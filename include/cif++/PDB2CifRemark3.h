@@ -11,15 +11,15 @@ class Remark3Parser
   public:
 	virtual ~Remark3Parser() {}
 
-	static bool Parse(const std::string& expMethod, PDBRecord* r, cif::datablock& db);
+	static bool parse(const std::string& expMethod, PDBRecord* r, cif::datablock& db);
 
-	virtual std::string Program();
-	virtual std::string Version();
+	virtual std::string program();
+	virtual std::string version();
 
   protected:
 
 	Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::datablock& db,
-			const TemplateLine templatelines[], uint32 templateLineCount, std::regex program_version);
+			const TemplateLine templatelines[], uint32 templateLineCount, std::regex programVersion);
 
 	virtual float Parse();
 	std::string NextLine();
@@ -31,17 +31,17 @@ class Remark3Parser
 
 	virtual void Fixup() {}
 
-	std::string		m_name;
-	std::string		m_expMethod;
-	PDBRecord*		m_rec;
-	cif::datablock	m_db;
-	std::string		m_line;
-	std::smatch		m_m;
-	uint32			m_state;
+	std::string		mName;
+	std::string		mExpMethod;
+	PDBRecord*		mRec;
+	cif::datablock	mDb;
+	std::string		mLine;
+	std::smatch		mM;
+	uint32			mState;
 
-	const TemplateLine*	m_template;
-	uint32				m_templateCount;
-	std::regex			m_program_version;
+	const TemplateLine*	mTemplate;
+	uint32				mTemplateCount;
+	std::regex			mProgramVersion;
 };
 
 

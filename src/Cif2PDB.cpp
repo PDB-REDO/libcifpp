@@ -1,4 +1,4 @@
-#include "libpr.h"
+#include "cif++/Config.h"
 
 #include <map>
 #include <set>
@@ -13,18 +13,17 @@
 #include <boost/iostreams/concepts.hpp>    // output_filter
 #include <boost/iostreams/operations.hpp>  // put
 
-#include "peptidedb.h"
-#include "cif2pdb.h"
-#include "libcif/atom_type.h"
-//#include "libcif/compound.h"
+#include "cif++/PeptideDB.h"
+#include "cif++/Cif2PDB.h"
+#include "cif++/AtomType.h"
 
 using namespace std;
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;
 
-using cif::datablock;
-using cif::category;
-using cif::row;
+using cif::Datablock;
+using cif::Category;
+using cif::Row;
 
 // --------------------------------------------------------------------
 // FillOutLineFilter is used to make sure all lines in PDB files
@@ -81,7 +80,7 @@ class FillOutLineFilter : public io::output_filter
 // --------------------------------------------------------------------
 // conversion routines between cif and pdb format
 
-string cif2pdb_date(const string& d)
+string cif2pdbDate(const string& d)
 {
 	const regex rx(R"((\d{4})-(\d{2})(?:-(\d{2}))?)");
 	const char* kMonths[12] = {
@@ -105,7 +104,7 @@ string cif2pdb_date(const string& d)
 	return result;
 }
 
-string cif2pdb_auth(string name)
+string cif2pdbAuth(string name)
 {
 	const regex rx(R"(([^,]+), (\S+))");
 	
@@ -116,7 +115,7 @@ string cif2pdb_auth(string name)
 	return name;
 }
 
-string cif2pdb_symmetry(string s)
+string cif2pdbSymmetry(string s)
 {
 	auto i = s.rfind('_');
 	if (i != string::npos)
@@ -124,11 +123,11 @@ string cif2pdb_symmetry(string s)
 	return s;
 }
 
-string cif2pdb_atomName(string name, string resName, datablock& db)
+string cif2pdbAtomName(string name, string resName, Datablock& db)
 {
 	if (name.length() < 4)
 	{
-		for (auto r: db["atom_site"].find(cif::key("label_atom_id") == name and cif::key("label_comp_id") == resName))
+		for (auto r: db["atom_site"].find(cif::Key("label_atom_id") == name and cif::Key("label_comp_id") == resName))
 		{
 			string element = r["type_symbol"].as<string>();
 			
@@ -144,7 +143,7 @@ string cif2pdb_atomName(string name, string resName, datablock& db)
 
 enum SoftwareType { eRefinement, eDataScaling, eDataExtraction, eDataReduction, ePhasing };
 
-string cif_software(datablock& db, SoftwareType sw)
+string cifSoftware(Datablock& db, SoftwareType sw)
 {
 	string result = "NULL";
 	
@@ -152,9 +151,9 @@ string cif_software(datablock& db, SoftwareType sw)
 	{
 		switch (sw)
 		{
-			case eRefinement:		result = db["computing"][cif::key("entry_id") == db.name()]["structure_refinement"].as<string>();	break;
-			case eDataScaling:		result = db["computing"][cif::key("entry_id") == db.name()]["pdbx_data_reduction_ds"].as<string>(); break;
-			case eDataReduction:	result = db["computing"][cif::key("entry_id") == db.name()]["pdbx_data_reduction_ii"].as<string>(); break;
+			case eRefinement:		result = db["computing"][cif::Key("entry_id") == db.getName()]["structure_refinement"].as<string>();	break;
+			case eDataScaling:		result = db["computing"][cif::Key("entry_id") == db.getName()]["pdbx_data_reduction_ds"].as<string>(); break;
+			case eDataReduction:	result = db["computing"][cif::Key("entry_id") == db.getName()]["pdbx_data_reduction_ii"].as<string>(); break;
 			default: break;
 		}
 		
@@ -162,15 +161,15 @@ string cif_software(datablock& db, SoftwareType sw)
 		{
 			auto& software = db["software"];
 		
-			row r;
+			Row r;
 			
 			switch (sw)
 			{
-				case eRefinement:		r = software[cif::key("classification") == "refinement"];		break;
-				case eDataScaling:		r = software[cif::key("classification") == "data scaling"];		break;
-				case eDataExtraction:	r = software[cif::key("classification") == "data extraction"];	break;
-				case eDataReduction:	r = software[cif::key("classification") == "data reduction"];	break;
-				case ePhasing:			r = software[cif::key("classification") == "phasing"];			break;
+				case eRefinement:		r = software[cif::Key("classification") == "refinement"];		break;
+				case eDataScaling:		r = software[cif::Key("classification") == "data scaling"];		break;
+				case eDataExtraction:	r = software[cif::Key("classification") == "data extraction"];	break;
+				case eDataReduction:	r = software[cif::Key("classification") == "data reduction"];	break;
+				case ePhasing:			r = software[cif::Key("classification") == "phasing"];			break;
 			}
 			
 			result = r["name"].as<string>() + " " + r["version"].as<string>();
@@ -188,19 +187,19 @@ string cif_software(datablock& db, SoftwareType sw)
 }
 
 // Map asym ID's back to PDB Chain ID's
-vector<string> MapAsymIDs2ChainIDs(const vector<string>& asymIDs, datablock& db)
+vector<string> MapAsymIDs2ChainIDs(const vector<string>& asymIDs, Datablock& db)
 {
 	set<string> result;
 	
 	for (auto asym: asymIDs)
 	{
-		for (auto r: db["pdbx_poly_seq_scheme"].find(cif::key("asym_id") == asym))
+		for (auto r: db["pdbx_poly_seq_scheme"].find(cif::Key("asym_id") == asym))
 		{
 			result.insert(r["pdb_strand_id"].as<string>());
 			break;
 		}
 		
-		for (auto r: db["pdbx_nonpoly_scheme"].find(cif::key("asym_id") == asym))
+		for (auto r: db["pdbx_nonpoly_scheme"].find(cif::Key("asym_id") == asym))
 		{
 			result.insert(r["pdb_strand_id"].as<string>());
 			break;
@@ -223,7 +222,7 @@ int WriteContinuedLine(ostream& pdbFile, string header, int& count, int cLen, st
 
 	int maxLength = 80 - lStart - 1;
 
-	vector<string> lines = cif::word_wrap(text, maxLength);
+	vector<string> lines = cif::wordWrap(text, maxLength);
 
 	for (auto& line: lines)
 	{
@@ -253,7 +252,7 @@ int WriteOneContinuedLine(ostream& pdbFile, string header, int cLen, string line
 	return WriteContinuedLine(pdbFile, header, count, cLen, line, lStart);
 }
 
-int WriteCitation(ostream& pdbFile, datablock& db, row r, int reference)
+int WriteCitation(ostream& pdbFile, Datablock& db, Row r, int reference)
 {
 	int result = 0;
 	
@@ -268,16 +267,16 @@ int WriteCitation(ostream& pdbFile, datablock& db, row r, int reference)
 	else
 		s1 = "JRNL        ";
 	
-	string id, title, pubname, volume, astm, country, issn, csd, publ, pmid, doi, page_first, page_last, year;
+	string id, title, pubname, volume, astm, country, issn, csd, publ, pmid, doi, pageFirst, pageLast, year;
 	
-	cif::tie(id, title, pubname, volume, astm, country, issn, csd, publ, pmid, doi, page_first, page_last, year) =
+	cif::tie(id, title, pubname, volume, astm, country, issn, csd, publ, pmid, doi, pageFirst, pageLast, year) =
 		r.get("id", "title", "journal_abbrev", "journal_volume", "journal_id_ASTM", "country", "journal_id_ISSN", 
 			  "journal_id_CSD", "book_publisher", "pdbx_database_id_PubMed", "pdbx_database_id_DOI",
 			  "page_first", "page_last", "year");
 	
 	vector<string> authors;
-	for (auto r1: db["citation_author"].find(cif::key("citation_id") == id))
-		authors.push_back(cif2pdb_auth(r1["name"].as<string>()));
+	for (auto r1: db["citation_author"].find(cif::Key("citation_id") == id))
+		authors.push_back(cif2pdbAuth(r1["name"].as<string>()));
 
 	if (not authors.empty())
 		result += WriteOneContinuedLine(pdbFile, s1 + "AUTH", 2, ba::join(authors, ","), 19);
@@ -294,7 +293,7 @@ int WriteCitation(ostream& pdbFile, datablock& db, row r, int reference)
 					% pubname
 					% (volume.empty() ? "" : "V.")
 					% volume
-					% page_first
+					% pageFirst
 					% year).str()
 				<< endl;
 		++result;
@@ -339,7 +338,7 @@ int WriteCitation(ostream& pdbFile, datablock& db, row r, int reference)
 	return result;
 }
 
-void WriteTitle(ostream& pdbFile, datablock& db)
+void WriteTitle(ostream& pdbFile, Datablock& db)
 {
 	//    0         1         2         3         4         5         6         7         8
 	//    HEADER    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxDDDDDDDDD   IIII
@@ -364,7 +363,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 		date = r["recvd_initial_deposition_date"].as<string>();
 		if (date.empty())
 			continue;
-		date = cif2pdb_date(date);
+		date = cif2pdbDate(date);
 		break;
 	}
 	
@@ -375,12 +374,12 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 			date = r["date_original"].as<string>();
 			if (date.empty())
 				continue;
-			date = cif2pdb_date(date);
+			date = cif2pdbDate(date);
 			break;
 		}
 	}
 	
-	pdbFile << (boost::format(kHeader) % keywords % date % db.name()).str() << endl;
+	pdbFile << (boost::format(kHeader) % keywords % date % db.getName()).str() << endl;
 	
 	// TODO: implement
 	// OBSLTE (skip for now)
@@ -405,7 +404,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 		if (r["type"] != "polymer")
 			continue;
 		
-		string entity_id = r["id"].as<string>();
+		string entityId = r["id"].as<string>();
 		
 		++molID;
 		cmpnd.push_back("MOL_ID: " + to_string(molID));
@@ -413,7 +412,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 		string molecule = r["pdbx_description"].as<string>();
 		cmpnd.push_back("MOLECULE: " + molecule);
 
-		auto poly = db["entity_poly"].find(cif::key("entity_id") == entity_id);
+		auto poly = db["entity_poly"].find(cif::Key("entity_id") == entityId);
 		if (not poly.empty())
 		{
 			string chains = poly.front()["pdbx_strand_id"].as<string>();
@@ -425,7 +424,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 		if (not fragment.empty())
 			cmpnd.push_back("FRAGMENT: " + fragment);
 		
-		for (auto sr: db["entity_name_com"].find(cif::key("entity_id") == entity_id))
+		for (auto sr: db["entity_name_com"].find(cif::Key("entity_id") == entityId))
 		{
 			string syn = sr["name"].as<string>();
 			if (not syn.empty())
@@ -460,7 +459,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 		if (r["type"] != "polymer")
 			continue;
 		
-		string entity_id = r["id"].as<string>();
+		string entityId = r["id"].as<string>();
 		
 		++molID;
 		source.push_back("MOL_ID: " + to_string(molID));
@@ -490,7 +489,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 			{ "details",						"OTHER_DETAILS" }
 		};
 
-		for (auto gr: gen.find(cif::key("entity_id") == entity_id))
+		for (auto gr: gen.find(cif::Key("entity_id") == entityId))
 		{
 			for (auto m: kGenSourceMapping)
 			{
@@ -515,7 +514,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 			{ "details",					"OTHER_DETAILS" }
 		};
 		
-		for (auto nr: nat.find(cif::key("entity_id") == entity_id))
+		for (auto nr: nat.find(cif::Key("entity_id") == entityId))
 		{
 			for (auto m: kNatSourceMapping)
 			{
@@ -562,27 +561,27 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 	// AUTHOR
 	vector<string> authors;
 	for (auto r: db["audit_author"])
-		authors.push_back(cif2pdb_auth(r["name"].as<string>()));
+		authors.push_back(cif2pdbAuth(r["name"].as<string>()));
 	if (not authors.empty())
 		WriteOneContinuedLine(pdbFile, "AUTHOR  ", 2, ba::join(authors, ","));
 	
 	// REVDAT
 	boost::format kRevDat("REVDAT %3.3d%2.2s %9.9s %4.4s    %1.1d      ");
 	auto& cat2 = db["database_PDB_rev"];
-	vector<row> rev(cat2.begin(), cat2.end());
-	sort(rev.begin(), rev.end(), [](row a, row b) -> bool { return a["num"].as<int>() > b["num"].as<int>(); });
+	vector<Row> rev(cat2.begin(), cat2.end());
+	sort(rev.begin(), rev.end(), [](Row a, Row b) -> bool { return a["num"].as<int>() > b["num"].as<int>(); });
 	for (auto r: rev)
 	{
-		int rev_num, mod_type;
+		int revNum, modType;
 		string date, replaces;
 		
-		cif::tie(rev_num, mod_type, date, replaces) = r.get("num", "mod_type", "date", "replaces");
+		cif::tie(revNum, modType, date, replaces) = r.get("num", "mod_type", "date", "replaces");
 		
-		date = cif2pdb_date(date);
+		date = cif2pdbDate(date);
 		
 		vector<string> types;
 		
-		for (auto r1: db["database_PDB_rev_record"].find(cif::key("rev_num") == rev_num))
+		for (auto r1: db["database_PDB_rev_record"].find(cif::Key("rev_num") == revNum))
 			types.push_back(r1["type"].as<string>());
 		
 		int continuation = 0;
@@ -590,7 +589,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 		{
 			string cs = ++continuation > 1 ? to_string(continuation) : string();
 			
-			pdbFile << (kRevDat % rev_num % cs % date % db.name() % mod_type).str();
+			pdbFile << (kRevDat % revNum % cs % date % db.getName() % modType).str();
 			for (size_t i = 0; i < 4; ++i)
 				pdbFile << (boost::format(" %-6.6s") % (i < types.size() ? types[i] : string())).str();
 			pdbFile << endl;
@@ -611,7 +610,7 @@ void WriteTitle(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark1(ostream& pdbFile, datablock& db)
+void WriteRemark1(ostream& pdbFile, Datablock& db)
 {
 	int reference = 0;
 	
@@ -629,7 +628,7 @@ void WriteRemark1(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark2(ostream& pdbFile, datablock& db)
+void WriteRemark2(ostream& pdbFile, Datablock& db)
 {
 	auto& refine = db["refine"];
 	if (refine.empty())
@@ -663,9 +662,9 @@ class FBase
 	virtual void out(ostream& os) = 0;
 
   protected:
-	FBase(row r, const char* f)
+	FBase(Row r, const char* f)
 		: mRow(r), mField(f) {}
-	FBase(category& cat, cif::condition&& cond, const char* f)
+	FBase(Category& cat, cif::Condition&& cond, const char* f)
 		: mField(f)
 	{
 		auto r = cat.find(move(cond));
@@ -673,15 +672,15 @@ class FBase
 			mRow = r.front();
 	}
 	
-	row mRow;
+	Row mRow;
 	const char* mField;
 };
 
 class Fi : public FBase
 {
   public:
-	Fi(row r, const char* f) : FBase(r, f) {}
-	Fi(category& cat, cif::condition&& cond, const char* f) : FBase(cat, move(cond), f) {}
+	Fi(Row r, const char* f) : FBase(r, f) {}
+	Fi(Category& cat, cif::Condition&& cond, const char* f) : FBase(cat, move(cond), f) {}
 	
 	virtual void out(ostream& os)
 	{
@@ -700,8 +699,8 @@ class Fi : public FBase
 class Ff : public FBase
 {
   public:
-	Ff(row r, const char* f) : FBase(r, f) {}
-	Ff(category& cat, cif::condition&& cond, const char* f) : FBase(cat, move(cond), f) {}
+	Ff(Row r, const char* f) : FBase(r, f) {}
+	Ff(Category& cat, cif::Condition&& cond, const char* f) : FBase(cat, move(cond), f) {}
 	
 	virtual void out(ostream& os)
 	{
@@ -720,8 +719,8 @@ class Ff : public FBase
 class Fs : public FBase
 {
   public:
-	Fs(row r, const char* f, int remarkNr = 3) : FBase(r, f), mNr(remarkNr) {}
-	Fs(category& cat, cif::condition&& cond, const char* f, int remarkNr = 3) : FBase(cat, move(cond), f), mNr(remarkNr) {}
+	Fs(Row r, const char* f, int remarkNr = 3) : FBase(r, f), mNr(remarkNr) {}
+	Fs(Category& cat, cif::Condition&& cond, const char* f, int remarkNr = 3) : FBase(cat, move(cond), f), mNr(remarkNr) {}
 	
 	virtual void out(ostream& os)
 	{
@@ -787,7 +786,7 @@ ostream& operator<<(ostream& os, SEP&& sep)
 
 // --------------------------------------------------------------------
 
-void WriteRemark3BusterTNT(ostream& pdbFile, datablock& db)
+void WriteRemark3BusterTNT(ostream& pdbFile, Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto ls_shell = db["refine_ls_shell"].front();
@@ -874,59 +873,59 @@ void WriteRemark3BusterTNT(ostream& pdbFile, datablock& db)
 			<< RM3("") << endl
 			<< RM3("  NUMBER OF GEOMETRIC FUNCTION TERMS DEFINED : 15") << endl
 			<< RM3("  TERM                          COUNT    WEIGHT   FUNCTION.") << endl
-			<< RM3("   BOND LENGTHS              : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_bond_d", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_bond_d", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_bond_d", "pdbx_restraint_function") << endl
-			<< RM3("   BOND ANGLES               : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_angle_deg", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_angle_deg", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_angle_deg", "pdbx_restraint_function") << endl
-			<< RM3("   TORSION ANGLES            : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_dihedral_angle_d", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_dihedral_angle_d", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_dihedral_angle_d", "pdbx_restraint_function") << endl
-			<< RM3("   TRIGONAL CARBON PLANES    : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_trig_c_planes", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_trig_c_planes", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_trig_c_planes", "pdbx_restraint_function") << endl
-			<< RM3("   GENERAL PLANES            : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_gen_planes", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_gen_planes", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_gen_planes", "pdbx_restraint_function") << endl
-			<< RM3("   ISOTROPIC THERMAL FACTORS : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_it", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_it", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_it", "pdbx_restraint_function") << endl
-			<< RM3("   BAD NON-BONDED CONTACTS   : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_nbd", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_nbd", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_nbd", "pdbx_restraint_function") << endl
-			<< RM3("   IMPROPER TORSIONS         : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_improper_torsion", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_improper_torsion", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_improper_torsion", "pdbx_restraint_function") << endl
-			<< RM3("   PSEUDOROTATION ANGLES     : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_pseud_angle", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_pseud_angle", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_pseud_angle", "pdbx_restraint_function") << endl
-			<< RM3("   CHIRAL IMPROPER TORSION   : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_chiral_improper_torsion", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_chiral_improper_torsion", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_chiral_improper_torsion", "pdbx_restraint_function") << endl
-			<< RM3("   SUM OF OCCUPANCIES        : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_sum_occupancies", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_sum_occupancies", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_sum_occupancies", "pdbx_restraint_function") << endl
-			<< RM3("   UTILITY DISTANCES         : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_utility_distance", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_utility_distance", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_utility_distance", "pdbx_restraint_function") << endl
-			<< RM3("   UTILITY ANGLES            : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_utility_angle", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_utility_angle", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_utility_angle", "pdbx_restraint_function") << endl
-			<< RM3("   UTILITY TORSION           : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_utility_torsion", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_utility_torsion", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_utility_torsion", "pdbx_restraint_function") << endl
-			<< RM3("   IDEAL-DIST CONTACT TERM   : ", 7, 0)	<< Ff(ls_restr, cif::key("type") == "t_ideal_dist_contact", "number")
-										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_ideal_dist_contact", "weight")
-										<< SEP("; ", 12)	<< Fs(ls_restr, cif::key("type") == "t_ideal_dist_contact", "pdbx_restraint_function") << endl
+			<< RM3("   BOND LENGTHS              : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_bond_d", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_bond_d", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_bond_d", "pdbx_restraint_function") << endl
+			<< RM3("   BOND ANGLES               : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_angle_deg", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_angle_deg", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_angle_deg", "pdbx_restraint_function") << endl
+			<< RM3("   TORSION ANGLES            : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_dihedral_angle_d", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_dihedral_angle_d", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_dihedral_angle_d", "pdbx_restraint_function") << endl
+			<< RM3("   TRIGONAL CARBON PLANES    : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_trig_c_planes", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_trig_c_planes", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_trig_c_planes", "pdbx_restraint_function") << endl
+			<< RM3("   GENERAL PLANES            : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_gen_planes", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_gen_planes", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_gen_planes", "pdbx_restraint_function") << endl
+			<< RM3("   ISOTROPIC THERMAL FACTORS : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_it", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_it", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_it", "pdbx_restraint_function") << endl
+			<< RM3("   BAD NON-BONDED CONTACTS   : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_nbd", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_nbd", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_nbd", "pdbx_restraint_function") << endl
+			<< RM3("   IMPROPER TORSIONS         : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_improper_torsion", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_improper_torsion", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_improper_torsion", "pdbx_restraint_function") << endl
+			<< RM3("   PSEUDOROTATION ANGLES     : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_pseud_angle", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_pseud_angle", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_pseud_angle", "pdbx_restraint_function") << endl
+			<< RM3("   CHIRAL IMPROPER TORSION   : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_chiral_improper_torsion", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_chiral_improper_torsion", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_chiral_improper_torsion", "pdbx_restraint_function") << endl
+			<< RM3("   SUM OF OCCUPANCIES        : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_sum_occupancies", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_sum_occupancies", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_sum_occupancies", "pdbx_restraint_function") << endl
+			<< RM3("   UTILITY DISTANCES         : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_utility_distance", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_utility_distance", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_utility_distance", "pdbx_restraint_function") << endl
+			<< RM3("   UTILITY ANGLES            : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_utility_angle", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_utility_angle", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_utility_angle", "pdbx_restraint_function") << endl
+			<< RM3("   UTILITY TORSION           : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_utility_torsion", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_utility_torsion", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_utility_torsion", "pdbx_restraint_function") << endl
+			<< RM3("   IDEAL-DIST CONTACT TERM   : ", 7, 0)	<< Ff(ls_restr, cif::Key("type") == "t_ideal_dist_contact", "number")
+										<< SEP("; ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_ideal_dist_contact", "weight")
+										<< SEP("; ", 12)	<< Fs(ls_restr, cif::Key("type") == "t_ideal_dist_contact", "pdbx_restraint_function") << endl
 
 			
 			<< RM3("") << endl
 			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << endl
-			<< RM3("  BOND LENGTHS                       (A) : ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "t_bond_d", "dev_ideal") << endl
-			<< RM3("  BOND ANGLES                  (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "t_angle_deg", "dev_ideal") << endl
-			<< RM3("  PEPTIDE OMEGA TORSION ANGLES (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "t_omega_torsion", "dev_ideal") << endl
-			<< RM3("  OTHER TORSION ANGLES         (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "t_other_torsion", "dev_ideal") << endl;
+			<< RM3("  BOND LENGTHS                       (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "t_bond_d", "dev_ideal") << endl
+			<< RM3("  BOND ANGLES                  (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "t_angle_deg", "dev_ideal") << endl
+			<< RM3("  PEPTIDE OMEGA TORSION ANGLES (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "t_omega_torsion", "dev_ideal") << endl
+			<< RM3("  OTHER TORSION ANGLES         (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "t_other_torsion", "dev_ideal") << endl;
 
 	auto& tls = db["pdbx_refine_tls"];	
 
@@ -937,7 +936,7 @@ void WriteRemark3BusterTNT(ostream& pdbFile, datablock& db)
 	for (auto t: tls)
 	{
 		string id = t["id"].as<string>();
-		auto g = db["pdbx_refine_tls_group"][cif::key("refine_tls_id") == id];
+		auto g = db["pdbx_refine_tls_group"][cif::Key("refine_tls_id") == id];
 		
 		pdbFile << RM3("") << endl
 				<< RM3("  TLS GROUP : ") << id << endl
@@ -965,7 +964,7 @@ void WriteRemark3BusterTNT(ostream& pdbFile, datablock& db)
 
 // --------------------------------------------------------------------
 
-void WriteRemark3CNS(ostream& pdbFile, datablock& db)
+void WriteRemark3CNS(ostream& pdbFile, Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto ls_shell = db["refine_ls_shell"].front();
@@ -1056,24 +1055,24 @@ void WriteRemark3CNS(ostream& pdbFile, datablock& db)
 			
 			<< RM3("") << endl
 			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << endl
-			<< RM3("  BOND LENGTHS                 (A) : ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "c_bond_d", "dev_ideal") << endl
-			<< RM3("  BOND ANGLES            (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "c_angle_deg", "dev_ideal") << endl
-			<< RM3("  DIHEDRAL ANGLES        (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "c_dihedral_angle_d", "dev_ideal") << endl
-			<< RM3("  IMPROPER ANGLES        (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "c_improper_angle_d", "dev_ideal") << endl
+			<< RM3("  BOND LENGTHS                 (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "c_bond_d", "dev_ideal") << endl
+			<< RM3("  BOND ANGLES            (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "c_angle_deg", "dev_ideal") << endl
+			<< RM3("  DIHEDRAL ANGLES        (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "c_dihedral_angle_d", "dev_ideal") << endl
+			<< RM3("  IMPROPER ANGLES        (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "c_improper_angle_d", "dev_ideal") << endl
 			
 			<< RM3("") << endl
 			<< RM3(" ISOTROPIC THERMAL MODEL : ") << Fs(refine, "pdbx_isotropic_thermal_model") << endl
 			
 			<< RM3("") << endl
 			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.    RMS    SIGMA") << endl
-			<< RM3("  MAIN-CHAIN BOND              (A**2) : ", 7, 3) << Ff(ls_restr, cif::key("type") == "c_mcbond_it", "dev_ideal") << SEP("; ", 7, 3) 
-																	 << Ff(ls_restr, cif::key("type") == "c_mcbond_it", "dev_ideal_target") << endl
-			<< RM3("  MAIN-CHAIN ANGLE             (A**2) : ", 7, 3) << Ff(ls_restr, cif::key("type") == "c_mcangle_it", "dev_ideal") << SEP("; ", 7, 3) 
-																	 << Ff(ls_restr, cif::key("type") == "c_mcangle_it", "dev_ideal_target") << endl
-			<< RM3("  SIDE-CHAIN BOND              (A**2) : ", 7, 3) << Ff(ls_restr, cif::key("type") == "c_scbond_it", "dev_ideal") << SEP("; ", 7, 3) 
-																	 << Ff(ls_restr, cif::key("type") == "c_scbond_it", "dev_ideal_target") << endl
-			<< RM3("  SIDE-CHAIN ANGLE             (A**2) : ", 7, 3) << Ff(ls_restr, cif::key("type") == "c_scangle_it", "dev_ideal") << SEP("; ", 7, 3) 
-																	 << Ff(ls_restr, cif::key("type") == "c_scangle_it", "dev_ideal_target") << endl
+			<< RM3("  MAIN-CHAIN BOND              (A**2) : ", 7, 3) << Ff(ls_restr, cif::Key("type") == "c_mcbond_it", "dev_ideal") << SEP("; ", 7, 3) 
+																	 << Ff(ls_restr, cif::Key("type") == "c_mcbond_it", "dev_ideal_target") << endl
+			<< RM3("  MAIN-CHAIN ANGLE             (A**2) : ", 7, 3) << Ff(ls_restr, cif::Key("type") == "c_mcangle_it", "dev_ideal") << SEP("; ", 7, 3) 
+																	 << Ff(ls_restr, cif::Key("type") == "c_mcangle_it", "dev_ideal_target") << endl
+			<< RM3("  SIDE-CHAIN BOND              (A**2) : ", 7, 3) << Ff(ls_restr, cif::Key("type") == "c_scbond_it", "dev_ideal") << SEP("; ", 7, 3) 
+																	 << Ff(ls_restr, cif::Key("type") == "c_scbond_it", "dev_ideal_target") << endl
+			<< RM3("  SIDE-CHAIN ANGLE             (A**2) : ", 7, 3) << Ff(ls_restr, cif::Key("type") == "c_scangle_it", "dev_ideal") << SEP("; ", 7, 3) 
+																	 << Ff(ls_restr, cif::Key("type") == "c_scangle_it", "dev_ideal_target") << endl
 
 			<< RM3("") << endl
 			<< RM3(" BULK SOLVENT MODELING.") << endl
@@ -1105,7 +1104,7 @@ void WriteRemark3CNS(ostream& pdbFile, datablock& db)
 
 // --------------------------------------------------------------------
 
-void WriteRemark3Refmac(ostream& pdbFile, datablock& db)
+void WriteRemark3Refmac(ostream& pdbFile, Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto ls_shell = db["refine_ls_shell"].front();
@@ -1115,7 +1114,7 @@ void WriteRemark3Refmac(ostream& pdbFile, datablock& db)
 	auto& ls_restr = db["refine_ls_restr"];
 //	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
 	
-	auto c = [](const char* t) -> cif::condition { return cif::key("type") == t; };
+	auto c = [](const char* t) -> cif::Condition { return cif::Key("type") == t; };
 	
 	pdbFile	<< RM3("") << endl
 			<< RM3("REFINEMENT TARGET : ") << Fs(refine, "pdbx_stereochemistry_target_values") << endl
@@ -1321,7 +1320,7 @@ void WriteRemark3Refmac(ostream& pdbFile, datablock& db)
 			
 			for (auto ens_id: ncs_groups)
 			{
-				auto lim = db["struct_ncs_dom_lim"].find(cif::key("pdbx_ens_id") == ens_id);
+				auto lim = db["struct_ncs_dom_lim"].find(cif::Key("pdbx_ens_id") == ens_id);
 				
 				set<string> chains;
 				set<int> component_ids;
@@ -1350,7 +1349,7 @@ void WriteRemark3Refmac(ostream& pdbFile, datablock& db)
 				}
 				
 				pdbFile << RM3("                  GROUP CHAIN        COUNT   RMS     WEIGHT") << endl;
-				for (auto l: db["refine_ls_restr_ncs"].find(cif::key("pdbx_ens_id") == ens_id))
+				for (auto l: db["refine_ls_restr_ncs"].find(cif::Key("pdbx_ens_id") == ens_id))
 				{
 					string type = l["pdbx_type"].as<string>();
 					ba::to_upper(type);
@@ -1388,7 +1387,7 @@ void WriteRemark3Refmac(ostream& pdbFile, datablock& db)
 	for (auto t: tls)
 	{
 		string id = t["id"].as<string>();
-		auto g = db["pdbx_refine_tls_group"].find(cif::key("refine_tls_id") == id);
+		auto g = db["pdbx_refine_tls_group"].find(cif::Key("refine_tls_id") == id);
 		
 		pdbFile << RM3("") << endl
 				<< RM3("  TLS GROUP : ") << id << endl
@@ -1432,7 +1431,7 @@ void WriteRemark3Refmac(ostream& pdbFile, datablock& db)
 			<< RM3("") << endl;
 }
 
-void WriteRemark3Shelxl(ostream& pdbFile, datablock& db)
+void WriteRemark3Shelxl(ostream& pdbFile, Datablock& db)
 {
 	auto refine = db["refine"].front();
 //	auto ls_shell = db["refine_ls_shell"].front();
@@ -1443,7 +1442,7 @@ void WriteRemark3Shelxl(ostream& pdbFile, datablock& db)
 //	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
 	auto pdbx_refine = db["pdbx_refine"].front();
 	
-	auto c = [](const char* t) -> cif::condition { return cif::key("type") == t; };
+	auto c = [](const char* t) -> cif::Condition { return cif::Key("type") == t; };
 	
 	pdbFile	<< RM3("  AUTHORS     : G.M.SHELDRICK") << endl
 			<< RM3("") << endl
@@ -1512,7 +1511,7 @@ void WriteRemark3Shelxl(ostream& pdbFile, datablock& db)
 			<< RM3("") << endl;
 }
 
-void WriteRemark3Phenix(ostream& pdbFile, datablock& db)
+void WriteRemark3Phenix(ostream& pdbFile, Datablock& db)
 {
 	auto refine = db["refine"].front();
 //	auto ls_shell = db["refine_ls_shell"].front();
@@ -1523,7 +1522,7 @@ void WriteRemark3Phenix(ostream& pdbFile, datablock& db)
 //	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
 	auto pdbx_reflns_twin = db["pdbx_reflns_twin"].front();
 	
-	auto c = [](const char* t) -> cif::condition { return cif::key("type") == t; };
+	auto c = [](const char* t) -> cif::Condition { return cif::Key("type") == t; };
 
 	pdbFile	<< RM3("") << endl
 			<< RM3("   REFINEMENT TARGET : ") << Fs(refine, "pdbx_stereochemistry_target_values") << endl
@@ -1547,13 +1546,13 @@ void WriteRemark3Phenix(ostream& pdbFile, datablock& db)
 			<< RM3("  BIN  RESOLUTION RANGE  COMPL.    NWORK NFREE   RWORK  RFREE") << endl;
 		
 	int bin = 1;
-	vector<row> bins;
+	vector<Row> bins;
 	for (auto r: db["refine_ls_shell"])
 		bins.push_back(r);
 //	reverse(bins.begin(), bins.end());
 	try
 	{
-		sort(bins.begin(), bins.end(), [](row a, row b) -> bool { return a["d_res_high"].as<float>() > b["d_res_high"].as<float>(); });
+		sort(bins.begin(), bins.end(), [](Row a, Row b) -> bool { return a["d_res_high"].as<float>() > b["d_res_high"].as<float>(); });
 	}
 	catch (...) {}
 
@@ -1635,7 +1634,7 @@ void WriteRemark3Phenix(ostream& pdbFile, datablock& db)
 	{
 		string id = t["id"].as<string>();
 
-		auto pdbx_refine_tls_group = db["pdbx_refine_tls_group"][cif::key("refine_tls_id") == id];
+		auto pdbx_refine_tls_group = db["pdbx_refine_tls_group"][cif::Key("refine_tls_id") == id];
 		
 		pdbFile << RM3("  TLS GROUP : ") << id << endl
 				<< RM3("   SELECTION: ") << Fs(pdbx_refine_tls_group, "selection_details") << endl
@@ -1673,7 +1672,7 @@ void WriteRemark3Phenix(ostream& pdbFile, datablock& db)
 //			
 //			for (auto ens_id: ncs_groups)
 //			{
-//				auto lim = db["struct_ncs_dom_lim"].find(cif::key("pdbx_ens_id") == ens_id);
+//				auto lim = db["struct_ncs_dom_lim"].find(cif::Key("pdbx_ens_id") == ens_id);
 //				
 //				set<string> chains;
 //				set<int> component_ids;
@@ -1702,7 +1701,7 @@ void WriteRemark3Phenix(ostream& pdbFile, datablock& db)
 //				}
 //				
 //				pdbFile << RM3("                  GROUP CHAIN        COUNT   RMS     WEIGHT") << endl;
-//				for (auto l: db["refine_ls_restr_ncs"].find(cif::key("pdbx_ens_id") == ens_id))
+//				for (auto l: db["refine_ls_restr_ncs"].find(cif::Key("pdbx_ens_id") == ens_id))
 //				{
 //					string type = l["pdbx_type"];
 //					ba::to_upper(type);
@@ -1739,7 +1738,7 @@ void WriteRemark3Phenix(ostream& pdbFile, datablock& db)
 	pdbFile << RM3("") << endl;
 }
 
-void WriteRemark3XPlor(ostream& pdbFile, datablock& db)
+void WriteRemark3XPlor(ostream& pdbFile, Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto ls_shell = db["refine_ls_shell"].front();
@@ -1816,24 +1815,24 @@ void WriteRemark3XPlor(ostream& pdbFile, datablock& db)
 			
 			<< RM3("") << endl
 			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << endl
-			<< RM3("  BOND LENGTHS                 (A) : ", 7, 3)	<< Ff(ls_restr, cif::key("type") == "x_bond_d", "dev_ideal") << endl
-			<< RM3("  BOND ANGLES            (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "x_angle_deg", "dev_ideal") << endl
-			<< RM3("  DIHEDRAL ANGLES        (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "x_dihedral_angle_d", "dev_ideal") << endl
-			<< RM3("  IMPROPER ANGLES        (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::key("type") == "x_improper_angle_d", "dev_ideal") << endl
+			<< RM3("  BOND LENGTHS                 (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "x_bond_d", "dev_ideal") << endl
+			<< RM3("  BOND ANGLES            (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "x_angle_deg", "dev_ideal") << endl
+			<< RM3("  DIHEDRAL ANGLES        (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "x_dihedral_angle_d", "dev_ideal") << endl
+			<< RM3("  IMPROPER ANGLES        (DEGREES) : ", 7, 2)	<< Ff(ls_restr, cif::Key("type") == "x_improper_angle_d", "dev_ideal") << endl
 			
 			<< RM3("") << endl
 			<< RM3(" ISOTROPIC THERMAL MODEL : ") << Fs(refine, "pdbx_isotropic_thermal_model") << endl
 			
 			<< RM3("") << endl
 			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.    RMS    SIGMA") << endl
-			<< RM3("  MAIN-CHAIN BOND              (A**2) : ", 6, 2) << Ff(ls_restr, cif::key("type") == "x_mcbond_it", "dev_ideal") << SEP("; ", 6, 2) 
-																	 << Ff(ls_restr, cif::key("type") == "x_mcbond_it", "dev_ideal_target") << endl
-			<< RM3("  MAIN-CHAIN ANGLE             (A**2) : ", 6, 2) << Ff(ls_restr, cif::key("type") == "x_mcangle_it", "dev_ideal") << SEP("; ", 6, 2) 
-																	 << Ff(ls_restr, cif::key("type") == "x_mcangle_it", "dev_ideal_target") << endl
-			<< RM3("  SIDE-CHAIN BOND              (A**2) : ", 6, 2) << Ff(ls_restr, cif::key("type") == "x_scbond_it", "dev_ideal") << SEP("; ", 6, 2) 
-																	 << Ff(ls_restr, cif::key("type") == "x_scbond_it", "dev_ideal_target") << endl
-			<< RM3("  SIDE-CHAIN ANGLE             (A**2) : ", 6, 2) << Ff(ls_restr, cif::key("type") == "x_scangle_it", "dev_ideal") << SEP("; ", 6, 2) 
-																	 << Ff(ls_restr, cif::key("type") == "x_scangle_it", "dev_ideal_target") << endl
+			<< RM3("  MAIN-CHAIN BOND              (A**2) : ", 6, 2) << Ff(ls_restr, cif::Key("type") == "x_mcbond_it", "dev_ideal") << SEP("; ", 6, 2) 
+																	 << Ff(ls_restr, cif::Key("type") == "x_mcbond_it", "dev_ideal_target") << endl
+			<< RM3("  MAIN-CHAIN ANGLE             (A**2) : ", 6, 2) << Ff(ls_restr, cif::Key("type") == "x_mcangle_it", "dev_ideal") << SEP("; ", 6, 2) 
+																	 << Ff(ls_restr, cif::Key("type") == "x_mcangle_it", "dev_ideal_target") << endl
+			<< RM3("  SIDE-CHAIN BOND              (A**2) : ", 6, 2) << Ff(ls_restr, cif::Key("type") == "x_scbond_it", "dev_ideal") << SEP("; ", 6, 2) 
+																	 << Ff(ls_restr, cif::Key("type") == "x_scbond_it", "dev_ideal_target") << endl
+			<< RM3("  SIDE-CHAIN ANGLE             (A**2) : ", 6, 2) << Ff(ls_restr, cif::Key("type") == "x_scangle_it", "dev_ideal") << SEP("; ", 6, 2) 
+																	 << Ff(ls_restr, cif::Key("type") == "x_scangle_it", "dev_ideal_target") << endl
 			<< RM3("") << endl
 			<< RM3(" NCS MODEL : ")	<< Fs(ls_restr_ncs, "ncs_model_details") << endl
 			
@@ -1854,13 +1853,13 @@ void WriteRemark3XPlor(ostream& pdbFile, datablock& db)
 			<< RM3("") << endl;
 }
 
-void WriteRemark3(ostream& pdbFile, datablock& db)
+void WriteRemark3(ostream& pdbFile, Datablock& db)
 {
 	string program, authors;
 
 	if (not db["pdbx_nmr_software"].empty())
 	{
-		auto software = db["pdbx_nmr_software"].find(cif::key("classification") == "refinement");
+		auto software = db["pdbx_nmr_software"].find(cif::Key("classification") == "refinement");
 		if (software.size() == 1)
 			cif::tie(program, authors) = software.front().get("name", "authors");
 		else if (software.size() > 1)
@@ -1880,7 +1879,7 @@ void WriteRemark3(ostream& pdbFile, datablock& db)
 	}
 	
 	if (program.empty())
-		program = cif_software(db, eRefinement);
+		program = cifSoftware(db, eRefinement);
 	
 	if (authors.empty())
 		authors = "NULL";
@@ -1891,11 +1890,11 @@ void WriteRemark3(ostream& pdbFile, datablock& db)
 				<< RM3("REFINEMENT.") << endl;
 		
 		int l = 0;
-		for (auto s: cif::word_wrap(program, 52))
+		for (auto s: cif::wordWrap(program, 52))
 			pdbFile << RM3(++l == 1 ? "  PROGRAM     : " : "                ") << s << endl;
 
 		l = 0;
-		for (auto s: cif::word_wrap(authors, 52))
+		for (auto s: cif::wordWrap(authors, 52))
 			pdbFile << RM3(++l == 1 ? "  AUTHORS     : " : "                ") << s << endl;
 	}
 	
@@ -1930,7 +1929,7 @@ void WriteRemark3(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark200(ostream& pdbFile, datablock& db)
+void WriteRemark200(ostream& pdbFile, Datablock& db)
 {
 	typedef RM<200> RM;
 	
@@ -1941,29 +1940,29 @@ void WriteRemark200(ostream& pdbFile, datablock& db)
 			string diffrn_id = diffrn["id"].as<string>();
 			string crystal_id = diffrn["crystal_id"].as<string>();
 			
-			auto diffrn_radiation = db["diffrn_radiation"][cif::key("diffrn_id") == diffrn_id];
-			auto diffrn_radiation_wavelength = db["diffrn_radiation_wavelength"][cif::key("id") == diffrn_radiation["wavelength_id"].as<string>()];
-			auto diffrn_source = db["diffrn_source"][cif::key("diffrn_id") == diffrn_id];
-			auto diffrn_detector = db["diffrn_detector"][cif::key("diffrn_id") == diffrn_id];
-			auto exptl = db["exptl"][cif::key("entry_id") == db.name()];
-			auto exptl_crystal = db["exptl_crystal"][cif::key("id") == crystal_id];
-			auto exptl_crystal_grow = db["exptl_crystal_grow"][cif::key("crystal_id") == crystal_id];
-			auto computing = db["computing"][cif::key("entry_id") == db.name()];
-			auto reflns = db["reflns"][cif::key("entry_id") == db.name()];
+			auto diffrn_radiation = db["diffrn_radiation"][cif::Key("diffrn_id") == diffrn_id];
+			auto diffrn_radiation_wavelength = db["diffrn_radiation_wavelength"][cif::Key("id") == diffrn_radiation["wavelength_id"].as<string>()];
+			auto diffrn_source = db["diffrn_source"][cif::Key("diffrn_id") == diffrn_id];
+			auto diffrn_detector = db["diffrn_detector"][cif::Key("diffrn_id") == diffrn_id];
+			auto exptl = db["exptl"][cif::Key("entry_id") == db.getName()];
+			auto exptl_crystal = db["exptl_crystal"][cif::Key("id") == crystal_id];
+			auto exptl_crystal_grow = db["exptl_crystal_grow"][cif::Key("crystal_id") == crystal_id];
+			auto computing = db["computing"][cif::Key("entry_id") == db.getName()];
+			auto reflns = db["reflns"][cif::Key("entry_id") == db.getName()];
 
 			string pdbx_diffrn_id = reflns["pdbx_diffrn_id"].as<string>();
 			
-			auto reflns_shell = db["reflns_shell"][cif::key("pdbx_diffrn_id") == pdbx_diffrn_id];
-			auto refine = db["refine"][cif::key("pdbx_diffrn_id") == pdbx_diffrn_id];
+			auto reflns_shell = db["reflns_shell"][cif::Key("pdbx_diffrn_id") == pdbx_diffrn_id];
+			auto refine = db["refine"][cif::Key("pdbx_diffrn_id") == pdbx_diffrn_id];
 		
 			string date = diffrn_detector["pdbx_collection_date"].as<string>();
 			if (date.empty())
 				date = "NULL";
 			else
-				date = cif2pdb_date(date);
+				date = cif2pdbDate(date);
 				
-			string iis = cif_software(db, eDataReduction);
-			string dss = cif_software(db, eDataScaling);
+			string iis = cifSoftware(db, eDataReduction);
+			string dss = cifSoftware(db, eDataScaling);
 
 			string source = diffrn_source["source"].as<string>();
 			string synchrotron, type;
@@ -2031,7 +2030,7 @@ void WriteRemark200(ostream& pdbFile, datablock& db)
 				<< RM(" <I/SIGMA(I)> FOR SHELL         : ", 7, 3) << Ff(reflns_shell, "meanI_over_sigI_obs") << endl
 				<< RM("") << endl;
 
-			struct { row r; const char* field; const char* dst; }
+			struct { Row r; const char* field; const char* dst; }
 			kTail[] = {
 				{ diffrn_radiation, "pdbx_diffrn_protocol", "DIFFRACTION PROTOCOL: "},
 				{ refine, "pdbx_method_to_determine_struct", "METHOD USED TO DETERMINE THE STRUCTURE: "},
@@ -2047,7 +2046,7 @@ void WriteRemark200(ostream& pdbFile, datablock& db)
 				if (s.empty())
 				{
 					if (strcmp(t.field, "structure_solution") == 0)
-						s = cif_software(db, ePhasing);
+						s = cifSoftware(db, ePhasing);
 					else
 						s = "NULL";
 				}
@@ -2064,7 +2063,7 @@ void WriteRemark200(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark280(ostream& pdbFile, datablock& db)
+void WriteRemark280(ostream& pdbFile, Datablock& db)
 {
 	typedef RM<280> RM;
 	
@@ -2073,7 +2072,7 @@ void WriteRemark280(ostream& pdbFile, datablock& db)
 		for (auto exptl_crystal: db["exptl_crystal"])
 		{
 			string crystal_id = exptl_crystal["id"].as<string>();
-			auto exptl_crystal_grow = db["exptl_crystal_grow"][cif::key("crystal_id") == crystal_id];
+			auto exptl_crystal_grow = db["exptl_crystal_grow"][cif::Key("crystal_id") == crystal_id];
 
 			pdbFile
 				<< RM("") << endl
@@ -2125,7 +2124,7 @@ void WriteRemark280(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark350(ostream& pdbFile, datablock& db)
+void WriteRemark350(ostream& pdbFile, Datablock& db)
 {
 	auto& c1 = db["pdbx_struct_assembly"];
 	if (c1.empty())
@@ -2137,7 +2136,7 @@ void WriteRemark350(ostream& pdbFile, datablock& db)
 		string id = bm["id"].as<string>();
 		biomolecules.push_back(id);
 		
-		for (auto r: db["struct_biol"].find(cif::key("id") == id))
+		for (auto r: db["struct_biol"].find(cif::Key("id") == id))
 		{
 			string s = r["details"].as<string>();
 			if (not s.empty())
@@ -2192,7 +2191,7 @@ void WriteRemark350(ostream& pdbFile, datablock& db)
 		
 		for (string type: { "ABSA (A^2)", "SSA (A^2)", "MORE" })
 		{
-			for (auto prop: db["pdbx_struct_assembly_prop"].find(cif::key("biol_id") == id and cif::key("type") == type))
+			for (auto prop: db["pdbx_struct_assembly_prop"].find(cif::Key("biol_id") == id and cif::Key("type") == type))
 			{
 				string value = prop["value"].as<string>();
 			
@@ -2205,7 +2204,7 @@ void WriteRemark350(ostream& pdbFile, datablock& db)
 			}
 		}
 		
-		auto gen = db["pdbx_struct_assembly_gen"][cif::key("assembly_id") == id];
+		auto gen = db["pdbx_struct_assembly_gen"][cif::Key("assembly_id") == id];
 		
 		vector<string> asyms;
 		string asym_id_list, oper_id_list;
@@ -2221,7 +2220,7 @@ void WriteRemark350(ostream& pdbFile, datablock& db)
 		{
 			string oper_id{ i->begin(), i->end() };
 
-			auto r = db["pdbx_struct_oper_list"][cif::key("id") == oper_id];
+			auto r = db["pdbx_struct_oper_list"][cif::Key("id") == oper_id];
 			
 			pdbFile << RM("  BIOMT1 ", -3) <<	Fi(r, "id")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[1][1]")
@@ -2245,7 +2244,7 @@ void WriteRemark350(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark400(ostream& pdbFile, datablock& db)
+void WriteRemark400(ostream& pdbFile, Datablock& db)
 {
 	for (auto& r: db["pdbx_entry_details"])
 	{
@@ -2255,7 +2254,7 @@ void WriteRemark400(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark450(ostream& pdbFile, datablock& db)
+void WriteRemark450(ostream& pdbFile, Datablock& db)
 {
 	for (auto& r: db["pdbx_entry_details"])
 	{
@@ -2266,15 +2265,15 @@ void WriteRemark450(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark465(ostream& pdbFile, datablock& db)
+void WriteRemark465(ostream& pdbFile, Datablock& db)
 {
 	bool first = true;
 	typedef RM<465> RM;
 	boost::format fmt("REMARK 465 %3.3s %3.3s %1.1s %5.5d%1.1s");
 	
 	auto& c = db["pdbx_unobs_or_zero_occ_residues"];
-	vector<row> missing(c.begin(), c.end());
-	stable_sort(missing.begin(), missing.end(), [](row a, row b) -> bool
+	vector<Row> missing(c.begin(), c.end());
+	stable_sort(missing.begin(), missing.end(), [](Row a, Row b) -> bool
 	{
 		int modelNrA, seqIDA, modelNrB, seqIDB;
 		string asymIDA, asymIDB;
@@ -2315,7 +2314,7 @@ void WriteRemark465(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark470(ostream& pdbFile, datablock& db)
+void WriteRemark470(ostream& pdbFile, Datablock& db)
 {
 	typedef RM<470> RM;
 	boost::format fmt("REMARK 470 %3.3s %3.3s %1.1s%4.4d%1.1s  ");
@@ -2363,7 +2362,7 @@ void WriteRemark470(ostream& pdbFile, datablock& db)
 				
 				for (size_t i = 0; i < 6 and not a.second.empty(); ++i)
 				{
-					pdbFile << cif2pdb_atomName(a.second.front(), resName, db) << ' ';	
+					pdbFile << cif2pdbAtomName(a.second.front(), resName, db) << ' ';	
 					a.second.pop_front();
 				}
 
@@ -2374,12 +2373,12 @@ void WriteRemark470(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemark610(ostream& pdbFile, datablock& db)
+void WriteRemark610(ostream& pdbFile, Datablock& db)
 {
 	#warning("unimplemented!");
 }
 
-void WriteRemark800(ostream& pdbFile, datablock& db)
+void WriteRemark800(ostream& pdbFile, Datablock& db)
 {
 	int nr = 0;
 	for (auto r: db["struct_site"])
@@ -2398,13 +2397,13 @@ void WriteRemark800(ostream& pdbFile, datablock& db)
 
 		for (auto l: { "SITE_IDENTIFIER: " + ident, "EVIDENCE_CODE: " + code, "SITE_DESCRIPTION: " + desc })
 		{
-			for (auto s: cif::word_wrap(l, 69))
+			for (auto s: cif::wordWrap(l, 69))
 				pdbFile << "REMARK 800 " << s << endl;
 		};
 	}
 }
 
-void WriteRemark999(ostream& pdbFile, datablock& db)
+void WriteRemark999(ostream& pdbFile, Datablock& db)
 {
 	for (auto& r: db["pdbx_entry_details"])
 	{
@@ -2415,7 +2414,7 @@ void WriteRemark999(ostream& pdbFile, datablock& db)
 	}
 }
 
-void WriteRemarks(ostream& pdbFile, datablock& db)
+void WriteRemarks(ostream& pdbFile, Datablock& db)
 {
 	WriteRemark1(pdbFile, db);
 	WriteRemark2(pdbFile, db);
@@ -2437,7 +2436,7 @@ void WriteRemarks(ostream& pdbFile, datablock& db)
 	WriteRemark999(pdbFile, db);
 }
 
-int WritePrimaryStructure(ostream& pdbFile, datablock& db)
+int WritePrimaryStructure(ostream& pdbFile, Datablock& db)
 {
 	int numSeq = 0;
 	
@@ -2448,7 +2447,7 @@ int WritePrimaryStructure(ostream& pdbFile, datablock& db)
 		string id, db_name, db_code;
 		cif::tie(id, db_name, db_code) = r.get("id", "db_name", "db_code");
 		
-		for (auto r1: db["struct_ref_seq"].find(cif::key("ref_id") == id))
+		for (auto r1: db["struct_ref_seq"].find(cif::Key("ref_id") == id))
 		{
 			string idCode, chainID, insertBegin, insertEnd, dbAccession, dbinsBeg, dbinsEnd;
 			string seqBegin, seqEnd, dbseqBegin, dbseqEnd;
@@ -2578,7 +2577,7 @@ int WritePrimaryStructure(ostream& pdbFile, datablock& db)
 		
 		pdbFile << (boost::format(
 					"MODRES %4.4s %3.3s %1.1s %4.4s%1.1s %3.3s  %-41.41s")
-					% db.name()
+					% db.getName()
 					% resName
 					% chainID
 					% seqNum
@@ -2591,12 +2590,12 @@ int WritePrimaryStructure(ostream& pdbFile, datablock& db)
 	return numSeq;
 }
 
-int WriteHeterogen(ostream& pdbFile, datablock& db)
+int WriteHeterogen(ostream& pdbFile, Datablock& db)
 {
 	int numHet = 0;
 	
 	string water_entity_id, water_comp_id;
-	for (auto r: db["entity"].find(cif::key("type") == string("water")))
+	for (auto r: db["entity"].find(cif::Key("type") == string("water")))
 	{
 		water_entity_id = r["id"].as<string>();
 		break;
@@ -2656,7 +2655,7 @@ int WriteHeterogen(ostream& pdbFile, datablock& db)
 //	}
 	
 	// count the HETATM's
-//	for (auto r: db["atom_site"].find(cif::key("group_PDB") == string("HETATM")))
+//	for (auto r: db["atom_site"].find(cif::Key("group_PDB") == string("HETATM")))
 	set<string> missingHetNames;
 
 	for (auto r: db["atom_site"])
@@ -2759,7 +2758,7 @@ int WriteHeterogen(ostream& pdbFile, datablock& db)
 		if (id == water_comp_id)
 			continue;
 
-		string syn = db["chem_comp"][cif::key("id") == id]["pdbx_synonyms"].as<string>();
+		string syn = db["chem_comp"][cif::Key("id") == id]["pdbx_synonyms"].as<string>();
 		if (syn.empty())
 			continue;
 		
@@ -2777,7 +2776,7 @@ int WriteHeterogen(ostream& pdbFile, datablock& db)
 		int componentNr = 0;
 		
 		string first_het_asym_id;
-		for (auto p: db["pdbx_poly_seq_scheme"].find(cif::key("mon_id") == hetID))
+		for (auto p: db["pdbx_poly_seq_scheme"].find(cif::Key("mon_id") == hetID))
 		{
 			first_het_asym_id = p["asym_id"].as<string>();
 			break;
@@ -2785,7 +2784,7 @@ int WriteHeterogen(ostream& pdbFile, datablock& db)
 		
 		if (first_het_asym_id.empty())
 		{
-			for (auto p: db["pdbx_nonpoly_scheme"].find(cif::key("mon_id") == hetID))
+			for (auto p: db["pdbx_nonpoly_scheme"].find(cif::Key("mon_id") == hetID))
 			{
 				first_het_asym_id = p["asym_id"].as<string>();
 				break;
@@ -2804,7 +2803,7 @@ int WriteHeterogen(ostream& pdbFile, datablock& db)
 		
 		int nr = count_if(hets.begin(), hets.end(), [hetID](auto& h) -> bool { return h.hetID == hetID; });
 		
-		for (auto r: db["chem_comp"].find(cif::key("id") == hetID))
+		for (auto r: db["chem_comp"].find(cif::Key("id") == hetID))
 		{
 			string formula = r["formula"].as<string>();
 			if (nr > 1)
@@ -2860,13 +2859,13 @@ int WriteHeterogen(ostream& pdbFile, datablock& db)
 	return numHet;
 }
 
-tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, datablock& db)
+tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, Datablock& db)
 {
 	int numHelix = 0, numSheet = 0;
 	
 	// HELIX
 	boost::format kHELIX("HELIX  %3.3d %3.3s %3.3s %c %4.4d%1.1s %3.3s %c %4.4d%1.1s%2.2d%-30.30s %5.5d");
-	for (auto r: db["struct_conf"].find(cif::key("conf_type_id") == "HELX_P"))
+	for (auto r: db["struct_conf"].find(cif::Key("conf_type_id") == "HELX_P"))
 	{
 		string pdbx_PDB_helix_id, beg_label_comp_id, pdbx_beg_PDB_ins_code,
 			end_label_comp_id, pdbx_end_PDB_ins_code, beg_auth_comp_id,
@@ -2904,7 +2903,7 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, datablock& db)
 
 		bool first = true;
 		
-		for (auto o: db["struct_sheet_order"].find(cif::key("sheet_id") == sheetID))
+		for (auto o: db["struct_sheet_order"].find(cif::Key("sheet_id") == sheetID))
 		{
 			int sense = 0;
 			string s, rangeID1, rangeID2;
@@ -2920,7 +2919,7 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, datablock& db)
 				string initResName, initChainID, initICode, endResName, endChainID, endICode;
 				int initSeqNum, endSeqNum;
 
-				auto r1 = db["struct_sheet_range"][cif::key("sheet_id") == sheetID and cif::key("id") == rangeID1];
+				auto r1 = db["struct_sheet_range"][cif::Key("sheet_id") == sheetID and cif::Key("id") == rangeID1];
 	
 				cif::tie(initResName, initICode, endResName, endICode,
 					initResName, initChainID, initSeqNum, endResName, endChainID, endSeqNum)
@@ -2948,7 +2947,7 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, datablock& db)
 			string initResName, initChainID, initICode, endResName, endChainID, endICode, curAtom, curResName, curChainId, curICode, prevAtom, prevResName, prevChainId, prevICode;
 			int initSeqNum, endSeqNum, curResSeq, prevResSeq;
 
-			auto r2 = db["struct_sheet_range"][cif::key("sheet_id") == sheetID and cif::key("id") == rangeID2];
+			auto r2 = db["struct_sheet_range"][cif::Key("sheet_id") == sheetID and cif::Key("id") == rangeID2];
 
 			cif::tie(initResName, initICode, endResName, endICode,
 				initResName, initChainID, initSeqNum, endResName, endChainID, endSeqNum)
@@ -2956,7 +2955,7 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, datablock& db)
 			 	"pdbx_end_PDB_ins_code", "beg_auth_comp_id", "beg_auth_asym_id", "beg_auth_seq_id",
 			 	"end_auth_comp_id", "end_auth_asym_id", "end_auth_seq_id");
 			
-			auto h = db["pdbx_struct_sheet_hbond"].find(cif::key("sheet_id") == sheetID and cif::key("range_id_1") == rangeID1 and cif::key("range_id_2") == rangeID2);
+			auto h = db["pdbx_struct_sheet_hbond"].find(cif::Key("sheet_id") == sheetID and cif::Key("range_id_1") == rangeID1 and cif::Key("range_id_2") == rangeID2);
 			
 			if (h.empty())
 			{
@@ -2983,8 +2982,8 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, datablock& db)
 					= h.front().get("range_2_auth_atom_id", "range_2_auth_comp_id", "range_2_auth_seq_id", "range_2_auth_asym_id", "range_2_PDB_ins_code",
 						"range_1_auth_atom_id", "range_1_auth_comp_id", "range_1_auth_seq_id", "range_1_auth_asym_id", "range_1_PDB_ins_code");
 				
-				curAtom = cif2pdb_atomName(curAtom, compID[0], db);
-				prevAtom = cif2pdb_atomName(prevAtom, compID[1], db);
+				curAtom = cif2pdbAtomName(curAtom, compID[0], db);
+				prevAtom = cif2pdbAtomName(prevAtom, compID[1], db);
 				
 				pdbFile << (kSHEET1
 					% rangeID2
@@ -3018,7 +3017,7 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, datablock& db)
 	return make_tuple(numHelix, numSheet);
 }
 
-void WriteConnectivity(ostream& pdbFile, cif::datablock& db)
+void WriteConnectivity(ostream& pdbFile, cif::Datablock& db)
 {
 	// SSBOND
 	// have to filter out alts
@@ -3026,7 +3025,7 @@ void WriteConnectivity(ostream& pdbFile, cif::datablock& db)
 	
 	int nr = 1;
 	boost::format kSSBOND("SSBOND %3.3d CYS %1.1s %4.4d%1.1s   CYS %1.1s %4.4d%1.1s                       %6.6s %6.6s %5.2f");
-	for (auto r: db["struct_conn"].find(cif::key("conn_type_id") == "disulf"))
+	for (auto r: db["struct_conn"].find(cif::Key("conn_type_id") == "disulf"))
 	{
 		string chainID1, icode1, chainID2, icode2, sym1, sym2;
 		float Length;
@@ -3042,8 +3041,8 @@ void WriteConnectivity(ostream& pdbFile, cif::datablock& db)
 		if (n.second == false)
 			continue;
 		
-		sym1 = cif2pdb_symmetry(sym1);
-		sym2 = cif2pdb_symmetry(sym2);
+		sym1 = cif2pdbSymmetry(sym1);
+		sym2 = cif2pdbSymmetry(sym2);
 		
 		pdbFile << (kSSBOND
 			% nr
@@ -3063,7 +3062,7 @@ void WriteConnectivity(ostream& pdbFile, cif::datablock& db)
 	// LINK
 	
 	boost::format kLINK("LINK        %-4.4s%1.1s%3.3s %1.1s%4.4d%1.1s               %-4.4s%1.1s%3.3s %1.1s%4.4d%1.1s  %6.6s %6.6s %5.2f");
-	for (auto r: db["struct_conn"].find(cif::key("conn_type_id") == "metalc" or cif::key("conn_type_id") == "covale"))
+	for (auto r: db["struct_conn"].find(cif::Key("conn_type_id") == "metalc" or cif::Key("conn_type_id") == "covale"))
 	{
 		string name1, altLoc1, resName1, chainID1, iCode1, name2, altLoc2, resName2, chainID2, iCode2, sym1, sym2;
 		int resSeq1, resSeq2;
@@ -3078,11 +3077,11 @@ void WriteConnectivity(ostream& pdbFile, cif::datablock& db)
 		
 		cif::tie(compID[0], compID[1]) = r.get("ptnr1_label_comp_id", "ptnr2_label_comp_id");
 
-		name1 = cif2pdb_atomName(name1, compID[0], db);
-		name2 = cif2pdb_atomName(name2, compID[1], db);
+		name1 = cif2pdbAtomName(name1, compID[0], db);
+		name2 = cif2pdbAtomName(name2, compID[1], db);
 
-		sym1 = cif2pdb_symmetry(sym1);
-		sym2 = cif2pdb_symmetry(sym2);
+		sym1 = cif2pdbSymmetry(sym1);
+		sym2 = cif2pdbSymmetry(sym2);
 		
 		pdbFile << (kLINK
 			% name1
@@ -3131,7 +3130,7 @@ void WriteConnectivity(ostream& pdbFile, cif::datablock& db)
 	}
 }
 
-int WriteMiscellaneousFeatures(ostream& pdbFile, datablock& db)
+int WriteMiscellaneousFeatures(ostream& pdbFile, Datablock& db)
 {
 	int numSite = 0;
 	
@@ -3184,12 +3183,12 @@ int WriteMiscellaneousFeatures(ostream& pdbFile, datablock& db)
 	return numSite;
 }
 
-void WriteCrystallographic(ostream& pdbFile, datablock& db)
+void WriteCrystallographic(ostream& pdbFile, Datablock& db)
 {
-	auto r = db["symmetry"][cif::key("entry_id") == db.name()];
+	auto r = db["symmetry"][cif::Key("entry_id") == db.getName()];
 	string symmetry = r["space_group_name_H-M"].as<string>();
 
-	r = db["cell"][cif::key("entry_id") == db.name()];
+	r = db["cell"][cif::Key("entry_id") == db.getName()];
 	
 	boost::format kCRYST1("CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11.11s%4.4d");
 	
@@ -3204,7 +3203,7 @@ void WriteCrystallographic(ostream& pdbFile, datablock& db)
 		% r["Z_PDB"]) << endl;
 }
 
-int WriteCoordinateTransformation(ostream& pdbFile, datablock& db)
+int WriteCoordinateTransformation(ostream& pdbFile, Datablock& db)
 {
 	int result = 0;
 	
@@ -3245,7 +3244,7 @@ int WriteCoordinateTransformation(ostream& pdbFile, datablock& db)
 	return result;
 }
 
-tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, datablock& db,
+tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, Datablock& db,
 	const map<string,tuple<string,int,string>>& last_resseq_for_chain_map,
 	set<string>& TERminatedChains, int model_nr)
 {
@@ -3344,10 +3343,10 @@ tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, datablock& db,
 		
 		++numCoord;
 		
-		auto ai = atom_site_anisotrop[cif::key("id") == id];
+		auto ai = atom_site_anisotrop[cif::Key("id") == id];
 		if (not ai.empty())
 //		
-//		auto ai = find_if(atom_site_anisotrop.begin(), atom_site_anisotrop.end(), [id](row r) -> bool { return r["id"] == id; });
+//		auto ai = find_if(atom_site_anisotrop.begin(), atom_site_anisotrop.end(), [id](Row r) -> bool { return r["id"] == id; });
 //		if (ai != atom_site_anisotrop.end())
 		{
 			float u11, u22, u33, u12, u13, u23;
@@ -3379,7 +3378,7 @@ tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, datablock& db,
 	return make_tuple(numCoord, numTer);
 }
 
-tuple<int,int> WriteCoordinate(ostream& pdbFile, datablock& db)
+tuple<int,int> WriteCoordinate(ostream& pdbFile, Datablock& db)
 {
 	// residues known from seqres
 //	map<tuple<string,int,string>,string> res2chain_map;
@@ -3439,7 +3438,7 @@ tuple<int,int> WriteCoordinate(ostream& pdbFile, datablock& db)
 	return result;
 }
 
-void WritePDBFile(ostream& pdbFile, cif::file& cifFile)
+void WritePDBFile(ostream& pdbFile, cif::File& cifFile)
 {
 	io::filtering_ostream out;
 	out.push(FillOutLineFilter());
@@ -3448,7 +3447,7 @@ void WritePDBFile(ostream& pdbFile, cif::file& cifFile)
 	auto filter = out.component<FillOutLineFilter>(0);
 	assert(filter);
 
-	auto& db = cifFile.first_datablock();
+	auto& db = cifFile.firstDatablock();
 	
 	int numRemark = 0, numHet = 0, numHelix = 0, numSheet = 0, numTurn = 0, numSite = 0, numXform = 0, numCoord = 0, numTer = 0, numConect = 0, numSeq = 0;
 	

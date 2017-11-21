@@ -7,9 +7,9 @@
 
 #include <boost/any.hpp>
 
-#include "libcif/atom_type.h"
-#include "libcif/point.h"
-#include "libcif/compound.h"
+#include "cif++/AtomType.h"
+#include "cif++/Point.h"
+#include "cif++/Compound.h"
 
 /*
 	To modify a structure, you will have to use actions.
@@ -19,7 +19,7 @@
 //	- Move atom to new location
 	- Remove atom
 //	- Add new atom that was formerly missing
-//	- Add alternate residue
+//	- Add alternate Residue
 	- 
 	
 	Other important design principles:
@@ -36,19 +36,19 @@
 // forward declaration
 namespace cif
 {
-	class datablock;
+	class Datablock;
 };
 
 
 namespace libcif
 {
 
-class atom;
-class residue;
-class monomer;
-class polymer;
-class structure;
-class file;
+class Atom;
+class Residue;
+class Monomer;
+class Polymer;
+class Structure;
+class File;
 
 // --------------------------------------------------------------------
 // We do not want to introduce a dependency on cif++ here, we might want
@@ -57,100 +57,100 @@ class file;
 // Eventually this should be moved to std::variant, but that's only when
 // c++17 is acceptable.
 
-struct property
+struct Property
 {
-	property() {}
-	property(const std::string& name, const boost::any& value)
+	Property() {}
+	Property(const std::string& name, const boost::any& value)
 		: name(name), value(value) {}
 	
 	std::string name;
 	boost::any value;
 };
 
-typedef std::vector<property>	property_list;
+typedef std::vector<Property>	PropertyList;
 
 // --------------------------------------------------------------------
 
-class atom
+class Atom
 {
   public:
-//	atom(const structure& s, const std::string& id);
-	atom(struct atom_impl* impl);
-	atom(const file& f, const std::string& id);
-	atom(const atom& rhs);
+//	Atom(const structure& s, const std::string& id);
+	Atom(struct AtomImpl* impl);
+	Atom(const File& f, const std::string& id);
+	Atom(const Atom& rhs);
 
-	~atom();
+	~Atom();
 	
-	atom& operator=(const atom& rhs);
+	Atom& operator=(const Atom& rhs);
 
 	std::string id() const;
-	atom_type type() const;
+	AtomType type() const;
 
 	point location() const;
 
 	const compound& comp() const;
 	const entity& ent() const;
-	bool is_water() const;
+	bool isWater() const;
 	int charge() const;
 	
 	boost::any property(const std::string& name) const;
 	void property(const std::string& name, const boost::any& value);
 	
 	// specifications
-	std::string label_atom_id() const;
-	std::string label_comp_id() const;
-	std::string label_asym_id() const;
-	int label_seq_id() const;
-	std::string label_alt_id() const;
+	std::string labelAtomId() const;
+	std::string labelCompId() const;
+	std::string labelAsymId() const;
+	int labelSeqId() const;
+	std::string labelAltId() const;
 	
-	std::string auth_atom_id() const;
-	std::string auth_comp_id() const;
-	std::string auth_asym_id() const;
-	int auth_seq_id() const;
-	std::string pdbx_auth_ins_code() const;
-	std::string auth_alt_id() const;
+	std::string authAtomId() const;
+	std::string authCompId() const;
+	std::string authAsymId() const;
+	int authSeqId() const;
+	std::string pdbxAuthInsCode() const;
+	std::string authAltId() const;
 	
-	bool operator==(const atom& rhs) const;
+	bool operator==(const Atom& rhs) const;
 
-	const file& get_file() const;
+	const File& getFile() const;
 
   private:
- 	struct atom_impl*			m_impl;
+ 	struct AtomImpl*			mImpl;
 };
 
-typedef std::vector<atom> atom_view;
+typedef std::vector<Atom> AtomView;
 
 // --------------------------------------------------------------------
 
-class residue : public std::enable_shared_from_this<residue>
+class Residue : public std::enable_shared_from_this<Residue>
 {
   public:
-	residue(const compound& cmp) : m_compound(cmp) {}
+	Residue(const compound& cmp) : mCompound(cmp) {}
 
-	const compound&		comp() const		{ return m_compound; }
-	virtual atom_view	atoms();
+	const compound&		comp() const		{ return mCompound; }
+	virtual AtomView	atoms();
 
   private:
-	const compound&		m_compound;
+	const compound&		mCompound;
 };
 
 //// --------------------------------------------------------------------
-//// a monomer models a single residue in a protein chain 
+//// a monomer models a single Residue in a protein chain 
 //
-//class monomer : public residue
+//class monomer : public Residue
 //{
 //  public:
-//	monomer(polymer& polymer, size_t seq_id, const std::string& comp_id,
-//		const std::string& alt_id);
+//	monomer(polymer& polymer, size_t seqId, const std::string& compId,
+//		const std::string& altId);
 //
-//	int num() const								{ return m_num; }
-////	polymer& get_polymer();
+//	int num() const								{ return mNum; }
+////	polymer& getPolymer();
 //
 ////	std::vector<monomer_ptr> alternates();
 //
 //  private:
-//	polymer_ptr	m_polymer;
-//	int			m_num;
+//	polymer_ptr	mPolymer;
+//	int			mNum;
 //};
 //
 //// --------------------------------------------------------------------
@@ -158,7 +158,7 @@ class residue : public std::enable_shared_from_this<residue>
 //class polymer : public std::enable_shared_from_this<polymer>
 //{
 //  public:
-//	polymer(const polymer_entity& pe, const std::string& asym_id);
+//	polymer(const polymerEntity& pe, const std::string& asymId);
 //	
 //	struct iterator : public std::iterator<std::random_access_iterator_tag, monomer>
 //	{
@@ -189,31 +189,31 @@ class residue : public std::enable_shared_from_this<residue>
 //	iterator end();
 //
 //  private:
-//	polymer_entity				m_entity;
-//	std::string					m_asym_id;
-//	std::vector<residue_ptr>	m_monomers;
+//	polymer_entity				mEntity;
+//	std::string					mAsymId;
+//	std::vector<Residue_ptr>	mMonomers;
 //};
 
 // --------------------------------------------------------------------
 // file is a reference to the data stored in e.g. the cif file.
 // This object is not copyable.
 
-class file : public std::enable_shared_from_this<file>
+class File : public std::enable_shared_from_this<File>
 {
   public:
-	file();
-	file(boost::filesystem::path p);
-	~file();
+	File();
+	File(boost::filesystem::path p);
+	~File();
 
-	file(const file&) = delete;
-	file& operator=(const file&) = delete;
+	File(const File&) = delete;
+	File& operator=(const File&) = delete;
 
 	void load(boost::filesystem::path p);
 	void save(boost::filesystem::path p);
 	
 	structure* model(size_t nr = 1);
 
-	struct file_impl& impl() const						{ return *m_impl; }
+	struct FileImpl& impl() const						{ return *mImpl; }
 
 	std::vector<const entity*> entities();
 
@@ -221,7 +221,7 @@ class file : public std::enable_shared_from_this<file>
 
   private:
 
-	struct file_impl*	m_impl;
+	struct FileImpl*	mImpl;
 };
 
 // --------------------------------------------------------------------
@@ -229,52 +229,50 @@ class file : public std::enable_shared_from_this<file>
 class structure
 {
   public:
-	structure(file& p, uint32 model_nr = 1);
+	structure(File& p, uint32 modelNr = 1);
 	structure(const structure&);
 	structure& operator=(const structure&);
 	~structure();
 
-	file& get_file() const;
+	File& getFile() const;
 
-	atom_view atoms() const;
-	atom_view waters() const;
+	AtomView atoms() const;
+	AtomView waters() const;
 
-	atom get_atom_by_id(std::string id) const;
-	atom get_atom_by_location(point pt, float max_distance) const;
+	Atom getAtomById(std::string id) const;
+	Atom getAtomByLocation(point pt, float maxDistance) const;
 	
-	atom get_atom_for_label(const std::string& atom_id, const std::string& asym_id,
-		const std::string& comp_id, int seq_id, const std::string& alt_id = "");
+	Atom getAtomForLabel(const std::string& atomId, const std::string& asymId,
+		const std::string& compId, int seqId, const std::string& altId = "");
 	
-	atom get_atom_for_auth(const std::string& atom_id, const std::string& asym_id,
-		const std::string& comp_id, int seq_id, const std::string& alt_id = "",
-		const std::string& pdbx_auth_ins_code = "");
+	Atom getAtomForAuth(const std::string& atomId, const std::string& asymId,
+		const std::string& compId, int seqId, const std::string& altId = "",
+		const std::string& pdbxAuthInsCode = "");
 	
 	// map between auth and label locations
 	
-	std::tuple<std::string,int,std::string> MapAuthToLabel(const std::string& asym_id,
-		const std::string& seq_id, const std::string& comp_id, const std::string& ins_code = "");
+	std::tuple<std::string,int,std::string> MapAuthToLabel(const std::string& asymId,
+		const std::string& seqId, const std::string& compId, const std::string& insCode = "");
 	
 	std::tuple<std::string,std::string,std::string,std::string> MapLabelToAuth(
-		const std::string& asym_id, int seq_id, const std::string& comp_id);
+		const std::string& asymId, int seqId, const std::string& compId);
 
 	// returns chain, seqnr
 	std::tuple<std::string,std::string> MapLabelToAuth(
-		const std::string& asym_id, int seq_id);
+		const std::string& asymId, int seqId);
 
 	// returns chain,seqnr,comp,iCode
 	std::tuple<std::string,int,std::string,std::string> MapLabelToPDB(
-		const std::string& asym_id, int seq_id, const std::string& comp_id);
+		const std::string& asymId, int seqId, const std::string& compId);
 
 	std::tuple<std::string,int,std::string,std::string> MapPDBToLabel(
-		const std::string& asym_id, int seq_id, const std::string& comp_id, const std::string& iCode);
+		const std::string& asymId, int seqId, const std::string& compId, const std::string& iCode);
 	
 	// Actions
-	void remove_atom(atom& a);
+	void removeAtom(Atom& a);
 
   private:
-	friend class action;
-
-	struct structure_impl*	m_impl;
+	struct StructureImpl*	mImpl;
 };
 
 }

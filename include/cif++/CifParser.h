@@ -1,6 +1,6 @@
-// CIF parser
+// CIF Parser
 
-#include "libcif/cif++.h"
+#include "cif++/Cif++.h"
 
 #include <stack>
 
@@ -9,10 +9,10 @@ namespace cif
 
 // --------------------------------------------------------------------
 
-class cif_parser_error : public std::runtime_error
+class CifParserError : public std::runtime_error
 {
   public:
-	cif_parser_error(uint32 line_nr, const std::string& message);
+	CifParserError(uint32 lineNr, const std::string& message);
 };
 
 // --------------------------------------------------------------------
@@ -28,38 +28,38 @@ enum CharTraitsMask: uint8 {
 	kAnyPrintMask = 1 << 3
 };
 
-inline bool is_white(int ch)
+inline bool isWhite(int ch)
 {
 	return std::isspace(ch) or ch == '#';
 }
 
-inline bool is_ordinary(int ch)
+inline bool isOrdinary(int ch)
 {
 	return ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kOrdinaryMask) != 0;
 }
 
-inline bool is_non_blank(int ch)
+inline bool isNonBlank(int ch)
 {
 	return ch > 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kNonBlankMask) != 0;
 }
 
-inline bool is_text_lead(int ch)
+inline bool isTextLead(int ch)
 {
 	return ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kTextLeadMask) != 0;
 }
 
-inline bool is_any_print(int ch)	
+inline bool isAnyPrint(int ch)	
 {
 	return ch == '\t' or 
 		(ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kAnyPrintMask) != 0);
 }
 
-inline bool is_unquoted_string(const char* s)
+inline bool isUnquotedString(const char* s)
 {
-	bool result = is_ordinary(*s++);
+	bool result = isOrdinary(*s++);
 	while (result and *s != 0)
 	{
-		result = is_non_blank(*s);
+		result = isNonBlank(*s);
 		++s;
 	}
 	return result;
@@ -67,16 +67,16 @@ inline bool is_unquoted_string(const char* s)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string,std::string> split_tag_name(const std::string& tag);
+std::tuple<std::string,std::string> splitTagName(const std::string& tag);
 
 // --------------------------------------------------------------------
-// sac parser, analogous to SAX parser (simple api for xml)
+// sac Parser, analogous to SAX Parser (simple api for xml)
 
-class sac_parser
+class SacParser
 {
   public:
-	sac_parser(std::istream& is);
-	virtual ~sac_parser() {}
+	SacParser(std::istream& is);
+	virtual ~SacParser() {}
 
 	enum CIFToken
 	{
@@ -108,30 +108,30 @@ class sac_parser
 
 	static const char* kValueName[];
 	
-	int get_next_char();
+	int getNextChar();
 
 	void retract();
 	void restart();
 	
-	CIFToken get_next_token();
+	CIFToken getNextToken();
 	void match(CIFToken token);
 
-	void parse_file();
-	void parse_global();
-	void parse_data_block();
+	void parseFile();
+	void parseGlobal();
+	void parseDataBlock();
 
-	virtual void parse_save_frame();
+	virtual void parseSaveFrame();
 	
-	void parse_dictionary();
+	void parseDictionary();
 	
 	void error(const std::string& msg);
 	
 	// production methods, these are pure virtual here
 	
-	virtual void produce_datablock(const std::string& name) = 0;
-	virtual void produce_category(const std::string& name) = 0;
-	virtual void produce_row() = 0;
-	virtual void produce_item(const std::string& category, const std::string& item, const string& value) = 0;
+	virtual void produceDatablock(const std::string& name) = 0;
+	virtual void produceCategory(const std::string& name) = 0;
+	virtual void produceRow() = 0;
+	virtual void produceItem(const std::string& category, const std::string& item, const string& value) = 0;
 
   protected:
 
@@ -153,60 +153,60 @@ class sac_parser
 		eStateValue = 300
 	};
 
-	std::istream&			m_data;
+	std::istream&			mData;
 
-	// parser state
-	bool					m_validate;
-	uint32					m_line_nr;
-	bool					m_bol;
-	int						m_state, m_start;
-	CIFToken				m_lookahead;
-	std::string				m_token_value;
-	CIFValueType			m_token_type;
-	std::stack<int>			m_buffer;
+	// Parser state
+	bool					mValidate;
+	uint32					mLineNr;
+	bool					mBol;
+	int						mState, mStart;
+	CIFToken				mLookahead;
+	std::string				mTokenValue;
+	CIFValueType			mTokenType;
+	std::stack<int>			mBuffer;
 };
 
 // --------------------------------------------------------------------
 
-class parser : public sac_parser
+class Parser : public SacParser
 {
   public:
-	parser(std::istream& is, file& f);
+	Parser(std::istream& is, File& f);
 
-	virtual void produce_datablock(const std::string& name);
-	virtual void produce_category(const std::string& name);
-	virtual void produce_row();
-	virtual void produce_item(const std::string& category, const std::string& item, const std::string& value);
+	virtual void produceDatablock(const std::string& name);
+	virtual void produceCategory(const std::string& name);
+	virtual void produceRow();
+	virtual void produceItem(const std::string& category, const std::string& item, const std::string& value);
 
   protected:
-	file&					m_file;
-	datablock*				m_data_block;
-	datablock::iterator		m_cat;
-	row						m_row;
+	File&					mFile;
+	Datablock*				mDataBlock;
+	Datablock::iterator		mCat;
+	Row						mRow;
 };
 
 // --------------------------------------------------------------------
 
-class dict_parser : public parser
+class DictParser : public Parser
 {
   public:
 
-	dict_parser(validator& validator, std::istream& is);
-	~dict_parser();
+	DictParser(Validator& validator, std::istream& is);
+	~DictParser();
 	
-	void load_dictionary();
+	void loadDictionary();
 	
   private:
 
-	virtual void parse_save_frame();
+	virtual void parseSaveFrame();
 	
-	bool collect_item_types();
-	void link_items();
+	bool collectItemTypes();
+	void linkItems();
 
-	validator&						m_validator;
-	file							m_file;
-	struct dict_parser_data_impl*	m_impl;
-	bool							m_collected_item_types = false;
+	Validator&						mValidator;
+	File							mFile;
+	struct DictParserDataImpl*		mImpl;
+	bool							mCollectedItemTypes = false;
 };
 
 }

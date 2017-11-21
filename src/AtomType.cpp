@@ -1,7 +1,7 @@
 // Lib for working with structures as contained in mmCIF and PDB files
 
-#include "libcif/atom_type.h"
-#include "libcif/cif++.h"
+#include "cif++/AtomType.h"
+#include "cif++/Cif++.h"
 
 using namespace std;
 
@@ -10,7 +10,7 @@ namespace libcif
 
 const float kNA = nan("1");
 
-const atom_type_info kKnownAtoms[] =
+const AtomTypeInfo kKnownAtoms[] =
 {
 	{ Nn,	"Unknown",			"Nn",	0,		false, {	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },
 	{ H,	"Hydro­gen",			"H",	1.008,	false, {	53,		25,		37,		32,		kNA,	kNA,	120 } },
@@ -133,35 +133,35 @@ const atom_type_info kKnownAtoms[] =
 	{ Lr,	"Lawren­cium",		"Lr",	266,	true,  {	kNA,	kNA,	kNA,	161,	141,	kNA,	kNA } }
 };
 
-uint32 kKnownAtomsCount = sizeof(kKnownAtoms) / sizeof(atom_type_info);
+uint32 kKnownAtomsCount = sizeof(kKnownAtoms) / sizeof(AtomTypeInfo);
 
 // --------------------------------------------------------------------
-// atom_type_traits
+// AtomTypeTraits
 
-atom_type_traits::atom_type_traits(const string& symbol)
-	: m_info(nullptr)
+AtomTypeTraits::AtomTypeTraits(const string& symbol)
+	: mInfo(nullptr)
 {
 	for (auto& i: kKnownAtoms)
 	{
 		if (cif::iequals(i.symbol, symbol))
 		{
-			m_info = &i;
+			mInfo = &i;
 			break;
 		}
 	}
 	
-	if (m_info == nullptr)
+	if (mInfo == nullptr)
 		throw invalid_argument("Not a known element: " + symbol);
 }
 
-atom_type_traits::atom_type_traits(atom_type t)
+AtomTypeTraits::AtomTypeTraits(AtomType t)
 {
 	if (t < H or t > Lr)
-		throw invalid_argument("atom_type out of range");
-	m_info = &kKnownAtoms[t];
+		throw invalid_argument("atomType out of range");
+	mInfo = &kKnownAtoms[t];
 }
 
-bool atom_type_traits::is_element(const string& symbol)
+bool AtomTypeTraits::isElement(const string& symbol)
 {
 	bool result = false;
 	
@@ -177,7 +177,7 @@ bool atom_type_traits::is_element(const string& symbol)
 	return result;
 }
 
-bool atom_type_traits::is_metal(const std::string& symbol)
+bool AtomTypeTraits::isMetal(const string& symbol)
 {
 	bool result = false;
 	

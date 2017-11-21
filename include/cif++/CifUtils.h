@@ -5,7 +5,7 @@
 #include <vector>
 #include <set>
 
-#include "libcif/config.h"
+#include "cif++/Config.h"
 
 namespace cif
 {
@@ -19,8 +19,8 @@ int icompare(const std::string& a, const std::string& b);
 bool iequals(const char* a, const char* b);
 int icompare(const char* a, const char* b);
 
-void to_lower(std::string& s);
-std::string to_lower_copy(const std::string& s);
+void toLower(std::string& s);
+std::string toLowerCopy(const std::string& s);
 
 // To make life easier, we also define iless and iset using iequals
 
@@ -46,11 +46,11 @@ inline char tolower(char ch)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string,std::string> split_tag_name(const std::string& tag);
+std::tuple<std::string,std::string> splitTagName(const std::string& tag);
 
 // --------------------------------------------------------------------
 //	custom wordwrapping routine
 
-std::vector<std::string> word_wrap(const std::string& text, unsigned int width);
+std::vector<std::string> wordWrap(const std::string& text, unsigned int width);
 
 }

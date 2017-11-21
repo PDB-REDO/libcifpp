@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "libcif/config.h"
+#include "cif++/Config.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/math/quaternion.hpp>
@@ -10,7 +10,7 @@
 namespace libcif
 {
 
-enum atom_type : uint8
+enum AtomType : uint8
 {
 	Nn = 0,		// Unknown
 	
@@ -143,9 +143,9 @@ enum atom_type : uint8
 };
 
 // --------------------------------------------------------------------
-// atom_type_info
+// AtomTypeInfo
 
-enum radius_type {
+enum RadiusType {
 	eRadiusCalculated,
 	eRadiusEmpirical,
 	eRadiusCovalentEmpirical,
@@ -159,9 +159,9 @@ enum radius_type {
 	eRadiusTypeCount
 };
 
-struct atom_type_info
+struct AtomTypeInfo
 {
-	atom_type		type;
+	AtomType		type;
 	std::string		name;
 	std::string		symbol;
 	float			weight;
@@ -169,36 +169,36 @@ struct atom_type_info
 	float			radii[eRadiusTypeCount];
 };
 
-extern const atom_type_info kKnownAtoms[];
+extern const AtomTypeInfo kKnownAtoms[];
 
 // --------------------------------------------------------------------
-// atom_type_traits
+// AtomTypeTraits
 
-class atom_type_traits
+class AtomTypeTraits
 {
   public:
-	atom_type_traits(atom_type a);
-	atom_type_traits(const std::string& symbol);
+	AtomTypeTraits(AtomType a);
+	AtomTypeTraits(const std::string& symbol);
 	
-	atom_type type() const			{ return m_info->type; }
-	std::string	name() const		{ return m_info->name; }
-	std::string	symbol() const		{ return m_info->symbol; }
-	float weight() const			{ return m_info->weight; }
+	AtomType type() const			{ return mInfo->type; }
+	std::string	name() const		{ return mInfo->name; }
+	std::string	symbol() const		{ return mInfo->symbol; }
+	float weight() const			{ return mInfo->weight; }
 	
-	bool is_metal() const			{ return m_info->metal; }
+	bool isMetal() const			{ return mInfo->metal; }
 	
-	static bool is_element(const std::string& symbol);
-	static bool is_metal(const std::string& symbol);
+	static bool isElement(const std::string& symbol);
+	static bool isMetal(const std::string& symbol);
 	
-	float radius(radius_type type = eRadiusSingleBond) const
+	float radius(RadiusType type = eRadiusSingleBond) const
 	{
 		if (type >= eRadiusTypeCount)
 			throw std::invalid_argument("invalid radius requested");
-		return m_info->radii[type] / 100.f;
+		return mInfo->radii[type] / 100.f;
 	}
 
   private:
-	const struct atom_type_info*	m_info;
+	const struct AtomTypeInfo*	mInfo;
 };
 
 }

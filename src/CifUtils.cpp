@@ -1,13 +1,13 @@
 // CIF parser
 
-#include "libcif/config.h"
+#include "cif++/Config.h"
 
 #include <tuple>
 #include <iostream>
 
 #include <boost/algorithm/string.hpp>
 
-#include "libcif/cif-utils.h"
+#include "cif++/CifUtils.h"
 
 using namespace std;
 namespace ba = boost::algorithm;

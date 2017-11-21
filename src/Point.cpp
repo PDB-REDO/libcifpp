@@ -1,6 +1,6 @@
 // Lib for working with structures as contained in mmCIF and PDB files
 
-#include "libcif/point.h"
+#include "cif++/Point.h"
 
 using namespace std;
 
@@ -32,16 +32,16 @@ quaternion Normalize(quaternion q)
 
 // --------------------------------------------------------------------
 
-float DihedralAngle(const point& p1, const point& p2, const point& p3, const point& p4)
+float DihedralAngle(const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
-	point v12 = p1 - p2;	// vector from p2 to p1
-	point v43 = p4 - p3;	// vector from p3 to p4
+	Point v12 = p1 - p2;	// vector from p2 to p1
+	Point v43 = p4 - p3;	// vector from p3 to p4
 	
-	point z = p2 - p3;		// vector from p3 to p2
+	Point z = p2 - p3;		// vector from p3 to p2
 	
-	point p = CrossProduct(z, v12);
-	point x = CrossProduct(z, v43);
-	point y = CrossProduct(z, x);
+	Point p = CrossProduct(z, v12);
+	Point x = CrossProduct(z, v43);
+	Point y = CrossProduct(z, x);
 	
 	double u = DotProduct(x, x);
 	double v = DotProduct(y, y);
@@ -58,10 +58,10 @@ float DihedralAngle(const point& p1, const point& p2, const point& p3, const poi
 	return result;
 }
 
-float CosinusAngle(const point& p1, const point& p2, const point& p3, const point& p4)
+float CosinusAngle(const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
-	point v12 = p1 - p2;
-	point v34 = p3 - p4;
+	Point v12 = p1 - p2;
+	Point v34 = p3 - p4;
 	
 	double result = 0;
 	
@@ -74,7 +74,7 @@ float CosinusAngle(const point& p1, const point& p2, const point& p3, const poin
 
 // --------------------------------------------------------------------
 
-tuple<double,point> QuaternionToAngleAxis(quaternion q)
+tuple<double,Point> QuaternionToAngleAxis(quaternion q)
 {
 	if (q.R_component_1() > 1)
 		q = Normalize(q);
@@ -88,58 +88,58 @@ tuple<double,point> QuaternionToAngleAxis(quaternion q)
 	if (s < 0.001)
 		s = 1;
 	
-	point axis(q.R_component_2() / s, q.R_component_3() / s, q.R_component_4() / s);
+	Point axis(q.R_component_2() / s, q.R_component_3() / s, q.R_component_4() / s);
 
 	return make_tuple(angle, axis);
 }
 
-point CenterPoints(vector<point>& points)
+Point CenterPoints(vector<Point>& Points)
 {
-	point t;
+	Point t;
 	
-	for (point& pt : points)
+	for (Point& pt : Points)
 	{
-		t.x() += pt.x();
-		t.y() += pt.y();
-		t.z() += pt.z();
+		t.getX() += pt.getX();
+		t.getY() += pt.getY();
+		t.getZ() += pt.getZ();
 	}
 	
-	t.x() /= points.size();
-	t.y() /= points.size();
-	t.z() /= points.size();
+	t.getX() /= Points.size();
+	t.getY() /= Points.size();
+	t.getZ() /= Points.size();
 	
-	for (point& pt : points)
+	for (Point& pt : Points)
 	{
-		pt.x() -= t.x();
-		pt.y() -= t.y();
-		pt.z() -= t.z();
+		pt.getX() -= t.getX();
+		pt.getY() -= t.getY();
+		pt.getZ() -= t.getZ();
 	}
 	
 	return t;
 }
 
-point Centroid(vector<point>& points)
+Point Centroid(vector<Point>& Points)
 {
-	point result;
+	Point result;
 	
-	for (point& pt : points)
+	for (Point& pt : Points)
 		result += pt;
 	
-	result /= points.size();
+	result /= Points.size();
 	
 	return result;
 }
 
-double RMSd(const vector<point>& a, const vector<point>& b)
+double RMSd(const vector<Point>& a, const vector<Point>& b)
 {
 	double sum = 0;
 	for (uint32 i = 0; i < a.size(); ++i)
 	{
 		valarray<double> d(3);
 		
-		d[0] = b[i].x() - a[i].x();
-		d[1] = b[i].y() - a[i].y();
-		d[2] = b[i].z() - a[i].z();
+		d[0] = b[i].getX() - a[i].getX();
+		d[1] = b[i].getY() - a[i].getY();
+		d[2] = b[i].getZ() - a[i].getZ();
 
 		d *= d;
 		
@@ -188,19 +188,19 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 	return t.max();
 }
 
-//quaternion AlignPoints(const vector<point>& pa, const vector<point>& pb)
+//quaternion AlignPoints(const vector<Point>& pa, const vector<Point>& pb)
 //{
 //	// First calculate M, a 3x3 matrix containing the sums of products of the coordinates of A and B
 //	matrix<double> M(3, 3, 0);
 //
 //	for (uint32 i = 0; i < pa.size(); ++i)
 //	{
-//		const point& a = pa[i];
-//		const point& b = pb[i];
+//		const Point& a = pa[i];
+//		const Point& b = pb[i];
 //		
-//		M(0, 0) += a.x() * b.x();	M(0, 1) += a.x() * b.y();	M(0, 2) += a.x() * b.z();
-//		M(1, 0) += a.y() * b.x();	M(1, 1) += a.y() * b.y();	M(1, 2) += a.y() * b.z();
-//		M(2, 0) += a.z() * b.x();	M(2, 1) += a.z() * b.y();	M(2, 2) += a.z() * b.z();
+//		M(0, 0) += a.getX() * b.getX();	M(0, 1) += a.getX() * b.getY();	M(0, 2) += a.getX() * b.getZ();
+//		M(1, 0) += a.getY() * b.getX();	M(1, 1) += a.getY() * b.getY();	M(1, 2) += a.getY() * b.getZ();
+//		M(2, 0) += a.getZ() * b.getX();	M(2, 1) += a.getZ() * b.getY();	M(2, 2) += a.getZ() * b.getZ();
 //	}
 //	
 //	// Now calculate N, a symmetric 4x4 matrix
