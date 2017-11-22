@@ -29,7 +29,7 @@ namespace libcif
 struct FileImpl
 {
 	cif::File			mData;
-	cif::datablock*		mDb = nullptr;
+	cif::Datablock*		mDb = nullptr;
 	
 	void load(fs::path p);
 	void save(fs::path p);
@@ -71,7 +71,7 @@ void FileImpl::load(fs::path p)
 
 			mData.load(in);
 		}
-		catch (const cif::cifParserError& e)
+		catch (const cif::CifParserError& e)
 		{
 			if (VERBOSE)
 				cerr << "Not cif, trying plain old PDB" << endl;
@@ -130,22 +130,22 @@ void FileImpl::save(fs::path p)
 
 
 // --------------------------------------------------------------------
-// atom
+// Atom
 
-struct atomImpl
+struct AtomImpl
 {
-	atomImpl(const File& f, const string& id)
+	AtomImpl(const File& f, const string& id)
 		: mFile(f), mId(id), mRefcount(1), mCompound(nullptr)
 	{
 		auto& db = *mFile.impl().mDb;
 		auto& cat = db["atom_site"];
 		
-		mRow = cat[cif::key("id") == mId];
+		mRow = cat[cif::Key("id") == mId];
 
 		prefetch();
 	}
 	
-	atomImpl(const file& f, const string& id, cif::row row)
+	AtomImpl(const File& f, const string& id, cif::Row row)
 		: mFile(f), mId(id), mRefcount(1), mRow(row), mCompound(nullptr)
 	{
 		prefetch();
@@ -157,12 +157,12 @@ struct atomImpl
 		string symbol;
 		cif::tie(symbol) = mRow.get("type_symbol");
 		
-		mType = atomTypeTraits(symbol).type();
+		mType = AtomTypeTraits(symbol).type();
 
 		float x, y, z;
 		cif::tie(x, y, z) = mRow.get("Cartn_x", "Cartn_y", "Cartn_z");
 		
-		mLocation = point(x, y, z);
+		mLocation = Point(x, y, z);
 		
 		try
 		{
@@ -182,14 +182,14 @@ struct atomImpl
 			delete this;
 	}
 	
-	const compound& comp()
+	const Compound& comp()
 	{
 		if (mCompound == nullptr)
 		{
 			string compId;
 			cif::tie(compId) = mRow.get("label_comp_id");
 			
-			mCompound = compound::create(compId);
+			mCompound = Compound::create(compId);
 		}
 		
 		if (mCompound == nullptr)
@@ -203,44 +203,44 @@ struct atomImpl
 		return mCompound != nullptr and mCompound->isWater();
 	}
 
-	const file&			mFile;
+	const File&			mFile;
 	string				mId;
 	int					mRefcount;
-	cif::row			mRow;
-	const compound*		mCompound;
-	point				mLocation;
-	atomType			mType;
+	cif::Row			mRow;
+	const Compound*		mCompound;
+	Point				mLocation;
+	AtomType			mType;
 	
 //	const entity&		mEntity;
 //	std::string			mAsymId;
 //	std::string			mAtomId;
-//	point				mLoc;
+//	Point				mLoc;
 //	propertyList		mProperties;
 };
 
-atom::atom(const file& f, const string& id)
-	: mImpl(new atomImpl(f, id))
+Atom::Atom(const File& f, const string& id)
+	: mImpl(new AtomImpl(f, id))
 {
 }
 
-atom::atom(atomImpl* impl)
+Atom::Atom(AtomImpl* impl)
 	: mImpl(impl)
 {
 }
 
-atom::atom(const atom& rhs)
+Atom::Atom(const Atom& rhs)
 	: mImpl(rhs.mImpl)
 {
 	mImpl->reference();
 }
 
-atom::~atom()
+Atom::~Atom()
 {
 	if (mImpl)
 		mImpl->release();
 }
 
-atom& atom::operator=(const atom& rhs)
+Atom& Atom::operator=(const Atom& rhs)
 {
 	if (this != &rhs)
 	{
@@ -252,17 +252,17 @@ atom& atom::operator=(const atom& rhs)
 	return *this;
 }
 
-string atom::id() const
+string Atom::id() const
 {
 	return mImpl->mId;
 }
 
-atomType atom::type() const
+AtomType Atom::type() const
 {
 	return mImpl->mType;
 }
 
-int atom::charge() const
+int Atom::charge() const
 {
 	int charge;
 	cif::tie(charge) = mImpl->mRow.get("pdbx_formal_charge");
@@ -270,7 +270,7 @@ int atom::charge() const
 	return charge;
 }
 
-string atom::labelAtomId() const
+string Atom::labelAtomId() const
 {
 	string atomId;
 	cif::tie(atomId) = mImpl->mRow.get("label_atom_id");
@@ -278,7 +278,7 @@ string atom::labelAtomId() const
 	return atomId;
 }
 
-string atom::labelCompId() const
+string Atom::labelCompId() const
 {
 	string compId;
 	cif::tie(compId) = mImpl->mRow.get("label_comp_id");
@@ -286,7 +286,7 @@ string atom::labelCompId() const
 	return compId;
 }
 
-string atom::labelAsymId() const
+string Atom::labelAsymId() const
 {
 	string asymId;
 	cif::tie(asymId) = mImpl->mRow.get("label_asym_id");
@@ -294,7 +294,7 @@ string atom::labelAsymId() const
 	return asymId;
 }
 
-int atom::labelSeqId() const
+int Atom::labelSeqId() const
 {
 	int seqId;
 	cif::tie(seqId) = mImpl->mRow.get("label_seq_id");
@@ -302,7 +302,7 @@ int atom::labelSeqId() const
 	return seqId;
 }
 
-string atom::authAsymId() const
+string Atom::authAsymId() const
 {
 	string asymId;
 	cif::tie(asymId) = mImpl->mRow.get("auth_asym_id");
@@ -310,7 +310,7 @@ string atom::authAsymId() const
 	return asymId;
 }
 
-int atom::authSeqId() const
+int Atom::authSeqId() const
 {
 	int seqId;
 	cif::tie(seqId) = mImpl->mRow.get("auth_seq_id");
@@ -318,35 +318,35 @@ int atom::authSeqId() const
 	return seqId;
 }
 
-point atom::location() const
+Point Atom::location() const
 {
 	return mImpl->mLocation;
 }
 
-const compound& atom::comp() const
+const Compound& Atom::comp() const
 {
 	return mImpl->comp();
 }
 
-bool atom::isWater() const
+bool Atom::isWater() const
 {
 	return mImpl->isWater();
 }
 
-boost::any atom::property(const std::string& name) const
+boost::any Atom::property(const std::string& name) const
 {
 	string s = mImpl->mRow[name].as<string>();
 	
 	return boost::any(s);
 }
 
-bool atom::operator==(const atom& rhs) const
+bool Atom::operator==(const Atom& rhs) const
 {
 	return mImpl == rhs.mImpl or
 		(&mImpl->mFile == &rhs.mImpl->mFile and mImpl->mId == rhs.mImpl->mId); 	
 }
 
-const file& atom::getFile() const
+const File& Atom::getFile() const
 {
 	assert(mImpl);
 	return mImpl->mFile;
@@ -355,7 +355,7 @@ const file& atom::getFile() const
 // --------------------------------------------------------------------
 // residue
 
-//atomView residue::atoms()
+//AtomView residue::Atoms()
 //{
 //	assert(false);
 //}
@@ -367,25 +367,25 @@ const file& atom::getFile() const
 // polymer
 
 // --------------------------------------------------------------------
-// file
+// File
 
-file::file()
+File::File()
 	: mImpl(new FileImpl)
 {
 }
 
-File::file(fs::path file)
+File::File(fs::path File)
 	: mImpl(new FileImpl)
 {
-	load(file);
+	load(File);
 }
 
-file::~file()
+File::~File()
 {
 	delete mImpl;
 }
 
-void file::load(fs::path p)
+void File::load(fs::path p)
 {
 	mImpl->load(p);
 	
@@ -412,7 +412,7 @@ void file::load(fs::path p)
 //	auto& atomSites = db["atom_site"];
 //	for (auto& atomSite: atomSites)
 //	{
-//		atomPtr ap(new atom(this, atom_site));
+//		AtomPtr ap(new Atom(this, atom_site));
 //
 //		string entity_id = atom_site["entity_id"];
 //		
@@ -441,12 +441,12 @@ void file::load(fs::path p)
 	
 }
 
-void file::save(boost::filesystem::path file)
+void File::save(boost::filesystem::path File)
 {
-	mImpl->save(file);
+	mImpl->save(File);
 }
 
-cif::datablock& file::data()
+cif::Datablock& File::data()
 {
 	assert(mImpl);
 	assert(mImpl->mDb);
@@ -458,11 +458,11 @@ cif::datablock& file::data()
 }
 
 // --------------------------------------------------------------------
-//	structure
+//	Structure
 
-struct structureImpl
+struct StructureImpl
 {
-	structureImpl(structure& s, file& f, uint32 modelNr)
+	StructureImpl(Structure& s, File& f, uint32 modelNr)
 		: mFile(&f), mModelNr(modelNr)
 	{
 		auto& db = *mFile->impl().mDb;
@@ -473,20 +473,20 @@ struct structureImpl
 			auto modelNr = a["pdbx_PDB_model_num"];
 			
 			if (modelNr.empty() or modelNr.as<uint32>() == mModelNr)
-				mAtoms.emplace_back(new atomImpl(f, a["id"].as<string>(), a));
+				mAtoms.emplace_back(new AtomImpl(f, a["id"].as<string>(), a));
 		}
 	}
 	
-	void removeAtom(atom& a);
+	void removeAtom(Atom& a);
 	
-	file*			mFile;
+	File*			mFile;
 	uint32			mModelNr;
-	atomView		mAtoms;
+	AtomView		mAtoms;
 };
 
-void structureImpl::removeAtom(atom& a)
+void StructureImpl::removeAtom(Atom& a)
 {
-	cif::datablock& db = *mFile->impl().mDb;
+	cif::Datablock& db = *mFile->impl().mDb;
 	
 	auto& atomSites = db["atom_site"];
 	
@@ -505,24 +505,24 @@ void structureImpl::removeAtom(atom& a)
 	mAtoms.erase(remove(mAtoms.begin(), mAtoms.end(), a), mAtoms.end());
 }
 
-structure::structure(file& f, uint32 modelNr)
-	: mImpl(new structureImpl(*this, f, modelNr))
+Structure::Structure(File& f, uint32 modelNr)
+	: mImpl(new StructureImpl(*this, f, modelNr))
 {
 }
 
-structure::~structure()
+Structure::~Structure()
 {
 	delete mImpl;
 }
 
-atomView structure::atoms() const
+AtomView Structure::atoms() const
 {
 	return mImpl->mAtoms;
 }
 
-atomView structure::waters() const
+AtomView Structure::waters() const
 {
-	atomView result;
+	AtomView result;
 	
 	auto& db = *getFile().impl().mDb;
 	
@@ -549,7 +549,7 @@ atomView structure::waters() const
 	return result;
 }
 
-atom structure::getAtomById(string id) const
+Atom Structure::getAtomById(string id) const
 {
 	for (auto& a: mImpl->mAtoms)
 	{
@@ -560,12 +560,12 @@ atom structure::getAtomById(string id) const
 	throw out_of_range("Could not find atom with id " + id);
 }
 
-file& structure::getFile() const
+File& Structure::getFile() const
 {
 	return *mImpl->mFile;
 }
 
-//tuple<string,string> structure::MapLabelToAuth(
+//tuple<string,string> Structure::MapLabelToAuth(
 //	const string& asymId, int seqId)
 //{
 //	auto& db = *getFile().impl().mDb;
@@ -574,8 +574,8 @@ file& structure::getFile() const
 //	bool found = false;
 //	
 //	for (auto r: db["pdbx_poly_seq_scheme"].find(
-//						cif::key("asym_id") == asym_id and
-//						cif::key("seq_id") == seq_id))
+//						cif::Key("asym_id") == asym_id and
+//						cif::Key("seq_id") == seq_id))
 //	{
 //		string auth_asym_id, pdb_mon_id, pdb_ins_code;
 //		int pdb_seq_num;
@@ -590,9 +590,9 @@ file& structure::getFile() const
 //	}
 //						
 //	for (auto r: db["pdbx_nonpoly_scheme"].find(
-//						cif::key("asym_id") == asym_id and
-//						cif::key("seq_id") == seq_id and
-//						cif::key("mon_id") == mon_id))
+//						cif::Key("asym_id") == asym_id and
+//						cif::Key("seq_id") == seq_id and
+//						cif::Key("mon_id") == mon_id))
 //	{
 //		string pdb_strand_id, pdb_mon_id, pdb_ins_code;
 //		int pdb_seq_num;
@@ -609,7 +609,7 @@ file& structure::getFile() const
 //	return result;
 //}
 
-tuple<string,int,string,string> structure::MapLabelToPDB(
+tuple<string,int,string,string> Structure::MapLabelToPDB(
 	const string& asymId, int seqId, const string& monId)
 {
 	auto& db = *getFile().impl().mDb;
@@ -617,9 +617,9 @@ tuple<string,int,string,string> structure::MapLabelToPDB(
 	tuple<string,int,string,string> result;
 	
 	for (auto r: db["pdbx_poly_seq_scheme"].find(
-						cif::key("asym_id") == asymId and
-						cif::key("seq_id") == seqId and
-						cif::key("mon_id") == monId))
+						cif::Key("asym_id") == asymId and
+						cif::Key("seq_id") == seqId and
+						cif::Key("mon_id") == monId))
 	{
 		string pdbStrandId, pdbMonId, pdbInsCode;
 		int pdbSeqNum;
@@ -633,9 +633,9 @@ tuple<string,int,string,string> structure::MapLabelToPDB(
 	}
 						
 	for (auto r: db["pdbx_nonpoly_scheme"].find(
-						cif::key("asym_id") == asymId and
-						cif::key("seq_id") == seqId and
-						cif::key("mon_id") == monId))
+						cif::Key("asym_id") == asymId and
+						cif::Key("seq_id") == seqId and
+						cif::Key("mon_id") == monId))
 	{
 		string pdbStrandId, pdbMonId, pdbInsCode;
 		int pdbSeqNum;
@@ -654,7 +654,7 @@ tuple<string,int,string,string> structure::MapLabelToPDB(
 // --------------------------------------------------------------------
 // actions
 
-void structure::removeAtom(atom& a)
+void Structure::removeAtom(Atom& a)
 {
 	mImpl->removeAtom(a);
 }

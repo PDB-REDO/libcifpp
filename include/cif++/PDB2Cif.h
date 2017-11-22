@@ -1,6 +1,6 @@
 #pragma once
 
-#include "libcif++/cif++.h"
+#include "cif++/Cif++.h"
 
 // --------------------------------------------------------------------
 
@@ -30,4 +30,4 @@ struct PDBRecord
 
 // --------------------------------------------------------------------
 
-void ReadPDBFile(std::istream& pdbFile, cif::file& cifFile);
+void ReadPDBFile(std::istream& pdbFile, cif::File& cifFile);

@@ -1,6 +1,6 @@
 // Lib for working with structures as contained in mmCIF and PDB files
 
-#include "libcif/config.h"
+#include "cif++/Config.h"
 
 #include <map>
 
@@ -8,8 +8,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
 
-#include "libcif/compound.h"
-#include "libcif/cif++.h"
+#include "cif++/Cif++.h"
+#include "cif++/Compound.h"
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -18,38 +18,38 @@ namespace fs = boost::filesystem;
 namespace libcif
 {
 
-class compound_factory
+class CompoundFactory
 {
   public:
 	
-	static compound_factory& instance();
-	const compound* create(string id);
+	static CompoundFactory& instance();
+	const Compound* create(string id);
 
   private:
-	compound_factory();
-	~compound_factory();
+	CompoundFactory();
+	~CompoundFactory();
 	
-	static compound_factory* sInstance;
+	static CompoundFactory* sInstance;
 
-	fs::path m_clibd_mon;
-	vector<compound*> m_compounds;
+	fs::path mClibdMon;
+	vector<Compound*> mCompounds;
 };
 
 
 // --------------------------------------------------------------------
-// compound
+// Compound
 
-string compound::formula() const
+string Compound::formula() const
 {
 	string result;
 	
 	map<string,uint32> atoms;
-	float charge_sum = 0;
+	float chargeSum = 0;
 
-	for (auto r: m_atoms)
+	for (auto r: mAtoms)
 	{
-		atoms[atom_type_traits(r.type_symbol).symbol()] += 1;
-		charge_sum += r.partial_charge;
+		atoms[AtomTypeTraits(r.typeSymbol).symbol()] += 1;
+		chargeSum += r.partialCharge;
 	}
 	
 	auto c = atoms.find("C");
@@ -83,24 +83,24 @@ string compound::formula() const
 			result += to_string(a.second);	
 	}
 
-	int charge = lrint(charge_sum);
+	int charge = lrint(chargeSum);
 	if (charge != 0)
 		result += ' ' + to_string(charge);
 
 	return result;
 }
 
-int compound::charge() const
+int Compound::charge() const
 {
 	float result = 0;
 
-	for (auto r: m_atoms)
-		result += r.partial_charge;
+	for (auto r: mAtoms)
+		result += r.partialCharge;
 
 	return lrint(result);
 }
 
-string compound::type() const
+string Compound::type() const
 {
 	string result;
 	
@@ -123,78 +123,78 @@ string compound::type() const
 	//	pyranose
 	//	saccharide
 	
-	if (cif::iequals(m_id, "gly"))
+	if (cif::iequals(mId, "gly"))
 		result = "peptide linking";
-	else if (cif::iequals(m_group, "l-peptide") or cif::iequals(m_group, "L-peptide linking") or cif::iequals(m_group, "peptide"))
+	else if (cif::iequals(mGroup, "l-peptide") or cif::iequals(mGroup, "L-peptide linking") or cif::iequals(mGroup, "peptide"))
 		result = "L-peptide linking";
-	else if (cif::iequals(m_group, "DNA"))
+	else if (cif::iequals(mGroup, "DNA"))
 		result = "DNA linking";
-	else if (cif::iequals(m_group, "RNA"))
+	else if (cif::iequals(mGroup, "RNA"))
 		result = "RNA linking";
 	
 	return result;
 }
 
-bool compound::is_water() const
+bool Compound::isWater() const
 {
-	return m_id == "HOH" or m_id == "H2O";
+	return mId == "HOH" or mId == "H2O";
 }
 
-comp_atom compound::get_atom_by_id(const string& atom_id) const
+CompoundAtom Compound::getAtomById(const string& atomId) const
 {
-	comp_atom result;
-	for (auto& a: m_atoms)
+	CompoundAtom result;
+	for (auto& a: mAtoms)
 	{
-		if (a.id == atom_id)
+		if (a.id == atomId)
 		{
 			result = a;
 			break;
 		}
 	}
 
-	if (result.id != atom_id)	
-		throw out_of_range("No atom " + atom_id + " in compound " + m_id);
+	if (result.id != atomId)	
+		throw out_of_range("No atom " + atomId + " in Compound " + mId);
 	
 	return result;
 }
 
-const compound* compound::create(const string& id)
+const Compound* Compound::create(const string& id)
 {
-	return compound_factory::instance().create(id);
+	return CompoundFactory::instance().create(id);
 }
 
 // --------------------------------------------------------------------
 // a factory class to generate compounds
 
-compound_factory* compound_factory::sInstance = nullptr;
+CompoundFactory* CompoundFactory::sInstance = nullptr;
 
-compound_factory::compound_factory()
+CompoundFactory::CompoundFactory()
 {
-	const char* clibd_mon = getenv("CLIBD_MON");
-	if (clibd_mon == nullptr)
+	const char* clibdMon = getenv("CLIBD_MON");
+	if (clibdMon == nullptr)
 		throw runtime_error("Cannot locate peptide list, please souce the CCP4 environment");
-	m_clibd_mon = clibd_mon;
+	mClibdMon = clibdMon;
 }
 
-compound_factory::~compound_factory()
+CompoundFactory::~CompoundFactory()
 {
 }
 
-compound_factory& compound_factory::instance()
+CompoundFactory& CompoundFactory::instance()
 {
 	if (sInstance == nullptr)
-		sInstance = new compound_factory();
+		sInstance = new CompoundFactory();
 	return *sInstance;
 }
 
 // id is the three letter code
-const compound* compound_factory::create(std::string id)
+const Compound* CompoundFactory::create(std::string id)
 {
 	ba::to_upper(id);
 
-	compound* result = nullptr;
+	Compound* result = nullptr;
 	
-	for (auto cmp: m_compounds)
+	for (auto cmp: mCompounds)
 	{
 		if (cmp->id() == id)
 		{
@@ -205,11 +205,11 @@ const compound* compound_factory::create(std::string id)
 	
 	if (result == nullptr)
 	{
-		fs::path resFile = m_clibd_mon / ba::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
+		fs::path resFile = mClibdMon / ba::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
 		fs::ifstream file(resFile);
 		if (file.is_open())
 		{
-			cif::file cf;
+			cif::File cf;
 			
 			try
 			{
@@ -222,20 +222,20 @@ const compound* compound_factory::create(std::string id)
 			}
 			
 			auto& list = cf["comp_list"];
-			auto row = list["chem_comp"][cif::key("id") == id];
+			auto row = list["chem_comp"][cif::Key("id") == id];
 			
 			string name, group;
-			uint32 number_atoms_all, number_atoms_nh;
-			cif::tie(name, group, number_atoms_all, number_atoms_nh) =
+			uint32 numberAtomsAll, numberAtomsNh;
+			cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
 				row.get("name", "group", "number_atoms_all", "number_atoms_nh");
 	
 			ba::trim(name);
 			ba::trim(group);
 			
-			auto& comp_atoms = cf["comp_" + id]["chem_comp_atom"];
+			auto& compoundAtoms = cf["comp_" + id]["chem_comp_atom"];
 			
-			vector<comp_atom> atoms;
-			for (auto row: comp_atoms)
+			vector<CompoundAtom> atoms;
+			for (auto row: compoundAtoms)
 			{
 				string id, symbol, energy;
 				float charge;
@@ -243,18 +243,18 @@ const compound* compound_factory::create(std::string id)
 				cif::tie(id, symbol, energy, charge) = row.get("atom_id", "type_symbol", "type_energy", "partial_charge");
 				
 				atoms.push_back({
-					id, atom_type_traits(symbol).type(), energy, charge
+					id, AtomTypeTraits(symbol).type(), energy, charge
 				});
 			}
 
-			auto& comp_bonds = cf["comp_" + id]["chem_comp_bond"];
+			auto& compBonds = cf["comp_" + id]["chem_comp_bond"];
 			
 			map<tuple<string,string>,float> bonds;
-			for (auto row: comp_bonds)
+			for (auto row: compBonds)
 			{
-				string atom_id_1, atom_id_2, type;
+				string atomId_1, atomId_2, type;
 				
-				cif::tie(atom_id_1, atom_id_2, type) = row.get("atom_id_1", "atom_id_2", "type");
+				cif::tie(atomId_1, atomId_2, type) = row.get("atom_id_1", "atom_id_2", "type");
 				
 				float value = 0;
 				if (type == "single")		value = 1;
@@ -268,29 +268,29 @@ const compound* compound_factory::create(std::string id)
 					value = 1.0;
 				}
 				
-				bonds[make_tuple(atom_id_1, atom_id_2)] = value;
+				bonds[make_tuple(atomId_1, atomId_2)] = value;
 			}
 			
-			result = new compound(id, name, group, move(atoms), move(bonds));
-			m_compounds.push_back(result);
+			result = new Compound(id, name, group, move(atoms), move(bonds));
+			mCompounds.push_back(result);
 		}
 	}
 	
 	return result;
 }
 
-bool compound::atoms_bonded(const string& atom_id_1, const string& atom_id_2) const
+bool Compound::atomsBonded(const string& atomId_1, const string& atomId_2) const
 {
-	return m_bonds.count(make_tuple(atom_id_1, atom_id_2)) or m_bonds.count(make_tuple(atom_id_2, atom_id_1));
+	return mBonds.count(make_tuple(atomId_1, atomId_2)) or mBonds.count(make_tuple(atomId_2, atomId_1));
 }
 
-float compound::atom_bond_value(const string& atom_id_1, const string& atom_id_2) const
+float Compound::atomBondValue(const string& atomId_1, const string& atomId_2) const
 {
-	auto i = m_bonds.find(make_tuple(atom_id_1, atom_id_2));
-	if (i == m_bonds.end())
-		i = m_bonds.find(make_tuple(atom_id_2, atom_id_1));
+	auto i = mBonds.find(make_tuple(atomId_1, atomId_2));
+	if (i == mBonds.end())
+		i = mBonds.find(make_tuple(atomId_2, atomId_1));
 	
-	return i == m_bonds.end() ? 0 : i->second;
+	return i == mBonds.end() ? 0 : i->second;
 }
 
 }

@@ -86,10 +86,10 @@ class Atom
 	std::string id() const;
 	AtomType type() const;
 
-	point location() const;
+	Point location() const;
 
-	const compound& comp() const;
-	const entity& ent() const;
+	const Compound& comp() const;
+	const Entity& ent() const;
 	bool isWater() const;
 	int charge() const;
 	
@@ -125,13 +125,13 @@ typedef std::vector<Atom> AtomView;
 class Residue : public std::enable_shared_from_this<Residue>
 {
   public:
-	Residue(const compound& cmp) : mCompound(cmp) {}
+	Residue(const Compound& cmp) : mCompound(cmp) {}
 
-	const compound&		comp() const		{ return mCompound; }
+	const Compound&		comp() const		{ return mCompound; }
 	virtual AtomView	atoms();
 
   private:
-	const compound&		mCompound;
+	const Compound&		mCompound;
 };
 
 //// --------------------------------------------------------------------
@@ -211,13 +211,13 @@ class File : public std::enable_shared_from_this<File>
 	void load(boost::filesystem::path p);
 	void save(boost::filesystem::path p);
 	
-	structure* model(size_t nr = 1);
+	Structure* model(size_t nr = 1);
 
 	struct FileImpl& impl() const						{ return *mImpl; }
 
-	std::vector<const entity*> entities();
+	std::vector<const Entity*> entities();
 
-	cif::datablock& data();
+	cif::Datablock& data();
 
   private:
 
@@ -226,13 +226,13 @@ class File : public std::enable_shared_from_this<File>
 
 // --------------------------------------------------------------------
 
-class structure
+class Structure
 {
   public:
-	structure(File& p, uint32 modelNr = 1);
-	structure(const structure&);
-	structure& operator=(const structure&);
-	~structure();
+	Structure(File& p, uint32 modelNr = 1);
+	Structure(const Structure&);
+	Structure& operator=(const Structure&);
+	~Structure();
 
 	File& getFile() const;
 
@@ -240,7 +240,7 @@ class structure
 	AtomView waters() const;
 
 	Atom getAtomById(std::string id) const;
-	Atom getAtomByLocation(point pt, float maxDistance) const;
+	Atom getAtomByLocation(Point pt, float maxDistance) const;
 	
 	Atom getAtomForLabel(const std::string& atomId, const std::string& asymId,
 		const std::string& compId, int seqId, const std::string& altId = "");

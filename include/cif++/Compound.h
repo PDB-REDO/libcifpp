@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 
-#include "libcif++/AtomType.h"
+#include "cif++/AtomType.h"
 
 namespace libcif
 {
