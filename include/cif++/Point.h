@@ -231,9 +231,9 @@ class SphericalDots
 			double lat = std::asin((2.0 * i) / P);
 			double lon = std::fmod(i, kGoldenRatio) * 2 * kPI / kGoldenRatio;
 			
-			p->x(sin(lon) * cos(lat));
-			p->y(cos(lon) * cos(lat));
-			p->z(           sin(lat));
+			p->setX(sin(lon) * cos(lat));
+			p->setY(cos(lon) * cos(lat));
+			p->setZ(           sin(lat));
 
 			++p;
 		}

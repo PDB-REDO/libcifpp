@@ -1,4 +1,4 @@
-#include "libpr.h"
+#include "cif++/Config.h"
 
 #include <set>
 #include <map>
@@ -8,9 +8,8 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "cif++.h"
-
-#include "peptidedb.h"
+#include "cif++/Cif++.h"
+#include "cif++/PeptideDB.h"
 
 using namespace std;
 namespace fs = boost::filesystem;
@@ -62,46 +61,46 @@ struct PeptideDBImpl
 
 	~PeptideDBImpl()
 	{
-		delete m_next;
+		delete mNext;
 	}
 
-	/*unordered_*/set<string>	m_known_peptides;
-	set<string>					m_known_bases;
-	cif::file					m_file;
-	cif::category&				m_chem_comp;
-	PeptideDBImpl*				m_next;
+	/*unordered_*/set<string>	mKnownPeptides;
+	set<string>					mKnownBases;
+	cif::File					mFile;
+	cif::Category&				mChemComp;
+	PeptideDBImpl*				mNext;
 
-	string name_for(const string& res_name) const
+	string nameFor(const string& resName) const
 	{
 		string result;
 		
-		for (auto& chem_comp: m_chem_comp)
+		for (auto& chemComp: mChemComp)
 		{
-			if (ba::iequals(chem_comp["three_letter_code"].as<string>(), res_name) == false)
+			if (ba::iequals(chemComp["three_letter_code"].as<string>(), resName) == false)
 				continue;
 			
-			result = chem_comp["name"].as<string>();
+			result = chemComp["name"].as<string>();
 			ba::trim(result);
 			break;
 		}
 		
-		if (result.empty() and m_next)
-			result = m_next->name_for(res_name);
+		if (result.empty() and mNext)
+			result = mNext->nameFor(resName);
 		
 		return result;
 	}
 
-	string formula_for(string res_name) const;
+	string formulaFor(string resName) const;
 
-	string unalias(const string& res_name) const
+	string unalias(const string& resName) const
 	{
-		string result = res_name;
+		string result = resName;
 		
-		auto& e = const_cast<cif::file&>(m_file)["comp_synonym_list"];
+		auto& e = const_cast<cif::File&>(mFile)["comp_synonym_list"];
 		
 		for (auto& synonym: e["chem_comp_synonyms"])
 		{
-			if (ba::iequals(synonym["comp_alternative_id"].as<string>(), res_name) == false)
+			if (ba::iequals(synonym["comp_alternative_id"].as<string>(), resName) == false)
 				continue;
 			
 			result = synonym["comp_id"].as<string>();
@@ -109,38 +108,38 @@ struct PeptideDBImpl
 			break;
 		}
 
-		if (result.empty() and m_next)
-			result = m_next->unalias(res_name);
+		if (result.empty() and mNext)
+			result = mNext->unalias(resName);
 		
 		return result;
 	}
 };
 
 PeptideDBImpl::PeptideDBImpl(istream& data, PeptideDBImpl* next)
-	: m_file(data), m_chem_comp(m_file.first_datablock()["chem_comp"]), m_next(next)
+	: mFile(data), mChemComp(mFile.firstDatablock()["chem_comp"]), mNext(next)
 {
-	for (auto& chem_comp: m_chem_comp)
+	for (auto& chemComp: mChemComp)
 	{
-		string group, three_letter_code;
+		string group, threeLetterCode;
 		
-		cif::tie(group, three_letter_code) = chem_comp.get("group", "three_letter_code");
+		cif::tie(group, threeLetterCode) = chemComp.get("group", "three_letter_code");
 		
 		if (group == "peptide" or group == "M-peptide" or group == "P-peptide")
-			m_known_peptides.insert(three_letter_code);
+			mKnownPeptides.insert(threeLetterCode);
 		else if (group == "DNA" or group == "RNA")
-			m_known_bases.insert(three_letter_code);
+			mKnownBases.insert(threeLetterCode);
 	}
 }
 
-string PeptideDBImpl::formula_for(string res) const
+string PeptideDBImpl::formulaFor(string res) const
 {
 	string result;
 
 	ba::to_upper(res);
 	
-	for (auto& db: m_file)
+	for (auto& db: mFile)
 	{
-		if (db.name() != "comp_" + res)
+		if (db.getName() != "comp_" + res)
 			continue;
 		
 		auto& cat = db["chem_comp_atom"];
@@ -162,15 +161,15 @@ string PeptideDBImpl::formula_for(string res) const
 	
 	if (result.empty())
 	{
-		if (m_next != nullptr)
-			result = m_next->formula_for(res);
+		if (mNext != nullptr)
+			result = mNext->formulaFor(res);
 		else
 		{
-			const char* clibd_mon = getenv("CLIBD_MON");
-			if (clibd_mon == nullptr)
+			const char* clibdMon = getenv("CLIBD_MON");
+			if (clibdMon == nullptr)
 				throw runtime_error("Cannot locate peptide list, please souce the CCP4 environment");
 			
-			fs::path resFile = fs::path(clibd_mon) / ba::to_lower_copy(res.substr(0, 1)) / (res + ".cif");
+			fs::path resFile = fs::path(clibdMon) / ba::to_lower_copy(res.substr(0, 1)) / (res + ".cif");
 			if (fs::exists(resFile))
 			{
 				fs::ifstream file(resFile);
@@ -178,7 +177,7 @@ string PeptideDBImpl::formula_for(string res) const
 				{
 					try
 					{
-						cif::file cf(file);
+						cif::File cf(file);
 						
 						auto& cat = cf["comp_" + res]["chem_comp_atom"];
 						
@@ -223,18 +222,18 @@ PeptideDB& PeptideDB::Instance()
 
 PeptideDB::PeptideDB()
 {
-	const char* clibd_mon = getenv("CLIBD_MON");
-	if (clibd_mon == nullptr)
+	const char* clibdMon = getenv("CLIBD_MON");
+	if (clibdMon == nullptr)
 		throw runtime_error("Cannot locate peptide list, please souce the CCP4 environment");
 	
-	fs::path db = fs::path(clibd_mon) / "list" / "mon_lib_list.cif";
+	fs::path db = fs::path(clibdMon) / "list" / "mon_lib_list.cif";
 
-	PushDictionary(db);
+	pushDictionary(db);
 	
 	sInstance = this;
 }
 
-void PeptideDB::PushDictionary(boost::filesystem::path dict)
+void PeptideDB::pushDictionary(boost::filesystem::path dict)
 {
 	if (not fs::exists(dict))
 		throw runtime_error("file not found: " + dict.string());
@@ -246,13 +245,13 @@ void PeptideDB::PushDictionary(boost::filesystem::path dict)
 	mImpl = new PeptideDBImpl(file, mImpl);
 }
 
-void PeptideDB::PopDictionary()
+void PeptideDB::popDictionary()
 {
 	if (mImpl != nullptr)
 	{
 		auto i = mImpl;
-		mImpl = i->m_next;
-		i->m_next = nullptr;
+		mImpl = i->mNext;
+		i->mNext = nullptr;
 		delete i;
 	}
 }
@@ -262,27 +261,27 @@ PeptideDB::~PeptideDB()
 	delete mImpl;
 }
 
-bool PeptideDB::IsKnownPeptide(const string& res_name) const
+bool PeptideDB::isKnownPeptide(const string& resName) const
 {
-	return mImpl->m_known_peptides.count(res_name) > 0;
+	return mImpl->mKnownPeptides.count(resName) > 0;
 }
 
-bool PeptideDB::IsKnownBase(const string& res_name) const
+bool PeptideDB::isKnownBase(const string& resName) const
 {
-	return mImpl->m_known_bases.count(res_name) > 0;
+	return mImpl->mKnownBases.count(resName) > 0;
 }
 
-string PeptideDB::GetNameForResidue(const string& res_name) const
+string PeptideDB::nameForResidue(const string& resName) const
 {
-	return mImpl->name_for(res_name);
+	return mImpl->nameFor(resName);
 }
 
-string PeptideDB::GetFormulaForResidue(const string& res_name) const
+string PeptideDB::formulaForResidue(const string& resName) const
 {
-	return mImpl->formula_for(res_name);
+	return mImpl->formulaFor(resName);
 }
 
-string PeptideDB::Unalias(const string& res_name) const
+string PeptideDB::unalias(const string& resName) const
 {
-	return mImpl->unalias(res_name);
+	return mImpl->unalias(resName);
 }

@@ -525,11 +525,11 @@ int RowComparator::operator()(const ItemRow* a, const ItemRow* b) const
 //	class to keep an index on the keys of a Category. This is a red/black
 //	tree implementation.
 
-class catIndex
+class CatIndex
 {
   public:
-	catIndex(Category* cat);
-	~catIndex();
+	CatIndex(Category* cat);
+	~CatIndex();
 	
 	ItemRow* find(ItemRow* k) const;
 
@@ -716,17 +716,17 @@ class catIndex
 	entry*				mRoot;
 };
 
-catIndex::catIndex(Category* cat)
+CatIndex::CatIndex(Category* cat)
 	: mCat(*cat), mComp(cat), mRoot(nullptr)
 {
 }
 
-catIndex::~catIndex()
+CatIndex::~CatIndex()
 {
 	delete mRoot;
 }
 
-ItemRow* catIndex::find(ItemRow* k) const
+ItemRow* CatIndex::find(ItemRow* k) const
 {
 	const entry* r = mRoot;
 	while (r != nullptr)
@@ -743,13 +743,13 @@ ItemRow* catIndex::find(ItemRow* k) const
 	return r ? r->mRow : nullptr;
 }
 
-void catIndex::insert(ItemRow* k)
+void CatIndex::insert(ItemRow* k)
 {
 	mRoot = insert(mRoot, k);
 	mRoot->mRed = false;
 }
 
-catIndex::entry* catIndex::insert(entry* h, ItemRow* v)
+CatIndex::entry* CatIndex::insert(entry* h, ItemRow* v)
 {
 	if (h == nullptr)
 		return new entry(v);
@@ -772,14 +772,14 @@ catIndex::entry* catIndex::insert(entry* h, ItemRow* v)
 	return h;
 }
 
-void catIndex::erase(ItemRow* k)
+void CatIndex::erase(ItemRow* k)
 {
 	mRoot = erase(mRoot, k);
 	if (mRoot != nullptr)
 		mRoot->mRed = false;
 }
 
-catIndex::entry* catIndex::erase(entry* h, ItemRow* k)
+CatIndex::entry* CatIndex::erase(entry* h, ItemRow* k)
 {
 	if (mComp(k, h->mRow) < 0)
 	{
@@ -820,7 +820,7 @@ catIndex::entry* catIndex::erase(entry* h, ItemRow* k)
 	return fixUp(h);
 }
 
-void catIndex::reconstruct()
+void CatIndex::reconstruct()
 {
 	delete mRoot;
 	mRoot = nullptr;
@@ -897,7 +897,7 @@ void catIndex::reconstruct()
 //	mRoot = e.front();
 }
 
-size_t catIndex::size() const
+size_t CatIndex::size() const
 {
 	stack<entry*> s;
 	s.push(mRoot);
@@ -921,7 +921,7 @@ size_t catIndex::size() const
 	return result;
 }
 
-void catIndex::validate() const
+void CatIndex::validate() const
 {
 	if (mRoot != nullptr)
 	{
@@ -935,7 +935,7 @@ void catIndex::validate() const
 	}
 }
 
-void catIndex::validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& minBlack, uint32& maxBlack) const
+void CatIndex::validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& minBlack, uint32& maxBlack) const
 {
 	if (h->mRed)
 		assert(not isParentRed);
@@ -1018,7 +1018,7 @@ Category::Category(Datablock& db, const string& name, Validator* Validator)
 			for (auto& k: mCatValidator->mMandatoryFields)
 				addColumn(k);
 			
-			mIndex = new catIndex(this);
+			mIndex = new CatIndex(this);
 		}
 	}
 }
@@ -1044,7 +1044,7 @@ void Category::setValidator(Validator* v)
 		mCatValidator = mValidator->getValidatorForCategory(mName);
 		if (mCatValidator != nullptr)
 		{
-			mIndex = new catIndex(this);
+			mIndex = new CatIndex(this);
 			mIndex->reconstruct();
 #if DEBUG
 			assert(mIndex->size() == size());
@@ -1192,7 +1192,7 @@ void Category::clear()
 	if (mIndex != nullptr)
 	{
 		delete mIndex;
-		mIndex = new catIndex(this);
+		mIndex = new CatIndex(this);
 	}
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pdb2cif.h"
+#include "cif++/PDB2Cif.h"
 
 // --------------------------------------------------------------------
 
@@ -11,30 +11,30 @@ class Remark3Parser
   public:
 	virtual ~Remark3Parser() {}
 
-	static bool parse(const std::string& expMethod, PDBRecord* r, cif::datablock& db);
+	static bool parse(const std::string& expMethod, PDBRecord* r, cif::Datablock& db);
 
 	virtual std::string program();
 	virtual std::string version();
 
   protected:
 
-	Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::datablock& db,
+	Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db,
 			const TemplateLine templatelines[], uint32 templateLineCount, std::regex programVersion);
 
-	virtual float Parse();
-	std::string NextLine();
+	virtual float parse();
+	std::string nextLine();
 
-	bool Match(const char* expr, int nextState);
-	void StoreCapture(const char* category, std::initializer_list<const char*> items, bool createNew = false);
-	void StoreRefineLsRestr(const char* type, std::initializer_list<const char*> values);
-	void UpdateRefineLsRestr(const char* type, std::initializer_list<const char*> values);
+	bool match(const char* expr, int nextState);
+	void storeCapture(const char* category, std::initializer_list<const char*> items, bool createNew = false);
+	void storeRefineLsRestr(const char* type, std::initializer_list<const char*> values);
+	void updateRefineLsRestr(const char* type, std::initializer_list<const char*> values);
 
-	virtual void Fixup() {}
+	virtual void fixup() {}
 
 	std::string		mName;
 	std::string		mExpMethod;
 	PDBRecord*		mRec;
-	cif::datablock	mDb;
+	cif::Datablock	mDb;
 	std::string		mLine;
 	std::smatch		mM;
 	uint32			mState;

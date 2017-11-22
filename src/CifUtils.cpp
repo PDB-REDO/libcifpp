@@ -4,8 +4,21 @@
 
 #include <tuple>
 #include <iostream>
+#include <cstdio>
+#include <atomic>
+
+#if defined(_MSC_VER)
+#define TERM_WIDTH 80
+#else
+#include <termios.h>
+#include <sys/ioctl.h>
+#endif
 
 #include <boost/algorithm/string.hpp>
+#include <boost/thread.hpp>
+#if BOOST_VERSION >= 104800
+#include <boost/timer/timer.hpp>
+#endif
 
 #include "cif++/CifUtils.h"
 
@@ -94,13 +107,13 @@ int icompare(const char* a, const char* b)
 	return d;
 }
 
-void to_lower(string& s)
+void toLower(string& s)
 {
 	for (auto& c: s)
 		c = tolower(c);
 }
 
-string to_lower_copy(const string& s)
+string toLowerCopy(const string& s)
 {
 	string result(s);
 	for (auto& c: result)
@@ -110,7 +123,7 @@ string to_lower_copy(const string& s)
 
 // --------------------------------------------------------------------
 
-tuple<string,string> split_tag_name(const string& tag)
+tuple<string,string> splitTagName(const string& tag)
 {
 	if (tag.empty())
 		throw runtime_error("empty tag");
@@ -196,12 +209,12 @@ const LineBreakClass kASCII_LBTable[128] =
 	kLBC_Alphabetic, kLBC_Alphabetic, kLBC_Alphabetic, kLBC_OpenPunctuation, kLBC_BreakAfter, kLBC_ClosePunctuation, kLBC_Alphabetic, kLBC_CombiningMark
 };
 
-string::const_iterator next_line_break(string::const_iterator text, string::const_iterator end)
+string::const_iterator nextLineBreak(string::const_iterator text, string::const_iterator end)
 {
 	if (text == end)
 		return text;
 	
-	enum break_action
+	enum breakAction
 	{ 
 		DBK = 0, // direct break 	(blank in table)
 		IBK, 	// indirect break	(% in table)
@@ -210,7 +223,7 @@ string::const_iterator next_line_break(string::const_iterator text, string::cons
 		CPB		// combining prohibited break
 	};
 
-	const break_action brkTable[27][27] = {
+	const breakAction brkTable[27][27] = {
 	//   	OP  	CL  	CP  	QU  	GL  	NS  	EX  	SY  	IS  	PR  	PO  	NU  	AL  	ID  	IN  	HY  	BA  	BB  	B2  	ZW  	CM  	WJ  	H2  	H3  	JL  	JV  	JT
 /* OP */ { 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	CPB, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK, 	PBK },
 /* CL */ { 	DBK, 	PBK, 	PBK, 	IBK, 	IBK, 	PBK, 	PBK, 	PBK, 	PBK, 	IBK, 	IBK, 	DBK, 	DBK, 	DBK, 	DBK, 	IBK, 	IBK, 	DBK, 	DBK, 	PBK, 	CIB, 	PBK, 	DBK, 	DBK, 	DBK, 	DBK, 	DBK },
@@ -278,7 +291,7 @@ string::const_iterator next_line_break(string::const_iterator text, string::cons
 		if (ncls == kLBC_Space)
 			continue;
 		
-		break_action brk = brkTable[cls][ncls];
+		breakAction brk = brkTable[cls][ncls];
 		
 		if (brk == DBK or (brk == IBK and lcls == kLBC_Space))
 			break;
@@ -289,7 +302,7 @@ string::const_iterator next_line_break(string::const_iterator text, string::cons
 	return text;
 }
 
-vector<string> wrap_line(const string& text, unsigned int width)
+vector<string> wrapLine(const string& text, unsigned int width)
 {
 	vector<string> result;
 	vector<size_t> offsets = { 0 };
@@ -297,7 +310,7 @@ vector<string> wrap_line(const string& text, unsigned int width)
 	auto b = text.begin();
 	while (b != text.end())
 	{
-		auto e = next_line_break(b, text.end());
+		auto e = nextLineBreak(b, text.end());
 		
 		offsets.push_back(e - text.begin());
 		
@@ -350,7 +363,7 @@ vector<string> wrap_line(const string& text, unsigned int width)
 	return result;
 }
 
-vector<string> word_wrap(const string& text, unsigned int width)
+vector<string> wordWrap(const string& text, unsigned int width)
 {
 	vector<string> paragraphs;
 	ba::split(paragraphs, text, ba::is_any_of("\n"));
@@ -364,11 +377,168 @@ vector<string> word_wrap(const string& text, unsigned int width)
 			continue;
 		}
 		
-		auto lines = wrap_line(p, width);
+		auto lines = wrapLine(p, width);
 		result.insert(result.end(), lines.begin(), lines.end());
 	}
 
 	return result;
 }
+
+// --------------------------------------------------------------------
+
+#ifdef _MSC_VER
+uint32 get_terminal_width()
+{
+	return TERM_WIDTH;
+}
+#else
+uint32 get_terminal_width()
+{
+	struct winsize w;
+	ioctl(0, TIOCGWINSZ, &w);
+	return w.ws_col;
+}
+#endif
+
+// --------------------------------------------------------------------
+
+struct ProgressImpl
+{
+					ProgressImpl(int64 inMax, const string& inAction)
+						: mMax(inMax), mConsumed(0), mAction(inAction), mMessage(inAction)
+						, mThread(boost::bind(&ProgressImpl::Run, this)) {}
+
+	void			Run();
+	
+	void			PrintProgress();
+	void			PrintDone();
+
+	int64			mMax;
+	atomic<int64>	mConsumed;
+	string			mAction, mMessage;
+	boost::mutex	mMutex;
+	boost::thread	mThread;
+	boost::timer::cpu_timer
+					mTimer;
+};
+
+void ProgressImpl::Run()
+{
+	try
+	{
+		for (;;)
+		{
+			boost::this_thread::sleep(boost::posix_time::seconds(1));
+			
+			boost::mutex::scoped_lock lock(mMutex);
+			
+			if (mConsumed == mMax)
+				break;
+			
+			PrintProgress();
+		}
+	}
+	catch (...) {}
+	
+	PrintDone();
+}
+
+void ProgressImpl::PrintProgress()
+{
+	uint32 width = get_terminal_width();
+	
+	string msg;
+	msg.reserve(width + 1);
+	if (mMessage.length() <= 20)
+	{
+		msg = mMessage;
+		if (msg.length() < 20)
+			msg.append(20 - msg.length(), ' ');
+	}
+	else
+		msg = mMessage.substr(0, 17) + "...";
+	
+	msg += " [";
+	
+	float progress = static_cast<float>(mConsumed) / mMax;
+	int tw = width - 28;
+	int twd = static_cast<int>(tw * progress + 0.5f);
+	msg.append(twd, '=');
+	msg.append(tw - twd, ' ');
+	msg.append("] ");
+	
+	int perc = static_cast<int>(100 * progress);
+	if (perc < 100)
+		msg += ' ';
+	if (perc < 10)
+		msg += ' ';
+	msg += to_string(perc);
+	msg += '%';
+	
+	cout << '\r' << msg;
+	cout.flush();
+}
+
+void ProgressImpl::PrintDone()
+{
+	string msg = mAction + " done in " + mTimer.format(0, "%ts cpu / %ws wall");
+
+	uint32 width = get_terminal_width();
+
+	if (msg.length() < width)
+		msg += string(width - msg.length(), ' ');
+	
+	cout << '\r' << msg << endl;
+}
+
+Progress::Progress(int64 inMax, const string& inAction)
+	: mImpl(nullptr)
+{
+	if (isatty(STDOUT_FILENO))
+		mImpl = new ProgressImpl(inMax, inAction);
+}
+
+Progress::~Progress()
+{
+	if (mImpl != nullptr and mImpl->mThread.joinable())
+	{
+		mImpl->mThread.interrupt();
+		mImpl->mThread.join();
+	}
+
+	delete mImpl;
+}
+	
+void Progress::consumed(int64 inConsumed)
+{
+	if (mImpl != nullptr and 
+		(mImpl->mConsumed += inConsumed) >= mImpl->mMax and
+		mImpl->mThread.joinable())
+	{
+		mImpl->mThread.interrupt();
+		mImpl->mThread.join();
+	}
+}
+
+void Progress::progress(int64 inProgress)
+{
+	if (mImpl != nullptr and 
+		(mImpl->mConsumed = inProgress) >= mImpl->mMax and
+		mImpl->mThread.joinable())
+	{
+		mImpl->mThread.interrupt();
+		mImpl->mThread.join();
+	}
+}
+
+void Progress::message(const std::string& inMessage)
+{
+	if (mImpl != nullptr)
+	{
+		boost::mutex::scoped_lock lock(mImpl->mMutex);
+		mImpl->mMessage = inMessage;
+	}
+}
+
 
 }

@@ -7,6 +7,7 @@
 #include <regex>
 #include <iostream>
 #include <set>
+#include <list>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/any.hpp>
@@ -211,11 +212,10 @@ class Datablock
 	Category* get(const string& name);
 
 	void getTagOrder(vector<string>& tags) const;
+	void write(std::ostream& os, const vector<string>& order);
+	void write(std::ostream& os);
 
   private:
-
-	void write(std::ostream& os);
-	void write(std::ostream& os, const vector<string>& order);
 
 	std::list<Category>	mCategories;
 	string				mName;
@@ -451,7 +451,7 @@ class Row
 {
   public:
 	friend class Category;
-	friend class catIndex;
+	friend class CatIndex;
 	friend class RowComparator;
 	friend struct detail::ItemReference;
 
@@ -995,7 +995,7 @@ class Category
 	vector<ItemColumn>	mColumns;
 	ItemRow*			mHead;
 	ItemRow*			mTail;
-	class catIndex*	mIndex;
+	class CatIndex*		mIndex;
 };
 
 // --------------------------------------------------------------------

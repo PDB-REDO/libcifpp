@@ -37,8 +37,8 @@
 namespace cif
 {
 	class Datablock;
+	class File;
 };
-
 
 namespace libcif
 {
@@ -218,6 +218,7 @@ class File : public std::enable_shared_from_this<File>
 	std::vector<const Entity*> entities();
 
 	cif::Datablock& data();
+	cif::File& file();
 
   private:
 

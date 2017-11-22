@@ -12,15 +12,15 @@ class PeptideDB
   public:
 	static PeptideDB& Instance();
 	
-	void PushDictionary(boost::filesystem::path dict);
-	void PopDictionary();
+	void pushDictionary(boost::filesystem::path dict);
+	void popDictionary();
 	
-	bool IsKnownPeptide(const std::string& res_name) const;
-	bool IsKnownBase(const std::string& res_name) const;
+	bool isKnownPeptide(const std::string& res_name) const;
+	bool isKnownBase(const std::string& res_name) const;
 
-	std::string GetNameForResidue(const std::string& res_name) const;
-	std::string GetFormulaForResidue(const std::string& res_name) const;
-	std::string Unalias(const std::string& res_name) const;
+	std::string nameForResidue(const std::string& res_name) const;
+	std::string formulaForResidue(const std::string& res_name) const;
+	std::string unalias(const std::string& res_name) const;
 
   private:
 	PeptideDB();

@@ -53,4 +53,30 @@ std::tuple<std::string,std::string> splitTagName(const std::string& tag);
 
 std::vector<std::string> wordWrap(const std::string& text, unsigned int width);
 
+// --------------------------------------------------------------------
+//	Code helping with terminal i/o
+
+uint32 get_terminal_width();
+
+// --------------------------------------------------------------------
+//	A progress bar
+
+class Progress
+{
+  public:
+				Progress(int64 inMax, const std::string& inAction);
+	virtual		~Progress();
+	
+	void		consumed(int64 inConsumed);	// consumed is relative
+	void		progress(int64 inProgress);	// progress is absolute
+
+	void		message(const std::string& inMessage);
+
+  private:
+				Progress(const Progress&);
+	Progress&	operator=(const Progress&);
+
+	struct ProgressImpl*	mImpl;
+};
+
 }

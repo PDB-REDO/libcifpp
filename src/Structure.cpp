@@ -457,6 +457,16 @@ cif::Datablock& File::data()
 	return *mImpl->mDb;
 }
 
+cif::File& File::file()
+{
+	assert(mImpl);
+	
+	if (mImpl == nullptr)
+		throw runtime_error("No data loaded");
+	
+	return mImpl->mData;
+}
+
 // --------------------------------------------------------------------
 //	Structure
 

@@ -762,11 +762,11 @@ void DictParser::parseSaveFrame()
 		string category = dict.firstItem("_category.id");
 
 		vector<string> keys;
-		for (auto k: dict["categoryKey"])
+		for (auto k: dict["category_key"])
 			keys.push_back(get<1>(splitTagName(k["name"].as<string>())));
 		
 		iset groups;
-		for (auto g: dict["categoryGroup"])
+		for (auto g: dict["category_group"])
 			groups.insert(g["id"].as<string>());
 			
 		mImpl->mCategoryValidators.push_back(ValidateCategory{category, keys, groups});

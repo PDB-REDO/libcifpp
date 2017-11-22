@@ -1,4 +1,4 @@
-#include "libpr.h"
+#include "cif++/Config.h"
 
 #include <map>
 #include <set>
@@ -8,19 +8,18 @@
 #include <boost/format.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 
-#include "peptidedb.h"
-#include "pdb2cif.h"
-#include "libcif/atom_type.h"
-#include "libcif/compound.h"
-#include "libcif/pdb2cif-remark3.h"
+#include "cif++/AtomType.h"
+#include "cif++/Compound.h"
+#include "cif++/PDB2CifRemark3.h"
+#include "cif++/PeptideDB.h"
 
 using namespace std;
 namespace ba = boost::algorithm;
 
-using cif::datablock;
-using cif::category;
-using cif::row;
-using cif::key;
+using cif::Datablock;
+using cif::Category;
+using cif::Row;
+using cif::Key;
 using cif::iequals;
 
 static const char* kRedOn = "\033[37;1;41m";
@@ -31,11 +30,11 @@ static const char* kRedOff = "\033[0m";
 struct TemplateLine
 {
 	const char*						rx;
-	int								next_state_offset;
+	int								nextStateOffset;
 	const char*						category;
 	initializer_list<const char*>	items;
-	const char*						ls_restr_type = nullptr;
-	bool							create_new;
+	const char*						lsRestrType = nullptr;
+	bool							createNew;
 };
 
 // --------------------------------------------------------------------
@@ -139,7 +138,7 @@ const TemplateLine kBusterTNT_Template[] = {
 class BUSTER_TNT_Remark3Parser : public Remark3Parser
 {
   public:
-	BUSTER_TNT_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	BUSTER_TNT_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db,
 			kBusterTNT_Template, sizeof(kBusterTNT_Template) / sizeof(TemplateLine),
 				regex(R"((BUSTER(?:-TNT)?)(?: (\d+(?:\..+)?))?)")) {}
@@ -232,7 +231,7 @@ const TemplateLine kCNS_Template[] = {
 class CNS_Remark3Parser : public Remark3Parser
 {
   public:
-	CNS_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	CNS_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kCNS_Template,
 			sizeof(kCNS_Template) / sizeof(TemplateLine), regex(R"((CN[SX])(?: (\d+(?:\.\d+)?))?)")) {}
 };
@@ -310,16 +309,16 @@ const TemplateLine kPHENIX_Template[] = {
 class PHENIX_Remark3Parser : public Remark3Parser
 {
   public:
-	PHENIX_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	PHENIX_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kPHENIX_Template, sizeof(kPHENIX_Template) / sizeof(TemplateLine),
 			regex(R"((PHENIX)(?: \(PHENIX\.REFINE:) (\d+(?:\.[^)]+)?)\)?)")) {}
 
-	virtual void Fixup();
+	virtual void fixup();
 };
 
-void PHENIX_Remark3Parser::Fixup()
+void PHENIX_Remark3Parser::fixup()
 {
-	for (auto r: m_db["refine_ls_shell"])
+	for (auto r: mDb["refine_ls_shell"])
 	{
 		try
 		{
@@ -401,7 +400,7 @@ const TemplateLine kPROLSQ_Template[] = {
 class PROLSQ_Remark3Parser : public Remark3Parser
 {
   public:
-	PROLSQ_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	PROLSQ_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kPROLSQ_Template, sizeof(kPROLSQ_Template) / sizeof(TemplateLine),
 			regex(R"((PROLSQ|NUCLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
 };
@@ -472,12 +471,12 @@ const TemplateLine kREFMAC_Template[] = {
 class REFMAC_Remark3Parser : public Remark3Parser
 {
   public:
-	REFMAC_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	REFMAC_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kREFMAC_Template, sizeof(kREFMAC_Template) / sizeof(TemplateLine),
 			regex(".+")) {}
 
-	virtual string Program()	{ return "REFMAC"; }
-	virtual string Version()	{ return ""; }
+	virtual string program()	{ return "REFMAC"; }
+	virtual string version()	{ return ""; }
 };
 
 const TemplateLine kREFMAC5_Template[] = {
@@ -624,7 +623,7 @@ const TemplateLine kREFMAC5_Template[] = {
 class REFMAC5_Remark3Parser : public Remark3Parser
 {
   public:
-	REFMAC5_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	REFMAC5_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kREFMAC5_Template, sizeof(kREFMAC5_Template) / sizeof(TemplateLine),
 			regex(R"((REFMAC)(?: (\d+(?:\..+)?))?)")) {}
 };
@@ -682,7 +681,7 @@ const TemplateLine kSHELXL_Template[] = {
 class SHELXL_Remark3Parser : public Remark3Parser
 {
   public:
-	SHELXL_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	SHELXL_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kSHELXL_Template, sizeof(kSHELXL_Template) / sizeof(TemplateLine),
 			regex(R"((SHELXL)(?:-(\d+(?:\..+)?)))")) {}
 };
@@ -737,7 +736,7 @@ const TemplateLine kTNT_Template[] = {
 class TNT_Remark3Parser : public Remark3Parser
 {
   public:
-	TNT_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	TNT_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kTNT_Template, sizeof(kTNT_Template) / sizeof(TemplateLine),
 			regex(R"((TNT)(?: V. (\d+.+)?)?)")) {}
 };
@@ -815,45 +814,45 @@ const TemplateLine kXPLOR_Template[] = {
 class XPLOR_Remark3Parser : public Remark3Parser
 {
   public:
-	XPLOR_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::datablock& db)
+	XPLOR_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kXPLOR_Template, sizeof(kXPLOR_Template) / sizeof(TemplateLine),
 			regex(R"((X-PLOR)(?: (\d+(?:\.\d+)?))?)")) {}
 };
 
 // --------------------------------------------------------------------
 
-Remark3Parser::Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::datablock& db,
-			const TemplateLine templatelines[], uint32 templateLineCount, std::regex program_version)
-	: m_name(name), m_expMethod(expMethod), m_rec(r), m_db(db.name())
-	, m_template(templatelines), m_templateCount(templateLineCount), m_program_version(program_version)
+Remark3Parser::Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db,
+			const TemplateLine templatelines[], uint32 templateLineCount, std::regex programversion)
+	: mName(name), mExpMethod(expMethod), mRec(r), mDb(db.getName())
+	, mTemplate(templatelines), mTemplateCount(templateLineCount), mProgramVersion(programversion)
 {
 }
 
-string Remark3Parser::NextLine()
+string Remark3Parser::nextLine()
 {
-	m_line.clear();
+	mLine.clear();
 
-	while (m_rec != nullptr and m_rec->is("REMARK   3"))
+	while (mRec != nullptr and mRec->is("REMARK   3"))
 	{
 		size_t valueIndent = 0;
-		for (size_t i = 4; i < m_rec->m_vlen; ++i)
+		for (size_t i = 4; i < mRec->mVlen; ++i)
 		{
-			if (m_rec->m_value[i] == ' ')
+			if (mRec->mValue[i] == ' ')
 				continue;
 
-			if (m_rec->m_value[i] == ':')
+			if (mRec->mValue[i] == ':')
 			{
 				valueIndent = i;
-				while (valueIndent < m_rec->m_vlen and m_rec->m_value[i] == ' ')
+				while (valueIndent < mRec->mVlen and mRec->mValue[i] == ' ')
 					++valueIndent;
 				break;
 			}
 		}
 
-		m_line = m_rec->v_s(12);
-		m_rec = m_rec->m_next;
+		mLine = mRec->vS(12);
+		mRec = mRec->mNext;
 
-		if (m_line.empty())
+		if (mLine.empty())
 			continue;
 
 		// concatenate value that is wrapped over multiple lines (tricky code...)
@@ -862,25 +861,25 @@ string Remark3Parser::NextLine()
 		{
 			string indent(valueIndent - 4, ' ');
 
-			while (m_rec->is("REMARK   3") and m_rec->m_vlen > valueIndent)
+			while (mRec->is("REMARK   3") and mRec->mVlen > valueIndent)
 			{
-				string v(m_rec->m_value + 4, m_rec->m_value + m_rec->m_vlen);
+				string v(mRec->mValue + 4, mRec->mValue + mRec->mVlen);
 				if (not ba::starts_with(v, indent))
 					break;
 
-				m_line += ' ';
-				m_line.append(m_rec->m_value + valueIndent, m_rec->m_value + m_rec->m_vlen);
+				mLine += ' ';
+				mLine.append(mRec->mValue + valueIndent, mRec->mValue + mRec->mVlen);
 
-				m_rec = m_rec->m_next;
+				mRec = mRec->mNext;
 			}
 		}
 
 
 		// collapse multiple spaces
 		bool space = false;
-		auto i = m_line.begin(), j = i;
+		auto i = mLine.begin(), j = i;
 
-		while (i != m_line.end())
+		while (i != mLine.end())
 		{
 			bool nspace = isspace(*i);
 
@@ -893,129 +892,129 @@ string Remark3Parser::NextLine()
 			space = nspace;
 			++i;
 		}
-		m_line.erase(j, m_line.end());
+		mLine.erase(j, mLine.end());
 
 		break;
 	}
 
 	if (VERBOSE >= 2)
-		cerr << "RM3: " << m_line << endl;
+		cerr << "RM3: " << mLine << endl;
 
-	return m_line;
+	return mLine;
 }
 
-bool Remark3Parser::Match(const char* expr, int nextState)
+bool Remark3Parser::match(const char* expr, int nextState)
 {
 	regex rx(expr);
 
-	bool result = regex_match(m_line, m_m, rx);
+	bool result = regex_match(mLine, mM, rx);
 
 	if (result)
-		m_state = nextState;
+		mState = nextState;
 	else if (VERBOSE >= 3)
-		cerr << kRedOn << "No Match:" << kRedOff << " '" << expr << '\'' << endl;
+		cerr << kRedOn << "No match:" << kRedOff << " '" << expr << '\'' << endl;
 
 	return result;
 }
 
-float Remark3Parser::Parse()
+float Remark3Parser::parse()
 {
 	int lineCount = 0, dropped = 0;
 	string remarks;
-	m_state = 0;
+	mState = 0;
 
-	while (m_rec != nullptr)
+	while (mRec != nullptr)
 	{
-		NextLine();
+		nextLine();
 
-		if (m_line.empty())
+		if (mLine.empty())
 			break;
 
 		++lineCount;
 
 		// Skip over AUTHORS lines
-		if (m_state == 0 and Match(R"(AUTHORS\s*:.+)", 0))
+		if (mState == 0 and match(R"(AUTHORS\s*:.+)", 0))
 			continue;
 
-		auto state = m_state;
-		for (state = m_state; state < m_templateCount; ++state)
+		auto state = mState;
+		for (state = mState; state < mTemplateCount; ++state)
 		{
-			const TemplateLine& tmpl = m_template[state];
+			const TemplateLine& tmpl = mTemplate[state];
 
-			if (Match(tmpl.rx, state + tmpl.next_state_offset))
+			if (match(tmpl.rx, state + tmpl.nextStateOffset))
 			{
 				if (not (tmpl.category == nullptr or tmpl.items.size() == 0))
 				{
-					if (tmpl.ls_restr_type == nullptr)
-						StoreCapture(tmpl.category, tmpl.items, tmpl.create_new);
-					else if (tmpl.create_new)
-						StoreRefineLsRestr(tmpl.ls_restr_type, tmpl.items);
+					if (tmpl.lsRestrType == nullptr)
+						storeCapture(tmpl.category, tmpl.items, tmpl.createNew);
+					else if (tmpl.createNew)
+						storeRefineLsRestr(tmpl.lsRestrType, tmpl.items);
 					else
-						UpdateRefineLsRestr(tmpl.ls_restr_type, tmpl.items);
+						updateRefineLsRestr(tmpl.lsRestrType, tmpl.items);
 				}
 				break;
 			}
 		}
 
-		if (state < m_templateCount)
+		if (state < mTemplateCount)
 			continue;
 
-		if (state == m_templateCount and Match(R"(OTHER REFINEMENT REMARKS\s*:\s*(.*))", m_templateCount + 1))
+		if (state == mTemplateCount and match(R"(OTHER REFINEMENT REMARKS\s*:\s*(.*))", mTemplateCount + 1))
 		{
-			remarks = m_m[1].str();
+			remarks = mM[1].str();
 			continue;
 		}
 
-		if (state == m_templateCount + 1)
+		if (state == mTemplateCount + 1)
 		{
-			remarks = remarks + '\n' + m_line;
+			remarks = remarks + '\n' + mLine;
 			continue;
 		}
 
 		if (VERBOSE >= 2)
-			cerr << kRedOn << "Dropping line:" << kRedOff << " '" << m_line << '\'' << endl;
+			cerr << kRedOn << "Dropping line:" << kRedOff << " '" << mLine << '\'' << endl;
 
 		++dropped;
 	}
 
 	if (not remarks.empty() and not iequals(remarks, "NULL"))
-		m_db["refine"].front()["details"] = remarks;
+		mDb["refine"].front()["details"] = remarks;
 
 	float score = float(lineCount - dropped) / lineCount;
 
 	return score;
 }
 
-string Remark3Parser::Program()
+string Remark3Parser::program()
 {
-	string result = m_name;
+	string result = mName;
 
 	smatch m;
-	if (regex_match(m_name, m, m_program_version))
+	if (regex_match(mName, m, mProgramVersion))
 		result = m[1].str();
 
 	return result;
 }
 
-string Remark3Parser::Version()
+string Remark3Parser::version()
 {
 	string result;
 
 	smatch m;
-	if (regex_match(m_name, m, m_program_version))
+	if (regex_match(mName, m, mProgramVersion))
 		result = m[2].str();
 
 	return result;
 }
 
-void Remark3Parser::StoreCapture(const char* category, initializer_list<const char*> items, bool createNew)
+void Remark3Parser::storeCapture(const char* category, initializer_list<const char*> items, bool createNew)
 {
 	int capture = 0;
 	for (auto item: items)
 	{
 		++capture;
 
-		string value = m_m[capture].str();
+		string value = mM[capture].str();
 		ba::trim(value);
 
 		if (iequals(value, "NULL") or iequals(value, "NONE"))
@@ -1024,60 +1023,60 @@ void Remark3Parser::StoreCapture(const char* category, initializer_list<const ch
 		if (VERBOSE >= 3)
 			cerr << "storing: '" << value << "' in _" << category << '.' << item << endl;
 
-		auto& cat = m_db[category];
+		auto& cat = mDb[category];
 		if (cat.empty() or createNew)
 		{
 			if (iequals(category, "refine"))
 				cat.emplace({
-					{ "pdbx_refine_id", m_expMethod },
-					{ "entry_id", m_db.name() },
+					{ "pdbx_refine_id", mExpMethod },
+					{ "entry_id", mDb.getName() },
 #warning("???")
 					{ "pdbx_diffrn_id", 1 }
 				});
 			else if (iequals(category, "refine_analyze") or iequals(category, "pdbx_refine"))
 				cat.emplace({
-					{ "pdbx_refine_id", m_expMethod },
-					{ "entry_id", m_db.name() },
+					{ "pdbx_refine_id", mExpMethod },
+					{ "entry_id", mDb.getName() },
 //					{ "pdbx_diffrn_id", 1 }
 				});
 			else if (iequals(category, "refine_hist"))
 			{
-				string d_res_high, d_res_low;
-				for (auto r: m_db["refine"])
+				string dResHigh, dResLow;
+				for (auto r: mDb["refine"])
 				{
-					cif::tie(d_res_high, d_res_low) = r.get("ls_d_res_high", "ls_d_res_low");
+					cif::tie(dResHigh, dResLow) = r.get("ls_d_res_high", "ls_d_res_low");
 					break;
 				}
 
 				cat.emplace({
-					{ "pdbx_refine_id", m_expMethod },
+					{ "pdbx_refine_id", mExpMethod },
 					{ "cycle_id", "LAST" },
-					{ "d_res_high", d_res_high.empty() ? "." : d_res_high },
-					{ "d_res_low", d_res_low.empty() ? "." : d_res_low }
+					{ "d_res_high", dResHigh.empty() ? "." : dResHigh },
+					{ "d_res_low", dResLow.empty() ? "." : dResLow }
 				});
 			}
 			else if (iequals(category, "refine_ls_shell"))
 			{
 				cat.emplace({
-					{ "pdbx_refine_id", m_expMethod },
+					{ "pdbx_refine_id", mExpMethod },
 				});
 			}
 			else if (iequals(category, "pdbx_refine_tls_group"))
 			{
-				string tls_group_id;
-				if (not m_db["pdbx_refine_tls"].empty())
-					tls_group_id = m_db["pdbx_refine_tls"].back()["id"].as<string>();
+				string tlsGroupId;
+				if (not mDb["pdbx_refine_tls"].empty())
+					tlsGroupId = mDb["pdbx_refine_tls"].back()["id"].as<string>();
 
 				cat.emplace({
-					{ "pdbx_refine_id", m_expMethod },
-					{ "id", tls_group_id },
-					{ "refine_tls_id", tls_group_id }
+					{ "pdbx_refine_id", mExpMethod },
+					{ "id", tlsGroupId },
+					{ "refine_tls_id", tlsGroupId }
 				});
 			}
 			else if (iequals(category, "pdbx_refine_tls"))
 			{
 				cat.emplace({
-					{ "pdbx_refine_id", m_expMethod },
+					{ "pdbx_refine_id", mExpMethod },
 					{ "method", "refined" }
 				});
 			}
@@ -1107,25 +1106,25 @@ void Remark3Parser::StoreCapture(const char* category, initializer_list<const ch
 	}
 }
 
-void Remark3Parser::StoreRefineLsRestr(const char* type, initializer_list<const char*> items)
+void Remark3Parser::storeRefineLsRestr(const char* type, initializer_list<const char*> items)
 {
-	row r;
+	Row r;
 	int capture = 0;
 
 	for (auto item: items)
 	{
 		++capture;
 
-		string value = m_m[capture].str();
+		string value = mM[capture].str();
 		ba::trim(value);
 		if (value.empty() or iequals(value, "NULL"))
 			continue;
 
 		if (not r)
 		{
-			std::tie(r, std::ignore) = m_db["refine_ls_restr"].emplace({});
+			std::tie(r, std::ignore) = mDb["refine_ls_restr"].emplace({});
 
-			r["pdbx_refine_id"] = m_expMethod;
+			r["pdbx_refine_id"] = mExpMethod;
 			r["type"] = type;
 		}
 
@@ -1133,21 +1132,21 @@ void Remark3Parser::StoreRefineLsRestr(const char* type, initializer_list<const 
 	}
 }
 
-void Remark3Parser::UpdateRefineLsRestr(const char* type, initializer_list<const char*> items)
+void Remark3Parser::updateRefineLsRestr(const char* type, initializer_list<const char*> items)
 {
-	auto rows = m_db["refine_ls_restr"].find(cif::key("type") == type and cif::key("pdbx_refine_id") == m_expMethod);
+	auto rows = mDb["refine_ls_restr"].find(cif::Key("type") == type and cif::Key("pdbx_refine_id") == mExpMethod);
 	if (rows.empty())
-		StoreRefineLsRestr(type, items);
+		storeRefineLsRestr(type, items);
 	else
 	{
-		for (row r: rows)
+		for (Row r: rows)
 		{
 			int capture = 0;
 			for (auto item: items)
 			{
 				++capture;
 
-				string value = m_m[capture].str();
+				string value = mM[capture].str();
 				ba::trim(value);
 				if (iequals(value, "NULL"))
 					value.clear();
@@ -1162,17 +1161,17 @@ void Remark3Parser::UpdateRefineLsRestr(const char* type, initializer_list<const
 
 // --------------------------------------------------------------------
 
-bool Remark3Parser::Parse(const string& expMethod, PDBRecord* r, cif::datablock& db)
+bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock& db)
 {
 	// simple version, only for the first few lines
-	auto GetNextLine = [&]()
+	auto getNextLine = [&]()
 	{
 		string result;
 
 		while (result.empty() and r != nullptr and r->is("REMARK   3"))
 		{
-			result = r->v_s(12);
-			r = r->m_next;
+			result = r->vS(12);
+			r = r->mNext;
 		}
 
 		return result;
@@ -1180,12 +1179,12 @@ bool Remark3Parser::Parse(const string& expMethod, PDBRecord* r, cif::datablock&
 
 	// All remark 3 records should start with the same data.
 
-	string line = GetNextLine();
+	string line = getNextLine();
 
 	if (line != "REFINEMENT.")
 		throw runtime_error("Unexpected data in REMARK 3");
 
-	line = GetNextLine();
+	line = getNextLine();
 
 	regex rxp(R"(^PROGRAM\s*:\s*(.+))");
 	smatch m;
@@ -1194,36 +1193,36 @@ bool Remark3Parser::Parse(const string& expMethod, PDBRecord* r, cif::datablock&
 		throw runtime_error("Expected valid PROGRAM line in REMARK 3");
 	line = m[1].str();
 
-	struct program_score
+	struct programScore
 	{
-		program_score(const string& program, Remark3Parser* parser, float score)
+		programScore(const string& program, Remark3Parser* parser, float score)
 			: program(program), parser(parser), score(score) {}
 
 		string program;
 		unique_ptr<Remark3Parser> parser;
 		float score;
 
-		bool operator<(const program_score& rhs) const
+		bool operator<(const programScore& rhs) const
 		{
 			return score > rhs.score;
 		}
 	};
 
-	vector<program_score> scores;
+	vector<programScore> scores;
 
 	auto tryParser = [&](Remark3Parser* p)
 	{
 		unique_ptr<Remark3Parser> parser(p);
-		float score = parser->Parse();
+		float score = parser->parse();
 
 		if (VERBOSE >= 2)
-			cerr << "Score for " << parser->Program() << ": " << score << endl;
+			cerr << "Score for " << parser->program() << ": " << score << endl;
 
 		if (score > 0)
 		{
 			auto& software = db["software"];
-			string program = parser->Program();
-			string version = parser->Version();
+			string program = parser->program();
+			string version = parser->version();
 
 			software.emplace({
 				{ "name", program },
@@ -1278,11 +1277,11 @@ bool Remark3Parser::Parse(const string& expMethod, PDBRecord* r, cif::datablock&
 		auto& best = scores.front();
 
 		if (VERBOSE >= 2)
-			cerr << "Choosing " << best.parser->Program() << " version '" << best.parser->Version() << "' as refinement program. Score = " << best.score << endl;
+			cerr << "Choosing " << best.parser->program() << " version '" << best.parser->version() << "' as refinement program. Score = " << best.score << endl;
 
-		best.parser->Fixup();
+		best.parser->fixup();
 
-		for (auto& cat1: best.parser->m_db)
+		for (auto& cat1: best.parser->mDb)
 		{
 			auto& cat2 = db[cat1.name()];
 
@@ -1292,8 +1291,8 @@ bool Remark3Parser::Parse(const string& expMethod, PDBRecord* r, cif::datablock&
 				if (cat2.empty())			// duh... this will generate a validation error anyway...
 					cat2.emplace({});
 
-				row r1 = cat1.front();
-				row r2 = cat2.front();
+				Row r1 = cat1.front();
+				Row r2 = cat2.front();
 
 				for (auto& i: r1)
 					r2[i.name()] = i.value();
