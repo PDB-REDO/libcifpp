@@ -11,6 +11,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/any.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include "cif++/CifUtils.h"
 
@@ -1008,11 +1009,15 @@ class File
 
 	File();
 	File(std::istream& is, bool validate = false);
+	File(boost::filesystem::path p, bool validate = false);
 	File(File&& rhs);
 	File(const File& rhs) = delete;
 	File& operator=(const File& rhs) = delete;
 	
 	~File();
+
+	void load(boost::filesystem::path p);
+	void save(boost::filesystem::path p);
 
 	void load(std::istream& is);
 	void save(std::ostream& os);

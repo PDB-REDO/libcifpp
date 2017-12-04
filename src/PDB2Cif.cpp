@@ -2621,7 +2621,7 @@ void PDBFileParser::ParseRemark200()
 	{
 		getCategory("diffrn_radiation_wavelength")->emplace({
 			{ "id", wavelengthNr++ },
-			{ "wavelength", wl },
+			{ "wavelength", wl.empty() ? "." : wl },
 			{ "wt", "1.0" }
 		});
 	}

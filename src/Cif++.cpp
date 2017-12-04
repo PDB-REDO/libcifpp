@@ -11,6 +11,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 #if defined(USE_RSRC)
 #include "cif++/mrsrc.h"
@@ -24,6 +27,7 @@
 using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
+namespace io = boost::iostreams;
 
 extern int VERBOSE;
 
@@ -1950,6 +1954,12 @@ File::File(istream& is, bool validate)
 	load(is);
 }
 
+File::File(boost::filesystem::path p, bool validate)
+	: File()
+{
+	load(p);
+}
+
 File::File(File&& rhs)
 	: mHead(nullptr), mValidator(nullptr)
 {
@@ -1986,6 +1996,51 @@ void File::append(Datablock* e)
 			ie = ie->mNext;
 		}
 	}
+}
+
+void File::load(fs::path p)
+{
+	fs::ifstream inFile(p, ios_base::in | ios_base::binary);
+	if (not inFile.is_open())
+		throw runtime_error("Could not open file: " + p.string());
+	
+	io::filtering_stream<io::input> in;
+	string ext;
+	
+	if (p.extension() == ".bz2")
+	{
+		in.push(io::bzip2_decompressor());
+		ext = p.stem().extension().string();
+	}
+	else if (p.extension() == ".gz")
+	{
+		in.push(io::gzip_decompressor());
+		ext = p.stem().extension().string();
+	}
+	
+	in.push(inFile);
+
+	load(in);
+}
+
+void File::save(fs::path p)
+{
+	fs::ofstream outFile(p, ios_base::out | ios_base::binary);
+	io::filtering_stream<io::output> out;
+	
+	if (p.extension() == ".gz")
+	{
+		out.push(io::gzip_compressor());
+		p = p.stem();
+	}
+	else if (p.extension() == ".bz2")
+	{
+		out.push(io::bzip2_compressor());
+		p = p.stem();
+	}
+	
+	out.push(outFile);
+	save(out);
 }
 
 void File::load(istream& is)
