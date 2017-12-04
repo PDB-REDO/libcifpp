@@ -221,6 +221,7 @@ PeptideDB& PeptideDB::Instance()
 }
 
 PeptideDB::PeptideDB()
+	: mImpl(nullptr)
 {
 	const char* clibdMon = getenv("CLIBD_MON");
 	if (clibdMon == nullptr)

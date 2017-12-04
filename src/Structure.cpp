@@ -42,7 +42,7 @@ void FileImpl::load(fs::path p)
 		throw runtime_error("No such file: " + p.string());
 	
 	io::filtering_stream<io::input> in;
-	string ext;
+	string ext = p.extension().string();
 	
 	if (p.extension() == ".bz2")
 	{
@@ -57,42 +57,50 @@ void FileImpl::load(fs::path p)
 	
 	in.push(inFile);
 
-	// OK, we've got the file, now create a protein
-	if (ext == ".cif")
-		mData.load(in);
-	else if (ext == ".pdb" or ext == ".ent")
-		ReadPDBFile(in, mData);
-	else
+	try
 	{
-		try
-		{
-			if (VERBOSE)
-				cerr << "unrecognized file extension, trying cif" << endl;
-
+		// OK, we've got the file, now create a protein
+		if (ext == ".cif")
 			mData.load(in);
-		}
-		catch (const cif::CifParserError& e)
-		{
-			if (VERBOSE)
-				cerr << "Not cif, trying plain old PDB" << endl;
-
-			// pffft...
-			in.reset();
-
-			if (inFile.is_open())
-				inFile.seekg(0);
-			else
-				inFile.open(p, ios_base::in | ios::binary);
-
-			if (p.extension() == ".bz2")
-				in.push(io::bzip2_decompressor());
-			else if (p.extension() == ".gz")
-				in.push(io::gzip_decompressor());
-			
-			in.push(inFile);
-
+		else if (ext == ".pdb" or ext == ".ent")
 			ReadPDBFile(in, mData);
+		else
+		{
+			try
+			{
+				if (VERBOSE)
+					cerr << "unrecognized file extension, trying cif" << endl;
+	
+				mData.load(in);
+			}
+			catch (const cif::CifParserError& e)
+			{
+				if (VERBOSE)
+					cerr << "Not cif, trying plain old PDB" << endl;
+	
+				// pffft...
+				in.reset();
+	
+				if (inFile.is_open())
+					inFile.seekg(0);
+				else
+					inFile.open(p, ios_base::in | ios::binary);
+	
+				if (p.extension() == ".bz2")
+					in.push(io::bzip2_decompressor());
+				else if (p.extension() == ".gz")
+					in.push(io::gzip_decompressor());
+				
+				in.push(inFile);
+	
+				ReadPDBFile(in, mData);
+			}
 		}
+	}
+	catch (const exception& ex)
+	{
+		cerr << "Failed trying to load file " << p << endl;
+		throw;
 	}
 	
 	// Yes, we've parsed the data. Now locate the datablock.

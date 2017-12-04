@@ -283,4 +283,42 @@ float CalculateEDIA(const Atom& atom, const clipper::Xmap<float>& xmap,
 	return result;
 }
 
+//
+//// --------------------------------------------------------------------
+//// test function
+//
+//double shellIntegration(float start, float end)
+//{
+//	double r = 1.35;
+//	
+//	PointWeightFunction w(Point(), r);
+//
+//	double volume = 0, positief = 0, negatief = 0;
+//	const size_t N = 10000;
+//	
+//	double h = 1.0 / N;
+//	
+//	for (size_t i = 0; i < N; ++i)
+//	{
+//		double x = start + i * h;
+//		auto y = w(Point(x * r, 0, 0));
+//		
+//		volume += x * y;
+//		if (y > 0)
+//			positief += x * y;
+//		if (y < 0)
+//			negatief += x * y;
+//	}
+//	
+//	volume *= 2 * kPI * h;
+//	positief *= 2 * kPI * h;
+//	negatief *= 2 * kPI * h;
+//	
+//	cout << "Volume: " << volume << endl
+//		 << "Positief: " << positief << endl
+//		 << "Negatief: " << negatief << endl;
+//
+//	return volume;
+//}
+
 }

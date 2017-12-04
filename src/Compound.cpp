@@ -260,7 +260,7 @@ const Compound* CompoundFactory::create(std::string id)
 				if (type == "single")		value = 1;
 				else if (type == "double")	value = 2;
 				else if (type == "triple")	value = 3;
-				else if (type == "deloc" or type == "aromat")
+				else if (type == "deloc" or type == "aromat" or type == "aromatic")
 											value = 1.5;
 				else
 				{

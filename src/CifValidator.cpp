@@ -17,6 +17,18 @@ extern int VERBOSE;
 namespace cif
 {
 
+ValidationError::ValidationError(const string& msg)
+	: mMsg(msg)
+{
+}
+
+ValidationError::ValidationError(const string& cat, const string& item, const string& msg)
+	: mMsg("When validating _" + cat + '.' + item + ": " + msg)
+{
+}
+
+// --------------------------------------------------------------------
+
 DDL_PrimitiveType mapToPrimitiveType(const string& s)
 {
 	DDL_PrimitiveType result;
@@ -137,18 +149,15 @@ void ValidateItem::setParent(ValidateItem* parent)
 
 void ValidateItem::operator()(string value) const
 {
-	if (VERBOSE >= 4)
-		cout << "validating '" << value << "' for '" << mTag << "'" << endl;
-
 	if (not value.empty() and value != "?" and value != ".")
 	{
 		if (mType != nullptr and not boost::regex_match(value, mType->mRx))
-			throw ValidationError("Value '" + value + "' does not match type expression for type " + mType->mName + " in item " + mTag);
+			throw ValidationError(mCategory->mName, mTag, "Value '" + value + "' does not match type expression for type " + mType->mName);
 
 		if (not mEnums.empty())
 		{
 			if (mEnums.count(value) == 0)
-				throw ValidationError("Value '" + value + "' is not in the list of allowed values for item " + mTag);
+				throw ValidationError(mCategory->mName, mTag, "Value '" + value + "' is not in the list of allowed values");
 		}
 	}
 }

@@ -18,7 +18,9 @@ struct ValidateCategory;
 class ValidationError : public std::exception
 {
   public:
-	ValidationError(const std::string& msg) : mMsg(msg) {}
+	ValidationError(const std::string& msg);
+	ValidationError(const std::string& cat, const std::string& item,
+		const std::string& msg);
 	const char* what() const noexcept		{ return mMsg.c_str(); }
 	std::string mMsg;
 };

@@ -387,9 +387,9 @@ class PDBFileParser
 		string	PDBIDCode;
 		char	chainID;
 		int		seqBegin;
-		char	insertBegin;
+		char	insertBegin = ' ';
 		int		seqEnd;
-		char	insertEnd;
+		char	insertEnd = ' ';
 		string	database;
 		string	dbAccession;
 		string	dbIdCode;
@@ -820,6 +820,7 @@ class PDBFileParser
 	cif::Datablock*	mDatablock = nullptr;
 
 	string		mStructureId;
+	string		mModelTypeDetails;
 	string		mOriginalDate;
 	string		mExpMethod = "X-RAY DIFFRACTION";
 	int			mCitationAuthorNr = 1, mCitationEditorNr = 1;
@@ -1232,7 +1233,8 @@ void PDBFileParser::ParseTitle()
 	if (mRec->is("CAVEAT"))							//	  1 - 6       Record name   "CAVEAT"
 	{													//	 9 - 10       Continuation  continuation   Allows concatenation of multiple records.
 		getCategory("database_PDB_caveat")->emplace({
-			{ "id", vS(12, 15) },						//	12 - 15       IDcode        idCode         PDB ID code of this datablock.                  
+//			{ "id", vS(12, 15) },						//	12 - 15       IDcode        idCode         PDB ID code of this datablock.                  
+			{ "id", 1 },								//	12 - 15       IDcode        idCode         PDB ID code of this datablock.                  
 			{ "text", string{mRec->vS(20) } }    		//	20 - 79       String        comment        Free text giving the reason for the  CAVEAT.
 		});
 		
@@ -1400,8 +1402,7 @@ void PDBFileParser::ParseTitle()
 	// MDLTYP
 	if (mRec->is("MDLTYP"))
 	{
-		if (VERBOSE)	
-			Error("skipping unimplemented MDLTYP record");
+		mModelTypeDetails = vS(11);
 		GetNextRecord();
 	}
 
@@ -1519,7 +1520,8 @@ void PDBFileParser::ParseCitation(const string& id)
 	
 	string auth, titl, edit, publ, refn, pmid, doi;
 	string pubname, volume, astm, country, issn, csd;
-	int pageFirst = 0, pageLast = 0, year = 0;
+	string pageFirst;
+	int year = 0;
 
 	auto extend = [](string& s, const string& p)
 	{
@@ -1541,7 +1543,7 @@ void PDBFileParser::ParseCitation(const string& id)
 				extend(pubname, vS(20, 47));
 				if (vS(50, 51) == "V.")
 					volume = ba::trim_copy(vS(52, 55));
-				pageFirst = vI(57, 61);
+				pageFirst = vS(57, 61);
 				year = vI(63, 66);
 			}
 			else
@@ -1568,8 +1570,7 @@ void PDBFileParser::ParseCitation(const string& id)
 		{ "title", titl },
 		{ "journal_abbrev", pubname },
 		{ "journal_volume", volume },
-		{ "page_first", pageFirst > 0 ? to_string(pageFirst) : "" },
-		{ "page_last", pageLast > 0 ? to_string(pageLast) : "" },
+		{ "page_first", pageFirst },
 		{ "year", year > 0 ? to_string(year) : "" },
 		{ "journal_id_ASTM", astm },
 		{ "country", country },
@@ -1889,8 +1890,8 @@ void PDBFileParser::ParseRemarks()
 					
 					string res = vS(16, 18);
 					char chain = vC(20);
-					int seq = vI(21, 25);
-					char iCode = vC(26);
+					int seq = vI(21, 24);
+					char iCode = vC(25);
 					
 					vector<string> atoms;
 					string atomStr = mRec->vS(29);
@@ -2052,8 +2053,8 @@ void PDBFileParser::ParseRemarks()
 								int model = vI(11, 13);
 								string resNam1 = vS(15, 17);
 								string chainID1 { vC(19) };
-								int seqNum1 = vI(20, 24);
-								string iCode1 { vC(25) };
+								int seqNum1 = vI(20, 23);
+								string iCode1 { vC(24) };
 								string alt1 = vS(30, 30);
 								string atm1 = vS(26, 29);
 
@@ -2106,8 +2107,8 @@ void PDBFileParser::ParseRemarks()
 								int model = vI(11, 13);
 								string resNam = vS(15, 17);
 								string chainID { vC(19) };
-								int seqNum = vI(20, 24);
-								string iCode { vC(25) };
+								int seqNum = vI(20, 23);
+								string iCode { vC(24) };
 								
 								if (iCode == " ")
 									iCode.clear();
@@ -2154,8 +2155,8 @@ void PDBFileParser::ParseRemarks()
 								int model = vI(11, 13);
 								string resNam = vS(15, 17);
 								string chainID { vC(19) };
-								int seqNum = vI(20, 24);
-								string iCode { vC(25) };
+								int seqNum = vI(20, 23);
+								string iCode { vC(24) };
 								
 								if (iCode == " ")
 									iCode.clear();
@@ -2229,8 +2230,8 @@ void PDBFileParser::ParseRemarks()
 								int model = vI(11, 13);
 								string resNam = vS(15, 17);
 								string chainID { vC(19) };
-								int seqNum = vI(20, 24);
-								string iCode { vC(25) };
+								int seqNum = vI(20, 23);
+								string iCode { vC(24) };
 								
 								if (iCode == " ")
 									iCode.clear();
@@ -3530,7 +3531,7 @@ void PDBFileParser::ConstructEntities()
 			
 			if (not dbref.database.empty())
 			{
-				auto insToStr = [](char i) -> string { return i == ' ' ? "" : string{ i }; };
+				auto insToStr = [](char i) -> string { return i == ' ' or not isprint(i) ? "" : string{ i }; };
 				
 				auto& pdbxPolySeqScheme = *getCategory("pdbx_poly_seq_scheme");
 				
@@ -3724,7 +3725,8 @@ void PDBFileParser::ConstructEntities()
 		getCategory("struct")->emplace({
 			{ "entry_id", mStructureId },
 			{ "title", ba::join(structTitle, ", ") },
-			{ "pdbx_descriptor", ba::join(structDescription, ", ") }
+			{ "pdbx_descriptor", ba::join(structDescription, ", ") },
+			{ "pdbx_model_type_details", mModelTypeDetails }
 		});
 	}
 	
@@ -4030,7 +4032,7 @@ void PDBFileParser::ConstructEntities()
 					{ "label_asym_id",	asymId },
 					{ "label_comp_id",	compId },		// TODO: change to correct comp_id
 					{ "label_seq_id",	seqNr > 0 ? to_string(seqNr) : "" },
-					{ "labelAtomId",	atom }
+					{ "label_atom_id",	atom }
 				});
 				
 			}
@@ -5246,7 +5248,15 @@ void ReadPDBFile(istream& pdbFile, cif::File& cifFile)
 
 	cifFile.loadDictionary("mmcif_pdbx");
 
-	p.Parse(pdbFile, cifFile);
+	try
+	{
+		p.Parse(pdbFile, cifFile);
+	}
+	catch (const exception& ex)
+	{
+		cerr << "Error parsing PDB file" << endl;
+		throw;
+	}
 	
 	cifFile.validate();
 }
