@@ -181,41 +181,48 @@ int PDBRecord::vI(int columnFirst, int columnLast)
 	enum { start, digit, tail } state = start;
 	bool negate = false;
 
-	for (const char* p = mValue + columnFirst - 7; p < e; ++p)
+	try
 	{
-		switch (state)
+		for (const char* p = mValue + columnFirst - 7; p < e; ++p)
 		{
-			case start:
-				if (*p == '+')
-					state = digit;
-				else if (*p == '-')
-				{
-					negate = true;
-					state = digit;
-				}
-				else if (isdigit(*p))
-				{
-					result = *p - '0';
-					state = digit;
-				}
-				else if (not isspace(*p))
-					throw runtime_error("Not a valid integer in PDB record");
-				break;
+			switch (state)
+			{
+				case start:
+					if (*p == '+')
+						state = digit;
+					else if (*p == '-')
+					{
+						negate = true;
+						state = digit;
+					}
+					else if (isdigit(*p))
+					{
+						result = *p - '0';
+						state = digit;
+					}
+					else if (not isspace(*p))
+						throw runtime_error("Not a valid integer in PDB record");
+					break;
+					
+				case digit:
+					if (isspace(*p))
+						state = tail;
+					else if (not isdigit(*p))
+						throw runtime_error("Not a valid integer in PDB record");
+					else
+						result = result * 10 + *p - '0';
+					break;
 				
-			case digit:
-				if (isspace(*p))
-					state = tail;
-				else if (not isdigit(*p))
-					throw runtime_error("Not a valid integer in PDB record");
-				else
-					result = result * 10 + *p - '0';
-				break;
-			
-			case tail:
-				if (not isspace(*p))
-					throw runtime_error("Not a valid integer in PDB record");
-				break;
+				case tail:
+					if (not isspace(*p))
+						throw runtime_error("Not a valid integer in PDB record");
+					break;
+			}
 		}
+	}
+	catch (...)
+	{
+		throw_with_nested(runtime_error("Trying to parse '" + string(mValue + columnFirst - 7, mValue + columnLast - 7) + '\''));
 	}
 	
 	if (negate)
@@ -645,14 +652,6 @@ class PDBFileParser
 
 	void GetNextRecord();
 	void Match(const string& expected);
-//	void Error(const string& msg) const
-//	{
-//		string lineNr;
-//		if (mRec != nullptr)
-//			lineNr = " (at line " + to_string(mRec->mLineNr) + ')';
-//		
-//		throw runtime_error("Error parsing PDB file" + lineNr + ": " + msg);
-//	}
 
 	void ParseTitle();
 	void ParseCitation(const string& id);
@@ -695,37 +694,46 @@ class PDBFileParser
 			rx1(R"((\d{2})-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{2}))"),
 			rx2(R"((JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{2}))");
 
-		if (regex_match(s, m, rx1))
+		try
 		{
-			using namespace boost::gregorian;
+			if (regex_match(s, m, rx1))
+			{
+				using namespace boost::gregorian;
+				
+				int day = stoi(m[1].str());
+				auto mi = kMonths.find(m[2].str());
+				if (mi == kMonths.end())
+					throw runtime_error("Invalid month: '" + m[2].str() + '\'');
+				int month = mi->second;
+				int year = 1900 + stoi(m[3].str());
+				if (year < 1950)
+					year += 100;
 			
-			int day = stoi(m[1].str());
-			auto mi = kMonths.find(m[2].str());
-			if (mi == kMonths.end())
-				throw runtime_error("Invalid month: '" + m[2].str() + '\'');
-			int month = mi->second;
-			int year = 1900 + stoi(m[3].str());
-			if (year < 1950)
-				year += 100;
-		
-			date dateOriginal(year, month, day);
+				date dateOriginal(year, month, day);
+				
+				s = to_iso_extended_string(dateOriginal);
+			}
+			else if (regex_match(s, m, rx2))
+			{
+				auto mi = kMonths.find(m[1].str());
+				if (mi == kMonths.end())
+					throw runtime_error("Invalid month: '" + m[1].str() + '\'');
+				int month = mi->second;
+				int year = 1900 + stoi(m[2].str());
+				if (year < 1950)
+					year += 100;
 			
-			s = to_iso_extended_string(dateOriginal);
+				s = (boost::format("%04d-%02d") % year % month).str();
+			}
+			else
+				ec = error::make_error_code(error::pdbErrors::invalidDate);
 		}
-		else if (regex_match(s, m, rx2))
+		catch (const exception& ex)
 		{
-			auto mi = kMonths.find(m[1].str());
-			if (mi == kMonths.end())
-				throw runtime_error("Invalid month: '" + m[1].str() + '\'');
-			int month = mi->second;
-			int year = 1900 + stoi(m[2].str());
-			if (year < 1950)
-				year += 100;
-		
-			s = (boost::format("%04d-%02d") % year % month).str();
-		}
-		else
+			if (VERBOSE)
+				cerr << ex.what() << endl;
 			ec = error::make_error_code(error::pdbErrors::invalidDate);
+		}
 		
 		return s;
 	}
@@ -768,7 +776,7 @@ class PDBFileParser
 		{
 			smatch m;
 			if (not regex_match(s, m, sgRx))
-				throw runtime_error("invalid symmetry value");
+				throw runtime_error("invalid symmetry value '" + s + '\'');
 	
 			s = m[1].str() + "_" + m[2].str();
 		}
@@ -942,8 +950,16 @@ void PDBFileParser::PreParseInput(istream& is)
 	{
 		string cs = lookahead.substr(offset, len);
 		ba::trim(cs);
+		int result;
 		
-		int result = cs.empty() ? 0 : stoi(cs);
+		try
+		{
+			result = cs.empty() ? 0 : stoi(cs);
+		}
+		catch (...)
+		{
+			throw runtime_error("Continuation string '" + cs + "' is not valid");
+		}
 		return result;
 	};
 
@@ -1054,16 +1070,39 @@ void PDBFileParser::PreParseInput(istream& is)
 		}
 		else if (type == "FORMUL")
 		{
-			int compNr = stoi(value.substr(1, 3));
-			int n = 2;
-			while (lookahead.substr(0, 6) == type and
-				stoi(lookahead.substr(7, 3)) == compNr and
-				contNr(16, 2) == n)
+			try
 			{
-				value += lookahead.substr(19);
-				getline(is, lookahead);
-				++lineNr;
-				++n;
+				int compNr;
+				try
+				{
+					compNr = stoi(value.substr(1, 3));
+				}
+				catch (...)
+				{
+					throw_with_nested(runtime_error("Invalid component number '" + value.substr(1, 3) + '\''));
+				}
+	
+				int n = 2;
+				try
+				{
+					while (lookahead.substr(0, 6) == type and
+						stoi(lookahead.substr(7, 3)) == compNr and
+						contNr(16, 2) == n)
+					{
+						value += lookahead.substr(19);
+						getline(is, lookahead);
+						++lineNr;
+						++n;
+					}
+				}
+				catch (const invalid_argument& ex)
+				{
+					throw_with_nested(runtime_error("Invalid component number '" + lookahead.substr(7, 3) + '\''));
+				}
+			}
+			catch (...)
+			{
+				throw_with_nested(runtime_error("When parsing FORMUL at line " + to_string(lineNr)));
 			}
 		}
 		else if (type == "HETNAM" or
@@ -1117,7 +1156,7 @@ void PDBFileParser::PreParseInput(istream& is)
 						ba::replace_all(k, "  ", " ");
 					ba::trim(v);
 					
-					if (iequals(v, "NONE"))
+					if (iequals(v, "NONE") or iequals(v, "N/A") or iequals(v, "NAN"))
 						mRemark200[k] = ".";
 					else if (not iequals(v, "NULL"))
 						mRemark200[k] = v;
@@ -1161,7 +1200,7 @@ void PDBFileParser::GetNextRecord()
 void PDBFileParser::Match(const string& expected)
 {
 	if (mRec->mName != expected)
-		throw runtime_error("At line " + to_string(mRec->mLineNr) + ": expected record " + expected + " but found " + mRec->mName);
+		throw runtime_error("Expected record " + expected + " but found " + mRec->mName);
 }
 
 vector<string> PDBFileParser::SplitCSV(const string& value)
@@ -1239,17 +1278,13 @@ void PDBFileParser::ParseTitle()
 	}
 	
 	// SPLIT
-	if (mRec->is("SPLIT"))
+	if (mRec->is("SPLIT "))
 	{
 		//	 1 -  6        Record  name  "SPLIT "
 		//	 9 - 10        Continuation  continuation  Allows concatenation of multiple records.
 		//	12 - 15        IDcode        idCode        ID code of related datablock.
 		
 		throw runtime_error("SPLIT PDB files are not supported");
-		
-//		if (VERBOSE)	
-//			Error("skipping unimplemented SPLIT record");
-//		GetNextRecord();
 	}
 	
 	// CAVEAT
@@ -1406,7 +1441,13 @@ void PDBFileParser::ParseTitle()
 
 		cat = getCategory("exptl");
 		
-		for (auto si = ba::make_split_iterator(mExpMethod, ba::token_finder(ba::is_any_of(";"), ba::token_compress_on)); not si.eof(); ++si)
+		vector<string> crystals;
+		ba::split(crystals, mRemark200["NUMBER OF CRYSTALS USED"], ba::is_any_of("; "));
+		if (crystals.empty())
+			crystals.push_back("");
+		auto ci = crystals.begin();
+		
+		for (auto si = ba::make_split_iterator(mExpMethod, ba::token_finder(ba::is_any_of(";"), ba::token_compress_on)); not si.eof(); ++si, ++ci)
 		{
 			string expMethod(si->begin(), si->end());
 			ba::trim(expMethod);
@@ -1417,7 +1458,7 @@ void PDBFileParser::ParseTitle()
 			cat->emplace({
 				{ "entry_id", mStructureId },
 				{ "method", expMethod },
-				{ "crystals_number", mRemark200["NUMBER OF CRYSTALS USED"] }
+				{ "crystals_number", ci != crystals.end() ? *ci : "" }
 			});
 		}
 		
@@ -2601,6 +2642,9 @@ void PDBFileParser::ParseRemark200()
 		if (ambientTemp.empty())
 			break;
 		
+		if (ba::ends_with(ambientTemp, "K"))
+			ambientTemp.erase(ambientTemp.length() - 1, 1);
+		
 		getCategory("diffrn")->emplace({
 			{ "id", diffrnNr },
 			{ "ambient_temp", ambientTemp },
@@ -2673,8 +2717,11 @@ void PDBFileParser::ParseRemark200()
 	}
 
 	int wavelengthNr = 1;
-	for (auto& wl: diffrnWaveLengths)
+	for (auto wl: diffrnWaveLengths)
 	{
+		if (ba::ends_with(wl, "A"))
+			wl.erase(wl.length() - 1, 1);
+		
 		getCategory("diffrn_radiation_wavelength")->emplace({
 			{ "id", wavelengthNr++ },
 			{ "wavelength", wl.empty() ? "." : wl },
@@ -3208,6 +3255,8 @@ void PDBFileParser::ConstructEntities()
 		if (r->is("MODEL "))
 		{
 			modelNr = r->vI(11, 14);
+			if (modelNr != 1)
+				break;
 			continue;
 		}
 
@@ -3311,6 +3360,14 @@ void PDBFileParser::ConstructEntities()
 
 	for (auto r = mData; r != nullptr; r = r->mNext)
 	{
+		if (r->is("MODEL "))
+		{
+			modelNr = r->vI(11, 14);
+			if (modelNr != 1)
+				break;
+			continue;
+		}
+
 		if (r->is("ATOM  ") or r->is("HETATM"))
 		{											//	 1 -  6        Record name   "ATOM  "
 			int serial = r->vI(7, 11);				//	 7 - 11        Integer       serial       Atom  serial number.
@@ -5184,7 +5241,10 @@ void PDBFileParser::PDBChain::AlignResToSeqRes()
 	
 	int x, y;
 	
-	const float kGapOpen = 10, gapExtend = 0.1;
+	const float
+		kMatchReward = 5,
+		kMismatchCost = -10,
+		kGapOpen = 10, gapExtend = 0.1;
 
 	float high = 0;
 	size_t highX = 0, highY = 0;
@@ -5202,9 +5262,9 @@ void PDBFileParser::PDBChain::AlignResToSeqRes()
 			// score for alignment
 			float M;
 			if (a.mMonId == b.mMonId)
-				M = 1;
+				M = kMatchReward;
 			else
-				M = -10000;
+				M = kMismatchCost;
 
 			// gap open cost is zero if the PDB ATOM records indicate that a gap
 			// should be here.

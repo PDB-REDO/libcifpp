@@ -1185,7 +1185,11 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 	string line = getNextLine();
 
 	if (line != "REFINEMENT.")
-		throw runtime_error("Unexpected data in REMARK 3");
+	{
+		if (VERBOSE)
+			cerr << "Unexpected data in REMARK 3" << endl;
+		return false;
+	}
 
 	line = getNextLine();
 
@@ -1193,7 +1197,12 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 	smatch m;
 
 	if (not regex_match(line, m, rxp))
-		throw runtime_error("Expected valid PROGRAM line in REMARK 3");
+	{
+		if (VERBOSE)
+			cerr << "Expected valid PROGRAM line in REMARK 3" << endl;
+		return false;
+	}
+	
 	line = m[1].str();
 
 	struct programScore
