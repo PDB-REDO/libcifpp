@@ -264,7 +264,8 @@ const Compound* CompoundFactory::create(std::string id)
 											value = 1.5;
 				else
 				{
-					cerr << "Unimplemented chem_comp_bond.type " << type << " in file " << resFile << endl;
+					if (VERBOSE)
+						cerr << "Unimplemented chem_comp_bond.type " << type << " in file " << resFile << endl;
 					value = 1.0;
 				}
 				

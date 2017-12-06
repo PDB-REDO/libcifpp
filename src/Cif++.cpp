@@ -1773,7 +1773,7 @@ Row& Row::operator=(const Row& rhs)
 void Row::assign(const string& name, const string& value, bool emplacing)
 {
 	if (mData == nullptr)
-		throw logic_error("invalid Row, no data");
+		throw logic_error("invalid Row, no data assigning value '" + value + "' to " + name);
 	
 	auto cat = mData->mCategory;
 	auto cix = cat->addColumn(name);
@@ -1905,7 +1905,7 @@ bool Row::empty() const
 
 auto Row::begin() const -> const_iterator
 {
-	return const_iterator(mData, mData->mValues);
+	return const_iterator(mData, mData ? mData->mValues : nullptr);
 }
 
 auto Row::end() const -> const_iterator

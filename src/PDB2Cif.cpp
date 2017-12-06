@@ -9,6 +9,8 @@
 #include <boost/format.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 
+#include <clipper/core/spacegroup.h>
+
 #include "cif++/PDB2Cif.h"
 #include "cif++/AtomType.h"
 #include "cif++/Compound.h"
@@ -31,7 +33,8 @@ namespace error
 {
 	enum pdbErrors
 	{
-		residueNotFound	= 1000
+		residueNotFound	= 1000,
+		invalidDate
 	};
 	
 	namespace detail
@@ -51,6 +54,9 @@ namespace error
 				{
 					case residueNotFound:
 						return "Residue not found";
+					
+					case invalidDate:
+						return "Invalid date";
 					
 					default:
 						return "Error in PDB format";
@@ -123,7 +129,6 @@ PDBRecord::PDBRecord(uint32 lineNr, const string& name, const string& value)
 
 PDBRecord::~PDBRecord()
 {
-	delete mNext;
 }
 
 void* PDBRecord::operator new(size_t size, size_t vLen)
@@ -373,7 +378,13 @@ class PDBFileParser
 	
 	~PDBFileParser()
 	{
-		delete mData;
+		PDBRecord* r = mData;
+		while (r != nullptr)
+		{
+			PDBRecord* d = r;
+			r = d->mNext;
+			delete d;
+		}	
 	}
 	
 	void Parse(istream& is, cif::File& result);
@@ -489,8 +500,8 @@ class PDBFileParser
 			int					mSeqNum;
 			char				mIcode;
 			
-			bool operator==(const AtomRes& rhs) const		{ return mMonId == rhs.mMonId and mSeqNum == rhs.mSeqNum and mIcode == rhs.mIcode; }
-			bool operator!=(const AtomRes& rhs) const		{ return mMonId != rhs.mMonId or mSeqNum != rhs.mSeqNum or mIcode != rhs.mIcode; }
+			bool operator==(const AtomRes& rhs) const		{ return mSeqNum == rhs.mSeqNum and mIcode == rhs.mIcode; }
+			bool operator!=(const AtomRes& rhs) const		{ return mSeqNum != rhs.mSeqNum or mIcode != rhs.mIcode; }
 		};
 		vector<AtomRes>			mResiduesSeen;
 		
@@ -593,16 +604,7 @@ class PDBFileParser
 
 	int vI(int columnFirst, int columnLast) const
 	{
-		int result = 0;
-		try
-		{
-			result = mRec->vI(columnFirst, columnLast);
-		}
-		catch (const exception& ex)
-		{
-			Error(ex.what());
-		}
-		return result;
+		return mRec->vI(columnFirst, columnLast);
 	}
 
 	// ----------------------------------------------------------------
@@ -643,14 +645,14 @@ class PDBFileParser
 
 	void GetNextRecord();
 	void Match(const string& expected);
-	void Error(const string& msg) const
-	{
-		string lineNr;
-		if (mRec != nullptr)
-			lineNr = " (at line " + to_string(mRec->mLineNr) + ')';
-		
-		throw runtime_error("Error parsing PDB file" + lineNr + ": " + msg);
-	}
+//	void Error(const string& msg) const
+//	{
+//		string lineNr;
+//		if (mRec != nullptr)
+//			lineNr = " (at line " + to_string(mRec->mLineNr) + ')';
+//		
+//		throw runtime_error("Error parsing PDB file" + lineNr + ": " + msg);
+//	}
 
 	void ParseTitle();
 	void ParseCitation(const string& id);
@@ -686,7 +688,7 @@ class PDBFileParser
 	
 	vector<string> SplitCSV(const string& value);
 
-	string pdb2cifDate(string s)
+	string pdb2cifDate(string s, boost::system::error_code& ec)
 	{
 		smatch m;
 		const regex
@@ -700,7 +702,7 @@ class PDBFileParser
 			int day = stoi(m[1].str());
 			auto mi = kMonths.find(m[2].str());
 			if (mi == kMonths.end())
-				Error("Invalid month");
+				throw runtime_error("Invalid month: '" + m[2].str() + '\'');
 			int month = mi->second;
 			int year = 1900 + stoi(m[3].str());
 			if (year < 1950)
@@ -714,7 +716,7 @@ class PDBFileParser
 		{
 			auto mi = kMonths.find(m[1].str());
 			if (mi == kMonths.end())
-				Error("Invalid month");
+				throw runtime_error("Invalid month: '" + m[1].str() + '\'');
 			int month = mi->second;
 			int year = 1900 + stoi(m[2].str());
 			if (year < 1950)
@@ -722,7 +724,16 @@ class PDBFileParser
 		
 			s = (boost::format("%04d-%02d") % year % month).str();
 		}
+		else
+			ec = error::make_error_code(error::pdbErrors::invalidDate);
 		
+		return s;
+	}
+	
+	string pdb2cifDate(string s)
+	{
+		boost::system::error_code ec;		
+		pdb2cifDate(s, ec);
 		return s;
 	}
 	
@@ -925,7 +936,16 @@ void PDBFileParser::PreParseInput(istream& is)
 	getline(is, lookahead);
 
 	if (ba::starts_with(lookahead, "HEADER") == false)
-		Error("This does not look like a PDB file, should start with a HEADER line");
+		throw runtime_error("This does not look like a PDB file, should start with a HEADER line");
+
+	auto contNr = [&lookahead](int offset, int len) -> int
+	{
+		string cs = lookahead.substr(offset, len);
+		ba::trim(cs);
+		
+		int result = cs.empty() ? 0 : stoi(cs);
+		return result;
+	};
 
 	PDBRecord* last = nullptr;
 	set<string> dropped;
@@ -964,7 +984,7 @@ void PDBFileParser::PreParseInput(istream& is)
 			type == "TITLE ")
 		{
 			int n = 2;
-			while (lookahead.substr(0, 6) == type and stoi(lookahead.substr(7, 3)) == n)
+			while (lookahead.substr(0, 6) == type and contNr(7, 3) == n)
 			{
 				value += ba::trim_right_copy(lookahead.substr(10));
 				getline(is, lookahead);
@@ -976,7 +996,7 @@ void PDBFileParser::PreParseInput(istream& is)
 		{
 			int n = 2;
 			value += '\n';
-			while (lookahead.substr(0, 6) == type and stoi(lookahead.substr(7, 3)) == n)
+			while (lookahead.substr(0, 6) == type and contNr(7, 3) == n)
 			{
 				value += ba::trim_right_copy(lookahead.substr(10));
 				value += '\n';
@@ -991,7 +1011,7 @@ void PDBFileParser::PreParseInput(istream& is)
 			int n = 2;
 			while (lookahead.substr(0, 6) == type and
 				stoi(lookahead.substr(7, 3)) == revNr and
-				stoi(lookahead.substr(10, 2)) == n)
+				contNr(10, 2) == n)
 			{
 				value += lookahead.substr(38);
 				getline(is, lookahead);
@@ -1002,7 +1022,7 @@ void PDBFileParser::PreParseInput(istream& is)
 		else if (type == "CAVEAT")
 		{
 			int n = 2;
-			while (lookahead.substr(0, 6) == type and stoi(lookahead.substr(7, 3)) == n)
+			while (lookahead.substr(0, 6) == type and contNr(7, 3) == n)
 			{
 				value += ba::trim_right_copy(lookahead.substr(13));
 				getline(is, lookahead);
@@ -1023,7 +1043,7 @@ void PDBFileParser::PreParseInput(istream& is)
 		{
 			value += '\n';
 			int n = 2;
-			while (lookahead.substr(0, 6) == type and stoi(lookahead.substr(7, 3)) == n)
+			while (lookahead.substr(0, 6) == type and contNr(7, 3) == n)
 			{
 				value += ba::trim_copy(lookahead.substr(10));
 				value += '\n';
@@ -1038,8 +1058,7 @@ void PDBFileParser::PreParseInput(istream& is)
 			int n = 2;
 			while (lookahead.substr(0, 6) == type and
 				stoi(lookahead.substr(7, 3)) == compNr and
-				lookahead.substr(16, 2) != "  " and
-				stoi(lookahead.substr(16, 2)) == n)
+				contNr(16, 2) == n)
 			{
 				value += lookahead.substr(19);
 				getline(is, lookahead);
@@ -1051,9 +1070,7 @@ void PDBFileParser::PreParseInput(istream& is)
 				 type == "HETSYN")
 		{
 			int n = 2;
-			while (lookahead.substr(0, 6) == type and
-				lookahead.substr(8, 2) != "  " and
-				stoi(lookahead.substr(8, 2)) == n)
+			while (lookahead.substr(0, 6) == type and contNr(8, 2) == n)
 			{
 				value += lookahead.substr(16);
 				getline(is, lookahead);
@@ -1116,6 +1133,9 @@ void PDBFileParser::PreParseInput(istream& is)
 			last->mNext = cur;
 
 		last = cur;
+
+		if (type == "END   ")
+			break;
 	}
 	
 	if (not dropped.empty())
@@ -1141,7 +1161,7 @@ void PDBFileParser::GetNextRecord()
 void PDBFileParser::Match(const string& expected)
 {
 	if (mRec->mName != expected)
-		Error("Expected record " + expected + " but found " + mRec->mName);
+		throw runtime_error("At line " + to_string(mRec->mLineNr) + ": expected record " + expected + " but found " + mRec->mName);
 }
 
 vector<string> PDBFileParser::SplitCSV(const string& value)
@@ -1224,17 +1244,20 @@ void PDBFileParser::ParseTitle()
 		//	 1 -  6        Record  name  "SPLIT "
 		//	 9 - 10        Continuation  continuation  Allows concatenation of multiple records.
 		//	12 - 15        IDcode        idCode        ID code of related datablock.
-		if (VERBOSE)	
-			Error("skipping unimplemented SPLIT record");
-		GetNextRecord();
+		
+		throw runtime_error("SPLIT PDB files are not supported");
+		
+//		if (VERBOSE)	
+//			Error("skipping unimplemented SPLIT record");
+//		GetNextRecord();
 	}
 	
 	// CAVEAT
-	if (mRec->is("CAVEAT"))							//	  1 - 6       Record name   "CAVEAT"
-	{													//	 9 - 10       Continuation  continuation   Allows concatenation of multiple records.
+	int caveatID = 1;
+	while (mRec->is("CAVEAT"))							//	  1 - 6       Record name   "CAVEAT"
+	{
 		getCategory("database_PDB_caveat")->emplace({
-//			{ "id", vS(12, 15) },						//	12 - 15       IDcode        idCode         PDB ID code of this datablock.                  
-			{ "id", 1 },								//	12 - 15       IDcode        idCode         PDB ID code of this datablock.                  
+			{ "id", caveatID++ },
 			{ "text", string{mRec->vS(20) } }    		//	20 - 79       String        comment        Free text giving the reason for the  CAVEAT.
 		});
 		
@@ -1347,7 +1370,7 @@ void PDBFileParser::ParseTitle()
 			}
 			
 			if (source == nullptr)
-				Error("MOL_ID missing");
+				throw runtime_error("At line " + to_string(mRec->mLineNr) + ": missing MOL_ID in SOURCE");
 			
 			(*source)[key] = value;
 		}
@@ -1380,13 +1403,23 @@ void PDBFileParser::ParseTitle()
 	if (mRec->is("EXPDTA"))
 	{
 		mExpMethod = vS(11);
-		
+
 		cat = getCategory("exptl");
-		cat->emplace({
-			{ "entry_id", mStructureId },
-			{ "method", mExpMethod },
-			{ "crystals_number", mRemark200["NUMBER OF CRYSTALS USED"] }
-		});
+		
+		for (auto si = ba::make_split_iterator(mExpMethod, ba::token_finder(ba::is_any_of(";"), ba::token_compress_on)); not si.eof(); ++si)
+		{
+			string expMethod(si->begin(), si->end());
+			ba::trim(expMethod);
+			
+			if (expMethod.empty())
+				continue;
+			
+			cat->emplace({
+				{ "entry_id", mStructureId },
+				{ "method", expMethod },
+				{ "crystals_number", mRemark200["NUMBER OF CRYSTALS USED"] }
+			});
+		}
 		
 		GetNextRecord();
 	}
@@ -1395,7 +1428,7 @@ void PDBFileParser::ParseTitle()
 	if (mRec->is("NUMMDL"))
 	{
 		if (VERBOSE)	
-			Error("skipping unimplemented NUMMDL record");
+			cerr << "skipping unimplemented NUMMDL record" << endl;
 		GetNextRecord();
 	}
 	
@@ -1624,834 +1657,843 @@ void PDBFileParser::ParseRemarks()
 	{
 		int remarkNr = vI(8, 10);
 		
-		switch (remarkNr)
+		try
 		{
-			case 1:
-				while (mRec->is("REMARK   1"))
-				{
-					if (mRec->mVlen > 15 and vS(12, 20) == "REFERENCE")
-					{
-						string id = vS(22, 70);
-						GetNextRecord();
-						
-						ParseCitation(id);
-					}
-					else
-						GetNextRecord();
-				}
-				break;
-			
-			case 3:
-				// we skip REMARK 3 until we know the mapping
-				while (mRec->is("REMARK   3"))
-					GetNextRecord();
-				break;
-
-			case 4:
-				// who cares...
-				while (mRec->is("REMARK   4"))
-					GetNextRecord();
-				break;
-
-			case 100:
+			switch (remarkNr)
 			{
-				const regex rx(R"(THE (\S+) ID CODE IS (\S+?)\.?\s*)");
-				smatch m;
-				string r = vS(12);
-				
-				if (regex_match(r, m, rx))
-				{
-					auto cat = getCategory("database_2");
-					cat->emplace({
-						{ "database_id", m[1].str() },
-						{ "database_code", m[2].str() }
-					});
-				}
-				
-				GetNextRecord();
-				break;
-			}
-			
-			case 200:
-			{
-				// we already parsed most of this remark, but the "REMARK:" part might have been split.
-
-				bool remark = false;
-				
-				do
-				{
-					string r = mRec->vS(12);
-
-					if (ba::starts_with(r, "REMARK: "))
+				case 1:
+					while (mRec->is("REMARK   1"))
 					{
-						mRemark200["REMARK"] = r.substr(8);
-						remark = true;
-					}
-					else if (remark)
-					{
-						if (r.empty())
-							remark = false;
+						if (mRec->mVlen > 15 and vS(12, 20) == "REFERENCE")
+						{
+							string id = vS(22, 70);
+							GetNextRecord();
+							
+							ParseCitation(id);
+						}
 						else
-							mRemark200["REMARK"] += r;
+							GetNextRecord();
 					}
-					
-					GetNextRecord();
-				}
-				while (mRec->is("REMARK 200"));
-				break;
-			}
-
-			case 280:
-			{
-				string density_Matthews, densityPercentSol, conditions;
+					break;
 				
-				const regex rx1(R"(SOLVENT CONTENT, VS +\(%\): *(.+))"),
-					rx2(R"(MATTHEWS COEFFICIENT, VM \(ANGSTROMS\*\*3/DA\): *(.+))");
-				
-				smatch m;
-
-				do
+				case 3:
+					// we skip REMARK 3 until we know the mapping
+					while (mRec->is("REMARK   3"))
+						GetNextRecord();
+					break;
+	
+				case 4:
+					// who cares...
+					while (mRec->is("REMARK   4"))
+						GetNextRecord();
+					break;
+	
+				case 100:
 				{
+					const regex rx(R"(THE (\S+) ID CODE IS (\S+?)\.?\s*)");
+					smatch m;
 					string r = vS(12);
-
-					if (conditions.empty())
+					
+					if (regex_match(r, m, rx))
 					{
-						if (regex_match(r, m, rx1))
-							densityPercentSol = m[1].str();
-						else if (regex_match(r, m, rx2))
-							density_Matthews = m[1].str();
-						else if (ba::starts_with(r, "CRYSTALLIZATION CONDITIONS: "))
-							conditions = r.substr(28);
+						auto cat = getCategory("database_2");
+						cat->emplace({
+							{ "database_id", m[1].str() },
+							{ "database_code", m[2].str() }
+						});
 					}
-					else
-						conditions = conditions + ' ' + r;
 					
 					GetNextRecord();
+					break;
 				}
-				while (mRec->is("REMARK 280"));
 				
-				string desc = mRemark200["REMARK"];
-				if (desc == "NULL")
-					desc.clear();
-				
-				getCategory("exptl_crystal")->emplace({
-					{ "id", 1 },
-					{ "density_Matthews", iequals(density_Matthews, "NULL") ? "" : density_Matthews  },
-					{ "density_percent_sol", iequals(densityPercentSol, "NULL") ? "" : densityPercentSol },
-					{ "description", desc }
-				});
-				
-				// now try to parse the conditions
-				const regex rx3(R"(TEMPERATURE +(\d+)K)"), rx4(R"(PH *(?:: *)?(\d+(?:\.\d+)?))")/*, rx5(R"(\b(\d+)C\b)")*/;
-				
-				string temp, ph, method;
-
-				for (auto i = make_split_iterator(conditions, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not i.eof(); ++i)
+				case 200:
 				{
-					string s(i->begin(), i->end());
-
-					ba::trim(s);
-
-					if (regex_search(s, m, rx3))
-						temp = m[1].str();
-					if (regex_search(s, m, rx4))
-						ph = m[1].str();
-					if (s.length() < 60 and
-						(ba::icontains(s, "drop") or ba::icontains(s, "vapor") or ba::icontains(s, "batch")))
+					// we already parsed most of this remark, but the "REMARK:" part might have been split.
+	
+					bool remark = false;
+					
+					do
 					{
-						if (not method.empty())
-							method = method + ", " + s;
-						else
-							method = s;
-					}
-				}
-				
-				if (not (method.empty() and temp.empty() and ph.empty() and (conditions.empty() or conditions == "NULL")))
-				{
-					getCategory("exptl_crystal_grow")->emplace({
-						{ "crystal_id", 1 },
-						{ "method", method },
-						{ "temp", temp },
-						{ "pH", ph },
-						{ "pdbx_details", conditions }
-					});
-				}
-
-				break;
-			}
-			
-//			case 290:
-//				
-//				break;
-			
-			case 350:
-				// postponed since we don't have the required information yet
-				for (; mRec->is("REMARK 350"); GetNextRecord())
-					;
-				break;
-			
-			case 400:
-			{
-				stringstream s;
-				GetNextRecord();
-				if (vS(12) == "COMPOUND")
-					GetNextRecord();
-				
-				while (mRec->is("REMARK 400"))
-				{
-					s << vS(12) << endl;
-					GetNextRecord();
-				}
-				
-				compoundDetails = s.str();
-				break;
-			}
-			
-			case 450:
-			{
-				stringstream s;
-				GetNextRecord();
-				if (vS(12) == "SOURCE")
-					GetNextRecord();
-				
-				while (mRec->is("REMARK 450"))
-				{
-					s << vS(12) << endl;
-					GetNextRecord();
-				}
-				
-				sourceDetails = s.str();
-				break;
-			}
-			
-			case 465:
-			{
-				bool headerSeen = false;
-				regex rx(R"( *MODELS *(\d+)-(\d+))");
-				int models[2] = { -1, -1 };
-				
-				for (; mRec->is("REMARK 465"); GetNextRecord())
-				{
-					if (not headerSeen)
-					{
-						string line = vS(12);
-						smatch m;
-
-						if (regex_match(line, m, rx))
+						string r = mRec->vS(12);
+	
+						if (ba::starts_with(r, "REMARK: "))
 						{
-							models[0] = stoi(m[1].str());
-							models[1] = stoi(m[2].str());
+							mRemark200["REMARK"] = r.substr(8);
+							remark = true;
+						}
+						else if (remark)
+						{
+							if (r.empty())
+								remark = false;
+							else
+								mRemark200["REMARK"] += r;
+						}
+						
+						GetNextRecord();
+					}
+					while (mRec->is("REMARK 200"));
+					break;
+				}
+	
+				case 280:
+				{
+					string density_Matthews, densityPercentSol, conditions;
+					
+					const regex rx1(R"(SOLVENT CONTENT, VS +\(%\): *(.+))"),
+						rx2(R"(MATTHEWS COEFFICIENT, VM \(ANGSTROMS\*\*3/DA\): *(.+))");
+					
+					smatch m;
+	
+					do
+					{
+						string r = vS(12);
+	
+						if (conditions.empty())
+						{
+							if (regex_match(r, m, rx1))
+								densityPercentSol = m[1].str();
+							else if (regex_match(r, m, rx2))
+								density_Matthews = m[1].str();
+							else if (ba::starts_with(r, "CRYSTALLIZATION CONDITIONS: "))
+								conditions = r.substr(28);
 						}
 						else
-							headerSeen = ba::contains(line, "RES C SSSEQI");
-						continue;
+							conditions = conditions + ' ' + r;
+						
+						GetNextRecord();
 					}
+					while (mRec->is("REMARK 280"));
 					
-					if (models[0] == models[1])
-						models[0] = models[1] = vI(12, 14);
+					string desc = mRemark200["REMARK"];
+					if (desc == "NULL")
+						desc.clear();
 					
-					string res = vS(16, 18);
-					char chain = vC(20);
-					int seq = vI(22, 26);
-					char iCode = vC(27);
-					
-					for (int modelNr = models[0]; modelNr <= models[1]; ++modelNr)
-						mUnobs.push_back({modelNr, res, chain, seq, iCode});
-				}
-				
-				break;
-			}
-			
-			case 470:
-			{
-				bool headerSeen = false;
-				regex rx(R"( *MODELS *(\d+)-(\d+))");
-				int models[2] = { -1, -1 };
-				
-				for (; mRec->is("REMARK 470"); GetNextRecord())
-				{
-					if (not headerSeen)
-					{
-						string line = vS(12);
-						smatch m;
-
-						if (regex_match(line, m, rx))
-						{
-							models[0] = stoi(m[1].str());
-							models[1] = stoi(m[2].str());
-						}
-						else
-							headerSeen = ba::contains(line, "RES CSSEQI  ATOMS");
-						continue;
-					}
-					
-					if (models[0] == models[1])
-						models[0] = models[1] = vI(12, 14);
-					
-					string res = vS(16, 18);
-					char chain = vC(20);
-					int seq = vI(21, 24);
-					char iCode = vC(25);
-					
-					vector<string> atoms;
-					string atomStr = mRec->vS(29);
-					for (auto i = make_split_iterator(atomStr, ba::token_finder(ba::is_any_of(" "), ba::token_compress_on)); not i.eof(); ++i)
-						atoms.push_back({ i-> begin(), i->end() });
-					
-					for (int modelNr = models[0]; modelNr <= models[1]; ++modelNr)
-						mUnobs.push_back({modelNr, res, chain, seq, iCode, atoms});
-				}
-				
-				break;
-			}
-			
-			case 500:
-			{
-				GetNextRecord();
-				
-				enum State { eStart, eCCinSAU, eCC, eCBL, eCBA, eTA, eCTg, ePG, eMCP, eChC } state = eStart;
-				bool headerSeen = false;
-				int id = 0;
-				
-				for (; mRec->is("REMARK 500"); GetNextRecord())
-				{
-					string line = vS(12);
-					
-					if (line == "GEOMETRY AND STEREOCHEMISTRY")
-						continue;
-					
-					switch (state)
-					{
-						case eStart:
-						{
-							if (line.empty() or not ba::starts_with(line, "SUBTOPIC: "))
-								continue;
-
-							string subtopic = line.substr(10);
-
-							if (subtopic == "CLOSE CONTACTS IN SAME ASYMMETRIC UNIT")	state = eCCinSAU;
-							else if (subtopic == "CLOSE CONTACTS")						state = eCC;
-							else if (subtopic == "COVALENT BOND LENGTHS")				state = eCBL;
-							else if (subtopic == "COVALENT BOND ANGLES")				state = eCBA;
-							else if (subtopic == "TORSION ANGLES")						state = eTA;
-							else if (subtopic == "NON-CIS, NON-TRANS")					state = eCTg;
-							else if (subtopic == "PLANAR GROUPS")						state = ePG;
-							else if (subtopic == "MAIN CHAIN PLANARITY")				state = eMCP;
-							else if (subtopic == "CHIRAL CENTERS")						state = eChC;
-							else if (VERBOSE)
-								Error("Unknown subtopic in REMARK 500: " + subtopic);
-							
-							headerSeen = false;
-							id = 0;
-							break;
-						}
-						
-						case eCCinSAU:
-						{
-							if (not headerSeen)
-								headerSeen =
-									line == "ATM1  RES C  SSEQI   ATM2  RES C  SSEQI           DISTANCE";
-							else if (line.empty())
-								state = eStart;
-							else
-							{
-								string atom1 = vS(13, 16);
-								string res1 = vS(19, 21);
-								string alt1 = vS(17, 17);
-								char chain1 = vC(23);
-								int seq1 = vI(25, 29);
-								string iCode1 = vS(30, 30);
-								
-								string atom2 = vS(34, 37);
-								string alt2 = vS(38, 38);
-								string res2 = vS(40, 42);
-								char chain2 = vC(44);
-								int seq2 = vI(46, 50);
-								string iCode2 = vS(51, 51);
-								
-								string distance = vF(63, 71);
-								
-								getCategory("pdbx_validate_close_contact")->emplace({
-									{ "id",				to_string(++id) },
-									{ "PDB_model_num",	1 },
-									{ "auth_atom_id_1",	atom1 },
-									{ "auth_asym_id_1", string{ chain1 } },
-									{ "auth_comp_id_1", res1 },
-									{ "auth_seq_id_1",	seq1 },
-									{ "PDB_ins_code_1", iCode1 },
-									{ "label_alt_id_1", alt1 },
-									{ "auth_atom_id_2",	atom2 },
-									{ "auth_asym_id_2", string { chain2 } },
-									{ "auth_comp_id_2", res2 },
-									{ "auth_seq_id_2",	seq2 },
-									{ "PDB_ins_code_2", iCode2 },
-									{ "label_alt_id_2", alt2 },
-									{ "dist", distance }
-								});
-							}
-							break;
-						}
-						
-						case eCC:
-						{
-							if (not headerSeen)
-								headerSeen = line == "ATM1  RES C  SSEQI   ATM2  RES C  SSEQI  SSYMOP   DISTANCE";
-							else if (line.empty())
-								state = eStart;
-							else
-							{
-								string atom1 = vS(13, 16);
-								string res1 = vS(19, 21);
-								char chain1 = vC(23);
-								int seq1 = vI(25, 29);
-								
-								string atom2 = vS(34, 37);
-								string res2 = vS(40, 42);
-								char chain2 = vC(44);
-								int seq2 = vI(46, 50);
-								
-								string symop = pdb2cifSymmetry(vS(54, 59));
-								
-								string distance = vF(63, 71);
-								
-								getCategory("pdbx_validate_symm_contact")->emplace({
-									{ "id",				to_string(++id) },
-									{ "PDB_model_num",	1 },
-									{ "auth_atom_id_1",	atom1 },
-									{ "auth_asym_id_1", string{ chain1 } },
-									{ "auth_comp_id_1", res1 },
-									{ "auth_seq_id_1",	seq1 },
-//									{ "PDB_ins_code_1", "" },
-//									{ "label_alt_id_1", "" },
-									{ "site_symmetry_1", "1_555" },
-									{ "auth_atom_id_2",	atom2 },
-									{ "auth_asym_id_2", string { chain2 } },
-									{ "auth_comp_id_2", res2 },
-									{ "auth_seq_id_2",	seq2 },
-//									{ "PDB_ins_code_2", "" },
-//									{ "label_alt_id_2", "" },
-									{ "site_symmetry_2", symop },
-									{ "dist", distance }
-								});
-							}
-							break;
-						}
-						
-						case eCBL:
-						{
-							if (not headerSeen)
-							{
-								if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,2(A3,1X,A1,I4,A1,1X,A4,3X),1X,F6.3)")
-									Error("Unexpected format in REMARK 500");
-								
-								headerSeen = line == "M RES CSSEQI ATM1   RES CSSEQI ATM2   DEVIATION";
-							}
-							else if (line.empty())
-								state = eStart;
-							else
-							{
-								int model = vI(11, 13);
-								string resNam1 = vS(15, 17);
-								string chainID1 { vC(19) };
-								int seqNum1 = vI(20, 23);
-								string iCode1 { vC(24) };
-								string alt1 = vS(30, 30);
-								string atm1 = vS(26, 29);
-
-								string resNam2 = vS(33, 35);
-								string chainID2 { vC(37) };
-								int seqNum2 = vI(38, 41);
-								string iCode2 { vC(42) };
-								string alt2 = vS(48, 48);
-								string atm2 = vS(44, 47);
-								
-								string deviation = vF(51, 57);
-								
-								if (iCode1 == " ") iCode1.clear();
-								if (iCode2 == " ") iCode2.clear();
-								
-								getCategory("pdbx_validate_rmsd_bond")->emplace({
-									{ "id",				to_string(++id) },
-									{ "PDB_model_num",	model ? model : 1 },
-									{ "auth_atom_id_1",	atm1 },
-									{ "auth_asym_id_1", chainID1 },
-									{ "auth_comp_id_1", resNam1 },
-									{ "auth_seq_id_1",	seqNum1 },
-									{ "PDB_ins_code_1",	iCode1 },
-									{ "label_alt_id_1", alt1 },
-									{ "auth_atom_id_2",	atm2 },
-									{ "auth_asym_id_2", chainID2 },
-									{ "auth_comp_id_2", resNam2 },
-									{ "auth_seq_id_2",	seqNum2 },
-									{ "PDB_ins_code_2",	iCode2 },
-									{ "label_alt_id_2", alt2 },
-									{ "bond_deviation",deviation }
-								});
-							}
-							
-							break;
-						}
-						
-						case eCBA:
-							if (not headerSeen)
-							{
-								if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,A3,1X,A1,I4,A1,3(1X,A4,2X),12X,F5.1)")
-									Error("Unexpected format in REMARK 500");
-								
-								headerSeen = line == "M RES CSSEQI ATM1   ATM2   ATM3";
-							}
-							else if (line.empty())
-								state = eStart;
-							else if (vS(64) == "DEGREES")
-							{
-								int model = vI(11, 13);
-								string resNam = vS(15, 17);
-								string chainID { vC(19) };
-								int seqNum = vI(20, 23);
-								string iCode { vC(24) };
-								
-								if (iCode == " ")
-									iCode.clear();
-								
-								string atoms[3] = { vS(27, 30), vS(34, 37), vS(41, 44) };
-								string deviation = vF(57, 62);
-								
-								getCategory("pdbx_validate_rmsd_angle")->emplace({
-									{ "id",				to_string(++id) },
-									{ "PDB_model_num",	model ? model : 1 },
-									{ "auth_atom_id_1",	atoms[0] },
-									{ "auth_asym_id_1", chainID },
-									{ "auth_comp_id_1", resNam },
-									{ "auth_seq_id_1",	seqNum },
-									{ "PDB_ins_code_1",	iCode },
-									{ "auth_atom_id_2",	atoms[1] },
-									{ "auth_asym_id_2", chainID },
-									{ "auth_comp_id_2", resNam },
-									{ "auth_seq_id_2",	seqNum },
-									{ "PDB_ins_code_2",	iCode },
-									{ "auth_atom_id_3",	atoms[2] },
-									{ "auth_asym_id_3", chainID },
-									{ "auth_comp_id_3", resNam },
-									{ "auth_seq_id_3",	seqNum },
-									{ "PDB_ins_code_3",	iCode },
-									{ "angle_deviation",deviation }
-								});
-							}
-							
-							break;
-						
-						case eTA:
-							if (not headerSeen)
-							{
-								if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT:(10X,I3,1X,A3,1X,A1,I4,A1,4X,F7.2,3X,F7.2)")
-									Error("Unexpected format in REMARK 500");
-								
-								headerSeen = line == "M RES CSSEQI        PSI       PHI";
-							}
-							else if (line.empty())
-								state = eStart;
-							else
-							{
-								int model = vI(11, 13);
-								string resNam = vS(15, 17);
-								string chainID { vC(19) };
-								int seqNum = vI(20, 23);
-								string iCode { vC(24) };
-								
-								if (iCode == " ")
-									iCode.clear();
-								
-								string psi = vF(27, 35);
-								string phi = vF(37, 45);
-								
-								getCategory("pdbx_validate_torsion")->emplace({
-									{ "id",				to_string(++id) },
-									{ "PDB_model_num",	model ? model : 1 },
-									{ "auth_comp_id", 	resNam },
-									{ "auth_asym_id", 	chainID },
-									{ "auth_seq_id",	seqNum },
-									{ "PDB_ins_code",	iCode },
-									{ "phi",			phi },
-									{ "psi",			psi }
-								});
-							}
-							break;
-						
-						case eCTg:
-							if (not headerSeen)
-								headerSeen = line == "MODEL     OMEGA";
-							else if (line.empty())
-								state = eStart;
-							else
-							{
-								int model = vI(45, 48);
-
-								string resNam1 = vS(12, 14);
-								string chainID1 { vC(16) };
-								int seqNum1 = vI(17, 21);
-								string iCode1 { vC(22) };
-								
-								if (iCode1 == " ")
-									iCode1.clear();
-								
-								string resNam2 = vS(27, 29);
-								string chainID2 { vC(31) };
-								int seqNum2 = vI(32, 36);
-								string iCode2 { vC(37) };
-								
-								if (iCode2 == " ")
-									iCode2.clear();
-								
-								string omega = vF(54, 60);
-								
-								getCategory("pdbx_validate_peptide_omega")->emplace({
-									{ "id",				to_string(++id) },
-									{ "PDB_model_num",	model ? model : 1 },
-									{ "auth_comp_id_1",	resNam1 },
-									{ "auth_asym_id_1",	chainID1 },
-									{ "auth_seq_id_1",	seqNum1 },
-									{ "PDB_ins_code_1",	iCode1 },
-									{ "auth_comp_id_2",	resNam2 },
-									{ "auth_asym_id_2",	chainID2 },
-									{ "auth_seq_id_2",	seqNum2 },
-									{ "PDB_ins_code_2",	iCode2 },
-									{ "omega",			omega }
-								});
-							}
-							break;
-						
-						case ePG:
-							if (not headerSeen)
-								headerSeen = line == "M RES CSSEQI        RMS     TYPE";
-							else if (line.empty())
-								state = eStart;
-							else
-							{
-								int model = vI(11, 13);
-								string resNam = vS(15, 17);
-								string chainID { vC(19) };
-								int seqNum = vI(20, 23);
-								string iCode { vC(24) };
-								
-								if (iCode == " ")
-									iCode.clear();
-								
-								string rmsd = vF(32, 36);
-								string type = vS(41);
-								
-								getCategory("pdbx_validate_planes")->emplace({
-									{ "id",				to_string(++id) },
-									{ "PDB_model_num",	model ? model : 1 },
-									{ "auth_comp_id",	resNam },
-									{ "auth_asym_id",	chainID },
-									{ "auth_seq_id",	seqNum },
-									{ "PDB_ins_code",	iCode },
-									{ "rmsd",			rmsd },
-									{ "type",			type }
-								});
-							}
-							break;
-						
-						
-						default:
-							state = eStart;
-							break;
-					}
-				}
-				
-				break;
-			}
-			
-			case 610:
-			{
-				bool headerSeen = false;
-				
-				for (; mRec->is("REMARK 610"); GetNextRecord())
-				{
-					if (not headerSeen)
-					{
-						string line = vS(12);
-						headerSeen = ba::contains(line, "RES C SSEQI");
-						continue;
-					}
-					
-					int modelNr = vI(12, 14);
-					if (modelNr == 0)
-						modelNr = 1;
-					string res = vS(16, 18);
-					char chain = vC(20);
-					int seq = vI(22, 25);
-					char iCode = vC(26);
-					
-					auto compound = libcif::Compound::create(res);
-					if (compound == nullptr)
-						continue;
-					
-					vector<string> atoms;
-					for (auto atom: compound->atoms())
-					{
-						if (atom.typeSymbol != libcif::H)
-							atoms.push_back(atom.id);
-					}
-					
-					mUnobs.push_back({modelNr, res, chain, seq, iCode, { atoms }});
-				}
-				
-				break;
-			}
-			
-			case 800:
-			{
-				const regex rx1(R"(SITE_IDENTIFIER: (.+))"),
-					rx2(R"(EVIDENCE_CODE: (.+))"),
-					rx3(R"(SITE_DESCRIPTION: (binding site for residue ([[:alnum:]]{1,3}) ([[:alnum:]]) (\d+)|.+))", regex_constants::icase);
-				
-				string id, evidence, desc;
-				string pdbxAuthAsymId, pdbxAuthCompId, pdbxAuthSeqId, pdbxAuthInsCode;
-				smatch m;
-				
-				enum State { sStart, sId, sEvidence, sDesc, sDesc2 } state = sStart;
-				
-				auto store = [&]()
-				{
-					// Find the matching SITE record
-					auto site = FindRecord([id](PDBRecord& r) -> bool
-					{
-						return r.is("SITE  ") and r.vS(12, 14) == id;
+					getCategory("exptl_crystal")->emplace({
+						{ "id", 1 },
+						{ "density_Matthews", iequals(density_Matthews, "NULL") ? "" : density_Matthews  },
+						{ "density_percent_sol", iequals(densityPercentSol, "NULL") ? "" : densityPercentSol },
+						{ "description", desc }
 					});
 					
-					if (site == nullptr)
-						throw runtime_error("Invalid REMARK 800, no SITE record for id " + id);
+					// now try to parse the conditions
+					const regex rx3(R"(TEMPERATURE +(\d+)K)"), rx4(R"(PH *(?:: *)?(\d+(?:\.\d+)?))")/*, rx5(R"(\b(\d+)C\b)")*/;
 					
-					// next record, store what we have	
-					getCategory("struct_site")->emplace({
-						{ "id", id },
-						{ "details", desc },
-						{ "pdbx_auth_asym_id", pdbxAuthAsymId },
-						{ "pdbx_auth_comp_id", pdbxAuthCompId },
-						{ "pdbx_auth_seq_id", pdbxAuthSeqId },
-						{ "pdbx_num_residues", site->vI(16, 17) },
-						{ "pdbx_evidence_code", evidence }
-					});
-				};
-
-				for ( ; mRec->is("REMARK 800"); GetNextRecord())
-				{
-					string s = mRec->vS(12);
-					if (s.empty())
-						continue;
-
-					switch (state)
+					string temp, ph, method;
+	
+					for (auto i = make_split_iterator(conditions, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not i.eof(); ++i)
 					{
-						case sStart:
- 							if (s == "SITE")
- 								state = sId;
-							else if (VERBOSE)
-								Error("Invalid REMARK 800 record, expected SITE");
- 							break;
-						
-						case sId:
-							if (regex_match(s, m, rx1))
+						string s(i->begin(), i->end());
+	
+						ba::trim(s);
+	
+						if (regex_search(s, m, rx3))
+							temp = m[1].str();
+						if (regex_search(s, m, rx4))
+							ph = m[1].str();
+						if (s.length() < 60 and
+							(ba::icontains(s, "drop") or ba::icontains(s, "vapor") or ba::icontains(s, "batch")))
+						{
+							if (not method.empty())
+								method = method + ", " + s;
+							else
+								method = s;
+						}
+					}
+					
+					if (not (method.empty() and temp.empty() and ph.empty() and (conditions.empty() or conditions == "NULL")))
+					{
+						getCategory("exptl_crystal_grow")->emplace({
+							{ "crystal_id", 1 },
+							{ "method", method },
+							{ "temp", temp },
+							{ "pH", ph },
+							{ "pdbx_details", conditions }
+						});
+					}
+	
+					break;
+				}
+				
+	//			case 290:
+	//				
+	//				break;
+				
+				case 350:
+					// postponed since we don't have the required information yet
+					for (; mRec->is("REMARK 350"); GetNextRecord())
+						;
+					break;
+				
+				case 400:
+				{
+					stringstream s;
+					GetNextRecord();
+					if (vS(12) == "COMPOUND")
+						GetNextRecord();
+					
+					while (mRec->is("REMARK 400"))
+					{
+						s << vS(12) << endl;
+						GetNextRecord();
+					}
+					
+					compoundDetails = s.str();
+					break;
+				}
+				
+				case 450:
+				{
+					stringstream s;
+					GetNextRecord();
+					if (vS(12) == "SOURCE")
+						GetNextRecord();
+					
+					while (mRec->is("REMARK 450"))
+					{
+						s << vS(12) << endl;
+						GetNextRecord();
+					}
+					
+					sourceDetails = s.str();
+					break;
+				}
+				
+				case 465:
+				{
+					bool headerSeen = false;
+					regex rx(R"( *MODELS *(\d+)-(\d+))");
+					int models[2] = { -1, -1 };
+					
+					for (; mRec->is("REMARK 465"); GetNextRecord())
+					{
+						if (not headerSeen)
+						{
+							string line = vS(12);
+							smatch m;
+	
+							if (regex_match(line, m, rx))
 							{
-								id = m[1].str();
-								state = sEvidence;
-							}
-							else if (VERBOSE)
-								Error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
-							break;
-						
-						case sEvidence:
-							if (regex_match(s, m, rx2))
-							{
-								evidence = m[1].str();
-								state = sDesc;
-							}
-							else if (VERBOSE)
-								Error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
-							break;
-						
-						case sDesc:
-							if (regex_match(s, m, rx3))
-							{
-								desc = m[1].str();
-								pdbxAuthCompId = m[2].str();
-								pdbxAuthAsymId = m[3].str();
-								pdbxAuthSeqId = m[4].str();
-
-								state = sDesc2;
-							}
-							break;
-						
-						case sDesc2:
-							if (regex_match(s, m, rx1))
-							{
-								store();
-								
-								id = m[1].str();
-								state = sEvidence;
-								evidence.clear();
-								desc.clear();
+								models[0] = stoi(m[1].str());
+								models[1] = stoi(m[2].str());
 							}
 							else
-								desc = desc + ' ' + s;
-							break;
+								headerSeen = ba::contains(line, "RES C SSSEQI");
+							continue;
+						}
+						
+						if (models[0] == models[1])
+							models[0] = models[1] = vI(12, 14);
+						
+						string res = vS(16, 18);
+						char chain = vC(20);
+						int seq = vI(22, 26);
+						char iCode = vC(27);
+						
+						for (int modelNr = models[0]; modelNr <= models[1]; ++modelNr)
+							mUnobs.push_back({modelNr, res, chain, seq, iCode});
 					}
-				}
-				
-				if (not id.empty())
-					store();
-
-				break;
-			}
-			
-			case 999:
-			{
-				stringstream s;
-				GetNextRecord();
-				if (vS(12) == "SEQUENCE")
-					GetNextRecord();
-				
-				while (mRec->is("REMARK 999"))
-				{
-					s << vS(12) << endl;
-					GetNextRecord();
-				}
-				
-				sequenceDetails = s.str();
-				break;
-			}
-
-			// these are skipped 
-
-			case 2:
-			case 290:
-			case 300:
-				GetNextRecord();
-				break;
-
-			default:
-			{
-				string skipped = mRec->mName;
-				
-				stringstream s;
-				
-				if (not mRec->vS(11).empty())
-					s << mRec->vS(11) << endl;
-				GetNextRecord();
 					
-				while (mRec->is(skipped.c_str()))
-				{
-					s << mRec->vS(11) << endl;
-					GetNextRecord();
+					break;
 				}
 				
-				getCategory("pdbx_database_remark")->emplace({
-					{ "id", remarkNr },
-					{ "text", s.str() }
-				});
+				case 470:
+				{
+					bool headerSeen = false;
+					regex rx(R"( *MODELS *(\d+)-(\d+))");
+					int models[2] = { -1, -1 };
+					
+					for (; mRec->is("REMARK 470"); GetNextRecord())
+					{
+						if (not headerSeen)
+						{
+							string line = vS(12);
+							smatch m;
+	
+							if (regex_match(line, m, rx))
+							{
+								models[0] = stoi(m[1].str());
+								models[1] = stoi(m[2].str());
+							}
+							else
+								headerSeen = ba::contains(line, "RES CSSEQI  ATOMS");
+							continue;
+						}
+						
+						if (models[0] == models[1])
+							models[0] = models[1] = vI(12, 14);
+						
+						string res = vS(16, 18);
+						char chain = vC(20);
+						int seq = vI(21, 24);
+						char iCode = vC(25);
+						
+						vector<string> atoms;
+						string atomStr = mRec->vS(29);
+						for (auto i = make_split_iterator(atomStr, ba::token_finder(ba::is_any_of(" "), ba::token_compress_on)); not i.eof(); ++i)
+							atoms.push_back({ i-> begin(), i->end() });
+						
+						for (int modelNr = models[0]; modelNr <= models[1]; ++modelNr)
+							mUnobs.push_back({modelNr, res, chain, seq, iCode, atoms});
+					}
+					
+					break;
+				}
 				
-				break;
+				case 500:
+				{
+					GetNextRecord();
+					
+					enum State { eStart, eCCinSAU, eCC, eCBL, eCBA, eTA, eCTg, ePG, eMCP, eChC } state = eStart;
+					bool headerSeen = false;
+					int id = 0;
+					
+					for (; mRec->is("REMARK 500"); GetNextRecord())
+					{
+						string line = vS(12);
+						
+						if (line == "GEOMETRY AND STEREOCHEMISTRY")
+							continue;
+						
+						switch (state)
+						{
+							case eStart:
+							{
+								if (line.empty() or not ba::starts_with(line, "SUBTOPIC: "))
+									continue;
+	
+								string subtopic = line.substr(10);
+	
+								if (subtopic == "CLOSE CONTACTS IN SAME ASYMMETRIC UNIT")	state = eCCinSAU;
+								else if (subtopic == "CLOSE CONTACTS")						state = eCC;
+								else if (subtopic == "COVALENT BOND LENGTHS")				state = eCBL;
+								else if (subtopic == "COVALENT BOND ANGLES")				state = eCBA;
+								else if (subtopic == "TORSION ANGLES")						state = eTA;
+								else if (subtopic == "NON-CIS, NON-TRANS")					state = eCTg;
+								else if (subtopic == "PLANAR GROUPS")						state = ePG;
+								else if (subtopic == "MAIN CHAIN PLANARITY")				state = eMCP;
+								else if (subtopic == "CHIRAL CENTERS")						state = eChC;
+								else if (VERBOSE)
+									throw runtime_error("Unknown subtopic in REMARK 500: " + subtopic);
+								
+								headerSeen = false;
+								id = 0;
+								break;
+							}
+							
+							case eCCinSAU:
+							{
+								if (not headerSeen)
+									headerSeen =
+										line == "ATM1  RES C  SSEQI   ATM2  RES C  SSEQI           DISTANCE";
+								else if (line.empty())
+									state = eStart;
+								else
+								{
+									string atom1 = vS(13, 16);
+									string res1 = vS(19, 21);
+									string alt1 = vS(17, 17);
+									char chain1 = vC(23);
+									int seq1 = vI(25, 29);
+									string iCode1 = vS(30, 30);
+									
+									string atom2 = vS(34, 37);
+									string alt2 = vS(38, 38);
+									string res2 = vS(40, 42);
+									char chain2 = vC(44);
+									int seq2 = vI(46, 50);
+									string iCode2 = vS(51, 51);
+									
+									string distance = vF(63, 71);
+									
+									getCategory("pdbx_validate_close_contact")->emplace({
+										{ "id",				to_string(++id) },
+										{ "PDB_model_num",	1 },
+										{ "auth_atom_id_1",	atom1 },
+										{ "auth_asym_id_1", string{ chain1 } },
+										{ "auth_comp_id_1", res1 },
+										{ "auth_seq_id_1",	seq1 },
+										{ "PDB_ins_code_1", iCode1 },
+										{ "label_alt_id_1", alt1 },
+										{ "auth_atom_id_2",	atom2 },
+										{ "auth_asym_id_2", string { chain2 } },
+										{ "auth_comp_id_2", res2 },
+										{ "auth_seq_id_2",	seq2 },
+										{ "PDB_ins_code_2", iCode2 },
+										{ "label_alt_id_2", alt2 },
+										{ "dist", distance }
+									});
+								}
+								break;
+							}
+							
+							case eCC:
+							{
+								if (not headerSeen)
+									headerSeen = line == "ATM1  RES C  SSEQI   ATM2  RES C  SSEQI  SSYMOP   DISTANCE";
+								else if (line.empty())
+									state = eStart;
+								else
+								{
+									string atom1 = vS(13, 16);
+									string res1 = vS(19, 21);
+									char chain1 = vC(23);
+									int seq1 = vI(25, 29);
+									
+									string atom2 = vS(34, 37);
+									string res2 = vS(40, 42);
+									char chain2 = vC(44);
+									int seq2 = vI(46, 50);
+									
+									string symop = pdb2cifSymmetry(vS(54, 59));
+									
+									string distance = vF(63, 71);
+									
+									getCategory("pdbx_validate_symm_contact")->emplace({
+										{ "id",				to_string(++id) },
+										{ "PDB_model_num",	1 },
+										{ "auth_atom_id_1",	atom1 },
+										{ "auth_asym_id_1", string{ chain1 } },
+										{ "auth_comp_id_1", res1 },
+										{ "auth_seq_id_1",	seq1 },
+	//									{ "PDB_ins_code_1", "" },
+	//									{ "label_alt_id_1", "" },
+										{ "site_symmetry_1", "1_555" },
+										{ "auth_atom_id_2",	atom2 },
+										{ "auth_asym_id_2", string { chain2 } },
+										{ "auth_comp_id_2", res2 },
+										{ "auth_seq_id_2",	seq2 },
+	//									{ "PDB_ins_code_2", "" },
+	//									{ "label_alt_id_2", "" },
+										{ "site_symmetry_2", symop },
+										{ "dist", distance }
+									});
+								}
+								break;
+							}
+							
+							case eCBL:
+							{
+								if (not headerSeen)
+								{
+									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,2(A3,1X,A1,I4,A1,1X,A4,3X),1X,F6.3)")
+										throw runtime_error("Unexpected format in REMARK 500");
+									
+									headerSeen = line == "M RES CSSEQI ATM1   RES CSSEQI ATM2   DEVIATION";
+								}
+								else if (line.empty())
+									state = eStart;
+								else
+								{
+									int model = vI(11, 13);
+									string resNam1 = vS(15, 17);
+									string chainID1 { vC(19) };
+									int seqNum1 = vI(20, 23);
+									string iCode1 { vC(24) };
+									string alt1 = vS(30, 30);
+									string atm1 = vS(26, 29);
+	
+									string resNam2 = vS(33, 35);
+									string chainID2 { vC(37) };
+									int seqNum2 = vI(38, 41);
+									string iCode2 { vC(42) };
+									string alt2 = vS(48, 48);
+									string atm2 = vS(44, 47);
+									
+									string deviation = vF(51, 57);
+									
+									if (iCode1 == " ") iCode1.clear();
+									if (iCode2 == " ") iCode2.clear();
+									
+									getCategory("pdbx_validate_rmsd_bond")->emplace({
+										{ "id",				to_string(++id) },
+										{ "PDB_model_num",	model ? model : 1 },
+										{ "auth_atom_id_1",	atm1 },
+										{ "auth_asym_id_1", chainID1 },
+										{ "auth_comp_id_1", resNam1 },
+										{ "auth_seq_id_1",	seqNum1 },
+										{ "PDB_ins_code_1",	iCode1 },
+										{ "label_alt_id_1", alt1 },
+										{ "auth_atom_id_2",	atm2 },
+										{ "auth_asym_id_2", chainID2 },
+										{ "auth_comp_id_2", resNam2 },
+										{ "auth_seq_id_2",	seqNum2 },
+										{ "PDB_ins_code_2",	iCode2 },
+										{ "label_alt_id_2", alt2 },
+										{ "bond_deviation",deviation }
+									});
+								}
+								
+								break;
+							}
+							
+							case eCBA:
+								if (not headerSeen)
+								{
+									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,A3,1X,A1,I4,A1,3(1X,A4,2X),12X,F5.1)")
+										throw runtime_error("Unexpected format in REMARK 500");
+									
+									headerSeen = line == "M RES CSSEQI ATM1   ATM2   ATM3";
+								}
+								else if (line.empty())
+									state = eStart;
+								else if (vS(64) == "DEGREES")
+								{
+									int model = vI(11, 13);
+									string resNam = vS(15, 17);
+									string chainID { vC(19) };
+									int seqNum = vI(20, 23);
+									string iCode { vC(24) };
+									
+									if (iCode == " ")
+										iCode.clear();
+									
+									string atoms[3] = { vS(27, 30), vS(34, 37), vS(41, 44) };
+									string deviation = vF(57, 62);
+									if (deviation == "*****")
+										deviation.clear();
+									
+									getCategory("pdbx_validate_rmsd_angle")->emplace({
+										{ "id",				to_string(++id) },
+										{ "PDB_model_num",	model ? model : 1 },
+										{ "auth_atom_id_1",	atoms[0] },
+										{ "auth_asym_id_1", chainID },
+										{ "auth_comp_id_1", resNam },
+										{ "auth_seq_id_1",	seqNum },
+										{ "PDB_ins_code_1",	iCode },
+										{ "auth_atom_id_2",	atoms[1] },
+										{ "auth_asym_id_2", chainID },
+										{ "auth_comp_id_2", resNam },
+										{ "auth_seq_id_2",	seqNum },
+										{ "PDB_ins_code_2",	iCode },
+										{ "auth_atom_id_3",	atoms[2] },
+										{ "auth_asym_id_3", chainID },
+										{ "auth_comp_id_3", resNam },
+										{ "auth_seq_id_3",	seqNum },
+										{ "PDB_ins_code_3",	iCode },
+										{ "angle_deviation",deviation }
+									});
+								}
+								
+								break;
+							
+							case eTA:
+								if (not headerSeen)
+								{
+									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT:(10X,I3,1X,A3,1X,A1,I4,A1,4X,F7.2,3X,F7.2)")
+										throw runtime_error("Unexpected format in REMARK 500");
+									
+									headerSeen = line == "M RES CSSEQI        PSI       PHI";
+								}
+								else if (line.empty())
+									state = eStart;
+								else
+								{
+									int model = vI(11, 13);
+									string resNam = vS(15, 17);
+									string chainID { vC(19) };
+									int seqNum = vI(20, 23);
+									string iCode { vC(24) };
+									
+									if (iCode == " ")
+										iCode.clear();
+									
+									string psi = vF(27, 35);
+									string phi = vF(37, 45);
+									
+									getCategory("pdbx_validate_torsion")->emplace({
+										{ "id",				to_string(++id) },
+										{ "PDB_model_num",	model ? model : 1 },
+										{ "auth_comp_id", 	resNam },
+										{ "auth_asym_id", 	chainID },
+										{ "auth_seq_id",	seqNum },
+										{ "PDB_ins_code",	iCode },
+										{ "phi",			phi },
+										{ "psi",			psi }
+									});
+								}
+								break;
+							
+							case eCTg:
+								if (not headerSeen)
+									headerSeen = line == "MODEL     OMEGA";
+								else if (line.empty())
+									state = eStart;
+								else
+								{
+									int model = vI(45, 48);
+	
+									string resNam1 = vS(12, 14);
+									string chainID1 { vC(16) };
+									int seqNum1 = vI(17, 21);
+									string iCode1 { vC(22) };
+									
+									if (iCode1 == " ")
+										iCode1.clear();
+									
+									string resNam2 = vS(27, 29);
+									string chainID2 { vC(31) };
+									int seqNum2 = vI(32, 36);
+									string iCode2 { vC(37) };
+									
+									if (iCode2 == " ")
+										iCode2.clear();
+									
+									string omega = vF(54, 60);
+									
+									getCategory("pdbx_validate_peptide_omega")->emplace({
+										{ "id",				to_string(++id) },
+										{ "PDB_model_num",	model ? model : 1 },
+										{ "auth_comp_id_1",	resNam1 },
+										{ "auth_asym_id_1",	chainID1 },
+										{ "auth_seq_id_1",	seqNum1 },
+										{ "PDB_ins_code_1",	iCode1 },
+										{ "auth_comp_id_2",	resNam2 },
+										{ "auth_asym_id_2",	chainID2 },
+										{ "auth_seq_id_2",	seqNum2 },
+										{ "PDB_ins_code_2",	iCode2 },
+										{ "omega",			omega }
+									});
+								}
+								break;
+							
+							case ePG:
+								if (not headerSeen)
+									headerSeen = line == "M RES CSSEQI        RMS     TYPE";
+								else if (line.empty())
+									state = eStart;
+								else
+								{
+									int model = vI(11, 13);
+									string resNam = vS(15, 17);
+									string chainID { vC(19) };
+									int seqNum = vI(20, 23);
+									string iCode { vC(24) };
+									
+									if (iCode == " ")
+										iCode.clear();
+									
+									string rmsd = vF(32, 36);
+									string type = vS(41);
+									
+									getCategory("pdbx_validate_planes")->emplace({
+										{ "id",				to_string(++id) },
+										{ "PDB_model_num",	model ? model : 1 },
+										{ "auth_comp_id",	resNam },
+										{ "auth_asym_id",	chainID },
+										{ "auth_seq_id",	seqNum },
+										{ "PDB_ins_code",	iCode },
+										{ "rmsd",			rmsd },
+										{ "type",			type }
+									});
+								}
+								break;
+							
+							
+							default:
+								state = eStart;
+								break;
+						}
+					}
+					
+					break;
+				}
+				
+				case 610:
+				{
+					bool headerSeen = false;
+					
+					for (; mRec->is("REMARK 610"); GetNextRecord())
+					{
+						if (not headerSeen)
+						{
+							string line = vS(12);
+							headerSeen = ba::contains(line, "RES C SSEQI");
+							continue;
+						}
+						
+						int modelNr = vI(12, 14);
+						if (modelNr == 0)
+							modelNr = 1;
+						string res = vS(16, 18);
+						char chain = vC(20);
+						int seq = vI(22, 25);
+						char iCode = vC(26);
+						
+						auto compound = libcif::Compound::create(res);
+						if (compound == nullptr)
+							continue;
+						
+						vector<string> atoms;
+						for (auto atom: compound->atoms())
+						{
+							if (atom.typeSymbol != libcif::H)
+								atoms.push_back(atom.id);
+						}
+						
+						mUnobs.push_back({modelNr, res, chain, seq, iCode, { atoms }});
+					}
+					
+					break;
+				}
+				
+				case 800:
+				{
+					const regex rx1(R"(SITE_IDENTIFIER: (.+))"),
+						rx2(R"(EVIDENCE_CODE: (.+))"),
+						rx3(R"(SITE_DESCRIPTION: (binding site for residue ([[:alnum:]]{1,3}) ([[:alnum:]]) (\d+)|.+))", regex_constants::icase);
+					
+					string id, evidence, desc;
+					string pdbxAuthAsymId, pdbxAuthCompId, pdbxAuthSeqId, pdbxAuthInsCode;
+					smatch m;
+					
+					enum State { sStart, sId, sEvidence, sDesc, sDesc2 } state = sStart;
+					
+					auto store = [&]()
+					{
+						// Find the matching SITE record
+						auto site = FindRecord([id](PDBRecord& r) -> bool
+						{
+							return r.is("SITE  ") and r.vS(12, 14) == id;
+						});
+						
+						if (site == nullptr)
+							throw runtime_error("Invalid REMARK 800, no SITE record for id " + id);
+						
+						// next record, store what we have	
+						getCategory("struct_site")->emplace({
+							{ "id", id },
+							{ "details", desc },
+							{ "pdbx_auth_asym_id", pdbxAuthAsymId },
+							{ "pdbx_auth_comp_id", pdbxAuthCompId },
+							{ "pdbx_auth_seq_id", pdbxAuthSeqId },
+							{ "pdbx_num_residues", site->vI(16, 17) },
+							{ "pdbx_evidence_code", evidence }
+						});
+					};
+	
+					for ( ; mRec->is("REMARK 800"); GetNextRecord())
+					{
+						string s = mRec->vS(12);
+						if (s.empty())
+							continue;
+	
+						switch (state)
+						{
+							case sStart:
+	 							if (s == "SITE")
+	 								state = sId;
+								else if (VERBOSE)
+									throw runtime_error("Invalid REMARK 800 record, expected SITE");
+	 							break;
+							
+							case sId:
+								if (regex_match(s, m, rx1))
+								{
+									id = m[1].str();
+									state = sEvidence;
+								}
+								else if (VERBOSE)
+									throw runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
+								break;
+							
+							case sEvidence:
+								if (regex_match(s, m, rx2))
+								{
+									evidence = m[1].str();
+									state = sDesc;
+								}
+								else if (VERBOSE)
+									throw runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
+								break;
+							
+							case sDesc:
+								if (regex_match(s, m, rx3))
+								{
+									desc = m[1].str();
+									pdbxAuthCompId = m[2].str();
+									pdbxAuthAsymId = m[3].str();
+									pdbxAuthSeqId = m[4].str();
+	
+									state = sDesc2;
+								}
+								break;
+							
+							case sDesc2:
+								if (regex_match(s, m, rx1))
+								{
+									store();
+									
+									id = m[1].str();
+									state = sEvidence;
+									evidence.clear();
+									desc.clear();
+								}
+								else
+									desc = desc + ' ' + s;
+								break;
+						}
+					}
+					
+					if (not id.empty())
+						store();
+	
+					break;
+				}
+				
+				case 999:
+				{
+					stringstream s;
+					GetNextRecord();
+					if (vS(12) == "SEQUENCE")
+						GetNextRecord();
+					
+					while (mRec->is("REMARK 999"))
+					{
+						s << vS(12) << endl;
+						GetNextRecord();
+					}
+					
+					sequenceDetails = s.str();
+					break;
+				}
+	
+				// these are skipped 
+	
+				case 2:
+				case 290:
+				case 300:
+					GetNextRecord();
+					break;
+	
+				default:
+				{
+					string skipped = mRec->mName;
+					
+					stringstream s;
+					
+					if (not mRec->vS(11).empty())
+						s << mRec->vS(11) << endl;
+					GetNextRecord();
+						
+					while (mRec->is(skipped.c_str()))
+					{
+						s << mRec->vS(11) << endl;
+						GetNextRecord();
+					}
+					
+					getCategory("pdbx_database_remark")->emplace({
+						{ "id", remarkNr },
+						{ "text", s.str() }
+					});
+					
+					break;
+				}
 			}
+		}
+		catch (const exception& ex)
+		{
+			throw_with_nested(runtime_error("Error parsing REMARK " + to_string(remarkNr)));
 		}
 	}
 
@@ -2566,11 +2608,24 @@ void PDBFileParser::ParseRemark200()
 			{ "crystal_id", 1 }
 		});
 		
+		string collectionDate;
+		boost::system::error_code ec;
+		collectionDate = pdb2cifDate(rm200("DATE OF DATA COLLECTION", diffrnNr), ec);
+		if (ec)
+		{
+			if (VERBOSE)
+				cerr << ec.message() << " for pdbx_collection_date" << endl;
+			
+			// The date field can become truncated when multiple values are available		
+			if (diffrnNr != 1)
+				collectionDate.clear();
+		}
+				
 		getCategory("diffrn_detector")->emplace({
 			{ "diffrn_id", diffrnNr },
 			{ "detector", rm200("DETECTOR TYPE", diffrnNr) },
 			{ "type", rm200("DETECTOR MANUFACTURER", diffrnNr) },
-			{ "pdbx_collection_date", pdb2cifDate(rm200("DATE OF DATA COLLECTION", diffrnNr)) },
+			{ "pdbx_collection_date", collectionDate },
 			{ "details", rm200("OPTICS", diffrnNr) }
 		});
 		
@@ -2586,7 +2641,7 @@ void PDBFileParser::ParseRemark200()
 
 		vector<string> wavelengths;
 		string wl = rm200("WAVELENGTH OR RANGE (A)", diffrnNr);
-		ba::split(wavelengths, wl, ba::is_any_of(", "), ba::token_compress_on);
+		ba::split(wavelengths, wl, ba::is_any_of(", -"), ba::token_compress_on);
 		
 		diffrnWaveLengths.insert(wavelengths.begin(), wavelengths.end());
 
@@ -2997,7 +3052,7 @@ void PDBFileParser::ParsePrimaryStructure()
 		else if (mRec->is("DBREF2"))					//	 1 -  6       Record name   "DBREF2"                                        
 		{                                               //	 8 - 11       IDcode        idCode        ID code of this datablock.            
 			if (vC(13) != cur.chainID)			        //	13            Character     chainID       Chain identifier.                 
-				Error("Chain ID's for DBREF1/DBREF2 records do not match");
+				throw runtime_error("Chain ID's for DBREF1/DBREF2 records do not match");
 			cur.dbAccession				= vS(19, 40);  //	19 - 40       LString       dbAccession   Sequence database accession code, 
                                                         //	                                          left justified.                   
 			cur.dbSeqBegin				= vI(46, 55);  //	46 - 55       Integer       seqBegin      Initial sequence number of the    
@@ -3096,25 +3151,32 @@ void PDBFileParser::ParseHeterogen()
 		GetNextRecord();
 	}
 	
-	while (mRec->is("HETNAM"))		//	 1 -  6       Record name   "HETNAM"                                                 
-	{								//	 9 - 10       Continuation  continuation    Allows concatenation of multiple records.
-		string hetID = vS(12, 14);	//	12 - 14       LString(3)    hetID           Het identifier, right-justified.         
-        string text = vS(16);		//	16 - 70       String        text            Chemical name.                           
-
-		mHetnams[hetID] = text;
-		InsertChemComp(hetID);
+	for (;;)
+	{
+		if (mRec->is("HETNAM"))		//	 1 -  6       Record name   "HETNAM"                                                 
+		{								//	 9 - 10       Continuation  continuation    Allows concatenation of multiple records.
+			string hetID = vS(12, 14);	//	12 - 14       LString(3)    hetID           Het identifier, right-justified.         
+	        string text = vS(16);		//	16 - 70       String        text            Chemical name.                           
+	
+			mHetnams[hetID] = text;
+			InsertChemComp(hetID);
+			
+			GetNextRecord();
+			continue;
+		}
+	
+		if (mRec->is("HETSYN"))		 //	 1 -  6       Record name   "HETSYN"                                                           
+		{                                //	 9 - 10       Continuation  continuation   Allows concatenation of multiple records.           
+	         string hetID = vS(12, 14); //	12 - 14       LString(3)    hetID          Het identifier, right-justified.                    
+	         string syn = vS(16);		 //	16 - 70       SList         hetSynonyms    List of synonyms.                                   
+	
+			mHetsyns[hetID] = syn;
+	
+			GetNextRecord();
+			continue;
+		}
 		
-		GetNextRecord();
-	}
-
-	while (mRec->is("HETSYN"))		 //	 1 -  6       Record name   "HETSYN"                                                           
-	{                                //	 9 - 10       Continuation  continuation   Allows concatenation of multiple records.           
-         string hetID = vS(12, 14); //	12 - 14       LString(3)    hetID          Het identifier, right-justified.                    
-         string syn = vS(16);		 //	16 - 70       SList         hetSynonyms    List of synonyms.                                   
-
-		mHetsyns[hetID] = syn;
-
-		GetNextRecord();
+		break;
 	}
 	
 	while (mRec->is("FORMUL"))			//	 1 -  6        Record name   "FORMUL"                          
@@ -3145,7 +3207,7 @@ void PDBFileParser::ConstructEntities()
 	{
 		if (r->is("MODEL "))
 		{
-			modelNr = vI(11, 14);
+			modelNr = r->vI(11, 14);
 			continue;
 		}
 
@@ -3245,6 +3307,8 @@ void PDBFileParser::ConstructEntities()
 		}
 	}
 
+	set<char> terminatedChains;
+
 	for (auto r = mData; r != nullptr; r = r->mNext)
 	{
 		if (r->is("ATOM  ") or r->is("HETATM"))
@@ -3295,7 +3359,8 @@ void PDBFileParser::ConstructEntities()
 				}
 			}
 			
-			if (r->is("HETATM"))
+			// There appears to be a program that writes out HETATM records as ATOM records....
+			if (r->is("HETATM") or terminatedChains.count(chainID))
 			{
 				if (isWater(resName))
 					mWaterHetId = resName;
@@ -3316,6 +3381,12 @@ void PDBFileParser::ConstructEntities()
 			}
 
 			continue;
+		}
+
+		if (r->is("TER   "))
+		{
+			char chainID		= r->vC(22);		//	22             Character     chainID      Chain identifier.
+			terminatedChains.insert(chainID);
 		}
 	}
 
@@ -3371,32 +3442,38 @@ void PDBFileParser::ConstructEntities()
 		int seqNr = 1;
 		for (auto& res: chain.mSeqres)
 		{
-			string authMonId, authSeqNum;
-			if (res.mSeen)
-			{
-				authMonId = res.mMonId;
-				authSeqNum = to_string(res.mSeqNum);
-			}
-
 			mChainSeq2AsymSeq[make_tuple(chain.mDbref.chainID, res.mSeqNum, res.mIcode)] = make_tuple(asymId, seqNr, true);
 			
 			string seqId = to_string(seqNr);
 			++seqNr;
 			
-			cat->emplace({
-				{ "asym_id", asymId },
-				{ "entity_id", mMolID2EntityID[chain.mMolId] },
-				{ "seq_id", seqId },
-				{ "mon_id", res.mMonId },
-				{ "ndb_seq_num", seqId },
-				{ "pdb_seq_num", res.mSeqNum },
-				{ "auth_seq_num", authSeqNum },
-				{ "pdb_mon_id", authMonId },
-				{ "auth_mon_id", authMonId },
-				{ "pdb_strand_id", string{chain.mDbref.chainID} },
-				{ "pdb_ins_code", (res.mIcode == ' ' or res.mIcode == 0) ? "." : string{res.mIcode} },
-				{ "hetero", res.mAlts.empty() ? "n" : "y" }
-			});
+			set<string> monIds = { res.mMonId };
+			monIds.insert(res.mAlts.begin(), res.mAlts.end());
+			
+			for (string monId: monIds)
+			{
+				string authMonId, authSeqNum;
+				if (res.mSeen)
+				{
+					authMonId = monId;
+					authSeqNum = to_string(res.mSeqNum);
+				}
+
+				cat->emplace({
+					{ "asym_id", asymId },
+					{ "entity_id", mMolID2EntityID[chain.mMolId] },
+					{ "seq_id", seqId },
+					{ "mon_id", monId },
+					{ "ndb_seq_num", seqId },
+					{ "pdb_seq_num", res.mSeqNum },
+					{ "auth_seq_num", authSeqNum },
+					{ "pdb_mon_id", authMonId },
+					{ "auth_mon_id", authMonId },
+					{ "pdb_strand_id", string{chain.mDbref.chainID} },
+					{ "pdb_ins_code", (res.mIcode == ' ' or res.mIcode == 0) ? "." : string{res.mIcode} },
+					{ "hetero", res.mAlts.empty() ? "n" : "y" }
+				});
+			}
 		}
 	}
 	
@@ -3431,9 +3508,12 @@ void PDBFileParser::ConstructEntities()
 				{ "gene_src_common_name", cmp.mSource["ORGANISM_COMMON"] },
 				{ "pdbx_gene_src_gene", cmp.mSource["GENE"] },
 				{ "gene_src_strain", cmp.mSource["STRAIN"] },
+				{ "gene_src_tissue", cmp.mSource["TISSUE"] },
+				{ "gene_src_tissue_fraction", cmp.mSource["TISSUE_FRACTION"] },
 				{ "pdbx_gene_src_cell_line", cmp.mSource["CELL_LINE"] },
 				{ "pdbx_gene_src_organelle", cmp.mSource["ORGANELLE"] },
 				{ "pdbx_gene_src_cellular_location", cmp.mSource["CELLULAR_LOCATION"] },
+				{ "host_org_common_name", cmp.mSource["EXPRESSION_SYSTEM_COMMON"] },
 				{ "pdbx_gene_src_scientific_name", cmp.mSource["ORGANISM_SCIENTIFIC"] },
 				{ "pdbx_gene_src_ncbi_taxonomy_id", cmp.mSource["ORGANISM_TAXID"] },
 				{ "pdbx_host_org_scientific_name", cmp.mSource["EXPRESSION_SYSTEM"] },
@@ -4613,9 +4693,21 @@ void PDBFileParser::ParseCrystallographic()
 		{ "Z_PDB", vF(67, 70) }                //	67 - 70       Integer       z              Z value.           
 	});
 	
+	string spageGroup, intTablesNr;
+	try
+	{
+		spageGroup = vS(56, 66);
+		clipper::Spacegroup sg(clipper::Spgr_descr{spageGroup});
+		intTablesNr = to_string(sg.spacegroup_number());
+	}
+	catch (...)
+	{
+	}
+
 	getCategory("symmetry")->emplace({
 		{ "entry_id", mStructureId },
-		{ "space_group_name_H-M", vS(56, 66) }
+		{ "space_group_name_H-M", spageGroup },
+		{ "Int_Tables_number", intTablesNr }
 	});
 
 	GetNextRecord();
@@ -4901,7 +4993,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			int u23 = vI(64, 70);				//	64 - 70       Integer       u[1][2]        U(2,3)
 			
 			if (vS(7, 11) + vS(77, 80) != check)
-				Error("ANISOU record should follow corresponding ATOM record");
+				throw runtime_error("ANISOU record should follow corresponding ATOM record");
 			
 			auto f = [](float f) -> string { return (boost::format("%6.4f") % f).str(); };
 			
@@ -4912,7 +5004,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 				{ "pdbx_label_alt_id", altLoc != ' ' ? string { altLoc } : "." },
 				{ "pdbx_label_comp_id", resName },
 				{ "pdbx_label_asym_id", asymId },
-				{ "pdbx_label_seq_id", seqId },
+				{ "pdbx_label_seq_id", (isResseq and seqId > 0) ? to_string(seqId) : "." },
 				{ "U[1][1]", f(u11 / 10000.f) },
 				{ "U[2][2]", f(u22 / 10000.f) },
 				{ "U[3][3]", f(u33 / 10000.f) },
@@ -5028,11 +5120,8 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 		}
 		catch (const exception& ex)
 		{
-			cerr << "Error parsing REMARK 3: " << endl
-				 << ex.what() << endl;
+			throw_with_nested(runtime_error("Error parsing REMARK 3"));
 		}
-//		
-//		
 //		
 //		auto cat = getCategory("pdbx_refine_tls_group");
 //		for (Row r: *cat)
@@ -5062,7 +5151,10 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 	}
 	catch (const exception& ex)
 	{
-		Error(ex.what());
+		if (mRec != nullptr)
+			throw_with_nested(runtime_error("Error parsing PDB at line " + to_string(mRec->mLineNr)));
+		else
+			throw;
 	}
 }
 
@@ -5175,36 +5267,75 @@ void PDBFileParser::PDBChain::AlignResToSeqRes()
 	x = highX;
 	y = highY;
 	
-	while (x >= 0 and y >= 0)
+	try
 	{
-		switch (tb(x, y))
+		while (x >= 0 and y >= 0)
 		{
-			case -1:
-				throw runtime_error("A residue found in the ATOM records (" + ry[y].mMonId + 
-					" @ " + string{mDbref.chainID} + ":" + to_string(ry[y].mSeqNum) +
-					") was not found in the SEQRES records");
-				--y;
-				break;
-			
-			case 1:
-				if (VERBOSE > 3)
-					cerr << "Missing residue in ATOM records: " << rx[x].mMonId << " at " << rx[x].mSeqNum << endl;
-
-				--x;
-				break;
-			
-			case 0:
-				if (VERBOSE > 3 and rx[x].mMonId != ry[y].mMonId)
-					cerr << "Warning, unaligned residues at " << x << "/" << y << "(" << rx[x].mMonId << '/' << ry[y].mMonId << ')' << endl;
-				else if (VERBOSE > 4)
-					cerr << rx[x].mMonId << " -> " << ry[y].mMonId << " (" << ry[y].mSeqNum << ')' << endl;
-
-				rx[x].mSeqNum = ry[y].mSeqNum;
-				rx[x].mIcode = ry[y].mIcode;
-
-				--x;
-				--y;
+			switch (tb(x, y))
+			{
+				case -1:
+					throw runtime_error("A residue found in the ATOM records (" + ry[y].mMonId + 
+						" @ " + string{mDbref.chainID} + ":" + to_string(ry[y].mSeqNum) +
+						((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : string{ ry[y].mIcode })+
+						") was not found in the SEQRES records");
+					--y;
+					break;
+				
+				case 1:
+					if (VERBOSE > 3)
+						cerr << "Missing residue in ATOM records: " << rx[x].mMonId << " at " << rx[x].mSeqNum << endl;
+	
+					--x;
+					break;
+				
+				case 0:
+					if (VERBOSE > 3 and rx[x].mMonId != ry[y].mMonId)
+						cerr << "Warning, unaligned residues at " << x << "/" << y << "(" << rx[x].mMonId << '/' << ry[y].mMonId << ')' << endl;
+					else if (VERBOSE > 4)
+						cerr << rx[x].mMonId << " -> " << ry[y].mMonId << " (" << ry[y].mSeqNum << ')' << endl;
+	
+					rx[x].mSeqNum = ry[y].mSeqNum;
+					rx[x].mIcode = ry[y].mIcode;
+	
+					--x;
+					--y;
+			}
 		}
+	}
+	catch (const exception& ex)
+	{
+		if (VERBOSE)
+		{
+			std::vector<pair<string,string>> alignment;
+			
+			for (x = highX, y = highY; x >= 0 and y >= 0; )
+			{
+				switch (tb(x, y))
+				{
+					case -1:
+						alignment.push_back(make_pair("...", ry[y].mMonId));
+						--y;
+						break;
+					
+					case 1:
+						alignment.push_back(make_pair(rx[x].mMonId, "..."));
+						--x;
+						break;
+					
+					case 0:
+						alignment.push_back(make_pair(rx[x].mMonId, ry[y].mMonId));
+						--x;
+						--y;
+						break;
+				}
+			}
+			
+			reverse(alignment.begin(), alignment.end());
+			for (auto a: alignment)
+				cerr << "  " << a.first << " -- " << a.second << endl;
+		}
+		
+		throw;
 	}
 	
 	// assign numbers to the residues that don't have them yet
@@ -5248,15 +5379,7 @@ void ReadPDBFile(istream& pdbFile, cif::File& cifFile)
 
 	cifFile.loadDictionary("mmcif_pdbx");
 
-	try
-	{
-		p.Parse(pdbFile, cifFile);
-	}
-	catch (const exception& ex)
-	{
-		cerr << "Error parsing PDB file" << endl;
-		throw;
-	}
+	p.Parse(pdbFile, cifFile);
 	
 	cifFile.validate();
 }

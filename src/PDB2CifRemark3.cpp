@@ -978,7 +978,10 @@ float Remark3Parser::parse()
 	}
 
 	if (not remarks.empty() and not iequals(remarks, "NULL"))
-		mDb["refine"].front()["details"] = remarks;
+	{
+		if (not mDb["refine"].empty())
+			mDb["refine"].front()["details"] = remarks;
+	}
 
 	float score = float(lineCount - dropped) / lineCount;
 
