@@ -1020,7 +1020,7 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 		string value = mM[capture].str();
 		ba::trim(value);
 
-		if (iequals(value, "NULL") or iequals(value, "NONE"))
+		if (iequals(value, "NULL") or iequals(value, "NONE") or iequals(value, "******"))
 			continue;
 
 		if (VERBOSE >= 3)
@@ -1120,7 +1120,7 @@ void Remark3Parser::storeRefineLsRestr(const char* type, initializer_list<const 
 
 		string value = mM[capture].str();
 		ba::trim(value);
-		if (value.empty() or iequals(value, "NULL"))
+		if (value.empty() or iequals(value, "NULL") or iequals(value, "******"))
 			continue;
 
 		if (not r)
@@ -1151,7 +1151,7 @@ void Remark3Parser::updateRefineLsRestr(const char* type, initializer_list<const
 
 				string value = mM[capture].str();
 				ba::trim(value);
-				if (iequals(value, "NULL"))
+				if (iequals(value, "NULL") or iequals(value, "******"))
 					value.clear();
 
 				r[item] = value;
