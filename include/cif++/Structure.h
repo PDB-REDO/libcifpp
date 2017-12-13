@@ -7,6 +7,8 @@
 
 #include <boost/any.hpp>
 
+#include <clipper/core/coords.h>
+
 #include "cif++/AtomType.h"
 #include "cif++/Point.h"
 #include "cif++/Compound.h"
@@ -113,6 +115,9 @@ class Atom
 	bool operator==(const Atom& rhs) const;
 
 	const File& getFile() const;
+	
+	// get clipper format Atom
+	clipper::Atom toClipper() const;
 
   private:
  	struct AtomImpl*			mImpl;

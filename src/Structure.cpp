@@ -178,6 +178,53 @@ struct AtomImpl
 		}
 		catch (...) {}
 	}
+	
+	clipper::Atom toClipper() const
+	{
+		clipper::Atom result;
+		result.set_coord_orth(mLocation);
+		
+		if (mRow["occupancy"].empty())
+			result.set_occupancy(1.0);
+		else
+			result.set_occupancy(mRow["occupancy"].as<float>());
+		
+		string element = mRow["type_symbol"].as<string>();
+		if (not mRow["pdbx_formal_charge"].empty())
+		{
+			int charge = mRow["pdbx_formal_charge"].as<int>();
+			if (abs(charge > 1))
+				element += to_string(charge);
+			if (charge < 0)
+				element += '-';
+			else
+				element += '+';
+		}
+		result.set_element(element);
+		
+		if (not mRow["U_iso_or_equiv"].empty())
+			result.set_u_iso(mRow["U_iso_or_equiv"].as<float>());
+		else if (not mRow["B_iso_or_equiv"].empty())
+			result.set_u_iso(mRow["B_iso_or_equiv"].as<float>() / (8 * kPI * kPI));
+		else
+			throw runtime_error("Missing B_iso or U_iso");	
+		
+		auto& db = *mFile.impl().mDb;
+		auto& cat = db["atom_site_anisotrop"];
+		auto r = cat[cif::Key("id") == mId];
+		if (r.empty())
+			result.set_u_aniso_orth(clipper::U_aniso_orth(nan("0"), 0, 0, 0, 0, 0));
+		else
+		{
+			float u11, u12, u13, u22, u23, u33;
+			cif::tie(u11, u12, u13, u22, u23, u33) =
+				r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
+			
+			result.set_u_aniso_orth(clipper::U_aniso_orth(u11, u12, u13, u22, u23, u33));
+		}
+		
+		return result;
+	}
 
 	void reference()
 	{
@@ -358,6 +405,11 @@ const File& Atom::getFile() const
 {
 	assert(mImpl);
 	return mImpl->mFile;
+}
+
+clipper::Atom Atom::toClipper() const
+{
+	return mImpl->toClipper();
 }
 
 // --------------------------------------------------------------------

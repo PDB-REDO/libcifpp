@@ -978,6 +978,7 @@ class Category
 	// return index for known column, or the next available column index
 	size_t getColumnIndex(const string& name) const;
 	const string& getColumnName(size_t columnIndex) const;
+	vector<string> getColumnNames() const;
 
 	void reorderByIndex();
 

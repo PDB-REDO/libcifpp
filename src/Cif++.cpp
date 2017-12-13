@@ -1078,6 +1078,14 @@ const string& Category::getColumnName(size_t columnIx) const
 	return mColumns.at(columnIx).mName;
 }
 
+vector<string> Category::getColumnNames() const
+{
+	vector<string> result;
+	for (auto& c: mColumns)
+		result.push_back(c.mName);
+	return result;
+}
+
 size_t Category::addColumn(const string& name)
 {
 	size_t result = getColumnIndex(name);
