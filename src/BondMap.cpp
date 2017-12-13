@@ -64,7 +64,7 @@ BondMap::BondMap(const Structure& p)
 	// first link all residues in a polyseq
 	
 	string lastAsymID;
-	int lastSeqID;
+	int lastSeqID = 0;
 	for (auto r: db["pdbx_poly_seq_scheme"])
 	{
 		string asymId;
