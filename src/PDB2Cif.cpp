@@ -492,7 +492,7 @@ class PDBFileParser
 		DBREF					mDbref;
 		vector<PDBSeqRes>		mSeqres, mHet;
 		int						mWaters;
-		size_t					mTerIndex;
+		int						mTerIndex;
 		
 		int						mMolId;
 
@@ -512,7 +512,7 @@ class PDBFileParser
 		};
 		vector<AtomRes>			mResiduesSeen;
 		
-		void AlignResToSeqRes();
+		int AlignResToSeqRes();
 		bool SameSequence(const PDBChain& rhs) const;
 	};
 
@@ -3307,7 +3307,8 @@ void PDBFileParser::ConstructEntities()
 													//	23 - 26 	   Integer		 resSeq 		 Residue sequence number. 
 													//	27			   AChar		 iCode			 Insertion code.		  
 			auto& chain = GetChainForID(chainID);
-			chain.mTerIndex = chain.mResiduesSeen.size();
+			if (chain.mTerIndex == 0)				// Is this the first TER record? (Refmac writes out multiple TER records...)
+				chain.mTerIndex = chain.mResiduesSeen.size();
 			continue;
 		}
 	}
@@ -3323,7 +3324,20 @@ void PDBFileParser::ConstructEntities()
 			if (chain.mTerIndex > 0)
 				chain.mResiduesSeen.erase(chain.mResiduesSeen.begin() + chain.mTerIndex, chain.mResiduesSeen.end());
 			
-			chain.AlignResToSeqRes();
+			int lastResidueIndex = chain.AlignResToSeqRes();
+			
+			if (lastResidueIndex > 0 and lastResidueIndex + 1 < static_cast<int>(chain.mResiduesSeen.size()))
+			{
+				auto& r = chain.mResiduesSeen[lastResidueIndex + 1];
+
+				if (VERBOSE)
+				{
+					cerr << "Detected residues that cannot be aligned to SEQRES" << endl
+						 << "First residue is " << chain.mDbref.chainID << ':' << r.mSeqNum << r.mIcode << endl;
+				}
+				
+				chain.mTerIndex = lastResidueIndex + 1;
+			}
 		}
 		else
 		{
@@ -3332,7 +3346,7 @@ void PDBFileParser::ConstructEntities()
 			// first lets shift the ter index until it is past the last known
 			// aminoacid or base.
 			
-			for (size_t ix = chain.mTerIndex; ix < chain.mResiduesSeen.size(); ++ix)
+			for (int ix = chain.mTerIndex; ix < static_cast<int>(chain.mResiduesSeen.size()); ++ix)
 			{
 				string resName = chain.mResiduesSeen[ix].mMonId;
 				
@@ -3348,7 +3362,7 @@ void PDBFileParser::ConstructEntities()
 			}
 			
 			// And now construct our 'SEQRES'...
-			for (size_t ix = 0; ix < chain.mTerIndex; ++ix)
+			for (int ix = 0; ix < chain.mTerIndex; ++ix)
 			{
 				auto& ar = chain.mResiduesSeen[ix];
 				chain.mSeqres.push_back({ar.mMonId, ar.mSeqNum, ar.mIcode, ar.mSeqNum, true});
@@ -3357,6 +3371,7 @@ void PDBFileParser::ConstructEntities()
 	}
 
 	set<char> terminatedChains;
+	map<char,int> residuePerChainCounter;
 
 	for (auto r = mData; r != nullptr; r = r->mNext)
 	{
@@ -3416,8 +3431,12 @@ void PDBFileParser::ConstructEntities()
 				}
 			}
 			
+			int residueCount = (residuePerChainCounter[chainID] += 1);
+			
 			// There appears to be a program that writes out HETATM records as ATOM records....
-			if (r->is("HETATM") or terminatedChains.count(chainID))
+			if (r->is("HETATM") or
+				terminatedChains.count(chainID) or
+				(chain.mTerIndex > 0 and residueCount >= chain.mTerIndex))
 			{
 				if (isWater(resName))
 					mWaterHetId = resName;
@@ -5218,8 +5237,9 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 }
 
 // ----------------------------------------------------------------
+// A blast like alignment. Returns index of last aligned residue.
 
-void PDBFileParser::PDBChain::AlignResToSeqRes()
+int PDBFileParser::PDBChain::AlignResToSeqRes()
 {
 	// Use dynamic programming to align the found residues (in ATOM records) against
 	// the residues in the SEQRES records in order to obtain the residue numbering.
@@ -5421,6 +5441,8 @@ void PDBFileParser::PDBChain::AlignResToSeqRes()
 		rx[x].mSeqNum = rx[x + 1].mSeqNum - 1;
 		unnumbered.pop();
 	}
+	
+	return highY;
 }
 
 bool PDBFileParser::PDBChain::SameSequence(const PDBChain& rhs) const
