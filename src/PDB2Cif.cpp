@@ -3324,7 +3324,27 @@ void PDBFileParser::ConstructEntities()
 			if (chain.mTerIndex > 0)
 				chain.mResiduesSeen.erase(chain.mResiduesSeen.begin() + chain.mTerIndex, chain.mResiduesSeen.end());
 			
-			int lastResidueIndex = chain.AlignResToSeqRes();
+			int lastResidueIndex;
+			
+			try
+			{
+				lastResidueIndex = chain.AlignResToSeqRes();
+			}
+			catch (const exception& ex)
+			{
+				if (VERBOSE > 1)
+					cerr << "First alignment attempt failed, trying to strip seen residues of non-polymers" << endl;
+
+				chain.mResiduesSeen.erase(
+					remove_if(chain.mResiduesSeen.begin(), chain.mResiduesSeen.end(),
+						[](PDBChain::AtomRes& r)
+						{
+							return not (PeptideDB::Instance().isKnownPeptide(r.mMonId) or PeptideDB::Instance().isKnownBase(r.mMonId));
+						}),
+					chain.mResiduesSeen.end());
+				
+				lastResidueIndex = chain.AlignResToSeqRes();
+			}
 			
 			if (lastResidueIndex > 0 and lastResidueIndex + 1 < static_cast<int>(chain.mResiduesSeen.size()))
 			{
@@ -5291,7 +5311,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 			// gap open cost is zero if the PDB ATOM records indicate that a gap
 			// should be here.
 			float gapOpen = kGapOpen;
-			if (y + 1 < dimY and ry[y + 1].mSeqNum > ry[y].mSeqNum + 1)
+			if (y == 0 or (y + 1 < dimY and ry[y + 1].mSeqNum > ry[y].mSeqNum + 1))
 				gapOpen = 0;
 
 			if (x > 0 and y > 0)
@@ -5356,6 +5376,12 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 			switch (tb(x, y))
 			{
 				case -1:
+//					if (VERBOSE)
+//						cerr << "A residue found in the ATOM records "
+//							 << "(" << ry[y].mMonId << " @ " << mDbref.chainID << ":" << ry[y].mSeqNum
+//							 	<<  ((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : string{ ry[y].mIcode }) << ")"
+//							 << " was not found in the SEQRES records" << endl;
+
 					throw runtime_error("A residue found in the ATOM records (" + ry[y].mMonId + 
 						" @ " + string{mDbref.chainID} + ":" + to_string(ry[y].mSeqNum) +
 						((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : string{ ry[y].mIcode })+
@@ -5412,6 +5438,18 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 				}
 			}
 			
+			while (x >= 0)
+			{
+				alignment.push_back(make_pair(rx[x].mMonId, "..."));
+				--x;				
+			}
+
+			while (y >= 0)
+			{
+				alignment.push_back(make_pair("...", ry[y].mMonId));
+				--y;
+			}
+				
 			reverse(alignment.begin(), alignment.end());
 			for (auto a: alignment)
 				cerr << "  " << a.first << " -- " << a.second << endl;
