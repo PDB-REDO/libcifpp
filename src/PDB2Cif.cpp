@@ -16,6 +16,7 @@
 #include "cif++/Compound.h"
 #include "cif++/PeptideDB.h"
 #include "cif++/PDB2CifRemark3.h"
+#include "cif++/CifUtils.h"
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -3272,8 +3273,11 @@ void PDBFileParser::ConstructEntities()
 			
 			PDBChain::AtomRes ar{ resName, resSeq, iCode };
 
-			if (chain.mResiduesSeen.empty() or chain.mResiduesSeen.back() != ar)
+			if ((chain.mResiduesSeen.empty() or chain.mResiduesSeen.back() != ar) and
+				(PeptideDB::Instance().isKnownPeptide(resName) or PeptideDB::Instance().isKnownBase(resName)))
+			{
 				chain.mResiduesSeen.push_back(ar);
+			}
 
 			// now that we're iterating atoms anyway, clean up the mUnobs array
 			mUnobs.erase(remove_if(mUnobs.begin(), mUnobs.end(), [=](UNOBS& a)
@@ -3324,27 +3328,7 @@ void PDBFileParser::ConstructEntities()
 			if (chain.mTerIndex > 0)
 				chain.mResiduesSeen.erase(chain.mResiduesSeen.begin() + chain.mTerIndex, chain.mResiduesSeen.end());
 			
-			int lastResidueIndex;
-			
-			try
-			{
-				lastResidueIndex = chain.AlignResToSeqRes();
-			}
-			catch (const exception& ex)
-			{
-				if (VERBOSE > 1)
-					cerr << "First alignment attempt failed, trying to strip seen residues of non-polymers" << endl;
-
-				chain.mResiduesSeen.erase(
-					remove_if(chain.mResiduesSeen.begin(), chain.mResiduesSeen.end(),
-						[](PDBChain::AtomRes& r)
-						{
-							return not (PeptideDB::Instance().isKnownPeptide(r.mMonId) or PeptideDB::Instance().isKnownBase(r.mMonId));
-						}),
-					chain.mResiduesSeen.end());
-				
-				lastResidueIndex = chain.AlignResToSeqRes();
-			}
+			int lastResidueIndex = chain.AlignResToSeqRes();
 			
 			if (lastResidueIndex > 0 and lastResidueIndex + 1 < static_cast<int>(chain.mResiduesSeen.size()))
 			{
@@ -5368,6 +5352,62 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	// assign numbers
 	x = highX;
 	y = highY;
+
+	// C++ is getting closer to Pascal :-)
+	auto printAlignment = [=]()
+	{
+		cerr << string(cif::get_terminal_width(), '-') << endl
+			 << "Alignment for chain " << mDbref.chainID << endl
+			 << endl;
+		std::vector<pair<string,string>> alignment;
+
+		int x = highX;
+		int y = highY;
+		
+		for (x = highX, y = highY; x >= 0 and y >= 0; )
+		{
+			switch (tb(x, y))
+			{
+				case -1:
+					alignment.push_back(make_pair("...", ry[y].mMonId));
+					--y;
+					break;
+				
+				case 1:
+					alignment.push_back(make_pair(rx[x].mMonId, "..."));
+					--x;
+					break;
+				
+				case 0:
+					alignment.push_back(make_pair(rx[x].mMonId, ry[y].mMonId));
+					--x;
+					--y;
+					break;
+			}
+		}
+		
+		while (x >= 0)
+		{
+			alignment.push_back(make_pair(rx[x].mMonId, "..."));
+			--x;				
+		}
+
+		while (y >= 0)
+		{
+			alignment.push_back(make_pair("...", ry[y].mMonId));
+			--y;
+		}
+			
+		reverse(alignment.begin(), alignment.end());
+		for (auto a: alignment)
+			cerr << "  " << a.first << " -- " << a.second << endl;
+		
+		cerr << endl;
+	};
+	
+	if (VERBOSE > 1)
+		printAlignment();
+	
 	
 	try
 	{
@@ -5412,48 +5452,8 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	}
 	catch (const exception& ex)
 	{
-		if (VERBOSE)
-		{
-			std::vector<pair<string,string>> alignment;
-			
-			for (x = highX, y = highY; x >= 0 and y >= 0; )
-			{
-				switch (tb(x, y))
-				{
-					case -1:
-						alignment.push_back(make_pair("...", ry[y].mMonId));
-						--y;
-						break;
-					
-					case 1:
-						alignment.push_back(make_pair(rx[x].mMonId, "..."));
-						--x;
-						break;
-					
-					case 0:
-						alignment.push_back(make_pair(rx[x].mMonId, ry[y].mMonId));
-						--x;
-						--y;
-						break;
-				}
-			}
-			
-			while (x >= 0)
-			{
-				alignment.push_back(make_pair(rx[x].mMonId, "..."));
-				--x;				
-			}
-
-			while (y >= 0)
-			{
-				alignment.push_back(make_pair("...", ry[y].mMonId));
-				--y;
-			}
-				
-			reverse(alignment.begin(), alignment.end());
-			for (auto a: alignment)
-				cerr << "  " << a.first << " -- " << a.second << endl;
-		}
+		if (VERBOSE == 1)
+			printAlignment();
 		
 		throw;
 	}

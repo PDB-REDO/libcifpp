@@ -118,15 +118,18 @@ struct PeptideDBImpl
 PeptideDBImpl::PeptideDBImpl(istream& data, PeptideDBImpl* next)
 	: mFile(data), mChemComp(mFile.firstDatablock()["chem_comp"]), mNext(next)
 {
+	const std::regex peptideRx("(?:[lmp]-)?peptide", std::regex::icase);
+
 	for (auto& chemComp: mChemComp)
 	{
 		string group, threeLetterCode;
 		
 		cif::tie(group, threeLetterCode) = chemComp.get("group", "three_letter_code");
-		
-		if (group == "peptide" or group == "M-peptide" or group == "P-peptide")
+
+		if (std::regex_match(group, peptideRx))
+//		if (ba::iequals(group, "peptide") or ba::iequals(group, "M-peptide") or ba::iequals(group, "P-peptide"))
 			mKnownPeptides.insert(threeLetterCode);
-		else if (group == "DNA" or group == "RNA")
+		else if (ba::iequals(group, "DNA") or ba::iequals(group, "RNA"))
 			mKnownBases.insert(threeLetterCode);
 	}
 }
