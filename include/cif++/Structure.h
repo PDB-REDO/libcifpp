@@ -95,8 +95,11 @@ class Atom
 	bool isWater() const;
 	int charge() const;
 	
-	boost::any property(const std::string& name) const;
-	void property(const std::string& name, const boost::any& value);
+	template<typename T>
+	T property(const std::string& name) const;
+	
+	template<typename T>
+	void property(const std::string& name, const T& value);
 	
 	// specifications
 	std::string labelAtomId() const;

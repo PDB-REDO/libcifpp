@@ -388,11 +388,16 @@ bool Atom::isWater() const
 	return mImpl->isWater();
 }
 
-boost::any Atom::property(const std::string& name) const
+template<>
+string Atom::property<string>(const std::string& name) const
 {
-	string s = mImpl->mRow[name].as<string>();
-	
-	return boost::any(s);
+	return mImpl->mRow[name].as<string>();
+}
+
+template<>
+float Atom::property<float>(const std::string& name) const
+{
+	return stof(mImpl->mRow[name].as<string>());
 }
 
 bool Atom::operator==(const Atom& rhs) const
@@ -612,7 +617,7 @@ AtomView Structure::waters() const
 
 	for (auto& a: mImpl->mAtoms)
 	{
-		if (boost::any_cast<string>(a.property("label_entity_id")) == waterEntityId)
+		if (a.property<string>("label_entity_id") == waterEntityId)
 			result.push_back(a);
 	}
 	
