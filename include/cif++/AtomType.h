@@ -196,6 +196,18 @@ class AtomTypeTraits
 			throw std::invalid_argument("invalid radius requested");
 		return mInfo->radii[type] / 100.f;
 	}
+	
+	// data type encapsulating the Waasmaier & Kirfel scattering factors
+	// in a simplified form (only a and b).
+	struct WKSF
+	{
+		double a[6], b[6];
+	};
+	
+	// to get the Cval and Siva values, use this constant as charge:
+	enum { kWKSFVal = -99 };
+	
+	const WKSF& wksf(int charge = 0) const;
 
   private:
 	const struct AtomTypeInfo*	mInfo;

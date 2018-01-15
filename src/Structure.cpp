@@ -11,6 +11,7 @@
 #include "cif++/PDB2Cif.h"
 #include "cif++/CifParser.h"
 #include "cif++/Cif2PDB.h"
+#include "cif++/AtomShape.h"
 
 using namespace std;
 
@@ -258,6 +259,11 @@ struct AtomImpl
 		return mCompound != nullptr and mCompound->isWater();
 	}
 
+	float radius() const
+	{
+		return mRadius;
+	}
+
 	const File&			mFile;
 	string				mId;
 	int					mRefcount;
@@ -265,6 +271,7 @@ struct AtomImpl
 	const Compound*		mCompound;
 	Point				mLocation;
 	AtomType			mType;
+	float				mRadius = nan("4");
 	
 //	const entity&		mEntity;
 //	std::string			mAsymId;
@@ -419,6 +426,21 @@ const File& Atom::getFile() const
 clipper::Atom Atom::toClipper() const
 {
 	return mImpl->toClipper();
+}
+
+void Atom::calculateRadius(float resHigh, float resLow, float perc)
+{
+	AtomShape shape(*this, resHigh, resLow);
+	mImpl->mRadius = shape.radius();
+
+	// verbose
+	if (VERBOSE > 1)
+		cout << "Calculated radius for " << AtomTypeTraits(mImpl->mType).name() << " with charge " << charge() << " is " << mImpl->mRadius << endl;
+}
+
+float Atom::radius() const
+{
+	return mImpl->mRadius;
 }
 
 // --------------------------------------------------------------------

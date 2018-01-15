@@ -125,6 +125,10 @@ class Atom
 	// get clipper format Atom
 	clipper::Atom toClipper() const;
 
+	// Radius calculation based on integrating the density until perc of electrons is found
+	void calculateRadius(float resHigh, float resLow, float perc);
+	float radius() const;
+
   private:
  	struct AtomImpl*			mImpl;
 };
