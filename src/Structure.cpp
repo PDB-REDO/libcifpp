@@ -307,6 +307,24 @@ Atom& Atom::operator=(const Atom& rhs)
 	return *this;
 }
 
+template<>
+string Atom::property<string>(const std::string& name) const
+{
+	return mImpl->mRow[name].as<string>();
+}
+
+template<>
+int Atom::property<int>(const std::string& name) const
+{
+	return mImpl->mRow[name].as<int>();
+}
+
+template<>
+float Atom::property<float>(const std::string& name) const
+{
+	return mImpl->mRow[name].as<float>();
+}
+
 string Atom::id() const
 {
 	return mImpl->mId;
@@ -319,58 +337,56 @@ AtomType Atom::type() const
 
 int Atom::charge() const
 {
-	int charge;
-	cif::tie(charge) = mImpl->mRow.get("pdbx_formal_charge");
+	return property<int>("pdbx_formal_charge");
+}
+
+float Atom::uIso() const
+{
+	float result;
 	
-	return charge;
+	if (not mImpl->mRow["U_iso_or_equiv"].empty())
+		result =  mImpl->mRow["U_iso_or_equiv"].as<float>();
+	else if (not mImpl->mRow["B_iso_or_equiv"].empty())
+		result = mImpl->mRow["B_iso_or_equiv"].as<float>() / (8 * kPI * kPI);
+	else
+		throw runtime_error("Missing B_iso or U_iso");
+	
+	return result;
+}
+
+float Atom::occupancy() const
+{
+	return property<float>("occupancy");
 }
 
 string Atom::labelAtomId() const
 {
-	string atomId;
-	cif::tie(atomId) = mImpl->mRow.get("label_atom_id");
-	
-	return atomId;
+	return property<string>("label_atom_id");
 }
 
 string Atom::labelCompId() const
 {
-	string compId;
-	cif::tie(compId) = mImpl->mRow.get("label_comp_id");
-	
-	return compId;
+	return property<string>("label_comp_id");
 }
 
 string Atom::labelAsymId() const
 {
-	string asymId;
-	cif::tie(asymId) = mImpl->mRow.get("label_asym_id");
-	
-	return asymId;
+	return property<string>("label_asym_id");
 }
 
 int Atom::labelSeqId() const
 {
-	int seqId;
-	cif::tie(seqId) = mImpl->mRow.get("label_seq_id");
-	
-	return seqId;
+	return property<int>("label_seq_id");
 }
 
 string Atom::authAsymId() const
 {
-	string asymId;
-	cif::tie(asymId) = mImpl->mRow.get("auth_asym_id");
-	
-	return asymId;
+	return property<string>("auth_asym_id");
 }
 
 int Atom::authSeqId() const
 {
-	int seqId;
-	cif::tie(seqId) = mImpl->mRow.get("auth_seq_id");
-	
-	return seqId;
+	return property<int>("auth_seq_id");
 }
 
 Point Atom::location() const
@@ -386,18 +402,6 @@ const Compound& Atom::comp() const
 bool Atom::isWater() const
 {
 	return mImpl->isWater();
-}
-
-template<>
-string Atom::property<string>(const std::string& name) const
-{
-	return mImpl->mRow[name].as<string>();
-}
-
-template<>
-float Atom::property<float>(const std::string& name) const
-{
-	return stof(mImpl->mRow[name].as<string>());
 }
 
 bool Atom::operator==(const Atom& rhs) const

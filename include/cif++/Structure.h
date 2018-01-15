@@ -94,6 +94,9 @@ class Atom
 	const Entity& ent() const;
 	bool isWater() const;
 	int charge() const;
+
+	float uIso() const;
+	float occupancy() const;
 	
 	template<typename T>
 	T property(const std::string& name) const;
