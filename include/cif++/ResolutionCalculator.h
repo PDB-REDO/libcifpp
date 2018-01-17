@@ -4,6 +4,10 @@
 
 #include "cif++/ResolutionCalculator.h"
 
+#include <clipper/clipper.h>
+
+#include <cmath>
+
 namespace libcif
 {
 
@@ -14,6 +18,7 @@ class ResolutionCalculator
   public:
 	ResolutionCalculator(double a, double b, double c,
 		double alpha, double beta, double gamma);
+	ResolutionCalculator(const clipper::Cell& cell);
 	
 	double operator()(int h, int k, int l) const
 	{

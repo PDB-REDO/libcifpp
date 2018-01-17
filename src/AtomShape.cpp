@@ -11,9 +11,6 @@ using namespace std;
 namespace libcif
 {
 
-
-namespace {
-
 // --------------------------------------------------------------------
 
 template <class F>
@@ -33,7 +30,7 @@ NewuoaClosure make_closure(F &function) {
 //	B.T.P. Rowe et. al.
 //	DOI: 10.1016/j.ascom.2015.02.002
 
-double SineIntegration(double x)
+double sineIntegration(double x)
 {
 	struct P { double n, d; };
 	double result = 0;
@@ -135,20 +132,44 @@ class DensityIntegration
   public:
 	DensityIntegration(float resolutionLow, float resolutionHigh);
 
-	double IntegrateRadius(float perc, AtomType symbol, int charge,
-		float uIso, float occupancy) const;
-	double IntegrateDensity(double r, int ks, const vector<double>& fst) const;
-	
-	tuple<double,vector<double>> InitData(AtomType symbol, int charge,
-		float uIso, float occupancy) const;
+	static DensityIntegration& instance(float resolutionLow, float resolutionHigh);
 
+	double integrateRadius(float perc, float occupancy, double yi, const vector<double>& fst) const;
+	double integrateDensity(double r, int ks, const vector<double>& fst) const;
+	
+	float a() const								{ return mA; }
+	float b() const								{ return mB; }
+	const vector<double>&	st() const			{ return mST; }
+	const vector<double>&	sts() const			{ return mSTS; }
+	const vector<double>&	wa() const			{ return mWA; }
+		
   private:
+
 	float	mA, mB;
 	int		mM;
 
 	// Gauss-Legendre quadrature weights and abscissae
 	vector<double>	mWA, mST, mSTS;
+	static list<DensityIntegration>	sInstances;
 };
+
+list<DensityIntegration> DensityIntegration::sInstances;
+
+DensityIntegration& DensityIntegration::instance(float resolutionLow, float resolutionHigh)
+{
+	float a = 0.5f / resolutionLow, b = 0.5f / resolutionHigh;
+
+	auto i = find_if(sInstances.begin(), sInstances.end(), [=](const DensityIntegration& di)
+		{ return di.mA == a and di.mB == b; });
+	
+	if (i == sInstances.end())
+	{
+		sInstances.emplace_back(resolutionLow, resolutionHigh);
+		i = prev(sInstances.end());
+	}
+
+	return *i;
+}
 
 DensityIntegration::DensityIntegration(float resolutionLow, float resolutionHigh)
 {
@@ -203,42 +224,10 @@ DensityIntegration::DensityIntegration(float resolutionLow, float resolutionHigh
 }
 
 // --------------------------------------------------------------------
-
-tuple<double,vector<double>> DensityIntegration::InitData(AtomType symbol, int charge,
-		float uIso, float occupancy) const
-{
-	double yi = 0;
-	vector<double> fst(mST.size(), 0);
-
-	auto& D = AtomTypeTraits(symbol).wksf(charge);
-	auto bIso = clipper::Util::u2b(uIso);
-	
-	for (int i = 0; i < 6; ++i)
-	{
-		double bi = D.b[i] + bIso;
-		yi += D.a[i] * (exp(-bi * mA * mA) - exp(-bi * mB * mB)) / bi;
-	}
-	
-	for (size_t i = 0; i < mST.size(); ++i)
-	{
-		double t = 0;
-		for (int j = 0; j < 6; ++j)
-		{
-			double bj = D.b[j] + bIso;
-			t += D.a[j] * exp(-bj * mSTS[i]);
-		}
-
-		fst[i] = occupancy * mWA[i] * t * mST[i];
-	}
-
-	return make_tuple(yi, fst);
-}
-
-// --------------------------------------------------------------------
 // Calculate Radius integral over r of calculated density
 // code inspired by radint.f in edstats
 
-double DensityIntegration::IntegrateDensity(double r, int ks, const vector<double>& fst) const
+double DensityIntegration::integrateDensity(double r, int ks, const vector<double>& fst) const
 {
 	double y = 0;
 	
@@ -251,8 +240,8 @@ double DensityIntegration::IntegrateDensity(double r, int ks, const vector<doubl
 		double t = 4 * libcif::kPI * rt;
 		y = 0;
 		
-		for (int i = 0; i < mST.size(); ++i)
-			y += fst[i] * SineIntegration(t * mST[i]);
+		for (size_t i = 0; i < mST.size(); ++i)
+			y += fst[i] * sineIntegration(t * mST[i]);
 		
 		if (r < 0)
 			y = y - ks * r;
@@ -261,16 +250,8 @@ double DensityIntegration::IntegrateDensity(double r, int ks, const vector<doubl
 	return ks * y;
 }
 
-double DensityIntegration::IntegrateRadius(float perc, AtomType symbol, int charge,
-	float uIso, float occupancy) const
+double DensityIntegration::integrateRadius(float perc, float occupancy, double yi, const vector<double>& fst) const
 {
-	// Initilialise parameters
-	
-	double yi;
-	vector<double> fst;
-	
-	tie(yi, fst) = InitData(symbol, charge, uIso, occupancy);
-	
 	double yt = perc * 0.25 * libcif::kPI * occupancy * yi;
 	double initialValue = 0.25;
 	
@@ -289,7 +270,7 @@ double DensityIntegration::IntegrateRadius(float perc, AtomType symbol, int char
     auto function = [&] (long n, const double *x)
     {
 		assert(n == 1);
-		return this->IntegrateDensity(x[0], -1, fst);
+		return this->integrateDensity(x[0], -1, fst);
     };
     auto closure = make_closure(function);
 
@@ -317,7 +298,7 @@ double DensityIntegration::IntegrateRadius(float perc, AtomType symbol, int char
 	    for (int it = 0; it < 100; ++it)
 	    {
 	    	double x = 0.5 * (x1 + x2);
-	    	double y = IntegrateDensity(x, 1, fst);
+	    	double y = integrateDensity(x, 1, fst);
 	    	
 	    	if (abs(y - yt) < kRE * abs(yt))
 	    	{
@@ -343,26 +324,101 @@ double DensityIntegration::IntegrateRadius(float perc, AtomType symbol, int char
 	return result;
 }
 
+// --------------------------------------------------------------------
 
-
-} // namespace
-	
-AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow)
-	: mSymbol(atom.type())
-	, mCharge(atom.charge())
-	, mUIso(atom.uIso())
-	, mOccupancy(atom.occupancy())
-	, mResHigh(resHigh)
-	, mResLow(resLow)
+struct AtomShapeImpl
 {
+	AtomShapeImpl(AtomType symbol, int charge, float uIso, float occupancy, float resHigh, float resLow)
+		: mSymbol(symbol), mCharge(charge), mUIso(uIso), mOccupancy(occupancy)
+		, mResHigh(resHigh), mResLow(resLow)
+		, mIntegrator(DensityIntegration::instance(resLow, resHigh))
+	{
+		auto st = mIntegrator.st();
+		auto sts = mIntegrator.sts();
+		auto wa = mIntegrator.wa();
+		
+		mYi = 0;
+		mFst = vector<double>(st.size(), 0);
+	
+		auto& D = AtomTypeTraits(symbol).wksf(charge);
+		auto bIso = clipper::Util::u2b(uIso);
+		
+		float as = mIntegrator.a() * mIntegrator.a();
+		float bs = mIntegrator.b() * mIntegrator.b();
+		
+		for (int i = 0; i < 6; ++i)
+		{
+			double bi = D.b[i] + bIso;
+			mYi += D.a[i] * (exp(-bi * as) - exp(-bi * bs)) / bi;
+		}
+		
+		for (size_t i = 0; i < st.size(); ++i)
+		{
+			double t = 0;
+			for (int j = 0; j < 6; ++j)
+			{
+				double bj = D.b[j] + bIso;
+				t += D.a[j] * exp(-bj * sts[i]);
+			}
+	
+			mFst[i] = occupancy * wa[i] * t * st[i];
+		}
+
+		for (size_t i = 0; i < 6; ++i)
+		{
+			mBW[i] = -4 * kPI * kPI / (D.b[i] + bIso);
+			mAW[i] = D.a[i] * pow(-mBW[i] / kPI, 1.5);
+		}
+	}
+	
+	AtomType	mSymbol;
+	int			mCharge;
+	float		mUIso, mOccupancy;
+	float		mResHigh, mResLow;
+
+	const DensityIntegration&	mIntegrator;
+	double				mYi;
+	vector<double>		mFst;
+	float				mAW[6], mBW[6];
+	
+	float integratedRadius(float perc) const
+	{
+		return 	mIntegrator.integrateRadius(perc, mOccupancy, mYi, mFst);
+	}
+	
+	float calculatedDensity(float r) const
+	{
+		float rsq = r * r;
+		return mOccupancy *
+			(
+				mAW[0] * exp(mBW[0] * rsq) + mAW[1] * exp(mBW[1] * rsq) +
+				mAW[2] * exp(mBW[2] * rsq) + mAW[3] * exp(mBW[3] * rsq) +
+				mAW[4] * exp(mBW[4] * rsq) + mAW[5] * exp(mBW[5] * rsq)
+			);
+	}
+};
+	
+// --------------------------------------------------------------------
+
+AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow)
+	: mImpl(new AtomShapeImpl(atom.type(), atom.charge(), atom.uIso(),
+		atom.occupancy(), resHigh, resLow))
+{
+}
+
+AtomShape::~AtomShape()
+{
+	delete mImpl;
 }
 
 float AtomShape::radius() const
 {
-	DensityIntegration di(mResLow, mResHigh);
-	
-	return di.IntegrateRadius(0.95, mSymbol, mCharge, mUIso, mOccupancy);
+	return mImpl->integratedRadius(0.95);
 }
 
+float AtomShape::calculatedDensity(float r) const
+{
+	return mImpl->calculatedDensity(r);
+}
 
 }

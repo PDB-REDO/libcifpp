@@ -2,10 +2,20 @@
 
 #include "cif++/ResolutionCalculator.h"
 
+#include "cif++/Point.h"
+
 using namespace std;
 
 namespace libcif
 {
+
+ResolutionCalculator::ResolutionCalculator(const clipper::Cell& cell)
+	: ResolutionCalculator(cell.a(), cell.b(), cell.c(),
+		180 * cell.alpha() / kPI,
+		180 * cell.beta() / kPI,
+		180 * cell.gamma() / kPI)
+{
+}
 
 ResolutionCalculator::ResolutionCalculator(double a, double b, double c,
 		double alpha, double beta, double gamma)

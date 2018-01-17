@@ -14,14 +14,16 @@ class AtomShape
 {
   public:
 	AtomShape(const Atom& atom, float resHigh, float resLow);
+	~AtomShape();
+	
+	AtomShape(const AtomShape&) = delete;
+	AtomShape& operator=(const AtomShape&) = delete;
 
 	float radius() const;
+	float calculatedDensity(float r) const;
 
   private:
-	AtomType	mSymbol;
-	int			mCharge;
-	float		mUIso, mOccupancy;
-	float		mResHigh, mResLow;
+	struct AtomShapeImpl*	mImpl;
 };
 	
 }
