@@ -391,6 +391,11 @@ string Atom::authAsymId() const
 	return property<string>("auth_asym_id");
 }
 
+string Atom::authCompId() const
+{
+	return property<string>("auth_comp_id");
+}
+
 int Atom::authSeqId() const
 {
 	return property<int>("auth_seq_id");
