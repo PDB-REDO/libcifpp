@@ -55,20 +55,23 @@ const map<string,char> kBaseMap{
 
 // --------------------------------------------------------------------
 
-struct PeptideDBImpl
+class PeptideDBImpl
 {
+  public:
 	PeptideDBImpl(istream& data, PeptideDBImpl* next);
 
 	~PeptideDBImpl()
 	{
 		delete mNext;
 	}
-
-	/*unordered_*/set<string>	mKnownPeptides;
-	set<string>					mKnownBases;
-	cif::File					mFile;
-	cif::Category&				mChemComp;
-	PeptideDBImpl*				mNext;
+	
+	PeptideDBImpl* pop()
+	{
+		auto result = mNext;
+		mNext = nullptr;
+		delete this;
+		return result;
+	}
 
 	string nameFor(const string& resName) const
 	{
@@ -113,6 +116,25 @@ struct PeptideDBImpl
 		
 		return result;
 	}
+
+	bool isKnownPeptide(const string& resName)
+	{
+		return mKnownPeptides.count(resName) or
+			(mNext != nullptr and mNext->isKnownPeptide(resName));
+	}
+
+	bool isKnownBase(const string& resName)
+	{
+		return mKnownBases.count(resName) or
+			(mNext != nullptr and mNext->isKnownBase(resName));
+	}
+
+  private:
+	/*unordered_*/set<string>	mKnownPeptides;
+	set<string>					mKnownBases;
+	cif::File					mFile;
+	cif::Category&				mChemComp;
+	PeptideDBImpl*				mNext;
 };
 
 PeptideDBImpl::PeptideDBImpl(istream& data, PeptideDBImpl* next)
@@ -252,12 +274,7 @@ void PeptideDB::pushDictionary(boost::filesystem::path dict)
 void PeptideDB::popDictionary()
 {
 	if (mImpl != nullptr)
-	{
-		auto i = mImpl;
-		mImpl = i->mNext;
-		i->mNext = nullptr;
-		delete i;
-	}
+		mImpl = mImpl->pop();
 }
 
 PeptideDB::~PeptideDB()
@@ -267,12 +284,12 @@ PeptideDB::~PeptideDB()
 
 bool PeptideDB::isKnownPeptide(const string& resName) const
 {
-	return mImpl->mKnownPeptides.count(resName) > 0;
+	return mImpl->isKnownPeptide(resName);
 }
 
 bool PeptideDB::isKnownBase(const string& resName) const
 {
-	return mImpl->mKnownBases.count(resName) > 0;
+	return mImpl->isKnownBase(resName);
 }
 
 string PeptideDB::nameForResidue(const string& resName) const

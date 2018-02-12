@@ -5457,6 +5457,9 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 		
 		throw;
 	}
+
+	if (VERBOSE > 1)
+		printAlignment();
 	
 	// assign numbers to the residues that don't have them yet
 	stack<int> unnumbered;
