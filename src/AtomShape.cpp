@@ -406,6 +406,12 @@ AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow)
 {
 }
 
+AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow, float bFactor)
+	: mImpl(new AtomShapeImpl(atom.type(), atom.charge(), clipper::Util::b2u(bFactor),
+		1.0, resHigh, resLow))
+{
+}
+
 AtomShape::~AtomShape()
 {
 	delete mImpl;

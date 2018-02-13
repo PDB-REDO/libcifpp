@@ -14,6 +14,9 @@ class AtomShape
 {
   public:
 	AtomShape(const Atom& atom, float resHigh, float resLow);
+	AtomShape(const Atom& atom, float resHigh, float resLow,
+		float bFactor);
+
 	~AtomShape();
 	
 	AtomShape(const AtomShape&) = delete;
