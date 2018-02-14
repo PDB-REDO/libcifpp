@@ -3,6 +3,8 @@
 #include <clipper/clipper.h>
 #include <boost/filesystem/path.hpp>
 
+#include "cif++/Structure.h"
+
 namespace libcif
 {
 	
@@ -20,30 +22,43 @@ class MapMaker
 	typedef clipper::Cell								Cell;
 	typedef clipper::Grid_sampling						Grid_sampling;
 	
-	MapMaker(Xmap& fb, Xmap& fd, bool fixMTZ, float samplingRate = 4.5);
+	enum AnisoScalingFlag {
+		as_None, as_Observed, as_Calculated
+	};
+	
+	MapMaker(Xmap& fb, Xmap& fd);
 	~MapMaker();
 
-	void LoadFromMTZ(const boost::filesystem::path& mtzFile,
+	void loadFromMTZ(const boost::filesystem::path& mtzFile,
+		float samplingRate = 4.5,
 		std::initializer_list<std::string> fbLabels = { "FWT", "PHWT" },
 		std::initializer_list<std::string> fdLabels = { "DELFWT", "PHDELWT" },
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
 		std::initializer_list<std::string> fcLabels = { "FC_ALL", "PHIC_ALL" });
-	void RecalculateFromMTZ(
+	void recalculateFromMTZ(const boost::filesystem::path& mtzFile,
+		const Structure& structure,
+		bool noBulk, AnisoScalingFlag anisoScaling,
+		float samplingRate = 4.5,
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
-		std::initializer_list<std::string> freeLabels = { "FP", "SIGFP" });
-	void LoadFromMapFiles();
+		std::initializer_list<std::string> freeLabels = { "FREE" });
+	void loadFromMapFiles(const boost::filesystem::path& fbMapFile,
+		const boost::filesystem::path& fdMapFile);
 
-	double RMSDensityFb() const			{ return mRMSDensityFb; }
-	double MeanDensityFb() const		{ return mMeanDensityFb; }
-	double RMSDensityFd() const			{ return mRMSDensityFd; }
-	double MeanDensityFd() const		{ return mMeanDensityFd; }
+	double rmsDensityFb() const			{ return mRMSDensityFb; }
+	double meanDensityFb() const		{ return mMeanDensityFb; }
+	double rmsDensityFd() const			{ return mRMSDensityFd; }
+	double meanDensityFd() const		{ return mMeanDensityFd; }
 	
-	double ResLow() const				{ return mResLow; }
-	double ResHight() const				{ return mResHigh; }
+	double resLow() const				{ return mResLow; }
+	double resHigh() const				{ return mResHigh; }
+
+	const Spacegroup& spacegroup() const		{ return mSpacegroup; }
+	const Cell& cell() const					{ return mCell; }
+	const Grid_sampling& gridSampling() const	{ return mGrid; }
 
   private:
 
-	void FixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc);
+	void fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc);
 
 	Xmap&		mFb;
 	Xmap&		mFd;
@@ -52,7 +67,6 @@ class MapMaker
 	Cell			mCell;
 	Grid_sampling	mGrid;
 
-	bool		mFixMTZ;
 	float		mSamplingRate;
 
 	double		mRMSDensityFb, mRMSDensityFd;
