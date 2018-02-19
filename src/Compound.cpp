@@ -271,8 +271,38 @@ const Compound* CompoundFactory::create(std::string id)
 				
 				bonds[make_tuple(atomId_1, atomId_2)] = value;
 			}
+
+			auto& compChir = cf["comp_" + id]["chem_comp_chir"];
 			
-			result = new Compound(id, name, group, move(atoms), move(bonds));
+			vector<Compound::ChiralCentre> chiralCentres;
+			for (auto row: compChir)
+			{
+				Compound::ChiralCentre cc;
+				string volumeSign;
+				
+				cif::tie(cc.mID, cc.mAtomIDCentre, cc.mAtomID[0],
+					cc.mAtomID[1], cc.mAtomID[2], volumeSign) = 
+					row.get("id", "atom_id_centre", "atom_id_1",
+						"atom_id_2", "atom_id_3", "volume_sign");
+				
+				if (volumeSign == "negativ")
+					cc.mVolumeSign = negativ;
+				else if (volumeSign == "positiv")
+					cc.mVolumeSign = positiv;
+				else if (volumeSign == "both")
+					cc.mVolumeSign = both;
+				else
+				{
+					if (VERBOSE)
+						cerr << "Unimplemented chem_comp_chir.volume_sign " << volumeSign << " in file " << resFile << endl;
+					continue;
+				}
+				
+				chiralCentres.push_back(cc);
+			}
+			
+			result = new Compound(id, name, group, move(atoms), move(bonds),
+				move(chiralCentres));
 			mCompounds.push_back(result);
 		}
 	}

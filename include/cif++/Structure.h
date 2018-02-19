@@ -12,6 +12,7 @@
 #include "cif++/AtomType.h"
 #include "cif++/Point.h"
 #include "cif++/Compound.h"
+#include "cif++/Cif++.h"
 
 /*
 	To modify a structure, you will have to use actions.
@@ -35,12 +36,14 @@
 	
 */
 
-// forward declaration
-namespace cif
-{
-	class Datablock;
-	class File;
-};
+//// forward declaration
+//namespace cif
+//{
+//	class Category;
+//	class Datablock;
+//	class File;
+//	class RowSet;
+//};
 
 namespace libcif
 {
@@ -137,77 +140,121 @@ typedef std::vector<Atom> AtomView;
 
 // --------------------------------------------------------------------
 
-class Residue : public std::enable_shared_from_this<Residue>
+class Residue
 {
   public:
-	Residue(const Compound& cmp) : mCompound(cmp) {}
+	Residue(const Residue& rhs);
+	Residue& operator=(const Residue& rhs);
 
-	const Compound&		comp() const		{ return mCompound; }
-	virtual AtomView	atoms();
+	Residue(const Structure& structure)
+		: mStructure(&structure) {}
+	Residue(const Structure& structure, const std::string& compoundID,
+		const std::string& asymID, const std::string& seqID = "",
+		const std::string& altID = "")
+		: mStructure(&structure), mCompoundID(compoundID)
+		, mAsymID(asymID), mSeqID(seqID), mAltID(altID) {}
+	
+	const Compound&		comp() const;
+	AtomView			atoms() const;
+	
+	Atom				atomByID(const std::string& atomID) const;
 
-  private:
-	const Compound&		mCompound;
+	const std::string&	compoundID() const	{ return mCompoundID; }
+	const std::string&	asymID() const		{ return mAsymID; }
+	const std::string&	seqID() const		{ return mSeqID; }
+	const std::string&	altID() const		{ return mAltID; }
+
+  protected:
+
+	const Structure* mStructure;
+	std::string	mCompoundID, mAsymID, mSeqID, mAltID;
+	mutable AtomView mAtoms;
 };
 
-//// --------------------------------------------------------------------
-//// a monomer models a single Residue in a protein chain 
-//
-//class monomer : public Residue
-//{
-//  public:
-//	monomer(polymer& polymer, size_t seqId, const std::string& compId,
-//		const std::string& altId);
-//
-//	int num() const								{ return mNum; }
-////	polymer& getPolymer();
-//
-////	std::vector<monomer_ptr> alternates();
-//
-//  private:
-//	polymer_ptr	mPolymer;
-//	int			mNum;
-//};
-//
-//// --------------------------------------------------------------------
-//
-//class polymer : public std::enable_shared_from_this<polymer>
-//{
-//  public:
-//	polymer(const polymerEntity& pe, const std::string& asymId);
-//	
-//	struct iterator : public std::iterator<std::random_access_iterator_tag, monomer>
-//	{
-//		typedef std::iterator<std::bidirectional_iterator_tag, monomer>	base_type;
-//		typedef base_type::reference									reference;
-//		typedef base_type::pointer										pointer;
-//		
-//		iterator(polymer& list, uint32 index);
-//		iterator(iterator&& rhs);
-//		iterator(const iterator& rhs);
-//		iterator& operator=(const iterator& rhs);
+// --------------------------------------------------------------------
+// a monomer models a single Residue in a protein chain 
+
+class Monomer : public Residue
+{
+  public:
+	Monomer(const Monomer& rhs);
+	Monomer& operator=(const Monomer& rhs);
+
+	Monomer(Polymer& polymer);
+	Monomer(Polymer& polymer, uint32 seqID,
+		const std::string& compoundID, const std::string& altID);
+
+  private:
+	Polymer*	mPolymer;
+};
+
+// --------------------------------------------------------------------
+
+class Polymer
+{
+  public:
+	Polymer(const Structure& s, const std::string& entityID, const std::string& asymID);
+	Polymer(const Polymer&);
+	Polymer& operator=(const Polymer&);
+	
+	struct iterator : public std::iterator<std::random_access_iterator_tag, Monomer>
+	{
+		typedef std::iterator<std::bidirectional_iterator_tag, Monomer>	base_type;
+		typedef base_type::reference									reference;
+		typedef base_type::pointer										pointer;
+		
+		iterator(Polymer& p, uint32 index);
+		iterator(iterator&& rhs);
+
+		iterator(const iterator& rhs);
+		iterator& operator=(const iterator& rhs);
 //		iterator& operator=(iterator&& rhs);
-//		
-//		reference	operator*();
-//		pointer		operator->();
-//		
-//		iterator&	operator++();
-//		iterator	operator++(int);
-//		
-//		iterator&	operator--();
-//		iterator	operator--(int);
-//
-//		bool		operator==(const iterator& rhs) const;
-//		bool		operator!=(const iterator& rhs) const;
-//	};
-//
-//	iterator begin();
-//	iterator end();
-//
-//  private:
-//	polymer_entity				mEntity;
-//	std::string					mAsymId;
-//	std::vector<Residue_ptr>	mMonomers;
-//};
+		
+		reference	operator*()											{ return mCurrent; }
+		pointer		operator->()										{ return &mCurrent; }
+		
+		iterator&	operator++();
+		iterator	operator++(int)
+		{
+			iterator result(*this);
+			operator++();
+			return result;
+		}
+
+		iterator&	operator--();
+		iterator	operator--(int)
+		{
+			iterator result(*this);
+			operator--();
+			return result;
+		}
+
+		bool		operator==(const iterator& rhs) const				{ return mPolymer == rhs.mPolymer and mIndex == rhs.mIndex; }
+		bool		operator!=(const iterator& rhs) const				{ return mPolymer != rhs.mPolymer or mIndex != rhs.mIndex; }
+
+	  private:
+		Polymer*	mPolymer;
+		uint32		mIndex;
+		Monomer		mCurrent;
+	};
+
+	iterator begin();
+	iterator end();
+
+	Structure* structure() const	{ return mStructure; }
+	
+	std::string asymID() const		{ return mAsymID; }
+	std::string entityID() const	{ return mEntityID; }
+
+  private:
+
+	friend struct iterator;
+
+	Structure*					mStructure;
+	std::string					mEntityID;
+	std::string					mAsymID;
+	cif::RowSet					mPolySeq;
+};
 
 // --------------------------------------------------------------------
 // file is a reference to the data stored in e.g. the cif file.
@@ -254,6 +301,9 @@ class Structure
 
 	AtomView atoms() const;
 	AtomView waters() const;
+	
+	std::vector<Polymer> polymers() const;
+	std::vector<Residue> nonPolymers() const;
 
 	Atom getAtomById(std::string id) const;
 	Atom getAtomByLocation(Point pt, float maxDistance) const;
@@ -286,8 +336,13 @@ class Structure
 	
 	// Actions
 	void removeAtom(Atom& a);
-
+	
   private:
+	friend Polymer;
+	friend Residue;
+
+	cif::Category& category(const char* name) const;
+
 	struct StructureImpl*	mImpl;
 };
 

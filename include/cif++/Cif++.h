@@ -597,6 +597,24 @@ struct Condition
 namespace detail
 {
 
+struct KeyIsEmptyConditionImpl : public ConditionImpl
+{
+	KeyIsEmptyConditionImpl(const string& ItemTag)
+		: mItemTag(ItemTag) {}
+	
+	virtual bool test(const Category& c, const Row& r) const
+	{
+		return r[mItemTag].empty();
+	}
+	
+	virtual std::string str() const
+	{
+		return mItemTag + " == <empty>";
+	}
+	
+	string mItemTag;
+};
+
 template<typename T>
 struct KeyIsConditionImpl : public ConditionImpl
 {
@@ -782,7 +800,9 @@ inline Condition operator||(Condition&& a, Condition&& b)
 {
 	return Condition(new detail::orConditionImpl(std::move(a), std::move(b)));
 }
-	
+
+struct Empty {};
+
 struct Key
 {
 	Key(const string& ItemTag) : mItemTag(ItemTag) {}
@@ -798,6 +818,11 @@ struct Key
 	{
 		string value(v ? v : "");
 		return Condition(new detail::KeyIsConditionImpl<std::string>(mItemTag, value));
+	}
+	
+	Condition operator==(Empty&) const
+	{
+		return Condition(new detail::KeyIsEmptyConditionImpl(mItemTag));
 	}
 	
 	template<typename T>

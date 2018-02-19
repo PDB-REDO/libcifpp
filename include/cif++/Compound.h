@@ -42,15 +42,21 @@ struct CompoundAtom
 // This information is derived from the ccp4 monomer library by default.
 // To create compounds, you'd best use the factory method.
 
+enum ChiralVolumeSign { negativ, positiv, both };
+
 class Compound
 {
   public:
 
+	struct ChiralCentre;
+
 	Compound(const std::string& id, const std::string& name,
 		const std::string& group, std::vector<CompoundAtom>&& atoms,
-		std::map<std::tuple<std::string,std::string>,float>&& bonds)
+		std::map<std::tuple<std::string,std::string>,float>&& bonds,
+		std::vector<ChiralCentre>&& chiralCentres)
 		: mId(id), mName(name), mGroup(group)
 		, mAtoms(std::move(atoms)), mBonds(std::move(bonds))
+		, mChiralCentres(std::move(chiralCentres))
 	{
 	}
 
@@ -88,13 +94,24 @@ class Compound
 	int charge() const;
 	bool isWater() const;
 
+	struct ChiralCentre
+	{
+		std::string			mID;
+		std::string			mAtomIDCentre;
+		std::string			mAtomID[3];
+		ChiralVolumeSign	mVolumeSign;
+	};
+
+	std::vector<ChiralCentre> chiralCentres() const			{ return mChiralCentres; }
+
   private:
-//	Entity&					mEntity;
-	std::string				mId;
-	std::string				mName;
-	std::string				mGroup;
+//	Entity&						mEntity;
+	std::string					mId;
+	std::string					mName;
+	std::string					mGroup;
 	std::vector<CompoundAtom>	mAtoms;
 	std::map<std::tuple<std::string,std::string>,float>	mBonds;
+	std::vector<ChiralCentre>	mChiralCentres;
 };
 
 // --------------------------------------------------------------------

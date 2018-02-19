@@ -451,17 +451,200 @@ float Atom::radius() const
 // --------------------------------------------------------------------
 // residue
 
-//AtomView residue::Atoms()
-//{
-//	assert(false);
-//}
+Residue::Residue(const Residue& rhs)
+	: mStructure(rhs.mStructure)
+	, mCompoundID(rhs.mCompoundID), mAsymID(rhs.mAsymID), mSeqID(rhs.mSeqID), mAltID(rhs.mAltID)
+{
+}
+
+Residue& Residue::operator=(const Residue& rhs)
+{
+	if (this != &rhs)
+	{
+		mStructure = rhs.mStructure;
+		mCompoundID = rhs.mCompoundID;
+		mAsymID = rhs.mAsymID;
+		mSeqID = rhs.mSeqID;
+		mAltID = rhs.mAltID;
+	}
+	
+	return *this;
+}
+
+const Compound& Residue::comp() const
+{
+	auto compound = Compound::create(mCompoundID);
+	if (compound == nullptr)
+		throw runtime_error("Failed to create compound " + mCompoundID);
+	return *compound;
+}
+
+AtomView Residue::atoms() const
+{
+	if (mStructure == nullptr)
+		throw runtime_error("Invalid Residue object");
+
+	if (mAtoms.empty())
+	{
+		for (auto& a: mStructure->atoms())
+		{
+			if (a.property<string>("label_asym_id") != mAsymID or
+				a.property<string>("label_comp_id") != mCompoundID)
+					continue;
+			
+			if (not mSeqID.empty() and a.property<string>("label_seq_id") != mSeqID)
+				continue;
+			
+			if (not mAltID.empty() and a.property<string>("label_alt_id") != mAltID)
+				continue;
+			
+			mAtoms.push_back(a);
+		}
+	}
+	
+	return mAtoms;
+	
+//	auto& atomSites = mStructure->category("atom_site");
+//	
+//	auto query = cif::Key("label_asym_id") == mAsymID and cif::Key("label_comp_id") == mCompoundID;
+//	
+//	if (not mSeqID.empty())
+//		query = move(query) and cif::Key("label_seq_id") == mSeqID;
+//	
+//	if (not mAltID.empty())
+//		query = move(query) and (cif::Key("label_alt_id") == cif::Empty() or cif::Key("label_alt_id") == mAltID);
+//
+//	return atomSites.find(move(query));
+}
+
+Atom Residue::atomByID(const string& atomID) const
+{
+	for (auto& a: atoms())
+	{
+		if (a.property<string>("label_atom_id") == atomID)
+			return a;
+	}
+	
+	throw runtime_error("Atom with atom_id " + atomID + " not found in residue " + mAsymID + ':' + mSeqID);
+}
 
 // --------------------------------------------------------------------
 // monomer
 
+Monomer::Monomer(const Monomer& rhs)
+	: Residue(rhs), mPolymer(rhs.mPolymer)
+{
+}
+
+Monomer& Monomer::operator=(const Monomer& rhs)
+{
+	if (this != &rhs)
+	{
+		Residue::operator=(rhs);
+		mPolymer = rhs.mPolymer;
+	}
+	
+	return *this;
+}
+
+Monomer::Monomer(Polymer& polymer)
+	: Residue(*polymer.structure())
+	, mPolymer(&polymer)
+{
+	
+}
+
+Monomer::Monomer(Polymer& polymer, uint32 seqID, const string& compoundID, const string& altID)
+	: Residue(*polymer.structure(), compoundID, polymer.asymID(), to_string(seqID), altID)
+	, mPolymer(&polymer)
+{
+}
+
 // --------------------------------------------------------------------
 // polymer
 
+Polymer::iterator::iterator(Polymer& p, uint32 index)
+	: mPolymer(&p), mIndex(index), mCurrent(p)
+{
+	auto& polySeq = mPolymer->mPolySeq;
+
+	if (index < polySeq.size())
+	{
+		int seqID;
+		string asymID, monID;
+		cif::tie(asymID, seqID, monID) =
+			polySeq[mIndex].get("asym_id", "seq_id", "mon_id");
+		
+		mCurrent = Monomer(*mPolymer, seqID, monID, "");
+	}
+}
+
+Polymer::iterator::iterator(const iterator& rhs)
+	: mPolymer(rhs.mPolymer), mIndex(rhs.mIndex), mCurrent(rhs.mCurrent)
+{
+}
+
+Polymer::iterator& Polymer::iterator::operator=(const iterator& rhs)
+{
+	if (this != &rhs)
+	{
+		mPolymer = rhs.mPolymer;
+		mIndex = rhs.mIndex;
+		mCurrent = rhs.mCurrent;
+	}
+	
+	return *this;
+}
+
+Polymer::iterator& Polymer::iterator::operator++()
+{
+	auto& polySeq = mPolymer->mPolySeq;
+
+	if (mIndex < polySeq.size())
+		++mIndex;
+
+	if (mIndex < polySeq.size())
+	{
+		int seqID;
+		string asymID, monID;
+		cif::tie(asymID, seqID, monID) =
+			polySeq[mIndex].get("asym_id", "seq_id", "mon_id");
+		
+		mCurrent = Monomer(*mPolymer, seqID, monID, "");
+	}
+	
+	return *this;
+}
+
+Polymer::Polymer(const Polymer& rhs)
+	: mStructure(rhs.mStructure), mEntityID(rhs.mEntityID), mAsymID(rhs.mAsymID), mPolySeq(rhs.mPolySeq)
+{
+	
+}
+
+Polymer::Polymer(const Structure& s, const string& entityID, const string& asymID)
+	: mStructure(const_cast<Structure*>(&s)), mEntityID(entityID), mAsymID(asymID)
+	, mPolySeq(s.category("pdbx_poly_seq_scheme").find(cif::Key("asym_id") == mAsymID and cif::Key("entity_id") == mEntityID))
+{
+}
+
+Polymer::iterator Polymer::begin()
+{
+	return iterator(*this, 0);
+}
+
+Polymer::iterator Polymer::end()
+{
+	return iterator(*this, mPolySeq.size());
+}
+
+//cif::RowSet Polymer::polySeqRows() const
+//{
+//	auto& cat = mStructure->category("pdbx_poly_seq_scheme");
+//	
+//	return cat.find(cif::Key("asym_id") == mAsymID and cif::Key("entityID") == mEntityID);
+//}
+//
 // --------------------------------------------------------------------
 // File
 
@@ -655,6 +838,44 @@ AtomView Structure::waters() const
 	return result;
 }
 
+vector<Polymer> Structure::polymers() const
+{
+	vector<Polymer> result;
+	
+	auto& polySeqScheme = category("pdbx_poly_seq_scheme");
+	
+	for (auto& r: polySeqScheme)
+	{
+		string asymID, entityID, seqID, monID;
+		cif::tie(asymID, entityID, seqID, monID) =
+			r.get("asym_id", "entity_id", "seq_id", "mon_id");
+		
+		if (result.empty() or result.back().asymID() != asymID or result.back().entityID() != entityID)
+			result.emplace_back(*this, entityID, asymID);
+	}
+	
+	return result;
+}
+
+vector<Residue> Structure::nonPolymers() const
+{
+	vector<Residue> result;
+
+	auto& nonPolyScheme = category("pdbx_nonpoly_scheme");
+	
+	for (auto& r: nonPolyScheme)
+	{
+		string asymID, monID;
+		cif::tie(asymID, monID) =
+			r.get("asym_id", "mon_id");
+		
+		if (result.empty() or result.back().asymID() != asymID)
+			result.emplace_back(*this, monID, asymID);
+	}
+	
+	return result;
+}
+
 Atom Structure::getAtomById(string id) const
 {
 	for (auto& a: mImpl->mAtoms)
@@ -669,6 +890,12 @@ Atom Structure::getAtomById(string id) const
 File& Structure::getFile() const
 {
 	return *mImpl->mFile;
+}
+
+cif::Category& Structure::category(const char* name) const
+{
+	auto& db = *getFile().impl().mDb;
+	return db[name];
 }
 
 //tuple<string,string> Structure::MapLabelToAuth(
