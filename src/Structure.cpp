@@ -164,7 +164,8 @@ struct AtomImpl
 	{
 		// Prefetch some data
 		string symbol;
-		cif::tie(symbol) = mRow.get("type_symbol");
+		cif::tie(symbol, mAtomID, mCompID, mAsymID, mSeqID, mAltID) =
+			mRow.get("type_symbol", "label_atom_id", "label_comp_id", "label_asym_id", "label_seq_id", "label_alt_id");
 		
 		mType = AtomTypeTraits(symbol).type();
 
@@ -264,20 +265,39 @@ struct AtomImpl
 		return mRadius;
 	}
 
+	const string& property(const string& name)
+	{
+		static string kEmptyString;
+		
+		auto i = mCachedProperties.find(name);
+		if (i == mCachedProperties.end())
+		{
+			auto v = mRow[name];
+			if (v.empty())
+				return kEmptyString;
+			
+			return mCachedProperties[name] = v.as<string>();
+		}
+		else
+			return i->second;
+	}
+	
 	const File&			mFile;
 	string				mId;
+	AtomType			mType;
+
+	string				mAtomID;
+	string				mCompID;
+	string				mAsymID;
+	int					mSeqID;
+	string				mAltID;
+	
+	Point				mLocation;
 	int					mRefcount;
 	cif::Row			mRow;
 	const Compound*		mCompound;
-	Point				mLocation;
-	AtomType			mType;
 	float				mRadius = nan("4");
-	
-//	const entity&		mEntity;
-//	std::string			mAsymId;
-//	std::string			mAtomId;
-//	Point				mLoc;
-//	propertyList		mProperties;
+	map<string,string>	mCachedProperties;
 };
 
 Atom::Atom(const File& f, const string& id)
@@ -317,19 +337,19 @@ Atom& Atom::operator=(const Atom& rhs)
 template<>
 string Atom::property<string>(const std::string& name) const
 {
-	return mImpl->mRow[name].as<string>();
+	return mImpl->property(name);
 }
 
 template<>
 int Atom::property<int>(const std::string& name) const
 {
-	return mImpl->mRow[name].as<int>();
+	return stoi(mImpl->property(name));
 }
 
 template<>
 float Atom::property<float>(const std::string& name) const
 {
-	return mImpl->mRow[name].as<float>();
+	return stof(mImpl->property(name));
 }
 
 string Atom::id() const
@@ -351,10 +371,10 @@ float Atom::uIso() const
 {
 	float result;
 	
-	if (not mImpl->mRow["U_iso_or_equiv"].empty())
-		result =  mImpl->mRow["U_iso_or_equiv"].as<float>();
-	else if (not mImpl->mRow["B_iso_or_equiv"].empty())
-		result = mImpl->mRow["B_iso_or_equiv"].as<float>() / (8 * kPI * kPI);
+	if (not property<string>("U_iso_or_equiv").empty())
+		result =  property<float>("U_iso_or_equiv");
+	else if (not property<string>("B_iso_or_equiv").empty())
+		result = property<float>("B_iso_or_equiv") / (8 * kPI * kPI);
 	else
 		throw runtime_error("Missing B_iso or U_iso");
 	
@@ -368,22 +388,22 @@ float Atom::occupancy() const
 
 string Atom::labelAtomId() const
 {
-	return property<string>("label_atom_id");
+	return mImpl->mAtomID;
 }
 
 string Atom::labelCompId() const
 {
-	return property<string>("label_comp_id");
+	return mImpl->mCompID;
 }
 
 string Atom::labelAsymId() const
 {
-	return property<string>("label_asym_id");
+	return mImpl->mAsymID;
 }
 
 int Atom::labelSeqId() const
 {
-	return property<int>("label_seq_id");
+	return mImpl->mSeqID;
 }
 
 string Atom::authAsymId() const
@@ -453,7 +473,7 @@ float Atom::radius() const
 
 Residue::Residue(const Residue& rhs)
 	: mStructure(rhs.mStructure)
-	, mCompoundID(rhs.mCompoundID), mAsymID(rhs.mAsymID), mSeqID(rhs.mSeqID), mAltID(rhs.mAltID)
+	, mCompoundID(rhs.mCompoundID), mAsymID(rhs.mAsymID), mAltID(rhs.mAltID), mSeqID(rhs.mSeqID)
 {
 }
 
@@ -466,6 +486,8 @@ Residue& Residue::operator=(const Residue& rhs)
 		mAsymID = rhs.mAsymID;
 		mSeqID = rhs.mSeqID;
 		mAltID = rhs.mAltID;
+		
+		mAtoms = rhs.mAtoms;
 	}
 	
 	return *this;
@@ -488,18 +510,40 @@ AtomView Residue::atoms() const
 	{
 		for (auto& a: mStructure->atoms())
 		{
-			if (a.property<string>("label_asym_id") != mAsymID or
-				a.property<string>("label_comp_id") != mCompoundID)
-					continue;
-			
-			if (not mSeqID.empty() and a.property<string>("label_seq_id") != mSeqID)
+			if (mSeqID > 0 and a.labelSeqId() != mSeqID)
 				continue;
+			
+			if (a.labelAsymId() != mAsymID or
+				a.labelCompId() != mCompoundID)
+					continue;
 			
 			if (not mAltID.empty() and a.property<string>("label_alt_id") != mAltID)
 				continue;
 			
 			mAtoms.push_back(a);
 		}
+//
+//		auto& atomSites = mStructure->category("atom_site");
+//		
+//		auto query = cif::Key("label_asym_id") == mAsymID and cif::Key("label_comp_id") == mCompoundID;
+//		
+//		if (not mSeqID.empty())
+//			query = move(query) and cif::Key("label_seq_id") == mSeqID;
+//		
+//		if (not mAltID.empty())
+//			query = move(query) and (cif::Key("label_alt_id") == cif::Empty() or cif::Key("label_alt_id") == mAltID);
+//	
+//		auto cifAtoms = atomSites.find(move(query));
+//
+//		set<string> ids;
+//		for (auto cifAtom: cifAtoms)
+//			ids.insert(cifAtom["id"].as<string>());
+//		
+//		for (auto& a: mStructure->atoms())
+//		{
+//			if (ids.count(a.id()))
+//				mAtoms.push_back(a);
+//		}
 	}
 	
 	return mAtoms;
@@ -525,7 +569,7 @@ Atom Residue::atomByID(const string& atomID) const
 			return a;
 	}
 	
-	throw runtime_error("Atom with atom_id " + atomID + " not found in residue " + mAsymID + ':' + mSeqID);
+	throw runtime_error("Atom with atom_id " + atomID + " not found in residue " + mAsymID + ':' + to_string(mSeqID));
 }
 
 // --------------------------------------------------------------------
@@ -554,8 +598,8 @@ Monomer::Monomer(Polymer& polymer)
 	
 }
 
-Monomer::Monomer(Polymer& polymer, uint32 seqID, const string& compoundID, const string& altID)
-	: Residue(*polymer.structure(), compoundID, polymer.asymID(), to_string(seqID), altID)
+Monomer::Monomer(Polymer& polymer, int seqID, const string& compoundID, const string& altID)
+	: Residue(*polymer.structure(), compoundID, polymer.asymID(), seqID, altID)
 	, mPolymer(&polymer)
 {
 }

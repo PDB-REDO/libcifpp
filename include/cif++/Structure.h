@@ -149,10 +149,10 @@ class Residue
 	Residue(const Structure& structure)
 		: mStructure(&structure) {}
 	Residue(const Structure& structure, const std::string& compoundID,
-		const std::string& asymID, const std::string& seqID = "",
+		const std::string& asymID, int seqID = 0,
 		const std::string& altID = "")
 		: mStructure(&structure), mCompoundID(compoundID)
-		, mAsymID(asymID), mSeqID(seqID), mAltID(altID) {}
+		, mAsymID(asymID), mAltID(altID), mSeqID(seqID) {}
 	
 	const Compound&		comp() const;
 	AtomView			atoms() const;
@@ -161,13 +161,14 @@ class Residue
 
 	const std::string&	compoundID() const	{ return mCompoundID; }
 	const std::string&	asymID() const		{ return mAsymID; }
-	const std::string&	seqID() const		{ return mSeqID; }
+	int					seqID() const		{ return mSeqID; }
 	const std::string&	altID() const		{ return mAltID; }
 
   protected:
 
 	const Structure* mStructure;
-	std::string	mCompoundID, mAsymID, mSeqID, mAltID;
+	std::string	mCompoundID, mAsymID, mAltID;
+	int mSeqID;
 	mutable AtomView mAtoms;
 };
 
@@ -181,7 +182,7 @@ class Monomer : public Residue
 	Monomer& operator=(const Monomer& rhs);
 
 	Monomer(Polymer& polymer);
-	Monomer(Polymer& polymer, uint32 seqID,
+	Monomer(Polymer& polymer, int seqID,
 		const std::string& compoundID, const std::string& altID);
 
   private:

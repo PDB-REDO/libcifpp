@@ -820,7 +820,7 @@ struct Key
 		return Condition(new detail::KeyIsConditionImpl<std::string>(mItemTag, value));
 	}
 	
-	Condition operator==(Empty&) const
+	Condition operator==(const Empty&) const
 	{
 		return Condition(new detail::KeyIsEmptyConditionImpl(mItemTag));
 	}
@@ -873,6 +873,13 @@ inline
 Condition Key::operator==(const std::regex& rx) const
 {
 	return Condition(new detail::KeyMatchesConditionImpl(mItemTag, rx));
+}
+
+template<>
+inline
+Condition Key::operator==(const Empty&) const
+{
+	return Condition(new detail::KeyIsEmptyConditionImpl(mItemTag));
 }
 
 struct any
