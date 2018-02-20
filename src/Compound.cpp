@@ -249,48 +249,51 @@ const Compound* CompoundFactory::create(std::string id)
 
 			auto& compBonds = cf["comp_" + id]["chem_comp_bond"];
 			
-			map<tuple<string,string>,float> bonds;
+			vector<CompoundBond> bonds;
 			for (auto row: compBonds)
 			{
-				string atomId_1, atomId_2, type;
+				CompoundBond b;
+				string type, aromatic;
 				
-				cif::tie(atomId_1, atomId_2, type) = row.get("atom_id_1", "atom_id_2", "type");
+				cif::tie(b.atomID[0], b.atomID[1], type, b.distance, aromatic) =
+					row.get("atom_id_1", "atom_id_2", "type", "distance", "aromatic");
 				
-				float value = 0;
-				if (type == "single")		value = 1;
-				else if (type == "double")	value = 2;
-				else if (type == "triple")	value = 3;
-				else if (type == "deloc" or type == "aromat" or type == "aromatic")
-											value = 1.5;
+				using cif::iequals;
+				
+				if (iequals(type, "single"))		b.type = singleBond;
+				else if (iequals(type, "double"))	b.type = doubleBond;
+				else if (iequals(type, "triple"))	b.type = tripleBond;
+				else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
+													b.type = delocalizedBond;
 				else
 				{
 					if (VERBOSE)
 						cerr << "Unimplemented chem_comp_bond.type " << type << " in file " << resFile << endl;
-					value = 1.0;
+					b.type = singleBond;
 				}
 				
-				bonds[make_tuple(atomId_1, atomId_2)] = value;
+				bonds.push_back(b);
 			}
 
 			auto& compChir = cf["comp_" + id]["chem_comp_chir"];
 			
-			vector<Compound::ChiralCentre> chiralCentres;
+			vector<ChiralCentre> chiralCentres;
 			for (auto row: compChir)
 			{
-				Compound::ChiralCentre cc;
+				ChiralCentre cc;
 				string volumeSign;
 				
-				cif::tie(cc.mID, cc.mAtomIDCentre, cc.mAtomID[0],
-					cc.mAtomID[1], cc.mAtomID[2], volumeSign) = 
+				cif::tie(cc.id, cc.atomIDCentre, cc.atomID[0],
+					cc.atomID[1], cc.atomID[2], volumeSign) = 
 					row.get("id", "atom_id_centre", "atom_id_1",
 						"atom_id_2", "atom_id_3", "volume_sign");
 				
 				if (volumeSign == "negativ")
-					cc.mVolumeSign = negativ;
+					cc.volumeSign = negativ;
 				else if (volumeSign == "positiv")
-					cc.mVolumeSign = positiv;
+					cc.volumeSign = positiv;
 				else if (volumeSign == "both")
-					cc.mVolumeSign = both;
+					cc.volumeSign = both;
 				else
 				{
 					if (VERBOSE)
@@ -312,16 +315,26 @@ const Compound* CompoundFactory::create(std::string id)
 
 bool Compound::atomsBonded(const string& atomId_1, const string& atomId_2) const
 {
-	return mBonds.count(make_tuple(atomId_1, atomId_2)) or mBonds.count(make_tuple(atomId_2, atomId_1));
+	auto i = find_if(mBonds.begin(), mBonds.end(),
+		[&](const CompoundBond& b)
+		{
+			return (b.atomID[0] == atomId_1 and b.atomID[1] == atomId_2)
+				or (b.atomID[0] == atomId_2 and b.atomID[1] == atomId_1);
+		});
+	
+	return i != mBonds.end();
 }
 
 float Compound::atomBondValue(const string& atomId_1, const string& atomId_2) const
 {
-	auto i = mBonds.find(make_tuple(atomId_1, atomId_2));
-	if (i == mBonds.end())
-		i = mBonds.find(make_tuple(atomId_2, atomId_1));
+	auto i = find_if(mBonds.begin(), mBonds.end(),
+		[&](const CompoundBond& b)
+		{
+			return (b.atomID[0] == atomId_1 and b.atomID[1] == atomId_2)
+				or (b.atomID[0] == atomId_2 and b.atomID[1] == atomId_1);
+		});
 	
-	return i == mBonds.end() ? 0 : i->second;
+	return i != mBonds.end() ? i->distance : 0;
 }
 
 }

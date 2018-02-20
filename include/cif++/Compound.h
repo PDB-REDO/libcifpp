@@ -38,22 +38,45 @@ struct CompoundAtom
 };
 
 // --------------------------------------------------------------------
+// struct containing information about the bonds
+// This information comes from the CCP4 monomer library. 
+
+enum CompoundBondType { singleBond, doubleBond, tripleBond, delocalizedBond };
+
+struct CompoundBond
+{
+	std::string			atomID[2];
+	CompoundBondType	type;
+	bool				aromatic;
+	float				distance;
+};
+
+// --------------------------------------------------------------------
+// struct containing information about a chiral centre
+// This information comes from the CCP4 monomer library. 
+
+enum ChiralVolumeSign { negativ, positiv, both };
+
+struct ChiralCentre
+{
+	std::string			id;
+	std::string			atomIDCentre;
+	std::string			atomID[3];
+	ChiralVolumeSign	volumeSign;
+};
+
+// --------------------------------------------------------------------
 // a class that contains information about a chemical compound.
 // This information is derived from the ccp4 monomer library by default.
 // To create compounds, you'd best use the factory method.
-
-enum ChiralVolumeSign { negativ, positiv, both };
 
 class Compound
 {
   public:
 
-	struct ChiralCentre;
-
 	Compound(const std::string& id, const std::string& name,
 		const std::string& group, std::vector<CompoundAtom>&& atoms,
-		std::map<std::tuple<std::string,std::string>,float>&& bonds,
-		std::vector<ChiralCentre>&& chiralCentres)
+		std::vector<CompoundBond>&& bonds, std::vector<ChiralCentre>&& chiralCentres)
 		: mId(id), mName(name), mGroup(group)
 		, mAtoms(std::move(atoms)), mBonds(std::move(bonds))
 		, mChiralCentres(std::move(chiralCentres))
@@ -83,6 +106,7 @@ class Compound
 	std::string	type() const;
 //	std::string group() const				{ return mGroup; }
 	std::vector<CompoundAtom> atoms() const	{ return mAtoms; }
+	std::vector<CompoundBond> bonds() const	{ return mBonds; }
 	
 	CompoundAtom getAtomById(const std::string& atomId) const;
 	
@@ -94,14 +118,6 @@ class Compound
 	int charge() const;
 	bool isWater() const;
 
-	struct ChiralCentre
-	{
-		std::string			mID;
-		std::string			mAtomIDCentre;
-		std::string			mAtomID[3];
-		ChiralVolumeSign	mVolumeSign;
-	};
-
 	std::vector<ChiralCentre> chiralCentres() const			{ return mChiralCentres; }
 
   private:
@@ -110,7 +126,7 @@ class Compound
 	std::string					mName;
 	std::string					mGroup;
 	std::vector<CompoundAtom>	mAtoms;
-	std::map<std::tuple<std::string,std::string>,float>	mBonds;
+	std::vector<CompoundBond>	mBonds;
 	std::vector<ChiralCentre>	mChiralCentres;
 };
 

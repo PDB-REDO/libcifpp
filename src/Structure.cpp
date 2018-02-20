@@ -565,7 +565,7 @@ Atom Residue::atomByID(const string& atomID) const
 {
 	for (auto& a: atoms())
 	{
-		if (a.property<string>("label_atom_id") == atomID)
+		if (a.labelAtomId() == atomID)
 			return a;
 	}
 	
