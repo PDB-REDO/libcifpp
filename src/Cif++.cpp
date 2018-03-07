@@ -246,6 +246,11 @@ bool ItemReference::empty() const
 	return c_str() == kEmptyResult;
 }
 
+void ItemReference::swap(ItemReference& b)
+{
+	Row::swap(mName, mRow, b.mRow);
+}
+
 }
 
 // --------------------------------------------------------------------
@@ -1786,7 +1791,7 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 	auto cat = mData->mCategory;
 	auto cix = cat->addColumn(name);
 	auto& col = cat->mColumns[cix];
-//	auto& db = cat->mDb;
+	auto& db = cat->mDb;
 
 	const char* oldValue = nullptr;
 	for (auto iv = mData->mValues; iv != nullptr; iv = iv->mNext)
@@ -1812,37 +1817,12 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 	
 	bool reinsert = false;
 	
-	if (not emplacing)	// an update of an Item's value
+	if (not emplacing and	// an update of an Item's value
+		cat->mIndex != nullptr and cat->keyFields().count(name))
 	{
-////#if DEBUG
-////		if (VERBOSE)
-////			cerr << "reassigning the value of Key field _" << cat->mName << '.' << name << endl;
-////#endif
-//		// see if we need to update any child categories that depend on this value
-//		auto iv = col.mValidator;
-//		if (iv != nullptr and not iv->mChildren.empty())
-//		{
-//			for (auto child: iv->mChildren)
-//			{
-//				if (child->mCategory == nullptr)
-//					continue;
-//				
-//				auto childCat = db.get(child->mCategory->mName);
-//				if (childCat == nullptr)
-//					continue;
-//					
-//				auto rows = childCat->find(Key(child->mTag) == oldValue);
-//				for (auto& cr: rows)
-//					cr.assign(child->mTag, value, false);
-//			}
-//		}
-
-		if (cat->mIndex != nullptr and cat->keyFields().count(name))
-		{
-			reinsert = cat->mIndex->find(mData);
-			if (reinsert)
-				cat->mIndex->erase(mData);
-		}
+		reinsert = cat->mIndex->find(mData);
+		if (reinsert)
+			cat->mIndex->erase(mData);
 	}
 
 	// first remove old value with cix
@@ -1872,11 +1852,6 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 		}
 	}
 
-#if DEBUG
-	for (auto iv = mData->mValues; iv != nullptr; iv = iv->mNext)
-		assert(iv != iv->mNext and (iv->mNext == nullptr or iv != iv->mNext->mNext));
-#endif
-
 	if (not value.empty())
 	{
 		auto nv = new(value.length()) ItemValue(value.c_str(), cix);
@@ -1892,14 +1867,167 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 		}
 	}
 
-#if DEBUG
-	for (auto iv = mData->mValues; iv != nullptr; iv = iv->mNext)
-		assert(iv != iv->mNext and (iv->mNext == nullptr or iv != iv->mNext->mNext));
-#endif
-
 	if (reinsert)
 		cat->mIndex->insert(mData);
+
+	// see if we need to update any child categories that depend on this value
+	auto iv = col.mValidator;
+	if (not emplacing and iv != nullptr and not iv->mChildren.empty())
+	{
+		for (auto child: iv->mChildren)
+		{
+			if (child->mCategory == nullptr)
+				continue;
+			
+			auto childCat = db.get(child->mCategory->mName);
+			if (childCat == nullptr)
+				continue;
+
+#if DEBUG
+cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
+#endif
+				
+			auto rows = childCat->find(Key(child->mTag) == oldValue);
+			for (auto& cr: rows)
+				cr.assign(child->mTag, value, false);
+		}
+	}
 }
+
+void Row::swap(const string& name, ItemRow* a, ItemRow* b)
+{
+	if (a == nullptr or b == nullptr)
+		throw logic_error("invalid Rows in swap");
+
+	assert(a->mCategory == b->mCategory);
+	if (a->mCategory != b->mCategory)
+		throw logic_error("Categories not same in swap");
+	
+	auto cat = a->mCategory;
+	auto cix = cat->addColumn(name);
+	auto& col = cat->mColumns[cix];
+	auto& db = cat->mDb;
+
+	// If the field is part of the Key for this Category, remove it from the index
+	// before updating
+	
+	bool reinsert = false;
+	
+	if (cat->mIndex != nullptr and cat->keyFields().count(name))
+	{
+		reinsert = true;
+		cat->mIndex->erase(a);
+		cat->mIndex->erase(b);
+	}
+
+	ItemValue* ap = nullptr;
+	ItemValue* ai = nullptr;
+	ItemValue* bp = nullptr;
+	ItemValue* bi = nullptr;
+	
+	if (a->mValues == nullptr)
+		;
+	else if (a->mValues->mColumnIndex == cix)
+		ai = a->mValues;
+	else
+	{
+		ap = a->mValues;
+		while (ap->mNext != nullptr)
+		{
+			if (ap->mNext->mColumnIndex == cix)
+			{
+				ai = ap->mNext;
+				ap->mNext = ai->mNext;
+				ai->mNext = nullptr;
+				break;
+			}
+			ap = ap->mNext;
+		}
+	}
+
+
+	if (b->mValues == nullptr)
+		;
+	else if (b->mValues->mColumnIndex == cix)
+		bi = b->mValues;
+	else
+	{
+		bp = b->mValues;
+		while (bp->mNext != nullptr)
+		{
+			if (bp->mNext->mColumnIndex == cix)
+			{
+				bi = bp->mNext;
+				bp->mNext = bi->mNext;
+				bi->mNext = nullptr;
+				break;
+			}
+			bp = bp->mNext;
+		}
+	}
+
+	if (ai != nullptr)
+	{
+		if (bp == nullptr)
+			b->mValues = ai;
+		else
+		{
+			ai->mNext = bp->mNext;
+			bp->mNext = ai;
+		}
+	}
+
+	if (bi != nullptr)
+	{
+		if (ap == nullptr)
+			a->mValues = bi;
+		else
+		{
+			bi->mNext = ap->mNext;
+			ap->mNext = bi;
+		}
+	}
+
+	if (reinsert)
+	{
+		cat->mIndex->insert(a);
+		cat->mIndex->insert(b);
+	}
+
+	// see if we need to update any child categories that depend on these values
+	auto iv = col.mValidator;
+	if ((ai != nullptr or bi != nullptr) and
+		iv != nullptr and not iv->mChildren.empty())
+	{
+		for (auto child: iv->mChildren)
+		{
+			if (child->mCategory == nullptr)
+				continue;
+			
+			auto childCat = db.get(child->mCategory->mName);
+			if (childCat == nullptr)
+				continue;
+
+#if DEBUG
+cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
+#endif
+			if (ai != nullptr)
+			{
+				auto rows = childCat->find(Key(child->mTag) == string(ai->mText));
+				for (auto& cr: rows)
+					cr.assign(child->mTag, bi == nullptr ? "" : bi->mText, false);
+			}
+
+			if (bi != nullptr)
+			{
+				auto rows = childCat->find(Key(child->mTag) == string(bi->mText));
+				for (auto& cr: rows)
+					cr.assign(child->mTag, ai == nullptr ? "" : ai->mText, false);
+			}
+		}
+	}
+}
+
 
 void Row::assign(const Item& value, bool emplacing)
 {

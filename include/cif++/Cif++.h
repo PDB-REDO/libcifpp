@@ -35,7 +35,7 @@ extern int VERBOSE;
 	
 	cif::Category atomSite("atom_site");
 	size_t nr{};
-	for (myAtom: atoms)
+	for (auto& myAtom: atoms)
 	{
 		atomSite.push_back({
 			{ "group_PDB", "ATOM" },
@@ -244,6 +244,8 @@ namespace detail
 			this->operator=(boost::lexical_cast<string>(value));
 			return *this;
 		}
+		
+		void swap(ItemReference& b);
 		
 //		operator string() const	{ return c_str(); }
 		
@@ -537,6 +539,8 @@ class Row
 
 	void assign(const string& name, const string& value, bool emplacing);
 	void assign(const Item& i, bool emplacing);
+	
+	static void swap(const string& name, ItemRow* a, ItemRow* b);
 
 	ItemRow*	mData;
 };
@@ -1159,6 +1163,12 @@ namespace std
 
 template<>
 inline void swap(cif::Row& a, cif::Row& b)
+{
+	a.swap(b);
+}
+
+template<>
+inline void swap(cif::detail::ItemReference& a, cif::detail::ItemReference& b)
 {
 	a.swap(b);
 }

@@ -335,19 +335,19 @@ Atom& Atom::operator=(const Atom& rhs)
 }
 
 template<>
-string Atom::property<string>(const std::string& name) const
+string Atom::property<string>(const string& name) const
 {
 	return mImpl->property(name);
 }
 
 template<>
-int Atom::property<int>(const std::string& name) const
+int Atom::property<int>(const string& name) const
 {
 	return stoi(mImpl->property(name));
 }
 
 template<>
-float Atom::property<float>(const std::string& name) const
+float Atom::property<float>(const string& name) const
 {
 	return stof(mImpl->property(name));
 }
@@ -811,7 +811,8 @@ struct StructureImpl
 	}
 	
 	void removeAtom(Atom& a);
-	
+	void swapAtoms(Atom& a1, Atom& a2);
+
 	File*			mFile;
 	uint32			mModelNr;
 	AtomView		mAtoms;
@@ -836,6 +837,29 @@ void StructureImpl::removeAtom(Atom& a)
 	}
 	
 	mAtoms.erase(remove(mAtoms.begin(), mAtoms.end(), a), mAtoms.end());
+}
+
+void StructureImpl::swapAtoms(Atom& a1, Atom& a2)
+{
+	cif::Datablock& db = *mFile->impl().mDb;
+	auto& atomSites = db["atom_site"];
+
+	auto r1 = atomSites.find(cif::Key("id") == a1.id());
+	auto r2 = atomSites.find(cif::Key("id") == a2.id());
+	
+	if (r1.size() != 1)
+		throw runtime_error("Cannot swap atoms since the number of atoms with id " + a1.id() + " is " + to_string(r1.size()));
+	
+	if (r2.size() != 1)
+		throw runtime_error("Cannot swap atoms since the number of atoms with id " + a2.id() + " is " + to_string(r2.size()));
+	
+	auto l1 = r1.front()["label_atom_id"];
+	auto l2 = r2.front()["label_atom_id"];
+	swap(l1, l2);
+	
+	auto l3 = r1.front()["auth_atom_id"];
+	auto l4 = r2.front()["auth_atom_id"];
+	swap(l3, l4);
 }
 
 Structure::Structure(File& f, uint32 modelNr)
@@ -1034,6 +1058,11 @@ tuple<string,int,string,string> Structure::MapLabelToPDB(
 void Structure::removeAtom(Atom& a)
 {
 	mImpl->removeAtom(a);
+}
+
+void Structure::swapAtoms(Atom& a1, Atom& a2)
+{
+	mImpl->swapAtoms(a1, a2);
 }
 
 }

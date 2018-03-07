@@ -337,6 +337,7 @@ class Structure
 	
 	// Actions
 	void removeAtom(Atom& a);
+	void swapAtoms(Atom& a1, Atom& a2);	// swap the labels for these atoms
 	
   private:
 	friend Polymer;
