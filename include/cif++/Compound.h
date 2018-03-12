@@ -119,6 +119,8 @@ class Compound
 	bool isWater() const;
 
 	std::vector<ChiralCentre> chiralCentres() const			{ return mChiralCentres; }
+	
+	bool isIsomerOf(const Compound& c) const;
 
   private:
 //	Entity&						mEntity;

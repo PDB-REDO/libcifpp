@@ -1883,9 +1883,9 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 			if (childCat == nullptr)
 				continue;
 
-#if DEBUG
-cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
-#endif
+//#if DEBUG
+//cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
+//#endif
 				
 			auto rows = childCat->find(Key(child->mTag) == oldValue);
 			for (auto& cr: rows)
@@ -2008,9 +2008,9 @@ void Row::swap(const string& name, ItemRow* a, ItemRow* b)
 			if (childCat == nullptr)
 				continue;
 
-#if DEBUG
-cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
-#endif
+//#if DEBUG
+//cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
+//#endif
 			if (ai != nullptr)
 			{
 				auto rows = childCat->find(Key(child->mTag) == string(ai->mText));

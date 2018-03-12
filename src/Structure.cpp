@@ -239,6 +239,15 @@ struct AtomImpl
 			delete this;
 	}
 	
+	void moveTo(const Point& p)
+	{
+		mRow["Cartn_x"] = p.getX();
+		mRow["Cartn_y"] = p.getY();
+		mRow["Cartn_z"] = p.getZ();
+
+		mLocation = p;
+	}
+	
 	const Compound& comp()
 	{
 		if (mCompound == nullptr)
@@ -424,6 +433,11 @@ int Atom::authSeqId() const
 Point Atom::location() const
 {
 	return mImpl->mLocation;
+}
+
+void Atom::location(Point p)
+{
+	mImpl->moveTo(p);
 }
 
 const Compound& Atom::comp() const
@@ -812,6 +826,7 @@ struct StructureImpl
 	
 	void removeAtom(Atom& a);
 	void swapAtoms(Atom& a1, Atom& a2);
+	void moveAtom(Atom& a, Point p);
 
 	File*			mFile;
 	uint32			mModelNr;
@@ -860,6 +875,11 @@ void StructureImpl::swapAtoms(Atom& a1, Atom& a2)
 	auto l3 = r1.front()["auth_atom_id"];
 	auto l4 = r2.front()["auth_atom_id"];
 	swap(l3, l4);
+}
+
+void StructureImpl::moveAtom(Atom& a, Point p)
+{
+	a.location(p);
 }
 
 Structure::Structure(File& f, uint32 modelNr)
@@ -1063,6 +1083,11 @@ void Structure::removeAtom(Atom& a)
 void Structure::swapAtoms(Atom& a1, Atom& a2)
 {
 	mImpl->swapAtoms(a1, a2);
+}
+
+void Structure::moveAtom(Atom& a, Point p)
+{
+	mImpl->moveAtom(a, p);
 }
 
 }

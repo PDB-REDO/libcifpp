@@ -92,6 +92,7 @@ class Atom
 	AtomType type() const;
 
 	Point location() const;
+	void location(Point p);
 
 	const Compound& comp() const;
 	const Entity& ent() const;
@@ -338,6 +339,7 @@ class Structure
 	// Actions
 	void removeAtom(Atom& a);
 	void swapAtoms(Atom& a1, Atom& a2);	// swap the labels for these atoms
+	void moveAtom(Atom& a, Point p);	// move atom to a new location
 	
   private:
 	friend Polymer;
