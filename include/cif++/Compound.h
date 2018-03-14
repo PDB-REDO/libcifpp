@@ -121,6 +121,8 @@ class Compound
 	std::vector<ChiralCentre> chiralCentres() const			{ return mChiralCentres; }
 	
 	bool isIsomerOf(const Compound& c) const;
+	
+	std::vector<std::string>	isomers() const;
 
   private:
 //	Entity&						mEntity;

@@ -9,12 +9,16 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
 
+#include <zeep/xml/document.hpp>
+
 #include "cif++/Cif++.h"
 #include "cif++/Compound.h"
+#include "cif++/mrsrc.h"
 
 using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
+namespace zx = zeep::xml;
 
 namespace libcif
 {
@@ -67,6 +71,88 @@ struct CompoundBondLess
 };
 
 // --------------------------------------------------------------------
+// Isomers in the ccp4 dictionary
+
+struct IsomerSet
+{
+	vector<string>	compounds;
+	
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zx::make_element_nvp("compound", compounds);
+	}
+};
+
+struct IsomerSets
+{
+	vector<IsomerSet>	isomers;
+	
+	template<typename Archive>
+	void serialize(Archive& ar, unsigned long version)
+	{
+		ar & zx::make_element_nvp("isomer-set", isomers);
+	}
+};
+
+class IsomerDB
+{
+  public:
+	
+	static IsomerDB& instance();
+
+	size_t count(const string& compound) const;
+	const vector<string>& operator[](const string& compound) const;
+	
+  private:
+	
+	IsomerDB();
+	
+	IsomerSets			mData;
+//	map<string,size_t>	mIndex;
+};
+
+IsomerDB::IsomerDB()
+{
+	mrsrc::rsrc isomers("isomers.xml");
+	if (not isomers)
+		throw runtime_error("Missing isomers.xml resource");
+	
+	zx::document doc(string(isomers.data(), isomers.size()));
+	zx::deserializer d(doc.root());
+	
+	d & zx::make_element_nvp("isomers", mData);
+}
+
+IsomerDB& IsomerDB::instance()
+{
+	static IsomerDB sInstance;
+	return sInstance;
+}
+
+size_t IsomerDB::count(const string& compound) const
+{
+	size_t n = 0;
+	for (auto& d: mData.isomers)
+	{
+		if (find(d.compounds.begin(), d.compounds.end(), compound) != d.compounds.end())
+			++n;
+	}
+	return n;
+}
+
+const vector<string>& IsomerDB::operator[](const string& compound) const
+{
+	for (auto& d: mData.isomers)
+	{
+		if (find(d.compounds.begin(), d.compounds.end(), compound) != d.compounds.end())
+			return d.compounds;
+	}
+	
+	throw runtime_error("No isomer set found containing " + compound);
+}
+
+// --------------------------------------------------------------------
 // Brute force comparison of two structures, when they are isomers the
 // mapping between the atoms of both is returned
 // This is not an optimal solution, but it works good enough for now
@@ -76,6 +162,7 @@ struct Node
 	string									id;
 	AtomType								symbol;
 	vector<tuple<size_t,CompoundBondType>>	links;
+	size_t									hydrogens = 0;
 };
 
 // Check to see if the nodes a[iA] and b[iB] are the start of a similar sub structure
@@ -115,9 +202,22 @@ bool SubStructuresAreIsomeric(
 			tie(lA, typeA) = na.links[i];			assert(lA < a.size());
 			tie(lB, typeB) = nb.links[ilb[i]];		assert(lB < b.size());
 			
-			if (typeA != typeB or visitedA[lA] != visitedB[lB] or a[lA].symbol != b[lB].symbol or a[lA].links.size() != b[lB].links.size())
+			if (typeA != typeB or visitedA[lA] != visitedB[lB])
+			{
 				result = false;
-			else if (not visitedA[lA])
+				break;
+			}
+
+			auto& la = a[lA];
+			auto& lb = b[lB];
+			
+			if (la.symbol != lb.symbol or la.hydrogens != lb.hydrogens or la.links.size() != lb.links.size())
+			{
+				result = false;
+				break;
+			}
+
+			if (not visitedA[lA])
 				result = SubStructuresAreIsomeric(a, b, lA, lB, visitedA, visitedB, m);
 		}
 		
@@ -158,8 +258,15 @@ bool StructuresAreIsomeric(vector<CompoundAtom> atomsA, const vector<CompoundBon
 		size_t atom1 = ma.at(bondA.atomID[0]);
 		size_t atom2 = ma.at(bondA.atomID[1]);
 		
-		a[atom1].links.emplace_back(atom2, bondA.type);
-		a[atom2].links.emplace_back(atom1, bondA.type);
+		if (a[atom2].symbol == H)
+			a[atom1].hydrogens += 1;
+		else
+			a[atom1].links.emplace_back(atom2, bondA.type);
+			
+		if (a[atom1].symbol == H)
+			a[atom2].hydrogens += 1;
+		else
+			a[atom2].links.emplace_back(atom1, bondA.type);
 	}
 
 	for (auto& atomB: atomsB)
@@ -173,21 +280,26 @@ bool StructuresAreIsomeric(vector<CompoundAtom> atomsA, const vector<CompoundBon
 		size_t atom1 = mb.at(bondB.atomID[0]);
 		size_t atom2 = mb.at(bondB.atomID[1]);
 		
-		b[atom1].links.emplace_back(atom2, bondB.type);
-		b[atom2].links.emplace_back(atom1, bondB.type);
+		if (b[atom2].symbol == H)
+			b[atom1].hydrogens += 1;
+		else
+			b[atom1].links.emplace_back(atom2, bondB.type);
+		
+		if (b[atom1].symbol == H)
+			b[atom2].hydrogens += 1;
+		else
+			b[atom2].links.emplace_back(atom1, bondB.type);
 	}
 
 	size_t N = atomsA.size();
-	size_t ia = find_if(a.begin(), a.end(), [](auto& a) { return a.symbol != libcif::H; }) - a.begin();
-	if (ia == N)
-		throw runtime_error("This compound contains no atoms other than Hydrogen?");
+	size_t ia = 0;
 	
 	bool result = false;
 
 	// try each atom in B to see if it can be traced to be similar to A starting at zero
 	for (size_t ib = 0; ib < N; ++ib)
 	{
-		if (b[ib].symbol != a[ia].symbol or a[ib].links.size() != b[ia].links.size())
+		if (b[ib].symbol != a[ia].symbol or a[ia].hydrogens != b[ib].hydrogens or a[ia].links.size() != b[ib].links.size())
 			continue;
 		
 		vector<bool> va(N, false), vb(N, false);
@@ -608,6 +720,24 @@ bool Compound::isIsomerOf(const Compound& c) const
 		}
 		
 		break;	
+	}
+	
+	return result;
+}
+
+vector<string> Compound::isomers() const
+{
+	vector<string> result;
+	
+	auto& db = IsomerDB::instance();
+	if (db.count(mId))
+	{
+		result = db[mId];
+		
+		auto i = find(result.begin(), result.end(), mId);
+		assert(i != result.end());
+		
+		result.erase(i);
 	}
 	
 	return result;
