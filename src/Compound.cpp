@@ -69,6 +69,7 @@ struct CompoundBondLess
 // --------------------------------------------------------------------
 // Brute force comparison of two structures, when they are isomers the
 // mapping between the atoms of both is returned
+// This is not an optimal solution, but it works good enough for now
 
 struct Node
 {
@@ -82,57 +83,56 @@ bool SubStructuresAreIsomeric(
 	const vector<Node>& a, const vector<Node>& b, size_t iA, size_t iB,
 	vector<bool> visitedA, vector<bool> visitedB, vector<tuple<string,string>>& outMapping)
 {
-	bool result = false;
-
 	auto& na = a[iA];
 	auto& nb = b[iB];
 	size_t N = na.links.size();
 	
-	if (na.symbol == nb.symbol and nb.links.size() == N)
+	assert(na.symbol == nb.symbol);
+	assert(nb.links.size() == N);
+
+	// we're optimistic today
+	bool result = true;
+	
+	visitedA[iA] = true;
+	visitedB[iB] = true;
+	
+	// we now have two sets of links to compare. 
+	// Compare each permutation of the second set of indices with the first
+	
+	vector<size_t> ilb(N);
+	iota(ilb.begin(), ilb.end(), 0);
+	
+	for (;;)
 	{
 		result = true;
+		vector<tuple<string,string>> m;
 		
-		visitedA[iA] = true;
-		visitedB[iB] = true;
-		
-		// we now have two sets of links to compare. 
-		// To keep code clean, first create the list of possible permutations
-		
-		vector<size_t> ilb(N);
-		iota(ilb.begin(), ilb.end(), 0);
-		
-		for (;;)
+		for (size_t i = 0; result and i < N; ++i)
 		{
-			result = true;
-			vector<tuple<string,string>> m = outMapping;
-			
-			for (size_t i = 0; result and i < N; ++i)
-			{
-				size_t lA, lB;
-				CompoundBondType typeA, typeB;
+			size_t lA, lB;
+			CompoundBondType typeA, typeB;
 
-				tie(lA, typeA) = na.links[i];
-				tie(lB, typeB) = nb.links[ilb[i]];
-				
-				if (typeA != typeB or visitedA[lA] != visitedB[lB])
-					result = false;
-				else if (not visitedA[lA])
-					result = SubStructuresAreIsomeric(a, b, lA, lB, visitedA, visitedB, m);
-			}
+			tie(lA, typeA) = na.links[i];			assert(lA < a.size());
+			tie(lB, typeB) = nb.links[ilb[i]];		assert(lB < b.size());
 			
-			if (result)
-			{
-				swap(m, outMapping);
-				break;
-			}
-
-			if (not next_permutation(ilb.begin(), ilb.end()))
-				break;
+			if (typeA != typeB or visitedA[lA] != visitedB[lB] or a[lA].symbol != b[lB].symbol or a[lA].links.size() != b[lB].links.size())
+				result = false;
+			else if (not visitedA[lA])
+				result = SubStructuresAreIsomeric(a, b, lA, lB, visitedA, visitedB, m);
 		}
 		
 		if (result)
-			outMapping.emplace_back(na.id, nb.id);
+		{
+			outMapping.insert(outMapping.end(), m.begin(), m.end());
+			break;
+		}
+
+		if (not next_permutation(ilb.begin(), ilb.end()))
+			break;
 	}
+	
+	if (result)
+		outMapping.emplace_back(na.id, nb.id);
 	
 	return result;
 }
@@ -178,15 +178,21 @@ bool StructuresAreIsomeric(vector<CompoundAtom> atomsA, const vector<CompoundBon
 	}
 
 	size_t N = atomsA.size();
+	size_t ia = find_if(a.begin(), a.end(), [](auto& a) { return a.symbol != libcif::H; }) - a.begin();
+	if (ia == N)
+		throw runtime_error("This compound contains no atoms other than Hydrogen?");
 	
 	bool result = false;
 
 	// try each atom in B to see if it can be traced to be similar to A starting at zero
 	for (size_t ib = 0; ib < N; ++ib)
 	{
+		if (b[ib].symbol != a[ia].symbol or a[ib].links.size() != b[ia].links.size())
+			continue;
+		
 		vector<bool> va(N, false), vb(N, false);
 
-		if (SubStructuresAreIsomeric(a, b, 0, ib, va, vb, outMapping))
+		if (SubStructuresAreIsomeric(a, b, ia, ib, va, vb, outMapping))
 		{
 			result = true;
 			break;
@@ -451,9 +457,9 @@ const Compound* CompoundFactory::create(std::string id)
 				
 				using cif::iequals;
 				
-				if (iequals(type, "single"))		b.type = singleBond;
-				else if (iequals(type, "double"))	b.type = doubleBond;
-				else if (iequals(type, "triple"))	b.type = tripleBond;
+				if (iequals(type, "single") or iequals(type, "sing"))		b.type = singleBond;
+				else if (iequals(type, "double") or iequals(type, "doub"))	b.type = doubleBond;
+				else if (iequals(type, "triple") or iequals(type, "trip"))	b.type = tripleBond;
 				else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
 													b.type = delocalizedBond;
 				else
