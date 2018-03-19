@@ -352,7 +352,8 @@ string Atom::property<string>(const string& name) const
 template<>
 int Atom::property<int>(const string& name) const
 {
-	return stoi(mImpl->property(name));
+	auto v = mImpl->property(name);
+	return v.empty() ? 0 : stoi(v);
 }
 
 template<>
