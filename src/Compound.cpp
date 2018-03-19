@@ -418,6 +418,11 @@ bool Compound::isWater() const
 	return mId == "HOH" or mId == "H2O";
 }
 
+bool Compound::isSugar() const
+{
+	return cif::iequals(mGroup, "furanose") or cif::iequals(mGroup, "pyranose");
+}
+
 CompoundAtom Compound::getAtomById(const string& atomId) const
 {
 	CompoundAtom result;
@@ -723,6 +728,17 @@ bool Compound::isIsomerOf(const Compound& c) const
 	}
 	
 	return result;
+}
+
+vector<tuple<string,string>> Compound::mapToIsomer(const Compound& c) const
+{
+	vector<tuple<string,string>> result;
+	
+	bool check = StructuresAreIsomeric(mAtoms, mBonds, c.mAtoms, c.mBonds, result);
+	if (not check)
+		throw runtime_error("Compounds " + id() + " and " + c.id() + " are not isomers in call to mapToIsomer");
+	
+	return move(result);
 }
 
 vector<string> Compound::isomers() const

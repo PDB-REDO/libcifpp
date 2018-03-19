@@ -117,12 +117,13 @@ class Compound
 	float formulaWeight() const;
 	int charge() const;
 	bool isWater() const;
+	bool isSugar() const;
 
 	std::vector<ChiralCentre> chiralCentres() const			{ return mChiralCentres; }
 	
-	bool isIsomerOf(const Compound& c) const;
-	
 	std::vector<std::string>	isomers() const;
+	bool isIsomerOf(const Compound& c) const;
+	std::vector<std::tuple<std::string,std::string>> mapToIsomer(const Compound& c) const;
 
   private:
 //	Entity&						mEntity;
