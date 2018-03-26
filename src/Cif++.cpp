@@ -1808,6 +1808,8 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 	if (oldValue != nullptr and value == oldValue)	// no need to update
 		return;
 
+	string oldStrValue = oldValue ? oldValue : "";
+
 	// check the value
 	if (col.mValidator)
 		(*col.mValidator)(value);
@@ -1883,11 +1885,11 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 			if (childCat == nullptr)
 				continue;
 
-//#if DEBUG
-//cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
-//#endif
+#if DEBUG
+cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
+#endif
 				
-			auto rows = childCat->find(Key(child->mTag) == oldValue);
+			auto rows = childCat->find(Key(child->mTag) == oldStrValue);
 			for (auto& cr: rows)
 				cr.assign(child->mTag, value, false);
 		}
@@ -2008,9 +2010,9 @@ void Row::swap(const string& name, ItemRow* a, ItemRow* b)
 			if (childCat == nullptr)
 				continue;
 
-//#if DEBUG
-//cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
-//#endif
+#if DEBUG
+cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
+#endif
 			if (ai != nullptr)
 			{
 				auto rows = childCat->find(Key(child->mTag) == string(ai->mText));

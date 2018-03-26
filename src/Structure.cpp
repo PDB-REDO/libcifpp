@@ -587,6 +587,18 @@ Atom Residue::atomByID(const string& atomID) const
 	throw runtime_error("Atom with atom_id " + atomID + " not found in residue " + mAsymID + ':' + to_string(mSeqID));
 }
 
+// Residue is a single entity if the atoms for the asym with mAsymID is equal
+// to the number of atoms in this residue...  hope this is correct....
+bool Residue::isEntity() const
+{
+	auto& db = mStructure->datablock();
+	
+	auto a1 = db["atom_site"].find(cif::Key("label_asym_id") == mAsymID);
+	auto a2 = atoms();
+	
+	return a1.size() == a2.size();
+}
+
 // --------------------------------------------------------------------
 // monomer
 
@@ -828,11 +840,59 @@ struct StructureImpl
 	void removeAtom(Atom& a);
 	void swapAtoms(Atom& a1, Atom& a2);
 	void moveAtom(Atom& a, Point p);
+	void changeResidue(Residue& res, const string& newCompound,
+		const vector<tuple<string,string>>& remappedAtoms);
+
+	void insertCompound(const string& compoundID, bool isEntity);
 
 	File*			mFile;
 	uint32			mModelNr;
 	AtomView		mAtoms;
 };
+
+void StructureImpl::insertCompound(const string& compoundID, bool isEntity)
+{
+	auto compound = Compound::create(compoundID);
+	if (compound == nullptr)
+		throw runtime_error("Trying to insert unknown compound " + compoundID + " (not found in CCP4 monomers lib)");
+
+	cif::Datablock& db = *mFile->impl().mDb;
+	
+	auto& chemComp = db["chem_comp"];
+	auto r = chemComp.find(cif::Key("id") == compoundID);
+	if (r.empty())
+	{
+		chemComp.emplace({
+			{ "id", compoundID },
+			{ "name", compound->name() },
+			{ "formula", compound->formula() },
+			{ "type", compound->type() }
+		});
+	}
+	
+	if (isEntity)
+	{
+		auto& pdbxEntityNonpoly = db["pdbx_entity_nonpoly"];
+		if (pdbxEntityNonpoly.find(cif::Key("comp_id") == compoundID).empty())
+		{
+			auto& entity = db["entity"];
+			string entityID = to_string(entity.size() + 1);
+			
+			entity.emplace({
+				{ "id", entityID },
+				{ "type", "non-polymer" },
+				{ "pdbx_description", compound->name() },
+				{ "formula_weight", compound->formulaWeight() }
+			});
+			
+			pdbxEntityNonpoly.emplace({
+				{ "entity_id", entityID  },
+				{ "name", compound->name() },
+				{ "comp_id", compoundID }
+			});
+		}
+	}
+}
 
 void StructureImpl::removeAtom(Atom& a)
 {
@@ -883,6 +943,55 @@ void StructureImpl::moveAtom(Atom& a, Point p)
 	a.location(p);
 }
 
+void StructureImpl::changeResidue(Residue& res, const string& newCompound,
+		const vector<tuple<string,string>>& remappedAtoms)
+{
+	cif::Datablock& db = *mFile->impl().mDb;
+
+	string entityID;
+
+	// First make sure the compound is already known or insert it.
+	// And if the residue is an entity, we must make sure it exists
+	insertCompound(newCompound, res.isEntity());
+	
+	auto& atomSites = db["atom_site"];
+	auto atoms = res.atoms();
+
+	for (auto& a: remappedAtoms)
+	{
+		string a1, a2;
+		tie(a1, a2) = a;
+		
+		auto i = find_if(atoms.begin(), atoms.end(), [&](const Atom& a) { return a.labelAtomId() == a1; });
+		if (i == atoms.end())
+		{
+			cerr << "Missing atom for atom ID " << a1 << endl;
+			continue;
+		}
+
+		auto r = atomSites.find(cif::Key("id") == i->id());
+
+		if (r.size() != 1)
+			continue;
+		
+		if (a1 != a2)
+			r.front()["label_atom_id"] = a2;
+	}
+	
+	for (auto a: atoms)
+	{
+		auto r = atomSites.find(cif::Key("id") == a.id());
+		assert(r.size() == 1);
+
+		if (r.size() != 1)
+			continue;
+
+		r.front()["label_comp_id"] = newCompound;
+		if (not entityID.empty())
+			r.front()["label_entity_id"] = entityID;
+	}
+}
+
 Structure::Structure(File& f, uint32 modelNr)
 	: mImpl(new StructureImpl(*this, f, modelNr))
 {
@@ -902,7 +1011,7 @@ AtomView Structure::waters() const
 {
 	AtomView result;
 	
-	auto& db = *getFile().impl().mDb;
+	auto& db = datablock();
 	
 	// Get the entity id for water
 	auto& entityCat = db["entity"];
@@ -983,7 +1092,7 @@ File& Structure::getFile() const
 
 cif::Category& Structure::category(const char* name) const
 {
-	auto& db = *getFile().impl().mDb;
+	auto& db = datablock();
 	return db[name];
 }
 
@@ -1034,7 +1143,7 @@ cif::Category& Structure::category(const char* name) const
 tuple<string,int,string,string> Structure::MapLabelToPDB(
 	const string& asymId, int seqId, const string& monId)
 {
-	auto& db = *getFile().impl().mDb;
+	auto& db = datablock();
 	
 	tuple<string,int,string,string> result;
 	
@@ -1073,6 +1182,11 @@ tuple<string,int,string,string> Structure::MapLabelToPDB(
 	return result;
 }
 
+cif::Datablock& Structure::datablock() const
+{
+	return *mImpl->mFile->impl().mDb;
+}
+
 // --------------------------------------------------------------------
 // actions
 
@@ -1089,6 +1203,12 @@ void Structure::swapAtoms(Atom& a1, Atom& a2)
 void Structure::moveAtom(Atom& a, Point p)
 {
 	mImpl->moveAtom(a, p);
+}
+
+void Structure::changeResidue(Residue& res, const string& newCompound,
+		const vector<tuple<string,string>>& remappedAtoms)
+{
+	mImpl->changeResidue(res, newCompound, remappedAtoms);
 }
 
 }

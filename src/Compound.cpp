@@ -231,7 +231,7 @@ bool SubStructuresAreIsomeric(
 			break;
 	}
 	
-	if (result)
+	if (result and na.id != nb.id)
 		outMapping.emplace_back(na.id, nb.id);
 	
 	return result;
@@ -368,6 +368,16 @@ string Compound::formula() const
 	return result;
 }
 
+float Compound::formulaWeight() const
+{
+	float result = 0;
+
+	for (auto r: mAtoms)
+		result += AtomTypeTraits(r.typeSymbol).weight();
+
+	return result;
+}
+
 int Compound::charge() const
 {
 	float result = 0;
@@ -409,6 +419,8 @@ string Compound::type() const
 		result = "DNA linking";
 	else if (cif::iequals(mGroup, "RNA"))
 		result = "RNA linking";
+	else
+		result = mGroup;
 	
 	return result;
 }
@@ -606,9 +618,9 @@ const Compound* CompoundFactory::create(std::string id)
 					row.get("id", "atom_id_centre", "atom_id_1",
 						"atom_id_2", "atom_id_3", "volume_sign");
 				
-				if (volumeSign == "negativ")
+				if (volumeSign == "negativ" or volumeSign == "negative")
 					cc.volumeSign = negativ;
-				else if (volumeSign == "positiv")
+				else if (volumeSign == "positiv" or volumeSign == "positive")
 					cc.volumeSign = positiv;
 				else if (volumeSign == "both")
 					cc.volumeSign = both;

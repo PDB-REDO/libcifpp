@@ -164,6 +164,9 @@ class Residue
 	const std::string&	asymID() const		{ return mAsymID; }
 	int					seqID() const		{ return mSeqID; }
 	const std::string&	altID() const		{ return mAltID; }
+	
+	// Is this residue a single entity?
+	bool isEntity() const;
 
   protected:
 
@@ -340,12 +343,15 @@ class Structure
 	void removeAtom(Atom& a);
 	void swapAtoms(Atom& a1, Atom& a2);	// swap the labels for these atoms
 	void moveAtom(Atom& a, Point p);	// move atom to a new location
+	void changeResidue(Residue& res, const std::string& newCompound,
+		const std::vector<std::tuple<std::string,std::string>>& remappedAtoms);
 	
   private:
 	friend Polymer;
 	friend Residue;
 
 	cif::Category& category(const char* name) const;
+	cif::Datablock& datablock() const;
 
 	struct StructureImpl*	mImpl;
 };
