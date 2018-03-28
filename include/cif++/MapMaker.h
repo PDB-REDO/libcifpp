@@ -39,6 +39,7 @@ class MapMaker
 		const Structure& structure,
 		bool noBulk, AnisoScalingFlag anisoScaling,
 		float samplingRate = 4.5,
+		bool electronScattering = false,
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
 		std::initializer_list<std::string> freeLabels = { "FREE" });
 	void loadFromMapFiles(const boost::filesystem::path& fbMapFile,

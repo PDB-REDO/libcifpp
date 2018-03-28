@@ -151,7 +151,7 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc)
 template<typename FTYPE>
 void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 		const Structure& structure, bool noBulk, AnisoScalingFlag anisoScaling, float samplingRate,
-		initializer_list<string> foLabels, initializer_list<string> freeLabels)
+		bool electronScattering, initializer_list<string> foLabels, initializer_list<string> freeLabels)
 {
 	if (VERBOSE)
 		cerr << "Recalculating maps from " << mtzFile << endl;
@@ -195,8 +195,13 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 
 	HKL_data<F_phi> fc(hklInfo, mCell);
 
-	auto& exptl = structure.getFile().data()["exptl"];
-	if (not exptl.empty() and exptl.front()["method"] == "ELECTRON CRYSTALLOGRAPHY")
+	if (not electronScattering)
+	{
+		auto& exptl = structure.getFile().data()["exptl"];
+		electronScattering = not exptl.empty() and exptl.front()["method"] == "ELECTRON CRYSTALLOGRAPHY";
+	}
+
+	if (electronScattering)
 	{
 		if (VERBOSE)
 			cerr << "Using electron scattering factors" << endl;
