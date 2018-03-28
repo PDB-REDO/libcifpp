@@ -114,7 +114,8 @@ class IsomerDB
 
 IsomerDB::IsomerDB()
 {
-	mrsrc::rsrc isomers("isomers.xml");
+//	mrsrc::rsrc isomers("isomers.xml");
+	mrsrc::rsrc isomers("isomers-with-sugar.xml");
 	if (not isomers)
 		throw runtime_error("Missing isomers.xml resource");
 	

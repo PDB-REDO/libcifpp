@@ -199,7 +199,8 @@ class AtomTypeTraits
 	
 	// data type encapsulating the Waasmaier & Kirfel scattering factors
 	// in a simplified form (only a and b).
-	struct WKSF
+	// Added the electrion scattering factors as well
+	struct SFData
 	{
 		double a[6], b[6];
 	};
@@ -207,7 +208,8 @@ class AtomTypeTraits
 	// to get the Cval and Siva values, use this constant as charge:
 	enum { kWKSFVal = -99 };
 	
-	const WKSF& wksf(int charge = 0) const;
+	const SFData& wksf(int charge = 0) const;
+	const SFData& elsf() const;
 
   private:
 	const struct AtomTypeInfo*	mInfo;

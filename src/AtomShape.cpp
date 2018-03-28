@@ -328,10 +328,11 @@ double DensityIntegration::integrateRadius(float perc, float occupancy, double y
 
 struct AtomShapeImpl
 {
-	AtomShapeImpl(AtomType symbol, int charge, float uIso, float occupancy, float resHigh, float resLow)
+	AtomShapeImpl(AtomType symbol, int charge, float uIso, float occupancy, float resHigh, float resLow, bool electronScattering)
 		: mSymbol(symbol), mCharge(charge), mUIso(uIso), mOccupancy(occupancy)
 		, mResHigh(resHigh), mResLow(resLow)
 		, mIntegrator(DensityIntegration::instance(resLow, resHigh))
+		, mElectronScattering(electronScattering)
 	{
 		auto st = mIntegrator.st();
 		auto sts = mIntegrator.sts();
@@ -340,7 +341,8 @@ struct AtomShapeImpl
 		mYi = 0;
 		mFst = vector<double>(st.size(), 0);
 	
-		auto& D = AtomTypeTraits(symbol).wksf(charge);
+		auto& D = 
+			mElectronScattering ? AtomTypeTraits(symbol).elsf() : AtomTypeTraits(symbol).wksf(charge);
 		auto bIso = clipper::Util::u2b(uIso);
 		
 		float as = mIntegrator.a() * mIntegrator.a();
@@ -375,6 +377,7 @@ struct AtomShapeImpl
 	int			mCharge;
 	float		mUIso, mOccupancy;
 	float		mResHigh, mResLow;
+	bool		mElectronScattering;
 
 	const DensityIntegration&	mIntegrator;
 	double				mYi;
@@ -400,15 +403,15 @@ struct AtomShapeImpl
 	
 // --------------------------------------------------------------------
 
-AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow)
+AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow, bool electronScattering)
 	: mImpl(new AtomShapeImpl(atom.type(), atom.charge(), atom.uIso(),
-		atom.occupancy(), resHigh, resLow))
+		atom.occupancy(), resHigh, resLow, electronScattering))
 {
 }
 
-AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow, float bFactor)
+AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow, bool electronScattering, float bFactor)
 	: mImpl(new AtomShapeImpl(atom.type(), atom.charge(), clipper::Util::b2u(bFactor),
-		1.0, resHigh, resLow))
+		1.0, resHigh, resLow, electronScattering))
 {
 }
 

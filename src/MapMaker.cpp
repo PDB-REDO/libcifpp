@@ -194,20 +194,44 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 		atoms.push_back(a.toClipper());
 
 	HKL_data<F_phi> fc(hklInfo, mCell);
-	
-	if (noBulk)
+
+	auto& exptl = structure.getFile().data()["exptl"];
+	if (not exptl.empty() and exptl.front()["method"] == "ELECTRON CRYSTALLOGRAPHY")
 	{
-		clipper::SFcalc_aniso_fft<float> sfc;
-		sfc(fc, atoms);
+		if (VERBOSE)
+			cerr << "Using electron scattering factors" << endl;
+
+		if (noBulk)
+		{
+			clipper::SFcalc_aniso_fft<float,clipper::sftElectron> sfc;
+			sfc(fc, atoms);
+		}
+		else
+		{
+			clipper::SFcalc_obs_bulk<float,clipper::sftElectron> sfcb;
+			sfcb(fc, fo, atoms);
+			
+			if (VERBOSE)
+				cerr << "Bulk correction volume: " << sfcb.bulk_frac() << endl
+					 << "Bulk correction factor: " << sfcb.bulk_scale() << endl;
+		}
 	}
 	else
 	{
-		clipper::SFcalc_obs_bulk<float> sfcb;
-		sfcb(fc, fo, atoms);
-		
-		if (VERBOSE)
-			cerr << "Bulk correction volume: " << sfcb.bulk_frac() << endl
-				 << "Bulk correction factor: " << sfcb.bulk_scale() << endl;
+		if (noBulk)
+		{
+			clipper::SFcalc_aniso_fft<float,clipper::sftWaasmaierKirfel> sfc;
+			sfc(fc, atoms);
+		}
+		else
+		{
+			clipper::SFcalc_obs_bulk<float,clipper::sftWaasmaierKirfel> sfcb;
+			sfcb(fc, fo, atoms);
+			
+			if (VERBOSE)
+				cerr << "Bulk correction volume: " << sfcb.bulk_frac() << endl
+					 << "Bulk correction factor: " << sfcb.bulk_scale() << endl;
+		}
 	}
 	
 	if (anisoScaling != as_None)

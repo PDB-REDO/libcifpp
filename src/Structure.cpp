@@ -470,7 +470,7 @@ clipper::Atom Atom::toClipper() const
 
 void Atom::calculateRadius(float resHigh, float resLow, float perc)
 {
-	AtomShape shape(*this, resHigh, resLow);
+	AtomShape shape(*this, resHigh, resLow, false);
 	mImpl->mRadius = shape.radius();
 
 	// verbose

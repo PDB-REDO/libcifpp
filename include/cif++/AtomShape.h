@@ -13,9 +13,10 @@ namespace libcif
 class AtomShape
 {
   public:
-	AtomShape(const Atom& atom, float resHigh, float resLow);
 	AtomShape(const Atom& atom, float resHigh, float resLow,
-		float bFactor);
+		bool electronScattering);
+	AtomShape(const Atom& atom, float resHigh, float resLow,
+		bool electronScattering, float bFactor);
 
 	~AtomShape();
 	
