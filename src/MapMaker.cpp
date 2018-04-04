@@ -195,6 +195,7 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 
 	HKL_data<F_phi> fc(hklInfo, mCell);
 
+#if 0
 	if (not electronScattering)
 	{
 		auto& exptl = structure.getFile().data()["exptl"];
@@ -238,6 +239,22 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 					 << "Bulk correction factor: " << sfcb.bulk_scale() << endl;
 		}
 	}
+#else
+	if (noBulk)
+	{
+		clipper::SFcalc_aniso_fft<float> sfc;
+		sfc(fc, atoms);
+	}
+	else
+	{
+		clipper::SFcalc_obs_bulk<float> sfcb;
+		sfcb(fc, fo, atoms);
+		
+		if (VERBOSE)
+			cerr << "Bulk correction volume: " << sfcb.bulk_frac() << endl
+				 << "Bulk correction factor: " << sfcb.bulk_scale() << endl;
+	}
+#endif
 	
 	if (anisoScaling != as_None)
 	{

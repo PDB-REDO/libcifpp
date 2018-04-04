@@ -331,8 +331,8 @@ struct AtomShapeImpl
 	AtomShapeImpl(AtomType symbol, int charge, float uIso, float occupancy, float resHigh, float resLow, bool electronScattering)
 		: mSymbol(symbol), mCharge(charge), mUIso(uIso), mOccupancy(occupancy)
 		, mResHigh(resHigh), mResLow(resLow)
-		, mIntegrator(DensityIntegration::instance(resLow, resHigh))
 		, mElectronScattering(electronScattering)
+		, mIntegrator(DensityIntegration::instance(resLow, resHigh))
 	{
 		auto st = mIntegrator.st();
 		auto sts = mIntegrator.sts();
