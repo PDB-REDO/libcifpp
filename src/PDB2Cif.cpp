@@ -652,7 +652,7 @@ class PDBFileParser
 	void PreParseInput(istream& is);
 
 	void GetNextRecord();
-	void Match(const string& expected);
+	void Match(const string& expected, bool throwIfMissing);
 
 	void ParseTitle();
 	void ParseCitation(const string& id);
@@ -1198,10 +1198,14 @@ void PDBFileParser::GetNextRecord()
 	}
 }
 
-void PDBFileParser::Match(const string& expected)
+void PDBFileParser::Match(const string& expected, bool throwIfMissing)
 {
 	if (mRec->mName != expected)
-		throw runtime_error("Expected record " + expected + " but found " + mRec->mName);
+	{
+		if (throwIfMissing)
+			throw runtime_error("Expected record " + expected + " but found " + mRec->mName);
+		cerr << "Expected record " + expected + " but found " + mRec->mName << endl;
+	}
 }
 
 vector<string> PDBFileParser::SplitCSV(const string& value)
@@ -1224,7 +1228,7 @@ void PDBFileParser::ParseTitle()
 	//	                                               coordinates  were received at the PDB.
 	//	63 - 66       IDcode         idCode            This identifier is unique within the PDB.
 
-	Match("HEADER");
+	Match("HEADER", true);
 	
 	mStructureId		= vS(63, 66);
 	string keywords		= vS(11, 50);
@@ -1270,7 +1274,7 @@ void PDBFileParser::ParseTitle()
 	}
 	
 	// TITLE
-//	Match("TITLE ");
+	Match("TITLE ", false);
 	string title;
 	if (mRec->is("TITLE "))	//	 1 -  6       Record name    "TITLE "
 	{							//	 9 - 10       Continuation   continuation  Allows concatenation of multiple records.
@@ -1301,7 +1305,7 @@ void PDBFileParser::ParseTitle()
 	}
 	
 	// COMPND
-	Match("COMPND");
+	Match("COMPND", false);
 	//	 1 -  6       Record name     "COMPND"   
 	//	 8 - 10       Continuation    continuation  Allows concatenation of multiple records.
 	//	11 - 80       Specification   compound      Description of the molecular components.
@@ -1356,7 +1360,7 @@ void PDBFileParser::ParseTitle()
 	GetNextRecord();
 
 	// SOURCE
-//	Match("SOURCE");
+	Match("SOURCE", false);
 
 	if (mRec->is("SOURCE"))
 	{
@@ -1415,7 +1419,7 @@ void PDBFileParser::ParseTitle()
 	}
 
 	// KEYWDS
-//	Match("KEYWDS");
+	Match("KEYWDS", false);
 	string pdbxKeywords;
 
 	if (mRec->is("KEYWDS"))		//	 1 -  6       Record name    "KEYWDS"  
@@ -1435,7 +1439,7 @@ void PDBFileParser::ParseTitle()
 	}
 
 	// EXPDTA
-//	Match("EXPDTA");
+	Match("EXPDTA", false);
 	if (mRec->is("EXPDTA"))
 	{
 		mExpMethod = vS(11);
@@ -1482,7 +1486,7 @@ void PDBFileParser::ParseTitle()
 	}
 
 	// AUTHOR
-//	Match("AUTHOR");
+	Match("AUTHOR", false);
 	if (mRec->is("AUTHOR"))
 	{
 		int n = 1;
@@ -4761,7 +4765,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 
 void PDBFileParser::ParseCrystallographic()
 {
-	Match("CRYST1");
+	Match("CRYST1", true);
 
 	getCategory("cell")->emplace({		
 		{ "entry_id", mStructureId },			//	 1 -  6       Record name   "CRYST1"                          
@@ -4805,11 +4809,11 @@ void PDBFileParser::ParseCoordinateTransformation()
 		{
 			int x = stoi(n) - 1;
 
-			Match("ORIGX" + n);			//	 1 -  6         Record name   "ORIGXn"      n=1, 2, or 3  	
-			m[x][0] = vF(11, 20);  	//	11 - 20         Real(10.6)    o[n][1]       On1           
-			m[x][1] = vF(21, 30);  	//	21 - 30         Real(10.6)    o[n][2]       On2           
-			m[x][2] = vF(31, 40);  	//	31 - 40         Real(10.6)    o[n][3]       On3           
-			v[x] = vF(46, 55);     	//	46 - 55         Real(10.5)    t[n]          Tn            
+			Match("ORIGX" + n, true);	//	 1 -  6         Record name   "ORIGXn"      n=1, 2, or 3  	
+			m[x][0] = vF(11, 20);   	//	11 - 20         Real(10.6)    o[n][1]       On1           
+			m[x][1] = vF(21, 30);   	//	21 - 30         Real(10.6)    o[n][2]       On2           
+			m[x][2] = vF(31, 40);   	//	31 - 40         Real(10.6)    o[n][3]       On3           
+			v[x] = vF(46, 55);      	//	46 - 55         Real(10.5)    t[n]          Tn            
 			
 			GetNextRecord();
 		}
@@ -4837,11 +4841,11 @@ void PDBFileParser::ParseCoordinateTransformation()
 		{
 			int x = stoi(n) - 1;
 
-			Match("SCALE" + n);			//	 1 -  6         Record name   "SCALEn" n=1,  2, or 3      	
-			m[x][0] = vF(11, 20);  	//	11 - 20         Real(10.6)    s[n][1]            Sn1      
-			m[x][1] = vF(21, 30);  	//	21 - 30         Real(10.6)    s[n][2]            Sn2      
-			m[x][2] = vF(31, 40);  	//	31 - 40         Real(10.6)    s[n][3]            Sn3      
-			v[x] = vF(46, 55);     	//	46 - 55         Real(10.5)    u[n]               Un       
+			Match("SCALE" + n, true);	//	 1 -  6         Record name   "SCALEn" n=1,  2, or 3      	
+			m[x][0] = vF(11, 20);  		//	11 - 20         Real(10.6)    s[n][1]            Sn1      
+			m[x][1] = vF(21, 30);	  	//	21 - 30         Real(10.6)    s[n][2]            Sn2      
+			m[x][2] = vF(31, 40);  		//	31 - 40         Real(10.6)    s[n][3]            Sn3      
+			v[x] = vF(46, 55);     		//	46 - 55         Real(10.5)    u[n]               Un       
 
 			GetNextRecord();
 		}
@@ -4871,7 +4875,7 @@ void PDBFileParser::ParseCoordinateTransformation()
 		{
 			int x = stoi(n) - 1;
 
-			Match("MTRIX" + n);				//	 1 -  6        Record name   "MTRIXn"      n=1, 2, or 3
+			Match("MTRIX" + n, true);	//	 1 -  6        Record name   "MTRIXn"      n=1, 2, or 3
 			serial = vI(8, 10);			//	 8 - 10        Integer       serial        Serial number.
 			m[x][0] = vF(11, 20);  		//	11 - 20        Real(10.6)    m[n][1]       Mn1
 			m[x][1] = vF(21, 30);  		//	21 - 30        Real(10.6)    m[n][2]       Mn2
@@ -4935,7 +4939,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 
 		/*if?... */ while (mRec->is("TER   "))
 		{
-			Match("TER   ");
+			Match("TER   ", true);
 			GetNextRecord();
 		}
 	}
@@ -5114,10 +5118,10 @@ void PDBFileParser::ParseBookkeeping()
 {
 	if (mRec->is("MASTER"))
 	{
-		Match("MASTER");
+		Match("MASTER", false);
 		GetNextRecord();
 	}
-	Match("END   ");
+	Match("END   ", false);
 }
 
 void PDBFileParser::Parse(istream& is, cif::File& result)
@@ -5164,7 +5168,7 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 			
 			if (model)
 			{
-				Match("ENDMDL");
+				Match("ENDMDL", true);
 				GetNextRecord();
 			}
 		}	
