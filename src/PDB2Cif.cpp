@@ -106,7 +106,10 @@ const set<string> kSupportedRecords{
 	"SSBOND", "LINK  ", "CISPEP", "SITE  ", "CRYST1", "ORIGX1", "SCALE1",
 	"MTRIX1", "ORIGX2", "SCALE2", "MTRIX2", "ORIGX3", "SCALE3", "MTRIX3",
 	"MODEL ", "ATOM  ", "ANISOU", "TER   ", "HETATM", "ENDMDL", "CONECT",
-	"MASTER", "END   "
+	"MASTER", "END   ",
+	
+	// bah...
+	"LINKR "
 };
 
 bool isWater(const string& resname)
@@ -4549,8 +4552,11 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			continue;
 		}
 		
-		if (mRec->is("LINK  "))
+		if (mRec->is("LINK  ") or mRec->is("LINKR "))
 		{
+			if (VERBOSE and mRec->is("LINKR "))
+				cerr << "Accepting non-standard LINKR record, but ignoring extra information" << endl;
+			
 											//	 1 -  6         Record name    "LINK  "
 			string name1 = vS(13, 16);		//	13 - 16         Atom           name1           Atom name.
 											//	17              Character      altLoc1         Alternate location indicator.
@@ -4606,6 +4612,18 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				continue;
 			}
 			
+			string distance = vS(74, 78);
+			try
+			{
+				stod(distance);
+			}
+			catch (const invalid_argument&)
+			{
+				if (VERBOSE)
+					cerr << "Distance value '" << distance << "' is not a valid float" << endl;
+				distance.clear();
+			}
+			
 			getCategory("struct_conn")->emplace({
 				{ "id", type + to_string(linkNr) },
 				{ "conn_type_id", type },
@@ -4635,7 +4653,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 	
 				{ "ptnr2_symmetry", pdb2cifSymmetry(vS(67, 72)) },
 				
-				{ "pdbx_dist_value", vS(74, 78) }
+				{ "pdbx_dist_value", distance }
 			});
 			
 			continue;
@@ -5412,7 +5430,6 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	if (VERBOSE > 1)
 		printAlignment();
 	
-	
 	try
 	{
 		while (x >= 0 and y >= 0)
@@ -5462,9 +5479,6 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 		throw;
 	}
 
-	if (VERBOSE > 1)
-		printAlignment();
-	
 	// assign numbers to the residues that don't have them yet
 	stack<int> unnumbered;
 	for (x = 0; x < dimX; ++x)

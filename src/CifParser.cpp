@@ -784,6 +784,8 @@ void DictParser::parseSaveFrame()
 		for (auto e: dict["item_enumeration"])
 			ess.insert(e["value"].as<string>());
 		
+		string defaultValue = dict.firstItem("_item_default.value");
+		
 		// collect the dict from our dataBlock and construct validators
 		for (auto i: dict["item"])
 		{
@@ -806,7 +808,7 @@ void DictParser::parseSaveFrame()
 			
 			auto vi = find(ivs.begin(), ivs.end(), ValidateItem{itemName});
 			if (vi == ivs.end())
-				ivs.push_back(ValidateItem{itemName, iequals(mandatory, "yes"), tv, ess});
+				ivs.push_back(ValidateItem{itemName, iequals(mandatory, "yes"), tv, ess, defaultValue});
 			else
 			{
 				// need to update the itemValidator?

@@ -167,6 +167,8 @@ class Residue
 	
 	// Is this residue a single entity?
 	bool isEntity() const;
+	
+	const Structure& structure() const		{ return *mStructure; }
 
   protected:
 
@@ -260,8 +262,8 @@ class Polymer
 	iterator begin();
 	iterator end();
 	
-	size_t size() const				{ return mPolySeq.size(); }
-	Monomer operator[](size_t index) const;
+	size_t size() const							{ return mPolySeq.size(); }
+	Monomer operator[](size_t index) const		{ return Monomer(const_cast<Polymer&>(*this), index); }
 
 	Structure* structure() const	{ return mStructure; }
 	

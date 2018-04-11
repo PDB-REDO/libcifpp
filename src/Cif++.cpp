@@ -90,7 +90,7 @@ void ItemValue::operator delete(void* p)
 struct ItemColumn
 {
 	string					mName;		// store lower-case, for optimization
-	const ValidateItem*	mValidator;
+	const ValidateItem*		mValidator;
 };
 
 // itemRow contains the actual values for a Row in a Category
@@ -183,7 +183,6 @@ void ItemRow::drop(uint32 columnIx)
 #if DEBUG
 	for (auto iv = mValues; iv != nullptr; iv = iv->mNext)
 		assert(iv != iv->mNext and (iv->mNext == nullptr or iv != iv->mNext->mNext));
-	
 #endif
 }
 
@@ -215,8 +214,7 @@ ItemReference& ItemReference::operator=(const string& value)
 	return *this;
 }
 
-const char*
-ItemReference::c_str() const
+const char* ItemReference::c_str() const
 {
 	const char* result = kEmptyResult;
 	
@@ -234,6 +232,39 @@ ItemReference::c_str() const
 					result = iv->mText;
 	
 				break;
+			}
+		}
+	}
+	
+	return result;
+}
+
+const char* ItemReference::c_str(const char* defaultValue) const
+{
+	const char* result = defaultValue;
+	
+	if (mRow != nullptr and mRow->mCategory != nullptr)
+	{
+//		assert(mRow->mCategory);
+		
+		auto cix = mRow->mCategory->getColumnIndex(mName);
+		
+		if (cix < mRow->mCategory->mColumns.size())
+		{
+			auto iv = mRow->mCategory->mColumns[cix].mValidator;
+			if (iv != nullptr and not iv->mDefault.empty())
+				result = iv->mDefault.c_str();
+			
+			for (auto iv = mRow->mValues; iv != nullptr; iv = iv->mNext)
+			{
+				if (iv->mColumnIndex == cix)
+				{
+					// only really non-empty values
+					if (iv->mText[0] != 0 and ((iv->mText[0] != '.' and iv->mText[0] != '?') or iv->mText[1] != 0))
+						result = iv->mText;
+	
+					break;
+				}
 			}
 		}
 	}
@@ -991,14 +1022,48 @@ void CatIndex::validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& m
 
 // --------------------------------------------------------------------
 
+RowSet::RowSet(const RowSet& rhs)
+	: base_type(rhs)
+	, mCat(rhs.mCat)
+{
+}
+
+RowSet::RowSet(RowSet&& rhs)
+	: base_type(move(rhs))
+	, mCat(rhs.mCat)
+{
+}
+
+RowSet& RowSet::operator=(const RowSet& rhs)
+{
+	if (this != &rhs)
+	{
+		base_type::operator=(rhs);
+		mCat = rhs.mCat;
+	}
+	
+	return *this;
+}
+
+RowSet& RowSet::operator=(RowSet&& rhs)
+{
+	if (this != &rhs)
+	{
+		base_type::operator=(move(rhs));
+		mCat = rhs.mCat;
+	}
+	
+	return *this;
+}
+
 RowSet::RowSet(Category& cat)
-	: mCat(cat)
+	: mCat(&cat)
 {
 }
 
 RowSet& RowSet::orderBy(initializer_list<string> items)
 {
-	RowComparator c(&mCat, items.begin(), items.end());
+	RowComparator c(mCat, items.begin(), items.end());
 	
 	stable_sort(begin(), end(), c);
 	

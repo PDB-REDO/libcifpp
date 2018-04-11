@@ -104,7 +104,7 @@ class Compound
 	std::string id() const					{ return mId; }
 	std::string	name() const				{ return mName; }
 	std::string	type() const;
-//	std::string group() const				{ return mGroup; }
+	std::string group() const				{ return mGroup; }
 	std::vector<CompoundAtom> atoms() const	{ return mAtoms; }
 	std::vector<CompoundBond> bonds() const	{ return mBonds; }
 	

@@ -58,8 +58,9 @@ struct ValidateItem
 {
 	std::string				mTag;
 	bool					mMandatory;
-	const ValidateType*	mType;
+	const ValidateType*		mType;
 	cif::iset				mEnums;
+	std::string				mDefault;
 	ValidateItem*			mParent = nullptr;
 	std::set<ValidateItem*>
 							mChildren;

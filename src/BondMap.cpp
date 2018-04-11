@@ -102,13 +102,21 @@ BondMap::BondMap(const Structure& p)
 				  "ptnr1_label_atom_id", "ptnr2_label_atom_id",
 				  "ptnr1_label_seq_id", "ptnr2_label_seq_id");
 		
-		auto a = db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_seq_id") == seqId1 and cif::Key("label_atom_id") == atomId1);
-		if (a.size() != 1)
-			cerr << "Unexpected number (" << a.size() << ") of atoms for link with asym_id " << asym1 << " seq_id " << seqId1 << " atom_id  " << atomId1 << endl;
+		auto a = 
+			l["ptnr1_label_seq_id"].empty() ?
+				db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_atom_id") == atomId1) :
+				db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_seq_id") == seqId1 and cif::Key("label_atom_id") == atomId1);
 		
-		auto b = db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_seq_id") == seqId2 and cif::Key("label_atom_id") == atomId2);
+		if (a.size() != 1)
+			cerr << "Unexpected number (" << a.size() << ") of atoms for link with asym_id " << asym1 << " seq_id " << seqId1 << " atom_id " << atomId1 << endl;
+		
+		auto b =
+			l["ptnr2_label_seq_id"].empty() ?
+				db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_atom_id") == atomId2) :
+				db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_seq_id") == seqId2 and cif::Key("label_atom_id") == atomId2);
+
 		if (b.size() != 1)
-			cerr << "Unexpected number (" << b.size() << ") of atoms for link with asym_id " << asym2 << " seq_id " << seqId2 << " atom_id  " << atomId2 << endl;
+			cerr << "Unexpected number (" << b.size() << ") of atoms for link with asym_id " << asym2 << " seq_id " << seqId2 << " atom_id " << atomId2 << endl;
 		
 		if (not (a.empty() or b.empty()))
 			bindAtoms(a.front()["id"].as<string>(), b.front()["id"].as<string>());

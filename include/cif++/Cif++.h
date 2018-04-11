@@ -252,10 +252,7 @@ namespace detail
 		template<typename T>
 		T as() const
 		{
-			T result = 0;
-			if (not empty())
-				result = boost::lexical_cast<T>(c_str());
-			return result;
+			return boost::lexical_cast<T>(c_str("0"));
 		}
 		
 		template<typename T>
@@ -285,6 +282,10 @@ namespace detail
 		
 		const char* c_str() const;
 		
+		// the following returns the defaultValue from either the parameter
+		// or, if specified, the value from _item_default.value in the dictionary
+		const char* c_str(const char* defaultValue) const;
+		
 		bool operator!=(const string& s) const		{ return s != c_str(); }
 		bool operator==(const string& s) const		{ return s == c_str(); }
 	};
@@ -293,14 +294,14 @@ namespace detail
 	inline
 	string ItemReference::as<string>() const
 	{
-		return string(c_str());
+		return string(c_str(""));
 	}
 	
 	template<>
 	inline
 	const char* ItemReference::as<const char*>() const
 	{
-		return c_str();
+		return c_str("");
 	}
 	
 	template<>
@@ -908,7 +909,14 @@ Condition any::operator==(const std::regex& rx) const
 
 class RowSet : public vector<Row>
 {
+	typedef vector<Row>	base_type;
+
   public:
+	RowSet(const RowSet& rhs);
+	RowSet(RowSet&& rhs);
+	RowSet& operator=(const RowSet& rhs);
+	RowSet& operator=(RowSet&& rhs);
+
 	RowSet(Category& cat);
 	
 	RowSet& orderBy(const string& Item)
@@ -917,7 +925,7 @@ class RowSet : public vector<Row>
 	RowSet& orderBy(std::initializer_list<string> Items);
 
   private:
-	Category&	mCat;
+	Category*	mCat;
 };
 
 // --------------------------------------------------------------------

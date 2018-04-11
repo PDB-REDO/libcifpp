@@ -108,7 +108,7 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 template<typename FTYPE>
 void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc)
 {
-#warning("WARNING: Need the check first to see if fix is necessary!")
+#warning("WARNING: Need to check first to see if fix is necessary!")
 
 	using clipper::HKL_class;
 	using clipper::data32::F_phi;
@@ -194,7 +194,6 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 		atoms.push_back(a.toClipper());
 
 	HKL_data<F_phi> fc(hklInfo, mCell);
-
 
 	if (not electronScattering)
 	{
