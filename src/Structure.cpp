@@ -603,7 +603,7 @@ bool Residue::isEntity() const
 // monomer
 
 Monomer::Monomer(const Monomer& rhs)
-	: Residue(rhs), mPolymer(rhs.mPolymer)
+	: Residue(rhs), mPolymer(rhs.mPolymer), mIndex(rhs.mIndex)
 {
 }
 
@@ -613,29 +613,94 @@ Monomer& Monomer::operator=(const Monomer& rhs)
 	{
 		Residue::operator=(rhs);
 		mPolymer = rhs.mPolymer;
+		mIndex = rhs.mIndex;
 	}
 	
 	return *this;
 }
 
-Monomer::Monomer(Polymer& polymer)
+Monomer::Monomer(Polymer& polymer, uint32 index)
 	: Residue(*polymer.structure())
 	, mPolymer(&polymer)
+	, mIndex(index)
 {
 	
 }
 
-Monomer::Monomer(Polymer& polymer, int seqID, const string& compoundID, const string& altID)
+Monomer::Monomer(Polymer& polymer, uint32 index, int seqID, const string& compoundID, const string& altID)
 	: Residue(*polymer.structure(), compoundID, polymer.asymID(), seqID, altID)
 	, mPolymer(&polymer)
+	, mIndex(index)
 {
+}
+
+float Monomer::phi() const
+{
+	float result = 360;
+	if (mIndex > 0)
+	{
+		Monomer prev = mPolymer->operator[](mIndex - 1);
+		if (prev.mSeqID + 1 == mSeqID)
+			result = DihedralAngle(prev.C().location(), N().location(), CAlpha().location(), C().location()); 
+	}
+
+	return result;
+}
+
+float Monomer::psi() const
+{
+	float result = 360;
+	if (mIndex + 1 < mPolymer->size())
+	{
+		Monomer next = mPolymer->operator[](mIndex + 1);
+		if (mSeqID + 1 == next.mSeqID)
+			result = DihedralAngle(N().location(), CAlpha().location(), C().location(), next.N().location()); 
+	}
+
+	return result;
+}
+
+float Monomer::alpha() const
+{
+	float result = 360;
+	
+	if (mIndex > 1 and mIndex + 2 < mPolymer->size())
+	{
+		Monomer prev = mPolymer->operator[](mIndex - 1);
+		Monomer next = mPolymer->operator[](mIndex + 1);
+		Monomer nextNext = mPolymer->operator[](mIndex + 2);
+		
+		result = DihedralAngle(prev.CAlpha().location(), CAlpha().location(), next.CAlpha().location(), nextNext.CAlpha().location());
+	}
+	
+	return result;
+}
+
+float Monomer::kappa() const
+{
+	double result = 360;
+	
+	if (mIndex > 2 and mIndex + 2 < mPolymer->size())
+	{
+		Monomer prevPrev = mPolymer->operator[](mIndex - 2);
+		Monomer nextNext = mPolymer->operator[](mIndex + 2);
+		
+		if (prevPrev.mSeqID + 4 == nextNext.mSeqID)
+		{
+			double ckap = CosinusAngle(CAlpha().location(), prevPrev.CAlpha().location(), nextNext.CAlpha().location(), CAlpha().location());
+			double skap = sqrt(1 - ckap * ckap);
+			result = atan2(skap, ckap) * 180 / kPI;
+		}
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------
 // polymer
 
 Polymer::iterator::iterator(Polymer& p, uint32 index)
-	: mPolymer(&p), mIndex(index), mCurrent(p)
+	: mPolymer(&p), mIndex(index), mCurrent(p, index)
 {
 	auto& polySeq = mPolymer->mPolySeq;
 
@@ -646,7 +711,7 @@ Polymer::iterator::iterator(Polymer& p, uint32 index)
 		cif::tie(asymID, seqID, monID) =
 			polySeq[mIndex].get("asym_id", "seq_id", "mon_id");
 		
-		mCurrent = Monomer(*mPolymer, seqID, monID, "");
+		mCurrent = Monomer(*mPolymer, index, seqID, monID, "");
 	}
 }
 
@@ -681,7 +746,7 @@ Polymer::iterator& Polymer::iterator::operator++()
 		cif::tie(asymID, seqID, monID) =
 			polySeq[mIndex].get("asym_id", "seq_id", "mon_id");
 		
-		mCurrent = Monomer(*mPolymer, seqID, monID, "");
+		mCurrent = Monomer(*mPolymer, mIndex, seqID, monID, "");
 	}
 	
 	return *this;

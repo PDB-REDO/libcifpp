@@ -185,12 +185,26 @@ class Monomer : public Residue
 	Monomer(const Monomer& rhs);
 	Monomer& operator=(const Monomer& rhs);
 
-	Monomer(Polymer& polymer);
-	Monomer(Polymer& polymer, int seqID,
+	Monomer(Polymer& polymer, uint32 index);
+	Monomer(Polymer& polymer, uint32 index, int seqID,
 		const std::string& compoundID, const std::string& altID);
+
+	// Assuming this is really an amino acid...
+	
+	float phi() const;
+	float psi() const;
+	float alpha() const;
+	float kappa() const;
+
+	Atom CAlpha() const		{ return atomByID("CA"); }
+	Atom C() const			{ return atomByID("C"); }
+	Atom N() const			{ return atomByID("N"); }
+	Atom O() const			{ return atomByID("O"); }
+	Atom H() const			{ return atomByID("H"); }
 
   private:
 	Polymer*	mPolymer;
+	uint32		mIndex;
 };
 
 // --------------------------------------------------------------------
@@ -245,6 +259,9 @@ class Polymer
 
 	iterator begin();
 	iterator end();
+	
+	size_t size() const				{ return mPolySeq.size(); }
+	Monomer operator[](size_t index) const;
 
 	Structure* structure() const	{ return mStructure; }
 	

@@ -1340,7 +1340,7 @@ void WriteRemark3Refmac(ostream& pdbFile, Datablock& db)
 				for (auto l: lim)
 				{
 					pdbFile << RM3("         ", -2)		<< Fi(l, "pdbx_component_id")
-							<< SEP(" ", -5)			<< Fs(l, "beg_auth_asym_id")
+							<< SEP(" ", -5)				<< Fs(l, "beg_auth_asym_id")
 							<< SEP("  ", -5)			<< Fi(l, "beg_auth_seq_id")
 							<< SEP("   ", -5)			<< Fs(l, "end_auth_asym_id")
 							<< SEP("   ", -5)			<< Fi(l, "end_auth_seq_id")
@@ -1366,8 +1366,8 @@ void WriteRemark3Refmac(ostream& pdbFile, Datablock& db)
 							<< SEP("", -2)				<< Fi(l, "pdbx_ens_id")
 							<< SEP("    ", 1)			<< Fs(l, "pdbx_auth_asym_id")
 							<< SEP(unit.c_str(), -6)	<< Fi(l, "pdbx_number")
-							<< SEP(" ;", -6, 3)		<< Ff(l, "rms_dev_position")
-							<< SEP(" ;", -6, 3)		<< Ff(l, "weight_position")
+							<< SEP(" ;", -6, 3)			<< Ff(l, "rms_dev_position")
+							<< SEP(" ;", -6, 3)			<< Ff(l, "weight_position")
 							<< endl;
 				}
 			}
