@@ -155,7 +155,7 @@ class Residue
 		: mStructure(&structure), mCompoundID(compoundID)
 		, mAsymID(asymID), mAltID(altID), mSeqID(seqID) {}
 	
-	const Compound&		comp() const;
+	const Compound&		compound() const;
 	AtomView			atoms() const;
 	
 	Atom				atomByID(const std::string& atomID) const;

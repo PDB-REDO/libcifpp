@@ -508,12 +508,12 @@ Residue& Residue::operator=(const Residue& rhs)
 	return *this;
 }
 
-const Compound& Residue::comp() const
+const Compound& Residue::compound() const
 {
-	auto compound = Compound::create(mCompoundID);
-	if (compound == nullptr)
+	auto result = Compound::create(mCompoundID);
+	if (result == nullptr)
 		throw runtime_error("Failed to create compound " + mCompoundID);
-	return *compound;
+	return *result;
 }
 
 AtomView Residue::atoms() const

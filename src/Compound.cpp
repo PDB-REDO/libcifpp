@@ -582,8 +582,8 @@ const Compound* CompoundFactory::create(std::string id)
 				CompoundBond b;
 				string type, aromatic;
 				
-				cif::tie(b.atomID[0], b.atomID[1], type, b.distance, aromatic) =
-					row.get("atom_id_1", "atom_id_2", "type", "distance", "aromatic");
+				cif::tie(b.atomID[0], b.atomID[1], type, b.distance, b.esd) =
+					row.get("atom_id_1", "atom_id_2", "type", "value_dist", "value_dist_esd");
 				
 				using cif::iequals;
 				
@@ -605,6 +605,19 @@ const Compound* CompoundFactory::create(std::string id)
 				bonds.push_back(b);
 			}
 			sort(bonds.begin(), bonds.end(), CompoundBondLess());
+
+			auto& compAngles = cf["comp_" + id]["chem_comp_angle"];
+			
+			vector<CompoundAngle> angles;
+			for (auto row: compAngles)
+			{
+				CompoundAngle a;
+				
+				cif::tie(a.atomID[0], a.atomID[1], a.atomID[2], a.angle, a.esd) =
+					row.get("atom_id_1", "atom_id_2", "atom_id_3", "value_angle", "value_angle_esd");
+				
+				angles.push_back(a);
+			}
 
 			auto& compChir = cf["comp_" + id]["chem_comp_chir"];
 			
@@ -636,7 +649,7 @@ const Compound* CompoundFactory::create(std::string id)
 			}
 
 			result = new Compound(id, name, group, move(atoms), move(bonds),
-				move(chiralCentres));
+				move(angles), move(chiralCentres));
 
 			boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
 			mCompounds.push_back(result);

@@ -47,8 +47,19 @@ struct CompoundBond
 {
 	std::string			atomID[2];
 	CompoundBondType	type;
-	bool				aromatic;
 	float				distance;
+	float				esd;
+};
+
+// --------------------------------------------------------------------
+// struct containing information about the bond-angles
+// This information comes from the CCP4 monomer library. 
+
+struct CompoundAngle
+{
+	std::string			atomID[3];
+	float				angle;
+	float				esd;
 };
 
 // --------------------------------------------------------------------
@@ -76,14 +87,14 @@ class Compound
 
 	Compound(const std::string& id, const std::string& name,
 		const std::string& group, std::vector<CompoundAtom>&& atoms,
-		std::vector<CompoundBond>&& bonds, std::vector<ChiralCentre>&& chiralCentres)
+		std::vector<CompoundBond>&& bonds, std::vector<CompoundAngle>&& angles,
+		std::vector<ChiralCentre>&& chiralCentres)
 		: mId(id), mName(name), mGroup(group)
 		, mAtoms(std::move(atoms)), mBonds(std::move(bonds))
+		, mAngles(std::move(angles))
 		, mChiralCentres(std::move(chiralCentres))
 	{
 	}
-
-	~Compound();
 
 	// factory method, create a Compound based on the three letter code
 	// (for amino acids) or the one-letter code (for bases) or the
@@ -101,12 +112,13 @@ class Compound
 	static void addMonomerLibraryPath(const std::string& dir);
 
 	// accessors
-	std::string id() const					{ return mId; }
-	std::string	name() const				{ return mName; }
+	std::string id() const						{ return mId; }
+	std::string	name() const					{ return mName; }
 	std::string	type() const;
-	std::string group() const				{ return mGroup; }
-	std::vector<CompoundAtom> atoms() const	{ return mAtoms; }
-	std::vector<CompoundBond> bonds() const	{ return mBonds; }
+	std::string group() const					{ return mGroup; }
+	std::vector<CompoundAtom> atoms() const		{ return mAtoms; }
+	std::vector<CompoundBond> bonds() const		{ return mBonds; }
+	std::vector<CompoundAngle> angles() const	{ return mAngles; }
 	
 	CompoundAtom getAtomById(const std::string& atomId) const;
 	
@@ -126,12 +138,16 @@ class Compound
 	std::vector<std::tuple<std::string,std::string>> mapToIsomer(const Compound& c) const;
 
   private:
+
+	~Compound();
+
 //	Entity&						mEntity;
 	std::string					mId;
 	std::string					mName;
 	std::string					mGroup;
 	std::vector<CompoundAtom>	mAtoms;
 	std::vector<CompoundBond>	mBonds;
+	std::vector<CompoundAngle>	mAngles;
 	std::vector<ChiralCentre>	mChiralCentres;
 };
 

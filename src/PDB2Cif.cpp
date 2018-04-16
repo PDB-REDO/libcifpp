@@ -4662,7 +4662,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 		if (mRec->is("CISPEP"))
 		{
 											//	 1 -  6       Record name   "CISPEP"
-			int serNum = vI(8, 10);		//	 8 - 10       Integer       serNum        Record serial number.
+			int serNum = vI(8, 10);			//	 8 - 10       Integer       serNum        Record serial number.
 			string pep1 = vS(12, 14);		//	12 - 14       LString(3)    pep1          Residue name.
 			char chainID1 = vC(16); 		//	16            Character     chainID1      Chain identifier.
 			int seqNum1 = vI(18, 21);		//	18 - 21       Integer       seqNum1       Residue sequence number.
