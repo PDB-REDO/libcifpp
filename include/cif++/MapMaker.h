@@ -16,6 +16,7 @@ class MapMaker
 	typedef typename clipper::Xmap<ftype>				Xmap;
 	typedef clipper::HKL_data<clipper::data32::F_phi>	FPdata;
 	typedef clipper::HKL_data<clipper::data32::F_sigF>	FOdata;
+	typedef clipper::HKL_data<clipper::data32::Phi_fom>	WData;
 	
 	
 	typedef clipper::Spacegroup							Spacegroup;
@@ -58,7 +59,7 @@ class MapMaker
 
   private:
 
-	void fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc);
+	void fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WData& fom);
 
 	Xmap&		mFb;
 	Xmap&		mFd;

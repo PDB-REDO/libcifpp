@@ -1,5 +1,7 @@
 #include "cif++/Config.h"
 
+#include <iomanip>
+
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -35,7 +37,11 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	initializer_list<string> foLabels, initializer_list<string> fcLabels)
 {
 	if (VERBOSE)
-		cerr << "Reading map from " << mtzFile << endl;
+		cerr << "Reading map from " << mtzFile << endl
+			 << "  with labels: FB: " << ba::join(fbLabels, ",") << endl
+			 << "  with labels: FD: " << ba::join(fdLabels, ",") << endl
+			 << "  with labels: FO: " << ba::join(foLabels, ",") << endl
+			 << "  with labels: FC: " << ba::join(fcLabels, ",") << endl;
 	
 	const string kBasePath("/%1%/%2%/[%3%]");
 
@@ -44,6 +50,7 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	using clipper::HKL_data;
 	using clipper::data32::F_phi;
 	using clipper::data32::F_sigF;
+	using clipper::data32::Phi_fom;
 
 	CCP4MTZfile mtzin;
 	mtzin.open_read(mtzFile.string());
@@ -53,6 +60,7 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	
 	HKL_data<F_phi> fbData, fdData, fcData;
 	HKL_data<F_sigF> foData;
+	HKL_data<Phi_fom> fomData;
 
 	mtzin.import_hkl_data(fbData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fbLabels, ",")).str());
@@ -62,6 +70,8 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(foLabels, ",")).str());
 	mtzin.import_hkl_data(fcData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fcLabels, ",")).str());
+	mtzin.import_hkl_data(fomData,
+		(boost::format(kBasePath) % "*" % "*" % "PHWT,FOM").str());
 
 	mtzin.close_read();
 	
@@ -83,32 +93,182 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 			mResLow = res;
 	}
 
-	if (VERBOSE > 1)
-		cerr << "calculated reshi = " << mResHigh << " reslo = " << mResLow << endl;
-		
-	fixMTZ(fbData, fdData, foData, fcData);
+	fixMTZ(fbData, fdData, foData, fcData, fomData);
 
 	samplingRate /= 2;	// clipper's way of interpreting?
 	
-	mGrid = Grid_sampling(mSpacegroup, mCell,
+	mGrid.init(mSpacegroup, mCell,
 		hklInfo.resolution(), samplingRate);	// define grid
 	
-	mFb = Xmap(mSpacegroup, mCell, mGrid);	// define map
-	mFb.fft_from(fbData);														// generate map
+	mFb.init(mSpacegroup, mCell, mGrid);	// define map
+	mFb.fft_from(fbData);					// generate map
 	
-	mFd = Xmap(mSpacegroup, mCell, mGrid);	// define map
-	mFd.fft_from(fdData);														// generate map
+	mFd.init(mSpacegroup, mCell, mGrid);	// define map
+	mFd.fft_from(fdData);					// generate map
 
 	if (VERBOSE)
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
-			 << "  resolution: " << mResHigh
-			 << endl;
+		     << "  stored resolution: " << hklInfo.resolution().limit() << endl
+			 << "  calculated reshi = " << mResHigh << " reslo = " << mResLow << endl
+		     << "  spacegroup: " << mSpacegroup.symbol_hm() << endl
+		     << "  cell: " << mCell.format() << endl;
+
+#if DEBUG
+	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
+	if (mkstemps(tmpFoFileName, 4) < 0)
+		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+	
+	using clipper::CCP4MAPfile;
+
+	CCP4MAPfile foFile;
+	foFile.open_write(tmpFoFileName);
+	foFile.export_xmap(mFb);
+	foFile.close_write();
+	
+	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
+	if (mkstemps(tmpFcFileName, 4) < 0)
+		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+	
+	CCP4MAPfile fcFile;
+	fcFile.open_write(tmpFcFileName);
+	fcFile.export_xmap(mFd);
+	fcFile.close_write();
+	
+	cout << "Wrote fo map to: " << tmpFoFileName << endl
+		 << "  and df map to: " << tmpFcFileName << endl;
+#endif
 }
 
-template<typename FTYPE>
-void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc)
+ostream& operator<<(ostream& os, const clipper::HKL& hkl)
 {
-#warning("WARNING: Need to check first to see if fix is necessary!")
+	os << "h: " << hkl.h() << ", "
+	   << "k: " << hkl.k() << ", "
+	   << "l: " << hkl.l();
+	
+	return os;
+};
+
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WData& fom)
+{
+	enum {
+		A1,  // A1:  FC = 2mFo - FM              
+		A2,  // A2:  FC >= 2mFo - FM             
+		A3,  // A3:  FD = FM - mFo               
+		A4,  // A4:  FD = 2(FM - mFo)            
+		C5,  // C5:  FC = 2mFo - FM              
+		C6,  // C6:  FM = mFo                    
+		C7,  // C7:  FD = mFo - FC               
+		C8,  // C8:  FD = 2(mFo - FC)            
+		C9,  // C9:  FD <= mFo - FC              
+		T10, // 10:  FM = FC (unobserved only)   
+		T11, // 11:  FD = 0 (unobserved only)    
+		TestCount
+	};
+	vector<bool> tests(TestCount, true);
+	
+	// first run the tests to see if we need to fix anything
+	
+	if (VERBOSE)
+		cerr << "Testing MTZ file" << endl;
+	
+	for (auto ih = fb.first(); not ih.last(); ih.next())
+	{
+		clipper::HKL_class cls(mSpacegroup, ih.hkl());
+
+		auto W = fom[ih].fom();
+
+		auto FM = fb[ih].f();
+		auto PM = fb[ih].phi() * 180 / kPI;
+		auto FD = fd[ih].f();
+		auto PD = fd[ih].phi() * 180 / kPI;
+		auto FO = fo[ih].f();
+		auto FC = fc[ih].f();
+		auto PC = fc[ih].phi() * 180 / kPI;
+
+		auto WFO = W * FO;
+
+		if (abs(fmod(abs(PM - PC) + 180, 360) - 180) > 90)
+			FM = -FM;
+
+		if (abs(fmod(abs(PD - PC) + 180, 360) - 180) > 90)
+			FD = -FD; 
+			
+		if (fo[ih].missing() or W == 0)
+		{
+			if (tests[T10] and abs(FM - FC) > 0.05)
+			{
+				tests[T10] = false;
+				if (VERBOSE) cerr << "Test 10 failed at " << ih.hkl() << endl;
+			}
+			
+			if (tests[T11] and abs(FD) > 0.05)
+			{
+				tests[T11] = false;
+				if (VERBOSE) cerr << "Test 11 failed at " << ih.hkl() << endl;
+			}
+		}
+		else if (cls.centric())
+		{
+			if (tests[C5] and abs(FC + FM - 2 * WFO) > 0.05)
+			{
+				tests[C5] = false;
+				if (VERBOSE) cerr << "Test C5 failed at " << ih.hkl() << endl;
+			}
+			
+			if (tests[C6] and abs(FM - WFO) > 0.05)
+			{
+				tests[C6] = false;
+				if (VERBOSE) cerr << "Test C6 failed at " << ih.hkl() << endl;
+			}
+			
+			if (tests[C7] and abs(FC + FD - WFO) > 0.05)
+			{
+				tests[C7] = false;
+				if (VERBOSE) cerr << "Test C7 failed at " << ih.hkl() << endl;
+			}
+			
+			if (tests[C8] and abs(FC + 0.5 * FD - WFO) > 0.05)
+			{
+				tests[C8] = false;
+				if (VERBOSE) cerr << "Test C8 failed at " << ih.hkl() << endl;
+			}
+			
+			if (tests[C9] and (1.01 * FC + Gd - WFO) < -0.05)
+			{
+				tests[C9] = false;
+				if (VERBOSE) cerr << "Test C9 failed at " << ih.hkl() << endl;
+			}
+			
+		}
+		else
+		{
+			if (tests[A1] and abs(FC + FM - 2 * WFO) > 0.05)
+			{
+				tests[A1] = false;
+				if (VERBOSE) cerr << "Test A1 failed at " << ih.hkl() << endl;
+			}
+			
+			if (tests[A2] and 1.01 * FC + FM - 2 * WFO < -0.05)
+			{
+				tests[A2] = false;
+				if (VERBOSE) cerr << "Test A2 failed at " << ih.hkl() << endl;
+			}
+			
+			if (tests[A3] and abs(FM - FD - WFO) > 0.05)
+			{
+				tests[A3] = false;
+				if (VERBOSE) cerr << "Test A3 failed at " << ih.hkl() << endl;
+			}
+			
+			if (tests[A4] and abs(FM - 0.5 * FD - WFO) > 0.05)
+			{
+				tests[A4] = false;
+				if (VERBOSE) cerr << "Test A4 failed at " << ih.hkl() << endl;
+			}
+		}
+	}	
 
 	using clipper::HKL_class;
 	using clipper::data32::F_phi;
@@ -118,33 +278,58 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc)
 	// mtzfix...
 	for (auto ih = fb.first(); not ih.last(); ih.next())
 	{
-		if (fo[ih].missing())
-		{
-			fb[ih] = fc[ih];
-			fd[ih] = fzero;
-			continue;
-		}
-		
 		if (fb[ih].missing() or fd[ih].missing())
 			continue;
 
-		if (abs(fmod(abs(fb[ih].phi() - fc[ih].phi()) + 180, 360) - 180) > 90)
-			fb[ih] = -fb[ih];
+		auto PM = fb[ih].phi() * 180 / kPI;
+		auto PD = fd[ih].phi() * 180 / kPI;
+		auto PC = fc[ih].phi() * 180 / kPI;
 
-		if (abs(fmod(abs(fd[ih].phi() - fc[ih].phi()) + 180, 360) - 180) > 90)
-			fd[ih] = -fd[ih]; 
+		if (abs(fmod(abs(PM - PC) + 180, 360) - 180) > 90)
+		{
+			fb[ih].f() = -fb[ih].f();
+			fb[ih].phi() = fc[ih].phi();
+		}
+
+		if (abs(fmod(abs(PD - PC) + 180, 360) - 180) > 90)
+		{
+			fd[ih].f() = -fd[ih].f();
+			fd[ih].phi() = fc[ih].phi();
+		}
+		
+		auto mFo = fb[ih] - fd[ih];
 
 		HKL_class cls(mSpacegroup, ih.hkl());
 
-		auto mFo = fb[ih] - fd[ih];
-		auto DFc = mFo - fd[ih];
-
-		if (cls.centric())
-			fb[ih] = mFo;
+		if (not fo[ih].missing() and fom[ih].fom() > 0)
+		{
+			if (cls.centric())
+			{
+				if (not tests[C6])
+					fb[ih] = mFo;
+				if (not tests[C7] and tests[C8])
+					fd[ih].f() = fd[ih].f() / 2;
+			}
+			else
+			{
+				if (tests[A3] and not tests[A4])
+					fd[ih] = fd[ih] + fd[ih];
+			}
+		}
 		else
-			fd[ih] = fd[ih] + fd[ih];
-		
-		fc[ih] = DFc;
+		{
+			if (not tests[T10])
+			{
+				if ((not cls.centric() and tests[A1]) or
+					(cls.centric() and (tests[C5] or tests[C7] or tests[C8])))
+				{
+					fb[ih] = fc[ih];
+				}
+			}
+			
+			if (not tests[T11])
+				fd[ih] = fzero;
+		}
 	}
 }
 
@@ -262,7 +447,7 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 	// fb now contains 2mFo - DFc
 	// fd now contains  mFo - DFc
 
-	fixMTZ(fb, fd, fo, fc);
+	fixMTZ(fb, fd, fo, fc, phiw);
 
 	ResolutionCalculator rc(mCell);
 	mResHigh = 99; mResLow = 0;
@@ -283,39 +468,44 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 
 	samplingRate /= 2;
 	
-	mGrid = Grid_sampling(mSpacegroup, mCell,
+	mGrid.init(mSpacegroup, mCell,
 		hklInfo.resolution(), samplingRate);		// define grid
 	
-	mFb = Xmap(mSpacegroup, mCell, mGrid);			// define map
+	mFb.init(mSpacegroup, mCell, mGrid);			// define map
 	mFb.fft_from(fb);								// generate map
 	
-	mFd = Xmap(mSpacegroup, mCell, mGrid);			// define map
+	mFd.init(mSpacegroup, mCell, mGrid);			// define map
 	mFd.fft_from(fd);								// generate map
 
 	if (VERBOSE)
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
 			 << "  resolution: " << mResHigh
 			 << endl;
-//
-//#if DEBUG
-//	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
-//	if (mkstemps(tmpFoFileName, 4) < 0)
-//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-//	
-//	CCP4MAPfile foFile;
-//	foFile.open_write(tmpFoFileName);
-//	foFile.export_xmap(mFb);
-//	foFile.close_write();
-//	
-//	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
-//	if (mkstemps(tmpFcFileName, 4) < 0)
-//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-//	
-//	CCP4MAPfile fcFile;
-//	fcFile.open_write(tmpFcFileName);
-//	fcFile.export_xmap(mFd);
-//	fcFile.close_write();
-//#endif
+
+#if DEBUG
+	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
+	if (mkstemps(tmpFoFileName, 4) < 0)
+		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+	
+	using clipper::CCP4MAPfile;
+
+	CCP4MAPfile foFile;
+	foFile.open_write(tmpFoFileName);
+	foFile.export_xmap(mFb);
+	foFile.close_write();
+	
+	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
+	if (mkstemps(tmpFcFileName, 4) < 0)
+		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+	
+	CCP4MAPfile fcFile;
+	fcFile.open_write(tmpFcFileName);
+	fcFile.export_xmap(mFd);
+	fcFile.close_write();
+	
+	cout << "Wrote fo map to: " << tmpFoFileName << endl
+		 << "  and df map to: " << tmpFcFileName << endl;
+#endif
 }
 
 template<typename FTYPE>

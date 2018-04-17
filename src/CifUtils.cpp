@@ -445,6 +445,18 @@ void ProgressImpl::Run()
 
 void ProgressImpl::PrintProgress()
 {
+	const char* kBlocks[] = {
+		" ",				// 0
+		u8"\u258F",			// 1
+		u8"\u258E",			// 2
+		u8"\u258D",			// 3
+		u8"\u258C",			// 4
+		u8"\u258B",			// 5
+		u8"\u258A",			// 6
+		u8"\u2589",			// 7
+		u8"\u2588",			// 8
+	};
+
 	uint32 width = get_terminal_width();
 	
 	string msg;
@@ -458,14 +470,27 @@ void ProgressImpl::PrintProgress()
 	else
 		msg = mMessage.substr(0, 17) + "...";
 	
-	msg += " [";
+	msg += " |";
 	
 	float progress = static_cast<float>(mConsumed) / mMax;
-	int tw = width - 28;
-	int twd = static_cast<int>(tw * progress + 0.5f);
-	msg.append(twd, '=');
-	msg.append(tw - twd, ' ');
-	msg.append("] ");
+	int pi = static_cast<int>(ceil(progress * 33 * 8));
+//	int tw = width - 28;
+//	int twd = static_cast<int>(tw * progress + 0.5f);
+//	msg.append(twd, '=');
+//	msg.append(tw - twd, ' ');
+
+	for (int i = 0; i < 33; ++i)
+	{
+		if (pi <= 0)
+			msg += kBlocks[0];
+		else if (pi >= 8)
+			msg += kBlocks[8];
+		else
+			msg += kBlocks[pi];
+		pi -= 8;
+	}
+
+	msg.append("| ");
 	
 	int perc = static_cast<int>(100 * progress);
 	if (perc < 100)
