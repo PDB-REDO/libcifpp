@@ -3,7 +3,12 @@
 #include <iomanip>
 
 #include <boost/format.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/copy.hpp>
 
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
@@ -13,6 +18,7 @@
 
 using namespace std;
 namespace fs = boost::filesystem;
+namespace io = boost::iostreams;
 namespace ba = boost::algorithm;
 
 extern int VERBOSE;
@@ -21,8 +27,110 @@ namespace libcif
 {
 
 template<typename FTYPE>
-MapMaker<FTYPE>::MapMaker(Xmap& fb, Xmap& fd)
-	: mFb(fb), mFd(fd)
+Map<FTYPE>::Map()
+{
+}
+
+template<typename FTYPE>
+Map<FTYPE>::~Map()
+{
+}
+
+template<typename FTYPE>
+void Map<FTYPE>::calculateStats()
+{
+	double sum = 0, sum2 = 0;
+	int count = 0;
+	
+	for (auto ix = mMap.first(); not ix.last(); ix.next())
+	{
+		auto v = mMap[ix];
+		
+		if (isnan(v))
+			throw runtime_error("map contains NaN values");
+		
+		++count;
+		sum += v;
+		sum2 += v * v;
+	}
+	
+	mMeanDensity = sum / count;
+	mRMSDensity = sqrt((sum2 / count) - (mMeanDensity * mMeanDensity));
+}
+
+template<typename FTYPE>
+void Map<FTYPE>::read(const fs::path& mapFile)
+{
+	fs::path dataFile = mapFile;
+
+	if (VERBOSE)
+		cout << "Reading map from " << mapFile << endl;
+	
+	if (mapFile.extension() == ".gz" or mapFile.extension() == ".bz2")
+	{
+		// file is compressed
+		
+		fs::path p = mapFile.parent_path();
+		string s = mapFile.filename().string();
+		
+		io::filtering_stream<io::input> in;
+		
+		fs::ifstream fi(mapFile);
+		
+		if (mapFile.extension() == ".gz")
+			in.push(io::gzip_decompressor());
+		else
+			in.push(io::bzip2_decompressor());
+			
+		in.push(fi);
+
+		char tmpFileName[] = "/tmp/map-tmp-XXXXXX";
+		if (mkstemp(tmpFileName) < 0)
+			throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+		
+		dataFile = fs::path(tmpFileName);
+		fs::ofstream out(dataFile);
+		io::copy(in, out);
+	}
+	
+	if (not fs::exists(dataFile))
+		throw runtime_error("Could not open map file " + mapFile.string());
+	
+	using namespace clipper;
+
+	CCP4MAPfile mapin;
+	mapin.open_read(dataFile.string());
+	mapin.import_xmap(mMap);
+	mapin.close_read();
+	
+	if (dataFile != mapFile)
+		fs::remove(dataFile);
+
+	calculateStats();
+}
+
+template<typename FTYPE>
+void Map<FTYPE>::write(const fs::path& f)
+{
+	assert(false);
+}
+
+template class Map<float>;
+template class Map<double>;
+
+// --------------------------------------------------------------------
+
+
+//	MapMaker mm(mFb, mFd);
+//
+//	if (recalculateFc)
+//		mm.recalculateFromMTZ(dataFile, mStructure, noBulk, aniso);
+//	else
+//		mm.loadFromMTZ(dataFile);
+
+
+template<typename FTYPE>
+MapMaker<FTYPE>::MapMaker()
 {
 }
 
@@ -42,6 +150,38 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 			 << "  with labels: FD: " << ba::join(fdLabels, ",") << endl
 			 << "  with labels: FO: " << ba::join(foLabels, ",") << endl
 			 << "  with labels: FC: " << ba::join(fcLabels, ",") << endl;
+
+	fs::path dataFile = mtzFile;
+	
+	if (mtzFile.extension() == ".gz" or mtzFile.extension() == ".bz2")
+	{
+		// file is compressed
+		
+		fs::path p = mtzFile.parent_path();
+		string s = mtzFile.filename().string();
+		
+		io::filtering_stream<io::input> in;
+		
+		fs::ifstream fi(mtzFile);
+		
+		if (mtzFile.extension() == ".gz")
+			in.push(io::gzip_decompressor());
+		else
+			in.push(io::bzip2_decompressor());
+			
+		in.push(fi);
+
+		char tmpFileName[] = "/tmp/mtz-tmp-XXXXXX";
+		if (mkstemp(tmpFileName) < 0)
+			throw runtime_error(string("Could not create temp file for mtz: ") + strerror(errno));
+		
+		dataFile = fs::path(tmpFileName);
+		fs::ofstream out(dataFile);
+		io::copy(in, out);
+	}
+	
+	if (not fs::exists(dataFile))
+		throw runtime_error("Could not open mtz file " + mtzFile.string());
 	
 	const string kBasePath("/%1%/%2%/[%3%]");
 
@@ -53,7 +193,7 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	using clipper::data32::Phi_fom;
 
 	CCP4MTZfile mtzin;
-	mtzin.open_read(mtzFile.string());
+	mtzin.open_read(dataFile.string());
 	
 	HKL_info hklInfo;
 	mtzin.import_hkl_info(hklInfo);
@@ -74,6 +214,9 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 		(boost::format(kBasePath) % "*" % "*" % "PHWT,FOM").str());
 
 	mtzin.close_read();
+
+	if (dataFile != mtzFile)
+		fs::remove(dataFile);
 	
 	mCell = hklInfo.cell();
 	mSpacegroup = hklInfo.spacegroup();
@@ -100,11 +243,14 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	mGrid.init(mSpacegroup, mCell,
 		hklInfo.resolution(), samplingRate);	// define grid
 	
-	mFb.init(mSpacegroup, mCell, mGrid);	// define map
-	mFb.fft_from(fbData);					// generate map
+	clipper::Xmap<FTYPE>& fbMap = mFb;
+	clipper::Xmap<FTYPE>& fdMap = mFd;
 	
-	mFd.init(mSpacegroup, mCell, mGrid);	// define map
-	mFd.fft_from(fdData);					// generate map
+	fbMap.init(mSpacegroup, mCell, mGrid);	// define map
+	fbMap.fft_from(fbData);					// generate map
+	
+	fdMap.init(mSpacegroup, mCell, mGrid);	// define map
+	fdMap.fft_from(fdData);					// generate map
 
 	if (VERBOSE)
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
@@ -112,31 +258,31 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 			 << "  calculated reshi = " << mResHigh << " reslo = " << mResLow << endl
 		     << "  spacegroup: " << mSpacegroup.symbol_hm() << endl
 		     << "  cell: " << mCell.format() << endl;
-
-#if DEBUG
-	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
-	if (mkstemps(tmpFoFileName, 4) < 0)
-		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-	
-	using clipper::CCP4MAPfile;
-
-	CCP4MAPfile foFile;
-	foFile.open_write(tmpFoFileName);
-	foFile.export_xmap(mFb);
-	foFile.close_write();
-	
-	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
-	if (mkstemps(tmpFcFileName, 4) < 0)
-		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-	
-	CCP4MAPfile fcFile;
-	fcFile.open_write(tmpFcFileName);
-	fcFile.export_xmap(mFd);
-	fcFile.close_write();
-	
-	cout << "Wrote fo map to: " << tmpFoFileName << endl
-		 << "  and df map to: " << tmpFcFileName << endl;
-#endif
+//
+//#if DEBUG
+//	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
+//	if (mkstemps(tmpFoFileName, 4) < 0)
+//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+//	
+//	using clipper::CCP4MAPfile;
+//
+//	CCP4MAPfile foFile;
+//	foFile.open_write(tmpFoFileName);
+//	foFile.export_xmap(mFb);
+//	foFile.close_write();
+//	
+//	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
+//	if (mkstemps(tmpFcFileName, 4) < 0)
+//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+//	
+//	CCP4MAPfile fcFile;
+//	fcFile.open_write(tmpFcFileName);
+//	fcFile.export_xmap(mFd);
+//	fcFile.close_write();
+//	
+//	cout << "Wrote fo map to: " << tmpFoFileName << endl
+//		 << "  and df map to: " << tmpFcFileName << endl;
+//#endif
 }
 
 ostream& operator<<(ostream& os, const clipper::HKL& hkl)
@@ -471,60 +617,58 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 	mGrid.init(mSpacegroup, mCell,
 		hklInfo.resolution(), samplingRate);		// define grid
 	
-	mFb.init(mSpacegroup, mCell, mGrid);			// define map
-	mFb.fft_from(fb);								// generate map
+	clipper::Xmap<FTYPE>& fbMap = mFb;
+	clipper::Xmap<FTYPE>& fdMap = mFd;
+
+	fbMap.init(mSpacegroup, mCell, mGrid);			// define map
+	fbMap.fft_from(fb);								// generate map
 	
-	mFd.init(mSpacegroup, mCell, mGrid);			// define map
-	mFd.fft_from(fd);								// generate map
+	fdMap.init(mSpacegroup, mCell, mGrid);			// define map
+	fdMap.fft_from(fd);								// generate map
 
 	if (VERBOSE)
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
 			 << "  resolution: " << mResHigh
 			 << endl;
-
-#if DEBUG
-	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
-	if (mkstemps(tmpFoFileName, 4) < 0)
-		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-	
-	using clipper::CCP4MAPfile;
-
-	CCP4MAPfile foFile;
-	foFile.open_write(tmpFoFileName);
-	foFile.export_xmap(mFb);
-	foFile.close_write();
-	
-	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
-	if (mkstemps(tmpFcFileName, 4) < 0)
-		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-	
-	CCP4MAPfile fcFile;
-	fcFile.open_write(tmpFcFileName);
-	fcFile.export_xmap(mFd);
-	fcFile.close_write();
-	
-	cout << "Wrote fo map to: " << tmpFoFileName << endl
-		 << "  and df map to: " << tmpFcFileName << endl;
-#endif
+//
+//#if DEBUG
+//	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
+//	if (mkstemps(tmpFoFileName, 4) < 0)
+//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+//	
+//	using clipper::CCP4MAPfile;
+//
+//	CCP4MAPfile foFile;
+//	foFile.open_write(tmpFoFileName);
+//	foFile.export_xmap(mFb);
+//	foFile.close_write();
+//	
+//	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
+//	if (mkstemps(tmpFcFileName, 4) < 0)
+//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
+//	
+//	CCP4MAPfile fcFile;
+//	fcFile.open_write(tmpFcFileName);
+//	fcFile.export_xmap(mFd);
+//	fcFile.close_write();
+//	
+//	cout << "Wrote fo map to: " << tmpFoFileName << endl
+//		 << "  and df map to: " << tmpFcFileName << endl;
+//#endif
 }
 
 template<typename FTYPE>
-void MapMaker<FTYPE>::loadFromMapFiles(const fs::path& fbMapFile, const fs::path& fdMapFile)
+void MapMaker<FTYPE>::loadFromMapFiles(const fs::path& fbMapFile, const fs::path& fdMapFile,
+		float reshi, float reslo)
 {
-	using clipper::CCP4MAPfile;
-
-	CCP4MAPfile fbFile;
-	fbFile.open_read(fbMapFile.string());
-	fbFile.import_xmap(mFb);
-	mGrid = fbFile.grid_sampling();
-	mCell = fbFile.cell();
-	mSpacegroup = fbFile.spacegroup();
-	fbFile.close_read();
+	mResHigh = reshi;
+	mResLow = reslo;
 	
-	CCP4MAPfile fdFile;
-	fdFile.open_read(fdMapFile.string());
-	fdFile.import_xmap(mFd);
-	fdFile.close_read();
+	mFb.read(fbMapFile);
+	mFd.read(fdMapFile);
+	
+	if (not mFb.cell().equals(mFd.cell()))
+		throw runtime_error("Fb and Fd map do not contain the same cell");
 }
 
 template class MapMaker<float>;
