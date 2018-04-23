@@ -222,7 +222,7 @@ struct AtomImpl
 			cif::tie(u11, u12, u13, u22, u23, u33) =
 				r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
 			
-			result.set_u_aniso_orth(clipper::U_aniso_orth(u11, u12, u13, u22, u23, u33));
+			result.set_u_aniso_orth(clipper::U_aniso_orth(u11, u22, u33, u12, u13, u23));
 		}
 		
 		return result;
