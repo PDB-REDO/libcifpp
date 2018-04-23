@@ -334,9 +334,6 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WDa
 	
 	for (auto ih = fb.first(); not ih.last(); ih.next())
 	{
-		if (fc[ih].missing())
-			throw runtime_error("Missing Fc, apparently creating Fc went wrong");
-		
 		clipper::HKL_class cls(mSpacegroup, ih.hkl());
 
 		auto W = fom[ih].fom();
@@ -706,16 +703,11 @@ void MapMaker<FTYPE>::printStats(const clipper::HKL_info hklInfo,
 	for (auto ih = fo.first_data(); not ih.last(); ih = fo.next_data(ih))
 	{
 		if (fc[ih].missing())
-			throw runtime_error("missing Fc");
+			continue;
+//			throw runtime_error("missing Fc");
 		
 		double Fo = fo[ih].f();
 		double Fc = sqrt(rfn.f(ih)) * fc[ih].f();
-
-		if (isnan(Fo))
-			throw runtime_error("Fo is nan, blame clipper");
-
-		if (isnan(Fc))
-			throw runtime_error("Fc is nan, blame clipper");
 
 		if (free[ih].flag() == freeflag)
 		{
