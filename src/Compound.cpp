@@ -12,6 +12,7 @@
 #include <zeep/xml/document.hpp>
 
 #include "cif++/Cif++.h"
+#include "cif++/Point.h"
 #include "cif++/Compound.h"
 #include "cif++/mrsrc.h"
 
@@ -648,8 +649,25 @@ const Compound* CompoundFactory::create(std::string id)
 				chiralCentres.push_back(cc);
 			}
 
+			auto& compPlanes = cf["comp_" + id]["chem_comp_plane_atom"];
+			
+			vector<CompoundPlane> planes;
+			for (auto row: compPlanes)
+			{
+				string atom_id, plane_id;
+				float esd;	
+				
+				cif::tie(atom_id, plane_id, esd) = row.get("atom_id", "plane_id", "dist_esd");
+
+				auto i = find_if(planes.begin(), planes.end(), [&](auto& p) { return p.id == plane_id;});
+				if (i == planes.end())
+					planes.emplace_back(CompoundPlane{ plane_id, { atom_id }, esd });
+				else
+					i->atomID.push_back(atom_id);
+			}
+
 			result = new Compound(id, name, group, move(atoms), move(bonds),
-				move(angles), move(chiralCentres));
+				move(angles), move(chiralCentres), move(planes));
 
 			boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
 			mCompounds.push_back(result);
@@ -784,5 +802,105 @@ vector<string> Compound::isomers() const
 	
 	return result;
 }
+
+float Compound::bondAngle(const string& atomId_1, const string& atomId_2, const string& atomId_3) const
+{
+	float result = nanf("1");
+	
+	for (auto& a: mAngles)
+	{
+		if (not (a.atomID[1] == atomId_2 and
+				 ((a.atomID[0] == atomId_1 and a.atomID[2] == atomId_3) or
+				  (a.atomID[2] == atomId_1 and a.atomID[0] == atomId_3))))
+			continue;
+		
+		result = a.angle;
+		break;
+	}
+	
+	return result;
+}
+
+//static float calcC(float a, float b, float alpha)
+//{
+//	float f = b * sin(alpha * kPI / 180);
+//	float d = sqrt(b * b - f * f);
+//	float e = a - d;
+//	float c = sqrt(f * f + e * e);
+//	
+//	return c;
+//}
+
+float Compound::chiralVolume(const string& centreID) const
+{
+	float result = 0;
+	
+	for (auto& cv: mChiralCentres)
+	{
+		if (cv.id != centreID)
+			continue;
+		
+		// calculate the expected chiral volume
+
+		// the edges
+		
+		float a = atomBondValue(cv.atomIDCentre, cv.atomID[0]);
+		float b = atomBondValue(cv.atomIDCentre, cv.atomID[1]);
+		float c = atomBondValue(cv.atomIDCentre, cv.atomID[2]);
+		
+		// the angles for the top of the tetrahedron
+		
+		float alpha = bondAngle(cv.atomID[0], cv.atomIDCentre, cv.atomID[1]);
+		float beta  = bondAngle(cv.atomID[1], cv.atomIDCentre, cv.atomID[2]);
+		float gamma = bondAngle(cv.atomID[2], cv.atomIDCentre, cv.atomID[0]);
+		
+		float cosa = cos(alpha * kPI / 180);
+		float cosb = cos(beta * kPI / 180);
+		float cosc = cos(gamma * kPI / 180);
+		
+		result = (a * b * c * sqrt(1 + 2 * cosa * cosb * cosc - (cosa * cosa) - (cosb * cosb) - (cosc * cosc))) / 6;
+//
+//		
+//		// the bond angles for the top of the tetrahedron
+//		float b[3] =
+//		{
+//			bondAngle(cv.atomID[0], cv.atomIDCentre, cv.atomID[1]),
+//			bondAngle(cv.atomID[1], cv.atomIDCentre, cv.atomID[2]),
+//			bondAngle(cv.atomID[2], cv.atomIDCentre, cv.atomID[0])
+//		};
+//		
+//		// the edges
+//		
+//		float a[6] =
+//		{
+//			atomBondValue(cv.atomIDCentre, cv.atomID[0]),
+//			atomBondValue(cv.atomIDCentre, cv.atomID[1]),
+//			atomBondValue(cv.atomIDCentre, cv.atomID[2])
+//		};
+//		
+//		a[3] = calcC(a[0], a[1], b[0]);
+//		a[4] = calcC(a[1], a[2], b[1]);
+//		a[5] = calcC(a[2], a[0], b[2]);
+//		
+//		for (auto& i: a)
+//			i *= i;
+//		
+//		float v2 =
+//			a[0] * a[5] * (a[1] + a[2] + a[3] + a[5] - a[0] - a[4]) +
+//			a[1] * a[5] * (a[0] + a[2] + a[3] + a[4] - a[1] - a[5]) +
+//			a[2] * a[3] * (a[0] + a[1] + a[4] + a[5] - a[2] - a[3]) -
+//			a[0] * a[1] * a[3] - a[1] * a[2] * a[4] - a[0] * a[2] * a[5] - a[3] * a[4] * a[5];
+//		
+//		result = sqrt(v2 / 144);
+		
+		if (cv.volumeSign == negativ)
+			result = -result;
+		
+		break;
+	}
+	
+	return result;
+}
+
 
 }

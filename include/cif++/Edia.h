@@ -5,6 +5,8 @@
 #include <zeep/xml/document.hpp>
 #include <clipper/clipper.h>
 
+#include <boost/thread.hpp>
+
 #include "cif++/Structure.h"
 #include "cif++/DistanceMap.h"
 #include "cif++/BondMap.h"
@@ -39,6 +41,7 @@ class AtomRadius
 
 	zeep::xml::document mCurves;
 	Cache mCache;
+	boost::shared_mutex mMutex;
 };
 
 // --------------------------------------------------------------------

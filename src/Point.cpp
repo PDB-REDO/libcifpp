@@ -1,5 +1,7 @@
 // Lib for working with structures as contained in mmCIF and PDB files
 
+#include <random>
+
 #include "cif++/Point.h"
 
 using namespace std;
@@ -295,5 +297,28 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 //	
 //	return q;
 //}
+
+// --------------------------------------------------------------------
+
+Point Nudge(Point p, float offset)
+{
+	static std::random_device rd;
+	static mt19937_64 rng(rd());
+
+	uniform_real_distribution<> randomAngle(0, 2 * kPI);
+	normal_distribution<> randomOffset(0, offset);
+
+	float theta = randomAngle(rng);
+	float phi1 = randomAngle(rng) - kPI;
+	float phi2 = randomAngle(rng) - kPI;
+		
+	quaternion q = boost::math::spherical(1.0f, theta, phi1, phi2);
+
+	Point r{ 0, 0, 1 };
+	r.rotate(q);
+	r *= randomOffset(rng);
+	
+	return p + r;
+}
 
 }

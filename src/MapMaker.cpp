@@ -191,6 +191,7 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	using clipper::data32::F_phi;
 	using clipper::data32::F_sigF;
 	using clipper::data32::Phi_fom;
+	using clipper::data32::Flag;
 
 	CCP4MTZfile mtzin;
 	mtzin.open_read(dataFile.string());
@@ -201,6 +202,7 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	HKL_data<F_phi> fbData, fdData, fcData;
 	HKL_data<F_sigF> foData;
 	HKL_data<Phi_fom> fomData;
+	HKL_data<Flag> freeData;
 
 	mtzin.import_hkl_data(fbData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fbLabels, ",")).str());
@@ -210,6 +212,8 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(foLabels, ",")).str());
 	mtzin.import_hkl_data(fcData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fcLabels, ",")).str());
+	mtzin.import_hkl_data(freeData,
+		(boost::format(kBasePath) % "*" % "*" % "FREE").str());
 	mtzin.import_hkl_data(fomData,
 		(boost::format(kBasePath) % "*" % "*" % "PHWT,FOM").str());
 
@@ -253,11 +257,20 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	fdMap.fft_from(fdData);					// generate map
 
 	if (VERBOSE)
+	{
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
 		     << "  stored resolution: " << hklInfo.resolution().limit() << endl
 			 << "  calculated reshi = " << mResHigh << " reslo = " << mResLow << endl
 		     << "  spacegroup: " << mSpacegroup.symbol_hm() << endl
 		     << "  cell: " << mCell.format() << endl;
+
+		printStats(hklInfo, foData, fcData, freeData);
+	}
+
+	mFb.calculateStats();
+	mFd.calculateStats();
+
+
 //
 //#if DEBUG
 //	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
@@ -321,6 +334,9 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WDa
 	
 	for (auto ih = fb.first(); not ih.last(); ih.next())
 	{
+		if (fc[ih].missing())
+			throw runtime_error("Missing Fc, apparently creating Fc went wrong");
+		
 		clipper::HKL_class cls(mSpacegroup, ih.hkl());
 
 		auto W = fom[ih].fom();
@@ -578,16 +594,8 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 			flag[ih].flag() = clipper::SFweight_spline<float>::NONE;
 	}
 	
-	int nRefln = 1000;
-//	if (vm.count("num-reflns"))
-//		nRefln = vm["num-reflns"].as<int>();
-	
-	int nParam = 20;
-//	if (vm.count("num-params"))
-//		nParam = vm["num-param"].as<int>();
-
 	// do sigmaa calc
-	clipper::SFweight_spline<float> sfw(nRefln, nParam);
+	clipper::SFweight_spline<float> sfw(mNumRefln, mNumParam);
 	sfw(fb, fd, phiw, fo, fc, flag);
 
 	// fb now contains 2mFo - DFc
@@ -627,9 +635,17 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 	fdMap.fft_from(fd);								// generate map
 
 	if (VERBOSE)
+	{
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
 			 << "  resolution: " << mResHigh
 			 << endl;
+
+		printStats(hklInfo, fo, fc, flag);
+	}
+
+	mFb.calculateStats();
+	mFd.calculateStats();
+
 //
 //#if DEBUG
 //	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
@@ -669,6 +685,60 @@ void MapMaker<FTYPE>::loadFromMapFiles(const fs::path& fbMapFile, const fs::path
 	
 	if (not mFb.cell().equals(mFd.cell()))
 		throw runtime_error("Fb and Fd map do not contain the same cell");
+}
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::printStats(const clipper::HKL_info hklInfo,
+	const clipper::HKL_data<clipper::data32::F_sigF>& fo,
+	const clipper::HKL_data<clipper::data32::F_phi>& fc,
+	const clipper::HKL_data<clipper::data32::Flag>& free)
+{
+	// calc R and R-free
+	vector<double> params(mNumParam, 1.0);
+
+	clipper::BasisFn_spline basisfn(fo, mNumParam, 1.0);
+	clipper::TargetFn_scaleF1F2<clipper::data32::F_phi,clipper::data32::F_sigF> targetfn(fc, fo);
+	clipper::ResolutionFn rfn(hklInfo, basisfn, targetfn, params);
+
+	double r1w = 0, f1w = 0, r1f = 0, f1f = 0;
+	const int freeflag = 0;
+
+	for (auto ih = fo.first_data(); not ih.last(); ih = fo.next_data(ih))
+	{
+		if (fc[ih].missing())
+			throw runtime_error("missing Fc");
+		
+		double Fo = fo[ih].f();
+		double Fc = sqrt(rfn.f(ih)) * fc[ih].f();
+
+		if (isnan(Fo))
+			throw runtime_error("Fo is nan, blame clipper");
+
+		if (isnan(Fc))
+			throw runtime_error("Fc is nan, blame clipper");
+
+		if (free[ih].flag() == freeflag)
+		{
+			r1f += fabs(Fo - Fc);
+			f1f += Fo;
+		}
+		else
+		{
+			r1w += fabs(Fo - Fc);
+			f1w += Fo;
+		}
+	}
+	
+	if (f1f < 0.1)
+		f1f = 0.1;
+	r1f /= f1f;
+	
+	if (f1w < 0.1)
+		f1w = 0.1;
+	r1w /= f1w;
+
+	cerr << "R-factor      : " << r1w << endl
+		 << "Free R-factor : " << r1f << endl;
 }
 
 template class MapMaker<float>;

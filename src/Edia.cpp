@@ -34,8 +34,12 @@ float AtomRadius::operator()(AtomType a, int charge, float resolution)
 
 	try
 	{
+		boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
+		
 		if (mCache.count(key) == 0)
 		{
+			boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
+			
 			string symbol = AtomTypeTraits(a).symbol();
 			
 			auto fmt = boost::format("/curves/curve[@symbol='%1%']/cc[@charge='%2%']/radius[@resolution=%3%]");
@@ -116,9 +120,9 @@ class PointWeightFunction
 			
 			result = p.m * (d - p.c) * (d - p.c) + p.b;
 			
-			assert(result != 0);
-			if (result == 0)
-				result = numeric_limits<float>::epsilon();
+//			assert(result != 0);
+//			if (result == 0)
+//				result = numeric_limits<float>::epsilon();
 			
 			break;
 		}
@@ -140,6 +144,9 @@ class PointWeightFunction
 
 // --------------------------------------------------------------------
 
+AtomRadius kAtomRadius;
+
+
 float CalculateEDIA(const Atom& atom, const clipper::Xmap<float>& xmap,
 	float resolution, float meanDensity, float rmsDensity,
 	const DistanceMap& dm, const BondMap& bm)
@@ -153,8 +160,7 @@ float CalculateEDIA(const Atom& atom, const clipper::Xmap<float>& xmap,
 	typedef set<Atom, lessAtom> atomSet;
 
 	
-	static AtomRadius atomRadius;
-	float radius = atomRadius(atom.type(), 0, resolution);
+	float radius = kAtomRadius(atom.type(), 0, resolution);
 	
 	float x, y, z;
 	tie(x, y, z) = atom.location();
@@ -178,7 +184,7 @@ float CalculateEDIA(const Atom& atom, const clipper::Xmap<float>& xmap,
 
 	vector<PointWeightFunction> wn;
 	for (auto a: atomsNearBy)
-		wn.emplace_back(a.location(), atomRadius(a, resolution));
+		wn.emplace_back(a.location(), kAtomRadius(a, resolution));
 
 	double sum1 = 0, sum2 = 0;
 
@@ -262,7 +268,7 @@ float CalculateEDIA(const Atom& atom, const clipper::Xmap<float>& xmap,
 					}
 				}
 
-				if (VERBOSE > 2)
+				if (VERBOSE > 3)
 					cout << Point(p) << ":\td: " << xmap[iw] << "\tz: " << z << "\to: " << o << "\tzraw: " << ((xmap[iw] - meanDensity) / rmsDensity) << "\twp: " << wp << endl;
 				
 				sum1 += z * wp * o;
@@ -272,7 +278,7 @@ float CalculateEDIA(const Atom& atom, const clipper::Xmap<float>& xmap,
 	
 	float result = sum1 / sum2;
 	
-	if (VERBOSE > 1)
+	if (VERBOSE > 2)
 		cout << string(cif::get_terminal_width(), '-') << endl
 			 << "Processing atom " << atom.id() << endl
 			 << "Symbol: " << AtomTypeTraits(atom.type()).symbol() << endl

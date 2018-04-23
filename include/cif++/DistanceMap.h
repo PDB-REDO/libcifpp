@@ -15,6 +15,9 @@ class DistanceMap
 {
   public:
 	DistanceMap(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell);
+
+	// simplified version for subsets of atoms (used in refining e.g.)	
+	DistanceMap(const std::vector<Atom>& atoms);
 	
 	DistanceMap(const DistanceMap&) = delete;
 	DistanceMap& operator=(const DistanceMap&) = delete;
@@ -24,7 +27,7 @@ class DistanceMap
 
   private:
 
-	uint32 dim;
+	size_t dim;
 	std::vector<float> dist;
 	std::unordered_map<std::string,size_t> index;
 };

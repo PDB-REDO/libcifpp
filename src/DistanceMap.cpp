@@ -95,7 +95,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 							minR2 = r2;
 					}
 		
-					uint32 ix = j + i * dim - i * (i + 1) / 2;
+					size_t ix = j + i * dim - i * (i + 1) / 2;
 					
 					assert(ix < dist.size());
 					dist[ix] = sqrt(minR2);
@@ -108,15 +108,56 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	t.join_all();
 }
 
+DistanceMap::DistanceMap(const vector<Atom>& atoms)
+	: dim(0)
+{
+	dim = atoms.size();
+	
+	dist = vector<float>(dim * (dim - 1), 0.f);
+	
+	for (auto& atom: atoms)
+	{
+		size_t ix = index.size();
+		index[atom.id()] = ix;
+	};
+
+	for (size_t i = 0; i < dim; ++i)
+	{
+		for (size_t j = i + 1; j < dim; ++j)
+		{
+			size_t ix = j + i * dim - i * (i + 1) / 2;
+			assert(ix < dist.size());
+			dist[ix] = Distance(atoms[i].location(), atoms[j].location());
+		}
+	}
+}
+
 float DistanceMap::operator()(const Atom& a, const Atom& b) const
 {
-	uint32 ixa = index.at(a.id());
-	uint32 ixb = index.at(b.id());
+	size_t ixa, ixb;
+	
+	try
+	{
+		ixa = index.at(a.id());
+	}
+	catch (const out_of_range& ex)
+	{
+		throw runtime_error("atom " + a.id() + " not found in distance map");
+	}
+		
+	try
+	{
+		ixb = index.at(b.id());
+	}
+	catch (const out_of_range& ex)
+	{
+		throw runtime_error("atom " + b.id() + " not found in distance map");
+	}
 	
 	if (ixb < ixa)
 		swap(ixa, ixb);
 	
-	uint32 ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
 	
 	assert(ix < dist.size());
 	return dist[ix];
@@ -127,16 +168,24 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 	vector<Atom> result;
 	const File& f = a.getFile();
 	
-	uint32 ixa = index.at(a.id());
+	size_t ixa;
+	try
+	{
+		ixa = index.at(a.id());
+	}
+	catch (const out_of_range& ex)
+	{
+		throw runtime_error("atom " + a.id() + " not found in distance map");
+	}
 
 	for (auto& i: index)
 	{
-		uint32 ixb = i.second;
+		size_t ixb = i.second;
 		
 		if (ixb == ixa)
 			continue;
 		
-		uint32 ix;
+		size_t ix;
 		
 		if (ixa < ixb)
 			ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;

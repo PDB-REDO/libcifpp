@@ -98,12 +98,18 @@ class MapMaker
 
 	void fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WData& fom);
 
+	void printStats(const clipper::HKL_info hklInfo,
+		const clipper::HKL_data<clipper::data32::F_sigF>& fo,
+		const clipper::HKL_data<clipper::data32::F_phi>& fc,
+		const clipper::HKL_data<clipper::data32::Flag>& free);
+
 	MapType mFb, mFd;
 	Spacegroup mSpacegroup;
 	Cell mCell;
 	Grid_sampling mGrid;
 	float mSamplingRate;
 	double mResLow, mResHigh;
+	int mNumRefln = 1000, mNumParam = 20;
 };
 
 }

@@ -63,6 +63,17 @@ struct CompoundAngle
 };
 
 // --------------------------------------------------------------------
+// struct containing information about the bond-angles
+// This information comes from the CCP4 monomer library. 
+
+struct CompoundPlane
+{
+	std::string					id;
+	std::vector<std::string>	atomID;
+	float						esd;
+};
+
+// --------------------------------------------------------------------
 // struct containing information about a chiral centre
 // This information comes from the CCP4 monomer library. 
 
@@ -88,11 +99,13 @@ class Compound
 	Compound(const std::string& id, const std::string& name,
 		const std::string& group, std::vector<CompoundAtom>&& atoms,
 		std::vector<CompoundBond>&& bonds, std::vector<CompoundAngle>&& angles,
-		std::vector<ChiralCentre>&& chiralCentres)
+		std::vector<ChiralCentre>&& chiralCentres,
+		std::vector<CompoundPlane>&& planes)
 		: mId(id), mName(name), mGroup(group)
 		, mAtoms(std::move(atoms)), mBonds(std::move(bonds))
 		, mAngles(std::move(angles))
 		, mChiralCentres(std::move(chiralCentres))
+		, mPlanes(std::move(planes))
 	{
 	}
 
@@ -112,18 +125,22 @@ class Compound
 	static void addMonomerLibraryPath(const std::string& dir);
 
 	// accessors
-	std::string id() const						{ return mId; }
-	std::string	name() const					{ return mName; }
+	std::string id() const							{ return mId; }
+	std::string	name() const						{ return mName; }
 	std::string	type() const;
-	std::string group() const					{ return mGroup; }
-	std::vector<CompoundAtom> atoms() const		{ return mAtoms; }
-	std::vector<CompoundBond> bonds() const		{ return mBonds; }
-	std::vector<CompoundAngle> angles() const	{ return mAngles; }
+	std::string group() const						{ return mGroup; }
+	std::vector<CompoundAtom> atoms() const			{ return mAtoms; }
+	std::vector<CompoundBond> bonds() const			{ return mBonds; }
+	std::vector<CompoundAngle> angles() const		{ return mAngles; }
+	std::vector<ChiralCentre> chiralCentres() const	{ return mChiralCentres; }
+	std::vector<CompoundPlane> planes() const		{ return mPlanes; }
 	
 	CompoundAtom getAtomById(const std::string& atomId) const;
 	
 	bool atomsBonded(const std::string& atomId_1, const std::string& atomId_2) const;
 	float atomBondValue(const std::string& atomId_1, const std::string& atomId_2) const;
+	float bondAngle(const std::string& atomId_1, const std::string& atomId_2, const std::string& atomId_3) const;
+	float chiralVolume(const std::string& centreID) const;
 
 	std::string formula() const;
 	float formulaWeight() const;
@@ -131,8 +148,6 @@ class Compound
 	bool isWater() const;
 	bool isSugar() const;
 
-	std::vector<ChiralCentre> chiralCentres() const			{ return mChiralCentres; }
-	
 	std::vector<std::string>	isomers() const;
 	bool isIsomerOf(const Compound& c) const;
 	std::vector<std::tuple<std::string,std::string>> mapToIsomer(const Compound& c) const;
@@ -149,6 +164,7 @@ class Compound
 	std::vector<CompoundBond>	mBonds;
 	std::vector<CompoundAngle>	mAngles;
 	std::vector<ChiralCentre>	mChiralCentres;
+	std::vector<CompoundPlane>	mPlanes;
 };
 
 // --------------------------------------------------------------------

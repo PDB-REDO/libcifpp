@@ -180,6 +180,13 @@ float DihedralAngle(const Point& p1, const Point& p2, const Point& p3, const Poi
 float CosinusAngle(const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 
 // --------------------------------------------------------------------
+// For e.g. simulated annealing, returns a new point that is moved in
+// a random direction with a distance randomly chosen from a normal
+// distribution with a stddev of offset.
+
+Point Nudge(Point p, float offset);
+
+// --------------------------------------------------------------------
 // We use quaternions to do rotations in 3d space
 
 quaternion Normalize(quaternion q);
