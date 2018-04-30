@@ -185,36 +185,24 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	
 	const string kBasePath("/%1%/%2%/[%3%]");
 
-	using clipper::HKL_info;
 	using clipper::CCP4MTZfile;
-	using clipper::HKL_data;
-	using clipper::data32::F_phi;
-	using clipper::data32::F_sigF;
-	using clipper::data32::Phi_fom;
-	using clipper::data32::Flag;
 
 	CCP4MTZfile mtzin;
 	mtzin.open_read(dataFile.string());
 	
-	HKL_info hklInfo;
-	mtzin.import_hkl_info(hklInfo);
+	mtzin.import_hkl_info(mHKLInfo);
 	
-	HKL_data<F_phi> fbData, fdData, fcData;
-	HKL_data<F_sigF> foData;
-	HKL_data<Phi_fom> fomData;
-	HKL_data<Flag> freeData;
-
-	mtzin.import_hkl_data(fbData,
+	mtzin.import_hkl_data(mFbData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fbLabels, ",")).str());
-	mtzin.import_hkl_data(fdData,
+	mtzin.import_hkl_data(mFdData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fdLabels, ",")).str());
-	mtzin.import_hkl_data(foData,
+	mtzin.import_hkl_data(mFoData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(foLabels, ",")).str());
-	mtzin.import_hkl_data(fcData,
+	mtzin.import_hkl_data(mFcData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fcLabels, ",")).str());
-	mtzin.import_hkl_data(freeData,
+	mtzin.import_hkl_data(mFreeData,
 		(boost::format(kBasePath) % "*" % "*" % "FREE").str());
-	mtzin.import_hkl_data(fomData,
+	mtzin.import_hkl_data(mPhiFomData,
 		(boost::format(kBasePath) % "*" % "*" % "PHWT,FOM").str());
 
 	mtzin.close_read();
@@ -222,14 +210,14 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	if (dataFile != mtzFile)
 		fs::remove(dataFile);
 	
-	mCell = hklInfo.cell();
-	mSpacegroup = hklInfo.spacegroup();
+	Cell cell = mHKLInfo.cell();
+	Spacegroup spacegroup = mHKLInfo.spacegroup();
 
-	ResolutionCalculator rc(mCell);
+	ResolutionCalculator rc(cell);
 	mResHigh = 99;
 	mResLow = 0;
 	
-	for (auto hi = foData.first_data(); not hi.last(); hi = foData.next_data(hi))
+	for (auto hi = mFoData.first_data(); not hi.last(); hi = mFoData.next_data(hi))
 	{
 		float res = rc(hi.hkl().h(), hi.hkl().k(), hi.hkl().l());
 		
@@ -240,62 +228,35 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 			mResLow = res;
 	}
 
-	fixMTZ(fbData, fdData, foData, fcData, fomData);
+	fixMTZ();
 
 	samplingRate /= 2;	// clipper's way of interpreting?
 	
-	mGrid.init(mSpacegroup, mCell,
-		hklInfo.resolution(), samplingRate);	// define grid
+	mGrid.init(spacegroup, cell,
+		mHKLInfo.resolution(), samplingRate);	// define grid
 	
 	clipper::Xmap<FTYPE>& fbMap = mFb;
 	clipper::Xmap<FTYPE>& fdMap = mFd;
 	
-	fbMap.init(mSpacegroup, mCell, mGrid);	// define map
-	fbMap.fft_from(fbData);					// generate map
+	fbMap.init(spacegroup, cell, mGrid);	// define map
+	fbMap.fft_from(mFbData);				// generate map
 	
-	fdMap.init(mSpacegroup, mCell, mGrid);	// define map
-	fdMap.fft_from(fdData);					// generate map
+	fdMap.init(spacegroup, cell, mGrid);	// define map
+	fdMap.fft_from(mFdData);				// generate map
 
 	if (VERBOSE)
 	{
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
-		     << "  stored resolution: " << hklInfo.resolution().limit() << endl
+		     << "  stored resolution: " << mHKLInfo.resolution().limit() << endl
 			 << "  calculated reshi = " << mResHigh << " reslo = " << mResLow << endl
-		     << "  spacegroup: " << mSpacegroup.symbol_hm() << endl
-		     << "  cell: " << mCell.format() << endl;
+		     << "  spacegroup: " << spacegroup.symbol_hm() << endl
+		     << "  cell: " << cell.format() << endl;
 
-		printStats(hklInfo, foData, fcData, freeData);
+		printStats();
 	}
 
 	mFb.calculateStats();
 	mFd.calculateStats();
-
-
-//
-//#if DEBUG
-//	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
-//	if (mkstemps(tmpFoFileName, 4) < 0)
-//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-//	
-//	using clipper::CCP4MAPfile;
-//
-//	CCP4MAPfile foFile;
-//	foFile.open_write(tmpFoFileName);
-//	foFile.export_xmap(mFb);
-//	foFile.close_write();
-//	
-//	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
-//	if (mkstemps(tmpFcFileName, 4) < 0)
-//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-//	
-//	CCP4MAPfile fcFile;
-//	fcFile.open_write(tmpFcFileName);
-//	fcFile.export_xmap(mFd);
-//	fcFile.close_write();
-//	
-//	cout << "Wrote fo map to: " << tmpFoFileName << endl
-//		 << "  and df map to: " << tmpFcFileName << endl;
-//#endif
 }
 
 ostream& operator<<(ostream& os, const clipper::HKL& hkl)
@@ -307,10 +268,11 @@ ostream& operator<<(ostream& os, const clipper::HKL& hkl)
 	return os;
 };
 
-
 template<typename FTYPE>
-void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WData& fom)
+void MapMaker<FTYPE>::fixMTZ()
 {
+	Spacegroup spacegroup = mHKLInfo.spacegroup();
+
 	enum {
 		A1,  // A1:  FC = 2mFo - FM              
 		A2,  // A2:  FC >= 2mFo - FM             
@@ -325,6 +287,7 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WDa
 		T11, // 11:  FD = 0 (unobserved only)    
 		TestCount
 	};
+
 	vector<bool> tests(TestCount, true);
 	
 	// first run the tests to see if we need to fix anything
@@ -332,19 +295,19 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WDa
 	if (VERBOSE)
 		cerr << "Testing MTZ file" << endl;
 	
-	for (auto ih = fb.first(); not ih.last(); ih.next())
+	for (auto ih = mFbData.first(); not ih.last(); ih.next())
 	{
-		clipper::HKL_class cls(mSpacegroup, ih.hkl());
+		clipper::HKL_class cls(spacegroup, ih.hkl());
 
-		auto W = fom[ih].fom();
+		auto W = mPhiFomData[ih].fom();
 
-		auto FM = fb[ih].f();
-		auto PM = fb[ih].phi() * 180 / kPI;
-		auto FD = fd[ih].f();
-		auto PD = fd[ih].phi() * 180 / kPI;
-		auto FO = fo[ih].f();
-		auto FC = fc[ih].f();
-		auto PC = fc[ih].phi() * 180 / kPI;
+		auto FM = mFbData[ih].f();
+		auto PM = mFbData[ih].phi() * 180 / kPI;
+		auto FD = mFdData[ih].f();
+		auto PD = mFdData[ih].phi() * 180 / kPI;
+		auto FO = mFoData[ih].f();
+		auto FC = mFcData[ih].f();
+		auto PC = mFcData[ih].phi() * 180 / kPI;
 
 		auto WFO = W * FO;
 
@@ -354,7 +317,7 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WDa
 		if (abs(fmod(abs(PD - PC) + 180, 360) - 180) > 90)
 			FD = -FD; 
 			
-		if (fo[ih].missing() or W == 0)
+		if (mFoData[ih].missing() or W == 0)
 		{
 			if (tests[T10] and abs(FM - FC) > 0.05)
 			{
@@ -435,44 +398,44 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WDa
 	const F_phi fzero(0, 0);
 	
 	// mtzfix...
-	for (auto ih = fb.first(); not ih.last(); ih.next())
+	for (auto ih = mFbData.first(); not ih.last(); ih.next())
 	{
-		if (fb[ih].missing() or fd[ih].missing())
+		if (mFbData[ih].missing() or mFdData[ih].missing())
 			continue;
 
-		auto PM = fb[ih].phi() * 180 / kPI;
-		auto PD = fd[ih].phi() * 180 / kPI;
-		auto PC = fc[ih].phi() * 180 / kPI;
+		auto PM = mFbData[ih].phi() * 180 / kPI;
+		auto PD = mFdData[ih].phi() * 180 / kPI;
+		auto PC = mFcData[ih].phi() * 180 / kPI;
 
 		if (abs(fmod(abs(PM - PC) + 180, 360) - 180) > 90)
 		{
-			fb[ih].f() = -fb[ih].f();
-			fb[ih].phi() = fc[ih].phi();
+			mFbData[ih].f() = -mFbData[ih].f();
+			mFbData[ih].phi() = mFcData[ih].phi();
 		}
 
 		if (abs(fmod(abs(PD - PC) + 180, 360) - 180) > 90)
 		{
-			fd[ih].f() = -fd[ih].f();
-			fd[ih].phi() = fc[ih].phi();
+			mFdData[ih].f() = -mFdData[ih].f();
+			mFdData[ih].phi() = mFcData[ih].phi();
 		}
 		
-		auto mFo = fb[ih] - fd[ih];
+		auto mFo = mFbData[ih] - mFdData[ih];
 
-		HKL_class cls(mSpacegroup, ih.hkl());
+		HKL_class cls(spacegroup, ih.hkl());
 
-		if (not fo[ih].missing() and fom[ih].fom() > 0)
+		if (not mFoData[ih].missing() and mPhiFomData[ih].fom() > 0)
 		{
 			if (cls.centric())
 			{
 				if (not tests[C6])
-					fb[ih] = mFo;
+					mFbData[ih] = mFo;
 				if (not tests[C7] and tests[C8])
-					fd[ih].f() = fd[ih].f() / 2;
+					mFdData[ih].f() = mFdData[ih].f() / 2;
 			}
 			else
 			{
 				if (tests[A3] and not tests[A4])
-					fd[ih] = fd[ih] + fd[ih];
+					mFdData[ih] = mFdData[ih] + mFdData[ih];
 			}
 		}
 		else
@@ -482,14 +445,134 @@ void MapMaker<FTYPE>::fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WDa
 				if ((not cls.centric() and tests[A1]) or
 					(cls.centric() and (tests[C5] or tests[C7] or tests[C8])))
 				{
-					fb[ih] = fc[ih];
+					mFbData[ih] = mFcData[ih];
 				}
 			}
 			
 			if (not tests[T11])
-				fd[ih] = fzero;
+				mFdData[ih] = fzero;
 		}
 	}
+}
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::loadFromReflections(const fs::path& hklin,
+	const Structure& structure, bool noBulk, AnisoScalingFlag anisoScaling,
+	float samplingRate, bool electronScattering)
+{
+	using clipper::HKL;
+	
+	cif::File reflnsFile(hklin);
+	auto& reflns = reflnsFile.firstDatablock();
+	
+//	m_xname = reflns["exptl_crystal"].front()["id"].as<string>();
+//	m_pname = reflns["entry"].front()["id"].as<string>();
+
+	float a, b, c, alpha, beta, gamma;
+	cif::tie(a, b, c, alpha, beta, gamma) = reflns["cell"].front().get(
+		"length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma");
+	
+	using clipper::Cell_descr;
+	Cell cell = Cell(Cell_descr{a, b, c, alpha, beta, gamma});
+
+//	if (not cell2.equals(m_cell))
+//		throw runtime_error("Reflections file and coordinates file do not agree upon the cell parameters");
+
+	// --------------------------------------------------------------------
+
+	// Read reflections file to calculate resolution low and high
+	ResolutionCalculator rc(a, b, c, alpha, beta, gamma);
+	double hires = 99;
+	
+	for (auto r: reflns["refln"])
+	{
+		int h, k, l;
+		
+		cif::tie(h, k, l) = r.get("index_h", "index_k", "index_l");
+		
+		double res = rc(h, k, l);
+		
+		if (hires > res)
+			hires = res;
+	}
+	
+	string spacegroupDescr = reflns["symmetry"].front()["space_group_name_H-M"].as<string>();
+	auto spacegroup = Spacegroup(clipper::Spgr_descr{spacegroupDescr});
+	mHKLInfo = HKL_info(spacegroup, cell, clipper::Resolution{hires}, true);
+	
+//	m_crystal = MTZcrystal(m_xname, m_pname, m_cell);
+
+	mFoData.init(mHKLInfo, mHKLInfo.cell());
+	mFreeData.init(mHKLInfo, mHKLInfo.cell());
+
+	for (auto ih = mFreeData.first(); not ih.last(); ih.next())
+		mFreeData[ih].set_null();
+	
+	// --------------------------------------------------------------------
+
+	enum FreeRConvention { frXPLO, frCCP4 } freeRConvention = frXPLO;
+	int freeRefl = 1, workRefl = 0;
+	
+	if (false /*m_statusXPLO*/)
+	{
+		freeRConvention = frCCP4;
+		freeRefl = 0;
+		workRefl = 1;
+	}
+
+	bool first = false;
+	for (auto r: reflns["refln"])
+	{
+		int h, k, l;
+		char flag;
+		float F, sigF;
+		
+		cif::tie(h, k, l, flag, F, sigF) = r.get("index_h", "index_k", "index_l", "status", "F_meas_au", "F_meas_sigma_au");
+
+		int ix = mHKLInfo.index_of(HKL{h, k, l});
+		
+		if (ix < 0)
+		{
+			if (VERBOSE)
+				cerr << "Ignoring hkl(" << h << ", " << k << ", " << l << ")" << endl;
+			continue;
+		}
+		
+		if (first and (flag == freeRefl or flag == workRefl))
+		{
+			cerr << "Non-standard _refln.status column detected" << endl
+				 << "Assuming " << (freeRConvention == frXPLO ? "XPLOR" : "CCP4") << " convention for free R flag" << endl;
+			first = false;
+		}
+		
+		mFoData[ix] = F_sigF(F, sigF);
+		
+		switch (flag)
+		{
+			case 'o':
+			case 'h':
+			case 'l':
+				mFreeData[ix] = Flag(1);
+				break;
+			
+			case 'f':
+				mFreeData[ix] = Flag(0);
+				break;
+			
+			case '0':
+			case '1':
+				mFreeData[ix] = Flag(workRefl == flag ? 1 : 0);
+				break;
+
+			default:
+				if (VERBOSE > 1)
+					cerr << "Unexpected value in status: '" << flag << "' for hkl(" << h << ", " << k << ", " << l << ")" << endl;
+				break;
+		}
+	}
+	
+//	recalc();
+	recalc(structure, noBulk, anisoScaling, samplingRate, electronScattering);
 }
 
 template<typename FTYPE>
@@ -502,34 +585,29 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 	
 	const string kBasePath("/%1%/%2%/[%3%]");
 
-	using clipper::HKL_info;
 	using clipper::CCP4MTZfile;
-	using clipper::HKL_data;
-	using clipper::data32::F_phi;
-	using clipper::data32::F_sigF;
-	using clipper::data32::Phi_fom;
-	using clipper::data32::Flag;
 
 	CCP4MTZfile mtzin;
 	mtzin.open_read(mtzFile.string());
 	
-	HKL_info hklInfo;
-//	MTZcrystal crystal;
-	mtzin.import_hkl_info(hklInfo);
-	
-	HKL_data<F_sigF> fo;
-	HKL_data<Flag> free;
-
-//	mtzin.import_crystal(crystal, "/*/*/*");
-	mtzin.import_hkl_data(fo,
+	mtzin.import_hkl_info(mHKLInfo);
+	mtzin.import_hkl_data(mFoData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(foLabels, ",")).str());
-	mtzin.import_hkl_data(free,
+	mtzin.import_hkl_data(mFreeData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(freeLabels, ",")).str());
 
 	mtzin.close_read();
 	
-	mCell = hklInfo.cell();
-	mSpacegroup = hklInfo.spacegroup();
+	recalc(structure, noBulk, anisoScaling, samplingRate, electronScattering);
+}
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::recalc(const Structure& structure,
+		bool noBulk, AnisoScalingFlag anisoScaling,
+		float samplingRate, bool electronScattering)
+{
+	Cell cell = mHKLInfo.cell();
+	Spacegroup spacegroup = mHKLInfo.spacegroup();
 
 	// The calculation work
 	vector<clipper::Atom> atoms;
@@ -537,7 +615,7 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 	for (auto a: structure.atoms())
 		atoms.push_back(a.toClipper());
 
-	HKL_data<F_phi> fc(hklInfo, mCell);
+	mFcData.init(mHKLInfo, cell);
 
 	if (not electronScattering)
 	{
@@ -551,12 +629,12 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 	if (noBulk)
 	{
 		clipper::SFcalc_aniso_fft<float> sfc;
-		sfc(fc, atoms);
+		sfc(mFcData, atoms);
 	}
 	else
 	{
 		clipper::SFcalc_obs_bulk<float> sfcb;
-		sfcb(fc, fo, atoms);
+		sfcb(mFcData, mFoData, atoms);
 		
 		if (VERBOSE)
 			cerr << "Bulk correction volume: " << sfcb.bulk_frac() << endl
@@ -568,9 +646,9 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 		clipper::SFscale_aniso<float>::TYPE F = clipper::SFscale_aniso<float>::F;
 		clipper::SFscale_aniso<float> sfscl;
 		if (anisoScaling == as_Observed)
-			sfscl(fo, fc);  // scale Fobs
+			sfscl(mFoData, mFcData);  // scale Fobs
 		else
-			sfscl(fc, fo);  // scale Fcal
+			sfscl(mFcData, mFoData);  // scale Fcal
 			
 		if (VERBOSE)
 			cerr << "Anisotropic scaling:" << endl
@@ -578,14 +656,16 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 	}
 
 	// now do sigmaa calc
-	HKL_data<F_phi>   fb(hklInfo, mCell), fd(hklInfo, mCell);
-	HKL_data<Phi_fom> phiw(hklInfo, mCell);
-	HKL_data<Flag>    flag(hklInfo, mCell);
+	mFbData.init(mHKLInfo, cell);
+	mFdData.init(mHKLInfo, cell);
+	mPhiFomData.init(mHKLInfo, cell);
+	
+	HKL_data<Flag> flag(mHKLInfo, cell);
 
 	const int freeflag = 0;
-	for (auto ih = flag.first(); not ih.last(); ih.next())
+	for (auto ih = mFreeData.first(); not ih.last(); ih.next())
 	{
-		if (not fo[ih].missing() and (free[ih].missing() or free[ih].flag() == freeflag))
+		if (not mFoData[ih].missing() and (mFreeData[ih].missing() or mFreeData[ih].flag() == freeflag))
 			flag[ih].flag() = clipper::SFweight_spline<float>::BOTH;
 		else
 			flag[ih].flag() = clipper::SFweight_spline<float>::NONE;
@@ -593,17 +673,17 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 	
 	// do sigmaa calc
 	clipper::SFweight_spline<float> sfw(mNumRefln, mNumParam);
-	sfw(fb, fd, phiw, fo, fc, flag);
+	sfw(mFbData, mFdData, mPhiFomData, mFoData, mFcData, flag);
 
-	// fb now contains 2mFo - DFc
-	// fd now contains  mFo - DFc
+	// mFbData now contains 2mFo - DFc
+	// mFdData now contains  mFo - DFc
 
-	fixMTZ(fb, fd, fo, fc, phiw);
+	fixMTZ();
 
-	ResolutionCalculator rc(mCell);
+	ResolutionCalculator rc(cell);
 	mResHigh = 99; mResLow = 0;
 	
-	for (auto hi = fo.first_data(); not hi.last(); hi = fo.next_data(hi))
+	for (auto hi = mFoData.first_data(); not hi.last(); hi = mFoData.next_data(hi))
 	{
 		float res = rc(hi.hkl().h(), hi.hkl().k(), hi.hkl().l());
 		
@@ -619,17 +699,17 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 
 	samplingRate /= 2;
 	
-	mGrid.init(mSpacegroup, mCell,
-		hklInfo.resolution(), samplingRate);		// define grid
+	mGrid.init(spacegroup, cell,
+		mHKLInfo.resolution(), samplingRate);		// define grid
 	
 	clipper::Xmap<FTYPE>& fbMap = mFb;
 	clipper::Xmap<FTYPE>& fdMap = mFd;
 
-	fbMap.init(mSpacegroup, mCell, mGrid);			// define map
-	fbMap.fft_from(fb);								// generate map
+	fbMap.init(spacegroup, cell, mGrid);			// define map
+	fbMap.fft_from(mFbData);								// generate map
 	
-	fdMap.init(mSpacegroup, mCell, mGrid);			// define map
-	fdMap.fft_from(fd);								// generate map
+	fdMap.init(spacegroup, cell, mGrid);			// define map
+	fdMap.fft_from(mFdData);								// generate map
 
 	if (VERBOSE)
 	{
@@ -637,37 +717,11 @@ void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
 			 << "  resolution: " << mResHigh
 			 << endl;
 
-		printStats(hklInfo, fo, fc, flag);
+		printStats();
 	}
 
 	mFb.calculateStats();
 	mFd.calculateStats();
-
-//
-//#if DEBUG
-//	char tmpFoFileName[] = "/tmp/fo-XXXXXX.map";
-//	if (mkstemps(tmpFoFileName, 4) < 0)
-//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-//	
-//	using clipper::CCP4MAPfile;
-//
-//	CCP4MAPfile foFile;
-//	foFile.open_write(tmpFoFileName);
-//	foFile.export_xmap(mFb);
-//	foFile.close_write();
-//	
-//	char tmpFcFileName[] = "/tmp/df-XXXXXX.map";
-//	if (mkstemps(tmpFcFileName, 4) < 0)
-//		throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
-//	
-//	CCP4MAPfile fcFile;
-//	fcFile.open_write(tmpFcFileName);
-//	fcFile.export_xmap(mFd);
-//	fcFile.close_write();
-//	
-//	cout << "Wrote fo map to: " << tmpFoFileName << endl
-//		 << "  and df map to: " << tmpFcFileName << endl;
-//#endif
 }
 
 template<typename FTYPE>
@@ -685,31 +739,28 @@ void MapMaker<FTYPE>::loadFromMapFiles(const fs::path& fbMapFile, const fs::path
 }
 
 template<typename FTYPE>
-void MapMaker<FTYPE>::printStats(const clipper::HKL_info hklInfo,
-	const clipper::HKL_data<clipper::data32::F_sigF>& fo,
-	const clipper::HKL_data<clipper::data32::F_phi>& fc,
-	const clipper::HKL_data<clipper::data32::Flag>& free)
+void MapMaker<FTYPE>::printStats()
 {
 	// calc R and R-free
 	vector<double> params(mNumParam, 1.0);
 
-	clipper::BasisFn_spline basisfn(fo, mNumParam, 1.0);
-	clipper::TargetFn_scaleF1F2<clipper::data32::F_phi,clipper::data32::F_sigF> targetfn(fc, fo);
-	clipper::ResolutionFn rfn(hklInfo, basisfn, targetfn, params);
+	clipper::BasisFn_spline basisfn(mFoData, mNumParam, 1.0);
+	clipper::TargetFn_scaleF1F2<clipper::data32::F_phi,clipper::data32::F_sigF> targetfn(mFcData, mFoData);
+	clipper::ResolutionFn rfn(mHKLInfo, basisfn, targetfn, params);
 
 	double r1w = 0, f1w = 0, r1f = 0, f1f = 0;
 	const int freeflag = 0;
 
-	for (auto ih = fo.first_data(); not ih.last(); ih = fo.next_data(ih))
+	for (auto ih = mFoData.first_data(); not ih.last(); ih = mFoData.next_data(ih))
 	{
-		if (fc[ih].missing())
+		if (mFcData[ih].missing())
 			continue;
 //			throw runtime_error("missing Fc");
 		
-		double Fo = fo[ih].f();
-		double Fc = sqrt(rfn.f(ih)) * fc[ih].f();
+		double Fo = mFoData[ih].f();
+		double Fc = sqrt(rfn.f(ih)) * mFcData[ih].f();
 
-		if (free[ih].flag() == freeflag)
+		if (mFreeData[ih].flag() == freeflag)
 		{
 			r1f += fabs(Fo - Fc);
 			f1f += Fo;
@@ -731,6 +782,31 @@ void MapMaker<FTYPE>::printStats(const clipper::HKL_info hklInfo,
 
 	cerr << "R-factor      : " << r1w << endl
 		 << "Free R-factor : " << r1f << endl;
+}
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::writeMTZ(const fs::path& file, const string& pname, const string& cname)
+{
+	if (mHKLInfo.is_null())
+		throw runtime_error("HKL info not initialized");
+	
+	clipper::CCP4MTZfile mtz;
+	clipper::MTZdataset dataset(pname, 0);
+	clipper::MTZcrystal crystal(cname, pname, mHKLInfo.cell());
+
+	const string col = "/" + pname + "/" + cname + "/";
+	
+	mtz.open_write(file.string());
+	mtz.export_hkl_info(mHKLInfo);
+	mtz.export_crystal(crystal, col);
+	mtz.export_dataset(dataset, col);
+	if (not mFreeData.is_null())		mtz.export_hkl_data(mFreeData, col + "[FREE]");
+	if (not mFoData.is_null())			mtz.export_hkl_data(mFoData, col + "[FP,SIGFP]");
+	if (not mFcData.is_null())			mtz.export_hkl_data(mFcData, col + "[FC_ALL,PHIC_ALL]");
+	if (not mFbData.is_null())			mtz.export_hkl_data(mFbData, col + "[FWT,PHWT]");
+	if (not mFdData.is_null())			mtz.export_hkl_data(mFdData, col + "[DELFWT,PHDELWT]");
+	if (not mPhiFomData.is_null())		mtz.export_hkl_data(mPhiFomData, col + "[PHI,FOM]");
+	mtz.close_write();
 }
 
 template class MapMaker<float>;

@@ -38,6 +38,18 @@ class Map
 	Xmap mMap;
 	double mRMSDensity, mMeanDensity;
 };
+
+using clipper::HKL_info;
+using clipper::HKL_data;
+using clipper::data32::F_phi;
+using clipper::data32::F_sigF;
+using clipper::data32::Phi_fom;
+using clipper::data32::Flag;
+
+using clipper::Spacegroup;
+using clipper::Cell;
+using clipper::Grid_sampling;
+
 	
 template<typename FTYPE>
 class MapMaker
@@ -46,21 +58,15 @@ class MapMaker
 	typedef Map<FTYPE> MapType;
 	typedef typename MapType::Xmap Xmap;
 
-	typedef clipper::HKL_data<clipper::data32::F_phi>	FPdata;
-	typedef clipper::HKL_data<clipper::data32::F_sigF>	FOdata;
-	typedef clipper::HKL_data<clipper::data32::Phi_fom>	WData;
-	
-	
-	typedef clipper::Spacegroup							Spacegroup;
-	typedef clipper::Cell								Cell;
-	typedef clipper::Grid_sampling						Grid_sampling;
-	
 	enum AnisoScalingFlag {
 		as_None, as_Observed, as_Calculated
 	};
 	
 	MapMaker();
 	~MapMaker();
+	
+	MapMaker(const MapMaker&) = delete;
+	MapMaker& operator=(const MapMaker&) = delete;
 
 	void loadFromMTZ(const boost::filesystem::path& mtzFile,
 		float samplingRate = 4.5,
@@ -68,6 +74,10 @@ class MapMaker
 		std::initializer_list<std::string> fdLabels = { "DELFWT", "PHDELWT" },
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
 		std::initializer_list<std::string> fcLabels = { "FC_ALL", "PHIC_ALL" });
+
+	void loadFromReflections(const boost::filesystem::path& hklin,
+		const Structure& structure, bool noBulk, AnisoScalingFlag anisoScaling,
+		float samplingRate = 4.5, bool electronScattering = false);
 
 	void recalculateFromMTZ(const boost::filesystem::path& mtzFile,
 		const Structure& structure,
@@ -81,6 +91,9 @@ class MapMaker
 		const boost::filesystem::path& fdMapFile,
 		float reshi, float reslo);
 
+	void writeMTZ(const boost::filesystem::path& file,
+		const std::string& project, const std::string& crystal);
+
 	MapType& fb()								{ return mFb; }
 	MapType& fd()								{ return mFd; }
 
@@ -90,26 +103,31 @@ class MapMaker
 	double resLow() const						{ return mResLow; }
 	double resHigh() const						{ return mResHigh; }
 
-	const Spacegroup& spacegroup() const		{ return mSpacegroup; }
-	const Cell& cell() const					{ return mCell; }
+	const Spacegroup& spacegroup() const		{ return mHKLInfo.spacegroup(); }
+	const Cell& cell() const					{ return mHKLInfo.cell(); }
 	const Grid_sampling& gridSampling() const	{ return mGrid; }
 
   private:
 
-	void fixMTZ(FPdata& fb, FPdata& fd, FOdata& fo, FPdata& fc, WData& fom);
+	void fixMTZ();
+	void printStats();
+	
+	void recalc(const Structure& structure,
+		bool noBulk, AnisoScalingFlag anisoScaling,
+		float samplingRate = 4.5, bool electronScattering = false);
 
-	void printStats(const clipper::HKL_info hklInfo,
-		const clipper::HKL_data<clipper::data32::F_sigF>& fo,
-		const clipper::HKL_data<clipper::data32::F_phi>& fc,
-		const clipper::HKL_data<clipper::data32::Flag>& free);
-
-	MapType mFb, mFd;
-	Spacegroup mSpacegroup;
-	Cell mCell;
-	Grid_sampling mGrid;
-	float mSamplingRate;
-	double mResLow, mResHigh;
-	int mNumRefln = 1000, mNumParam = 20;
+	MapType				mFb, mFd;
+	Grid_sampling		mGrid;
+	float				mSamplingRate;
+	double				mResLow, mResHigh;
+	int					mNumRefln = 1000, mNumParam = 20;
+	
+	// Cached raw data
+	HKL_info			mHKLInfo;
+	HKL_data<F_sigF>	mFoData;
+	HKL_data<Flag>		mFreeData;
+	HKL_data<F_phi>		mFcData, mFbData, mFdData;
+	HKL_data<Phi_fom>	mPhiFomData;
 };
 
 }

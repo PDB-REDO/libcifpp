@@ -4612,21 +4612,32 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				continue;
 			}
 			
-			string distance = vS(74, 78);
-			try
+			string distance, details;
+			
+			if (mRec->is("LINK  "))
 			{
-				stod(distance);
+				distance = vS(74, 78);
+				try
+				{
+					stod(distance);
+				}
+				catch (const invalid_argument&)
+				{
+					if (VERBOSE)
+						cerr << "Distance value '" << distance << "' is not a valid float" << endl;
+					distance.clear();
+				}
 			}
-			catch (const invalid_argument&)
+			else	// LINKR
 			{
-				if (VERBOSE)
-					cerr << "Distance value '" << distance << "' is not a valid float" << endl;
-				distance.clear();
+				details = vS(74, 78);	// the link ID 
 			}
 			
 			getCategory("struct_conn")->emplace({
 				{ "id", type + to_string(linkNr) },
 				{ "conn_type_id", type },
+				
+				{ "details", details },
 	
 				{ "ptnr1_label_asym_id", p1Asym },
 				{ "ptnr1_label_comp_id", vS(18, 20) },
