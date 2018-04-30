@@ -8,6 +8,7 @@
 #include <map>
 
 #include "cif++/AtomType.h"
+#include "cif++/Cif++.h"
 
 namespace libcif
 {
@@ -96,18 +97,8 @@ class Compound
 {
   public:
 
-	Compound(const std::string& id, const std::string& name,
-		const std::string& group, std::vector<CompoundAtom>&& atoms,
-		std::vector<CompoundBond>&& bonds, std::vector<CompoundAngle>&& angles,
-		std::vector<ChiralCentre>&& chiralCentres,
-		std::vector<CompoundPlane>&& planes)
-		: mId(id), mName(name), mGroup(group)
-		, mAtoms(std::move(atoms)), mBonds(std::move(bonds))
-		, mAngles(std::move(angles))
-		, mChiralCentres(std::move(chiralCentres))
-		, mPlanes(std::move(planes))
-	{
-	}
+	Compound(const boost::filesystem::path& file, const std::string& id, const std::string& name,
+		const std::string& group);
 
 	// factory method, create a Compound based on the three letter code
 	// (for amino acids) or the one-letter code (for bases) or the
@@ -156,7 +147,8 @@ class Compound
 
 	~Compound();
 
-//	Entity&						mEntity;
+	cif::File					mCF;
+
 	std::string					mId;
 	std::string					mName;
 	std::string					mGroup;
@@ -168,120 +160,38 @@ class Compound
 };
 
 // --------------------------------------------------------------------
-// an Entity. This is a base class for PolymerEntity and NonPolyEntity
-// The latter can be either a regular non-polymer (residue), a macrolide or
-// water.
+// Factory class for Compound objects
 
-class Entity
+extern const std::map<std::string,char> kAAMap, kBaseMap;
+
+class CompoundFactory
 {
   public:
-	Entity(const std::string& id, const std::string& type, const std::string& description);
-	virtual ~Entity();
-
-	std::string id() const;
-	std::string	type() const;
-	std::string description() const;
-
-	virtual float formulaWeight() const = 0;
 	
-  private:
-	std::string		mId;
-	std::string		mType;
-	std::string		mDescription;
-};
+	static CompoundFactory& instance();
 
-// --------------------------------------------------------------------
-// A polymer Entity
+	void pushDictionary(const std::string& inDictFile);
+	void popDictionary();
 
-class PolymerEntity : public Entity
-{
-  public:
-	PolymerEntity(const std::string& id, const std::string& description);
-	~PolymerEntity();
-	
-	std::string		seqOneLetterCode(bool cannonical) const;
-	std::string		pdbxStrandId() const;
-	virtual float	formulaWeight() const;
-	
-	class monomer
-	{
-	  public:
-		friend class PolymerEntity;
-		
-		size_t				num() const;					// sequence number
-		bool				hetero() const;					// whether this position contains alternate Compounds
-		const Compound&		comp(size_t altNr) const;		// the chemical Compound of this monomer
-		
-	  private:
-		monomer*	mNext;
-		monomer*	mAlt;
-		size_t		mNum;
-		Compound*	mComp;
-	};
-	
-	class iterator : public std::iterator<std::forward_iterator_tag, const monomer>
-	{
-	  public:
-		typedef std::iterator<std::forward_iterator_tag, const monomer>	baseType;
-		typedef baseType::reference									reference;
-		typedef baseType::pointer										pointer;
-		
-		iterator(monomer* monomer = nullptr)
-			: mCursor(monomer) {}
+	bool isKnownPeptide(const std::string& res_name) const;
+	bool isKnownBase(const std::string& res_name) const;
 
-		iterator(const iterator& rhs)
-			: mCursor(rhs.mCursor)
-		{
-		}
+	std::string unalias(const std::string& res_name) const;
 
-		iterator& operator=(const iterator& rhs)
-		{
-			mCursor = rhs.mCursor;
-			return *this;
-		}
-		
-		reference	operator*()			{ return *mCursor; }
-		pointer		operator->()		{ return mCursor; }
-		
-		iterator&	operator++()		{ mCursor = mCursor->mNext; return *this; }
-		iterator	operator++(int)
-		{
-			iterator tmp(*this);
-			operator++();
-			return tmp;
-		}
-		
-		bool		operator==(const iterator& rhs) const		{ return mCursor == rhs.mCursor; }
-		bool		operator!=(const iterator& rhs) const		{ return mCursor != rhs.mCursor; }
-
-	  private:
-		monomer*	mCursor;
-	};
-	
-	iterator begin() const		{ return iterator(mSeq); }
-	iterator end() const		{ return iterator(); }
-	
-	const monomer& operator[](size_t index) const;
+	const Compound* get(std::string id);
+	const Compound* create(std::string id);
 
   private:
-	Entity&		mEntity;
-	monomer*	mSeq;
-};
 
-// --------------------------------------------------------------------
-// nonPoly Entity 
-
-class NonPolyEntity : public Entity
-{
-  public:
-	NonPolyEntity(const std::string& id, const std::string& type, const std::string& description);
-	~NonPolyEntity();
+	CompoundFactory();
+	~CompoundFactory();
 	
-	Compound&		comp() const;
-	virtual float	formulaWeight() const;
+	CompoundFactory(const CompoundFactory&) = delete;
+	CompoundFactory& operator=(const CompoundFactory&) = delete;
+	
+	static CompoundFactory* sInstance;
 
-  private:
- 	Compound*	mCompound;
+	struct CompoundFactoryImpl* mImpl;
 };
 
 }

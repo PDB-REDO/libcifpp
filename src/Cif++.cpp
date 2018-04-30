@@ -2281,6 +2281,14 @@ void File::write(ostream& os, const vector<string>& order)
 	}
 }
 
+Datablock* File::get(const string& name) const
+{
+	const Datablock* result = mHead;
+	while (result != nullptr and not iequals(result->mName, name))
+		result = result->mNext;
+	return result;
+}
+
 Datablock& File::operator[](const string& name)
 {
 	Datablock* result = mHead;

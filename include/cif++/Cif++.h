@@ -1079,6 +1079,7 @@ class File
 	Datablock& firstDatablock()			{ return *mHead; }
 	void append(Datablock* e);
 	
+	Datablock* get(const string& name) const;
 	Datablock& operator[](const string& name);
 
 	struct iterator : public std::iterator<std::forward_iterator_tag, Datablock>

@@ -24,26 +24,6 @@ namespace zx = zeep::xml;
 namespace libcif
 {
 
-class CompoundFactory
-{
-  public:
-	
-	static CompoundFactory& instance();
-
-	const Compound* get(string id);
-	const Compound* create(string id);
-
-  private:
-	CompoundFactory();
-	~CompoundFactory();
-	
-	static CompoundFactory* sInstance;
-
-	fs::path mClibdMon;
-	vector<Compound*> mCompounds;
-	boost::shared_mutex mMutex;
-};
-
 // --------------------------------------------------------------------
 // Compound helper classes
 
@@ -319,6 +299,125 @@ bool StructuresAreIsomeric(vector<CompoundAtom> atomsA, const vector<CompoundBon
 // --------------------------------------------------------------------
 // Compound
 
+Compound::Compound(const fs::path& file, const std::string& id,
+	const std::string& name, const std::string& group)
+	: mId(id), mName(name), mGroup(group)
+{
+	try
+	{
+		mCF.load(file);
+		
+		// locate the datablock
+		auto& db = mCF["comp_" + id];
+		
+		auto& compoundAtoms = db["chem_comp_atom"];
+		
+		for (auto row: compoundAtoms)
+		{
+			string id, symbol, energy;
+			float charge;
+			
+			cif::tie(id, symbol, energy, charge) = row.get("atom_id", "type_symbol", "type_energy", "partial_charge");
+			
+			mAtoms.push_back({
+				id, AtomTypeTraits(symbol).type(), energy, charge
+			});
+		}
+		sort(mAtoms.begin(), mAtoms.end(), CompoundAtomLess());
+
+		auto& compBonds = db["chem_comp_bond"];
+		
+		for (auto row: compBonds)
+		{
+			CompoundBond b;
+			string type, aromatic;
+			
+			cif::tie(b.atomID[0], b.atomID[1], type, b.distance, b.esd) =
+				row.get("atom_id_1", "atom_id_2", "type", "value_dist", "value_dist_esd");
+			
+			using cif::iequals;
+			
+			if (iequals(type, "single") or iequals(type, "sing"))		b.type = singleBond;
+			else if (iequals(type, "double") or iequals(type, "doub"))	b.type = doubleBond;
+			else if (iequals(type, "triple") or iequals(type, "trip"))	b.type = tripleBond;
+			else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
+												b.type = delocalizedBond;
+			else
+			{
+				if (VERBOSE)
+					cerr << "Unimplemented chem_comp_bond.type " << type << " in " << id << endl;
+				b.type = singleBond;
+			}
+			
+			if (b.atomID[0] > b.atomID[1])
+				swap(b.atomID[0], b.atomID[1]);
+			
+			mBonds.push_back(b);
+		}
+		sort(mBonds.begin(), mBonds.end(), CompoundBondLess());
+
+		auto& compAngles = db["chem_comp_angle"];
+		
+		for (auto row: compAngles)
+		{
+			CompoundAngle a;
+			
+			cif::tie(a.atomID[0], a.atomID[1], a.atomID[2], a.angle, a.esd) =
+				row.get("atom_id_1", "atom_id_2", "atom_id_3", "value_angle", "value_angle_esd");
+			
+			mAngles.push_back(a);
+		}
+
+		auto& compChir = db["chem_comp_chir"];
+		
+		for (auto row: compChir)
+		{
+			ChiralCentre cc;
+			string volumeSign;
+			
+			cif::tie(cc.id, cc.atomIDCentre, cc.atomID[0],
+				cc.atomID[1], cc.atomID[2], volumeSign) = 
+				row.get("id", "atom_id_centre", "atom_id_1",
+					"atom_id_2", "atom_id_3", "volume_sign");
+			
+			if (volumeSign == "negativ" or volumeSign == "negative")
+				cc.volumeSign = negativ;
+			else if (volumeSign == "positiv" or volumeSign == "positive")
+				cc.volumeSign = positiv;
+			else if (volumeSign == "both")
+				cc.volumeSign = both;
+			else
+			{
+				if (VERBOSE)
+					cerr << "Unimplemented chem_comp_chir.volume_sign " << volumeSign << " in " << id << endl;
+				continue;
+			}
+			
+			mChiralCentres.push_back(cc);
+		}
+
+		auto& compPlanes = db["chem_comp_plane_atom"];
+		
+		for (auto row: compPlanes)
+		{
+			string atom_id, plane_id;
+			float esd;	
+			
+			cif::tie(atom_id, plane_id, esd) = row.get("atom_id", "plane_id", "dist_esd");
+
+			auto i = find_if(mPlanes.begin(), mPlanes.end(), [&](auto& p) { return p.id == plane_id;});
+			if (i == mPlanes.end())
+				mPlanes.emplace_back(CompoundPlane{ plane_id, { atom_id }, esd });
+			else
+				i->atomID.push_back(atom_id);
+		}
+	}
+	catch (...)
+	{
+		throw_with_nested(runtime_error("Error loading ccp4 file for " + id));
+	}
+}
+
 string Compound::formula() const
 {
 	string result;
@@ -460,220 +559,6 @@ const Compound* Compound::create(const string& id)
 	auto result = CompoundFactory::instance().get(id);
 	if (result == nullptr)
 		result = CompoundFactory::instance().create(id);
-	return result;
-}
-
-// --------------------------------------------------------------------
-// a factory class to generate compounds
-
-CompoundFactory* CompoundFactory::sInstance = nullptr;
-
-CompoundFactory::CompoundFactory()
-{
-	const char* clibdMon = getenv("CLIBD_MON");
-	if (clibdMon == nullptr)
-		throw runtime_error("Cannot locate peptide list, please souce the CCP4 environment");
-	mClibdMon = clibdMon;
-}
-
-CompoundFactory::~CompoundFactory()
-{
-}
-
-CompoundFactory& CompoundFactory::instance()
-{
-	if (sInstance == nullptr)
-		sInstance = new CompoundFactory();
-	return *sInstance;
-}
-
-// id is the three letter code
-
-const Compound* CompoundFactory::get(std::string id)
-{
-	boost::shared_lock<boost::shared_mutex> lock(mMutex);
-
-	ba::to_upper(id);
-
-	Compound* result = nullptr;
-	
-	for (auto cmp: mCompounds)
-	{
-		if (cmp->id() == id)
-		{
-			result = cmp;
-			break;
-		}
-	}
-	
-	return result;
-}
-
-const Compound* CompoundFactory::create(std::string id)
-{
-	boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
-
-	ba::to_upper(id);
-
-	Compound* result = nullptr;
-	
-	for (auto cmp: mCompounds)
-	{
-		if (cmp->id() == id)
-		{
-			result = cmp;
-			break;
-		}
-	}
-	
-	if (result == nullptr)
-	{
-		fs::path resFile = mClibdMon / ba::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
-
-		if (not fs::exists(resFile) and	(id == "COM" or id == "CON" or "PRN")) 		// seriously...
-			mClibdMon / ba::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");
-
-		fs::ifstream file(resFile);
-		if (file.is_open())
-		{
-			cif::File cf;
-			
-			try
-			{
-				cf.load(file);
-			}
-			catch (const exception& ex)
-			{
-				cerr << "Error while loading " << resFile << endl;
-				throw ex;
-			}
-			
-			auto& list = cf["comp_list"];
-			auto row = list["chem_comp"][cif::Key("id") == id];
-			
-			string name, group;
-			uint32 numberAtomsAll, numberAtomsNh;
-			cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
-				row.get("name", "group", "number_atoms_all", "number_atoms_nh");
-	
-			ba::trim(name);
-			ba::trim(group);
-			
-			auto& compoundAtoms = cf["comp_" + id]["chem_comp_atom"];
-			
-			vector<CompoundAtom> atoms;
-			for (auto row: compoundAtoms)
-			{
-				string id, symbol, energy;
-				float charge;
-				
-				cif::tie(id, symbol, energy, charge) = row.get("atom_id", "type_symbol", "type_energy", "partial_charge");
-				
-				atoms.push_back({
-					id, AtomTypeTraits(symbol).type(), energy, charge
-				});
-			}
-			sort(atoms.begin(), atoms.end(), CompoundAtomLess());
-
-			auto& compBonds = cf["comp_" + id]["chem_comp_bond"];
-			
-			vector<CompoundBond> bonds;
-			for (auto row: compBonds)
-			{
-				CompoundBond b;
-				string type, aromatic;
-				
-				cif::tie(b.atomID[0], b.atomID[1], type, b.distance, b.esd) =
-					row.get("atom_id_1", "atom_id_2", "type", "value_dist", "value_dist_esd");
-				
-				using cif::iequals;
-				
-				if (iequals(type, "single") or iequals(type, "sing"))		b.type = singleBond;
-				else if (iequals(type, "double") or iequals(type, "doub"))	b.type = doubleBond;
-				else if (iequals(type, "triple") or iequals(type, "trip"))	b.type = tripleBond;
-				else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
-													b.type = delocalizedBond;
-				else
-				{
-					if (VERBOSE)
-						cerr << "Unimplemented chem_comp_bond.type " << type << " in file " << resFile << endl;
-					b.type = singleBond;
-				}
-				
-				if (b.atomID[0] > b.atomID[1])
-					swap(b.atomID[0], b.atomID[1]);
-				
-				bonds.push_back(b);
-			}
-			sort(bonds.begin(), bonds.end(), CompoundBondLess());
-
-			auto& compAngles = cf["comp_" + id]["chem_comp_angle"];
-			
-			vector<CompoundAngle> angles;
-			for (auto row: compAngles)
-			{
-				CompoundAngle a;
-				
-				cif::tie(a.atomID[0], a.atomID[1], a.atomID[2], a.angle, a.esd) =
-					row.get("atom_id_1", "atom_id_2", "atom_id_3", "value_angle", "value_angle_esd");
-				
-				angles.push_back(a);
-			}
-
-			auto& compChir = cf["comp_" + id]["chem_comp_chir"];
-			
-			vector<ChiralCentre> chiralCentres;
-			for (auto row: compChir)
-			{
-				ChiralCentre cc;
-				string volumeSign;
-				
-				cif::tie(cc.id, cc.atomIDCentre, cc.atomID[0],
-					cc.atomID[1], cc.atomID[2], volumeSign) = 
-					row.get("id", "atom_id_centre", "atom_id_1",
-						"atom_id_2", "atom_id_3", "volume_sign");
-				
-				if (volumeSign == "negativ" or volumeSign == "negative")
-					cc.volumeSign = negativ;
-				else if (volumeSign == "positiv" or volumeSign == "positive")
-					cc.volumeSign = positiv;
-				else if (volumeSign == "both")
-					cc.volumeSign = both;
-				else
-				{
-					if (VERBOSE)
-						cerr << "Unimplemented chem_comp_chir.volume_sign " << volumeSign << " in file " << resFile << endl;
-					continue;
-				}
-				
-				chiralCentres.push_back(cc);
-			}
-
-			auto& compPlanes = cf["comp_" + id]["chem_comp_plane_atom"];
-			
-			vector<CompoundPlane> planes;
-			for (auto row: compPlanes)
-			{
-				string atom_id, plane_id;
-				float esd;	
-				
-				cif::tie(atom_id, plane_id, esd) = row.get("atom_id", "plane_id", "dist_esd");
-
-				auto i = find_if(planes.begin(), planes.end(), [&](auto& p) { return p.id == plane_id;});
-				if (i == planes.end())
-					planes.emplace_back(CompoundPlane{ plane_id, { atom_id }, esd });
-				else
-					i->atomID.push_back(atom_id);
-			}
-
-			result = new Compound(id, name, group, move(atoms), move(bonds),
-				move(angles), move(chiralCentres), move(planes));
-
-			boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
-			mCompounds.push_back(result);
-		}
-	}
-	
 	return result;
 }
 
@@ -902,5 +787,351 @@ float Compound::chiralVolume(const string& centreID) const
 	return result;
 }
 
+// --------------------------------------------------------------------
+// a factory class to generate compounds
+
+const map<string,char> kAAMap{
+	{ "ALA", 'A' },
+	{ "ARG", 'R' },
+	{ "ASN", 'N' },
+	{ "ASP", 'D' },
+	{ "CYS", 'C' },
+	{ "GLN", 'Q' },
+	{ "GLU", 'E' },
+	{ "GLY", 'G' },
+	{ "HIS", 'H' },
+	{ "ILE", 'I' },
+	{ "LEU", 'L' },
+	{ "LYS", 'K' },
+	{ "MET", 'M' },
+	{ "PHE", 'F' },
+	{ "PRO", 'P' },
+	{ "SER", 'S' },
+	{ "THR", 'T' },
+	{ "TRP", 'W' },
+	{ "TYR", 'Y' },
+	{ "VAL", 'V' },
+	{ "GLX", 'Z' },
+	{ "ASX", 'B' }
+};
+
+const map<string,char> kBaseMap{
+	{ "A", 'A' },
+	{ "C", 'C' },
+	{ "G", 'G' },
+	{ "T", 'T' },
+	{ "U", 'U' },
+	{ "DA", 'A' },
+	{ "DC", 'C' },
+	{ "DG", 'G' },
+	{ "DT", 'T' }
+};
+
+// --------------------------------------------------------------------
+
+class CompoundFactoryImpl
+{
+  public:
+	CompoundFactoryImpl(fs::path file, CompoundFactoryImpl* next);
+
+	~CompoundFactoryImpl()
+	{
+		delete mNext;
+	}
+
+	Compound* get(string id);
+	Compound* create(string id);
+	
+	CompoundFactoryImpl* pop()
+	{
+		auto result = mNext;
+		mNext = nullptr;
+		delete this;
+		return result;
+	}
+
+	string unalias(const string& resName) const
+	{
+		string result = resName;
+		
+		auto& e = const_cast<cif::File&>(mFile)["comp_synonym_list"];
+		
+		for (auto& synonym: e["chem_comp_synonyms"])
+		{
+			if (ba::iequals(synonym["comp_alternative_id"].as<string>(), resName) == false)
+				continue;
+			
+			result = synonym["comp_id"].as<string>();
+			ba::trim(result);
+			break;
+		}
+
+		if (result.empty() and mNext)
+			result = mNext->unalias(resName);
+		
+		return result;
+	}
+
+	bool isKnownPeptide(const string& resName)
+	{
+		return mKnownPeptides.count(resName) or
+			(mNext != nullptr and mNext->isKnownPeptide(resName));
+	}
+
+	bool isKnownBase(const string& resName)
+	{
+		return mKnownBases.count(resName) or
+			(mNext != nullptr and mNext->isKnownBase(resName));
+	}
+
+  private:
+	boost::shared_mutex			mMutex;
+
+	fs::path					mPath;
+	vector<Compound*>			mCompounds;
+	/*unordered_*/set<string>	mKnownPeptides;
+	set<string>					mKnownBases;
+	cif::File					mFile;
+	cif::Category&				mChemComp;
+	CompoundFactoryImpl*		mNext;
+};
+
+// --------------------------------------------------------------------
+
+CompoundFactoryImpl::CompoundFactoryImpl(fs::path file, CompoundFactoryImpl* next)
+	: mPath(file), mFile(file), mChemComp(mFile.firstDatablock()["chem_comp"]), mNext(next)
+{
+	const std::regex peptideRx("(?:[lmp]-)?peptide", std::regex::icase);
+
+	for (auto& chemComp: mChemComp)
+	{
+		string group, threeLetterCode;
+		
+		cif::tie(group, threeLetterCode) = chemComp.get("group", "three_letter_code");
+
+		if (std::regex_match(group, peptideRx))
+			mKnownPeptides.insert(threeLetterCode);
+		else if (ba::iequals(group, "DNA") or ba::iequals(group, "RNA"))
+			mKnownBases.insert(threeLetterCode);
+	}
+}
+
+//struct CompoundFactoryImpl
+//{
+//	CompoundFactoryImpl();
+//
+//	Compound* get(string id);
+//	Compound* create(string id);
+//	
+//	void pushDictionary(const boost::filesystem::path& dictFile);
+//
+//	// cif::File cf acts as owner of datablock
+//	cif::Datablock& getDatablock(const string& name, cif::File& cf);
+//	
+//	deque<cif::File> mDictionaries;
+//	fs::path mClibdMon;
+//	vector<Compound*> mCompounds;
+//	boost::shared_mutex mMutex;
+//};
+//
+//CompoundFactoryImpl::CompoundFactoryImpl()
+//{
+//	const char* clibdMon = getenv("CLIBD_MON");
+//	if (clibdMon == nullptr)
+//		throw runtime_error("Cannot locate peptide list, please souce the CCP4 environment");
+//	mClibdMon = clibdMon;
+//}
+//
+//void CompoundFactoryImpl::pushDictionary(const boost::filesystem::path& dictFile)
+//{
+//	boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
+//
+//	mDictionaries.emplace_back(dictFile);
+//}
+//
+//cif::Datablock& CompoundFactoryImpl::getDatablock(const string& name, cif::File& cf)
+//{
+//	cif::Datablock* result = nullptr;
+//	
+//	// first check all loaded dictionaries
+//	
+//	for (auto d: mDictionaries)
+//	{
+//		result = d.get(name);
+//		
+//		if (result != nullptr)
+//			break;
+//	}	
+//	
+//	if (not result)
+//	{
+//		fs::path resFile = mClibdMon / ba::to_lower_copy(name.substr(0, 1)) / (name + ".cif");
+//	
+//		if (not fs::exists(resFile) and	(name == "COM" or name == "CON" or "PRN")) 		// seriously...
+//			mClibdMon / ba::to_lower_copy(name.substr(0, 1)) / (name + '_' + name + ".cif");
+//	
+//		fs::ifstream file(resFile);
+//		if (file.is_open())
+//		{
+//			try
+//			{
+//				cf.load(file);
+//			}
+//			catch (...)
+//			{
+//				throw_with_nested(runtime_error("Error while loading " + resFile));
+//			}
+//			
+//			result = cf.get(name);
+//		}
+//	}
+//
+//	if (result == nullptr)
+//		throw runtime_error("Failed to load datablock " + name);	
+//
+//	return *result;
+//}
+
+Compound* CompoundFactoryImpl::get(string id)
+{
+	boost::shared_lock<boost::shared_mutex> lock(mMutex);
+
+	ba::to_upper(id);
+
+	Compound* result = nullptr;
+	
+	for (auto cmp: mCompounds)
+	{
+		if (cmp->id() == id)
+		{
+			result = cmp;
+			break;
+		}
+	}
+	
+	if (result == nullptr and mNext != nullptr)
+		result = mNext->get(id);
+	
+	return result;
+}
+
+Compound* CompoundFactoryImpl::create(std::string id)
+{
+	ba::to_upper(id);
+
+	Compound* result = get(id);
+	if (result == nullptr)
+	{
+		boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
+
+		auto rs = mChemComp.find(cif::Key("three_letter_code") == id);
+	
+		if (not rs.empty())
+		{
+			auto row = rs.front();
+
+			string name, group;
+			uint32 numberAtomsAll, numberAtomsNh;
+			cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
+				row.get("name", "group", "number_atoms_all", "number_atoms_nh");
+			
+			ba::trim(name);
+			ba::trim(group);
+
+			if (mFile.get("comp_" + id) == nullptr)
+			{
+				auto clibd_mon = fs::path(getenv("CLIBD_MON"));
+				
+				fs::path resFile = clibd_mon / ba::to_lower_copy(name.substr(0, 1)) / (name + ".cif");
+			
+				if (not fs::exists(resFile) and	(name == "COM" or name == "CON" or "PRN")) 		// seriously...
+					resFile = clibd_mon / ba::to_lower_copy(name.substr(0, 1)) / (name + '_' + name + ".cif");
+
+				mCompounds.push_back(new Compound(resFile, id, name, group));
+			}				
+			else
+				mCompounds.push_back(new Compound(mPath, id, name, group));
+
+			result = mCompounds.back();
+		}
+		
+		if (result == nullptr and mNext != nullptr)
+			result = mNext->create(id);
+	}
+	
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+CompoundFactory* CompoundFactory::sInstance;
+
+CompoundFactory::CompoundFactory()
+	: mImpl(nullptr)
+{
+	const char* clibdMon = getenv("CLIBD_MON");
+	if (clibdMon == nullptr)
+		throw runtime_error("Cannot locate peptide list, please souce the CCP4 environment");
+	
+	fs::path db = fs::path(clibdMon) / "list" / "mon_lib_list.cif";
+
+	pushDictionary(db.string());
+}
+
+CompoundFactory::~CompoundFactory()
+{
+	delete mImpl;
+}
+
+CompoundFactory& CompoundFactory::instance()
+{
+	if (sInstance == nullptr)
+		sInstance = new CompoundFactory();
+	return *sInstance;
+}
+
+void CompoundFactory::pushDictionary(const string& inDictFile)
+{
+	if (not fs::exists(inDictFile))
+		throw runtime_error("file not found: " + inDictFile);
+
+//	ifstream file(inDictFile);
+//	if (not file.is_open())
+//		throw runtime_error("Could not open peptide list " + inDictFile);
+
+	mImpl = new CompoundFactoryImpl(inDictFile, mImpl);
+}
+
+void CompoundFactory::popDictionary()
+{
+	if (mImpl != nullptr)
+		mImpl = mImpl->pop();
+}
+
+// id is the three letter code
+const Compound* CompoundFactory::get(std::string id)
+{
+	return mImpl->get(id);
+}
+
+const Compound* CompoundFactory::create(std::string id)
+{
+	return mImpl->create(id);
+}
+
+bool CompoundFactory::isKnownPeptide(const string& resName) const
+{
+	return mImpl->isKnownPeptide(resName);
+}
+
+bool CompoundFactory::isKnownBase(const string& resName) const
+{
+	return mImpl->isKnownBase(resName);
+}
+
+string CompoundFactory::unalias(const string& resName) const
+{
+	return mImpl->unalias(resName);
+}
 
 }
