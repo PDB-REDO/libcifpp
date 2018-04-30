@@ -25,6 +25,25 @@ extern int VERBOSE;
 
 namespace libcif
 {
+	
+// --------------------------------------------------------------------
+
+bool IsMTZFile(const fs::path& p)
+{
+	bool result = false;
+	
+	fs::ifstream f(p);
+	if (f.is_open())
+	{
+		char sig[5] = {};
+		f.read(sig, 4);
+		result = sig == string("MTZ ");
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
 
 template<typename FTYPE>
 Map<FTYPE>::Map()
@@ -120,15 +139,6 @@ template class Map<double>;
 
 // --------------------------------------------------------------------
 
-
-//	MapMaker mm(mFb, mFd);
-//
-//	if (recalculateFc)
-//		mm.recalculateFromMTZ(dataFile, mStructure, noBulk, aniso);
-//	else
-//		mm.loadFromMTZ(dataFile);
-
-
 template<typename FTYPE>
 MapMaker<FTYPE>::MapMaker()
 {
@@ -140,31 +150,31 @@ MapMaker<FTYPE>::~MapMaker()
 }
 
 template<typename FTYPE>
-void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
+void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 	initializer_list<string> fbLabels, initializer_list<string> fdLabels,
 	initializer_list<string> foLabels, initializer_list<string> fcLabels)
 {
 	if (VERBOSE)
-		cerr << "Reading map from " << mtzFile << endl
+		cerr << "Reading map from " << hklin << endl
 			 << "  with labels: FB: " << ba::join(fbLabels, ",") << endl
 			 << "  with labels: FD: " << ba::join(fdLabels, ",") << endl
 			 << "  with labels: FO: " << ba::join(foLabels, ",") << endl
 			 << "  with labels: FC: " << ba::join(fcLabels, ",") << endl;
 
-	fs::path dataFile = mtzFile;
+	fs::path dataFile = hklin;
 	
-	if (mtzFile.extension() == ".gz" or mtzFile.extension() == ".bz2")
+	if (hklin.extension() == ".gz" or hklin.extension() == ".bz2")
 	{
 		// file is compressed
 		
-		fs::path p = mtzFile.parent_path();
-		string s = mtzFile.filename().string();
+		fs::path p = hklin.parent_path();
+		string s = hklin.filename().string();
 		
 		io::filtering_stream<io::input> in;
 		
-		fs::ifstream fi(mtzFile);
+		fs::ifstream fi(hklin);
 		
-		if (mtzFile.extension() == ".gz")
+		if (hklin.extension() == ".gz")
 			in.push(io::gzip_decompressor());
 		else
 			in.push(io::bzip2_decompressor());
@@ -181,7 +191,7 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	}
 	
 	if (not fs::exists(dataFile))
-		throw runtime_error("Could not open mtz file " + mtzFile.string());
+		throw runtime_error("Could not open mtz file " + hklin.string());
 	
 	const string kBasePath("/%1%/%2%/[%3%]");
 
@@ -207,7 +217,7 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 
 	mtzin.close_read();
 
-	if (dataFile != mtzFile)
+	if (dataFile != hklin)
 		fs::remove(dataFile);
 	
 	Cell cell = mHKLInfo.cell();
@@ -259,6 +269,24 @@ void MapMaker<FTYPE>::loadFromMTZ(const fs::path& mtzFile, float samplingRate,
 	mFd.calculateStats();
 }
 
+// --------------------------------------------------------------------
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::loadMaps(
+	const fs::path& fbMapFile, const fs::path& fdMapFile, float reshi, float reslo)
+{
+	mResHigh = reshi;
+	mResLow = reslo;
+	
+	mFb.read(fbMapFile);
+	mFd.read(fdMapFile);
+	
+	if (not mFb.cell().equals(mFd.cell()))
+		throw runtime_error("Fb and Fd map do not contain the same cell");
+}
+
+// --------------------------------------------------------------------
+
 ostream& operator<<(ostream& os, const clipper::HKL& hkl)
 {
 	os << "h: " << hkl.h() << ", "
@@ -267,6 +295,289 @@ ostream& operator<<(ostream& os, const clipper::HKL& hkl)
 	
 	return os;
 };
+
+// --------------------------------------------------------------------
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::calculate(const fs::path& hklin,
+	const Structure& structure, bool noBulk, AnisoScalingFlag anisoScaling,
+	float samplingRate, bool electronScattering,
+	initializer_list<std::string> foLabels, initializer_list<std::string> freeLabels)
+{
+	if (IsMTZFile(hklin))
+		loadFoFreeFromMTZFile(hklin, foLabels, freeLabels);
+	else
+		loadFoFreeFromReflectionsFile(hklin);
+	
+	recalc(structure, noBulk, anisoScaling, samplingRate, electronScattering);
+}
+
+// --------------------------------------------------------------------
+	
+template<typename FTYPE>
+void MapMaker<FTYPE>::loadFoFreeFromReflectionsFile(const fs::path& hklin)
+{
+	using clipper::HKL;
+	
+	cif::File reflnsFile(hklin);
+	auto& reflns = reflnsFile.firstDatablock();
+	
+//	m_xname = reflns["exptl_crystal"].front()["id"].as<string>();
+//	m_pname = reflns["entry"].front()["id"].as<string>();
+
+	float a, b, c, alpha, beta, gamma;
+	cif::tie(a, b, c, alpha, beta, gamma) = reflns["cell"].front().get(
+		"length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma");
+	
+	using clipper::Cell_descr;
+	Cell cell = Cell(Cell_descr{a, b, c, alpha, beta, gamma});
+
+//	if (not cell2.equals(m_cell))
+//		throw runtime_error("Reflections file and coordinates file do not agree upon the cell parameters");
+
+	// --------------------------------------------------------------------
+
+	// Read reflections file to calculate resolution low and high
+	ResolutionCalculator rc(a, b, c, alpha, beta, gamma);
+	double hires = 99;
+	
+	for (auto r: reflns["refln"])
+	{
+		int h, k, l;
+		
+		cif::tie(h, k, l) = r.get("index_h", "index_k", "index_l");
+		
+		double res = rc(h, k, l);
+		
+		if (hires > res)
+			hires = res;
+	}
+	
+	string spacegroupDescr = reflns["symmetry"].front()["space_group_name_H-M"].as<string>();
+	auto spacegroup = Spacegroup(clipper::Spgr_descr{spacegroupDescr});
+	mHKLInfo = HKL_info(spacegroup, cell, clipper::Resolution{hires}, true);
+	
+//	m_crystal = MTZcrystal(m_xname, m_pname, m_cell);
+
+	mFoData.init(mHKLInfo, mHKLInfo.cell());
+	mFreeData.init(mHKLInfo, mHKLInfo.cell());
+
+	for (auto ih = mFreeData.first(); not ih.last(); ih.next())
+		mFreeData[ih].set_null();
+	
+	// --------------------------------------------------------------------
+
+	enum FreeRConvention { frXPLO, frCCP4 } freeRConvention = frXPLO;
+	int freeRefl = 1, workRefl = 0;
+	
+	if (false /*m_statusXPLO*/)
+	{
+		freeRConvention = frCCP4;
+		freeRefl = 0;
+		workRefl = 1;
+	}
+
+	bool first = false;
+	for (auto r: reflns["refln"])
+	{
+		int h, k, l;
+		char flag;
+		float F, sigF;
+		
+		cif::tie(h, k, l, flag, F, sigF) = r.get("index_h", "index_k", "index_l", "status", "F_meas_au", "F_meas_sigma_au");
+
+		int ix = mHKLInfo.index_of(HKL{h, k, l});
+		
+		if (ix < 0)
+		{
+			if (VERBOSE)
+				cerr << "Ignoring hkl(" << h << ", " << k << ", " << l << ")" << endl;
+			continue;
+		}
+		
+		if (first and (flag == freeRefl or flag == workRefl))
+		{
+			cerr << "Non-standard _refln.status column detected" << endl
+				 << "Assuming " << (freeRConvention == frXPLO ? "XPLOR" : "CCP4") << " convention for free R flag" << endl;
+			first = false;
+		}
+		
+		mFoData[ix] = F_sigF(F, sigF);
+		
+		switch (flag)
+		{
+			case 'o':
+			case 'h':
+			case 'l':
+				mFreeData[ix] = Flag(1);
+				break;
+			
+			case 'f':
+				mFreeData[ix] = Flag(0);
+				break;
+			
+			case '0':
+			case '1':
+				mFreeData[ix] = Flag(workRefl == flag ? 1 : 0);
+				break;
+
+			default:
+				if (VERBOSE > 1)
+					cerr << "Unexpected value in status: '" << flag << "' for hkl(" << h << ", " << k << ", " << l << ")" << endl;
+				break;
+		}
+	}
+}
+
+// --------------------------------------------------------------------
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::loadFoFreeFromMTZFile(const fs::path& hklin,
+	initializer_list<std::string> foLabels, initializer_list<std::string> freeLabels)
+{
+	if (VERBOSE)
+		cerr << "Recalculating maps from " << hklin << endl;
+	
+	const string kBasePath("/%1%/%2%/[%3%]");
+
+	using clipper::CCP4MTZfile;
+
+	CCP4MTZfile mtzin;
+	mtzin.open_read(hklin.string());
+	
+	mtzin.import_hkl_info(mHKLInfo);
+	mtzin.import_hkl_data(mFoData,
+		(boost::format(kBasePath) % "*" % "*" % ba::join(foLabels, ",")).str());
+	mtzin.import_hkl_data(mFreeData,
+		(boost::format(kBasePath) % "*" % "*" % ba::join(freeLabels, ",")).str());
+
+	mtzin.close_read();
+}
+
+// --------------------------------------------------------------------
+
+template<typename FTYPE>
+void MapMaker<FTYPE>::recalc(const Structure& structure,
+		bool noBulk, AnisoScalingFlag anisoScaling,
+		float samplingRate, bool electronScattering)
+{
+	Cell cell = mHKLInfo.cell();
+	Spacegroup spacegroup = mHKLInfo.spacegroup();
+
+	// The calculation work
+	vector<clipper::Atom> atoms;
+
+	for (auto a: structure.atoms())
+		atoms.push_back(a.toClipper());
+
+	mFcData.init(mHKLInfo, cell);
+
+	if (not electronScattering)
+	{
+		auto& exptl = structure.getFile().data()["exptl"];
+		electronScattering = not exptl.empty() and exptl.front()["method"] == "ELECTRON CRYSTALLOGRAPHY";
+	}
+
+	clipper::ScatteringFactors::selectScattteringFactorsType(
+		electronScattering ? clipper::SF_ELECTRON : clipper::SF_WAASMAIER_KIRFEL);
+		
+	if (noBulk)
+	{
+		clipper::SFcalc_aniso_fft<float> sfc;
+		sfc(mFcData, atoms);
+	}
+	else
+	{
+		clipper::SFcalc_obs_bulk<float> sfcb;
+		sfcb(mFcData, mFoData, atoms);
+		
+		if (VERBOSE)
+			cerr << "Bulk correction volume: " << sfcb.bulk_frac() << endl
+				 << "Bulk correction factor: " << sfcb.bulk_scale() << endl;
+	}
+	
+	if (anisoScaling != as_None)
+	{
+		clipper::SFscale_aniso<float>::TYPE F = clipper::SFscale_aniso<float>::F;
+		clipper::SFscale_aniso<float> sfscl;
+		if (anisoScaling == as_Observed)
+			sfscl(mFoData, mFcData);  // scale Fobs
+		else
+			sfscl(mFcData, mFoData);  // scale Fcal
+			
+		if (VERBOSE)
+			cerr << "Anisotropic scaling:" << endl
+				 << sfscl.u_aniso_orth(F).format() << endl;
+	}
+
+	// now do sigmaa calc
+	mFbData.init(mHKLInfo, cell);
+	mFdData.init(mHKLInfo, cell);
+	mPhiFomData.init(mHKLInfo, cell);
+	
+	HKL_data<Flag> flag(mHKLInfo, cell);
+
+	const int freeflag = 0;
+	for (auto ih = mFreeData.first(); not ih.last(); ih.next())
+	{
+		if (not mFoData[ih].missing() and (mFreeData[ih].missing() or mFreeData[ih].flag() == freeflag))
+			flag[ih].flag() = clipper::SFweight_spline<float>::BOTH;
+		else
+			flag[ih].flag() = clipper::SFweight_spline<float>::NONE;
+	}
+	
+	// do sigmaa calc
+	clipper::SFweight_spline<float> sfw(mNumRefln, mNumParam);
+	sfw(mFbData, mFdData, mPhiFomData, mFoData, mFcData, flag);
+
+	// mFbData now contains 2mFo - DFc
+	// mFdData now contains  mFo - DFc
+
+	fixMTZ();
+
+	ResolutionCalculator rc(cell);
+	mResHigh = 99; mResLow = 0;
+	
+	for (auto hi = mFoData.first_data(); not hi.last(); hi = mFoData.next_data(hi))
+	{
+		float res = rc(hi.hkl().h(), hi.hkl().k(), hi.hkl().l());
+		
+		if (mResHigh > res)
+			mResHigh = res;
+
+		if (mResLow < res)
+			mResLow = res;
+	}
+
+	if (VERBOSE > 1)
+		cerr << "calculated reshi = " << mResHigh << " reslo = " << mResLow << endl;
+
+	samplingRate /= 2;
+	
+	mGrid.init(spacegroup, cell,
+		mHKLInfo.resolution(), samplingRate);		// define grid
+	
+	clipper::Xmap<FTYPE>& fbMap = mFb;
+	clipper::Xmap<FTYPE>& fdMap = mFd;
+
+	fbMap.init(spacegroup, cell, mGrid);			// define map
+	fbMap.fft_from(mFbData);								// generate map
+	
+	fdMap.init(spacegroup, cell, mGrid);			// define map
+	fdMap.fft_from(mFdData);								// generate map
+
+	if (VERBOSE)
+	{
+		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
+			 << "  resolution: " << mResHigh
+			 << endl;
+
+		printStats();
+	}
+
+	mFb.calculateStats();
+	mFd.calculateStats();
+}
 
 template<typename FTYPE>
 void MapMaker<FTYPE>::fixMTZ()
@@ -453,289 +764,6 @@ void MapMaker<FTYPE>::fixMTZ()
 				mFdData[ih] = fzero;
 		}
 	}
-}
-
-template<typename FTYPE>
-void MapMaker<FTYPE>::loadFromReflections(const fs::path& hklin,
-	const Structure& structure, bool noBulk, AnisoScalingFlag anisoScaling,
-	float samplingRate, bool electronScattering)
-{
-	using clipper::HKL;
-	
-	cif::File reflnsFile(hklin);
-	auto& reflns = reflnsFile.firstDatablock();
-	
-//	m_xname = reflns["exptl_crystal"].front()["id"].as<string>();
-//	m_pname = reflns["entry"].front()["id"].as<string>();
-
-	float a, b, c, alpha, beta, gamma;
-	cif::tie(a, b, c, alpha, beta, gamma) = reflns["cell"].front().get(
-		"length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma");
-	
-	using clipper::Cell_descr;
-	Cell cell = Cell(Cell_descr{a, b, c, alpha, beta, gamma});
-
-//	if (not cell2.equals(m_cell))
-//		throw runtime_error("Reflections file and coordinates file do not agree upon the cell parameters");
-
-	// --------------------------------------------------------------------
-
-	// Read reflections file to calculate resolution low and high
-	ResolutionCalculator rc(a, b, c, alpha, beta, gamma);
-	double hires = 99;
-	
-	for (auto r: reflns["refln"])
-	{
-		int h, k, l;
-		
-		cif::tie(h, k, l) = r.get("index_h", "index_k", "index_l");
-		
-		double res = rc(h, k, l);
-		
-		if (hires > res)
-			hires = res;
-	}
-	
-	string spacegroupDescr = reflns["symmetry"].front()["space_group_name_H-M"].as<string>();
-	auto spacegroup = Spacegroup(clipper::Spgr_descr{spacegroupDescr});
-	mHKLInfo = HKL_info(spacegroup, cell, clipper::Resolution{hires}, true);
-	
-//	m_crystal = MTZcrystal(m_xname, m_pname, m_cell);
-
-	mFoData.init(mHKLInfo, mHKLInfo.cell());
-	mFreeData.init(mHKLInfo, mHKLInfo.cell());
-
-	for (auto ih = mFreeData.first(); not ih.last(); ih.next())
-		mFreeData[ih].set_null();
-	
-	// --------------------------------------------------------------------
-
-	enum FreeRConvention { frXPLO, frCCP4 } freeRConvention = frXPLO;
-	int freeRefl = 1, workRefl = 0;
-	
-	if (false /*m_statusXPLO*/)
-	{
-		freeRConvention = frCCP4;
-		freeRefl = 0;
-		workRefl = 1;
-	}
-
-	bool first = false;
-	for (auto r: reflns["refln"])
-	{
-		int h, k, l;
-		char flag;
-		float F, sigF;
-		
-		cif::tie(h, k, l, flag, F, sigF) = r.get("index_h", "index_k", "index_l", "status", "F_meas_au", "F_meas_sigma_au");
-
-		int ix = mHKLInfo.index_of(HKL{h, k, l});
-		
-		if (ix < 0)
-		{
-			if (VERBOSE)
-				cerr << "Ignoring hkl(" << h << ", " << k << ", " << l << ")" << endl;
-			continue;
-		}
-		
-		if (first and (flag == freeRefl or flag == workRefl))
-		{
-			cerr << "Non-standard _refln.status column detected" << endl
-				 << "Assuming " << (freeRConvention == frXPLO ? "XPLOR" : "CCP4") << " convention for free R flag" << endl;
-			first = false;
-		}
-		
-		mFoData[ix] = F_sigF(F, sigF);
-		
-		switch (flag)
-		{
-			case 'o':
-			case 'h':
-			case 'l':
-				mFreeData[ix] = Flag(1);
-				break;
-			
-			case 'f':
-				mFreeData[ix] = Flag(0);
-				break;
-			
-			case '0':
-			case '1':
-				mFreeData[ix] = Flag(workRefl == flag ? 1 : 0);
-				break;
-
-			default:
-				if (VERBOSE > 1)
-					cerr << "Unexpected value in status: '" << flag << "' for hkl(" << h << ", " << k << ", " << l << ")" << endl;
-				break;
-		}
-	}
-	
-//	recalc();
-	recalc(structure, noBulk, anisoScaling, samplingRate, electronScattering);
-}
-
-template<typename FTYPE>
-void MapMaker<FTYPE>::recalculateFromMTZ(const fs::path& mtzFile,
-		const Structure& structure, bool noBulk, AnisoScalingFlag anisoScaling, float samplingRate,
-		bool electronScattering, initializer_list<string> foLabels, initializer_list<string> freeLabels)
-{
-	if (VERBOSE)
-		cerr << "Recalculating maps from " << mtzFile << endl;
-	
-	const string kBasePath("/%1%/%2%/[%3%]");
-
-	using clipper::CCP4MTZfile;
-
-	CCP4MTZfile mtzin;
-	mtzin.open_read(mtzFile.string());
-	
-	mtzin.import_hkl_info(mHKLInfo);
-	mtzin.import_hkl_data(mFoData,
-		(boost::format(kBasePath) % "*" % "*" % ba::join(foLabels, ",")).str());
-	mtzin.import_hkl_data(mFreeData,
-		(boost::format(kBasePath) % "*" % "*" % ba::join(freeLabels, ",")).str());
-
-	mtzin.close_read();
-	
-	recalc(structure, noBulk, anisoScaling, samplingRate, electronScattering);
-}
-
-template<typename FTYPE>
-void MapMaker<FTYPE>::recalc(const Structure& structure,
-		bool noBulk, AnisoScalingFlag anisoScaling,
-		float samplingRate, bool electronScattering)
-{
-	Cell cell = mHKLInfo.cell();
-	Spacegroup spacegroup = mHKLInfo.spacegroup();
-
-	// The calculation work
-	vector<clipper::Atom> atoms;
-
-	for (auto a: structure.atoms())
-		atoms.push_back(a.toClipper());
-
-	mFcData.init(mHKLInfo, cell);
-
-	if (not electronScattering)
-	{
-		auto& exptl = structure.getFile().data()["exptl"];
-		electronScattering = not exptl.empty() and exptl.front()["method"] == "ELECTRON CRYSTALLOGRAPHY";
-	}
-
-	clipper::ScatteringFactors::selectScattteringFactorsType(
-		electronScattering ? clipper::SF_ELECTRON : clipper::SF_WAASMAIER_KIRFEL);
-		
-	if (noBulk)
-	{
-		clipper::SFcalc_aniso_fft<float> sfc;
-		sfc(mFcData, atoms);
-	}
-	else
-	{
-		clipper::SFcalc_obs_bulk<float> sfcb;
-		sfcb(mFcData, mFoData, atoms);
-		
-		if (VERBOSE)
-			cerr << "Bulk correction volume: " << sfcb.bulk_frac() << endl
-				 << "Bulk correction factor: " << sfcb.bulk_scale() << endl;
-	}
-	
-	if (anisoScaling != as_None)
-	{
-		clipper::SFscale_aniso<float>::TYPE F = clipper::SFscale_aniso<float>::F;
-		clipper::SFscale_aniso<float> sfscl;
-		if (anisoScaling == as_Observed)
-			sfscl(mFoData, mFcData);  // scale Fobs
-		else
-			sfscl(mFcData, mFoData);  // scale Fcal
-			
-		if (VERBOSE)
-			cerr << "Anisotropic scaling:" << endl
-				 << sfscl.u_aniso_orth(F).format() << endl;
-	}
-
-	// now do sigmaa calc
-	mFbData.init(mHKLInfo, cell);
-	mFdData.init(mHKLInfo, cell);
-	mPhiFomData.init(mHKLInfo, cell);
-	
-	HKL_data<Flag> flag(mHKLInfo, cell);
-
-	const int freeflag = 0;
-	for (auto ih = mFreeData.first(); not ih.last(); ih.next())
-	{
-		if (not mFoData[ih].missing() and (mFreeData[ih].missing() or mFreeData[ih].flag() == freeflag))
-			flag[ih].flag() = clipper::SFweight_spline<float>::BOTH;
-		else
-			flag[ih].flag() = clipper::SFweight_spline<float>::NONE;
-	}
-	
-	// do sigmaa calc
-	clipper::SFweight_spline<float> sfw(mNumRefln, mNumParam);
-	sfw(mFbData, mFdData, mPhiFomData, mFoData, mFcData, flag);
-
-	// mFbData now contains 2mFo - DFc
-	// mFdData now contains  mFo - DFc
-
-	fixMTZ();
-
-	ResolutionCalculator rc(cell);
-	mResHigh = 99; mResLow = 0;
-	
-	for (auto hi = mFoData.first_data(); not hi.last(); hi = mFoData.next_data(hi))
-	{
-		float res = rc(hi.hkl().h(), hi.hkl().k(), hi.hkl().l());
-		
-		if (mResHigh > res)
-			mResHigh = res;
-
-		if (mResLow < res)
-			mResLow = res;
-	}
-
-	if (VERBOSE > 1)
-		cerr << "calculated reshi = " << mResHigh << " reslo = " << mResLow << endl;
-
-	samplingRate /= 2;
-	
-	mGrid.init(spacegroup, cell,
-		mHKLInfo.resolution(), samplingRate);		// define grid
-	
-	clipper::Xmap<FTYPE>& fbMap = mFb;
-	clipper::Xmap<FTYPE>& fdMap = mFd;
-
-	fbMap.init(spacegroup, cell, mGrid);			// define map
-	fbMap.fft_from(mFbData);								// generate map
-	
-	fdMap.init(spacegroup, cell, mGrid);			// define map
-	fdMap.fft_from(mFdData);								// generate map
-
-	if (VERBOSE)
-	{
-		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
-			 << "  resolution: " << mResHigh
-			 << endl;
-
-		printStats();
-	}
-
-	mFb.calculateStats();
-	mFd.calculateStats();
-}
-
-template<typename FTYPE>
-void MapMaker<FTYPE>::loadFromMapFiles(const fs::path& fbMapFile, const fs::path& fdMapFile,
-		float reshi, float reslo)
-{
-	mResHigh = reshi;
-	mResLow = reslo;
-	
-	mFb.read(fbMapFile);
-	mFd.read(fdMapFile);
-	
-	if (not mFb.cell().equals(mFd.cell()))
-		throw runtime_error("Fb and Fd map do not contain the same cell");
 }
 
 template<typename FTYPE>

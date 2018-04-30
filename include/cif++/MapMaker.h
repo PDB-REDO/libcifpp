@@ -50,6 +50,11 @@ using clipper::Spacegroup;
 using clipper::Cell;
 using clipper::Grid_sampling;
 
+// --------------------------------------------------------------------
+
+bool IsMTZFile(const boost::filesystem::path& p);
+
+// --------------------------------------------------------------------
 	
 template<typename FTYPE>
 class MapMaker
@@ -67,29 +72,26 @@ class MapMaker
 	
 	MapMaker(const MapMaker&) = delete;
 	MapMaker& operator=(const MapMaker&) = delete;
-
-	void loadFromMTZ(const boost::filesystem::path& mtzFile,
+	
+	void loadMTZ(const boost::filesystem::path& mtzFile,
 		float samplingRate = 4.5,
 		std::initializer_list<std::string> fbLabels = { "FWT", "PHWT" },
 		std::initializer_list<std::string> fdLabels = { "DELFWT", "PHDELWT" },
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
 		std::initializer_list<std::string> fcLabels = { "FC_ALL", "PHIC_ALL" });
 
-	void loadFromReflections(const boost::filesystem::path& hklin,
-		const Structure& structure, bool noBulk, AnisoScalingFlag anisoScaling,
-		float samplingRate = 4.5, bool electronScattering = false);
+	void loadMaps(
+		const boost::filesystem::path& fbMapFile,
+		const boost::filesystem::path& fdMapFile,
+		float reshi, float reslo);
 
-	void recalculateFromMTZ(const boost::filesystem::path& mtzFile,
+	// following works on both mtz files and structure factor files in CIF format
+	void calculate(const boost::filesystem::path& hklin,
 		const Structure& structure,
 		bool noBulk, AnisoScalingFlag anisoScaling,
 		float samplingRate = 4.5, bool electronScattering = false,
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
 		std::initializer_list<std::string> freeLabels = { "FREE" });
-
-	void loadFromMapFiles(
-		const boost::filesystem::path& fbMapFile,
-		const boost::filesystem::path& fdMapFile,
-		float reshi, float reslo);
 
 	void writeMTZ(const boost::filesystem::path& file,
 		const std::string& project, const std::string& crystal);
@@ -109,13 +111,18 @@ class MapMaker
 
   private:
 
-	void fixMTZ();
-	void printStats();
+	void loadFoFreeFromReflectionsFile(const boost::filesystem::path& hklin);
+	void loadFoFreeFromMTZFile(const boost::filesystem::path& hklin,
+		std::initializer_list<std::string> foLabels,
+		std::initializer_list<std::string> freeLabels);
 	
 	void recalc(const Structure& structure,
 		bool noBulk, AnisoScalingFlag anisoScaling,
 		float samplingRate = 4.5, bool electronScattering = false);
 
+	void fixMTZ();
+	void printStats();
+	
 	MapType				mFb, mFd;
 	Grid_sampling		mGrid;
 	float				mSamplingRate;
