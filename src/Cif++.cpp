@@ -2286,7 +2286,7 @@ Datablock* File::get(const string& name) const
 	const Datablock* result = mHead;
 	while (result != nullptr and not iequals(result->mName, name))
 		result = result->mNext;
-	return result;
+	return const_cast<Datablock*>(result);
 }
 
 Datablock& File::operator[](const string& name)
