@@ -9,7 +9,7 @@
 
 #include "clipper/core/coords.h"
 
-namespace libcif
+namespace mmcif
 {
 
 typedef boost::math::quaternion<float>	quaternion;
@@ -26,69 +26,71 @@ const long double
 //	float x, y, z;
 //	tie(x, y, z) = atom.loc();
 
-struct Point : public std::tuple<float,float,float>
+struct Point
 {
-	typedef std::tuple<float,float,float>	base_type;
+	float mX, mY, mZ;
 	
-	Point()								: base_type(0.f, 0.f, 0.f) {}
-	Point(float x, float y, float z)	: base_type(x, y, z) {}
-	Point(const clipper::Coord_orth& pt): base_type(pt[0], pt[1], pt[2]) {}
+	Point()								: mX(0), mY(0), mZ(0) {}
+	Point(float x, float y, float z)	: mX(x), mY(y), mZ(z) {}
+	Point(const clipper::Coord_orth& pt): mX(pt[0]), mY(pt[1]), mZ(pt[2]) {}
 	
 	Point& operator=(const clipper::Coord_orth& rhs)
 	{
-		setX(rhs[0]);
-		setY(rhs[1]);
-		setZ(rhs[2]);
+		mX = rhs[0];
+		mY = rhs[1];
+		mZ = rhs[2];
 		return *this;
 	}
 	
-	float& getX()			{ return std::get<0>(*this); }
-	float getX() const		{ return std::get<0>(*this); }
-	void setX(float x)		{ std::get<0>(*this) = x; }
+	float& getX()			{ return mX; }
+	float getX() const		{ return mX; }
+	void setX(float x)		{ mX = x; }
 
-	float& getY()			{ return std::get<1>(*this); }
-	float getY() const		{ return std::get<1>(*this); }
-	void setY(float y)		{ std::get<1>(*this) = y; }
+	float& getY()			{ return mY; }
+	float getY() const		{ return mY; }
+	void setY(float y)		{ mY = y; }
 
-	float& getZ()			{ return std::get<2>(*this); }
-	float getZ() const		{ return std::get<2>(*this); }
-	void setZ(float z)		{ std::get<2>(*this) = z; }
+	float& getZ()			{ return mZ; }
+	float getZ() const		{ return mZ; }
+	void setZ(float z)		{ mZ = z; }
 	
 	Point& operator+=(const Point& rhs)
 	{
-		getX() += rhs.getX();
-		getY() += rhs.getY();
-		getZ() += rhs.getZ();
+		mX += rhs.mX;
+		mY += rhs.mY;
+		mZ += rhs.mZ;
+		
 		return *this;
 	}
 	
 	Point& operator-=(const Point& rhs)
 	{
-		getX() -= rhs.getX();
-		getY() -= rhs.getY();
-		getZ() -= rhs.getZ();
+		mX -= rhs.mX;
+		mY -= rhs.mY;
+		mZ -= rhs.mZ;
+		
 		return *this;
 	}
 
 	Point& operator*=(float rhs)
 	{
-		getX() *= rhs;
-		getY() *= rhs;
-		getZ() *= rhs;
+		mX *= rhs;
+		mY *= rhs;
+		mZ *= rhs;
 		return *this;
 	}
 	
 	Point& operator/=(float rhs)
 	{
-		getX() *= rhs;
-		getY() *= rhs;
-		getZ() *= rhs;
+		mX *= rhs;
+		mY *= rhs;
+		mZ *= rhs;
 		return *this;
 	}
 
 	float normalize()
 	{
-		auto length = getX() * getX() + getY() * getY() + getZ() * getZ();
+		auto length = mX * mX + mY * mY + mZ * mZ;
 		if (length > 0)
 		{
 			length = std::sqrt(length);
@@ -99,50 +101,55 @@ struct Point : public std::tuple<float,float,float>
 	
 	void rotate(const boost::math::quaternion<float>& q)
 	{
-		boost::math::quaternion<float> p(0, getX(), getY(), getZ());
+		boost::math::quaternion<float> p(0, mX, mY, mZ);
 		
 		p = q * p * boost::math::conj(q);
 	
-		getX() = p.R_component_2();
-		getY() = p.R_component_3();
-		getZ() = p.R_component_4();
+		mX = p.R_component_2();
+		mY = p.R_component_3();
+		mZ = p.R_component_4();
 	}
 	
 	operator clipper::Coord_orth() const
 	{
-		return clipper::Coord_orth(getX(), getY(), getZ());
+		return clipper::Coord_orth(mX, mY, mZ);
+	}
+	
+	operator std::tuple<float,float,float>() const
+	{
+		return std::make_tuple(mX, mY, mZ);
 	}
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Point& pt)
 {
-	os << '(' << pt.getX() << ',' << pt.getY() << ',' << pt.getZ() << ')';
+	os << '(' << pt.mX << ',' << pt.mY << ',' << pt.mZ << ')';
 	return os; 
 }
 
 inline Point operator+(const Point& lhs, const Point& rhs)
 {
-	return Point(lhs.getX() + rhs.getX(), lhs.getY() + rhs.getY(), lhs.getZ() + rhs.getZ());
+	return Point(lhs.mX + rhs.mX, lhs.mY + rhs.mY, lhs.mZ + rhs.mZ);
 }
 
 inline Point operator-(const Point& lhs, const Point& rhs)
 {
-	return Point(lhs.getX() - rhs.getX(), lhs.getY() - rhs.getY(), lhs.getZ() - rhs.getZ());
+	return Point(lhs.mX - rhs.mX, lhs.mY - rhs.mY, lhs.mZ - rhs.mZ);
 }
 
 inline Point operator-(const Point& pt)
 {
-	return Point(-pt.getX(), -pt.getY(), -pt.getZ());
+	return Point(-pt.mX, -pt.mY, -pt.mZ);
 }
 
 inline Point operator*(const Point& pt, float f)
 {
-	return Point(pt.getX() * f, pt.getY() * f, pt.getZ() * f);
+	return Point(pt.mX * f, pt.mY * f, pt.mZ * f);
 }
 
 inline Point operator/(const Point& pt, float f)
 {
-	return Point(pt.getX() / f, pt.getY() / f, pt.getZ() / f);
+	return Point(pt.mX / f, pt.mY / f, pt.mZ / f);
 }
 
 // --------------------------------------------------------------------
@@ -151,29 +158,29 @@ inline Point operator/(const Point& pt, float f)
 inline double DistanceSquared(const Point& a, const Point& b)
 {
 	return
-		(a.getX() - b.getX()) * (a.getX() - b.getX()) +
-		(a.getY() - b.getY()) * (a.getY() - b.getY()) +
-		(a.getZ() - b.getZ()) * (a.getZ() - b.getZ());
+		(a.mX - b.mX) * (a.mX - b.mX) +
+		(a.mY - b.mY) * (a.mY - b.mY) +
+		(a.mZ - b.mZ) * (a.mZ - b.mZ);
 }
 
 inline double Distance(const Point& a, const Point& b)
 {
 	return sqrt(
-		(a.getX() - b.getX()) * (a.getX() - b.getX()) +
-		(a.getY() - b.getY()) * (a.getY() - b.getY()) +
-		(a.getZ() - b.getZ()) * (a.getZ() - b.getZ()));
+		(a.mX - b.mX) * (a.mX - b.mX) +
+		(a.mY - b.mY) * (a.mY - b.mY) +
+		(a.mZ - b.mZ) * (a.mZ - b.mZ));
 }
 
 inline float DotProduct(const Point& a, const Point& b)
 {
-	return a.getX() * b.getX() + a.getY() * b.getY() + a.getZ() * b.getZ();
+	return a.mX * b.mX + a.mY * b.mY + a.mZ * b.mZ;
 }
 
 inline Point CrossProduct(const Point& a, const Point& b)
 {
-	return Point(a.getY() * b.getZ() - b.getY() * a.getZ(),
-				  a.getZ() * b.getX() - b.getZ() * a.getX(),
-				  a.getX() * b.getY() - b.getX() * a.getY());
+	return Point(a.mY * b.mZ - b.mY * a.mZ,
+				  a.mZ * b.mX - b.mZ * a.mX,
+				  a.mX * b.mY - b.mX * a.mY);
 }
 
 float DihedralAngle(const Point& p1, const Point& p2, const Point& p3, const Point& p4);
@@ -238,9 +245,9 @@ class SphericalDots
 			double lat = std::asin((2.0 * i) / P);
 			double lon = std::fmod(i, kGoldenRatio) * 2 * kPI / kGoldenRatio;
 			
-			p->setX(sin(lon) * cos(lat));
-			p->setY(cos(lon) * cos(lat));
-			p->setZ(           sin(lat));
+			p->mX = sin(lon) * cos(lat);
+			p->mY = cos(lon) * cos(lat);
+			p->mZ =            sin(lat);
 
 			++p;
 		}
@@ -253,6 +260,5 @@ class SphericalDots
 };
 
 typedef SphericalDots<50> SphericalDots_50;
-
 
 }

@@ -44,7 +44,7 @@ using namespace std;
 namespace po = boost::program_options;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
-namespace c = libcif;
+namespace c = mmcif;
 
 namespace cif
 {

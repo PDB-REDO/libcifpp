@@ -6,7 +6,7 @@
 
 #include "cif++/Structure.h"
 
-namespace libcif
+namespace mmcif
 {
 
 class BondMap

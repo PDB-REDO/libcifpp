@@ -11,7 +11,7 @@
 #include "cif++/DistanceMap.h"
 #include "cif++/BondMap.h"
 
-namespace libcif
+namespace mmcif
 {
 
 // --------------------------------------------------------------------

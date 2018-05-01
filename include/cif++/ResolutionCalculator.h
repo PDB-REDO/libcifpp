@@ -8,7 +8,7 @@
 
 #include <cmath>
 
-namespace libcif
+namespace mmcif
 {
 
 // --------------------------------------------------------------------

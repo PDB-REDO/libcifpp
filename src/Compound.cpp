@@ -21,7 +21,7 @@ namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 namespace zx = zeep::xml;
 
-namespace libcif
+namespace mmcif
 {
 
 // --------------------------------------------------------------------
@@ -141,10 +141,10 @@ const vector<string>& IsomerDB::operator[](const string& compound) const
 
 struct Node
 {
-	string									id;
-	AtomType								symbol;
-	vector<tuple<size_t,CompoundBondType>>	links;
-	size_t									hydrogens = 0;
+	string							id;
+	AtomType						symbol;
+	vector<tuple<size_t,BondType>>	links;
+	size_t							hydrogens = 0;
 };
 
 // Check to see if the nodes a[iA] and b[iB] are the start of a similar sub structure
@@ -179,7 +179,7 @@ bool SubStructuresAreIsomeric(
 		for (size_t i = 0; result and i < N; ++i)
 		{
 			size_t lA, lB;
-			CompoundBondType typeA, typeB;
+			BondType typeA, typeB;
 
 			tie(lA, typeA) = na.links[i];			assert(lA < a.size());
 			tie(lB, typeB) = nb.links[ilb[i]];		assert(lB < b.size());
@@ -372,7 +372,7 @@ Compound::Compound(const fs::path& file, const std::string& id,
 		
 		for (auto row: compChir)
 		{
-			ChiralCentre cc;
+			CompoundChiralCentre cc;
 			string volumeSign;
 			
 			cif::tie(cc.id, cc.atomIDCentre, cc.atomID[0],
@@ -788,6 +788,125 @@ float Compound::chiralVolume(const string& centreID) const
 }
 
 // --------------------------------------------------------------------
+
+Link::Link(cif::Datablock& db)
+{
+	mId = db.getName();
+	
+	auto& linkBonds = db["chem_link_bond"];
+	
+	for (auto row: linkBonds)
+	{
+		LinkBond b;
+		string type, aromatic;
+		
+		cif::tie(b.atom[0].compID, b.atom[0].atomID,
+				b.atom[1].compID, b.atom[1].atomID, type, b.distance, b.esd) =
+			row.get("atom_1_comp_id", "atom_id_1", "atom_2_comp_id", "atom_id_2",
+				"type", "value_dist", "value_dist_esd");
+		
+		using cif::iequals;
+		
+		if (iequals(type, "single") or iequals(type, "sing"))		b.type = singleBond;
+		else if (iequals(type, "double") or iequals(type, "doub"))	b.type = doubleBond;
+		else if (iequals(type, "triple") or iequals(type, "trip"))	b.type = tripleBond;
+		else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
+											b.type = delocalizedBond;
+		else
+		{
+			if (VERBOSE)
+				cerr << "Unimplemented chem_link_bond.type " << type << " in " << mId << endl;
+			b.type = singleBond;
+		}
+		
+//		if (b.atom[0] > b.atom[1])
+//			swap(b.atom[0], b.atom[1]);
+		
+		mBonds.push_back(b);
+	}
+//	sort(mBonds.begin(), mBonds.end(), LinkBondLess());
+
+	auto& linkAngles = db["chem_link_angle"];
+	for (auto row: linkAngles)
+	{
+		LinkAngle a;
+		
+		cif::tie(a.atom[0].compID, a.atom[0].atomID, a.atom[1].compID, a.atom[1].atomID,
+				a.atom[2].compID, a.atom[2].atomID, a.angle, a.esd) =
+			row.get("atom_1_comp_id", "atom_id_1", "atom_2_comp_id", "atom_id_2",
+				"atom_3_comp_id", "atom_id_3", "value_angle", "value_angle_esd");
+		
+		mAngles.push_back(a);
+	}
+
+	auto& linkChir = db["chem_link_chir"];
+	for (auto row: linkChir)
+	{
+		LinkChiralCentre cc;
+		string volumeSign;
+		
+		cif::tie(cc.id, cc.atomCentre.compID, cc.atomCentre.atomID,
+				cc.atom[0].compID, cc.atom[0].atomID,
+				cc.atom[1].compID, cc.atom[1].atomID,
+				cc.atom[2].compID, cc.atom[2].atomID,
+				volumeSign) = 
+			row.get("id", "atom_centre_comp_id", "atom_id_centre",
+				"atom_1_comp_id", "atom_id_1", "atom_2_comp_id", "atom_id_2",
+				"atom_3_comp_id", "atom_id_3", "volume_sign");
+		
+		if (volumeSign == "negativ" or volumeSign == "negative")
+			cc.volumeSign = negativ;
+		else if (volumeSign == "positiv" or volumeSign == "positive")
+			cc.volumeSign = positiv;
+		else if (volumeSign == "both")
+			cc.volumeSign = both;
+		else
+		{
+			if (VERBOSE)
+				cerr << "Unimplemented chem_link_chir.volume_sign " << volumeSign << " in " << mId << endl;
+			continue;
+		}
+		
+		mChiralCentres.push_back(cc);
+	}
+
+	auto& linkPlanes = db["chem_link_plane"];
+	for (auto row: linkPlanes)
+	{
+		int compID;
+		string atomID, planeID;
+		float esd;	
+		
+		cif::tie(planeID, compID, atomID, esd) = row.get("plane_id", "atom_comp_id", "atom_id", "dist_esd");
+
+		auto i = find_if(mPlanes.begin(), mPlanes.end(), [&](auto& p) { return p.id == planeID;});
+		if (i == mPlanes.end())
+		{
+			vector<LinkAtom> atoms{LinkAtom{ compID, atomID }};
+			mPlanes.emplace_back(LinkPlane{ planeID, move(atoms), esd });
+		}
+		else
+			i->atoms.push_back({ compID, atomID });
+	}
+}
+
+const Link& Link::create(const std::string& id)
+{
+	auto result = CompoundFactory::instance().getLink(id);
+	if (result == nullptr)
+		result = CompoundFactory::instance().createLink(id);
+	
+	if (result == nullptr)
+		throw runtime_error("Link with id " + id + " not found");
+	
+	return *result;
+}
+
+Link::~Link()
+{
+}
+
+// --------------------------------------------------------------------
 // a factory class to generate compounds
 
 const map<string,char> kAAMap{
@@ -841,6 +960,9 @@ class CompoundFactoryImpl
 
 	Compound* get(string id);
 	Compound* create(string id);
+
+	const Link* getLink(std::string id);
+	const Link* createLink(std::string id);
 	
 	CompoundFactoryImpl* pop()
 	{
@@ -889,8 +1011,10 @@ class CompoundFactoryImpl
 
 	fs::path					mPath;
 	vector<Compound*>			mCompounds;
+	vector<const Link*>			mLinks;
 	/*unordered_*/set<string>	mKnownPeptides;
 	set<string>					mKnownBases;
+	set<string>					mMissing;
 	cif::File					mFile;
 	cif::Category&				mChemComp;
 	CompoundFactoryImpl*		mNext;
@@ -1020,7 +1144,7 @@ Compound* CompoundFactoryImpl::create(std::string id)
 	ba::to_upper(id);
 
 	Compound* result = get(id);
-	if (result == nullptr)
+	if (result == nullptr and mMissing.count(id) == 0)
 	{
 		boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
 
@@ -1042,12 +1166,15 @@ Compound* CompoundFactoryImpl::create(std::string id)
 			{
 				auto clibd_mon = fs::path(getenv("CLIBD_MON"));
 				
-				fs::path resFile = clibd_mon / ba::to_lower_copy(name.substr(0, 1)) / (name + ".cif");
+				fs::path resFile = clibd_mon / ba::to_lower_copy(name.substr(0, 1)) / (id + ".cif");
 			
-				if (not fs::exists(resFile) and	(name == "COM" or name == "CON" or "PRN")) 		// seriously...
-					resFile = clibd_mon / ba::to_lower_copy(name.substr(0, 1)) / (name + '_' + name + ".cif");
+				if (not fs::exists(resFile) and	(id == "COM" or id == "CON" or "PRN")) 		// seriously...
+					resFile = clibd_mon / ba::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");
 
-				mCompounds.push_back(new Compound(resFile, id, name, group));
+				if (not fs::exists(resFile))
+					mMissing.insert(id);
+				else
+					mCompounds.push_back(new Compound(resFile, id, name, group));
 			}				
 			else
 				mCompounds.push_back(new Compound(mPath, id, name, group));
@@ -1057,6 +1184,53 @@ Compound* CompoundFactoryImpl::create(std::string id)
 		
 		if (result == nullptr and mNext != nullptr)
 			result = mNext->create(id);
+	}
+	
+	return result;
+}
+
+const Link* CompoundFactoryImpl::getLink(string id)
+{
+	boost::shared_lock<boost::shared_mutex> lock(mMutex);
+
+	ba::to_upper(id);
+
+	const Link* result = nullptr;
+	
+	for (auto link: mLinks)
+	{
+		if (link->id() == id)
+		{
+			result = link;
+			break;
+		}
+	}
+	
+	if (result == nullptr and mNext != nullptr)
+		result = mNext->getLink(id);
+	
+	return result;
+}
+
+const Link* CompoundFactoryImpl::createLink(std::string id)
+{
+	ba::to_upper(id);
+
+	const Link* result = getLink(id);
+
+	if (result == nullptr)
+	{
+		boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
+
+		auto db = mFile.get("link_" + id);
+		if (db != nullptr)
+		{
+			result = new Link(*db);
+			mLinks.push_back(result);
+		}
+		
+		if (result == nullptr and mNext != nullptr)
+			result = mNext->createLink(id);
 	}
 	
 	return result;
@@ -1117,6 +1291,16 @@ const Compound* CompoundFactory::get(std::string id)
 const Compound* CompoundFactory::create(std::string id)
 {
 	return mImpl->create(id);
+}
+
+const Link* CompoundFactory::getLink(std::string id)
+{
+	return mImpl->getLink(id);
+}
+
+const Link* CompoundFactory::createLink(std::string id)
+{
+	return mImpl->createLink(id);
 }
 
 bool CompoundFactory::isKnownPeptide(const string& resName) const

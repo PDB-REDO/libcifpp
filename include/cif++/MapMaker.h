@@ -5,7 +5,7 @@
 
 #include "cif++/Structure.h"
 
-namespace libcif
+namespace mmcif
 {
 
 template<typename FTYPE>

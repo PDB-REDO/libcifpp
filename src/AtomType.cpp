@@ -5,7 +5,7 @@
 
 using namespace std;
 
-namespace libcif
+namespace mmcif
 {
 
 namespace data

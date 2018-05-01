@@ -11,7 +11,6 @@
 #include "cif++/AtomType.h"
 #include "cif++/Compound.h"
 #include "cif++/PDB2CifRemark3.h"
-#include "cif++/PeptideDB.h"
 
 using namespace std;
 namespace ba = boost::algorithm;

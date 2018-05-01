@@ -45,7 +45,7 @@
 //	class RowSet;
 //};
 
-namespace libcif
+namespace mmcif
 {
 
 class Atom;
@@ -88,7 +88,7 @@ class Atom
 	
 	Atom& operator=(const Atom& rhs);
 
-	std::string id() const;
+	const std::string& id() const;
 	AtomType type() const;
 
 	Point location() const;
@@ -144,6 +144,7 @@ typedef std::vector<Atom> AtomView;
 class Residue
 {
   public:
+	Residue();
 	Residue(const Residue& rhs);
 	Residue& operator=(const Residue& rhs);
 
@@ -184,6 +185,7 @@ class Residue
 class Monomer : public Residue
 {
   public:
+	Monomer();
 	Monomer(const Monomer& rhs);
 	Monomer& operator=(const Monomer& rhs);
 

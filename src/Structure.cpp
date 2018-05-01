@@ -21,7 +21,7 @@ namespace io = boost::iostreams;
 
 extern int VERBOSE;
 
-namespace libcif
+namespace mmcif
 {
 	
 // --------------------------------------------------------------------
@@ -173,12 +173,11 @@ struct AtomImpl
 		cif::tie(x, y, z) = mRow.get("Cartn_x", "Cartn_y", "Cartn_z");
 		
 		mLocation = Point(x, y, z);
+
+		string compId;
+		cif::tie(compId) = mRow.get("label_comp_id");
 		
-		try
-		{
-			comp();
-		}
-		catch (...) {}
+		mCompound = Compound::create(compId);
 	}
 	
 	clipper::Atom toClipper() const
@@ -362,7 +361,7 @@ float Atom::property<float>(const string& name) const
 	return stof(mImpl->property(name));
 }
 
-string Atom::id() const
+const string& Atom::id() const
 {
 	return mImpl->mId;
 }
@@ -486,6 +485,11 @@ float Atom::radius() const
 // --------------------------------------------------------------------
 // residue
 
+Residue::Residue()
+	: mStructure(nullptr), mSeqID(0)
+{
+}
+
 Residue::Residue(const Residue& rhs)
 	: mStructure(rhs.mStructure)
 	, mCompoundID(rhs.mCompoundID), mAsymID(rhs.mAsymID), mAltID(rhs.mAltID), mSeqID(rhs.mSeqID)
@@ -601,6 +605,11 @@ bool Residue::isEntity() const
 
 // --------------------------------------------------------------------
 // monomer
+
+Monomer::Monomer()
+	: mPolymer(nullptr), mIndex(0)
+{
+}
 
 Monomer::Monomer(const Monomer& rhs)
 	: Residue(rhs), mPolymer(rhs.mPolymer), mIndex(rhs.mIndex)

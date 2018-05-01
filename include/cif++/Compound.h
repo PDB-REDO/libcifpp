@@ -10,7 +10,7 @@
 #include "cif++/AtomType.h"
 #include "cif++/Cif++.h"
 
-namespace libcif
+namespace mmcif
 {
 
 // --------------------------------------------------------------------
@@ -24,7 +24,10 @@ namespace libcif
 class Composition;
 class Entity;
 class Compound;
+class Link;
 struct CompoundAtom;
+
+enum BondType { singleBond, doubleBond, tripleBond, delocalizedBond };
 
 // --------------------------------------------------------------------
 // struct containing information about an atom in a chemical compound
@@ -32,24 +35,22 @@ struct CompoundAtom;
 
 struct CompoundAtom
 {
-	std::string	id;
-	AtomType	typeSymbol;
-	std::string	typeEnergy;
-	float		partialCharge;
+	std::string		id;
+	AtomType		typeSymbol;
+	std::string		typeEnergy;
+	float			partialCharge;
 };
 
 // --------------------------------------------------------------------
 // struct containing information about the bonds
 // This information comes from the CCP4 monomer library. 
 
-enum CompoundBondType { singleBond, doubleBond, tripleBond, delocalizedBond };
-
 struct CompoundBond
 {
-	std::string			atomID[2];
-	CompoundBondType	type;
-	float				distance;
-	float				esd;
+	std::string		atomID[2];
+	BondType		type;
+	float			distance;
+	float			esd;
 };
 
 // --------------------------------------------------------------------
@@ -58,9 +59,9 @@ struct CompoundBond
 
 struct CompoundAngle
 {
-	std::string			atomID[3];
-	float				angle;
-	float				esd;
+	std::string		atomID[3];
+	float			angle;
+	float			esd;
 };
 
 // --------------------------------------------------------------------
@@ -80,7 +81,7 @@ struct CompoundPlane
 
 enum ChiralVolumeSign { negativ, positiv, both };
 
-struct ChiralCentre
+struct CompoundChiralCentre
 {
 	std::string			id;
 	std::string			atomIDCentre;
@@ -123,7 +124,8 @@ class Compound
 	std::vector<CompoundAtom> atoms() const			{ return mAtoms; }
 	std::vector<CompoundBond> bonds() const			{ return mBonds; }
 	std::vector<CompoundAngle> angles() const		{ return mAngles; }
-	std::vector<ChiralCentre> chiralCentres() const	{ return mChiralCentres; }
+	std::vector<CompoundChiralCentre> chiralCentres() const
+													{ return mChiralCentres; }
 	std::vector<CompoundPlane> planes() const		{ return mPlanes; }
 	
 	CompoundAtom getAtomById(const std::string& atomId) const;
@@ -155,12 +157,96 @@ class Compound
 	std::vector<CompoundAtom>	mAtoms;
 	std::vector<CompoundBond>	mBonds;
 	std::vector<CompoundAngle>	mAngles;
-	std::vector<ChiralCentre>	mChiralCentres;
+	std::vector<CompoundChiralCentre>
+								mChiralCentres;
 	std::vector<CompoundPlane>	mPlanes;
 };
 
 // --------------------------------------------------------------------
-// Factory class for Compound objects
+// struct containing information about the bonds
+// This information comes from the CCP4 monomer library. 
+
+struct LinkAtom
+{
+	int					compID;
+	std::string			atomID;
+};
+
+struct LinkBond
+{
+	LinkAtom			atom[2];
+	BondType			type;
+	float				distance;
+	float				esd;
+};
+
+// --------------------------------------------------------------------
+// struct containing information about the bond-angles
+// This information comes from the CCP4 monomer library. 
+
+struct LinkAngle
+{
+	LinkAtom			atom[3];
+	float				angle;
+	float				esd;
+};
+
+// --------------------------------------------------------------------
+// struct containing information about the bond-angles
+// This information comes from the CCP4 monomer library. 
+
+struct LinkPlane
+{
+	std::string					id;
+	std::vector<LinkAtom>		atoms;
+	float						esd;
+};
+
+// --------------------------------------------------------------------
+// struct containing information about a chiral centre
+// This information comes from the CCP4 monomer library. 
+
+struct LinkChiralCentre
+{
+	std::string			id;
+	LinkAtom			atomCentre;
+	LinkAtom			atom[3];
+	ChiralVolumeSign	volumeSign;
+};
+
+// --------------------------------------------------------------------
+// a class that contains information about a chemical link between compounds.
+// This information is derived from the ccp4 monomer library by default.
+
+class Link
+{
+  public:
+
+	Link(cif::Datablock& db);
+
+	// Factory method.
+	static const Link& create(const std::string& id);
+
+	// accessors
+	std::string id() const								{ return mId; }
+	std::vector<LinkBond> bonds() const					{ return mBonds; }
+	std::vector<LinkAngle> angles() const				{ return mAngles; }
+	std::vector<LinkChiralCentre> chiralCentres() const	{ return mChiralCentres; }
+	std::vector<LinkPlane> planes() const				{ return mPlanes; }
+	
+  private:
+
+	~Link();
+
+	std::string						mId;
+	std::vector<LinkBond>			mBonds;
+	std::vector<LinkAngle>			mAngles;
+	std::vector<LinkChiralCentre>	mChiralCentres;
+	std::vector<LinkPlane>			mPlanes;
+};
+
+// --------------------------------------------------------------------
+// Factory class for Compound and Link objects
 
 extern const std::map<std::string,char> kAAMap, kBaseMap;
 
@@ -180,6 +266,9 @@ class CompoundFactory
 
 	const Compound* get(std::string id);
 	const Compound* create(std::string id);
+	
+	const Link* getLink(std::string id);
+	const Link* createLink(std::string id);
 
   private:
 

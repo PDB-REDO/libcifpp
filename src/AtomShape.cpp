@@ -8,7 +8,7 @@
 
 using namespace std;
 
-namespace libcif
+namespace mmcif
 {
 
 // --------------------------------------------------------------------
@@ -118,7 +118,7 @@ double sineIntegration(double x)
 		
 		double gx = (sn / sd) / (x * x);
 		
-		result = libcif::kPI / 2 - fx * cos(x) - gx * sin(x);
+		result = mmcif::kPI / 2 - fx * cos(x) - gx * sin(x);
 	}
 	
 	return result;
@@ -194,7 +194,7 @@ DensityIntegration::DensityIntegration(float resolutionLow, float resolutionHigh
 	{
 		double z, zo, dp;
 		
-		z = cos(libcif::kPI * (i - 0.25) / (N + 0.5));
+		z = cos(mmcif::kPI * (i - 0.25) / (N + 0.5));
 
 		do
 		{
@@ -237,7 +237,7 @@ double DensityIntegration::integrateDensity(double r, int ks, const vector<doubl
 	
 	if (rt > 1e-10)
 	{
-		double t = 4 * libcif::kPI * rt;
+		double t = 4 * mmcif::kPI * rt;
 		y = 0;
 		
 		for (size_t i = 0; i < mST.size(); ++i)
@@ -252,7 +252,7 @@ double DensityIntegration::integrateDensity(double r, int ks, const vector<doubl
 
 double DensityIntegration::integrateRadius(float perc, float occupancy, double yi, const vector<double>& fst) const
 {
-	double yt = perc * 0.25 * libcif::kPI * occupancy * yi;
+	double yt = perc * 0.25 * mmcif::kPI * occupancy * yi;
 	double initialValue = 0.25;
 	
 

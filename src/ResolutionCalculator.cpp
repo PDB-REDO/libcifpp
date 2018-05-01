@@ -6,7 +6,7 @@
 
 using namespace std;
 
-namespace libcif
+namespace mmcif
 {
 
 ResolutionCalculator::ResolutionCalculator(const clipper::Cell& cell)

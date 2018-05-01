@@ -9,7 +9,7 @@
 
 using namespace std;
 
-namespace libcif
+namespace mmcif
 {
 
 // --------------------------------------------------------------------
@@ -128,7 +128,7 @@ BondMap::BondMap(const Structure& p)
 
 	for (auto c: compounds)
 	{
-		auto* compound = libcif::Compound::create(c);
+		auto* compound = mmcif::Compound::create(c);
 		if (not compound)
 		{
 			cerr << "Missing compound information for " << c << endl;

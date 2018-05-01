@@ -13,9 +13,9 @@
 #include <boost/iostreams/concepts.hpp>    // output_filter
 #include <boost/iostreams/operations.hpp>  // put
 
-#include "cif++/PeptideDB.h"
 #include "cif++/Cif2PDB.h"
 #include "cif++/AtomType.h"
+#include "cif++/Compound.h"
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -2666,7 +2666,7 @@ int WriteHeterogen(ostream& pdbFile, Datablock& db)
 		cif::tie(entity_id, seqNum, comp_id, chain_id, iCode, modelNr) =
 			r.get("label_entity_id", "auth_seq_id", "auth_comp_id", "auth_asym_id", "pdbx_PDB_ins_code", "pdbx_PDB_model_num");
 
-		if (kAAMap.count(comp_id) or kBaseMap.count(comp_id))
+		if (mmcif::kAAMap.count(comp_id) or mmcif::kBaseMap.count(comp_id))
 			continue;
 		
 		if (chain_id.length() != 1)

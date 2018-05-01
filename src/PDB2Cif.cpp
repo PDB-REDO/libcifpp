@@ -14,7 +14,6 @@
 #include "cif++/PDB2Cif.h"
 #include "cif++/AtomType.h"
 #include "cif++/Compound.h"
-#include "cif++/PeptideDB.h"
 #include "cif++/PDB2CifRemark3.h"
 #include "cif++/CifUtils.h"
 
@@ -26,6 +25,7 @@ using cif::Category;
 using cif::Row;
 using cif::Key;
 using cif::iequals;
+using mmcif::CompoundFactory;
 
 // --------------------------------------------------------------------
 // attempt to come up with better error handling
@@ -2369,14 +2369,14 @@ void PDBFileParser::ParseRemarks()
 						int seq = vI(22, 25);
 						char iCode = vC(26);
 						
-						auto compound = libcif::Compound::create(res);
+						auto compound = mmcif::Compound::create(res);
 						if (compound == nullptr)
 							continue;
 						
 						vector<string> atoms;
 						for (auto atom: compound->atoms())
 						{
-							if (atom.typeSymbol != libcif::H)
+							if (atom.typeSymbol != mmcif::H)
 								atoms.push_back(atom.id);
 						}
 						
@@ -3281,7 +3281,7 @@ void PDBFileParser::ConstructEntities()
 			PDBChain::AtomRes ar{ resName, resSeq, iCode };
 
 			if ((chain.mResiduesSeen.empty() or chain.mResiduesSeen.back() != ar) and
-				(PeptideDB::Instance().isKnownPeptide(resName) or PeptideDB::Instance().isKnownBase(resName)))
+				(CompoundFactory::instance().isKnownPeptide(resName) or CompoundFactory::instance().isKnownBase(resName)))
 			{
 				chain.mResiduesSeen.push_back(ar);
 			}
@@ -3361,10 +3361,10 @@ void PDBFileParser::ConstructEntities()
 			{
 				string resName = chain.mResiduesSeen[ix].mMonId;
 				
-				if (kAAMap.count(resName) or
-					kBaseMap.count(resName) or
-					PeptideDB::Instance().isKnownPeptide(resName) or
-					PeptideDB::Instance().isKnownBase(resName))
+				if (mmcif::kAAMap.count(resName) or
+					mmcif::kBaseMap.count(resName) or
+					CompoundFactory::instance().isKnownPeptide(resName) or
+					CompoundFactory::instance().isKnownBase(resName))
 				{
 					chain.mTerIndex = ix + 1;
 				}
@@ -3795,14 +3795,14 @@ void PDBFileParser::ConstructEntities()
 				if (mMod2parent.count(res.mMonId))
 					stdRes = mMod2parent.at(res.mMonId);
 
-				if (kAAMap.count(res.mMonId))
+				if (mmcif::kAAMap.count(res.mMonId))
 				{
-					letter = kAAMap.at(res.mMonId);
+					letter = mmcif::kAAMap.at(res.mMonId);
 					mightBeDNA = false;
 				}
-				else if (kBaseMap.count(res.mMonId))
+				else if (mmcif::kBaseMap.count(res.mMonId))
 				{
-					letter = kBaseMap.at(res.mMonId);
+					letter = mmcif::kBaseMap.at(res.mMonId);
 					mightBePolyPeptide = false;
 				}
 				else
@@ -3811,7 +3811,7 @@ void PDBFileParser::ConstructEntities()
 					letter = '(' + res.mMonId + ')';
 					
 					// sja...
-					auto compound = libcif::Compound::create(stdRes.empty() ? res.mMonId : stdRes);
+					auto compound = mmcif::Compound::create(stdRes.empty() ? res.mMonId : stdRes);
 					if (compound != nullptr and
 						not iequals(compound->type(), "L-peptide linking") and
 						not iequals(compound->type(), "RNA linking"))
@@ -3831,10 +3831,10 @@ void PDBFileParser::ConstructEntities()
 	
 				if (letter.length() > 1)
 				{
-					if (not stdRes.empty() and kAAMap.count(stdRes))
-						letter = kAAMap.at(stdRes);
-					else if (kBaseMap.count(res.mMonId))
-						letter = kBaseMap.at(res.mMonId);
+					if (not stdRes.empty() and mmcif::kAAMap.count(stdRes))
+						letter = mmcif::kAAMap.at(stdRes);
+					else if (mmcif::kBaseMap.count(res.mMonId))
+						letter = mmcif::kBaseMap.at(res.mMonId);
 					else
 						letter = 'X';
 				}
@@ -3961,7 +3961,11 @@ void PDBFileParser::ConstructEntities()
 			else
 			{
 				if (mHetnams[hetID].empty())
-					mHetnams[hetID] = PeptideDB::Instance().nameForResidue(hetID);
+				{
+					auto compound = mmcif::Compound::create(hetID);
+					if (compound != nullptr)
+						mHetnams[hetID] = compound->name();
+				}
 				
 				getCategory("entity")->emplace({
 					{ "id", entityId },
@@ -4095,7 +4099,7 @@ void PDBFileParser::ConstructEntities()
 
 	for (auto cc: mChemComp)
 	{
-		auto compound = libcif::Compound::create(
+		auto compound = mmcif::Compound::create(
 			mMod2parent.count(cc) ? mMod2parent[cc] : cc
 		);
 		
@@ -4447,10 +4451,10 @@ static bool IsMetal(const string& resName, const string& atomID)
 
 	try
 	{
-		auto compound = libcif::Compound::create(resName);
+		auto compound = mmcif::Compound::create(resName);
 		if (compound != nullptr)
 		{
-			auto at = libcif::AtomTypeTraits(compound->getAtomById(atomID).typeSymbol);
+			auto at = mmcif::AtomTypeTraits(compound->getAtomById(atomID).typeSymbol);
 			result = at.isMetal();
 		}
 	}

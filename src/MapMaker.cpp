@@ -23,7 +23,7 @@ namespace ba = boost::algorithm;
 
 extern int VERBOSE;
 
-namespace libcif
+namespace mmcif
 {
 	
 // --------------------------------------------------------------------

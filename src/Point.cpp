@@ -6,7 +6,7 @@
 
 using namespace std;
 
-namespace libcif
+namespace mmcif
 {
 
 // --------------------------------------------------------------------
@@ -101,20 +101,20 @@ Point CenterPoints(vector<Point>& Points)
 	
 	for (Point& pt : Points)
 	{
-		t.getX() += pt.getX();
-		t.getY() += pt.getY();
-		t.getZ() += pt.getZ();
+		t.mX += pt.mX;
+		t.mY += pt.mY;
+		t.mZ += pt.mZ;
 	}
 	
-	t.getX() /= Points.size();
-	t.getY() /= Points.size();
-	t.getZ() /= Points.size();
+	t.mX /= Points.size();
+	t.mY /= Points.size();
+	t.mZ /= Points.size();
 	
 	for (Point& pt : Points)
 	{
-		pt.getX() -= t.getX();
-		pt.getY() -= t.getY();
-		pt.getZ() -= t.getZ();
+		pt.mX -= t.mX;
+		pt.mY -= t.mY;
+		pt.mZ -= t.mZ;
 	}
 	
 	return t;
@@ -139,9 +139,9 @@ double RMSd(const vector<Point>& a, const vector<Point>& b)
 	{
 		valarray<double> d(3);
 		
-		d[0] = b[i].getX() - a[i].getX();
-		d[1] = b[i].getY() - a[i].getY();
-		d[2] = b[i].getZ() - a[i].getZ();
+		d[0] = b[i].mX - a[i].mX;
+		d[1] = b[i].mY - a[i].mY;
+		d[2] = b[i].mZ - a[i].mZ;
 
 		d *= d;
 		
@@ -200,9 +200,9 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 //		const Point& a = pa[i];
 //		const Point& b = pb[i];
 //		
-//		M(0, 0) += a.getX() * b.getX();	M(0, 1) += a.getX() * b.getY();	M(0, 2) += a.getX() * b.getZ();
-//		M(1, 0) += a.getY() * b.getX();	M(1, 1) += a.getY() * b.getY();	M(1, 2) += a.getY() * b.getZ();
-//		M(2, 0) += a.getZ() * b.getX();	M(2, 1) += a.getZ() * b.getY();	M(2, 2) += a.getZ() * b.getZ();
+//		M(0, 0) += a.mX * b.mX;	M(0, 1) += a.mX * b.mY;	M(0, 2) += a.mX * b.mZ;
+//		M(1, 0) += a.mY * b.mX;	M(1, 1) += a.mY * b.mY;	M(1, 2) += a.mY * b.mZ;
+//		M(2, 0) += a.mZ * b.mX;	M(2, 1) += a.mZ * b.mY;	M(2, 2) += a.mZ * b.mZ;
 //	}
 //	
 //	// Now calculate N, a symmetric 4x4 matrix

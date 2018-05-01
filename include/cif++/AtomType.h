@@ -7,7 +7,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/math/quaternion.hpp>
 
-namespace libcif
+namespace mmcif
 {
 
 enum AtomType : uint8
