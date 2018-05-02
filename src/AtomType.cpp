@@ -73,6 +73,20 @@ const AtomTypeInfo kKnownAtoms[] =
 	{ Cs,	"Caesium",			"Cs",	132.91,	true,  {	298,	260,	225,	232,	209,	kNA,	kNA } },
 	{ Ba,	"Barium",			"Ba",	137.33,	true,  {	253,	215,	198,	196,	161,	149,	kNA } },
 	{ La,	"Lanthanum",		"La",	138.91,	true,  {	kNA,	195,	169,	180,	139,	139,	kNA } },
+	{ Ce,	"Cerium",			"Ce",	140.12,	true,  {	kNA,	185,	kNA,	163,	137,	131,	kNA } },
+	{ Pr,	"Praseodymium",		"Pr",	140.91,	true,  {	247,	185,	kNA,	176,	138,	128,	kNA } },
+	{ Nd,	"Neodymium",		"Nd",	144.24,	true,  {	206,	185,	kNA,	174,	137,	kNA,	kNA } },
+	{ Pm,	"Promethium",		"Pm",	145,	true,  {	205,	185,	kNA,	173,	135,	kNA,	kNA } },
+	{ Sm,	"Samarium",			"Sm",	150.36,	true,  {	238,	185,	kNA,	172,	134,	kNA,	kNA } },
+	{ Eu,	"Europium",			"Eu",	151.96,	true,  {	231,	185,	kNA,	168,	134,	kNA,	kNA } },
+	{ Gd,	"Gadolinium",		"Gd",	157.25,	true,  {	233,	180,	kNA,	169,	135,	132,	kNA } },
+	{ Tb,	"Terbium",			"Tb",	158.93,	true,  {	225,	175,	kNA,	168,	135,	kNA,	kNA } },
+	{ Dy,	"Dysprosium",		"Dy",	162.50,	true,  {	228,	175,	kNA,	167,	133,	kNA,	kNA } },
+	{ Ho,	"Holmium",			"Ho",	164.93,	true,  {	226,	175,	kNA,	166,	133,	kNA,	kNA } },
+	{ Er,	"Erbium",			"Er",	167.26,	true,  {	226,	175,	kNA,	165,	133,	kNA,	kNA } },
+	{ Tm,	"Thulium",			"Tm",	168.93,	true,  {	222,	175,	kNA,	164,	131,	kNA,	kNA } },
+	{ Yb,	"Ytterbium",		"Yb",	173.05,	true,  {	222,	175,	kNA,	170,	129,	kNA,	kNA } },
+	{ Lu,	"Lutetium",			"Lu",	174.97,	true,  {	217,	175,	160,	162,	131,	131,	kNA } },
 	{ Hf,	"Hafnium",			"Hf",	178.49,	true,  {	208,	155,	150,	152,	128,	122,	kNA } },
 	{ Ta,	"Tantalum",			"Ta",	180.95,	true,  {	200,	145,	138,	146,	126,	119,	kNA } },
 	{ W,	"Tungsten",			"W",	183.84,	true,  {	193,	135,	146,	137,	120,	115,	kNA } },
@@ -91,6 +105,20 @@ const AtomTypeInfo kKnownAtoms[] =
 	{ Fr,	"Francium",			"Fr",	223,	true,  {	kNA,	kNA,	kNA,	223,	218,	kNA,	kNA } },
 	{ Ra,	"Radium",			"Ra",	226,	true,  {	kNA,	215,	kNA,	201,	173,	159,	kNA } },
 	{ Ac,	"Actinium",			"Ac",	227,	true,  {	kNA,	195,	kNA,	186,	153,	140,	kNA } },
+	{ Th,	"Thorium",			"Th",	232.04,	true,  {	kNA,	180,	kNA,	175,	143,	136,	kNA } },
+	{ Pa,	"Protactinium",		"Pa",	231.04,	true,  {	kNA,	180,	kNA,	169,	138,	129,	kNA } },
+	{ U,	"Uranium",			"U",	238.03,	true,  {	kNA,	175,	kNA,	170,	134,	118,	186 } },
+	{ Np,	"Neptunium",		"Np",	237,	true,  {	kNA,	175,	kNA,	171,	136,	116,	kNA } },
+	{ Pu,	"Plutonium",		"Pu",	244,	true,  {	kNA,	175,	kNA,	172,	135,	kNA,	kNA } },
+	{ Am,	"Americium",		"Am",	243,	true,  {	kNA,	175,	kNA,	166,	135,	kNA,	kNA } },
+	{ Cm,	"Curium",			"Cm",	247,	true,  {	kNA,	kNA,	kNA,	166,	136,	kNA,	kNA } },
+	{ Bk,	"Berkelium",		"Bk",	247,	true,  {	kNA,	kNA,	kNA,	168,	139,	kNA,	kNA } },
+	{ Cf,	"Californium",		"Cf",	251,	true,  {	kNA,	kNA,	kNA,	168,	140,	kNA,	kNA } },
+	{ Es,	"Einsteinium",		"Es",	252,	true,  {	kNA,	kNA,	kNA,	165,	140,	kNA,	kNA } },
+	{ Fm,	"Fermium",			"Fm",	257,	true,  {	kNA,	kNA,	kNA,	167,	kNA,	kNA,	kNA } },
+	{ Md,	"Mendelevium",		"Md",	258,	true,  {	kNA,	kNA,	kNA,	173,	139,	kNA,	kNA } },
+	{ No,	"Nobelium",			"No",	259,	true,  {	kNA,	kNA,	kNA,	176,	kNA,	kNA,	kNA } },
+	{ Lr,	"Lawrencium",		"Lr",	266,	true,  {	kNA,	kNA,	kNA,	161,	141,	kNA,	kNA } },
 	{ Rf,	"Rutherfordium",	"Rf",	267,	true,  {	kNA,	kNA,	kNA,	157,	140,	131,	kNA } },
 	{ Db,	"Dubnium",			"Db",	268,	true,  {	kNA,	kNA,	kNA,	149,	136,	126,	kNA } },
 	{ Sg,	"Seaborgium",		"Sg",	269,	true,  {	kNA,	kNA,	kNA,	143,	128,	121,	kNA } },
@@ -105,35 +133,7 @@ const AtomTypeInfo kKnownAtoms[] =
 	{ Mc,	"Moscovium",		"Mc",	290,	true,  {	kNA,	kNA,	kNA,	162,	kNA,	kNA,	kNA } },
 	{ Lv,	"Livermorium",		"Lv",	293,	true,  {	kNA,	kNA,	kNA,	175,	kNA,	kNA,	kNA } },
 	{ Ts,	"Tennessine",		"Ts",	294,	true,  {	kNA,	kNA,	kNA,	165,	kNA,	kNA,	kNA } },
-	{ Og,	"Oganesson",		"Og",	294,	true,  {	kNA,	kNA,	kNA,	157,	kNA,	kNA,	kNA } },
-	{ Ce,	"Cerium",			"Ce",	140.12,	true,  {	kNA,	185,	kNA,	163,	137,	131,	kNA } },
-	{ Pr,	"Praseodymium",		"Pr",	140.91,	true,  {	247,	185,	kNA,	176,	138,	128,	kNA } },
-	{ Nd,	"Neodymium",		"Nd",	144.24,	true,  {	206,	185,	kNA,	174,	137,	kNA,	kNA } },
-	{ Pm,	"Promethium",		"Pm",	145,	true,  {	205,	185,	kNA,	173,	135,	kNA,	kNA } },
-	{ Sm,	"Samarium",			"Sm",	150.36,	true,  {	238,	185,	kNA,	172,	134,	kNA,	kNA } },
-	{ Eu,	"Europium",			"Eu",	151.96,	true,  {	231,	185,	kNA,	168,	134,	kNA,	kNA } },
-	{ Gd,	"Gadolinium",		"Gd",	157.25,	true,  {	233,	180,	kNA,	169,	135,	132,	kNA } },
-	{ Tb,	"Terbium",			"Tb",	158.93,	true,  {	225,	175,	kNA,	168,	135,	kNA,	kNA } },
-	{ Dy,	"Dysprosium",		"Dy",	162.50,	true,  {	228,	175,	kNA,	167,	133,	kNA,	kNA } },
-	{ Ho,	"Holmium",			"Ho",	164.93,	true,  {	226,	175,	kNA,	166,	133,	kNA,	kNA } },
-	{ Er,	"Erbium",			"Er",	167.26,	true,  {	226,	175,	kNA,	165,	133,	kNA,	kNA } },
-	{ Tm,	"Thulium",			"Tm",	168.93,	true,  {	222,	175,	kNA,	164,	131,	kNA,	kNA } },
-	{ Yb,	"Ytterbium",		"Yb",	173.05,	true,  {	222,	175,	kNA,	170,	129,	kNA,	kNA } },
-	{ Lu,	"Lutetium",			"Lu",	174.97,	true,  {	217,	175,	160,	162,	131,	131,	kNA } },
-	{ Th,	"Thorium",			"Th",	232.04,	true,  {	kNA,	180,	kNA,	175,	143,	136,	kNA } },
-	{ Pa,	"Protactinium",		"Pa",	231.04,	true,  {	kNA,	180,	kNA,	169,	138,	129,	kNA } },
-	{ U,	"Uranium",			"U",	238.03,	true,  {	kNA,	175,	kNA,	170,	134,	118,	186 } },
-	{ Np,	"Neptunium",		"Np",	237,	true,  {	kNA,	175,	kNA,	171,	136,	116,	kNA } },
-	{ Pu,	"Plutonium",		"Pu",	244,	true,  {	kNA,	175,	kNA,	172,	135,	kNA,	kNA } },
-	{ Am,	"Americium",		"Am",	243,	true,  {	kNA,	175,	kNA,	166,	135,	kNA,	kNA } },
-	{ Cm,	"Curium",			"Cm",	247,	true,  {	kNA,	kNA,	kNA,	166,	136,	kNA,	kNA } },
-	{ Bk,	"Berkelium",		"Bk",	247,	true,  {	kNA,	kNA,	kNA,	168,	139,	kNA,	kNA } },
-	{ Cf,	"Californium",		"Cf",	251,	true,  {	kNA,	kNA,	kNA,	168,	140,	kNA,	kNA } },
-	{ Es,	"Einsteinium",		"Es",	252,	true,  {	kNA,	kNA,	kNA,	165,	140,	kNA,	kNA } },
-	{ Fm,	"Fermium",			"Fm",	257,	true,  {	kNA,	kNA,	kNA,	167,	kNA,	kNA,	kNA } },
-	{ Md,	"Mendelevium",		"Md",	258,	true,  {	kNA,	kNA,	kNA,	173,	139,	kNA,	kNA } },
-	{ No,	"Nobelium",			"No",	259,	true,  {	kNA,	kNA,	kNA,	176,	kNA,	kNA,	kNA } },
-	{ Lr,	"Lawrencium",		"Lr",	266,	true,  {	kNA,	kNA,	kNA,	161,	141,	kNA,	kNA } }
+	{ Og,	"Oganesson",		"Og",	294,	true,  {	kNA,	kNA,	kNA,	157,	kNA,	kNA,	kNA } }
 };
 
 uint32 kKnownAtomsCount = sizeof(kKnownAtoms) / sizeof(AtomTypeInfo);
@@ -1227,17 +1227,12 @@ AtomTypeTraits::AtomTypeTraits(const string& symbol)
 
 AtomTypeTraits::AtomTypeTraits(AtomType t)
 {
-	for (auto& i: data::kKnownAtoms)
-	{
-		if (i.type == t)
-		{
-			mInfo = &i;
-			break;
-		}
-	}
-	
-	if (mInfo == nullptr)
+	if (t < H or t > Og)
 		throw invalid_argument("atomType out of range");
+	
+	mInfo = &data::kKnownAtoms[t];
+	
+	assert(mInfo->type == t);
 }
 
 bool AtomTypeTraits::isElement(const string& symbol)
