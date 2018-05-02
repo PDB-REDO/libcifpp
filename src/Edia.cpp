@@ -163,7 +163,7 @@ float CalculateEDIA(const Atom& atom, const clipper::Xmap<float>& xmap,
 	float radius = kAtomRadius(atom.type(), 0, resolution);
 	
 	float x, y, z;
-	tie(x, y, z) = (tuple<float,float,float>)atom.location();
+	tie(x, y, z) = atom.location();
 
 	// calculate min and max orthogonal coordinates first, based on atom position, radius and bfactor
 	clipper::Coord_orth oMin = { x - radius * 2, y - radius * 2, z - radius * 2 },

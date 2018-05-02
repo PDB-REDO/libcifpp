@@ -115,9 +115,19 @@ struct Point
 		return clipper::Coord_orth(mX, mY, mZ);
 	}
 	
-	operator std::tuple<float,float,float>() const
+	operator std::tuple<const float&, const float&, const float&>() const
 	{
-		return std::make_tuple(mX, mY, mZ);
+		return std::make_tuple(std::ref(mX), std::ref(mY), std::ref(mZ));
+	}
+
+	operator std::tuple<float&,float&,float&>()
+	{
+		return std::make_tuple(std::ref(mX), std::ref(mY), std::ref(mZ));
+	}
+	
+	bool operator==(const Point& rhs) const
+	{
+		return mX == rhs.mX and mY == rhs.mY and mZ == rhs.mZ;
 	}
 };
 

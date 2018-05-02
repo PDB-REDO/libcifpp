@@ -206,7 +206,7 @@ class Datablock
 
 	std::tuple<iterator,bool> emplace(const std::string& name);
 	
-	void validate();
+	bool isValid();
 	void setValidator(Validator* v);
 
 	// this one only looks up a Category, returns nullptr if it does not exist
@@ -1004,7 +1004,7 @@ class Category
 	void erase(Row r);
 	void erase(iterator ri);
 
-	void validate();
+	bool isValid();
 
 	const Validator& getValidator() const;
 	const ValidateCategory* getCatValidator() const		{ return mCatValidator; }
@@ -1074,7 +1074,7 @@ class File
 	void loadDictionary(const char* dict);		// load one of the compiled in dictionaries 
 	void loadDictionary(std::istream& is);		// load dictionary from input stream
 
-	void validate();
+	bool isValid();
 	
 	Datablock& firstDatablock()			{ return *mHead; }
 	void append(Datablock* e);

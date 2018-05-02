@@ -109,8 +109,9 @@ void FileImpl::load(fs::path p)
 	
 	// And validate, otherwise lots of functionality won't work
 //	if (mData.getValidator() == nullptr)
-		mData.loadDictionary("mmcif_pdbx");
-	mData.validate();
+	mData.loadDictionary("mmcif_pdbx");
+	if (not mData.isValid())
+		cerr << "Invalid mmCIF file" << (VERBOSE ? "." : " use --verbose option to see errors") << endl;
 }
 
 void FileImpl::save(fs::path p)

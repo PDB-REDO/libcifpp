@@ -346,13 +346,15 @@ Category* Datablock::get(const string& name)
 	return i == end() ? nullptr : &*i;
 }
 
-void Datablock::validate()
+bool Datablock::isValid()
 {
 	if (mValidator == nullptr)
 		throw runtime_error("Validator not specified");
 
+	bool result = true;
 	for (auto& cat: *this)
-		cat.validate();
+		result = cat.isValid() and result;
+	return result;
 }
 
 void Datablock::setValidator(Validator* v)
@@ -598,7 +600,7 @@ class CatIndex
 	}
 
 	size_t size() const;
-	void validate() const;
+//	bool isValid() const;
 	
   private:
 
@@ -622,7 +624,7 @@ class CatIndex
 	entry* insert(entry* h, ItemRow* v);
 	entry* erase(entry* h, ItemRow* k);
 
-	void validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& minBlack, uint32& maxBlack) const;
+//	void validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& minBlack, uint32& maxBlack) const;
 
 	entry* rotateLeft(entry* h)
 	{
@@ -961,64 +963,70 @@ size_t CatIndex::size() const
 	return result;
 }
 
-void CatIndex::validate() const
-{
-	if (mRoot != nullptr)
-	{
-		uint32 minBlack = numeric_limits<uint32>::max();
-		uint32 maxBlack = 0;
-		
-		assert(not mRoot->mRed);
-		
-		validate(mRoot, false, 0, minBlack, maxBlack);
-		assert(minBlack == maxBlack);
-	}
-}
-
-void CatIndex::validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& minBlack, uint32& maxBlack) const
-{
-	if (h->mRed)
-		assert(not isParentRed);
-	else
-		++blackDepth;
-	
-	if (isParentRed)
-		assert(not h->mRed);
-	
-	if (h->mLeft != nullptr and h->mRight != nullptr)
-	{
-		if (isRed(h->mLeft))
-			assert(not isRed(h->mRight));
-		if (isRed(h->mRight))
-			assert(not isRed(h->mLeft));
-	}
-	
-	if (h->mLeft != nullptr)
-	{
-		assert(mComp(h->mLeft->mRow, h->mRow) < 0);
-		validate(h->mLeft, h->mRed, blackDepth, minBlack, maxBlack);
-	}
-	else
-	{
-		if (minBlack > blackDepth)
-			minBlack = blackDepth;
-		if (maxBlack < blackDepth)
-			maxBlack = blackDepth;
-	}
-	
-	if (h->mRight != nullptr)
-	{
-		assert(mComp(h->mRight->mRow, h->mRow) > 0);
-		validate(h->mRight, h->mRight, blackDepth, minBlack, maxBlack);
-	}
-	else
-	{
-		if (minBlack > blackDepth)
-			minBlack = blackDepth;
-		if (maxBlack < blackDepth)
-			maxBlack = blackDepth;
-	}
-}
+//bool CatIndex::isValid() const
+//{
+//	bool result = true;
+//	
+//	if (mRoot != nullptr)
+//	{
+//		uint32 minBlack = numeric_limits<uint32>::max();
+//		uint32 maxBlack = 0;
+//		
+//		assert(not mRoot->mRed);
+//		
+//		result = isValid(mRoot, false, 0, minBlack, maxBlack);
+//		assert(minBlack == maxBlack);
+//	}
+//	
+//	return result;
+//}
+//
+//bool CatIndex::validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& minBlack, uint32& maxBlack) const
+//{
+//	bool result = true;
+//	
+//	if (h->mRed)
+//		assert(not isParentRed);
+//	else
+//		++blackDepth;
+//	
+//	if (isParentRed)
+//		assert(not h->mRed);
+//	
+//	if (h->mLeft != nullptr and h->mRight != nullptr)
+//	{
+//		if (isRed(h->mLeft))
+//			assert(not isRed(h->mRight));
+//		if (isRed(h->mRight))
+//			assert(not isRed(h->mLeft));
+//	}
+//	
+//	if (h->mLeft != nullptr)
+//	{
+//		assert(mComp(h->mLeft->mRow, h->mRow) < 0);
+//		validate(h->mLeft, h->mRed, blackDepth, minBlack, maxBlack);
+//	}
+//	else
+//	{
+//		if (minBlack > blackDepth)
+//			minBlack = blackDepth;
+//		if (maxBlack < blackDepth)
+//			maxBlack = blackDepth;
+//	}
+//	
+//	if (h->mRight != nullptr)
+//	{
+//		assert(mComp(h->mRight->mRow, h->mRow) > 0);
+//		validate(h->mRight, h->mRight, blackDepth, minBlack, maxBlack);
+//	}
+//	else
+//	{
+//		if (minBlack > blackDepth)
+//			minBlack = blackDepth;
+//		if (maxBlack < blackDepth)
+//			maxBlack = blackDepth;
+//	}
+//}
 
 // --------------------------------------------------------------------
 
@@ -1120,10 +1128,10 @@ void Category::setValidator(Validator* v)
 		{
 			mIndex = new CatIndex(this);
 			mIndex->reconstruct();
-#if DEBUG
-			assert(mIndex->size() == size());
-			mIndex->validate();
-#endif
+//#if DEBUG
+//			assert(mIndex->size() == size());
+//			mIndex->validate();
+//#endif
 		}
 	}
 	else
@@ -1465,8 +1473,10 @@ Category::iterator Category::end()
 	return iterator(nullptr);
 }
 
-void Category::validate()
+bool Category::isValid()
 {
+	bool result = true;
+	
 	if (mValidator == nullptr)
 		throw runtime_error("no Validator specified");
 
@@ -1474,13 +1484,13 @@ void Category::validate()
 	{
 		if (VERBOSE > 2)
 			cerr << "Skipping validation of empty Category " << mName << endl;
-		return;
+		return true;
 	}
 	
 	if (mCatValidator == nullptr)
 	{
 		mValidator->reportError("undefined Category " + mName);
-		return;
+		return false;
 	}
 	
 	auto mandatory = mCatValidator->mMandatoryFields;
@@ -1489,7 +1499,10 @@ void Category::validate()
 	{
 		auto iv = mCatValidator->getValidatorForItem(col.mName);
 		if (iv == nullptr)
+		{
 			mValidator->reportError("Field " + col.mName + " is not valid in Category " + mName);
+			result = false;
+		}
 		
 		col.mValidator = iv;
 		
@@ -1497,20 +1510,23 @@ void Category::validate()
 	}
 	
 	if (not mandatory.empty())
-		mValidator->reportError("In Category " + mName + " the following mandatory fields are missing: " + ba::join(mandatory, ", "));
-	
-	// check index?
-	if (mIndex)
 	{
-#if not defined(NDEBUG)
-		mIndex->validate();
-		for (auto r: *this)
-		{
-			if (mIndex->find(r.mData) != r.mData)
-				mValidator->reportError("Key not found in index for Category " + mName);
-		}
-#endif
+		mValidator->reportError("In Category " + mName + " the following mandatory fields are missing: " + ba::join(mandatory, ", "));
+		result = false;
 	}
+	
+//#if not defined(NDEBUG)
+//	// check index?
+//	if (mIndex)
+//	{
+//		mIndex->validate();
+//		for (auto r: *this)
+//		{
+//			if (mIndex->find(r.mData) != r.mData)
+//				mValidator->reportError("Key not found in index for Category " + mName);
+//		}
+//	}
+//#endif
 	
 	// validate all values
 	mandatory = mCatValidator->mMandatoryFields;
@@ -1525,6 +1541,7 @@ void Category::validate()
 			if (iv == nullptr)
 			{
 				mValidator->reportError("invalid field " + mColumns[cix].mName + " for Category " + mName);
+				result = false;
 				continue;
 			}
 			
@@ -1537,13 +1554,18 @@ void Category::validate()
 				}
 			}
 			
-			if (seen)
+			if (seen or ri != mHead)
 				continue;
 			
 			if (iv != nullptr and iv->mMandatory)
+			{
 				mValidator->reportError("missing mandatory field " + mColumns[cix].mName + " for Category " + mName);
+				result = false;
+			}
 		}
 	}
+	
+	return result;
 }
 
 const Validator& Category::getValidator() const
@@ -2257,7 +2279,7 @@ void File::load(istream& is)
 	if (saved != nullptr)
 	{
 		setValidator(saved);
-		validate();
+		(void)isValid();
 	}
 }
 
@@ -2299,7 +2321,7 @@ Datablock& File::operator[](const string& name)
 	return *result;
 }
 
-void File::validate()
+bool File::isValid()
 {
 	if (mValidator == nullptr)
 	{
@@ -2309,8 +2331,10 @@ void File::validate()
 		loadDictionary();
 	}
 
+	bool result = true;
 	for (auto d = mHead; d != nullptr; d = d->mNext)
-		d->validate();
+		result = d->isValid() and result;
+	return result;
 }
 
 const Validator& File::getValidator() const
@@ -2327,30 +2351,47 @@ void File::loadDictionary()
 
 void File::loadDictionary(const char* dict)
 {
-	fs::path dictFile = string("dictionaries/") + dict + ".dic";
-	
-#if defined(USE_RSRC)
-	mrsrc::rsrc dictData(dictFile.string());
-
-	if (not dictData)
-		throw invalid_argument("no such dictionary");
-	
-	struct membuf : public streambuf
+	for (;;)
 	{
-		membuf(char* dict, size_t length)
+		string name(dict);
+		
+		if (fs::exists(name))
 		{
-			this->setg(dict, dict, dict + length);
+			fs::ifstream is(name);
+			loadDictionary(is);
+			break;
 		}
-	} buffer(const_cast<char*>(dictData.data()), dictData.size());
+		
+		fs::path dictFile = string("dictionaries/") + dict + ".dic";
+		if (fs::exists(dictFile))
+		{
+			fs::ifstream is(dictFile);
+			loadDictionary(is);
+			break;
+		}
+		
+#if defined(USE_RSRC)
+		mrsrc::rsrc dictData(dictFile.string());
 	
-	istream is(&buffer);
-#else
-	if (not fs::exists(dictFile))
-		throw runtime_error("Dictionary not found (" + dictFile.string() + ")");
-	fs::ifstream is(dictFile);
+		if (dictData)
+		{
+			struct membuf : public streambuf
+			{
+				membuf(char* dict, size_t length)
+				{
+					this->setg(dict, dict, dict + length);
+				}
+			} buffer(const_cast<char*>(dictData.data()), dictData.size());
+			
+			istream is(&buffer);
+			
+			loadDictionary(is);
+			break;
+		}
 #endif
-
-	loadDictionary(is);
+		
+		throw runtime_error("Dictionary not found or defined (" + name + ")");
+	}
 }
 
 void File::loadDictionary(istream& is)

@@ -5539,5 +5539,6 @@ void ReadPDBFile(istream& pdbFile, cif::File& cifFile)
 
 	p.Parse(pdbFile, cifFile);
 	
-	cifFile.validate();
+	if (not cifFile.isValid())
+		throw runtime_error("Resulting mmCIF file is invalid");
 }
