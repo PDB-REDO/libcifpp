@@ -131,7 +131,8 @@ BondMap::BondMap(const Structure& p)
 		auto* compound = mmcif::Compound::create(c);
 		if (not compound)
 		{
-			cerr << "Missing compound information for " << c << endl;
+			if (VERBOSE)
+				cerr << "Missing compound information for " << c << endl;
 			continue;
 		}
 		
