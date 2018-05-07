@@ -1174,12 +1174,16 @@ Compound* CompoundFactoryImpl::create(std::string id)
 				if (not fs::exists(resFile))
 					mMissing.insert(id);
 				else
+				{
 					mCompounds.push_back(new Compound(resFile, id, name, group));
+					result = mCompounds.back();
+				}
 			}				
 			else
+			{
 				mCompounds.push_back(new Compound(mPath, id, name, group));
-
-			result = mCompounds.back();
+				result = mCompounds.back();
+			}
 		}
 		
 		if (result == nullptr and mNext != nullptr)
