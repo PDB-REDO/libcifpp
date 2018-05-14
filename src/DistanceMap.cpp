@@ -3,6 +3,7 @@
 #include "cif++/Config.h"
 
 #include <atomic>
+#include <mutex>
 
 #include <boost/thread.hpp>
 
@@ -44,12 +45,17 @@ vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegrou
 DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
 	: dim(0)
 {
+	const float kMaxDistance = 5, kMaxDistanceSQ = kMaxDistance * kMaxDistance;
+	
 	auto atoms = p.atoms();
 	dim = atoms.size();
 	
-	dist = vector<float>(dim * (dim - 1), 0.f);
 	vector<clipper::Coord_orth> locations(dim);
 	vector<bool> isWater(dim, false);
+	
+	// bounding box
+	Point pMin(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max()),
+		  pMax(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
 	
 	for (auto& atom: atoms)
 	{
@@ -58,7 +64,26 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		
 		locations[ix] = atom.location();
 		isWater[ix] = atom.isWater();
+		
+		auto p = atom.location();
+
+		if (pMin.mX > p.mX)
+			pMin.mX = p.mX;
+		if (pMin.mY > p.mY)
+			pMin.mY = p.mY;
+		if (pMin.mZ > p.mZ)
+			pMin.mZ = p.mZ;
+
+		if (pMax.mX < p.mX)
+			pMax.mX = p.mX;
+		if (pMax.mY < p.mY)
+			pMax.mY = p.mY;
+		if (pMax.mZ < p.mZ)
+			pMax.mZ = p.mZ;
 	};
+	
+	pMin -= kMaxDistance;	// extend bounding box
+	pMax += kMaxDistance;
 
 	vector<clipper::RTop_orth> rtOrth = AlternativeSites(spacegroup, cell);
 	
@@ -67,6 +92,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	boost::thread_group t;
 	size_t N = boost::thread::hardware_concurrency();
 	atomic<size_t> next(0);
+	mutex m;
 
 	for (size_t i = 0; i < N; ++i)
 		t.create_thread([&]()
@@ -77,7 +103,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 				
 				if (i >= locations.size())
 					break;
-				
+
 				for (size_t j = i + 1; j < locations.size(); ++j)
 				{
 //					if (not (isWater[i] or isWater[j]))
@@ -90,15 +116,25 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 					{
 						auto p = locations[j].transform(rt);
 						
+						if (p[0] < pMin.mX or p[1] < pMin.mY or p[2] < pMin.mZ or
+						 	p[0] > pMax.mX or p[1] > pMax.mY or p[2] > pMax.mZ)
+						{
+						 	continue;
+						}
+						
 						double r2 = (locations[i] - p).lengthsq();
 						if (minR2 > r2)
 							minR2 = r2;
 					}
 		
-					size_t ix = j + i * dim - i * (i + 1) / 2;
-					
-					assert(ix < dist.size());
-					dist[ix] = sqrt(minR2);
+					if (minR2 < kMaxDistanceSQ)
+					{
+						float d = sqrt(minR2);
+						auto k = make_tuple(i, j);
+						
+						lock_guard<mutex> lock(m);
+						dist[k] = d;
+					}
 				}
 
 				progress.consumed(1);
@@ -113,8 +149,6 @@ DistanceMap::DistanceMap(const vector<Atom>& atoms)
 {
 	dim = atoms.size();
 	
-	dist = vector<float>(dim * (dim - 1), 0.f);
-	
 	for (auto& atom: atoms)
 	{
 		size_t ix = index.size();
@@ -125,9 +159,7 @@ DistanceMap::DistanceMap(const vector<Atom>& atoms)
 	{
 		for (size_t j = i + 1; j < dim; ++j)
 		{
-			size_t ix = j + i * dim - i * (i + 1) / 2;
-			assert(ix < dist.size());
-			dist[ix] = Distance(atoms[i].location(), atoms[j].location());
+			dist[make_tuple(i, j)] = Distance(atoms[i].location(), atoms[j].location());
 		}
 	}
 }
@@ -157,10 +189,16 @@ float DistanceMap::operator()(const Atom& a, const Atom& b) const
 	if (ixb < ixa)
 		swap(ixa, ixb);
 	
-	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+	tuple<size_t,size_t> k{ ixa, ixb };
+
+	auto ii = dist.find(k);
+
+	float result = 100;
 	
-	assert(ix < dist.size());
-	return dist[ix];
+	if (ii != dist.end())
+		result = ii->second;
+	
+	return result;
 }
 
 vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
@@ -185,15 +223,12 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 		if (ixb == ixa)
 			continue;
 		
-		size_t ix;
+		auto ii = 
+			ixa < ixb ?
+				dist.find(make_tuple(ixa, ixb)) :
+				dist.find(make_tuple(ixb, ixa));
 		
-		if (ixa < ixb)
-			ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
-		else
-			ix = ixa + ixb * dim - ixb * (ixb + 1) / 2;
-		
-		assert(ix < dist.size());
-		if (dist[ix] != 0 and dist[ix] <= maxDistance)
+		if (ii != dist.end() and ii->second <= maxDistance)
 			result.emplace_back(f, i.first);
 	}
 	

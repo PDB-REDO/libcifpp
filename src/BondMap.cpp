@@ -36,7 +36,7 @@ BondMap::BondMap(const Structure& p)
 		if (ixb < ixa)
 			swap(ixa, ixb);
 		
-		uint32 ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+		size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
 		
 		assert(ix < bond.size());
 		bond[ix] = true;
@@ -80,11 +80,11 @@ BondMap::BondMap(const Structure& p)
 		}
 		
 		auto c = db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == lastSeqID and cif::Key("label_atom_id") == "C");
-		if (c.size() != 1)
+		if (c.size() != 1 and VERBOSE > 1)
 			cerr << "Unexpected number (" << c.size() << ") of atoms with atom ID C in asym_id " << asymId << " with seq id " << lastSeqID << endl;
 		
 		auto n = db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == seqId and cif::Key("label_atom_id") == "N");
-		if (n.size() != 1)
+		if (n.size() != 1 and VERBOSE > 1)
 			cerr << "Unexpected number (" << n.size() << ") of atoms with atom ID N in asym_id " << asymId << " with seq id " << seqId << endl;
 		
 		if (not (c.empty() or n.empty()))
@@ -107,7 +107,7 @@ BondMap::BondMap(const Structure& p)
 				db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_atom_id") == atomId1) :
 				db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_seq_id") == seqId1 and cif::Key("label_atom_id") == atomId1);
 		
-		if (a.size() != 1)
+		if (a.size() != 1 and VERBOSE > 1)
 			cerr << "Unexpected number (" << a.size() << ") of atoms for link with asym_id " << asym1 << " seq_id " << seqId1 << " atom_id " << atomId1 << endl;
 		
 		auto b =
@@ -115,7 +115,7 @@ BondMap::BondMap(const Structure& p)
 				db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_atom_id") == atomId2) :
 				db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_seq_id") == seqId2 and cif::Key("label_atom_id") == atomId2);
 
-		if (b.size() != 1)
+		if (b.size() != 1 and VERBOSE > 1)
 			cerr << "Unexpected number (" << b.size() << ") of atoms for link with asym_id " << asym2 << " seq_id " << seqId2 << " atom_id " << atomId2 << endl;
 		
 		if (not (a.empty() or b.empty()))
@@ -186,7 +186,7 @@ BondMap::BondMap(const Structure& p)
 						if (ixb < ixa)
 							swap(ixa, ixb);
 						
-						uint32 ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+						size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
 						
 						assert(ix < bond.size());
 						bond[ix] = true;
@@ -201,13 +201,13 @@ BondMap::BondMap(const Structure& p)
 
 bool BondMap::operator()(const Atom& a, const Atom& b) const
 {
-	uint32 ixa = index.at(a.id());
-	uint32 ixb = index.at(b.id());
+	size_t ixa = index.at(a.id());
+	size_t ixb = index.at(b.id());
 	
 	if (ixb < ixa)
 		swap(ixa, ixb);
 	
-	uint32 ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
 	
 	assert(ix < bond.size());
 	return bond[ix];

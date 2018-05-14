@@ -21,7 +21,7 @@ class BondMap
 	
   private:
 
-	uint32 dim;
+	size_t dim;
 	std::vector<bool> bond;
 	std::unordered_map<std::string,size_t> index;
 };

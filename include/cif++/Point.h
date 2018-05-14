@@ -63,11 +63,29 @@ struct Point
 		return *this;
 	}
 	
+	Point& operator+=(float d)
+	{
+		mX += d;
+		mY += d;
+		mZ += d;
+		
+		return *this;
+	}
+
 	Point& operator-=(const Point& rhs)
 	{
 		mX -= rhs.mX;
 		mY -= rhs.mY;
 		mZ -= rhs.mZ;
+		
+		return *this;
+	}
+
+	Point& operator-=(float d)
+	{
+		mX -= d;
+		mY -= d;
+		mZ -= d;
 		
 		return *this;
 	}

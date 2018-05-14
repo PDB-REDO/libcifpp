@@ -4,6 +4,8 @@
 
 #include <unordered_map>
 
+//#include <boost/hash/hash.hpp>
+
 #include <clipper/clipper.h>
 
 #include "cif++/Structure.h"
@@ -28,8 +30,19 @@ class DistanceMap
   private:
 
 	size_t dim;
-	std::vector<float> dist;
 	std::unordered_map<std::string,size_t> index;
+	
+	struct key_hash
+	{
+		size_t operator()(std::tuple<size_t,size_t> const& k) const noexcept
+		{
+			size_t i[2];
+			std::tie(i[0], i[1]) = k;
+			return boost::hash_range(i, i + 1);
+		}
+	};
+	
+	std::unordered_map<std::tuple<size_t,size_t>,float,key_hash> dist;
 };
 
 }
