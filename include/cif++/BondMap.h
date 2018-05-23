@@ -17,9 +17,16 @@ class BondMap
 	BondMap(const BondMap&) = delete;
 	BondMap& operator=(const BondMap&) = delete;
 
-	bool operator()(const Atom& a, const Atom& b) const;
+	bool operator()(const Atom& a, const Atom& b) const
+	{
+		return isBonded(index.at(a.id()), index.at(b.id()));
+	}
+
+	bool is1_4(const Atom& a, const Atom& b) const;
 	
   private:
+
+	bool isBonded(size_t ai, size_t bi) const;
 
 	size_t dim;
 	std::vector<bool> bond;

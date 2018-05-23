@@ -199,7 +199,32 @@ BondMap::BondMap(const Structure& p)
 	}
 }
 
-bool BondMap::operator()(const Atom& a, const Atom& b) const
+//bool BondMap::operator()(const Atom& a, const Atom& b) const
+//{
+//	size_t ixa = index.at(a.id());
+//	size_t ixb = index.at(b.id());
+//	
+//	if (ixb < ixa)
+//		swap(ixa, ixb);
+//	
+//	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+//	
+//	assert(ix < bond.size());
+//	return bond[ix];
+//}
+
+bool BondMap::isBonded(size_t ixa, size_t ixb) const
+{
+	if (ixa > ixb)
+		swap(ixa, ixb);
+	
+	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+	
+	assert(ix < bond.size());
+	return bond[ix];
+}
+
+bool BondMap::is1_4(const Atom& a, const Atom& b) const
 {
 	size_t ixa = index.at(a.id());
 	size_t ixb = index.at(b.id());
@@ -207,10 +232,23 @@ bool BondMap::operator()(const Atom& a, const Atom& b) const
 	if (ixb < ixa)
 		swap(ixa, ixb);
 	
-	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+	bool result = false;
 	
-	assert(ix < bond.size());
-	return bond[ix];
+	for (size_t ia = 0; result == false and ia + 1 < dim; ++ia)
+	{
+		if (ia == ixa or ia == ixb)
+			continue;
+		
+		for (size_t ib = ia + 1; result == false and ib < dim; ++ib)
+		{
+			if (ib == ixa or ib == ixb)
+				continue;
+			
+			result = isBonded(ixa, ia) and isBonded(ia, ib) and isBonded(ib, ixb);
+		}
+	}
+	
+	return result;
 }
 
 }

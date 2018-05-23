@@ -133,6 +133,10 @@ class Atom
 	void calculateRadius(float resHigh, float resLow, float perc);
 	float radius() const;
 
+
+	// the energy-type field
+	std::string energyType() const;
+
   private:
  	struct AtomImpl*			mImpl;
 };
