@@ -377,6 +377,16 @@ int Atom::charge() const
 	return property<int>("pdbx_formal_charge");
 }
 
+string Atom::energyType() const
+{
+	string result;
+	
+	if (mImpl and mImpl->mCompound)
+		result = mImpl->mCompound->getAtomById(mImpl->mAtomID).typeEnergy;
+	
+	return result;
+}
+
 float Atom::uIso() const
 {
 	float result;

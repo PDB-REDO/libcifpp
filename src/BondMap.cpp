@@ -215,6 +215,9 @@ BondMap::BondMap(const Structure& p)
 
 bool BondMap::isBonded(size_t ixa, size_t ixb) const
 {
+	if (ixa == ixb)
+		return false;
+	
 	if (ixa > ixb)
 		swap(ixa, ixb);
 	
