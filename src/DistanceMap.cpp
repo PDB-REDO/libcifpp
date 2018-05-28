@@ -17,6 +17,15 @@ namespace mmcif
 
 // --------------------------------------------------------------------
 
+inline ostream& operator<<(ostream& os, const Atom& a)
+{
+	os << a.labelAsymId() << ':' << a.labelSeqId() << '/' << a.labelAtomId();
+	
+	return os;
+}
+
+// --------------------------------------------------------------------
+
 vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegroup,
 	const clipper::Cell& cell)
 {
@@ -85,7 +94,8 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	pMin -= kMaxDistance;	// extend bounding box
 	pMax += kMaxDistance;
 
-	vector<clipper::RTop_orth> rtOrth = AlternativeSites(spacegroup, cell);
+	vector<clipper::RTop_orth>
+		rtOrth = AlternativeSites(spacegroup, cell);
 	
 	cif::Progress progress(locations.size() - 1, "Creating distance map");
 	
@@ -93,7 +103,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	size_t N = boost::thread::hardware_concurrency();
 	atomic<size_t> next(0);
 	mutex m;
-
+	
 	for (size_t i = 0; i < N; ++i)
 		t.create_thread([&]()
 		{
@@ -103,30 +113,42 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 				
 				if (i >= locations.size())
 					break;
+				
+				clipper::Coord_orth pi = locations[i];
+				pi[0] = fmod(pi[0], cell.a());
+				pi[1] = fmod(pi[1], cell.b());
+				pi[2] = fmod(pi[2], cell.c());
 
 				for (size_t j = i + 1; j < locations.size(); ++j)
 				{
 //					if (not (isWater[i] or isWater[j]))
 //						continue;
-					
+
 					// find nearest location based on spacegroup/cell
 					double minR2 = numeric_limits<double>::max();
 					
-					for (const auto& rt: rtOrth)
+					for (auto rt: rtOrth)
 					{
-						auto p = locations[j].transform(rt);
+						auto pj = locations[j];
 						
-						if (p[0] < pMin.mX or p[1] < pMin.mY or p[2] < pMin.mZ or
-						 	p[0] > pMax.mX or p[1] > pMax.mY or p[2] > pMax.mZ)
-						{
-						 	continue;
-						}
+						pj[0] = fmod(pj[0], cell.a());
+						pj[1] = fmod(pj[1], cell.b());
+						pj[2] = fmod(pj[2], cell.c());
 						
-						double r2 = (locations[i] - p).lengthsq();
+						pj = pj.transform(rt);
+						double r2 = (pi - pj).lengthsq();
+
 						if (minR2 > r2)
 							minR2 = r2;
+
+#if DEBUG_VOOR_BART
+						if (r2 < 3.5 * 3.5 and not rt.equals(clipper::RTop<>::identity(), 0.1))
+							cout << "symmetry contact between "
+								 << atoms[i] << " at " << pi << " and "
+								 << atoms[j] << " at " << pj << endl;
+#endif
 					}
-		
+					
 					if (minR2 < kMaxDistanceSQ)
 					{
 						float d = sqrt(minR2);
