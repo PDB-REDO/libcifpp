@@ -132,7 +132,8 @@ class Atom
 	// Radius calculation based on integrating the density until perc of electrons is found
 	void calculateRadius(float resHigh, float resLow, float perc);
 	float radius() const;
-
+	
+	// access data in compound for this atom
 
 	// the energy-type field
 	std::string energyType() const;

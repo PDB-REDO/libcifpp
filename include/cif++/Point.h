@@ -100,9 +100,9 @@ struct Point
 	
 	Point& operator/=(float rhs)
 	{
-		mX *= rhs;
-		mY *= rhs;
-		mZ *= rhs;
+		mX /= rhs;
+		mY /= rhs;
+		mZ /= rhs;
 		return *this;
 	}
 
