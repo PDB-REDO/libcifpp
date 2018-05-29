@@ -7,6 +7,7 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/format.hpp>
 
 #include "cif++/PDB2Cif.h"
 #include "cif++/CifParser.h"
@@ -241,9 +242,15 @@ struct AtomImpl
 	
 	void moveTo(const Point& p)
 	{
-		mRow["Cartn_x"] = p.getX();
-		mRow["Cartn_y"] = p.getY();
-		mRow["Cartn_z"] = p.getZ();
+//		mRow["Cartn_x"] = p.getX();
+//		mRow["Cartn_y"] = p.getY();
+//		mRow["Cartn_z"] = p.getZ();
+
+		boost::format kPosFmt("%.3f");
+
+		mRow["Cartn_x"] = (kPosFmt % p.getX()).str();
+		mRow["Cartn_y"] = (kPosFmt % p.getY()).str();
+		mRow["Cartn_z"] = (kPosFmt % p.getZ()).str();
 
 		mLocation = p;
 	}
