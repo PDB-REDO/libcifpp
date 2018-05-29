@@ -175,6 +175,11 @@ inline Point operator*(const Point& pt, float f)
 	return Point(pt.mX * f, pt.mY * f, pt.mZ * f);
 }
 
+inline Point operator*(float f, const Point& pt)
+{
+	return Point(pt.mX * f, pt.mY * f, pt.mZ * f);
+}
+
 inline Point operator/(const Point& pt, float f)
 {
 	return Point(pt.mX / f, pt.mY / f, pt.mZ / f);
