@@ -68,6 +68,18 @@ struct CompoundAngle
 // struct containing information about the bond-angles
 // This information comes from the CCP4 monomer library. 
 
+struct CompoundTorsion
+{
+	std::string		atomID[4];
+	float			angle;
+	float			esd;
+	int				period;
+};
+
+// --------------------------------------------------------------------
+// struct containing information about the bond-angles
+// This information comes from the CCP4 monomer library. 
+
 struct CompoundPlane
 {
 	std::string					id;
@@ -127,6 +139,7 @@ class Compound
 	std::vector<CompoundChiralCentre> chiralCentres() const
 													{ return mChiralCentres; }
 	std::vector<CompoundPlane> planes() const		{ return mPlanes; }
+	std::vector<CompoundTorsion> torsions() const	{ return mTorsions; }
 	
 	CompoundAtom getAtomById(const std::string& atomId) const;
 	
@@ -157,6 +170,7 @@ class Compound
 	std::vector<CompoundAtom>	mAtoms;
 	std::vector<CompoundBond>	mBonds;
 	std::vector<CompoundAngle>	mAngles;
+	std::vector<CompoundTorsion>mTorsions;
 	std::vector<CompoundChiralCentre>
 								mChiralCentres;
 	std::vector<CompoundPlane>	mPlanes;
@@ -189,6 +203,18 @@ struct LinkAngle
 	LinkAtom			atom[3];
 	float				angle;
 	float				esd;
+};
+
+// --------------------------------------------------------------------
+// struct containing information about the bond-torsions
+// This information comes from the CCP4 monomer library. 
+
+struct LinkTorsion
+{
+	LinkAtom			atom[4];
+	float				angle;
+	float				esd;
+	int					period;
 };
 
 // --------------------------------------------------------------------
@@ -233,6 +259,7 @@ class Link
 	std::vector<LinkAngle> angles() const				{ return mAngles; }
 	std::vector<LinkChiralCentre> chiralCentres() const	{ return mChiralCentres; }
 	std::vector<LinkPlane> planes() const				{ return mPlanes; }
+	std::vector<LinkTorsion> torsions() const			{ return mTorsions; }
 	
   private:
 
@@ -241,6 +268,7 @@ class Link
 	std::string						mId;
 	std::vector<LinkBond>			mBonds;
 	std::vector<LinkAngle>			mAngles;
+	std::vector<LinkTorsion>		mTorsions;
 	std::vector<LinkChiralCentre>	mChiralCentres;
 	std::vector<LinkPlane>			mPlanes;
 };

@@ -356,9 +356,7 @@ Compound::Compound(const fs::path& file, const std::string& id,
 		}
 		sort(mBonds.begin(), mBonds.end(), CompoundBondLess());
 
-		auto& compAngles = db["chem_comp_angle"];
-		
-		for (auto row: compAngles)
+		for (auto row: db["chem_comp_angle"])
 		{
 			CompoundAngle a;
 			
@@ -368,9 +366,17 @@ Compound::Compound(const fs::path& file, const std::string& id,
 			mAngles.push_back(a);
 		}
 
-		auto& compChir = db["chem_comp_chir"];
-		
-		for (auto row: compChir)
+		for (auto row: db["chem_comp_tor"])
+		{
+			CompoundTorsion a;
+			
+			cif::tie(a.atomID[0], a.atomID[1], a.atomID[2], a.atomID[3], a.angle, a.esd, a.period) =
+				row.get("atom_id_1", "atom_id_2", "atom_id_3", "atom_id_4", "value_angle", "value_angle_esd", "period");
+			
+			mTorsions.push_back(a);
+		}
+
+		for (auto row: db["chem_comp_chir"])
 		{
 			CompoundChiralCentre cc;
 			string volumeSign;
@@ -837,6 +843,20 @@ Link::Link(cif::Datablock& db)
 				"atom_3_comp_id", "atom_id_3", "value_angle", "value_angle_esd");
 		
 		mAngles.push_back(a);
+	}
+
+	for (auto row: db["chem_link_tor"])
+	{
+		LinkTorsion a;
+		
+		cif::tie(a.atom[0].compID, a.atom[0].atomID, a.atom[1].compID, a.atom[1].atomID,
+				a.atom[2].compID, a.atom[2].atomID, a.atom[3].compID, a.atom[3].atomID,
+				a.angle, a.esd, a.period) =
+			row.get("atom_1_comp_id", "atom_id_1", "atom_2_comp_id", "atom_id_2",
+				"atom_3_comp_id", "atom_id_3", "atom_4_comp_id", "atom_id_4",
+				"value_angle", "value_angle_esd", "period");
+		
+		mTorsions.push_back(a);
 	}
 
 	auto& linkChir = db["chem_link_chir"];

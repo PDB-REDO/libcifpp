@@ -51,6 +51,17 @@ vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegrou
 
 // --------------------------------------------------------------------
 
+inline clipper::Coord_orth toCell(clipper::Coord_orth p, const clipper::Cell& cell)
+{
+	while (p[0] < 0)			p[0] += cell.a();
+	while (p[0] > cell.a())		p[0] -= cell.a();
+	while (p[1] < 0)			p[1] += cell.b();
+	while (p[1] > cell.a())		p[1] -= cell.b();
+	while (p[2] < 0)			p[2] += cell.c();
+	while (p[2] > cell.a())		p[2] -= cell.c();
+	return p;
+}
+
 DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
 	: dim(0)
 {
@@ -114,10 +125,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 				if (i >= locations.size())
 					break;
 				
-				clipper::Coord_orth pi = locations[i];
-				pi[0] = fmod(pi[0], cell.a());
-				pi[1] = fmod(pi[1], cell.b());
-				pi[2] = fmod(pi[2], cell.c());
+				clipper::Coord_orth pi = toCell(locations[i], cell);
 
 				for (size_t j = i + 1; j < locations.size(); ++j)
 				{
@@ -129,11 +137,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 					
 					for (auto rt: rtOrth)
 					{
-						auto pj = locations[j];
-						
-						pj[0] = fmod(pj[0], cell.a());
-						pj[1] = fmod(pj[1], cell.b());
-						pj[2] = fmod(pj[2], cell.c());
+						auto pj = toCell(locations[j], cell);
 						
 						pj = pj.transform(rt);
 						double r2 = (pi - pj).lengthsq();

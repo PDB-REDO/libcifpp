@@ -199,20 +199,6 @@ BondMap::BondMap(const Structure& p)
 	}
 }
 
-//bool BondMap::operator()(const Atom& a, const Atom& b) const
-//{
-//	size_t ixa = index.at(a.id());
-//	size_t ixb = index.at(b.id());
-//	
-//	if (ixb < ixa)
-//		swap(ixa, ixb);
-//	
-//	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
-//	
-//	assert(ix < bond.size());
-//	return bond[ix];
-//}
-
 bool BondMap::isBonded(size_t ixa, size_t ixb) const
 {
 	if (ixa == ixb)
