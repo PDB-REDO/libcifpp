@@ -95,10 +95,10 @@ string cif2pdbDate(const string& d)
 		int year = stoi(m[1].str());
 		int month = stoi(m[2].str());
 		
-		if (m.size() == 3)
-			result = (boost::format("%3.3s-%02.2d") % kMonths[month - 1] % (year % 100)).str();
-		else
+		if (m[3].matched)
 			result = (boost::format("%02.2d-%3.3s-%02.2d") % stoi(m[3].str()) % kMonths[month - 1] % (year % 100)).str();
+		else
+			result = (boost::format("%3.3s-%02.2d") % kMonths[month - 1] % (year % 100)).str();
 	}
 	
 	return result;
