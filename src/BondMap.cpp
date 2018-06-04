@@ -225,15 +225,16 @@ bool BondMap::is1_4(const Atom& a, const Atom& b) const
 	
 	for (size_t ia = 0; result == false and ia + 1 < dim; ++ia)
 	{
-		if (ia == ixa or ia == ixb)
+		if (ia == ixa or ia == ixb or not isBonded(ixa, ia))
 			continue;
 		
 		for (size_t ib = ia + 1; result == false and ib < dim; ++ib)
 		{
-			if (ib == ixa or ib == ixb)
+			if (ib == ixa or ib == ixb or not isBonded(ib, ixb))
 				continue;
-			
-			result = isBonded(ixa, ia) and isBonded(ia, ib) and isBonded(ib, ixb);
+
+			size_t ix = ib + ia * dim - ia * (ia + 1) / 2;
+			result = bond[ix];
 		}
 	}
 	
