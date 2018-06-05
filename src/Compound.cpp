@@ -750,39 +750,6 @@ float Compound::chiralVolume(const string& centreID) const
 		float cosc = cos(gamma * kPI / 180);
 		
 		result = (a * b * c * sqrt(1 + 2 * cosa * cosb * cosc - (cosa * cosa) - (cosb * cosb) - (cosc * cosc))) / 6;
-//
-//		
-//		// the bond angles for the top of the tetrahedron
-//		float b[3] =
-//		{
-//			bondAngle(cv.atomID[0], cv.atomIDCentre, cv.atomID[1]),
-//			bondAngle(cv.atomID[1], cv.atomIDCentre, cv.atomID[2]),
-//			bondAngle(cv.atomID[2], cv.atomIDCentre, cv.atomID[0])
-//		};
-//		
-//		// the edges
-//		
-//		float a[6] =
-//		{
-//			atomBondValue(cv.atomIDCentre, cv.atomID[0]),
-//			atomBondValue(cv.atomIDCentre, cv.atomID[1]),
-//			atomBondValue(cv.atomIDCentre, cv.atomID[2])
-//		};
-//		
-//		a[3] = calcC(a[0], a[1], b[0]);
-//		a[4] = calcC(a[1], a[2], b[1]);
-//		a[5] = calcC(a[2], a[0], b[2]);
-//		
-//		for (auto& i: a)
-//			i *= i;
-//		
-//		float v2 =
-//			a[0] * a[5] * (a[1] + a[2] + a[3] + a[5] - a[0] - a[4]) +
-//			a[1] * a[5] * (a[0] + a[2] + a[3] + a[4] - a[1] - a[5]) +
-//			a[2] * a[3] * (a[0] + a[1] + a[4] + a[5] - a[2] - a[3]) -
-//			a[0] * a[1] * a[3] - a[1] * a[2] * a[4] - a[0] * a[2] * a[5] - a[3] * a[4] * a[5];
-//		
-//		result = sqrt(v2 / 144);
 		
 		if (cv.volumeSign == negativ)
 			result = -result;
@@ -924,6 +891,74 @@ const Link& Link::create(const std::string& id)
 
 Link::~Link()
 {
+}
+
+float Link::atomBondValue(const LinkAtom& atom1, const LinkAtom& atom2) const
+{
+	auto i = find_if(mBonds.begin(), mBonds.end(),
+		[&](auto& b)
+		{
+			return (b.atom[0] == atom1 and b.atom[1] == atom2)
+				or (b.atom[0] == atom2 and b.atom[1] == atom1);
+		});
+	
+	return i != mBonds.end() ? i->distance : 0;
+}
+
+float Link::bondAngle(const LinkAtom& atom1, const LinkAtom& atom2, const LinkAtom& atom3) const
+{
+	float result = nanf("1");
+	
+	for (auto& a: mAngles)
+	{
+		if (not (a.atom[1] == atom2 and
+				 ((a.atom[0] == atom1 and a.atom[2] == atom3) or
+				  (a.atom[2] == atom1 and a.atom[0] == atom3))))
+			continue;
+		
+		result = a.angle;
+		break;
+	}
+	
+	return result;
+}
+
+float Link::chiralVolume(const string& centreID) const
+{
+	float result = 0;
+	
+	for (auto& cv: mChiralCentres)
+	{
+		if (cv.id != centreID)
+			continue;
+		
+		// calculate the expected chiral volume
+
+		// the edges
+		
+		float a = atomBondValue(cv.atomCentre, cv.atom[0]);
+		float b = atomBondValue(cv.atomCentre, cv.atom[1]);
+		float c = atomBondValue(cv.atomCentre, cv.atom[2]);
+		
+		// the angles for the top of the tetrahedron
+		
+		float alpha = bondAngle(cv.atom[0], cv.atomCentre, cv.atom[1]);
+		float beta  = bondAngle(cv.atom[1], cv.atomCentre, cv.atom[2]);
+		float gamma = bondAngle(cv.atom[2], cv.atomCentre, cv.atom[0]);
+		
+		float cosa = cos(alpha * kPI / 180);
+		float cosb = cos(beta * kPI / 180);
+		float cosc = cos(gamma * kPI / 180);
+		
+		result = (a * b * c * sqrt(1 + 2 * cosa * cosb * cosc - (cosa * cosa) - (cosb * cosb) - (cosc * cosc))) / 6;
+		
+		if (cv.volumeSign == negativ)
+			result = -result;
+		
+		break;
+	}
+	
+	return result;
 }
 
 // --------------------------------------------------------------------

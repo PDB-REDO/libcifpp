@@ -24,6 +24,18 @@ extern int VERBOSE;
 
 namespace mmcif
 {
+
+// DSSP constants	
+const double
+	kSSBridgeDistance = 3.0,
+	kMinimalDistance = 0.5,
+	kMinimalCADistance = 9.0,
+	kMinHBondEnergy = -9.9,
+	kMaxHBondEnergy = -0.5,
+	kCouplingConstant = -27.888,	//	= -332 * 0.42 * 0.2
+	kMaxPeptideBondLength = 2.5;
+
+	
 	
 // --------------------------------------------------------------------
 // FileImpl
@@ -942,6 +954,8 @@ struct StructureImpl
 	AtomView		mAtoms;
 };
 
+// --------------------------------------------------------------------
+
 void StructureImpl::insertCompound(const string& compoundID, bool isEntity)
 {
 	auto compound = Compound::create(compoundID);
@@ -1084,6 +1098,8 @@ void StructureImpl::changeResidue(Residue& res, const string& newCompound,
 	}
 }
 
+// --------------------------------------------------------------------
+
 Structure::Structure(File& f, uint32 modelNr)
 	: mImpl(new StructureImpl(*this, f, modelNr))
 {
@@ -1165,6 +1181,336 @@ vector<Residue> Structure::nonPolymers() const
 	
 	return result;
 }
+
+double Monomer::CalculateHBondEnergy(Monomer& inDonor, Monomer& inAcceptor)
+{
+	double result = 0;
+	
+	if (inDonor.compoundID() != "PRO")
+	{
+		double distanceHO = Distance(inDonor.H(), inAcceptor.O());
+		double distanceHC = Distance(inDonor.H(), inAcceptor.C());
+		double distanceNC = Distance(inDonor.N(), inAcceptor.C());
+		double distanceNO = Distance(inDonor.N(), inAcceptor.O());
+		
+		if (distanceHO < kMinimalDistance or distanceHC < kMinimalDistance or distanceNC < kMinimalDistance or distanceNO < kMinimalDistance)
+			result = kMinHBondEnergy;
+		else
+			result = kCouplingConstant / distanceHO - kCouplingConstant / distanceHC + kCouplingConstant / distanceNC - kCouplingConstant / distanceNO;
+
+		// DSSP compatibility mode:
+		result = round(result * 1000) / 1000;
+
+		if (result < kMinHBondEnergy)
+			result = kMinHBondEnergy;
+	}
+
+	// update donor
+	if (result < inDonor.mHBondAcceptor[0].energy)
+	{
+		inDonor.mHBondAcceptor[1] = inDonor.mHBondAcceptor[0];
+		inDonor.mHBondAcceptor[0].residue = &inAcceptor;
+		inDonor.mHBondAcceptor[0].energy = result;
+	}
+	else if (result < inDonor.mHBondAcceptor[1].energy)
+	{
+		inDonor.mHBondAcceptor[1].residue = &inAcceptor;
+		inDonor.mHBondAcceptor[1].energy = result;
+	}		
+
+	// and acceptor
+	if (result < inAcceptor.mHBondDonor[0].energy)
+	{
+		inAcceptor.mHBondDonor[1] = inAcceptor.mHBondDonor[0];
+		inAcceptor.mHBondDonor[0].residue = &inDonor;
+		inAcceptor.mHBondDonor[0].energy = result;
+	}
+	else if (result < inAcceptor.mHBondDonor[1].energy)
+	{
+		inAcceptor.mHBondDonor[1].residue = &inDonor;
+		inAcceptor.mHBondDonor[1].energy = result;
+	}		
+	
+	return result;
+}
+
+struct Bridge
+{
+	BridgeType		type;
+	uint32			sheet, ladder;
+	set<Bridge*>	link;
+	deque<uint32>	i, j;
+	string			chainI, chainJ;
+	
+	bool			operator<(const Bridge& b) const		{ return chainI < b.chainI or (chainI == b.chainI and i.front() < b.i.front()); }
+};
+
+
+void Structure::CalculateSecondaryStructure(bool inPreferPiHelices)
+{
+	auto polies = polymers();
+	
+	// CalculateHBondEnergies
+	
+	for (auto& poly: polies)
+	{
+		for (size_t i = 0; i + 1 < poly.size(); ++i)
+		{
+			auto ri = poly[i];
+			
+			for (size_t j = i + 1; j < poly.size(); ++j)
+			{
+				auto rj = poly[j];
+				
+				if (Distance(ri.CAlpha().location(), rj.CAlpha().location()) < kMinimalCADistance)
+				{
+					Monomer::CalculateHBondEnergy(ri, rj);
+					if (j != i + 1)
+						Monomer::CalculateHBondEnergy(rj, ri);
+				}
+			}
+		}
+	}
+	
+	// CalculateBetaSheets
+
+	vector<Bridge> bridges;
+	if (inResidues.size() > 4)
+	{
+		for (uint32 i = 1; i + 4 < inResidues.size(); ++i)
+		{
+			MResidue* ri = inResidues[i];
+			
+			for (uint32 j = i + 3; j + 1 < inResidues.size(); ++j)
+			{
+				MResidue* rj = inResidues[j];
+				
+				BridgeType type = ri->TestBridge(rj);
+				if (type == btNoBridge)
+					continue;
+				
+				bool found = false;
+				for (Bridge& bridge : bridges)
+				{
+					if (type != bridge.type or i != bridge.i.back() + 1)
+						continue;
+					
+					if (type == btParallel and bridge.j.back() + 1 == j)
+					{
+						bridge.i.push_back(i);
+						bridge.j.push_back(j);
+						found = true;
+						break;
+					}
+	
+					if (type == btAntiParallel and bridge.j.front() - 1 == j)
+					{
+						bridge.i.push_back(i);
+						bridge.j.push_front(j);
+						found = true;
+						break;
+					}
+				}
+				
+				if (not found)
+				{
+					Bridge bridge = {};
+					
+					bridge.type = type;
+					bridge.i.push_back(i);
+					bridge.chainI = ri->GetChainID();
+					bridge.j.push_back(j);
+					bridge.chainJ = rj->GetChainID();
+					
+					bridges.push_back(bridge);
+				}
+			}
+		}
+	}
+
+	// extend ladders
+	sort(bridges.begin(), bridges.end());
+	
+	for (uint32 i = 0; i < bridges.size(); ++i)
+	{
+		for (uint32 j = i + 1; j < bridges.size(); ++j)
+		{
+			uint32 ibi = bridges[i].i.front();
+			uint32 iei = bridges[i].i.back();
+			uint32 jbi = bridges[i].j.front();
+			uint32 jei = bridges[i].j.back();
+			uint32 ibj = bridges[j].i.front();
+			uint32 iej = bridges[j].i.back();
+			uint32 jbj = bridges[j].j.front();
+			uint32 jej = bridges[j].j.back();
+
+			if (bridges[i].type != bridges[j].type or
+				MResidue::NoChainBreak(inResidues[min(ibi, ibj)], inResidues[max(iei, iej)]) == false or
+				MResidue::NoChainBreak(inResidues[min(jbi, jbj)], inResidues[max(jei, jej)]) == false or
+				ibj - iei >= 6 or
+				(iei >= ibj and ibi <= iej))
+			{
+				continue;
+			}
+			
+			bool bulge;
+			if (bridges[i].type == btParallel)
+				bulge = ((jbj - jei < 6 and ibj - iei < 3) or (jbj - jei < 3));
+			else
+				bulge = ((jbi - jej < 6 and ibj - iei < 3) or (jbi - jej < 3));
+
+			if (bulge)
+			{
+				bridges[i].i.insert(bridges[i].i.end(), bridges[j].i.begin(), bridges[j].i.end());
+				if (bridges[i].type == btParallel)
+					bridges[i].j.insert(bridges[i].j.end(), bridges[j].j.begin(), bridges[j].j.end());
+				else
+					bridges[i].j.insert(bridges[i].j.begin(), bridges[j].j.begin(), bridges[j].j.end());
+				bridges.erase(bridges.begin() + j);
+				--j;
+			}
+		}
+	}
+
+	// Sheet
+	set<Bridge*> ladderset;
+	for (Bridge& bridge : bridges)
+	{
+		ladderset.insert(&bridge);
+		
+		uint32 n = bridge.i.size();
+		if (n > kHistogramSize)
+			n = kHistogramSize;
+		
+		if (bridge.type == btParallel)
+			mParallelBridgesPerLadderHistogram[n - 1] += 1;
+		else
+			mAntiparallelBridgesPerLadderHistogram[n - 1] += 1;
+	}
+	
+	uint32 sheet = 1, ladder = 0;
+	while (not ladderset.empty())
+	{
+		set<Bridge*> sheetset;
+		sheetset.insert(*ladderset.begin());
+		ladderset.erase(ladderset.begin());
+
+		bool done = false;
+		while (not done)
+		{
+			done = true;
+			for (Bridge* a : sheetset)
+			{
+				for (Bridge* b : ladderset)
+				{
+					if (Linked(*a, *b))
+					{
+						sheetset.insert(b);
+						ladderset.erase(b);
+						done = false;
+						break;
+					}
+				}
+				if (not done)
+					break;
+			}
+		}
+
+		for (Bridge* bridge : sheetset)
+		{
+			bridge->ladder = ladder;
+			bridge->sheet = sheet;
+			bridge->link = sheetset;
+			
+			++ladder;
+		}
+		
+		uint32 nrOfLaddersPerSheet = sheetset.size();
+		if (nrOfLaddersPerSheet > kHistogramSize)
+			nrOfLaddersPerSheet = kHistogramSize;
+		if (nrOfLaddersPerSheet == 1 and (*sheetset.begin())->i.size() > 1)
+			mLaddersPerSheetHistogram[0] += 1;
+		else if (nrOfLaddersPerSheet > 1)
+			mLaddersPerSheetHistogram[nrOfLaddersPerSheet - 1] += 1;
+		
+		++sheet;
+	}
+
+	for (Bridge& bridge : bridges)
+	{
+		// find out if any of the i and j set members already have
+		// a bridge assigned, if so, we're assigning bridge 2
+		
+		uint32 betai = 0, betaj = 0;
+		
+		for (uint32 l : bridge.i)
+		{
+			if (inResidues[l]->GetBetaPartner(0).residue != nullptr)
+			{
+				betai = 1;
+				break;
+			}
+		}
+
+		for (uint32 l : bridge.j)
+		{
+			if (inResidues[l]->GetBetaPartner(0).residue != nullptr)
+			{
+				betaj = 1;
+				break;
+			}
+		}
+		
+		SecondaryStructure ss = betabridge;
+		if (bridge.i.size() > 1)
+			ss = strand;
+		
+		if (bridge.type == btParallel)
+		{
+			mNrOfHBondsInParallelBridges += bridge.i.back() - bridge.i.front() + 2;
+			
+			deque<uint32>::iterator j = bridge.j.begin();
+			for (uint32 i : bridge.i)
+				inResidues[i]->SetBetaPartner(betai, inResidues[*j++], bridge.ladder, true);
+
+			j = bridge.i.begin();
+			for (uint32 i : bridge.j)
+				inResidues[i]->SetBetaPartner(betaj, inResidues[*j++], bridge.ladder, true);
+		}
+		else
+		{
+			mNrOfHBondsInAntiparallelBridges += bridge.i.back() - bridge.i.front() + 2;
+
+			deque<uint32>::reverse_iterator j = bridge.j.rbegin();
+			for (uint32 i : bridge.i)
+				inResidues[i]->SetBetaPartner(betai, inResidues[*j++], bridge.ladder, false);
+
+			j = bridge.i.rbegin();
+			for (uint32 i : bridge.j)
+				inResidues[i]->SetBetaPartner(betaj, inResidues[*j++], bridge.ladder, false);
+		}
+
+		for (uint32 i = bridge.i.front(); i <= bridge.i.back(); ++i)
+		{
+			if (inResidues[i]->GetSecondaryStructure() != strand)
+				inResidues[i]->SetSecondaryStructure(ss);
+			inResidues[i]->SetSheet(bridge.sheet);
+		}
+
+		for (uint32 i = bridge.j.front(); i <= bridge.j.back(); ++i)
+		{
+			if (inResidues[i]->GetSecondaryStructure() != strand)
+				inResidues[i]->SetSecondaryStructure(ss);
+			inResidues[i]->SetSheet(bridge.sheet);
+		}
+	}
+	
+	// CalculateAlphaHelices
+}
+
+
+
+
 
 Atom Structure::getAtomById(string id) const
 {

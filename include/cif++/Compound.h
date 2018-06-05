@@ -184,6 +184,8 @@ struct LinkAtom
 {
 	int					compID;
 	std::string			atomID;
+	
+	bool operator==(const LinkAtom& rhs) const { return compID == rhs.compID and atomID == rhs.atomID; }
 };
 
 struct LinkBond
@@ -260,6 +262,10 @@ class Link
 	std::vector<LinkChiralCentre> chiralCentres() const	{ return mChiralCentres; }
 	std::vector<LinkPlane> planes() const				{ return mPlanes; }
 	std::vector<LinkTorsion> torsions() const			{ return mTorsions; }
+	
+	float atomBondValue(const LinkAtom& atomId_1, const LinkAtom& atomId_2) const;
+	float bondAngle(const LinkAtom& atomId_1, const LinkAtom& atomId_2, const LinkAtom& atomId_3) const;
+	float chiralVolume(const std::string& id) const;
 	
   private:
 

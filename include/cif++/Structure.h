@@ -142,6 +142,11 @@ class Atom
  	struct AtomImpl*			mImpl;
 };
 
+inline double Distance(const Atom& a, const Atom& b)
+{
+	return Distance(a.location(), b.location());
+}
+
 typedef std::vector<Atom> AtomView;
 
 // --------------------------------------------------------------------
@@ -176,12 +181,53 @@ class Residue
 	
 	const Structure& structure() const		{ return *mStructure; }
 
+	
+
   protected:
 
 	const Structure* mStructure;
 	std::string	mCompoundID, mAsymID, mAltID;
 	int mSeqID;
 	mutable AtomView mAtoms;
+};
+
+// --------------------------------------------------------------------
+// We have DSSP built-in
+
+struct HBond
+{
+	Monomer*		residue;
+	double			energy;
+};
+
+enum BridgeType
+{
+	btNoBridge, btParallel, btAntiParallel
+};
+
+struct BridgeParner
+{
+	Monomer*		residue;
+	uint32			ladder;
+	bool			parallel;
+};
+
+enum HelixFlag
+{
+	helixNone, helixStart, helixEnd, helixStartAndEnd, helixMiddle
+};
+
+enum SecondaryStructure : char
+{
+	undefined	= 0,
+	loop		= ' ',
+	alphahelix	= 'H',
+	betabridge	= 'B',
+	strand		= 'E',
+	helix_3		= 'G',
+	helix_5		= 'I',
+	turn		= 'T',
+	bend		= 'S'
 };
 
 // --------------------------------------------------------------------
@@ -211,9 +257,23 @@ class Monomer : public Residue
 	Atom O() const			{ return atomByID("O"); }
 	Atom H() const			{ return atomByID("H"); }
 
+	SecondaryStructure secondaryStructure() const		{ return mSS; }
+
+	static double CalculateHBondEnergy(Monomer& donor, Monomer& acceptor);
+
   private:
-	Polymer*	mPolymer;
-	uint32		mIndex;
+	Polymer* mPolymer;
+	uint32 mIndex;
+
+	// DSSP info
+	SecondaryStructure mSS;
+	uint8 mSSBridgeNr;
+//	double				mAccessibility;
+	HBond mHBondDonor[2], mHBondAcceptor[2];
+	BridgeParner mBetaPartner[2];
+	uint32 mSheet;
+	HelixFlag mHelixFlags[3];	//
+	bool mBend;
 };
 
 // --------------------------------------------------------------------
@@ -371,6 +431,9 @@ class Structure
 	void moveAtom(Atom& a, Point p);	// move atom to a new location
 	void changeResidue(Residue& res, const std::string& newCompound,
 		const std::vector<std::tuple<std::string,std::string>>& remappedAtoms);
+
+	// DSSP
+	void CalculateSecondaryStructure(bool inPreferPiHelices = true);
 	
   private:
 	friend Polymer;

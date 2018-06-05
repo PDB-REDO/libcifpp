@@ -71,7 +71,6 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	dim = atoms.size();
 	
 	vector<clipper::Coord_orth> locations(dim);
-	vector<bool> isWater(dim, false);
 	
 	// bounding box
 	Point pMin(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max()),
@@ -82,8 +81,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		size_t ix = index.size();
 		index[atom.id()] = ix;
 		
-		locations[ix] = atom.location();
-		isWater[ix] = atom.isWater();
+		locations[ix] = toCell(atom.location(), cell);
 		
 		auto p = atom.location();
 
@@ -125,19 +123,16 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 				if (i >= locations.size())
 					break;
 				
-				clipper::Coord_orth pi = toCell(locations[i], cell);
+				clipper::Coord_orth pi = locations[i];
 
 				for (size_t j = i + 1; j < locations.size(); ++j)
 				{
-//					if (not (isWater[i] or isWater[j]))
-//						continue;
-
 					// find nearest location based on spacegroup/cell
 					double minR2 = numeric_limits<double>::max();
 					
 					for (auto rt: rtOrth)
 					{
-						auto pj = toCell(locations[j], cell);
+						auto pj = locations[j];
 						
 						pj = pj.transform(rt);
 						double r2 = (pi - pj).lengthsq();

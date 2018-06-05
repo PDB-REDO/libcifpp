@@ -93,6 +93,12 @@ class MapMaker
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
 		std::initializer_list<std::string> freeLabels = { "FREE" });
 
+	void recalc(const Structure& structure,
+		bool noBulk = false, AnisoScalingFlag anisoScaling = as_None,
+		float samplingRate = 4.5, bool electronScattering = false);
+
+	void printStats();
+
 	void writeMTZ(const boost::filesystem::path& file,
 		const std::string& project, const std::string& crystal);
 
@@ -109,6 +115,7 @@ class MapMaker
 	const Cell& cell() const					{ return mHKLInfo.cell(); }
 	const Grid_sampling& gridSampling() const	{ return mGrid; }
 
+
   private:
 
 	void loadFoFreeFromReflectionsFile(const boost::filesystem::path& hklin);
@@ -116,12 +123,7 @@ class MapMaker
 		std::initializer_list<std::string> foLabels,
 		std::initializer_list<std::string> freeLabels);
 	
-	void recalc(const Structure& structure,
-		bool noBulk, AnisoScalingFlag anisoScaling,
-		float samplingRate = 4.5, bool electronScattering = false);
-
 	void fixMTZ();
-	void printStats();
 	
 	MapType				mFb, mFd;
 	Grid_sampling		mGrid;
