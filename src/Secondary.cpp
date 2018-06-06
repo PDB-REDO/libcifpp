@@ -159,7 +159,25 @@ struct Res
 			else if (a.labelAtomId() == "C")	mC = a.location();
 			else if (a.labelAtomId() == "N")	mN = a.location();
 			else if (a.labelAtomId() == "O")	mO = a.location();
-			else if (a.labelAtomId() == "H")	mH = a.location();
+//			else if (a.labelAtomId() == "H")	mH = a.location();
+		}
+	}
+
+	void assignHydrogen()
+	{
+		// assign the Hydrogen
+		mH = mN;
+		
+		if (mType != kProline and mPrev != nullptr)
+		{
+			auto pc = mPrev->mC;
+			auto po = mPrev->mO;
+			
+			double CODistance = Distance(pc, po);
+			
+			mH.mX += (pc.mX - po.mX) / CODistance; 
+			mH.mY += (pc.mY - po.mY) / CODistance; 
+			mH.mZ += (pc.mZ - po.mZ) / CODistance; 
 		}
 	}
 
@@ -713,7 +731,7 @@ void CalculateSecondaryStructure(Structure& s)
 	vector<Res> residues;
 	residues.reserve(nRes);
 	
-	for (auto p: s.polymers())
+	for (auto& p: polymers)
 	{
 		for (auto m: p)
 			residues.emplace_back(move(m));
@@ -723,6 +741,8 @@ void CalculateSecondaryStructure(Structure& s)
 	{
 		residues[i].mNext = &residues[i + 1];
 		residues[i + 1].mPrev = &residues[i];
+		
+		residues[i + 1].assignHydrogen();
 	}
 	
 	CalculateHBondEnergies(residues);

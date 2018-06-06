@@ -745,6 +745,22 @@ Polymer::iterator::iterator(Polymer& p, uint32 index)
 	}
 }
 
+Monomer Polymer::operator[](size_t index) const
+{
+	if (index >= mPolySeq.size())
+		throw out_of_range("Invalid index for residue in polymer");
+
+	string compoundID;
+	int seqID;
+	
+	auto r = mPolySeq[index];
+	
+	cif::tie(seqID, compoundID) =
+		r.get("seq_id", "mon_id");
+	
+	return Monomer(const_cast<Polymer&>(*this), index, seqID, compoundID, "");
+}
+
 Polymer::iterator::iterator(const iterator& rhs)
 	: mPolymer(rhs.mPolymer), mIndex(rhs.mIndex), mCurrent(rhs.mCurrent)
 {

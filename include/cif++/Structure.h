@@ -275,7 +275,7 @@ class Polymer
 	iterator end();
 	
 	size_t size() const							{ return mPolySeq.size(); }
-	Monomer operator[](size_t index) const		{ return Monomer(const_cast<Polymer&>(*this), index); }
+	Monomer operator[](size_t index) const;
 
 	Structure* structure() const	{ return mStructure; }
 	
