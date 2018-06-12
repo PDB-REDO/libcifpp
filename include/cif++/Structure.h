@@ -216,6 +216,13 @@ class Monomer : public Residue
 	Atom O() const			{ return atomByID("O"); }
 	Atom H() const			{ return atomByID("H"); }
 
+	bool isBondedTo(const Monomer& rhs) const
+	{
+		return this != &rhs and areBonded(*this, rhs);
+	}
+
+	static bool areBonded(const Monomer& a, const Monomer& b, float errorMargin = 0.5f);
+	
   private:
 	Polymer*	mPolymer;
 	uint32		mIndex;

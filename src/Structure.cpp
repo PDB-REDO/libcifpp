@@ -726,6 +726,32 @@ float Monomer::kappa() const
 	return result;
 }
 
+bool Monomer::areBonded(const Monomer& a, const Monomer& b, float errorMargin)
+{
+	bool result = false;
+	
+	try
+	{
+		Point atoms[4] = {
+			a.atomByID("CA").location(),
+			a.atomByID("C").location(),
+			b.atomByID("N").location(),
+			b.atomByID("CA").location()
+		};
+		
+		auto distanceCACA = Distance(atoms[0], atoms[3]);
+		double omega = DihedralAngle(atoms[0], atoms[1], atoms[2], atoms[3]);
+
+		bool cis = abs(omega) <= 30.0;
+		float maxCACADistance = cis ? 3.0 : 3.8;
+		
+		result = abs(distanceCACA - maxCACADistance) < errorMargin;
+	}
+	catch (...) {}
+
+	return result;
+}
+
 // --------------------------------------------------------------------
 // polymer
 

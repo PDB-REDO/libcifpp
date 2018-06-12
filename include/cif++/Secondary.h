@@ -25,6 +25,23 @@ enum SecondaryStructureType : char
 	ssBend			= 'S'
 };
 
-void CalculateSecondaryStructure(Structure& s);
+//void CalculateSecondaryStructure(Structure& s);
+
+class DSSP
+{
+  public:
+	DSSP(const Structure& s);
+	~DSSP();
+	
+	DSSP(const DSSP&) = delete;
+	DSSP& operator=(const DSSP&) = delete;
+	
+	SecondaryStructureType operator()(const std::string& inAsymID, int inSeqID) const;
+	SecondaryStructureType operator()(const Monomer& m) const;
+	
+  private:
+	struct DSSPImpl* mImpl;
+};
+
 
 }

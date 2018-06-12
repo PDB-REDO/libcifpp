@@ -147,6 +147,17 @@ struct Point
 	{
 		return mX == rhs.mX and mY == rhs.mY and mZ == rhs.mZ;
 	}
+	
+	// consider point as a vector... perhaps I should rename Point?
+	float lengthsq() const
+	{
+		return mX * mX + mY * mY + mZ * mZ;
+	}
+
+	float length() const
+	{
+		return sqrt(mX * mX + mY * mY + mZ * mZ);
+	}
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Point& pt)

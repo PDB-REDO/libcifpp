@@ -249,7 +249,7 @@ struct Res
 	HBond mHBondDonor[2] = {}, mHBondAcceptor[2] = {};
 	BridgeParner mBetaPartner[2] = {};
 	uint32 mSheet = 0;
-	HelixFlag mHelixFlags[3];	//
+	HelixFlag mHelixFlags[3] = { helixNone, helixNone, helixNone };	//
 	bool mBend = false;
 };
 
@@ -760,6 +760,100 @@ void CalculateSecondaryStructure(Structure& s)
 				 << endl;
 		}
 	}
+}
+
+// --------------------------------------------------------------------
+
+struct DSSPImpl
+{
+	DSSPImpl(const Structure& s);
+	
+	const Structure&	mStructure;
+	vector<Polymer>		mPolymers;
+	vector<Res>			mResidues;
+};
+
+DSSPImpl::DSSPImpl(const Structure& s)
+	: mStructure(s)
+	, mPolymers(mStructure.polymers())
+{
+	size_t nRes = accumulate(mPolymers.begin(), mPolymers.end(),
+		0.0, [](double s, auto& p) { return s + p.size(); });
+	
+	mResidues.reserve(nRes);
+	
+	for (auto& p: mPolymers)
+	{
+		for (auto m: p)
+			mResidues.emplace_back(move(m));
+	}
+	
+	for (size_t i = 0; i + 1 < mResidues.size(); ++i)
+	{
+		mResidues[i].mNext = &mResidues[i + 1];
+		mResidues[i + 1].mPrev = &mResidues[i];
+		
+		mResidues[i + 1].assignHydrogen();
+	}
+	
+	CalculateHBondEnergies(mResidues);
+	CalculateBetaSheets(mResidues);
+	CalculateAlphaHelices(mResidues);
+	
+	if (VERBOSE)
+	{
+		for (auto& r: mResidues)
+		{
+			auto& m = r.mM;
+			
+			char helix[4] = { };
+			for (size_t stride: { 3, 4, 5 })
+			{
+				switch (r.GetHelixFlag(stride))
+				{
+					case helixStart:		helix[stride - 3] = '>'; break;
+					case helixMiddle:		helix[stride - 3] = '0' + stride; break;
+					case helixStartAndEnd:	helix[stride - 3] = 'X'; break;
+					case helixEnd:			helix[stride - 3] = '<'; break;
+					case helixNone:			helix[stride - 3] = ' '; break;
+				}
+			}
+			
+			string id = m.asymID() + ':' + to_string(m.seqID()) + '/' + m.compoundID();
+			
+			cout << id << string(12 - id.length(), ' ')
+				 << char(r.mSecondaryStructure) << ' '
+				 << helix
+				 << endl;
+		}
+	}
+}
+
+DSSP::DSSP(const Structure& s)
+	: mImpl(new DSSPImpl(s))
+{
+}
+
+DSSP::~DSSP()
+{
+	delete mImpl;
+}
+
+SecondaryStructureType DSSP::operator()(const string& inAsymID, int inSeqID) const
+{
+	SecondaryStructureType result = ssLoop;
+	auto i = find_if(mImpl->mResidues.begin(), mImpl->mResidues.end(),
+		[&](auto& r) { return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
+	if (i != mImpl->mResidues.end())
+		result = i->mSecondaryStructure;
+	else if (VERBOSE)
+		cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << endl;
+	return result;
+}
+
+SecondaryStructureType DSSP::operator()(const Monomer& m) const
+{
+	return operator()(m.asymID(), m.seqID());
 }
 
 }
