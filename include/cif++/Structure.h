@@ -55,6 +55,8 @@ class Polymer;
 class Structure;
 class File;
 
+struct SecondaryStructure;
+
 // --------------------------------------------------------------------
 // We do not want to introduce a dependency on cif++ here, we might want
 // to change the backend storage in the future.
@@ -178,6 +180,8 @@ class Residue
 	
 	// Is this residue a single entity?
 	bool isEntity() const;
+	
+	bool isWater() const					{ return mCompoundID == "HOH"; }
 	
 	const Structure& structure() const		{ return *mStructure; }
 

@@ -25,6 +25,30 @@ enum SecondaryStructureType : char
 	ssBend			= 'S'
 };
 
+//struct HBond
+//{
+//	std::string 				labelAsymID;
+//	int							labelSeqID;
+//	double						energy;
+//};
+//
+//struct BridgePartner
+//{
+//	std::string					labelAsymID;
+//	int							labelSeqID;
+//	int							ladder;
+//	bool						parallel;
+//};
+
+struct SecondaryStructure
+{
+	SecondaryStructureType		type;
+//	HBond						donor[2], acceptor[2];
+//	BridgePartner				beta[2];
+//	int							sheet;
+//	bool						bend;
+};
+
 //void CalculateSecondaryStructure(Structure& s);
 
 class DSSP
