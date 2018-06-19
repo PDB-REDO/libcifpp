@@ -1221,7 +1221,7 @@ Compound* CompoundFactoryImpl::create(std::string id)
 			{
 				auto clibd_mon = fs::path(getenv("CLIBD_MON"));
 				
-				fs::path resFile = clibd_mon / ba::to_lower_copy(name.substr(0, 1)) / (id + ".cif");
+				fs::path resFile = clibd_mon / ba::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
 			
 				if (not fs::exists(resFile) and	(id == "COM" or id == "CON" or "PRN")) 		// seriously...
 					resFile = clibd_mon / ba::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");

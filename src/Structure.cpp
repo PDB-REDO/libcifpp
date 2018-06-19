@@ -624,6 +624,29 @@ bool Residue::isEntity() const
 	return a1.size() == a2.size();
 }
 
+string Residue::authID() const
+{
+	string result;
+	
+	try
+	{
+		char chainID, iCode;
+		int seqNum;
+		
+		tie(chainID, seqNum, iCode) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
+		
+		result = chainID + to_string(seqNum);
+		if (iCode != ' ' and iCode != 0)
+			result += iCode;
+	}
+	catch (...)
+	{
+		result = mAsymID + to_string(mSeqID);
+	}
+	
+	return result;
+}
+
 // --------------------------------------------------------------------
 // monomer
 
@@ -710,17 +733,25 @@ float Monomer::kappa() const
 {
 	double result = 360;
 	
-	if (mIndex > 2 and mIndex + 2 < mPolymer->size())
+	try
 	{
-		Monomer prevPrev = mPolymer->operator[](mIndex - 2);
-		Monomer nextNext = mPolymer->operator[](mIndex + 2);
-		
-		if (prevPrev.mSeqID + 4 == nextNext.mSeqID)
+		if (mIndex > 2 and mIndex + 2 < mPolymer->size())
 		{
-			double ckap = CosinusAngle(CAlpha().location(), prevPrev.CAlpha().location(), nextNext.CAlpha().location(), CAlpha().location());
-			double skap = sqrt(1 - ckap * ckap);
-			result = atan2(skap, ckap) * 180 / kPI;
+			Monomer prevPrev = mPolymer->operator[](mIndex - 2);
+			Monomer nextNext = mPolymer->operator[](mIndex + 2);
+			
+			if (prevPrev.mSeqID + 4 == nextNext.mSeqID)
+			{
+				double ckap = CosinusAngle(CAlpha().location(), prevPrev.CAlpha().location(), nextNext.CAlpha().location(), CAlpha().location());
+				double skap = sqrt(1 - ckap * ckap);
+				result = atan2(skap, ckap) * 180 / kPI;
+			}
 		}
+	}
+	catch (const exception& ex)
+	{
+		if (VERBOSE)
+			cerr << ex.what() << endl;
 	}
 
 	return result;
@@ -746,6 +777,24 @@ bool Monomer::areBonded(const Monomer& a, const Monomer& b, float errorMargin)
 		float maxCACADistance = cis ? 3.0 : 3.8;
 		
 		result = abs(distanceCACA - maxCACADistance) < errorMargin;
+	}
+	catch (...) {}
+
+	return result;
+}
+
+bool Monomer::isCis(const mmcif::Monomer& a, const mmcif::Monomer& b)
+{
+	bool result = false;
+	
+	try
+	{
+		double omega = DihedralAngle(
+			a.atomByID("CA").location(),
+			a.atomByID("C").location(),
+			b.atomByID("N").location(),
+			b.atomByID("CA").location());
+		result = abs(omega) <= 30.0;
 	}
 	catch (...) {}
 
@@ -1237,52 +1286,56 @@ cif::Category& Structure::category(const char* name) const
 	return db[name];
 }
 
-//tuple<string,string> Structure::MapLabelToAuth(
-//	const string& asymId, int seqId)
-//{
-//	auto& db = *getFile().impl().mDb;
-//	
-//	tuple<string,int,string,string> result;
-//	bool found = false;
-//	
-//	for (auto r: db["pdbx_poly_seq_scheme"].find(
-//						cif::Key("asym_id") == asym_id and
-//						cif::Key("seq_id") == seq_id))
-//	{
-//		string auth_asym_id, pdb_mon_id, pdb_ins_code;
-//		int pdb_seq_num;
-//		
-//		cif::tie(pdb_strand_id, pdb_seq_num, pdb_mon_id, pdb_ins_code) =
-//			r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-//
-//		result = make_tuple(pdb_strand_id, pdb_seq_num, pdb_mon_id, pdb_ins_code);
-//
-//		found = true;
-//		break;
-//	}
-//						
-//	for (auto r: db["pdbx_nonpoly_scheme"].find(
-//						cif::Key("asym_id") == asym_id and
-//						cif::Key("seq_id") == seq_id and
-//						cif::Key("mon_id") == mon_id))
-//	{
-//		string pdb_strand_id, pdb_mon_id, pdb_ins_code;
-//		int pdb_seq_num;
-//		
-//		cif::tie(pdb_strand_id, pdb_seq_num, pdb_mon_id, pdb_ins_code) =
-//			r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-//
-//		result = make_tuple(pdb_strand_id, pdb_seq_num, pdb_mon_id, pdb_ins_code);
-//
-//		found = true;
-//		break;
-//	}
-//
-//	return result;
-//}
+tuple<char,int,char> Structure::MapLabelToAuth(
+	const string& asymId, int seqId) const
+{
+	auto& db = *getFile().impl().mDb;
+	
+	tuple<char,int,char> result;
+	bool found = false;
+	
+	for (auto r: db["pdbx_poly_seq_scheme"].find(
+						cif::Key("asym_id") == asymId and
+						cif::Key("seq_id") == seqId))
+	{
+		string auth_asym_id, pdb_ins_code;
+		int pdb_seq_num;
+		
+		cif::tie(auth_asym_id, pdb_seq_num, pdb_ins_code) =
+			r.get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
+
+		result = make_tuple(auth_asym_id.front(), pdb_seq_num,
+			pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
+
+		found = true;
+		break;
+	}
+						
+	if (not found)
+	{
+		for (auto r: db["pdbx_nonpoly_scheme"].find(
+							cif::Key("asym_id") == asymId and
+							cif::Key("seq_id") == seqId))
+		{
+			string pdb_strand_id, pdb_ins_code;
+			int pdb_seq_num;
+			
+			cif::tie(pdb_strand_id, pdb_seq_num, pdb_ins_code) =
+				r.get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
+	
+			result = make_tuple(pdb_strand_id.front(), pdb_seq_num,
+				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
+	
+			found = true;
+			break;
+		}
+	}
+
+	return result;
+}
 
 tuple<string,int,string,string> Structure::MapLabelToPDB(
-	const string& asymId, int seqId, const string& monId)
+	const string& asymId, int seqId, const string& monId) const
 {
 	auto& db = datablock();
 	

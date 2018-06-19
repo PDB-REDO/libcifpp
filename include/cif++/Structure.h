@@ -178,12 +178,17 @@ class Residue
 	int					seqID() const		{ return mSeqID; }
 	const std::string&	altID() const		{ return mAltID; }
 	
+	// return a human readable PDB-like auth id (chain+seqnr+iCode)
+	std::string			authID() const;
+	
 	// Is this residue a single entity?
 	bool isEntity() const;
 	
 	bool isWater() const					{ return mCompoundID == "HOH"; }
 	
 	const Structure& structure() const		{ return *mStructure; }
+
+	bool empty() const						{ return mStructure == nullptr; }
 
   protected:
 
@@ -226,6 +231,7 @@ class Monomer : public Residue
 	}
 
 	static bool areBonded(const Monomer& a, const Monomer& b, float errorMargin = 0.5f);
+	static bool isCis(const Monomer& a, const Monomer& b);
 	
   private:
 	Polymer*	mPolymer;
@@ -370,13 +376,13 @@ class Structure
 	std::tuple<std::string,std::string,std::string,std::string> MapLabelToAuth(
 		const std::string& asymId, int seqId, const std::string& compId);
 
-	// returns chain, seqnr
-	std::tuple<std::string,std::string> MapLabelToAuth(
-		const std::string& asymId, int seqId);
+	// returns chain, seqnr, icode
+	std::tuple<char,int,char> MapLabelToAuth(
+		const std::string& asymId, int seqId) const;
 
 	// returns chain,seqnr,comp,iCode
 	std::tuple<std::string,int,std::string,std::string> MapLabelToPDB(
-		const std::string& asymId, int seqId, const std::string& compId);
+		const std::string& asymId, int seqId, const std::string& compId) const;
 
 	std::tuple<std::string,int,std::string,std::string> MapPDBToLabel(
 		const std::string& asymId, int seqId, const std::string& compId, const std::string& iCode);
