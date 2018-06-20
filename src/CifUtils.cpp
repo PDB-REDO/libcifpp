@@ -424,11 +424,13 @@ struct ProgressImpl
 
 void ProgressImpl::Run()
 {
+	bool printedAny = false;
+	
 	try
 	{
 		for (;;)
 		{
-			boost::this_thread::sleep(boost::posix_time::seconds(1));
+			boost::this_thread::sleep(boost::posix_time::seconds(5));
 			
 			boost::mutex::scoped_lock lock(mMutex);
 			
@@ -436,11 +438,13 @@ void ProgressImpl::Run()
 				break;
 			
 			PrintProgress();
+			printedAny = true;
 		}
 	}
 	catch (...) {}
 	
-	PrintDone();
+	if (printedAny)
+		PrintDone();
 }
 
 void ProgressImpl::PrintProgress()

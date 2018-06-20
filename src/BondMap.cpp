@@ -151,8 +151,8 @@ BondMap::BondMap(const Structure& p)
 			cif::tie(asymId, seqId) = r.get("asym_id", "seq_id");
 			
 			vector<Atom> rAtoms;
-			for (auto a: db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == seqId))
-				rAtoms.push_back(p.getAtomById(a["id"].as<string>()));
+			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
+				[&](auto& a) { return a.labelAsymId() == asymId and a.labelSeqId() == seqId; });
 			
 			for (size_t i = 0; i + 1 < rAtoms.size(); ++i)
 			{
@@ -171,8 +171,10 @@ BondMap::BondMap(const Structure& p)
 			cif::tie(asymId) = r.get("asym_id");
 			
 			vector<Atom> rAtoms;
-			for (auto a: db["atom_site"].find(cif::Key("label_asym_id") == asymId))
-				rAtoms.push_back(p.getAtomById(a["id"].as<string>()));
+			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
+				[&](auto& a) { return a.labelAsymId() == asymId; });
+//			for (auto a: db["atom_site"].find(cif::Key("label_asym_id") == asymId))
+//				rAtoms.push_back(p.getAtomById(a["id"].as<string>()));
 			
 			for (size_t i = 0; i + 1 < rAtoms.size(); ++i)
 			{
