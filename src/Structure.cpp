@@ -751,7 +751,8 @@ float Monomer::kappa() const
 	catch (const exception& ex)
 	{
 		if (VERBOSE)
-			cerr << ex.what() << endl;
+			cerr << "When trying to calculate kappa for " << asymID() << ':' << seqID() << ": "
+				 << ex.what() << endl;
 	}
 
 	return result;
