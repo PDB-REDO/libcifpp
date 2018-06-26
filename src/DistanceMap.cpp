@@ -63,7 +63,7 @@ inline clipper::Coord_orth toCell(clipper::Coord_orth p, const clipper::Cell& ce
 }
 
 DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
-	: dim(0)
+	: structure(p), dim(0)
 {
 	const float kMaxDistance = 5, kMaxDistanceSQ = kMaxDistance * kMaxDistance;
 	
@@ -165,8 +165,8 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	t.join_all();
 }
 
-DistanceMap::DistanceMap(const vector<Atom>& atoms)
-	: dim(0)
+DistanceMap::DistanceMap(const Structure& p, const vector<Atom>& atoms)
+	: structure(p), dim(0)
 {
 	dim = atoms.size();
 	
@@ -225,7 +225,6 @@ float DistanceMap::operator()(const Atom& a, const Atom& b) const
 vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 {
 	vector<Atom> result;
-	const File& f = a.getFile();
 	
 	size_t ixa;
 	try
@@ -250,7 +249,7 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 				dist.find(make_tuple(ixb, ixa));
 		
 		if (ii != dist.end() and ii->second <= maxDistance)
-			result.emplace_back(f, i.first);
+			result.push_back(structure.getAtomById(i.first));
 	}
 	
 	return result;

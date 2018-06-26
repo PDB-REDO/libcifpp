@@ -316,11 +316,11 @@ struct AtomImpl
 	map<string,string>	mCachedProperties;
 };
 
-Atom::Atom(const File& f, const string& id)
-	: mImpl(new AtomImpl(f, id))
-{
-}
-
+//Atom::Atom(const File& f, const string& id)
+//	: mImpl(new AtomImpl(f, id))
+//{
+//}
+//
 Atom::Atom(AtomImpl* impl)
 	: mImpl(impl)
 {
@@ -439,6 +439,11 @@ int Atom::labelSeqId() const
 string Atom::authAsymId() const
 {
 	return property<string>("auth_asym_id");
+}
+
+string Atom::authAtomId() const
+{
+	return property<string>("auth_atom_id");
 }
 
 string Atom::authCompId() const

@@ -83,7 +83,6 @@ class Atom
   public:
 //	Atom(const structure& s, const std::string& id);
 	Atom(struct AtomImpl* impl);
-	Atom(const File& f, const std::string& id);
 	Atom(const Atom& rhs);
 
 	~Atom();
