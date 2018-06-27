@@ -11,6 +11,7 @@
 #include "cif++/AtomType.h"
 #include "cif++/Compound.h"
 #include "cif++/PDB2CifRemark3.h"
+#include "cif++/CifUtils.h"
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -20,9 +21,6 @@ using cif::Category;
 using cif::Row;
 using cif::Key;
 using cif::iequals;
-
-static const char* kRedOn = "\033[37;1;41m";
-static const char* kRedOff = "\033[0m";
 
 // --------------------------------------------------------------------
 
@@ -911,7 +909,7 @@ bool Remark3Parser::match(const char* expr, int nextState)
 	if (result)
 		mState = nextState;
 	else if (VERBOSE >= 3)
-		cerr << kRedOn << "No match:" << kRedOff << " '" << expr << '\'' << endl;
+		cerr << cif::coloured("No match:", cif::scWHITE, cif::scRED) << " '" << expr << '\'' << endl;
 
 	return result;
 }
@@ -971,7 +969,7 @@ float Remark3Parser::parse()
 		}
 
 		if (VERBOSE >= 2)
-			cerr << kRedOn << "Dropping line:" << kRedOff << " '" << mLine << '\'' << endl;
+			cerr << cif::coloured("Dropping line:", cif::scWHITE, cif::scRED) << " '" << mLine << '\'' << endl;
 
 		++dropped;
 	}

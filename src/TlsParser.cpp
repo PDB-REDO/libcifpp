@@ -49,9 +49,6 @@ namespace c = mmcif;
 namespace cif
 {
 
-static const char* kRedOn = "\033[37;1;41m";
-static const char* kRedOff = "\033[0m";
-
 const int
 	kResidueNrWildcard = numeric_limits<int>::min(),
 	kNoSeqNum = numeric_limits<int>::max() - 1;
@@ -151,9 +148,9 @@ void DumpSelection(const vector<TLSResidue>& selected, int indentLevel)
 	if (first)
 	{
 		if (isatty(STDOUT_FILENO))
-			cout << indent << kRedOn << "Empty selection" << kRedOff << endl;
+			cout << indent << cif::coloured("Empty selection") << endl;
 		else
-			cout << indent << kRedOn << "Empty selection" << kRedOff << endl;
+			cout << indent << cif::coloured("Empty selection") << endl;
 	}
 }
 

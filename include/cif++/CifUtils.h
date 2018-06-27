@@ -59,6 +59,77 @@ std::vector<std::string> wordWrap(const std::string& text, unsigned int width);
 uint32 get_terminal_width();
 
 // --------------------------------------------------------------------
+//	some manipulators to write coloured text to terminals
+
+enum StringColour {
+	scBLACK = 0, scRED, scGREEN, scYELLOW, scBLUE, scMAGENTA, scCYAN, scWHITE, scNONE = 9 };
+
+template<typename String, typename CharT>
+struct ColouredString
+{
+	static_assert(std::is_reference<String>::value or std::is_pointer<String>::value, "String type must be pointer or reference");
+	
+	ColouredString(String s, StringColour fore, StringColour back, bool bold = true)
+		: m_s(s), m_fore(fore), m_back(back), m_bold(bold) {}
+	
+	ColouredString& operator=(const ColouredString&) = delete;
+	
+	String m_s;
+	StringColour m_fore, m_back;
+	bool m_bold;
+};
+
+template<typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const ColouredString<const CharT*,CharT>& s)
+{
+	if (isatty(STDOUT_FILENO))
+	{
+		std::basic_ostringstream<CharT, Traits> ostr;
+		ostr << "\033[" << (30 + s.m_fore) << ';' << (s.m_bold ? "1" : "22") << ';' << (40 + s.m_back) << 'm'
+			 << s.m_s
+			 << "\033[0m";
+		
+		return os << ostr.str();
+	}
+	else
+		return os << s.m_s;
+}
+
+template<typename CharT, typename Traits, typename String>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const ColouredString<String,CharT>& s)
+{
+	if (isatty(STDOUT_FILENO))
+	{
+		std::basic_ostringstream<CharT, Traits> ostr;
+		ostr << "\033[" << (30 + s.m_fore) << ';' << (s.m_bold ? "1" : "22") << ';' << (40 + s.m_back) << 'm'
+			 << s.m_s
+			 << "\033[0m";
+		
+		return os << ostr.str();
+	}
+	else
+		return os << s.m_s;
+}
+
+template<typename CharT>
+inline auto coloured(const CharT* s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+{
+	return ColouredString<const CharT*, CharT>(s, fore, back, bold);
+}
+
+template<typename CharT, typename Traits, typename Alloc>
+inline auto coloured(const std::basic_string<CharT, Traits, Alloc>& s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+{
+	return ColouredString<const std::basic_string<CharT, Traits, Alloc>, CharT>(s, fore, back, bold);
+}
+
+template<typename CharT, typename Traits, typename Alloc>
+inline auto coloured(std::basic_string<CharT, Traits, Alloc>& s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+{
+	return ColouredString<std::basic_string<CharT, Traits, Alloc>, CharT>(s, fore, back, bold);
+}
+
+// --------------------------------------------------------------------
 //	A progress bar
 
 class Progress
