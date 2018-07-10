@@ -456,6 +456,15 @@ int Atom::authSeqId() const
 	return property<int>("auth_seq_id");
 }
 
+string Atom::pdbID() const
+{
+	return
+		property<string>("auth_comp_id") + '_' +
+		property<string>("auth_asym_id") + '_' +
+		property<string>("auth_seq_id") + 
+		property<string>("pdbx_PDB_ins_code");
+}
+
 Point Atom::location() const
 {
 	return mImpl->mLocation;

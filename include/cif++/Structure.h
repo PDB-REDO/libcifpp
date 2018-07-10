@@ -123,6 +123,8 @@ class Atom
 	std::string pdbxAuthInsCode() const;
 	std::string authAltId() const;
 	
+	std::string pdbID() const;	// auth_comp_id + '_' + auth_asym_id + '_' + auth_seq_id + pdbx_PDB_ins_code
+	
 	bool operator==(const Atom& rhs) const;
 
 	const File& getFile() const;
