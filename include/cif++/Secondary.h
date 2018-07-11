@@ -13,6 +13,8 @@ namespace mmcif
 class Structure;
 class Monomer;
 
+extern const double kCouplingConstant, kMinHBondEnergy, kMaxHBondEnergy;
+
 enum SecondaryStructureType : char
 {
 	ssLoop			= ' ',

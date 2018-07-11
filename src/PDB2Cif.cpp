@@ -624,10 +624,15 @@ class PDBFileParser
 	tuple<string,int,bool> MapResidue(char chainID, int resSeq, char iCode) const
 	{
 		auto key = make_tuple(chainID, resSeq, iCode);
-		if (not mChainSeq2AsymSeq.count(key))
-			throw runtime_error(string("Residue ") + chainID + to_string(resSeq) + iCode + " could not be mapped"); 
 		
-		return mChainSeq2AsymSeq.at(key);
+		try
+		{
+			return mChainSeq2AsymSeq.at(key);
+		}
+		catch (...)
+		{
+			throw_with_nested(runtime_error(string("Residue ") + chainID + to_string(resSeq) + iCode + " could not be mapped"));
+		}
 	}
 
 	tuple<string,int,bool> MapResidue(char chainID, int resSeq, char iCode, boost::system::error_code& ec) const
@@ -3258,6 +3263,9 @@ void PDBFileParser::ConstructEntities()
 	// First iterate all ATOM records and store the residues as found in these records
 	int modelNr = 1;
 	
+	typedef map<tuple<char,int,char,char>,string> CompTypeMap;
+	CompTypeMap residuesSeen;	// used to validate PDB files...
+	
 	for (auto r = mData; r != nullptr; r = r->mNext)
 	{
 		if (r->is("MODEL "))
@@ -3271,10 +3279,18 @@ void PDBFileParser::ConstructEntities()
 		if (r->is("ATOM  ") or r->is("HETATM"))		//	 1 -  6        Record name   "ATOM  "
 		{											//	 ...
 			string name			= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
+			char altLoc			= r->vC(17);		//	17             Character     altLoc       Alternate location indicator.
 			string resName		= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
 			char chainID		= r->vC(22);		//	22             Character     chainID      Chain identifier.
 			int resSeq			= r->vI(23, 26);	//	23 - 26        Integer       resSeq       Residue sequence number.
 			char iCode			= r->vC(27);		//	27             AChar         iCode        Code for insertion of residues.
+
+			// first validate, too sad this is required...
+			CompTypeMap::key_type k = make_tuple(chainID, resSeq, iCode, altLoc);
+			if (residuesSeen.count(k) == 0)
+				residuesSeen[k] = resName;
+			else if (residuesSeen[k] != resName)
+				throw runtime_error("inconsistent residue type for " + string{chainID} + to_string(resSeq) + iCode + altLoc);
 
 			auto& chain = GetChainForID(chainID);
 			
@@ -5540,5 +5556,6 @@ void ReadPDBFile(istream& pdbFile, cif::File& cifFile)
 	p.Parse(pdbFile, cifFile);
 	
 	if (not cifFile.isValid())
-		throw runtime_error("Resulting mmCIF file is invalid");
+//		throw runtime_error("Resulting mmCIF file is invalid");
+		cerr << "Resulting mmCIF file is not valid!" << endl;
 }
