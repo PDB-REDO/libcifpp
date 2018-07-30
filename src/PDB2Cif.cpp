@@ -2782,8 +2782,7 @@ void PDBFileParser::ParseRemark200()
 		r["pdbx_diffrn_id"] = 1;
 	}
 	
-	if (inRM200({ "HIGHEST RESOLUTION SHELL, RANGE HIGH (A)", "HIGHEST RESOLUTION SHELL, RANGE LOW (A)", "COMPLETENESS FOR SHELL (%)",
-		"R MERGE FOR SHELL (I)", "R SYM FOR SHELL (I)", "<I/SIGMA(I)> FOR SHELL", "DATA REDUNDANCY IN SHELL" }))
+	if (inRM200({ "HIGHEST RESOLUTION SHELL, RANGE HIGH (A)"})) // that one field is mandatory...
 	{
 		getCategory("reflns_shell")->emplace({
 			{ "d_res_high", mRemark200["HIGHEST RESOLUTION SHELL, RANGE HIGH (A)"] },
@@ -2797,7 +2796,12 @@ void PDBFileParser::ParseRemark200()
 			{ "pdbx_diffrn_id" , 1}
 		});
 	}
-	
+	else if (inRM200({ "HIGHEST RESOLUTION SHELL, RANGE LOW (A)", "COMPLETENESS FOR SHELL (%)",
+		"R MERGE FOR SHELL (I)", "R SYM FOR SHELL (I)", "<I/SIGMA(I)> FOR SHELL", "DATA REDUNDANCY IN SHELL" }))
+	{
+		if (VERBOSE)
+			cerr << "Not writing reflns_shell record since d_res_high is missing" << endl;
+	}
 }
 
 void PDBFileParser::ParseRemark350()
