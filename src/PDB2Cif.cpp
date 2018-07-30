@@ -3290,7 +3290,8 @@ void PDBFileParser::ConstructEntities()
 			if (residuesSeen.count(k) == 0)
 				residuesSeen[k] = resName;
 			else if (residuesSeen[k] != resName)
-				throw runtime_error("inconsistent residue type for " + string{chainID} + to_string(resSeq) + iCode + altLoc);
+				throw runtime_error("inconsistent residue type for " + string{chainID} + to_string(resSeq) + iCode + altLoc + "\n" +
+					"  (" + residuesSeen[k] + " != " + resName + ")");
 
 			auto& chain = GetChainForID(chainID);
 			
@@ -5200,6 +5201,7 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 		ParseCoordinateTransformation();
 	
 		uint32 modelNr = 1;
+		bool hasAtoms = false;
 	
 		while (mRec->is("MODEL ") or mRec->is("ATOM  ") or mRec->is("HETATM"))
 		{
@@ -5213,6 +5215,8 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 				GetNextRecord();
 			}
 			
+			hasAtoms = hasAtoms or mRec->is("ATOM  ") or mRec->is("HETATM");
+			
 			ParseCoordinate(modelNr);
 			
 			if (model)
@@ -5220,7 +5224,10 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 				Match("ENDMDL", true);
 				GetNextRecord();
 			}
-		}	
+		}
+		
+		if (not hasAtoms)
+			throw runtime_error("Either the PDB file has no atom records, or the field " + string(mRec->mName) + " is not at the correct location");
 	
 		for (auto e: mAtomTypes)
 			getCategory("atom_type")->emplace({
