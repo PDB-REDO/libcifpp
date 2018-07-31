@@ -1020,6 +1020,9 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 		if (iequals(value, "NULL") or iequals(value, "NONE") or iequals(value, string(value.length(), '*')))
 			continue;
 
+		if (iequals(value, "+Inf"))
+			value = ".";
+
 		if (VERBOSE >= 3)
 			cerr << "storing: '" << value << "' in _" << category << '.' << item << endl;
 
@@ -1119,6 +1122,9 @@ void Remark3Parser::storeRefineLsRestr(const char* type, initializer_list<const 
 		ba::trim(value);
 		if (value.empty() or iequals(value, "NULL") or iequals(value, string(value.length(), '*')))
 			continue;
+
+		if (iequals(value, "+Inf"))
+			value = ".";
 
 		if (not r)
 		{
