@@ -15,12 +15,12 @@ namespace mmcif
 
 template <class F>
 NewuoaClosure make_closure(F &function) {
-    struct Wrap {
-        static double call(void *data, long n, const double *values) {
-            return reinterpret_cast<F *>(data)->operator()(n, values);
-        }
-    };
-    return NewuoaClosure {&function, &Wrap::call};
+	struct Wrap {
+		static double call(void *data, long n, const double *values) {
+			return reinterpret_cast<F *>(data)->operator()(n, values);
+		}
+	};
+	return NewuoaClosure {&function, &Wrap::call};
 }
 
 // --------------------------------------------------------------------
@@ -67,7 +67,7 @@ double sineIntegration(double x)
 		const P
 			kF[] = 
 			{
-				{ 1,                          1,                           },
+				{ 1,						  1,						   },
 				{ 7.44437068161936700618e2,   7.46437068161927678031e2,    },
 				{ 1.96396372895146869801e5,   1.97865247031583951450e5,    },
 				{ 2.37750310125431834034e7,   2.41535670165126845144e7,    },
@@ -77,20 +77,20 @@ double sineIntegration(double x)
 				{ 4.20968180571076940208e12,  5.06084464593475076774e12,   },
 				{ 1.00795182980368574617e13,  1.43468549171581016479e13,   },
 				{ 4.94816688199951963482e12,  1.11535493509914254097e13,   },
-				{ -4.94701168645415959931e11, 0                            }
+				{ -4.94701168645415959931e11, 0 						   }
 			},
 			kG[] = {
-				{ 1,                         1,                              },
-				{ 8.1359520115168615e2,      8.19595201151451564e2,          },
-				{ 2.35239181626478200e5,     2.40036752835578777e5,          },
-				{ 3.12557570795778731e7,     3.26026661647090822e7,          },
-				{ 2.06297595146763354e9,     2.23355543278099360e9,          },
-				{ 6.83052205423625007e10,    7.87465017341829930e10,         },
-				{ 1.09049528450362786e12,    1.39866710696414565e12,         },
-				{ 7.57664583257834349e12,    1.17164723371736605e13,         },
-				{ 1.81004487464664575e13,    4.01839087307656620e13,         },
-				{ 6.43291613143049485e12,    3.99653257887490811e13,         },
-				{ -1.36517137670871689e12,   0                               }
+				{ 1,						 1, 							 },
+				{ 8.1359520115168615e2, 	 8.19595201151451564e2, 		 },
+				{ 2.35239181626478200e5,	 2.40036752835578777e5, 		 },
+				{ 3.12557570795778731e7,	 3.26026661647090822e7, 		 },
+				{ 2.06297595146763354e9,	 2.23355543278099360e9, 		 },
+				{ 6.83052205423625007e10,	 7.87465017341829930e10,		 },
+				{ 1.09049528450362786e12,	 1.39866710696414565e12,		 },
+				{ 7.57664583257834349e12,	 1.17164723371736605e13,		 },
+				{ 1.81004487464664575e13,	 4.01839087307656620e13,		 },
+				{ 6.43291613143049485e12,	 3.99653257887490811e13,		 },
+				{ -1.36517137670871689e12,	 0								 }
 			};
 		
 		double xs = pow(x, -2);
@@ -257,69 +257,69 @@ double DensityIntegration::integrateRadius(float perc, float occupancy, double y
 	
 
 	// code from newuoa-example
-    const long variables_count = 1;
-    const long number_of_interpolation_conditions = (variables_count + 1)*(variables_count + 2)/2;
-    double variables_values[] = { initialValue };
-    const double initial_trust_region_radius = 1e-3;
-    const double final_trust_region_radius = 1e3;
-    const long max_function_calls_count = 100;
-    const size_t working_space_size = NEWUOA_WORKING_SPACE_SIZE(variables_count,
-                                                                number_of_interpolation_conditions);
-    double working_space[working_space_size];
+	const long variables_count = 1;
+	const long number_of_interpolation_conditions = (variables_count + 1)*(variables_count + 2)/2;
+	double variables_values[] = { initialValue };
+	const double initial_trust_region_radius = 1e-3;
+	const double final_trust_region_radius = 1e3;
+	const long max_function_calls_count = 100;
+	const size_t working_space_size = NEWUOA_WORKING_SPACE_SIZE(variables_count,
+																number_of_interpolation_conditions);
+	double working_space[working_space_size];
 
-    auto function = [&] (long n, const double *x)
-    {
+	auto function = [&] (long n, const double *x)
+	{
 		assert(n == 1);
 		return this->integrateDensity(x[0], -1, fst);
-    };
-    auto closure = make_closure(function);
+	};
+	auto closure = make_closure(function);
 
-    double result = newuoa_closure(
-            &closure,
-            variables_count,
-            number_of_interpolation_conditions,
-            variables_values,
-            initial_trust_region_radius,
-            final_trust_region_radius,
-            max_function_calls_count,
-            working_space);
+	double result = newuoa_closure(
+			&closure,
+			variables_count,
+			number_of_interpolation_conditions,
+			variables_values,
+			initial_trust_region_radius,
+			final_trust_region_radius,
+			max_function_calls_count,
+			working_space);
 
-    // 
-    
-    const double kRE = 5e-5;
-    
-    double y1 = 0;
-    double y2 = -result;
-    double x1 = 0;
-    double x2 = variables_values[0];
-    
-    if (y2 > yt)
-    {
-	    for (int it = 0; it < 100; ++it)
-	    {
-	    	double x = 0.5 * (x1 + x2);
-	    	double y = integrateDensity(x, 1, fst);
-	    	
-	    	if (abs(y - yt) < kRE * abs(yt))
-	    	{
-	    		result = x;
-	    		break;
-	    	}
-	    	
-	    	if ((y1 < yt and y < yt) or (y1 > yt and y > yt))
-	    	{
-	    		x1 = x;
-	    		y1 = y;
-	    	}
-	    	else
-	    	{
-	    		x2 = x;
-	    		y2 = y;
-	    	}
-	    }
-    }
-    else
-    	result = x2;
+	// 
+	
+	const double kRE = 5e-5;
+	
+	double y1 = 0;
+	double y2 = -result;
+	double x1 = 0;
+	double x2 = variables_values[0];
+	
+	if (y2 > yt)
+	{
+		for (int it = 0; it < 100; ++it)
+		{
+			double x = 0.5 * (x1 + x2);
+			double y = integrateDensity(x, 1, fst);
+			
+			if (abs(y - yt) < kRE * abs(yt))
+			{
+				result = x;
+				break;
+			}
+			
+			if ((y1 < yt and y < yt) or (y1 > yt and y > yt))
+			{
+				x1 = x;
+				y1 = y;
+			}
+			else
+			{
+				x2 = x;
+				y2 = y;
+			}
+		}
+	}
+	else
+		result = x2;
 
 	return result;
 }
@@ -386,7 +386,7 @@ struct AtomShapeImpl
 	
 	float integratedRadius(float perc) const
 	{
-		return 	mIntegrator.integrateRadius(perc, mOccupancy, mYi, mFst);
+		return	mIntegrator.integrateRadius(perc, mOccupancy, mYi, mFst);
 	}
 	
 	float calculatedDensity(float r) const

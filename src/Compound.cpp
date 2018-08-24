@@ -3,6 +3,7 @@
 #include "cif++/Config.h"
 
 #include <map>
+#include <numeric>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/operations.hpp>

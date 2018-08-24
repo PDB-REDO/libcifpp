@@ -7,6 +7,7 @@
 #include <regex>
 #include <set>
 #include <unordered_map>
+#include <numeric>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/operations.hpp>

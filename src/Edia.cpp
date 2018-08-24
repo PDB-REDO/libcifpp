@@ -2,6 +2,8 @@
 
 #include "cif++/Config.h"
 
+#include <numeric>
+
 #include <boost/format.hpp>
 
 #include "cif++/mrsrc.h"

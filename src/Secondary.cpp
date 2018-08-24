@@ -7,6 +7,8 @@
 
 #include "cif++/Config.h"
 
+#include <numeric>
+
 #include <boost/algorithm/string.hpp>
 
 #include "cif++/Structure.h"
