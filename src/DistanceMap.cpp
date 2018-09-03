@@ -12,6 +12,8 @@
 
 using namespace std;
 
+//#define DEBUG_VOOR_BART
+
 namespace mmcif
 {
 
@@ -140,7 +142,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 						if (minR2 > r2)
 							minR2 = r2;
 
-#if DEBUG_VOOR_BART
+#if defined(DEBUG_VOOR_BART)
 						if (r2 < 3.5 * 3.5 and not rt.equals(clipper::RTop<>::identity(), 0.1))
 							cout << "symmetry contact between "
 								 << atoms[i] << " at " << pi << " and "

@@ -386,7 +386,11 @@ struct AtomShapeImpl
 	
 	float integratedRadius(float perc) const
 	{
-		return	mIntegrator.integrateRadius(perc, mOccupancy, mYi, mFst);
+		float result = mIntegrator.integrateRadius(perc, mOccupancy, mYi, mFst);
+		
+		assert(not isnan(result));
+		
+		return result;
 	}
 	
 	float calculatedDensity(float r) const
