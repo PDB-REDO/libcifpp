@@ -240,8 +240,6 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 
 	fixMTZ();
 
-	samplingRate /= 2;	// clipper's way of interpreting?
-	
 	mGrid.init(spacegroup, cell,
 		mHKLInfo.resolution(), samplingRate);	// define grid
 	
