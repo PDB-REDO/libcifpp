@@ -25,6 +25,7 @@ class AtomShape
 
 	float radius() const;
 	float calculatedDensity(float r) const;
+	float calculatedDensity(Point p) const;
 
   private:
 	struct AtomShapeImpl*	mImpl;

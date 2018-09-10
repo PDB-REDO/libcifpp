@@ -328,10 +328,11 @@ double DensityIntegration::integrateRadius(float perc, float occupancy, double y
 
 struct AtomShapeImpl
 {
-	AtomShapeImpl(AtomType symbol, int charge, float uIso, float occupancy, float resHigh, float resLow, bool electronScattering)
+	AtomShapeImpl(Point location, AtomType symbol, int charge, float uIso, float occupancy, float resHigh, float resLow, bool electronScattering)
 		: mSymbol(symbol), mCharge(charge), mUIso(uIso), mOccupancy(occupancy)
 		, mResHigh(resHigh), mResLow(resLow)
 		, mElectronScattering(electronScattering)
+		, mLocation(location)
 		, mIntegrator(DensityIntegration::instance(resLow, resHigh))
 	{
 		auto st = mIntegrator.st();
@@ -373,11 +374,14 @@ struct AtomShapeImpl
 		}
 	}
 	
+	virtual ~AtomShapeImpl() {}
+	
 	AtomType	mSymbol;
 	int			mCharge;
 	float		mUIso, mOccupancy;
 	float		mResHigh, mResLow;
 	bool		mElectronScattering;
+	Point		mLocation;
 
 	const DensityIntegration&	mIntegrator;
 	double				mYi;
@@ -393,7 +397,7 @@ struct AtomShapeImpl
 		return result;
 	}
 	
-	float calculatedDensity(float r) const
+	virtual float calculatedDensity(float r) const
 	{
 		float rsq = r * r;
 		return mOccupancy *
@@ -403,18 +407,82 @@ struct AtomShapeImpl
 				mAW[4] * exp(mBW[4] * rsq) + mAW[5] * exp(mBW[5] * rsq)
 			);
 	}
+
+	virtual float calculatedDensity(Point p) const
+	{
+		return calculatedDensity(Distance(mLocation, p));
+	}
+};
+
+struct AtomShapeAnisoImpl : public AtomShapeImpl
+{
+	AtomShapeAnisoImpl(Point location, AtomType symbol, int charge, clipper::U_aniso_orth& anisou, float occupancy, float resHigh, float resLow, bool electronScattering)
+		: AtomShapeImpl(location, symbol, charge, anisou.u_iso(), occupancy, resHigh, resLow, electronScattering)
+		, mAnisoU(anisou)
+	{
+		auto& D = 
+			mElectronScattering ? AtomTypeTraits(symbol).elsf() : AtomTypeTraits(symbol).wksf(charge);
+		
+		const float fourpi2 = 4 * kPI * kPI;
+		const float pi3 = kPI * kPI * kPI;
+		
+		for (int i = 0; i < 6; ++i)
+		{
+			mAnisoInv[i] = clipper::Mat33sym<>(
+				-2 * mAnisoU.mat00() - D.b[i] / fourpi2,
+				-2 * mAnisoU.mat11() - D.b[i] / fourpi2,
+				-2 * mAnisoU.mat22() - D.b[i] / fourpi2,
+				-2 * mAnisoU.mat01(),
+				-2 * mAnisoU.mat02(),
+				-2 * mAnisoU.mat12()).inverse();
+
+			double det = - mAnisoInv[i].det();
+			
+			mAW[i] = D.a[i] * sqrt(det / pi3);
+			mBW[i] = -pow(det, 1.0/3);
+		}
+	}
+	
+	virtual float calculatedDensity(Point p) const
+	{
+		const clipper::Coord_orth dxyz(p - mLocation);
+		return mOccupancy *
+			(
+				mAW[0] * exp(mAnisoInv[0].quad_form(dxyz)) +
+				mAW[1] * exp(mAnisoInv[1].quad_form(dxyz)) +
+				mAW[2] * exp(mAnisoInv[2].quad_form(dxyz)) +
+				mAW[3] * exp(mAnisoInv[3].quad_form(dxyz)) +
+				mAW[4] * exp(mAnisoInv[4].quad_form(dxyz)) +
+				mAW[5] * exp(mAnisoInv[5].quad_form(dxyz))
+			);
+	}
+	
+	clipper::U_aniso_orth mAnisoU;
+	array<clipper::Mat33sym<>,6> mAnisoInv;
 };
 	
 // --------------------------------------------------------------------
 
 AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow, bool electronScattering)
-	: mImpl(new AtomShapeImpl(atom.type(), atom.charge(), atom.uIso(),
-		atom.occupancy(), resHigh, resLow, electronScattering))
+	: mImpl(nullptr)
 {
+	float anisou[6];
+	
+	if (atom.getAnisoU(anisou))
+	{
+		clipper::U_aniso_orth u(anisou[0], anisou[3], anisou[5], anisou[1], anisou[2], anisou[4]);
+		
+		while (u.det() < 1.0e-20)
+			u = u + clipper::U_aniso_orth(0.01, 0.01, 0.01, 0, 0, 0);
+		
+		mImpl = new AtomShapeAnisoImpl(atom.location(), atom.type(), atom.charge(), u, atom.occupancy(), resHigh, resLow, electronScattering);
+	}
+	else
+		mImpl = new AtomShapeImpl(atom.location(), atom.type(), atom.charge(), atom.uIso(), atom.occupancy(), resHigh, resLow, electronScattering);
 }
 
 AtomShape::AtomShape(const Atom& atom, float resHigh, float resLow, bool electronScattering, float bFactor)
-	: mImpl(new AtomShapeImpl(atom.type(), atom.charge(), clipper::Util::b2u(bFactor),
+	: mImpl(new AtomShapeImpl(atom.location(), atom.type(), atom.charge(), clipper::Util::b2u(bFactor),
 		1.0, resHigh, resLow, electronScattering))
 {
 }
@@ -432,6 +500,11 @@ float AtomShape::radius() const
 float AtomShape::calculatedDensity(float r) const
 {
 	return mImpl->calculatedDensity(r);
+}
+
+float AtomShape::calculatedDensity(Point p) const
+{
+	return mImpl->calculatedDensity(p);
 }
 
 }

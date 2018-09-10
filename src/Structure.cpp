@@ -240,6 +240,23 @@ struct AtomImpl
 			delete this;
 	}
 	
+	bool getAnisoU(float anisou[6]) const
+	{
+		auto& db = *mFile.impl().mDb;
+		auto& cat = db["atom_site_anisotrop"];
+		auto r = cat[cif::Key("id") == mId];
+		bool result = false;
+
+		if (not r.empty())
+		{
+			result = true;
+			cif::tie(anisou[0], anisou[1], anisou[2], anisou[3], anisou[4], anisou[5]) =
+				r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
+		}
+		
+		return result;
+	}
+	
 	void moveTo(const Point& p)
 	{
 //		mRow["Cartn_x"] = p.getX();
@@ -409,6 +426,11 @@ float Atom::uIso() const
 		throw runtime_error("Missing B_iso or U_iso");
 	
 	return result;
+}
+
+bool Atom::getAnisoU(float anisou[6]) const
+{
+	return mImpl->getAnisoU(anisou);
 }
 
 float Atom::occupancy() const

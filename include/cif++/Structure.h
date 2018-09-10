@@ -101,6 +101,7 @@ class Atom
 	int charge() const;
 
 	float uIso() const;
+	bool getAnisoU(float anisou[6]) const;
 	float occupancy() const;
 	
 	template<typename T>
