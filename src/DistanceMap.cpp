@@ -12,7 +12,7 @@
 
 using namespace std;
 
-//#define DEBUG_VOOR_BART
+#define DEBUG_VOOR_BART
 
 namespace mmcif
 {
@@ -53,17 +53,6 @@ vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegrou
 
 // --------------------------------------------------------------------
 
-inline clipper::Coord_orth toCell(clipper::Coord_orth p, const clipper::Cell& cell)
-{
-	while (p[0] < 0)			p[0] += cell.a();
-	while (p[0] > cell.a())		p[0] -= cell.a();
-	while (p[1] < 0)			p[1] += cell.b();
-	while (p[1] > cell.a())		p[1] -= cell.b();
-	while (p[2] < 0)			p[2] += cell.c();
-	while (p[2] > cell.a())		p[2] -= cell.c();
-	return p;
-}
-
 DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
 	: structure(p), dim(0)
 {
@@ -83,7 +72,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		size_t ix = index.size();
 		index[atom.id()] = ix;
 		
-		locations[ix] = toCell(atom.location(), cell);
+		locations[ix] = atom.location();
 		
 		auto p = atom.location();
 
@@ -101,6 +90,55 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		if (pMax.mZ < p.mZ)
 			pMax.mZ = p.mZ;
 	};
+	
+	// correct locations so that the median of x, y and z are inside the cell
+	vector<float> c(locations.size());
+	auto median = [&]()
+	{
+		return dim % 1 == 0
+			? c[dim / 2]
+			: (c[dim / 2 - 1] + c[dim / 2]) / 2;
+	};
+	
+	transform(locations.begin(), locations.end(), c.begin(), [](auto& l) { return l[0]; });
+	sort(c.begin(), c.end());
+	float mx = median();
+	
+	transform(locations.begin(), locations.end(), c.begin(), [](auto& l) { return l[1]; });
+	sort(c.begin(), c.end());
+	float my = median();
+	
+	transform(locations.begin(), locations.end(), c.begin(), [](auto& l) { return l[2]; });
+	sort(c.begin(), c.end());
+	float mz = median();
+
+	if (VERBOSE > 1)
+		cerr << "median position of atoms: " << Point(mx, my, mz) << endl;
+	
+	auto calculateD = [&](float m, float c)
+	{
+		float d = 0;
+		while (d < -(c / 2))
+			d += c;
+		while (d > (c / 2))
+			d -= c;
+		return d;
+	};
+
+	float dx = calculateD(mx, cell.a());
+	float dy = calculateD(my, cell.b());
+	float dz = calculateD(mz, cell.c());
+	
+	if (VERBOSE)
+		cerr << "Calculated d: " << dx << ", " << dy << " and " << dz << endl;
+	
+	if (dx != 0 or dy != 0 or dz != 0)
+	{
+		if (VERBOSE)
+			cerr << "moving coorinates by " << dx << ", " << dy << " and " << dz << endl;
+		
+		for_each(locations.begin(), locations.end(), [&](auto& p) { p[0] += dx; p[1] += dy; p[2] += dz; });
+	}
 	
 	pMin -= kMaxDistance;	// extend bounding box
 	pMax += kMaxDistance;
