@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#define DEBUG_VOOR_BART
+//#define DEBUG_VOOR_BART
 
 namespace mmcif
 {
@@ -118,9 +118,9 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	auto calculateD = [&](float m, float c)
 	{
 		float d = 0;
-		while (d < -(c / 2))
+		while (m + d < -(c / 2))
 			d += c;
-		while (d > (c / 2))
+		while (m + d > (c / 2))
 			d -= c;
 		return d;
 	};
