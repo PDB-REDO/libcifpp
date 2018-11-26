@@ -708,7 +708,7 @@ Monomer& Monomer::operator=(const Monomer& rhs)
 	return *this;
 }
 
-Monomer::Monomer(Polymer& polymer, uint32 index)
+Monomer::Monomer(const Polymer& polymer, uint32 index)
 	: Residue(*polymer.structure())
 	, mPolymer(&polymer)
 	, mIndex(index)
@@ -716,7 +716,7 @@ Monomer::Monomer(Polymer& polymer, uint32 index)
 	
 }
 
-Monomer::Monomer(Polymer& polymer, uint32 index, int seqID, const string& compoundID, const string& altID)
+Monomer::Monomer(const Polymer& polymer, uint32 index, int seqID, const string& compoundID, const string& altID)
 	: Residue(*polymer.structure(), compoundID, polymer.asymID(), seqID, altID)
 	, mPolymer(&polymer)
 	, mIndex(index)
@@ -841,7 +841,7 @@ bool Monomer::isCis(const mmcif::Monomer& a, const mmcif::Monomer& b)
 // --------------------------------------------------------------------
 // polymer
 
-Polymer::iterator::iterator(Polymer& p, uint32 index)
+Polymer::iterator::iterator(const Polymer& p, uint32 index)
 	: mPolymer(&p), mIndex(index), mCurrent(p, index)
 {
 	auto& polySeq = mPolymer->mPolySeq;
@@ -916,20 +916,71 @@ Polymer::Polymer(const Polymer& rhs)
 	
 }
 
+Polymer::Polymer(const Structure& s, const string& asymID)
+	: mStructure(const_cast<Structure*>(&s)), mAsymID(asymID)
+	, mPolySeq(s.category("pdbx_poly_seq_scheme").find(cif::Key("asym_id") == mAsymID))
+{
+	mEntityID = mPolySeq.front()["entity_id"].as<string>();
+
+#if DEBUG
+	for (auto r: mPolySeq)
+		assert(r["entity_id"] == mEntityID);
+#endif
+	
+}
+
 Polymer::Polymer(const Structure& s, const string& entityID, const string& asymID)
 	: mStructure(const_cast<Structure*>(&s)), mEntityID(entityID), mAsymID(asymID)
 	, mPolySeq(s.category("pdbx_poly_seq_scheme").find(cif::Key("asym_id") == mAsymID and cif::Key("entity_id") == mEntityID))
 {
 }
 
-Polymer::iterator Polymer::begin()
+Polymer::iterator Polymer::begin() const
 {
 	return iterator(*this, 0);
 }
 
-Polymer::iterator Polymer::end()
+Polymer::iterator Polymer::end() const
 {
 	return iterator(*this, mPolySeq.size());
+}
+
+Monomer Polymer::getBySeqID(int seqID) const
+{
+	for (auto m: *this)
+		if (m.seqID() == seqID)
+			return m;
+
+	if (VERBOSE)
+		cerr << "Monomer with seqID " << seqID << " not found in polymer " << mAsymID << endl;
+
+	return Monomer();
+}
+
+int Polymer::Distance(const Monomer& a, const Monomer& b) const
+{
+	int result = numeric_limits<int>::max();
+	
+	if (a.asymID() == b.asymID())
+	{
+		int ixa = numeric_limits<int>::max(), ixb = numeric_limits<int>::max();
+	
+		int ix = 0, f = 0;
+		for (auto m: *this)
+		{
+			if (m.seqID() == a.seqID())
+				ixa = ix, ++f;
+			if (m.seqID() == b.seqID())
+				ixb = ix, ++f;
+			if (f == 2)
+			{
+				result = abs(ixa - ixb);
+				break;
+			}
+		}
+	}
+
+	return result;
 }
 
 //cif::RowSet Polymer::polySeqRows() const

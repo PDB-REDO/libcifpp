@@ -389,10 +389,10 @@ namespace detail
 			return mRow[mColumns[ix]];
 		}
 		
-		getRowResult(Row& r, C... columns)
+		getRowResult(const Row& r, C... columns)
 			: mRow(r), mColumns({{columns...}}) {}
 	
-		Row& mRow;
+		const Row& mRow;
 		std::array<const char*, N> mColumns;
 	};
 	
@@ -519,7 +519,7 @@ class Row
 	}
 
 	template<typename... C>
-	auto get(C... columns) -> detail::getRowResult<C...>
+	auto get(C... columns) const -> detail::getRowResult<C...>
 	{
 		return detail::getRowResult<C...>(*this, columns...);
 	}

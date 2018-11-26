@@ -21,8 +21,6 @@ namespace mmcif
 // Entities themselves are made up of compounds. And compounds
 // contain CompoundAtom records for each atom.
 
-class Composition;
-class Entity;
 class Compound;
 class Link;
 struct CompoundAtom;

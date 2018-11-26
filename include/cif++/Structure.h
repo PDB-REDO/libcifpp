@@ -96,7 +96,6 @@ class Atom
 	void location(Point p);
 
 	const Compound& comp() const;
-	const Entity& ent() const;
 	bool isWater() const;
 	int charge() const;
 
@@ -141,6 +140,13 @@ class Atom
 
 	// the energy-type field
 	std::string energyType() const;
+	
+	// convenience routine
+	bool isBackBone() const
+	{
+		return labelAtomId() == "N" or labelAtomId() == "O" or
+			labelAtomId() == "C" or labelAtomId() == "CA";
+	}
 
   private:
  	struct AtomImpl*			mImpl;
@@ -210,8 +216,8 @@ class Monomer : public Residue
 	Monomer(const Monomer& rhs);
 	Monomer& operator=(const Monomer& rhs);
 
-	Monomer(Polymer& polymer, uint32 index);
-	Monomer(Polymer& polymer, uint32 index, int seqID,
+	Monomer(const Polymer& polymer, uint32 index);
+	Monomer(const Polymer& polymer, uint32 index, int seqID,
 		const std::string& compoundID, const std::string& altID);
 
 	// Assuming this is really an amino acid...
@@ -236,8 +242,8 @@ class Monomer : public Residue
 	static bool isCis(const Monomer& a, const Monomer& b);
 	
   private:
-	Polymer*	mPolymer;
-	uint32		mIndex;
+	const Polymer*	mPolymer;
+	uint32			mIndex;
 };
 
 // --------------------------------------------------------------------
@@ -245,6 +251,7 @@ class Monomer : public Residue
 class Polymer
 {
   public:
+	Polymer(const Structure& s, const std::string& asymID);
 	Polymer(const Structure& s, const std::string& entityID, const std::string& asymID);
 	Polymer(const Polymer&);
 	Polymer& operator=(const Polymer&);
@@ -255,7 +262,7 @@ class Polymer
 		typedef base_type::reference									reference;
 		typedef base_type::pointer										pointer;
 		
-		iterator(Polymer& p, uint32 index);
+		iterator(const Polymer& p, uint32 index);
 		iterator(iterator&& rhs);
 
 		iterator(const iterator& rhs);
@@ -285,21 +292,25 @@ class Polymer
 		bool		operator!=(const iterator& rhs) const				{ return mPolymer != rhs.mPolymer or mIndex != rhs.mIndex; }
 
 	  private:
-		Polymer*	mPolymer;
-		uint32		mIndex;
-		Monomer		mCurrent;
+		const Polymer*	mPolymer;
+		uint32			mIndex;
+		Monomer			mCurrent;
 	};
 
-	iterator begin();
-	iterator end();
+	iterator begin() const;
+	iterator end() const;
 	
 	size_t size() const							{ return mPolySeq.size(); }
 	Monomer operator[](size_t index) const;
+	
+	Monomer getBySeqID(int seqID) const;
 
 	Structure* structure() const	{ return mStructure; }
 	
 	std::string asymID() const		{ return mAsymID; }
 	std::string entityID() const	{ return mEntityID; }
+	
+	int Distance(const Monomer& a, const Monomer& b) const;
 
   private:
 
@@ -331,8 +342,6 @@ class File : public std::enable_shared_from_this<File>
 	Structure* model(size_t nr = 1);
 
 	struct FileImpl& impl() const						{ return *mImpl; }
-
-	std::vector<const Entity*> entities();
 
 	cif::Datablock& data();
 	cif::File& file();
