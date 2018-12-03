@@ -259,10 +259,6 @@ struct AtomImpl
 	
 	void moveTo(const Point& p)
 	{
-//		mRow["Cartn_x"] = p.getX();
-//		mRow["Cartn_y"] = p.getY();
-//		mRow["Cartn_z"] = p.getZ();
-
 		boost::format kPosFmt("%.3f");
 
 		mRow["Cartn_x"] = (kPosFmt % p.getX()).str();
@@ -280,6 +276,9 @@ struct AtomImpl
 			cif::tie(compId) = mRow.get("label_comp_id");
 			
 			mCompound = Compound::create(compId);
+			
+			if (VERBOSE and mCompound == nullptr)
+				cerr << "Compound not found: '" << compId << '\'' << endl;
 		}
 		
 		if (mCompound == nullptr)
@@ -983,13 +982,6 @@ int Polymer::Distance(const Monomer& a, const Monomer& b) const
 	return result;
 }
 
-//cif::RowSet Polymer::polySeqRows() const
-//{
-//	auto& cat = mStructure->category("pdbx_poly_seq_scheme");
-//	
-//	return cat.find(cif::Key("asym_id") == mAsymID and cif::Key("entityID") == mEntityID);
-//}
-//
 // --------------------------------------------------------------------
 // File
 

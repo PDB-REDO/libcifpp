@@ -1,5 +1,8 @@
 // Lib for working with structures as contained in file and PDB files
 
+#include <thread>
+#include <mutex>
+
 #include "cif++/Structure.h"
 #include "cif++/AtomShape.h"
 #include "cif++/Point.h"
@@ -157,6 +160,9 @@ list<DensityIntegration> DensityIntegration::sInstances;
 
 DensityIntegration& DensityIntegration::instance(float resolutionLow, float resolutionHigh)
 {
+	static mutex m;
+	lock_guard<mutex> lock(m);
+	
 	float a = 0.5f / resolutionLow, b = 0.5f / resolutionHigh;
 
 	auto i = find_if(sInstances.begin(), sInstances.end(), [=](const DensityIntegration& di)
