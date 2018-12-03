@@ -449,16 +449,28 @@ void ProgressImpl::Run()
 
 void ProgressImpl::PrintProgress()
 {
+//	const char* kBlocks[] = {
+//		" ",				// 0
+//		u8"\u258F",			// 1
+//		u8"\u258E",			// 2
+//		u8"\u258D",			// 3
+//		u8"\u258C",			// 4
+//		u8"\u258B",			// 5
+//		u8"\u258A",			// 6
+//		u8"\u2589",			// 7
+//		u8"\u2588",			// 8
+//	};
+
 	const char* kBlocks[] = {
 		" ",				// 0
-		u8"\u258F",			// 1
-		u8"\u258E",			// 2
-		u8"\u258D",			// 3
-		u8"\u258C",			// 4
-		u8"\u258B",			// 5
-		u8"\u258A",			// 6
-		u8"\u2589",			// 7
-		u8"\u2588",			// 8
+		u8".",			// 1
+		u8"o",			// 2
+		u8"0",			// 3
+		u8"o",			// 4
+		u8".",			// 5
+		u8"-",			// 6
+		u8">",			// 7
+		"=",			// 8
 	};
 
 	uint32 width = get_terminal_width();
