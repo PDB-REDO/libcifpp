@@ -415,6 +415,8 @@ struct ProgressImpl
 
 	int64			mMax;
 	atomic<int64>	mConsumed;
+	int64			mLastConsumed = 0;
+	int				mSpinnerIndex = 0;
 	string			mAction, mMessage;
 	boost::mutex	mMutex;
 	boost::thread	mThread;
@@ -428,10 +430,10 @@ void ProgressImpl::Run()
 	
 	try
 	{
+		boost::this_thread::sleep(boost::posix_time::seconds(5));
+			
 		for (;;)
 		{
-			boost::this_thread::sleep(boost::posix_time::seconds(5));
-			
 			boost::mutex::scoped_lock lock(mMutex);
 			
 			if (mConsumed == mMax)
@@ -439,6 +441,8 @@ void ProgressImpl::Run()
 			
 			PrintProgress();
 			printedAny = true;
+
+			boost::this_thread::sleep(boost::posix_time::seconds(0.5));
 		}
 	}
 	catch (...) {}
@@ -488,7 +492,8 @@ void ProgressImpl::PrintProgress()
 	
 	msg += " |";
 	
-	float progress = static_cast<float>(mConsumed) / mMax;
+	int64 consumed = mConsumed;
+	float progress = static_cast<float>(consumed) / mMax;
 	int pi = static_cast<int>(ceil(progress * 33 * 8));
 //	int tw = width - 28;
 //	int twd = static_cast<int>(tw * progress + 0.5f);
@@ -507,14 +512,27 @@ void ProgressImpl::PrintProgress()
 	}
 
 	msg.append("| ");
+
+//	const char		kSpinner[] = { '|', '/', '-', '\\' };
+	const char		kSpinner[] = { ' ', '.', 'o', 'O', '0', 'O', 'o', '.' };
+	const size_t	kSpinnerCount = sizeof(kSpinner);
+
+	if (mLastConsumed < consumed)
+	{
+		mLastConsumed = consumed;
+		mSpinnerIndex = (mSpinnerIndex + 1) % kSpinnerCount;
+	}
 	
-	int perc = static_cast<int>(100 * progress);
-	if (perc < 100)
-		msg += ' ';
-	if (perc < 10)
-		msg += ' ';
-	msg += to_string(perc);
-	msg += '%';
+	const char spinner[2] = { kSpinner[mSpinnerIndex], 0 };
+	msg.append(spinner);
+
+//	int perc = static_cast<int>(100 * progress);
+//	if (perc < 100)
+//		msg += ' ';
+//	if (perc < 10)
+//		msg += ' ';
+//	msg += to_string(perc);
+//	msg += '%';
 	
 	cout << '\r' << msg;
 	cout.flush();

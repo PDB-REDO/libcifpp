@@ -262,6 +262,7 @@ float DistanceMap::operator()(const Atom& a, const Atom& b) const
 	return result;
 }
 
+#warning("this method should return symmetry reoriented atoms...")
 vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 {
 	vector<Atom> result;

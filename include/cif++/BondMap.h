@@ -22,7 +22,13 @@ class BondMap
 		return isBonded(index.at(a.id()), index.at(b.id()));
 	}
 
+	bool operator()(const std::string& id_a, const std::string& id_b) const
+	{
+		return isBonded(index.at(id_a), index.at(id_b));
+	}
+
 	bool is1_4(const Atom& a, const Atom& b) const;
+	bool is1_4(const std::string& id_a, const std::string& id_b) const;
 	
   private:
 
