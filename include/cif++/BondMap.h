@@ -27,18 +27,18 @@ class BondMap
 		return get(index.at(id_a), index.at(id_b)) == 1;
 	}
 
-//	bool is1_4(const Atom& a, const Atom& b) const
-//	{
-//		return get(index.at(a.id()), index.at(b.id())) == 3;
-//	}
-//	
-//	bool is1_4(const std::string& id_a, const std::string& id_b) const
-//	{
-//		return get(index.at(id_a), index.at(id_b)) == 3;
-//	}
+	bool is1_4(const Atom& a, const Atom& b) const
+	{
+		return get(index.at(a.id()), index.at(b.id())) == 3;
+	}
+	
+	bool is1_4(const std::string& id_a, const std::string& id_b) const
+	{
+		return get(index.at(id_a), index.at(id_b)) == 3;
+	}
 
-	bool is1_4(const Atom& a, const Atom& b) const;
-	bool is1_4(const std::string& id_a, const std::string& id_b) const;
+//	bool is1_4(const Atom& a, const Atom& b) const;
+//	bool is1_4(const std::string& id_a, const std::string& id_b) const;
 	
   private:
 

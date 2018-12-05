@@ -243,35 +243,35 @@ BondMap::BondMap(const Structure& p)
 //	return bond[ix];
 //}
 
-bool BondMap::is1_4(const Atom& a, const Atom& b) const
-{
-	size_t ixa = index.at(a.id());
-	size_t ixb = index.at(b.id());
-	
-	if (ixb < ixa)
-		swap(ixa, ixb);
-	
-	bool result = false;
-	
-	for (size_t ia = 0; result == false and ia + 1 < dim; ++ia)
-	{
-		if (ia == ixa or ia == ixb or get(ixa, ia) != 1)
-			continue;
-		
-		for (size_t ib = ia + 1; result == false and ib < dim; ++ib)
-		{
-			if (ib == ixa or ib == ixb or get(ib, ixb) != 1)
-				continue;
-
-			size_t ix = ib + ia * dim - ia * (ia + 1) / 2;
-			result = bond[ix] == 1;
-		}
-	}
-	
-	if (result != (get(ixa, ixb) == 3))
-		cerr << "Verschil in 1-4 binding voor " << a.labelID() << " en " << b.labelID() << " (c = " << (int)get(ixa, ixb) << ")" << endl;
-	
-	return result;
-}
+//bool BondMap::is1_4(const Atom& a, const Atom& b) const
+//{
+//	size_t ixa = index.at(a.id());
+//	size_t ixb = index.at(b.id());
+//	
+//	if (ixb < ixa)
+//		swap(ixa, ixb);
+//	
+//	bool result = false;
+//	
+//	for (size_t ia = 0; result == false and ia + 1 < dim; ++ia)
+//	{
+//		if (ia == ixa or ia == ixb or get(ixa, ia) != 1)
+//			continue;
+//		
+//		for (size_t ib = ia + 1; result == false and ib < dim; ++ib)
+//		{
+//			if (ib == ixa or ib == ixb or get(ib, ixb) != 1)
+//				continue;
+//
+//			size_t ix = ib + ia * dim - ia * (ia + 1) / 2;
+//			result = bond[ix] == 1;
+//		}
+//	}
+//	
+//	if (result != (get(ixa, ixb) == 3))
+//		cerr << "Verschil in 1-4 binding voor " << a.labelID() << " en " << b.labelID() << " (c = " << (int)get(ixa, ixb) << ")" << endl;
+//	
+//	return result;
+//}
 
 }
