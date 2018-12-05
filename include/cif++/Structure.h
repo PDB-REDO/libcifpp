@@ -94,7 +94,9 @@ class Atom
 
 	Point location() const;
 	void location(Point p);
-
+	
+	Atom symmetryCopy(const Point& d, const clipper::RTop_orth& rt);
+	
 	const Compound& comp() const;
 	bool isWater() const;
 	int charge() const;
@@ -123,6 +125,7 @@ class Atom
 	std::string pdbxAuthInsCode() const;
 	std::string authAltId() const;
 	
+	std::string labelID() const;// label_comp_id + '_' + label_asym_id + '_' + label_seq_id
 	std::string pdbID() const;	// auth_comp_id + '_' + auth_asym_id + '_' + auth_seq_id + pdbx_PDB_ins_code
 	
 	bool operator==(const Atom& rhs) const;

@@ -19,12 +19,12 @@ class DistanceMap
 	DistanceMap(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell);
 
 	// simplified version for subsets of atoms (used in refining e.g.)	
-	DistanceMap(const Structure& p, const std::vector<Atom>& atoms);
+//	DistanceMap(const Structure& p, const std::vector<Atom>& atoms);
 	
 	DistanceMap(const DistanceMap&) = delete;
 	DistanceMap& operator=(const DistanceMap&) = delete;
 
-	float operator()(const Atom& a, const Atom& b) const;
+//	float operator()(const Atom& a, const Atom& b) const;
 
 	std::vector<Atom> near(const Atom& a, float maxDistance = 3.5f) const;
 	std::vector<Atom> near(const Point& p, float maxDistance = 3.5f) const;
@@ -45,7 +45,9 @@ class DistanceMap
 		}
 	};
 	
-	std::unordered_map<std::tuple<size_t,size_t>,float,key_hash> dist;
+	std::unordered_map<std::tuple<size_t,size_t>,std::tuple<float,size_t>,key_hash> dist;
+	Point mD;	// needed to move atoms to center
+	std::vector<clipper::RTop_orth> mRtOrth;
 };
 
 }

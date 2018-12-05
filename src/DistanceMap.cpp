@@ -125,26 +125,25 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		return d;
 	};
 
-	float dx = calculateD(mx, cell.a());
-	float dy = calculateD(my, cell.b());
-	float dz = calculateD(mz, cell.c());
+	mD.mX = calculateD(mx, cell.a());
+	mD.mY = calculateD(my, cell.b());
+	mD.mZ = calculateD(mz, cell.c());
 	
 	if (VERBOSE)
-		cerr << "Calculated d: " << dx << ", " << dy << " and " << dz << endl;
+		cerr << "Calculated d: " << mD.mX << ", " << mD.mY << " and " << mD.mZ << endl;
 	
-	if (dx != 0 or dy != 0 or dz != 0)
+	if (mD.mX != 0 or mD.mY != 0 or mD.mZ != 0)
 	{
 		if (VERBOSE)
-			cerr << "moving coorinates by " << dx << ", " << dy << " and " << dz << endl;
+			cerr << "moving coorinates by " << mD.mX << ", " << mD.mY << " and " << mD.mZ << endl;
 		
-		for_each(locations.begin(), locations.end(), [&](auto& p) { p[0] += dx; p[1] += dy; p[2] += dz; });
+		for_each(locations.begin(), locations.end(), [&](auto& p) { p += mD; });
 	}
 	
 	pMin -= kMaxDistance;	// extend bounding box
 	pMax += kMaxDistance;
 
-	vector<clipper::RTop_orth>
-		rtOrth = AlternativeSites(spacegroup, cell);
+	mRtOrth = AlternativeSites(spacegroup, cell);
 	
 	cif::Progress progress(locations.size() - 1, "Creating distance map");
 	
@@ -170,15 +169,21 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 					// find nearest location based on spacegroup/cell
 					double minR2 = numeric_limits<double>::max();
 					
-					for (auto rt: rtOrth)
+					size_t kb = 0;
+					for (size_t k = 0; k < mRtOrth.size(); ++k)
 					{
+						auto& rt = mRtOrth[k];
+						
 						auto pj = locations[j];
 						
 						pj = pj.transform(rt);
 						double r2 = (pi - pj).lengthsq();
 
 						if (minR2 > r2)
+						{
 							minR2 = r2;
+							kb = k;
+						}
 
 #if defined(DEBUG_VOOR_BART)
 						if (r2 < 3.5 * 3.5 and not rt.equals(clipper::RTop<>::identity(), 0.1))
@@ -191,10 +196,10 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 					if (minR2 < kMaxDistanceSQ)
 					{
 						float d = sqrt(minR2);
-						auto k = make_tuple(i, j);
+						auto key = make_tuple(i, j);
 						
 						lock_guard<mutex> lock(m);
-						dist[k] = d;
+						dist[key] = make_tuple(d, kb);
 					}
 				}
 
@@ -205,64 +210,63 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	t.join_all();
 }
 
-DistanceMap::DistanceMap(const Structure& p, const vector<Atom>& atoms)
-	: structure(p), dim(0)
-{
-	dim = atoms.size();
-	
-	for (auto& atom: atoms)
-	{
-		size_t ix = index.size();
-		index[atom.id()] = ix;
-	};
+//DistanceMap::DistanceMap(const Structure& p, const vector<Atom>& atoms)
+//	: structure(p), dim(0)
+//{
+//	dim = atoms.size();
+//	
+//	for (auto& atom: atoms)
+//	{
+//		size_t ix = index.size();
+//		index[atom.id()] = ix;
+//	};
+//
+//	for (size_t i = 0; i < dim; ++i)
+//	{
+//		for (size_t j = i + 1; j < dim; ++j)
+//		{
+//			dist[make_tuple(i, j)] = Distance(atoms[i].location(), atoms[j].location());
+//		}
+//	}
+//}
 
-	for (size_t i = 0; i < dim; ++i)
-	{
-		for (size_t j = i + 1; j < dim; ++j)
-		{
-			dist[make_tuple(i, j)] = Distance(atoms[i].location(), atoms[j].location());
-		}
-	}
-}
+//float DistanceMap::operator()(const Atom& a, const Atom& b) const
+//{
+//	size_t ixa, ixb;
+//	
+//	try
+//	{
+//		ixa = index.at(a.id());
+//	}
+//	catch (const out_of_range& ex)
+//	{
+//		throw runtime_error("atom " + a.id() + " not found in distance map");
+//	}
+//		
+//	try
+//	{
+//		ixb = index.at(b.id());
+//	}
+//	catch (const out_of_range& ex)
+//	{
+//		throw runtime_error("atom " + b.id() + " not found in distance map");
+//	}
+//	
+//	if (ixb < ixa)
+//		swap(ixa, ixb);
+//	
+//	tuple<size_t,size_t> k{ ixa, ixb };
+//
+//	auto ii = dist.find(k);
+//
+//	float result = 100;
+//	
+//	if (ii != dist.end())
+//		result = ii->second;
+//	
+//	return result;
+//}
 
-float DistanceMap::operator()(const Atom& a, const Atom& b) const
-{
-	size_t ixa, ixb;
-	
-	try
-	{
-		ixa = index.at(a.id());
-	}
-	catch (const out_of_range& ex)
-	{
-		throw runtime_error("atom " + a.id() + " not found in distance map");
-	}
-		
-	try
-	{
-		ixb = index.at(b.id());
-	}
-	catch (const out_of_range& ex)
-	{
-		throw runtime_error("atom " + b.id() + " not found in distance map");
-	}
-	
-	if (ixb < ixa)
-		swap(ixa, ixb);
-	
-	tuple<size_t,size_t> k{ ixa, ixb };
-
-	auto ii = dist.find(k);
-
-	float result = 100;
-	
-	if (ii != dist.end())
-		result = ii->second;
-	
-	return result;
-}
-
-#warning("this method should return symmetry reoriented atoms...")
 vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 {
 	vector<Atom> result;
@@ -289,8 +293,19 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 				dist.find(make_tuple(ixa, ixb)) :
 				dist.find(make_tuple(ixb, ixa));
 		
-		if (ii != dist.end() and ii->second <= maxDistance)
-			result.push_back(structure.getAtomById(i.first));
+		if (ii == dist.end())
+			continue;
+		
+		float distance;
+		size_t rti;
+		tie(distance, rti) = ii->second;
+		
+		if (distance > maxDistance)
+			continue;
+		
+		Atom a = structure.getAtomById(i.first);
+		
+		result.push_back(a.symmetryCopy(mD, mRtOrth.at(rti)));
 	}
 	
 	return result;

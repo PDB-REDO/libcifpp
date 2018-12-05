@@ -161,7 +161,20 @@ struct AtomImpl
 	{
 		prefetch();
 	}
-	
+
+	AtomImpl(const AtomImpl& impl, const Point& d, const clipper::RTop_orth& rt)
+		: mFile(impl.mFile), mId(impl.mId), mType(impl.mType), mAtomID(impl.mAtomID)
+		, mCompID(impl.mCompID), mAsymID(impl.mAsymID), mSeqID(impl.mSeqID)
+		, mAltID(impl.mAltID), mLocation(impl.mLocation), mRefcount(impl.mRefcount)
+		, mRow(impl.mRow), mCompound(impl.mCompound), mRadius(impl.mRadius)
+		, mCachedProperties(impl.mCachedProperties)
+		, mSymmetryCopy(true)
+	{
+		mLocation += d;
+		mLocation = ((clipper::Coord_orth)mLocation).transform(rt);
+		mLocation -= d;
+	}
+
 	void prefetch()
 	{
 		// Prefetch some data
@@ -259,6 +272,10 @@ struct AtomImpl
 	
 	void moveTo(const Point& p)
 	{
+		assert(not mSymmetryCopy);
+		if (mSymmetryCopy)
+			throw runtime_error("Moving symmetry copy");
+		
 		boost::format kPosFmt("%.3f");
 
 		mRow["Cartn_x"] = (kPosFmt % p.getX()).str();
@@ -330,6 +347,8 @@ struct AtomImpl
 	const Compound*		mCompound;
 	float				mRadius = nan("4");
 	map<string,string>	mCachedProperties;
+	
+	bool				mSymmetryCopy = false;
 };
 
 //Atom::Atom(const File& f, const string& id)
@@ -477,6 +496,11 @@ int Atom::authSeqId() const
 	return property<int>("auth_seq_id");
 }
 
+string Atom::labelID() const
+{
+	return property<string>("label_comp_id") + '_' + mImpl->mAsymID + '_' + to_string(mImpl->mSeqID) + ':' + mImpl->mAtomID;
+}
+
 string Atom::pdbID() const
 {
 	return
@@ -494,6 +518,11 @@ Point Atom::location() const
 void Atom::location(Point p)
 {
 	mImpl->moveTo(p);
+}
+
+Atom Atom::symmetryCopy(const Point& d, const clipper::RTop_orth& rt)
+{
+	return Atom(new AtomImpl(*mImpl, d, rt));
 }
 
 const Compound& Atom::comp() const

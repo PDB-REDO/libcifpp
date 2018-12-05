@@ -442,7 +442,7 @@ void ProgressImpl::Run()
 			PrintProgress();
 			printedAny = true;
 
-			boost::this_thread::sleep(boost::posix_time::seconds(0.5));
+			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 		}
 	}
 	catch (...) {}

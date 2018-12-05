@@ -20,7 +20,7 @@ BondMap::BondMap(const Structure& p)
 	auto atoms = p.atoms();
 	dim = atoms.size();
 	
-	bond = vector<bool>(dim * (dim - 1), false);
+	bond = vector<uint8>(dim * (dim - 1), 0);
 
 	for (auto& atom: atoms)
 	{
@@ -39,7 +39,7 @@ BondMap::BondMap(const Structure& p)
 		size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
 		
 		assert(ix < bond.size());
-		bond[ix] = true;
+		bond[ix] = 1;
 		
 	};
 
@@ -57,7 +57,8 @@ BondMap::BondMap(const Structure& p)
 		if (compounds.count(c))
 			continue;
 		
-		cerr << "Warning: mon_id " << c << " is missing in the chem_comp category" << endl;
+		if (VERBOSE)
+			cerr << "Warning: mon_id " << c << " is missing in the chem_comp category" << endl;
 		compounds.insert(c);
 	}
 
@@ -124,8 +125,6 @@ BondMap::BondMap(const Structure& p)
 
 	// then link all atoms in the compounds
 	
-	cif::Progress progress(compounds.size(), "Creating bond map");
-
 	for (auto c: compounds)
 	{
 		auto* compound = mmcif::Compound::create(c);
@@ -191,29 +190,58 @@ BondMap::BondMap(const Structure& p)
 						size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
 						
 						assert(ix < bond.size());
-						bond[ix] = true;
+						bond[ix] = 1;
 					}
 				}
 			}
 		}
-		
-		progress.consumed(1);
+	}
+	
+	// The next step is to fill bond with the next steps to other atoms
+	// First for two steps and then for three
+	
+	for (size_t steps: { 2, 3 })
+	{
+		for (size_t i = 0; i + 1 < dim; ++i)
+		{
+			for (size_t j = i + 1; j < dim; ++j)
+			{
+				size_t ix = j + i * dim - i * (i + 1) / 2;
+
+				if (bond[ix])
+					continue;
+				
+				for (size_t k = 0; k < dim; ++k)
+				{
+					if (k == i or k == j)
+						continue;
+
+					size_t ni = get(k, i);
+					size_t nj = get(k, j);
+					if (ni > 0 and nj > 0 and ni + nj == steps)
+					{
+						bond[ix] = steps;
+						break;
+					}
+				}
+			}
+		}
 	}
 }
 
-bool BondMap::isBonded(size_t ixa, size_t ixb) const
-{
-	if (ixa == ixb)
-		return false;
-	
-	if (ixa > ixb)
-		swap(ixa, ixb);
-	
-	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
-	
-	assert(ix < bond.size());
-	return bond[ix];
-}
+//bool BondMap::isBonded(size_t ixa, size_t ixb) const
+//{
+//	if (ixa == ixb)
+//		return false;
+//	
+//	if (ixa > ixb)
+//		swap(ixa, ixb);
+//	
+//	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
+//	
+//	assert(ix < bond.size());
+//	return bond[ix];
+//}
 
 bool BondMap::is1_4(const Atom& a, const Atom& b) const
 {
@@ -227,18 +255,21 @@ bool BondMap::is1_4(const Atom& a, const Atom& b) const
 	
 	for (size_t ia = 0; result == false and ia + 1 < dim; ++ia)
 	{
-		if (ia == ixa or ia == ixb or not isBonded(ixa, ia))
+		if (ia == ixa or ia == ixb or get(ixa, ia) != 1)
 			continue;
 		
 		for (size_t ib = ia + 1; result == false and ib < dim; ++ib)
 		{
-			if (ib == ixa or ib == ixb or not isBonded(ib, ixb))
+			if (ib == ixa or ib == ixb or get(ib, ixb) != 1)
 				continue;
 
 			size_t ix = ib + ia * dim - ia * (ia + 1) / 2;
-			result = bond[ix];
+			result = bond[ix] == 1;
 		}
 	}
+	
+	if (result != (get(ixa, ixb) == 3))
+		cerr << "Verschil in 1-4 binding voor " << a.labelID() << " en " << b.labelID() << " (c = " << (int)get(ixa, ixb) << ")" << endl;
 	
 	return result;
 }
