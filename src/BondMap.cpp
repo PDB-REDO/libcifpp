@@ -197,16 +197,18 @@ BondMap::BondMap(const Structure& p)
 		}
 	}
 	
-	// The next step is to fill bond with the next steps to other atoms
+	// The next step is to fill bond with the distance to other atoms
 	// First for two steps and then for three
 	
 	for (size_t steps: { 2, 3 })
 	{
 		for (size_t i = 0; i + 1 < dim; ++i)
 		{
+			size_t ixi = i * dim - i * (i + 1) / 2;
+
 			for (size_t j = i + 1; j < dim; ++j)
 			{
-				size_t ix = j + i * dim - i * (i + 1) / 2;
+				size_t ix = j + ixi;
 
 				if (bond[ix])
 					continue;
@@ -228,50 +230,5 @@ BondMap::BondMap(const Structure& p)
 		}
 	}
 }
-
-//bool BondMap::isBonded(size_t ixa, size_t ixb) const
-//{
-//	if (ixa == ixb)
-//		return false;
-//	
-//	if (ixa > ixb)
-//		swap(ixa, ixb);
-//	
-//	size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
-//	
-//	assert(ix < bond.size());
-//	return bond[ix];
-//}
-
-//bool BondMap::is1_4(const Atom& a, const Atom& b) const
-//{
-//	size_t ixa = index.at(a.id());
-//	size_t ixb = index.at(b.id());
-//	
-//	if (ixb < ixa)
-//		swap(ixa, ixb);
-//	
-//	bool result = false;
-//	
-//	for (size_t ia = 0; result == false and ia + 1 < dim; ++ia)
-//	{
-//		if (ia == ixa or ia == ixb or get(ixa, ia) != 1)
-//			continue;
-//		
-//		for (size_t ib = ia + 1; result == false and ib < dim; ++ib)
-//		{
-//			if (ib == ixa or ib == ixb or get(ib, ixb) != 1)
-//				continue;
-//
-//			size_t ix = ib + ia * dim - ia * (ia + 1) / 2;
-//			result = bond[ix] == 1;
-//		}
-//	}
-//	
-//	if (result != (get(ixa, ixb) == 3))
-//		cerr << "Verschil in 1-4 binding voor " << a.labelID() << " en " << b.labelID() << " (c = " << (int)get(ixa, ixb) << ")" << endl;
-//	
-//	return result;
-//}
 
 }
