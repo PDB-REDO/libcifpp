@@ -15,12 +15,11 @@ namespace mmcif
 // --------------------------------------------------------------------
 
 BondMap::BondMap(const Structure& p)
-	: dim(0)
 {
 	auto atoms = p.atoms();
 	dim = atoms.size();
-	
-	bond = vector<uint8>(dim * (dim - 1), 0);
+
+//	bond = vector<bool>(dim * (dim - 1), false);
 
 	for (auto& atom: atoms)
 	{
@@ -30,17 +29,10 @@ BondMap::BondMap(const Structure& p)
 	
 	auto bindAtoms = [this](const string& a, const string& b)
 	{
-		size_t ixa = index[a];
-		size_t ixb = index[b];
+		uint32 ixa = index[a];
+		uint32 ixb = index[b];
 		
-		if (ixb < ixa)
-			swap(ixa, ixb);
-		
-		size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
-		
-		assert(ix < bond.size());
-		bond[ix] = 1;
-		
+		bond.insert(key(ixa, ixb));
 	};
 
 	cif::Datablock& db = p.getFile().data();
@@ -57,8 +49,7 @@ BondMap::BondMap(const Structure& p)
 		if (compounds.count(c))
 			continue;
 		
-		if (VERBOSE)
-			cerr << "Warning: mon_id " << c << " is missing in the chem_comp category" << endl;
+		cerr << "Warning: mon_id " << c << " is missing in the chem_comp category" << endl;
 		compounds.insert(c);
 	}
 
@@ -125,6 +116,8 @@ BondMap::BondMap(const Structure& p)
 
 	// then link all atoms in the compounds
 	
+	cif::Progress progress(compounds.size(), "Creating bond map");
+
 	for (auto c: compounds)
 	{
 		auto* compound = mmcif::Compound::create(c);
@@ -153,9 +146,9 @@ BondMap::BondMap(const Structure& p)
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
 				[&](auto& a) { return a.labelAsymId() == asymId and a.labelSeqId() == seqId; });
 			
-			for (size_t i = 0; i + 1 < rAtoms.size(); ++i)
+			for (uint32 i = 0; i + 1 < rAtoms.size(); ++i)
 			{
-				for (size_t j = i + 1; j < rAtoms.size(); ++j)
+				for (uint32 j = i + 1; j < rAtoms.size(); ++j)
 				{
 					if (compound->atomsBonded(rAtoms[i].labelAtomId(), rAtoms[j].labelAtomId()))
 						bindAtoms(rAtoms[i].id(), rAtoms[j].id());
@@ -175,60 +168,86 @@ BondMap::BondMap(const Structure& p)
 //			for (auto a: db["atom_site"].find(cif::Key("label_asym_id") == asymId))
 //				rAtoms.push_back(p.getAtomById(a["id"].as<string>()));
 			
-			for (size_t i = 0; i + 1 < rAtoms.size(); ++i)
+			for (uint32 i = 0; i + 1 < rAtoms.size(); ++i)
 			{
-				for (size_t j = i + 1; j < rAtoms.size(); ++j)
+				for (uint32 j = i + 1; j < rAtoms.size(); ++j)
 				{
 					if (compound->atomsBonded(rAtoms[i].labelAtomId(), rAtoms[j].labelAtomId()))
 					{
-						size_t ixa = index[rAtoms[i].id()];
-						size_t ixb = index[rAtoms[j].id()];
+						uint32 ixa = index[rAtoms[i].id()];
+						uint32 ixb = index[rAtoms[j].id()];
 						
-						if (ixb < ixa)
-							swap(ixa, ixb);
-						
-						size_t ix = ixb + ixa * dim - ixa * (ixa + 1) / 2;
-						
-						assert(ix < bond.size());
-						bond[ix] = 1;
+						bond.insert(key(ixa, ixb));
 					}
 				}
 			}
 		}
 	}
 	
-	// The next step is to fill bond with the distance to other atoms
-	// First for two steps and then for three
 	
-	for (size_t steps: { 2, 3 })
+	// start by creating an index for single bonds
+
+//cout << "Maken van b1_2 voor " << bond.size() << " bindingen" << endl;
+	
+	multimap<uint32,uint32> b1_2;
+	for (auto& bk: bond)
 	{
-		for (size_t i = 0; i + 1 < dim; ++i)
+		uint32 a, b;
+		tie(a, b) = dekey(bk);
+		
+		b1_2.insert({ a, b });
+		b1_2.insert({ b, a });
+	}
+	
+//cout << "Afmeting b1_2: " << b1_2.size() << endl;
+
+	multimap<uint32,uint32> b1_3;
+	for (uint32 i = 0; i < dim; ++i)
+	{
+		auto a = b1_2.equal_range(i);
+		
+		vector<uint32> s;
+		for (auto j = a.first; j != a.second; ++j)
+			s.push_back(j->second);
+
+		for (size_t si1 = 0; si1 + 1 < s.size(); ++si1)
 		{
-			size_t ixi = i * dim - i * (i + 1) / 2;
-
-			for (size_t j = i + 1; j < dim; ++j)
+			for (size_t si2 = si1 + 1; si2 < s.size(); ++si2)
 			{
-				size_t ix = j + ixi;
-
-				if (bond[ix])
+				uint32 x = s[si1];
+				uint32 y = s[si2];
+				
+				if (isBonded(x, y))
 					continue;
 				
-				for (size_t k = 0; k < dim; ++k)
-				{
-					if (k == i or k == j)
-						continue;
-
-					size_t ni = get(k, i);
-					size_t nj = get(k, j);
-					if (ni > 0 and nj > 0 and ni + nj == steps)
-					{
-						bond[ix] = steps;
-						break;
-					}
-				}
+				b1_3.insert({ x, y });
+				b1_3.insert({ y, x });
 			}
 		}
 	}
+
+//cout << "Afmeting b1_3: " << b1_3.size() << endl;
+
+	for (uint32 i = 0; i < dim; ++i)
+	{
+		auto a1 = b1_2.equal_range(i);
+		auto a2 = b1_3.equal_range(i);
+		
+		for (auto ai1 = a1.first; ai1 != a1.second; ++ai1)
+		{
+			for (auto ai2 = a2.first; ai2 != a2.second; ++ai2)
+			{
+				uint32 b1 = ai1->second;
+				uint32 b2 = ai2->second;
+				
+				if (isBonded(b1, b2))
+					continue;
+				
+				bond_1_4.insert(key(b1, b2));
+			}
+		}
+	}
+//cout << "Afmeting b1_4: " << bond_1_4.size() << endl;
 }
 
 }

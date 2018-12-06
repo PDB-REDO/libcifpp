@@ -19,47 +19,42 @@ class BondMap
 
 	bool operator()(const Atom& a, const Atom& b) const
 	{
-		return get(index.at(a.id()), index.at(b.id())) == 1;
-	}
-
-	bool operator()(const std::string& id_a, const std::string& id_b) const
-	{
-		return get(index.at(id_a), index.at(id_b)) == 1;
+		return isBonded(index.at(a.id()), index.at(b.id()));
 	}
 
 	bool is1_4(const Atom& a, const Atom& b) const
 	{
-		return get(index.at(a.id()), index.at(b.id())) == 3;
-	}
+		uint32 ixa = index.at(a.id());
+		uint32 ixb = index.at(b.id());
 	
-	bool is1_4(const std::string& id_a, const std::string& id_b) const
-	{
-		return get(index.at(id_a), index.at(id_b)) == 3;
+		return bond_1_4.count(key(ixa, ixb));
 	}
-
-//	bool is1_4(const Atom& a, const Atom& b) const;
-//	bool is1_4(const std::string& id_a, const std::string& id_b) const;
 	
   private:
 
-	uint8 get(size_t ia, size_t ib) const
+	bool isBonded(uint32 ai, uint32 bi) const
 	{
-		uint8 result = 0;
-		if (ia != ib)
-		{
-			if (ib < ia)
-				std::swap(ia, ib);
-			
-			size_t ix = ib + ia * dim - ia * (ia + 1) / 2;
-			assert(ix < bond.size());
-			result = bond[ix];
-		}
-		return result;
+		return bond.count(key(ai, bi)) != 0;
 	}
 
-	size_t dim;
-	std::vector<uint8> bond;
-	std::unordered_map<std::string,size_t> index;
+	uint64 key(uint32 a, uint32 b) const
+	{
+		if (a > b)
+			std::swap(a, b);
+		return static_cast<uint64>(a) | (static_cast<uint64>(b) << 32);
+	}
+	
+	std::tuple<uint32,uint32> dekey(uint64 k) const
+	{
+		return std::make_tuple(
+			static_cast<uint32>(k >> 32),
+			static_cast<uint32>(k)
+		);
+	}
+	
+	uint32 dim;
+	std::unordered_map<std::string,uint32> index;
+	std::set<uint64> bond, bond_1_4;
 };
 
 }
