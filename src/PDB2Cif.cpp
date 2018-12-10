@@ -1212,7 +1212,8 @@ void PDBFileParser::Match(const string& expected, bool throwIfMissing)
 	{
 		if (throwIfMissing)
 			throw runtime_error("Expected record " + expected + " but found " + mRec->mName);
-		cerr << "Expected record " + expected + " but found " + mRec->mName << endl;
+		if (VERBOSE)
+			cerr << "Expected record " + expected + " but found " + mRec->mName << endl;
 	}
 }
 

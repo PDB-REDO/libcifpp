@@ -711,6 +711,11 @@ string Residue::authID() const
 	return result;
 }
 
+string Residue::labelID() const
+{
+	return mAsymID + to_string(mSeqID);
+}
+
 // --------------------------------------------------------------------
 // monomer
 

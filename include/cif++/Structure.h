@@ -191,6 +191,9 @@ class Residue
 	
 	// return a human readable PDB-like auth id (chain+seqnr+iCode)
 	std::string			authID() const;
+
+	// similar for mmCIF space
+	std::string			labelID() const;
 	
 	// Is this residue a single entity?
 	bool isEntity() const;
