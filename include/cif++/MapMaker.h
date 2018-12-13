@@ -74,7 +74,7 @@ class MapMaker
 	MapMaker& operator=(const MapMaker&) = delete;
 	
 	void loadMTZ(const boost::filesystem::path& mtzFile,
-		float samplingRate = 4.5,
+		float samplingRate,
 		std::initializer_list<std::string> fbLabels = { "FWT", "PHWT" },
 		std::initializer_list<std::string> fdLabels = { "DELFWT", "PHDELWT" },
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
@@ -89,13 +89,13 @@ class MapMaker
 	void calculate(const boost::filesystem::path& hklin,
 		const Structure& structure,
 		bool noBulk, AnisoScalingFlag anisoScaling,
-		float samplingRate = 4.5, bool electronScattering = false,
+		float samplingRate, bool electronScattering = false,
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
 		std::initializer_list<std::string> freeLabels = { "FREE" });
 
 	void recalc(const Structure& structure,
-		bool noBulk = false, AnisoScalingFlag anisoScaling = as_None,
-		float samplingRate = 4.5, bool electronScattering = false);
+		bool noBulk, AnisoScalingFlag anisoScaling,
+		float samplingRate, bool electronScattering = false);
 
 	void printStats();
 

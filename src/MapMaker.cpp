@@ -238,7 +238,7 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 			mResLow = res;
 	}
 
-	fixMTZ();
+//	fixMTZ();
 
 	mGrid.init(spacegroup, cell,
 		mHKLInfo.resolution(), samplingRate);	// define grid
@@ -258,7 +258,8 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 		     << "  stored resolution: " << mHKLInfo.resolution().limit() << endl
 			 << "  calculated reshi = " << mResHigh << " reslo = " << mResLow << endl
 		     << "  spacegroup: " << spacegroup.symbol_hm() << endl
-		     << "  cell: " << cell.format() << endl;
+		     << "  cell: " << cell.format() << endl
+		     << "  grid: " << mGrid.format() << endl;
 
 		printStats();
 	}

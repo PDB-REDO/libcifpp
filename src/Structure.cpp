@@ -276,11 +276,15 @@ struct AtomImpl
 		if (mSymmetryCopy)
 			throw runtime_error("Moving symmetry copy");
 		
-		boost::format kPosFmt("%.3f");
-
-		mRow["Cartn_x"] = (kPosFmt % p.getX()).str();
-		mRow["Cartn_y"] = (kPosFmt % p.getY()).str();
-		mRow["Cartn_z"] = (kPosFmt % p.getZ()).str();
+		mRow["Cartn_x"] = p.getX();
+		mRow["Cartn_y"] = p.getY();
+		mRow["Cartn_z"] = p.getZ();
+		
+//		boost::format kPosFmt("%.3f");
+//
+//		mRow["Cartn_x"] = (kPosFmt % p.getX()).str();
+//		mRow["Cartn_y"] = (kPosFmt % p.getY()).str();
+//		mRow["Cartn_z"] = (kPosFmt % p.getZ()).str();
 
 		mLocation = p;
 	}
