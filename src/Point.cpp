@@ -34,48 +34,6 @@ quaternion Normalize(quaternion q)
 
 // --------------------------------------------------------------------
 
-float DihedralAngle(const Point& p1, const Point& p2, const Point& p3, const Point& p4)
-{
-	Point v12 = p1 - p2;	// vector from p2 to p1
-	Point v43 = p4 - p3;	// vector from p3 to p4
-	
-	Point z = p2 - p3;		// vector from p3 to p2
-	
-	Point p = CrossProduct(z, v12);
-	Point x = CrossProduct(z, v43);
-	Point y = CrossProduct(z, x);
-	
-	double u = DotProduct(x, x);
-	double v = DotProduct(y, y);
-	
-	double result = 360;
-	if (u > 0 and v > 0)
-	{
-		u = DotProduct(p, x) / sqrt(u);
-		v = DotProduct(p, y) / sqrt(v);
-		if (u != 0 or v != 0)
-			result = atan2(v, u) * 180 / kPI;
-	}
-	
-	return result;
-}
-
-float CosinusAngle(const Point& p1, const Point& p2, const Point& p3, const Point& p4)
-{
-	Point v12 = p1 - p2;
-	Point v34 = p3 - p4;
-	
-	double result = 0;
-	
-	double x = DotProduct(v12, v12) * DotProduct(v34, v34);
-	if (x > 0)
-		result = DotProduct(v12, v34) / sqrt(x);
-	
-	return result;
-}
-
-// --------------------------------------------------------------------
-
 tuple<double,Point> QuaternionToAngleAxis(quaternion q)
 {
 	if (q.R_component_1() > 1)

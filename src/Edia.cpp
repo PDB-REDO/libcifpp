@@ -195,7 +195,7 @@ float CalculateEDIA(const Atom& atom, const clipper::Xmap<float>& xmap,
 		for (auto iv = iu; iv.coord().v() <= gridMax[1]; iv.next_v())
 			for (auto iw = iv; iw.coord().w() <= gridMax[2]; iw.next_w())
 			{
-				auto p = iw.coord_orth();
+				Point p = iw.coord_orth();
 
 				float z = (xmap[iw] - meanDensity) / rmsDensity;
 				
