@@ -492,6 +492,10 @@ class Row
 	// checks for an initialized Row:
 	operator bool() const									{ return mData != nullptr; }
 	
+	// for debugging
+	uint32 lineNr() const;
+	void lineNr(uint32 l);
+	
 	bool empty() const;
 	const_iterator begin() const;
 	const_iterator end() const;
@@ -544,6 +548,7 @@ class Row
 	static void swap(const string& name, ItemRow* a, ItemRow* b);
 
 	ItemRow*	mData;
+	uint32		mLineNr = 0;
 };
 
 // swap for Rows is defined below

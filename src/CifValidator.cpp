@@ -2,8 +2,9 @@
 
 #include <boost/algorithm/string.hpp>
 
-// since gcc's regex is crashing....
-#include <boost/regex.hpp>
+//// since gcc's regex is crashing....
+//#include <boost/regex.hpp>
+#include <regex>
 
 #include "cif++/Cif++.h"
 #include "cif++/CifParser.h"
@@ -151,7 +152,7 @@ void ValidateItem::operator()(string value) const
 {
 	if (not value.empty() and value != "?" and value != ".")
 	{
-		if (mType != nullptr and not boost::regex_match(value, mType->mRx))
+		if (mType != nullptr and not regex_match(value, mType->mRx))
 			throw ValidationError(mCategory->mName, mTag, "Value '" + value + "' does not match type expression for type " + mType->mName);
 
 		if (not mEnums.empty())
@@ -208,7 +209,7 @@ const ValidateType* Validator::getValidatorForType(string typeCode) const
 {
 	const ValidateType* result = nullptr;
 	
-	auto i = mTypeValidators.find(ValidateType{ typeCode, ptChar, boost::regex() });
+	auto i = mTypeValidators.find(ValidateType{ typeCode, ptChar, regex() });
 	if (i != mTypeValidators.end())
 		result = &*i;
 	else if (VERBOSE > 4)

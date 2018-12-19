@@ -124,6 +124,7 @@ struct ItemRow
 	ItemRow*				mNext;
 	Category*				mCategory;
 	ItemValue*				mValues;
+	uint32					mLineNr = 0;
 };
 
 ostream& operator<<(ostream& os, const ItemRow& r)
@@ -2137,6 +2138,17 @@ auto Row::begin() const -> const_iterator
 auto Row::end() const -> const_iterator
 {
 	return const_iterator(mData, nullptr);
+}
+
+uint32 Row::lineNr() const
+{
+	return mData ? mData->mLineNr : 0;
+}
+
+void Row::lineNr(uint32 l)
+{
+	if (mData)
+		mData->mLineNr = l;
 }
 
 Row::const_iterator::const_iterator(ItemRow* data, ItemValue* ptr)

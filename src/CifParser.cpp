@@ -652,6 +652,7 @@ void Parser::produceRow()
 
 	mCat->emplace({});
 	mRow = mCat->back();
+	mRow.lineNr(mLineNr);
 }
 
 void Parser::produceItem(const string& category, const string& item, const string& value)
@@ -911,8 +912,7 @@ void DictParser::loadDictionary()
 	}
 	catch (const exception& ex)
 	{
-		if (VERBOSE)
-			cerr << "Error parsing dictionary: '" << ex.what() << "'" << endl;
+		throw_with_nested(runtime_error("Error parsing dictionary"));
 	}
 
 	// store all validators
@@ -971,16 +971,23 @@ bool DictParser::collectItemTypes()
 		ba::replace_all(construct, "\\t", "\t");
 		ba::replace_all(construct, "\\\n", "");
 		
-		ValidateType v = {
-			code, mapToPrimitiveType(primitiveCode), boost::regex(construct, boost::regex::egrep)
-		};
+		try
+		{
+			ValidateType v = {
+				code, mapToPrimitiveType(primitiveCode), regex(construct, regex::egrep | regex::optimize)
+			};
+			
+			mValidator.addTypeValidator(move(v));
+		}
+		catch (const exception& ex)
+		{
+			throw_with_nested(CifParserError(t.lineNr(), "error in regular expression"));
+		}
 
 // Do not replace an already defined type validator, this won't work with pdbx_v40
 // as it has a name that is too strict for its own names :-)
 //		if (mFileImpl.mTypeValidators.count(v))
 //			mFileImpl.mTypeValidators.erase(v);
-		
-		mValidator.addTypeValidator(move(v));
 
 		if (VERBOSE >= 5)
 			cerr << "Added type " << code << " (" << primitiveCode << ") => " << construct << endl;
