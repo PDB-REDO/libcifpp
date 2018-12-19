@@ -65,6 +65,8 @@ class DSSP
 	SecondaryStructureType operator()(const std::string& inAsymID, int inSeqID) const;
 	SecondaryStructureType operator()(const Monomer& m) const;
 	
+	bool isAlphaHelixEndBeforeStart(const Monomer& m) const;
+	
   private:
 	struct DSSPImpl* mImpl;
 };
