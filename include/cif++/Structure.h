@@ -160,6 +160,11 @@ inline double Distance(const Atom& a, const Atom& b)
 	return Distance(a.location(), b.location());
 }
 
+inline double DistanceSquared(const Atom& a, const Atom& b)
+{
+	return DistanceSquared(a.location(), b.location());
+}
+
 typedef std::vector<Atom> AtomView;
 
 // --------------------------------------------------------------------
