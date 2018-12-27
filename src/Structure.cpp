@@ -145,6 +145,16 @@ void FileImpl::save(fs::path p)
 
 struct AtomImpl
 {
+	AtomImpl(const AtomImpl& i)
+		: mFile(i.mFile), mId(i.mId), mType(i.mType)
+		, mAtomID(i.mAtomID), mCompID(i.mCompID), mAsymID(i.mAsymID)
+		, mSeqID(i.mSeqID), mAltID(i.mAltID), mLocation(i.mLocation)
+		, mRefcount(1), mRow(i.mRow), mCompound(i.mCompound)
+		, mRadius(i.mRadius), mCachedProperties(i.mCachedProperties)
+		, mSymmetryCopy(i.mSymmetryCopy), mClone(true)
+	{
+	}
+	
 	AtomImpl(const File& f, const string& id)
 		: mFile(f), mId(id), mRefcount(1), mCompound(nullptr)
 	{
@@ -276,9 +286,12 @@ struct AtomImpl
 		if (mSymmetryCopy)
 			throw runtime_error("Moving symmetry copy");
 		
-		mRow["Cartn_x"] = p.getX();
-		mRow["Cartn_y"] = p.getY();
-		mRow["Cartn_z"] = p.getZ();
+		if (not mClone)
+		{
+			mRow["Cartn_x"] = p.getX();
+			mRow["Cartn_y"] = p.getY();
+			mRow["Cartn_z"] = p.getZ();
+		}
 		
 //		boost::format kPosFmt("%.3f");
 //
@@ -353,6 +366,7 @@ struct AtomImpl
 	map<string,string>	mCachedProperties;
 	
 	bool				mSymmetryCopy = false;
+	bool				mClone = false;
 };
 
 //Atom::Atom(const File& f, const string& id)
@@ -363,6 +377,11 @@ struct AtomImpl
 Atom::Atom(AtomImpl* impl)
 	: mImpl(impl)
 {
+}
+
+Atom Atom::clone() const
+{
+	return Atom(new AtomImpl(*mImpl));
 }
 
 Atom::Atom(const Atom& rhs)
@@ -543,12 +562,6 @@ bool Atom::operator==(const Atom& rhs) const
 {
 	return mImpl == rhs.mImpl or
 		(&mImpl->mFile == &rhs.mImpl->mFile and mImpl->mId == rhs.mImpl->mId); 	
-}
-
-const File& Atom::getFile() const
-{
-	assert(mImpl);
-	return mImpl->mFile;
 }
 
 clipper::Atom Atom::toClipper() const
@@ -1141,6 +1154,14 @@ struct StructureImpl
 		}
 	}
 	
+	StructureImpl(const StructureImpl& si)
+		: mFile(si.mFile), mModelNr(si.mModelNr)
+	{
+		mAtoms.reserve(si.mAtoms.size());
+		for (auto& atom: si.mAtoms)
+			mAtoms.emplace_back(atom.clone());
+	}
+	
 	void removeAtom(Atom& a);
 	void swapAtoms(Atom& a1, Atom& a2);
 	void moveAtom(Atom& a, Point p);
@@ -1308,6 +1329,11 @@ Structure::Structure(File& f, uint32 modelNr)
 Structure::~Structure()
 {
 	delete mImpl;
+}
+
+Structure::Structure(const Structure& rhs)
+	: mImpl(new StructureImpl(*rhs.mImpl))
+{
 }
 
 AtomView Structure::atoms() const

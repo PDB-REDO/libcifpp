@@ -87,6 +87,9 @@ class Atom
 
 	~Atom();
 	
+	// return a copy of this atom, with data copied instead of referenced
+	Atom clone() const;
+	
 	Atom& operator=(const Atom& rhs);
 
 	const std::string& id() const;
@@ -130,8 +133,6 @@ class Atom
 	
 	bool operator==(const Atom& rhs) const;
 
-	const File& getFile() const;
-	
 	// get clipper format Atom
 	clipper::Atom toClipper() const;
 
@@ -368,9 +369,11 @@ class Structure
 {
   public:
 	Structure(File& p, uint32 modelNr = 1);
-	Structure(const Structure&);
-	Structure& operator=(const Structure&);
+	Structure& operator=(const Structure&) = delete;
 	~Structure();
+
+	// Create a read-only clone of the current structure (for multithreaded calculations that move atoms)
+	Structure(const Structure&);
 
 	File& getFile() const;
 

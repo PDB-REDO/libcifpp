@@ -24,7 +24,7 @@ class DistanceMap
 	DistanceMap(const DistanceMap&) = delete;
 	DistanceMap& operator=(const DistanceMap&) = delete;
 
-//	float operator()(const Atom& a, const Atom& b) const;
+	float operator()(const Atom& a, const Atom& b) const;
 
 	std::vector<Atom> near(const Atom& a, float maxDistance = 3.5f) const;
 	std::vector<Atom> near(const Point& p, float maxDistance = 3.5f) const;

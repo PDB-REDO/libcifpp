@@ -860,18 +860,20 @@ SecondaryStructureType DSSP::operator()(const Monomer& m) const
 
 bool DSSP::isAlphaHelixEndBeforeStart(const Monomer& m) const
 {
-	auto asymID = m.asymID();
-	auto seqID = m.seqID();
+	return isAlphaHelixEndBeforeStart(m.asymID(), m.seqID());
+}
 
+bool DSSP::isAlphaHelixEndBeforeStart(const string& inAsymID, int inSeqID) const
+{
 	auto i = find_if(mImpl->mResidues.begin(), mImpl->mResidues.end(),
-		[&](auto& r) { return r.mM.asymID() == asymID and r.mM.seqID() == seqID; });
+		[&](auto& r) { return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
 
 	bool result = false;
 
 	if (i != mImpl->mResidues.end() and i + 1 != mImpl->mResidues.end())
 		result = i->GetHelixFlag(4) == helixEnd and (i + 1)->GetHelixFlag(4) == helixStart;
 	else if (VERBOSE)
-		cerr << "Could not find secondary structure for " << asymID << ':' << seqID << endl;
+		cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << endl;
 
 	return result;
 }

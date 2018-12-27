@@ -230,42 +230,42 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 //	}
 //}
 
-//float DistanceMap::operator()(const Atom& a, const Atom& b) const
-//{
-//	size_t ixa, ixb;
-//	
-//	try
-//	{
-//		ixa = index.at(a.id());
-//	}
-//	catch (const out_of_range& ex)
-//	{
-//		throw runtime_error("atom " + a.id() + " not found in distance map");
-//	}
-//		
-//	try
-//	{
-//		ixb = index.at(b.id());
-//	}
-//	catch (const out_of_range& ex)
-//	{
-//		throw runtime_error("atom " + b.id() + " not found in distance map");
-//	}
-//	
-//	if (ixb < ixa)
-//		swap(ixa, ixb);
-//	
-//	tuple<size_t,size_t> k{ ixa, ixb };
-//
-//	auto ii = dist.find(k);
-//
-//	float result = 100;
-//	
-//	if (ii != dist.end())
-//		result = ii->second;
-//	
-//	return result;
-//}
+float DistanceMap::operator()(const Atom& a, const Atom& b) const
+{
+	size_t ixa, ixb;
+	
+	try
+	{
+		ixa = index.at(a.id());
+	}
+	catch (const out_of_range& ex)
+	{
+		throw runtime_error("atom " + a.id() + " not found in distance map");
+	}
+		
+	try
+	{
+		ixb = index.at(b.id());
+	}
+	catch (const out_of_range& ex)
+	{
+		throw runtime_error("atom " + b.id() + " not found in distance map");
+	}
+	
+	if (ixb < ixa)
+		swap(ixa, ixb);
+	
+	tuple<size_t,size_t> k{ ixa, ixb };
+
+	auto ii = dist.find(k);
+
+	float result = 100;
+	
+	if (ii != dist.end())
+		result = get<0>(ii->second);
+	
+	return result;
+}
 
 vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 {
