@@ -35,6 +35,14 @@ BondMap::BondMap(const Structure& p)
 		bond.insert(key(ixa, ixb));
 	};
 
+	auto linkAtoms = [this,&bindAtoms](const string& a, const string& b)
+	{
+		bindAtoms(a, b);
+
+		link[a].insert(b);
+		link[b].insert(a);
+	};
+
 	cif::Datablock& db = p.getFile().data();
 
 	// collect all compounds first
@@ -111,7 +119,7 @@ BondMap::BondMap(const Structure& p)
 			cerr << "Unexpected number (" << b.size() << ") of atoms for link with asym_id " << asym2 << " seq_id " << seqId2 << " atom_id " << atomId2 << endl;
 		
 		if (not (a.empty() or b.empty()))
-			bindAtoms(a.front()["id"].as<string>(), b.front()["id"].as<string>());
+			linkAtoms(a.front()["id"].as<string>(), b.front()["id"].as<string>());
 	}
 
 	// then link all atoms in the compounds
@@ -249,5 +257,18 @@ BondMap::BondMap(const Structure& p)
 	}
 //cout << "Afmeting b1_4: " << bond_1_4.size() << endl;
 }
+
+vector<string> BondMap::linked(const Atom& a) const
+{
+	auto i = link.find(a.id());
+	
+	vector<string> result;
+	
+	if (i != link.end())
+		result = vector<string>(i->second.begin(), i->second.end());
+
+	return result;
+}
+
 
 }

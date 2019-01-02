@@ -30,6 +30,9 @@ class BondMap
 		return bond_1_4.count(key(ixa, ixb));
 	}
 	
+	// links coming from the struct_conn records:
+	std::vector<std::string> linked(const Atom& a) const;
+	
   private:
 
 	bool isBonded(uint32 ai, uint32 bi) const
@@ -55,6 +58,8 @@ class BondMap
 	uint32 dim;
 	std::unordered_map<std::string,uint32> index;
 	std::set<uint64> bond, bond_1_4;
+
+	std::map<std::string,std::set<std::string>> link;
 };
 
 }
