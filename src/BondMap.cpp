@@ -57,7 +57,8 @@ BondMap::BondMap(const Structure& p)
 		if (compounds.count(c))
 			continue;
 		
-		cerr << "Warning: mon_id " << c << " is missing in the chem_comp category" << endl;
+		if (VERBOSE)
+			cerr << "Warning: mon_id " << c << " is missing in the chem_comp category" << endl;
 		compounds.insert(c);
 	}
 
