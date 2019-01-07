@@ -409,8 +409,8 @@ class Structure
 	std::tuple<std::string,int,std::string,std::string> MapLabelToPDB(
 		const std::string& asymId, int seqId, const std::string& compId) const;
 
-	std::tuple<std::string,int,std::string,std::string> MapPDBToLabel(
-		const std::string& asymId, int seqId, const std::string& compId, const std::string& iCode);
+	std::tuple<std::string,int,std::string> MapPDBToLabel(
+		const std::string& asymId, int seqId, const std::string& compId, const std::string& iCode) const;
 	
 	// Actions
 	void removeAtom(Atom& a);

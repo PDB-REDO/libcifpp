@@ -1520,6 +1520,62 @@ tuple<string,int,string,string> Structure::MapLabelToPDB(
 	return result;
 }
 
+tuple<string,int,string> Structure::MapPDBToLabel(const string& asymId, int seqId,
+	const string& compId, const string& iCode) const
+{
+	auto& db = datablock();
+	
+	tuple<string,int,string> result;
+
+	if (iCode.empty())
+	{
+		for (auto r: db["pdbx_poly_seq_scheme"].find(
+							cif::Key("pdb_strand_id") == asymId and
+							cif::Key("pdb_seq_num") == seqId and
+							cif::Key("pdb_mon_id") == compId and
+							cif::Key("pdb_ins_code") == cif::Empty()))
+		{
+			result = r.get("asym_id", "seq_id", "mon_id");
+			break;
+		}
+							
+		for (auto r: db["pdbx_nonpoly_scheme"].find(
+							cif::Key("pdb_strand_id") == asymId and
+							cif::Key("pdb_seq_num") == seqId and
+							cif::Key("pdb_mon_id") == compId and
+							cif::Key("pdb_ins_code") == cif::Empty()))
+		{
+			result = r.get("asym_id", "ndb_seq_num", "mon_id");
+			break;
+		}
+		
+	}
+	else
+	{
+		for (auto r: db["pdbx_poly_seq_scheme"].find(
+							cif::Key("pdb_strand_id") == asymId and
+							cif::Key("pdb_seq_num") == seqId and
+							cif::Key("pdb_mon_id") == compId and
+							cif::Key("pdb_ins_code") == iCode))
+		{
+			result = r.get("asym_id", "seq_id", "mon_id");
+			break;
+		}
+							
+		for (auto r: db["pdbx_nonpoly_scheme"].find(
+							cif::Key("pdb_strand_id") == asymId and
+							cif::Key("pdb_seq_num") == seqId and
+							cif::Key("pdb_mon_id") == compId and
+							cif::Key("pdb_ins_code") == iCode))
+		{
+			result = r.get("asym_id", "ndb_seq_num", "mon_id");
+			break;
+		}
+	}
+
+	return result;
+}
+
 cif::Datablock& Structure::datablock() const
 {
 	return *mImpl->mFile->impl().mDb;

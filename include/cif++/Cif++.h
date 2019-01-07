@@ -392,6 +392,9 @@ namespace detail
 		getRowResult(const Row& r, C... columns)
 			: mRow(r), mColumns({{columns...}}) {}
 	
+		template<typename... Ts>
+		operator std::tuple<Ts...>() const;
+	
 		const Row& mRow;
 		std::array<const char*, N> mColumns;
 	};
@@ -443,6 +446,53 @@ namespace detail
 		T& 		mVal;
 		next	mNext;
 	};
+	
+	// And to convert a getRowResult to a std::tuple
+	template<int IX, typename... Ts>
+	struct toTuple;
+	
+	template<int IX, typename T>
+	struct toTuple<IX,T>
+	{
+		template<typename RR>
+		std::tuple<T> operator()(RR& rr)
+		{
+			typedef typename std::remove_reference<T>::type basicType;
+
+			const ItemReference v = rr[IX];
+			std::tuple<T> tv = std::make_tuple(v.as<basicType>());
+			return tv;
+		};
+	};
+	
+	template<int IX, typename T, typename... Ts>
+	struct toTuple<IX,T,Ts...>
+	{
+		typedef toTuple<IX + 1, Ts...> next;
+	
+		template<typename RR>
+		std::tuple<T,Ts...> operator()(RR& rr)
+		{
+			typedef typename std::remove_reference<T>::type basicType;
+
+			const ItemReference v = rr[IX];
+			std::tuple<T> tv = std::make_tuple(v.as<basicType>());
+			
+			next n;
+			return std::tuple_cat(tv, n(rr));
+		};
+	};
+	
+	template<typename... C>
+	template<typename... Ts>
+	getRowResult<C...>::operator std::tuple<Ts...>() const
+	{
+		typedef toTuple<0, Ts...> ToTuple;
+		ToTuple tt;
+		return tt(*this);
+	}
+	
+
 }
 
 template<typename... Ts>
