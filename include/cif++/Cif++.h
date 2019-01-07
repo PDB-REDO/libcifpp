@@ -491,8 +491,6 @@ namespace detail
 		ToTuple tt;
 		return tt(*this);
 	}
-	
-
 }
 
 template<typename... Ts>

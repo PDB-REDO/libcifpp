@@ -1490,14 +1490,7 @@ tuple<string,int,string,string> Structure::MapLabelToPDB(
 						cif::Key("seq_id") == seqId and
 						cif::Key("mon_id") == monId))
 	{
-		string pdbStrandId, pdbMonId, pdbInsCode;
-		int pdbSeqNum;
-		
-		cif::tie(pdbStrandId, pdbSeqNum, pdbMonId, pdbInsCode) =
-			r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-
-		result = make_tuple(pdbStrandId, pdbSeqNum, pdbMonId, pdbInsCode);
-
+		result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
 		break;
 	}
 						
@@ -1506,14 +1499,7 @@ tuple<string,int,string,string> Structure::MapLabelToPDB(
 						cif::Key("seq_id") == seqId and
 						cif::Key("mon_id") == monId))
 	{
-		string pdbStrandId, pdbMonId, pdbInsCode;
-		int pdbSeqNum;
-		
-		cif::tie(pdbStrandId, pdbSeqNum, pdbMonId, pdbInsCode) =
-			r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-
-		result = make_tuple(pdbStrandId, pdbSeqNum, pdbMonId, pdbInsCode);
-
+		result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
 		break;
 	}
 
