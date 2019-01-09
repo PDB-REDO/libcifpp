@@ -173,12 +173,13 @@ typedef std::vector<Atom> AtomView;
 class Residue
 {
   public:
-	Residue();
-	Residue(const Residue& rhs);
-	Residue& operator=(const Residue& rhs);
+	Residue() = default;
+	Residue(const Residue& rhs) = default;
+	Residue& operator=(const Residue& rhs) = default;
 
 	Residue(const Structure& structure)
 		: mStructure(&structure) {}
+
 	Residue(const Structure& structure, const std::string& compoundID,
 		const std::string& asymID, int seqID = 0,
 		const std::string& altID = "")
@@ -194,6 +195,9 @@ class Residue
 	const std::string&	asymID() const		{ return mAsymID; }
 	int					seqID() const		{ return mSeqID; }
 	const std::string&	altID() const		{ return mAltID; }
+	
+	int					authSeqID() const;
+	std::string			authInsCode() const;
 	
 	// return a human readable PDB-like auth id (chain+seqnr+iCode)
 	std::string			authID() const;
@@ -212,9 +216,9 @@ class Residue
 
   protected:
 
-	const Structure* mStructure;
+	const Structure* mStructure = nullptr;
 	std::string	mCompoundID, mAsymID, mAltID;
-	int mSeqID;
+	int mSeqID = 0;
 	mutable AtomView mAtoms;
 };
 
@@ -238,6 +242,8 @@ class Monomer : public Residue
 	float psi() const;
 	float alpha() const;
 	float kappa() const;
+	
+	bool isCis() const;
 
 	Atom CAlpha() const		{ return atomByID("CA"); }
 	Atom C() const			{ return atomByID("C"); }
@@ -265,8 +271,8 @@ class Polymer
   public:
 	Polymer(const Structure& s, const std::string& asymID);
 	Polymer(const Structure& s, const std::string& entityID, const std::string& asymID);
-	Polymer(const Polymer&);
-	Polymer& operator=(const Polymer&);
+	Polymer(const Polymer&) = default;
+	Polymer& operator=(const Polymer&) = default;
 	
 	struct iterator : public std::iterator<std::random_access_iterator_tag, Monomer>
 	{
@@ -321,6 +327,8 @@ class Polymer
 	
 	std::string asymID() const		{ return mAsymID; }
 	std::string entityID() const	{ return mEntityID; }
+	
+	std::string chainID() const;
 	
 	int Distance(const Monomer& a, const Monomer& b) const;
 

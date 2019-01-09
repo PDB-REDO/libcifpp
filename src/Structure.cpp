@@ -587,31 +587,40 @@ float Atom::radius() const
 // --------------------------------------------------------------------
 // residue
 
-Residue::Residue()
-	: mStructure(nullptr), mSeqID(0)
+string Residue::authInsCode() const
 {
-}
+	assert(mStructure);
 
-Residue::Residue(const Residue& rhs)
-	: mStructure(rhs.mStructure)
-	, mCompoundID(rhs.mCompoundID), mAsymID(rhs.mAsymID), mAltID(rhs.mAltID), mSeqID(rhs.mSeqID)
-{
-}
-
-Residue& Residue::operator=(const Residue& rhs)
-{
-	if (this != &rhs)
+	string result;
+	
+	try
 	{
-		mStructure = rhs.mStructure;
-		mCompoundID = rhs.mCompoundID;
-		mAsymID = rhs.mAsymID;
-		mSeqID = rhs.mSeqID;
-		mAltID = rhs.mAltID;
+		tie(ignore, ignore, result) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
 		
-		mAtoms = rhs.mAtoms;
+		ba::trim(result);
+	}
+	catch (...)
+	{
 	}
 	
-	return *this;
+	return result;
+}
+
+int Residue::authSeqID() const
+{
+	assert(mStructure);
+
+	int result = 0;
+	
+	try
+	{
+		tie(ignore, result, ignore) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
+	}
+	catch (...)
+	{
+	}
+	
+	return result;
 }
 
 const Compound& Residue::compound() const
@@ -844,6 +853,20 @@ float Monomer::kappa() const
 	return result;
 }
 
+bool Monomer::isCis() const
+{
+	bool result = false;
+	
+	if (mIndex + 1 < mPolymer->size())
+	{
+		Monomer next = mPolymer->operator[](mIndex + 1);
+		
+		result = Monomer::isCis(*this, next);
+	}
+	
+	return result;
+}
+
 bool Monomer::areBonded(const Monomer& a, const Monomer& b, float errorMargin)
 {
 	bool result = false;
@@ -928,18 +951,6 @@ Polymer::iterator::iterator(const iterator& rhs)
 {
 }
 
-Polymer::iterator& Polymer::iterator::operator=(const iterator& rhs)
-{
-	if (this != &rhs)
-	{
-		mPolymer = rhs.mPolymer;
-		mIndex = rhs.mIndex;
-		mCurrent = rhs.mCurrent;
-	}
-	
-	return *this;
-}
-
 Polymer::iterator& Polymer::iterator::operator++()
 {
 	auto& polySeq = mPolymer->mPolySeq;
@@ -958,12 +969,6 @@ Polymer::iterator& Polymer::iterator::operator++()
 	}
 	
 	return *this;
-}
-
-Polymer::Polymer(const Polymer& rhs)
-	: mStructure(rhs.mStructure), mEntityID(rhs.mEntityID), mAsymID(rhs.mAsymID), mPolySeq(rhs.mPolySeq)
-{
-	
 }
 
 Polymer::Polymer(const Structure& s, const string& asymID)
@@ -993,6 +998,11 @@ Polymer::iterator Polymer::begin() const
 Polymer::iterator Polymer::end() const
 {
 	return iterator(*this, mPolySeq.size());
+}
+
+string Polymer::chainID() const
+{
+	return mPolySeq.front()["pdb_strand_id"].as<string>();
 }
 
 Monomer Polymer::getBySeqID(int seqID) const
