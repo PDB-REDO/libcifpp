@@ -253,7 +253,7 @@ float DistanceMap::operator()(const Atom& a, const Atom& b) const
 	}
 	
 	if (ixb < ixa)
-		swap(ixa, ixb);
+		std::swap(ixa, ixb);
 	
 	tuple<size_t,size_t> k{ ixa, ixb };
 

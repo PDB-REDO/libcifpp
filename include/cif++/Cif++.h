@@ -611,6 +611,7 @@ struct ConditionImpl
 {
 	virtual ~ConditionImpl() {}
 	
+	virtual void prepare(const Category& c) {}
 	virtual bool test(const Category& c, const Row& r) const = 0;
 	virtual std::string str() const = 0;
 };
@@ -638,9 +639,16 @@ struct Condition
 		delete mImpl;
 	}
 	
+	void prepare(const Category& c)
+	{
+		mImpl->prepare(c);
+		mPrepared = true;
+	}
+	
 	bool operator()(const Category& c, const Row& r) const
 	{
 		assert(mImpl);
+		assert(mPrepared);
 		return mImpl->test(c, r);
 	}
 	
@@ -650,6 +658,7 @@ struct Condition
 	}
 
 	detail::ConditionImpl*	mImpl;
+	bool mPrepared = false;
 };
 
 namespace detail
@@ -659,10 +668,12 @@ struct KeyIsEmptyConditionImpl : public ConditionImpl
 {
 	KeyIsEmptyConditionImpl(const string& ItemTag)
 		: mItemTag(ItemTag) {}
+
+	virtual void prepare(const Category& c);
 	
 	virtual bool test(const Category& c, const Row& r) const
 	{
-		return r[mItemTag].empty();
+		return r[mItemIx].empty();
 	}
 	
 	virtual std::string str() const
@@ -671,6 +682,7 @@ struct KeyIsEmptyConditionImpl : public ConditionImpl
 	}
 	
 	string mItemTag;
+	size_t mItemIx;
 };
 
 template<typename T>
@@ -681,9 +693,11 @@ struct KeyIsConditionImpl : public ConditionImpl
 	KeyIsConditionImpl(const string& ItemTag, const valueType& value)
 		: mItemTag(ItemTag), mValue(value) {}
 	
+	virtual void prepare(const Category& c);
+	
 	virtual bool test(const Category& c, const Row& r) const
 	{
-		return r[mItemTag].template compare<valueType>(mValue) == 0;
+		return r[mItemIx].template compare<valueType>(mValue) == 0;
 	}
 	
 	virtual std::string str() const
@@ -692,6 +706,7 @@ struct KeyIsConditionImpl : public ConditionImpl
 	}
 	
 	string mItemTag;
+	size_t mItemIx;
 	valueType mValue;
 };
 
@@ -703,9 +718,11 @@ struct KeyIsNotConditionImpl : public ConditionImpl
 	KeyIsNotConditionImpl(const string& ItemTag, const valueType& value)
 		: mItemTag(ItemTag), mValue(value) {}
 	
+	virtual void prepare(const Category& c);
+	
 	virtual bool test(const Category& c, const Row& r) const
 	{
-		return r[mItemTag].template compare<valueType>(mValue) != 0;
+		return r[mItemIx].template compare<valueType>(mValue) != 0;
 	}
 	
 	virtual std::string str() const
@@ -714,6 +731,7 @@ struct KeyIsNotConditionImpl : public ConditionImpl
 	}
 	
 	string mItemTag;
+	size_t mItemIx;
 	valueType mValue;
 };
 
@@ -722,6 +740,8 @@ struct KeyCompareConditionImpl : public ConditionImpl
 {
 	KeyCompareConditionImpl(const string& ItemTag, COMP&& comp)
 		: mItemTag(ItemTag), mComp(std::move(comp)) {}
+	
+	virtual void prepare(const Category& c);
 	
 	virtual bool test(const Category& c, const Row& r) const
 	{
@@ -734,6 +754,7 @@ struct KeyCompareConditionImpl : public ConditionImpl
 	}
 	
 	string mItemTag;
+	size_t mItemIx;
 	COMP mComp;
 };
 
@@ -742,9 +763,11 @@ struct KeyMatchesConditionImpl : public ConditionImpl
 	KeyMatchesConditionImpl(const string& ItemTag, const std::regex& rx)
 		: mItemTag(ItemTag), mRx(rx) {}
 	
+	virtual void prepare(const Category& c);
+	
 	virtual bool test(const Category& c, const Row& r) const
 	{
-		return std::regex_match(r[mItemTag].as<string>(), mRx);
+		return std::regex_match(r[mItemIx].as<string>(), mRx);
 	}
 	
 	virtual std::string str() const
@@ -753,6 +776,7 @@ struct KeyMatchesConditionImpl : public ConditionImpl
 	}
 	
 	string mItemTag;
+	size_t mItemIx;
 	std::regex mRx;
 };
 
@@ -804,6 +828,12 @@ struct andConditionImpl : public ConditionImpl
 		delete mB;
 	}
 	
+	virtual void prepare(const Category& c)
+	{
+		mA->prepare(c);
+		mB->prepare(c);
+	}
+	
 	virtual bool test(const Category& c, const Row& r) const
 	{
 		return mA->test(c, r) and mB->test(c, r);
@@ -833,6 +863,12 @@ struct orConditionImpl : public ConditionImpl
 		delete mB;
 	}
 	
+	virtual void prepare(const Category& c)
+	{
+		mA->prepare(c);
+		mB->prepare(c);
+	}
+	
 	virtual bool test(const Category& c, const Row& r) const
 	{
 		return mA->test(c, r) or mB->test(c, r);
@@ -842,7 +878,7 @@ struct orConditionImpl : public ConditionImpl
 	{
 		return "(" + mA->str() + ") or (" + mB->str() + ")";
 	}
-		
+	
 	ConditionImpl* mA;
 	ConditionImpl* mB;
 };
@@ -1218,21 +1254,39 @@ inline bool anyMatchesConditionImpl::test(const Category& c, const Row& r) const
 	
 }
 
-}
+// these should be here, as I learned today
 
-namespace std
-{
-
-template<>
 inline void swap(cif::Row& a, cif::Row& b)
 {
 	a.swap(b);
 }
 
-template<>
 inline void swap(cif::detail::ItemReference& a, cif::detail::ItemReference& b)
 {
 	a.swap(b);
+}
+
+namespace detail
+{
+
+template<typename T>
+void KeyIsConditionImpl<T>::prepare(const Category& c)
+{
+	mItemIx = c.getColumnIndex(mItemTag);
+}
+
+template<typename T>
+void KeyIsNotConditionImpl<T>::prepare(const Category& c)
+{
+	mItemIx = c.getColumnIndex(mItemTag);
+}
+
+template<typename T>
+void KeyCompareConditionImpl<T>::prepare(const Category& c)
+{
+	mItemIx = c.getColumnIndex(mItemTag);
+}
+
 }
 
 }

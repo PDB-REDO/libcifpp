@@ -1118,7 +1118,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(fs::path file, CompoundFactoryImpl* nex
 //{
 //	const char* clibdMon = getenv("CLIBD_MON");
 //	if (clibdMon == nullptr)
-//		throw runtime_error("Cannot locate peptide list, please souce the CCP4 environment");
+//		throw runtime_error("Cannot locate peptide list, please source the CCP4 environment");
 //	mClibdMon = clibdMon;
 //}
 //
@@ -1305,7 +1305,7 @@ CompoundFactory::CompoundFactory()
 {
 	const char* clibdMon = getenv("CLIBD_MON");
 	if (clibdMon == nullptr)
-		throw runtime_error("Cannot locate peptide list, please souce the CCP4 environment");
+		throw runtime_error("Cannot locate peptide list, please source the CCP4 environment");
 	
 	fs::path db = fs::path(clibdMon) / "list" / "mon_lib_list.cif";
 

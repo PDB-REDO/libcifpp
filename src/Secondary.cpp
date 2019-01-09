@@ -8,6 +8,8 @@
 #include "cif++/Config.h"
 
 #include <numeric>
+#include <chrono>
+#include <iomanip>
 
 #include <boost/algorithm/string.hpp>
 
@@ -775,20 +777,62 @@ struct DSSPImpl
 	vector<Res>			mResidues;
 };
 
+ostream& operator<<(ostream& os, const chrono::duration<double>& t)
+{
+	uint64 s = static_cast<uint64>(trunc(t.count()));
+	if (s > 24 * 60 * 60)
+	{
+		uint32 days = s / (24 * 60 * 60);
+		os << days << "d ";
+		s %= 24 * 60 * 60;
+	}
+	
+	if (s > 60 * 60)
+	{
+		uint32 hours = s / (60 * 60);
+		os << hours << "h ";
+		s %= 60 * 60;
+	}
+	
+	if (s > 60)
+	{
+		uint32 minutes = s / 60;
+		os << minutes << "m ";
+		s %= 60;
+	}
+	
+	double ss = s + 1e-6 * (t.count() - s);
+	
+	os << fixed << setprecision(1) << ss << 's';
+
+	return os;
+}
+
+
 DSSPImpl::DSSPImpl(const Structure& s)
 	: mStructure(s)
 	, mPolymers(mStructure.polymers())
 {
+	if (VERBOSE)
+		cerr << "Calculating DSSP ";
+	
 	size_t nRes = accumulate(mPolymers.begin(), mPolymers.end(),
 		0.0, [](double s, auto& p) { return s + p.size(); });
 	
 	mResidues.reserve(nRes);
+
+cerr << "starting to copy atoms for DSSP" << endl;
+auto start = std::chrono::system_clock::now();
 	
 	for (auto& p: mPolymers)
 	{
 		for (auto m: p)
 			mResidues.emplace_back(move(m));
 	}
+
+auto end = std::chrono::system_clock::now();
+chrono::duration<double> diff = end - start;
+cerr << "Copying atoms took " << diff << " seconds" << endl;
 	
 	for (size_t i = 0; i + 1 < mResidues.size(); ++i)
 	{
@@ -798,11 +842,18 @@ DSSPImpl::DSSPImpl(const Structure& s)
 		mResidues[i + 1].assignHydrogen();
 	}
 	
+	if (VERBOSE) cerr << ".";
 	CalculateHBondEnergies(mResidues);
+
+	if (VERBOSE) cerr << ".";
 	CalculateBetaSheets(mResidues);
+
+	if (VERBOSE) cerr << ".";
 	CalculateAlphaHelices(mResidues);
 	
-	if (VERBOSE)
+	if (VERBOSE) cerr << endl;
+
+	if (VERBOSE > 1)
 	{
 		for (auto& r: mResidues)
 		{
@@ -823,7 +874,7 @@ DSSPImpl::DSSPImpl(const Structure& s)
 			
 			string id = m.asymID() + ':' + to_string(m.seqID()) + '/' + m.compoundID();
 			
-			cout << id << string(12 - id.length(), ' ')
+			cerr << id << string(12 - id.length(), ' ')
 				 << char(r.mSecondaryStructure) << ' '
 				 << helix
 				 << endl;

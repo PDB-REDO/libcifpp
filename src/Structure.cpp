@@ -631,13 +631,14 @@ const Compound& Residue::compound() const
 	return *result;
 }
 
-AtomView Residue::atoms() const
+const AtomView& Residue::atoms() const
 {
 	if (mStructure == nullptr)
 		throw runtime_error("Invalid Residue object");
 
 	if (mAtoms.empty())
 	{
+#if 0
 		for (auto& a: mStructure->atoms())
 		{
 			if (mSeqID > 0 and a.labelSeqId() != mSeqID)
@@ -652,28 +653,22 @@ AtomView Residue::atoms() const
 			
 			mAtoms.push_back(a);
 		}
-//
-//		auto& atomSites = mStructure->category("atom_site");
-//		
-//		auto query = cif::Key("label_asym_id") == mAsymID and cif::Key("label_comp_id") == mCompoundID;
-//		
-//		if (not mSeqID.empty())
-//			query = move(query) and cif::Key("label_seq_id") == mSeqID;
-//		
-//		if (not mAltID.empty())
-//			query = move(query) and (cif::Key("label_alt_id") == cif::Empty() or cif::Key("label_alt_id") == mAltID);
-//	
-//		auto cifAtoms = atomSites.find(move(query));
-//
-//		set<string> ids;
-//		for (auto cifAtom: cifAtoms)
-//			ids.insert(cifAtom["id"].as<string>());
-//		
-//		for (auto& a: mStructure->atoms())
-//		{
-//			if (ids.count(a.id()))
-//				mAtoms.push_back(a);
-//		}
+#else
+		auto& atomSites = mStructure->category("atom_site");
+		
+		auto query = cif::Key("label_asym_id") == mAsymID and cif::Key("label_comp_id") == mCompoundID;
+		
+		if (mSeqID != 0)
+			query = move(query) and cif::Key("label_seq_id") == mSeqID;
+		
+		if (not mAltID.empty())
+			query = move(query) and (cif::Key("label_alt_id") == cif::Empty() or cif::Key("label_alt_id") == mAltID);
+	
+		auto cifAtoms = atomSites.find(move(query));
+
+		for (auto cifAtom: cifAtoms)
+			mAtoms.push_back(mStructure->getAtomById(cifAtom["id"].as<string>()));
+#endif
 	}
 	
 	return mAtoms;
@@ -785,12 +780,22 @@ Monomer::Monomer(const Polymer& polymer, uint32 index, int seqID, const string& 
 float Monomer::phi() const
 {
 	float result = 360;
-	if (mIndex > 0)
+
+	try
 	{
-		Monomer prev = mPolymer->operator[](mIndex - 1);
-		if (prev.mSeqID + 1 == mSeqID)
-			result = DihedralAngle(prev.C().location(), N().location(), CAlpha().location(), C().location()); 
+		if (mIndex > 0)
+		{
+			Monomer prev = mPolymer->operator[](mIndex - 1);
+			if (prev.mSeqID + 1 == mSeqID)
+				result = DihedralAngle(prev.C().location(), N().location(), CAlpha().location(), C().location()); 
+		}
 	}
+	catch (const exception& ex)
+	{
+		if (VERBOSE)
+			cerr << ex.what() << endl;
+	}
+
 
 	return result;
 }
@@ -798,11 +803,20 @@ float Monomer::phi() const
 float Monomer::psi() const
 {
 	float result = 360;
-	if (mIndex + 1 < mPolymer->size())
+	
+	try
 	{
-		Monomer next = mPolymer->operator[](mIndex + 1);
-		if (mSeqID + 1 == next.mSeqID)
-			result = DihedralAngle(N().location(), CAlpha().location(), C().location(), next.N().location()); 
+		if (mIndex + 1 < mPolymer->size())
+		{
+			Monomer next = mPolymer->operator[](mIndex + 1);
+			if (mSeqID + 1 == next.mSeqID)
+				result = DihedralAngle(N().location(), CAlpha().location(), C().location(), next.N().location()); 
+		}
+	}
+	catch (const exception& ex)
+	{
+		if (VERBOSE)
+			cerr << ex.what() << endl;
 	}
 
 	return result;
@@ -811,16 +825,24 @@ float Monomer::psi() const
 float Monomer::alpha() const
 {
 	float result = 360;
-	
-	if (mIndex > 1 and mIndex + 2 < mPolymer->size())
+
+	try
 	{
-		Monomer prev = mPolymer->operator[](mIndex - 1);
-		Monomer next = mPolymer->operator[](mIndex + 1);
-		Monomer nextNext = mPolymer->operator[](mIndex + 2);
-		
-		result = DihedralAngle(prev.CAlpha().location(), CAlpha().location(), next.CAlpha().location(), nextNext.CAlpha().location());
+		if (mIndex > 1 and mIndex + 2 < mPolymer->size())
+		{
+			Monomer prev = mPolymer->operator[](mIndex - 1);
+			Monomer next = mPolymer->operator[](mIndex + 1);
+			Monomer nextNext = mPolymer->operator[](mIndex + 2);
+			
+			result = DihedralAngle(prev.CAlpha().location(), CAlpha().location(), next.CAlpha().location(), nextNext.CAlpha().location());
+		}
 	}
-	
+	catch (const exception& ex)
+	{
+		if (VERBOSE)
+			cerr << ex.what() << endl;
+	}
+
 	return result;
 }
 
@@ -1162,6 +1184,8 @@ struct StructureImpl
 			if (modelNr.empty() or modelNr.as<uint32>() == mModelNr)
 				mAtoms.emplace_back(new AtomImpl(f, a["id"].as<string>(), a));
 		}
+		
+		sort(mAtoms.begin(), mAtoms.end(), [](auto& a, auto& b) { return a.id() < b.id(); });
 	}
 	
 	StructureImpl(const StructureImpl& si)
@@ -1180,9 +1204,9 @@ struct StructureImpl
 
 	void insertCompound(const string& compoundID, bool isEntity);
 
-	File*			mFile;
-	uint32			mModelNr;
-	AtomView		mAtoms;
+	File*				mFile;
+	uint32				mModelNr;
+	AtomView			mAtoms;
 };
 
 // --------------------------------------------------------------------
@@ -1268,11 +1292,11 @@ void StructureImpl::swapAtoms(Atom& a1, Atom& a2)
 	
 	auto l1 = r1.front()["label_atom_id"];
 	auto l2 = r2.front()["label_atom_id"];
-	swap(l1, l2);
+	std::swap(l1, l2);
 	
 	auto l3 = r1.front()["auth_atom_id"];
 	auto l4 = r2.front()["auth_atom_id"];
-	swap(l3, l4);
+	std::swap(l3, l4);
 }
 
 void StructureImpl::moveAtom(Atom& a, Point p)
@@ -1346,7 +1370,7 @@ Structure::Structure(const Structure& rhs)
 {
 }
 
-AtomView Structure::atoms() const
+const AtomView& Structure::atoms() const
 {
 	return mImpl->mAtoms;
 }
@@ -1420,13 +1444,13 @@ vector<Residue> Structure::nonPolymers() const
 
 Atom Structure::getAtomById(string id) const
 {
-	for (auto& a: mImpl->mAtoms)
-	{
-		if (a.id() == id)
-			return a;
-	}
-	
-	throw out_of_range("Could not find atom with id " + id);
+	auto i = lower_bound(mImpl->mAtoms.begin(), mImpl->mAtoms.end(),
+		id, [](auto& a, auto& b) { return a.id() < b; });
+
+	if (i == mImpl->mAtoms.end() or i->id() != id)
+		throw out_of_range("Could not find atom with id " + id);
+
+	return *i;
 }
 
 File& Structure::getFile() const

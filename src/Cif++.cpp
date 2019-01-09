@@ -485,6 +485,24 @@ void Datablock::write(ostream& os, const vector<string>& order)
 
 // --------------------------------------------------------------------
 //
+
+namespace detail
+{
+	
+void KeyIsEmptyConditionImpl::prepare(const Category& c)
+{
+	mItemIx = c.getColumnIndex(mItemTag);
+}
+
+void KeyMatchesConditionImpl::prepare(const Category& c)
+{
+	mItemIx = c.getColumnIndex(mItemTag);
+}
+
+}
+
+// --------------------------------------------------------------------
+//
 //	class to compare two rows based on their keys.
 
 class RowComparator
@@ -1228,6 +1246,8 @@ void Category::drop(const string& field)
 Row Category::operator[](Condition&& cond)
 {
 	Row result;
+
+	cond.prepare(*this);
 	
 	for (auto r: *this)
 	{
@@ -1244,6 +1264,9 @@ Row Category::operator[](Condition&& cond)
 RowSet Category::find(Condition&& cond)
 {
 	RowSet result(*this);
+	
+	cond.prepare(*this);
+	
 	for (auto r: *this)
 	{
 		if (cond(*this, r))
@@ -1255,6 +1278,8 @@ RowSet Category::find(Condition&& cond)
 bool Category::exists(Condition&& cond)
 {
 	bool result = false;
+
+	cond.prepare(*this);
 	
 	for (auto r: *this)
 	{
@@ -1379,6 +1404,8 @@ tuple<Row,bool> Category::emplace(Row r)
 void Category::erase(Condition&& cond)
 {
 	RowSet remove(*this);
+	
+	cond.prepare(*this);
 
 	for (auto r: *this)
 	{
@@ -2201,8 +2228,8 @@ File::File(boost::filesystem::path p, bool validate)
 File::File(File&& rhs)
 	: mHead(nullptr), mValidator(nullptr)
 {
-	swap(mHead, rhs.mHead);
-	swap(mValidator, rhs.mValidator);
+	std::swap(mHead, rhs.mHead);
+	std::swap(mValidator, rhs.mValidator);
 }
 
 File::~File()

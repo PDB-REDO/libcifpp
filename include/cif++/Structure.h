@@ -151,10 +151,20 @@ class Atom
 		return labelAtomId() == "N" or labelAtomId() == "O" or
 			labelAtomId() == "C" or labelAtomId() == "CA";
 	}
+	
+	void swap(Atom& b)
+	{
+		std::swap(mImpl, b.mImpl);
+	}
 
   private:
  	struct AtomImpl*			mImpl;
 };
+
+inline void swap(mmcif::Atom& a, mmcif::Atom& b)
+{
+	a.swap(b);
+}
 
 inline double Distance(const Atom& a, const Atom& b)
 {
@@ -187,7 +197,7 @@ class Residue
 		, mAsymID(asymID), mAltID(altID), mSeqID(seqID) {}
 	
 	const Compound&		compound() const;
-	AtomView			atoms() const;
+	const AtomView&		atoms() const;
 	
 	Atom				atomByID(const std::string& atomID) const;
 
@@ -385,7 +395,7 @@ class Structure
 
 	File& getFile() const;
 
-	AtomView atoms() const;
+	const AtomView& atoms() const;
 	AtomView waters() const;
 	
 	std::vector<Polymer> polymers() const;
