@@ -153,8 +153,8 @@ const uint32 kHistogramSize = 30;
 
 struct Res
 {
-	Res(Monomer&& m)
-		: mM(move(m))
+	Res(const Monomer& m)
+		: mM(m)
 		, mType(MapResidue(m.compoundID()))
 	{
 		for (auto& a: mM.atoms())
@@ -243,7 +243,7 @@ struct Res
 
 	Res* mNext = nullptr;
 	Res* mPrev = nullptr;
-	Monomer	mM;
+	const Monomer& mM;
 
 	Point mCAlpha, mC, mN, mO, mH;
 	
@@ -727,7 +727,7 @@ void CalculateAlphaHelices(vector<Res>& inResidues, bool inPreferPiHelices = tru
 
 void CalculateSecondaryStructure(Structure& s)
 {
-	auto polymers = s.polymers();
+	auto& polymers = s.polymers();
 	
 	size_t nRes = accumulate(polymers.begin(), polymers.end(),
 		0.0, [](double s, auto& p) { return s + p.size(); });
@@ -737,8 +737,8 @@ void CalculateSecondaryStructure(Structure& s)
 	
 	for (auto& p: polymers)
 	{
-		for (auto m: p)
-			residues.emplace_back(move(m));
+		for (auto& m: p)
+			residues.emplace_back(m);
 	}
 	
 	for (size_t i = 0; i + 1 < residues.size(); ++i)
@@ -772,9 +772,9 @@ struct DSSPImpl
 {
 	DSSPImpl(const Structure& s);
 	
-	const Structure&	mStructure;
-	vector<Polymer>		mPolymers;
-	vector<Res>			mResidues;
+	const Structure&		mStructure;
+	const vector<Polymer>&	mPolymers;
+	vector<Res>				mResidues;
 };
 
 ostream& operator<<(ostream& os, const chrono::duration<double>& t)
@@ -826,8 +826,8 @@ auto start = std::chrono::system_clock::now();
 	
 	for (auto& p: mPolymers)
 	{
-		for (auto m: p)
-			mResidues.emplace_back(move(m));
+		for (auto& m: p)
+			mResidues.emplace_back(m);
 	}
 
 auto end = std::chrono::system_clock::now();

@@ -252,9 +252,9 @@ ValidateItem* Validator::getValidatorForItem(string tag) const
 	return result;
 }
 
-void Validator::reportError(const string& msg)
+void Validator::reportError(const string& msg, bool fatal)
 {
-	if (mStrict)
+	if (mStrict or fatal)
 		throw ValidationError(msg);
 	else if (VERBOSE)
 		cerr << msg << endl;

@@ -236,6 +236,7 @@ namespace detail
 	struct ItemReference
 	{
 		const char*		mName;
+		size_t			mColumn;
 		ItemRow*		mRow;
 
 		template<typename T>
@@ -389,14 +390,16 @@ namespace detail
 			return mRow[mColumns[ix]];
 		}
 		
-		getRowResult(const Row& r, C... columns)
-			: mRow(r), mColumns({{columns...}}) {}
+		getRowResult(const Row& r, std::array<size_t, N>&& columns)
+			: mRow(r), mColumns(std::move(columns))
+		{
+		}
 	
 		template<typename... Ts>
 		operator std::tuple<Ts...>() const;
 	
 		const Row& mRow;
-		std::array<const char*, N> mColumns;
+		std::array<size_t, N> mColumns;
 	};
 	
 	// we want to be able to tie some variables to a RowResult, for this we use tiewraps
@@ -550,30 +553,45 @@ class Row
 
 // TODO: implement real const version?
 	
-	const detail::ItemReference operator[](const char* ItemTag) const
+	const detail::ItemReference operator[](size_t column) const
 	{
-		return detail::ItemReference{ItemTag, mData};
+		return detail::ItemReference{"<anonymous column>", column, mData};
 	}
 
-	detail::ItemReference operator[](const char* ItemTag)
+	const detail::ItemReference operator[](const char* itemTag) const
 	{
-		return detail::ItemReference{ItemTag, mData};
+		size_t column = ColumnForItemTag(itemTag);
+		return detail::ItemReference{itemTag, column, mData};
 	}
 
-	const detail::ItemReference operator[](const string& ItemTag) const
+	detail::ItemReference operator[](const char* itemTag)
 	{
-		return detail::ItemReference{ItemTag.c_str(), mData};
+		size_t column = ColumnForItemTag(itemTag);
+		return detail::ItemReference{itemTag, column, mData};
 	}
 
-	detail::ItemReference operator[](const string& ItemTag)
+	const detail::ItemReference operator[](const string& itemTag) const
 	{
-		return detail::ItemReference{ItemTag.c_str(), mData};
+		size_t column = ColumnForItemTag(itemTag.c_str());
+		return detail::ItemReference{itemTag.c_str(), column, mData};
+	}
+
+	detail::ItemReference operator[](const string& itemTag)
+	{
+		size_t column = ColumnForItemTag(itemTag.c_str());
+		return detail::ItemReference{itemTag.c_str(), column, mData};
 	}
 
 	template<typename... C>
 	auto get(C... columns) const -> detail::getRowResult<C...>
 	{
-		return detail::getRowResult<C...>(*this, columns...);
+		std::array<size_t,sizeof...(C)> cix;
+		
+		auto c = cix.begin();
+		for (auto col: { columns... })
+			*c++ = ColumnForItemTag(col);
+		
+		return detail::getRowResult<C...>(*this, std::move(cix));
 	}
 	
 	bool operator==(const Row& rhs) const
@@ -591,9 +609,12 @@ class Row
   private:
 
 	void assign(const string& name, const string& value, bool emplacing);
+	void assign(size_t column, const string& value, bool emplacing);
 	void assign(const Item& i, bool emplacing);
 	
-	static void swap(const string& name, ItemRow* a, ItemRow* b);
+	static void swap(size_t column, ItemRow* a, ItemRow* b);
+
+	size_t ColumnForItemTag(const char* itemTag) const;
 
 	ItemRow*	mData;
 	uint32		mLineNr = 0;
@@ -1103,6 +1124,8 @@ class Category
 	iset fields() const;
 	iset mandatoryFields() const;
 	iset keyFields() const;
+	
+	std::set<size_t> keyFieldsByIndex() const;
 	
 	void drop(const string& field);
 

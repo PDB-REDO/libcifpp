@@ -183,18 +183,18 @@ typedef std::vector<Atom> AtomView;
 class Residue
 {
   public:
-	Residue() = default;
-	Residue(const Residue& rhs) = default;
-	Residue& operator=(const Residue& rhs) = default;
+	Residue(const Residue& rhs) = delete;
+	Residue& operator=(const Residue& rhs) = delete;
 
-	Residue(const Structure& structure)
-		: mStructure(&structure) {}
+	Residue(Residue&& rhs);
+	Residue& operator=(Residue&& rhs);
 
 	Residue(const Structure& structure, const std::string& compoundID,
-		const std::string& asymID, int seqID = 0,
-		const std::string& altID = "")
+		const std::string& asymID, int seqID = 0)
 		: mStructure(&structure), mCompoundID(compoundID)
-		, mAsymID(asymID), mAltID(altID), mSeqID(seqID) {}
+		, mAsymID(asymID), mSeqID(seqID) {}
+
+	virtual ~Residue() {}
 	
 	const Compound&		compound() const;
 	const AtomView&		atoms() const;
@@ -204,7 +204,6 @@ class Residue
 	const std::string&	compoundID() const	{ return mCompoundID; }
 	const std::string&	asymID() const		{ return mAsymID; }
 	int					seqID() const		{ return mSeqID; }
-	const std::string&	altID() const		{ return mAltID; }
 	
 	int					authSeqID() const;
 	std::string			authInsCode() const;
@@ -226,10 +225,14 @@ class Residue
 
   protected:
 
+	Residue() {}
+
+	friend class Polymer;
+
 	const Structure* mStructure = nullptr;
-	std::string	mCompoundID, mAsymID, mAltID;
+	std::string	mCompoundID, mAsymID;
 	int mSeqID = 0;
-	mutable AtomView mAtoms;
+	AtomView mAtoms;
 };
 
 // --------------------------------------------------------------------
@@ -238,13 +241,16 @@ class Residue
 class Monomer : public Residue
 {
   public:
-	Monomer();
-	Monomer(const Monomer& rhs);
-	Monomer& operator=(const Monomer& rhs);
+//	Monomer();
+	Monomer(const Monomer& rhs) = delete;
+	Monomer& operator=(const Monomer& rhs) = delete;
+	
+	Monomer(Monomer&& rhs);
+	Monomer& operator=(Monomer&& rhs);
 
-	Monomer(const Polymer& polymer, uint32 index);
+//	Monomer(const Polymer& polymer, uint32 index);
 	Monomer(const Polymer& polymer, uint32 index, int seqID,
-		const std::string& compoundID, const std::string& altID);
+		const std::string& compoundID);
 
 	// Assuming this is really an amino acid...
 	
@@ -276,62 +282,20 @@ class Monomer : public Residue
 
 // --------------------------------------------------------------------
 
-class Polymer
+class Polymer : public std::vector<Monomer>
 {
   public:
-	Polymer(const Structure& s, const std::string& asymID);
+//	Polymer(const Structure& s, const std::string& asymID);
 	Polymer(const Structure& s, const std::string& entityID, const std::string& asymID);
-	Polymer(const Polymer&) = default;
-	Polymer& operator=(const Polymer&) = default;
+
+	Polymer(const Polymer&) = delete;
+	Polymer& operator=(const Polymer&) = delete;
 	
-	struct iterator : public std::iterator<std::random_access_iterator_tag, Monomer>
-	{
-		typedef std::iterator<std::bidirectional_iterator_tag, Monomer>	base_type;
-		typedef base_type::reference									reference;
-		typedef base_type::pointer										pointer;
-		
-		iterator(const Polymer& p, uint32 index);
-		iterator(iterator&& rhs);
+	Polymer(Polymer&& rhs);
+	Polymer& operator=(Polymer&& rhs);
 
-		iterator(const iterator& rhs);
-		iterator& operator=(const iterator& rhs);
-//		iterator& operator=(iterator&& rhs);
-		
-		reference	operator*()											{ return mCurrent; }
-		pointer		operator->()										{ return &mCurrent; }
-		
-		iterator&	operator++();
-		iterator	operator++(int)
-		{
-			iterator result(*this);
-			operator++();
-			return result;
-		}
-
-		iterator&	operator--();
-		iterator	operator--(int)
-		{
-			iterator result(*this);
-			operator--();
-			return result;
-		}
-
-		bool		operator==(const iterator& rhs) const				{ return mPolymer == rhs.mPolymer and mIndex == rhs.mIndex; }
-		bool		operator!=(const iterator& rhs) const				{ return mPolymer != rhs.mPolymer or mIndex != rhs.mIndex; }
-
-	  private:
-		const Polymer*	mPolymer;
-		uint32			mIndex;
-		Monomer			mCurrent;
-	};
-
-	iterator begin() const;
-	iterator end() const;
-	
-	size_t size() const							{ return mPolySeq.size(); }
-	Monomer operator[](size_t index) const;
-	
-	Monomer getBySeqID(int seqID) const;
+	Monomer& getBySeqID(int seqID);
+	const Monomer& getBySeqID(int seqID) const;
 
 	Structure* structure() const	{ return mStructure; }
 	
@@ -343,8 +307,6 @@ class Polymer
 	int Distance(const Monomer& a, const Monomer& b) const;
 
   private:
-
-	friend struct iterator;
 
 	Structure*					mStructure;
 	std::string					mEntityID;
@@ -398,7 +360,8 @@ class Structure
 	const AtomView& atoms() const;
 	AtomView waters() const;
 	
-	std::vector<Polymer> polymers() const;
+	const std::vector<Polymer>& polymers() const;
+
 	std::vector<Residue> nonPolymers() const;
 
 	Atom getAtomById(std::string id) const;
@@ -444,7 +407,13 @@ class Structure
 	cif::Category& category(const char* name) const;
 	cif::Datablock& datablock() const;
 
-	struct StructureImpl*	mImpl;
+	void insertCompound(const std::string& compoundID, bool isEntity);
+
+	File&					mFile;
+	uint32					mModelNr;
+	AtomView				mAtoms;
+	std::vector<Polymer>	mPolymers;
+//	std::vector<Residue*>	mResidues;
 };
 
 }

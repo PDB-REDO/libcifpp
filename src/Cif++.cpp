@@ -224,11 +224,9 @@ const char* ItemReference::c_str() const
 	{
 //		assert(mRow->mCategory);
 		
-		auto cix = mRow->mCategory->getColumnIndex(mName);
-		
 		for (auto iv = mRow->mValues; iv != nullptr; iv = iv->mNext)
 		{
-			if (iv->mColumnIndex == cix)
+			if (iv->mColumnIndex == mColumn)
 			{
 				if (iv->mText[0] != '.' or iv->mText[1] != 0)
 					result = iv->mText;
@@ -247,27 +245,23 @@ const char* ItemReference::c_str(const char* defaultValue) const
 	
 	if (mRow != nullptr and mRow->mCategory != nullptr)
 	{
-//		assert(mRow->mCategory);
-		
-		auto cix = mRow->mCategory->getColumnIndex(mName);
-		
-		if (cix < mRow->mCategory->mColumns.size())
+		for (auto iv = mRow->mValues; iv != nullptr; iv = iv->mNext)
 		{
-			auto iv = mRow->mCategory->mColumns[cix].mValidator;
+			if (iv->mColumnIndex == mColumn)
+			{
+				// only really non-empty values
+				if (iv->mText[0] != 0 and ((iv->mText[0] != '.' and iv->mText[0] != '?') or iv->mText[1] != 0))
+					result = iv->mText;
+
+				break;
+			}
+		}
+
+		if (result == defaultValue and mColumn < mRow->mCategory->mColumns.size())	// not found, perhaps the category has a default defined?
+		{
+			auto iv = mRow->mCategory->mColumns[mColumn].mValidator;
 			if (iv != nullptr and not iv->mDefault.empty())
 				result = iv->mDefault.c_str();
-			
-			for (auto iv = mRow->mValues; iv != nullptr; iv = iv->mNext)
-			{
-				if (iv->mColumnIndex == cix)
-				{
-					// only really non-empty values
-					if (iv->mText[0] != 0 and ((iv->mText[0] != '.' and iv->mText[0] != '?') or iv->mText[1] != 0))
-						result = iv->mText;
-	
-					break;
-				}
-			}
 		}
 	}
 	
@@ -281,7 +275,7 @@ bool ItemReference::empty() const
 
 void ItemReference::swap(ItemReference& b)
 {
-	Row::swap(mName, mRow, b.mRow);
+	Row::swap(mColumn, mRow, b.mRow);
 }
 
 }
@@ -1196,7 +1190,7 @@ size_t Category::addColumn(const string& name)
 		{
 			itemValidator = mCatValidator->getValidatorForItem(name);
 			if (itemValidator == nullptr)
-				mValidator->reportError("tag " + name + " not allowed in Category " + mName);
+				mValidator->reportError("tag " + name + " not allowed in Category " + mName, false);
 		}
 		
 		mColumns.push_back({name, itemValidator});
@@ -1489,7 +1483,8 @@ void Category::getTagOrder(vector<string>& tags) const
 
 const detail::ItemReference Category::getFirstItem(const char* itemName) const
 {
-	return detail::ItemReference{itemName, mHead};
+	size_t column = getColumnIndex(itemName);
+	return detail::ItemReference{itemName, column, mHead};
 }
 
 Category::iterator Category::begin()
@@ -1518,7 +1513,7 @@ bool Category::isValid()
 	
 	if (mCatValidator == nullptr)
 	{
-		mValidator->reportError("undefined Category " + mName);
+		mValidator->reportError("undefined Category " + mName, false);
 		return false;
 	}
 	
@@ -1529,7 +1524,7 @@ bool Category::isValid()
 		auto iv = mCatValidator->getValidatorForItem(col.mName);
 		if (iv == nullptr)
 		{
-			mValidator->reportError("Field " + col.mName + " is not valid in Category " + mName);
+			mValidator->reportError("Field " + col.mName + " is not valid in Category " + mName, false);
 			result = false;
 		}
 		
@@ -1540,7 +1535,7 @@ bool Category::isValid()
 	
 	if (not mandatory.empty())
 	{
-		mValidator->reportError("In Category " + mName + " the following mandatory fields are missing: " + ba::join(mandatory, ", "));
+		mValidator->reportError("In Category " + mName + " the following mandatory fields are missing: " + ba::join(mandatory, ", "), false);
 		result = false;
 	}
 	
@@ -1569,7 +1564,7 @@ bool Category::isValid()
 			
 			if (iv == nullptr)
 			{
-				mValidator->reportError("invalid field " + mColumns[cix].mName + " for Category " + mName);
+				mValidator->reportError("invalid field " + mColumns[cix].mName + " for Category " + mName, false);
 				result = false;
 				continue;
 			}
@@ -1588,7 +1583,7 @@ bool Category::isValid()
 			
 			if (iv != nullptr and iv->mMandatory)
 			{
-				mValidator->reportError("missing mandatory field " + mColumns[cix].mName + " for Category " + mName);
+				mValidator->reportError("missing mandatory field " + mColumns[cix].mName + " for Category " + mName, false);
 				result = false;
 			}
 		}
@@ -1610,7 +1605,7 @@ iset Category::fields() const
 		throw runtime_error("No Validator specified");
 	
 	if (mCatValidator == nullptr)
-		mValidator->reportError("undefined Category");
+		mValidator->reportError("undefined Category", true);
 	
 	iset result;
 	for (auto& iv: mCatValidator->mItemValidators)
@@ -1624,7 +1619,7 @@ iset Category::mandatoryFields() const
 		throw runtime_error("No Validator specified");
 	
 	if (mCatValidator == nullptr)
-		mValidator->reportError("undefined Category");
+		mValidator->reportError("undefined Category", true);
 	
 	return mCatValidator->mMandatoryFields;
 }
@@ -1635,9 +1630,24 @@ iset Category::keyFields() const
 		throw runtime_error("No Validator specified");
 	
 	if (mCatValidator == nullptr)
-		mValidator->reportError("undefined Category");
+		mValidator->reportError("undefined Category", true);
 	
 	return iset{ mCatValidator->mKeys.begin(), mCatValidator->mKeys.end() };
+}
+
+set<size_t> Category::keyFieldsByIndex() const
+{
+	if (mValidator == nullptr)
+		throw runtime_error("No Validator specified");
+	
+	if (mCatValidator == nullptr)
+		mValidator->reportError("undefined Category", true);
+	
+	set<size_t> result;
+	for (auto& k: mCatValidator->mKeys)
+		result.insert(getColumnIndex(k));
+	
+	return result;
 }
 
 auto Category::iterator::operator++() -> iterator&
@@ -1901,12 +1911,24 @@ Row& Row::operator=(const Row& rhs)
 
 void Row::assign(const string& name, const string& value, bool emplacing)
 {
+	try
+	{
+		auto cat = mData->mCategory;
+		assign(cat->addColumn(name), value, emplacing);
+	}
+	catch (const exception& ex)
+	{
+		throw_with_nested(logic_error("Could not assigning value '" + value + "' to column " + name));
+	}
+}
+
+void Row::assign(size_t column, const string& value, bool emplacing)
+{
 	if (mData == nullptr)
-		throw logic_error("invalid Row, no data assigning value '" + value + "' to " + name);
+		throw logic_error("invalid Row, no data assigning value '" + value + "' to column with index " + to_string(column));
 	
 	auto cat = mData->mCategory;
-	auto cix = cat->addColumn(name);
-	auto& col = cat->mColumns[cix];
+	auto& col = cat->mColumns[column];
 	auto& db = cat->mDb;
 
 	const char* oldValue = nullptr;
@@ -1914,7 +1936,7 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 	{
 		assert(iv != iv->mNext and (iv->mNext == nullptr or iv != iv->mNext->mNext));
 
-		if (iv->mColumnIndex == cix)
+		if (iv->mColumnIndex == column)
 		{
 			oldValue = iv->mText;
 			break;
@@ -1936,7 +1958,7 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 	bool reinsert = false;
 	
 	if (not emplacing and	// an update of an Item's value
-		cat->mIndex != nullptr and cat->keyFields().count(name))
+		cat->mIndex != nullptr and cat->keyFieldsByIndex().count(column))
 	{
 		reinsert = cat->mIndex->find(mData);
 		if (reinsert)
@@ -1947,7 +1969,7 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 
 	if (mData->mValues == nullptr)
 		;	// nothing to do
-	else if (mData->mValues->mColumnIndex == cix)
+	else if (mData->mValues->mColumnIndex == column)
 	{
 		auto iv = mData->mValues;
 		mData->mValues = iv->mNext;
@@ -1958,7 +1980,7 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 	{
 		for (auto iv = mData->mValues; iv->mNext != nullptr; iv = iv->mNext)
 		{
-			if (iv->mNext->mColumnIndex == cix)
+			if (iv->mNext->mColumnIndex == column)
 			{
 				auto nv = iv->mNext;
 				iv->mNext = nv->mNext;
@@ -1972,7 +1994,7 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 
 	if (not value.empty())
 	{
-		auto nv = new(value.length()) ItemValue(value.c_str(), cix);
+		auto nv = new(value.length()) ItemValue(value.c_str(), column);
 	
 		if (mData->mValues == nullptr)
 			mData->mValues = nv;
@@ -2012,7 +2034,7 @@ cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag <
 	}
 }
 
-void Row::swap(const string& name, ItemRow* a, ItemRow* b)
+void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 {
 	if (a == nullptr or b == nullptr)
 		throw logic_error("invalid Rows in swap");
@@ -2022,7 +2044,6 @@ void Row::swap(const string& name, ItemRow* a, ItemRow* b)
 		throw logic_error("Categories not same in swap");
 	
 	auto cat = a->mCategory;
-	auto cix = cat->addColumn(name);
 	auto& col = cat->mColumns[cix];
 	auto& db = cat->mDb;
 
@@ -2031,7 +2052,7 @@ void Row::swap(const string& name, ItemRow* a, ItemRow* b)
 	
 	bool reinsert = false;
 	
-	if (cat->mIndex != nullptr and cat->keyFields().count(name))
+	if (cat->mIndex != nullptr and cat->keyFieldsByIndex().count(cix))
 	{
 		reinsert = true;
 		cat->mIndex->erase(a);
@@ -2146,10 +2167,15 @@ cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag <
 	}
 }
 
-
 void Row::assign(const Item& value, bool emplacing)
 {
 	assign(value.name(), value.value(), emplacing);
+}
+
+size_t Row::ColumnForItemTag(const char* itemTag) const
+{
+	auto cat = mData->mCategory;
+	return cat->getColumnIndex(itemTag);
 }
 
 bool Row::empty() const

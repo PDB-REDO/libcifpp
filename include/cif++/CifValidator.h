@@ -130,7 +130,7 @@ class Validator
 	void addCategoryValidator(ValidateCategory&& v);
 	const ValidateCategory* getValidatorForCategory(std::string category) const;
 
-	void reportError(const std::string& msg);
+	void reportError(const std::string& msg, bool fatal);
 	
 	std::string dictName() const					{ return mName; }
 	void dictName(const std::string& name)			{ mName = name; }
