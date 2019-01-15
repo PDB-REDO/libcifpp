@@ -2,6 +2,8 @@
 
 #include "cif++/Structure.h"
 
+#include <numeric>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -1259,6 +1261,8 @@ Structure::Structure(File& f, uint32 modelNr)
 	
 //	sort(mAtoms.begin(), mAtoms.end(), [](auto& a, auto& b) { return a.id() < b.id(); });
 
+	updateAtomIndex();
+
 	// polymers
 	auto& polySeqScheme = category("pdbx_poly_seq_scheme");
 	
@@ -1280,6 +1284,8 @@ Structure::Structure(const Structure& s)
 	for (auto& atom: s.mAtoms)
 		mAtoms.emplace_back(atom.clone());
 
+	updateAtomIndex();
+
 	auto& polySeqScheme = category("pdbx_poly_seq_scheme");
 	
 	for (auto& r: polySeqScheme)
@@ -1295,6 +1301,15 @@ Structure::Structure(const Structure& s)
 
 Structure::~Structure()
 {
+}
+
+void Structure::updateAtomIndex()
+{
+	mAtomIndex = vector<size_t>(mAtoms.size());
+	
+	iota(mAtomIndex.begin(), mAtomIndex.end(), 0);
+	
+	sort(mAtomIndex.begin(), mAtomIndex.end(), [this](size_t a, size_t b) { return mAtoms[a].id() < mAtoms[b].id(); });
 }
 
 const AtomView& Structure::atoms() const
@@ -1357,16 +1372,16 @@ vector<Residue> Structure::nonPolymers() const
 
 Atom Structure::getAtomById(string id) const
 {
-//	auto i = lower_bound(mAtoms.begin(), mAtoms.end(),
-//		id, [](auto& a, auto& b) { return a.id() < b; });
+	auto i = lower_bound(mAtomIndex.begin(), mAtomIndex.end(),
+		id, [this](auto& a, auto& b) { return mAtoms[a].id() < b; });
 
-	auto i = find_if(mAtoms.begin(), mAtoms.end(),
-		[&id](auto& a) { return a.id() == id; });
+//	auto i = find_if(mAtoms.begin(), mAtoms.end(),
+//		[&id](auto& a) { return a.id() == id; });
 
-	if (i == mAtoms.end() or i->id() != id)
+	if (i == mAtomIndex.end() or mAtoms[*i].id() != id)
 		throw out_of_range("Could not find atom with id " + id);
 
-	return *i;
+	return mAtoms[*i];
 }
 
 File& Structure::getFile() const
@@ -1580,6 +1595,8 @@ void Structure::removeAtom(Atom& a)
 	}
 	
 	mAtoms.erase(remove(mAtoms.begin(), mAtoms.end(), a), mAtoms.end());
+	
+	updateAtomIndex();
 }
 
 void Structure::swapAtoms(Atom& a1, Atom& a2)

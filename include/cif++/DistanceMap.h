@@ -46,9 +46,10 @@ class DistanceMap
 		}
 	};
 	
-	std::unordered_map<std::tuple<size_t,size_t>,std::tuple<float,size_t>,key_hash> dist;
-	Point mD;	// needed to move atoms to center
-	std::vector<clipper::RTop_orth> mRtOrth;
+	std::vector<std::tuple<float,size_t>>	mA;
+	std::vector<size_t>						mIA, mJA;
+	Point									mD;			// needed to move atoms to center
+	std::vector<clipper::RTop_orth>			mRtOrth;
 };
 
 }

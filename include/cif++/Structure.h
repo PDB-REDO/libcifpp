@@ -389,12 +389,14 @@ class Structure
 	cif::Datablock& datablock() const;
 
 	void insertCompound(const std::string& compoundID, bool isEntity);
+	
+	void updateAtomIndex();
 
 	File&					mFile;
 	uint32					mModelNr;
 	AtomView				mAtoms;
+	std::vector<size_t>		mAtomIndex;
 	std::list<Polymer>		mPolymers;
-//	std::vector<Residue*>	mResidues;
 };
 
 }

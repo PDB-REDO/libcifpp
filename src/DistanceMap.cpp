@@ -130,9 +130,6 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	mD.mY = calculateD(my, cell.b());
 	mD.mZ = calculateD(mz, cell.c());
 	
-	if (VERBOSE)
-		cerr << "Calculated d: " << mD.mX << ", " << mD.mY << " and " << mD.mZ << endl;
-	
 	if (mD.mX != 0 or mD.mY != 0 or mD.mZ != 0)
 	{
 		if (VERBOSE)
@@ -152,6 +149,8 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	size_t N = boost::thread::hardware_concurrency();
 	atomic<size_t> next(0);
 	mutex m;
+	
+	map<tuple<size_t,size_t>,tuple<float,size_t>> dist;
 	
 	for (size_t i = 0; i < N; ++i)
 		t.create_thread([&]()
@@ -185,13 +184,6 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 							minR2 = r2;
 							kb = k;
 						}
-
-#if defined(DEBUG_VOOR_BART)
-						if (r2 < 3.5 * 3.5 and not rt.equals(clipper::RTop<>::identity(), 0.1))
-							cout << "symmetry contact between "
-								 << atoms[i] << " at " << pi << " and "
-								 << atoms[j] << " at " << pj << endl;
-#endif
 					}
 					
 					if (minR2 < kMaxDistanceSQ)
@@ -209,27 +201,107 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		});
 	
 	t.join_all();
-}
+	
+	// Store as a sparse CSR compressed matrix
+	
+	size_t nnz = dist.size();
+	mA.reserve(nnz);
+	mIA.reserve(dim + 1);
+	mJA.reserve(nnz);
+	
+	size_t lastR = 0;
+	mIA.push_back(0);
+	
+	for (auto& di: dist)
+	{
+		size_t c, r;
+		tie(r, c) = di.first;
 
-//DistanceMap::DistanceMap(const Structure& p, const vector<Atom>& atoms)
-//	: structure(p), dim(0)
-//{
-//	dim = atoms.size();
+		if (r != lastR)	// new row
+		{
+			for (size_t ri = lastR; ri < r; ++ri)
+				mIA.push_back(mA.size());
+			lastR = r;
+		}
+
+		mA.push_back(di.second);
+		mJA.push_back(c);
+	}
+
+	for (size_t ri = lastR; ri < dim; ++ri)
+		mIA.push_back(mA.size());
+
+//// debug code
 //	
-//	for (auto& atom: atoms)
+//	assert(mIA.size() == dim + 1);
+//	assert(mA.size() == nnz);
+//	assert(mJA.size() == nnz);
+//	
+//cerr << "nnz: " << nnz << endl;
+//	
+//	auto get = [&](size_t i, size_t j)
 //	{
-//		size_t ix = index.size();
-//		index[atom.id()] = ix;
-//	};
-//
-//	for (size_t i = 0; i < dim; ++i)
-//	{
-//		for (size_t j = i + 1; j < dim; ++j)
+//		if (i > j)
+//			std::swap(i, j);
+//		
+//		for (size_t cix = mIA[i]; cix < mIA[i + 1]; ++cix)
 //		{
-//			dist[make_tuple(i, j)] = Distance(atoms[i].location(), atoms[j].location());
+//			if (mJA[cix] == j)
+//				return std::get<0>(mA[cix]);
 //		}
-//	}
-//}
+//		
+//		return 100.f;
+//	};
+//	
+//	auto get2 = [&](size_t ixa, size_t ixb)
+//	{
+//		if (ixb < ixa)
+//			std::swap(ixa, ixb);
+//	
+//		int32 L = mIA[ixa];
+//		int32 R = mIA[ixa + 1] - 1;
+//		
+//		while (L <= R)
+//		{
+//			int32 i = (L + R) / 2;
+//			
+//			if (mJA[i] == ixb)
+//				return std::get<0>(mA[i]);
+//	
+//			if (mJA[i] < ixb)
+//				L = i + 1;
+//			else
+//				R = i - 1;
+//		}
+//
+//		return 100.f;
+//	};
+//	
+//	// test all values
+//	for (size_t i = 0; i < dim; ++i)
+//		for (size_t j = 0; j < dim; ++j)
+//		{
+//			float a = get(i, j);
+//			
+//			auto ixa = i, ixb = j;
+//			if (ixb < ixa)
+//				std::swap(ixa, ixb);
+//			
+//			tuple<size_t,size_t> k{ ixa, ixb };
+//		
+//			auto ii = dist.find(k);
+//		
+//			float b = 100;
+//			
+//			if (ii != dist.end())
+//				b = std::get<0>(ii->second);
+//			
+//			assert(a == b);
+//			
+//			float c = get2(i, j);
+//			assert(a == c);
+//		}
+}
 
 float DistanceMap::operator()(const Atom& a, const Atom& b) const
 {
@@ -255,23 +327,28 @@ float DistanceMap::operator()(const Atom& a, const Atom& b) const
 	
 	if (ixb < ixa)
 		std::swap(ixa, ixb);
-	
-	tuple<size_t,size_t> k{ ixa, ixb };
 
-	auto ii = dist.find(k);
+	size_t L = mIA[ixa];
+	size_t R = mIA[ixa + 1] - 1;
+	
+	while (L <= R)
+	{
+		size_t i = (L + R) / 2;
 
-	float result = 100;
+		if (mJA[i] == ixb)
+			return get<0>(mA[i]);
+
+		if (mJA[i] < ixb)
+			L = i + 1;
+		else
+			R = i - 1;
+	}
 	
-	if (ii != dist.end())
-		result = get<0>(ii->second);
-	
-	return result;
+	return 100.f;
 }
 
 vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 {
-	vector<Atom> result;
-	
 	size_t ixa;
 	try
 	{
@@ -282,27 +359,43 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 		throw runtime_error("atom " + a.id() + " not found in distance map");
 	}
 
-	for (auto& di: dist)
+	set<tuple<size_t,size_t>> bix;
+	
+	for (size_t bi = mIA[ixa]; bi < mIA[ixa + 1]; ++bi)
 	{
-		size_t dixa, dixb;
-		tie(dixa, dixb) = di.first;
-		
-		if (dixa != ixa and dixb != ixa)
-			continue;
-		
-		float distance;
+		float d;
 		size_t rti;
-		tie(distance, rti) = di.second;
+		tie(d, rti) = mA[bi];
+		if (d <= maxDistance)
+			bix.insert(make_tuple(mJA[bi], rti));
+	}
+	
+	for (size_t i = 0; i + 1 < dim; ++i)
+	{
+		for (size_t j = mIA[i]; j < mIA[i + 1]; ++j)
+		{
+			if (mJA[j] != ixa)
+				continue;
+			
+			float d;
+			size_t rti;
+			tie(d, rti) = mA[j];
+			if (d > maxDistance)
+				continue;
+			
+			bix.insert(make_tuple(i, rti));
+		}
+	}
+	
+	vector<Atom> result;
+	result.reserve(bix.size());
+	
+	for (auto& i: bix)
+	{
+		size_t ix, rti;
+		tie(ix, rti) = i;
 		
-		if (distance > maxDistance)
-			continue;
-		
-		size_t ixb = dixa;
-		if (ixb == ixa)
-			ixb = dixb;
-		
-		Atom a = structure.getAtomById(rIndex.at(ixb));
-		
+		Atom a = structure.getAtomById(rIndex.at(ix));
 		result.push_back(a.symmetryCopy(mD, mRtOrth.at(rti)));
 	}
 	
