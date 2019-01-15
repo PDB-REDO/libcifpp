@@ -820,19 +820,12 @@ DSSPImpl::DSSPImpl(const Structure& s)
 		0.0, [](double s, auto& p) { return s + p.size(); });
 	
 	mResidues.reserve(nRes);
-
-cerr << "starting to copy atoms for DSSP" << endl;
-auto start = std::chrono::system_clock::now();
 	
 	for (auto& p: mPolymers)
 	{
 		for (auto& m: p)
 			mResidues.emplace_back(m);
 	}
-
-auto end = std::chrono::system_clock::now();
-chrono::duration<double> diff = end - start;
-cerr << "Copying atoms took " << diff << " seconds" << endl;
 	
 	for (size_t i = 0; i + 1 < mResidues.size(); ++i)
 	{

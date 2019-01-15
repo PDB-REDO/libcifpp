@@ -1260,6 +1260,25 @@ Structure::Structure(File& f, uint32 modelNr)
 //	sort(mAtoms.begin(), mAtoms.end(), [](auto& a, auto& b) { return a.id() < b.id(); });
 
 	// polymers
+	auto& polySeqScheme = category("pdbx_poly_seq_scheme");
+	
+	for (auto& r: polySeqScheme)
+	{
+		string asymID, entityID, seqID, monID;
+		cif::tie(asymID, entityID, seqID, monID) =
+			r.get("asym_id", "entity_id", "seq_id", "mon_id");
+		
+		if (mPolymers.empty() or mPolymers.back().asymID() != asymID or mPolymers.back().entityID() != entityID)
+			mPolymers.emplace_back(*this, entityID, asymID);
+	}
+}
+
+Structure::Structure(const Structure& s)
+	: mFile(s.mFile), mModelNr(s.mModelNr)
+{
+	mAtoms.reserve(s.mAtoms.size());
+	for (auto& atom: s.mAtoms)
+		mAtoms.emplace_back(atom.clone());
 
 	auto& polySeqScheme = category("pdbx_poly_seq_scheme");
 	
@@ -1273,15 +1292,6 @@ Structure::Structure(File& f, uint32 modelNr)
 			mPolymers.emplace_back(*this, entityID, asymID);
 	}
 }
-	
-//	Structure(const Structure& s)
-//		: mFile(s.mFile), mModelNr(s.mModelNr)
-//	{
-//		mAtoms.reserve(si.mAtoms.size());
-//		for (auto& atom: si.mAtoms)
-//			mAtoms.emplace_back(atom.clone());
-//	}
-//}
 
 Structure::~Structure()
 {
@@ -1323,21 +1333,6 @@ AtomView Structure::waters() const
 
 const list<Polymer>& Structure::polymers() const
 {
-//	vector<Polymer> result;
-//	
-//	auto& polySeqScheme = category("pdbx_poly_seq_scheme");
-//	
-//	for (auto& r: polySeqScheme)
-//	{
-//		string asymID, entityID, seqID, monID;
-//		cif::tie(asymID, entityID, seqID, monID) =
-//			r.get("asym_id", "entity_id", "seq_id", "mon_id");
-//		
-//		if (result.empty() or result.back().asymID() != asymID or result.back().entityID() != entityID)
-//			result.emplace_back(*this, entityID, asymID);
-//	}
-//	
-//	return result;
 	return mPolymers;
 }
 
