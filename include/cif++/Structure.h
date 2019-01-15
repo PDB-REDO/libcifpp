@@ -25,25 +25,7 @@
 //	- Add alternate Residue
 	- 
 	
-	Other important design principles:
-	
-	- all objects here are references to the actual data. Not models of
-	  the data itself. That means that if you copy an atom, you copy the
-	  reference to an atom in the structure. You're not creating a new
-	  atom. This may sound obvious, but it is not if you are used to
-	  copy semantics in the C++ world.
-	
-	
 */
-
-//// forward declaration
-//namespace cif
-//{
-//	class Category;
-//	class Datablock;
-//	class File;
-//	class RowSet;
-//};
 
 namespace mmcif
 {
@@ -183,18 +165,18 @@ typedef std::vector<Atom> AtomView;
 class Residue
 {
   public:
+	Residue(const Structure& structure, const std::string& compoundID,
+		const std::string& asymID, int seqID = 0)
+		: mStructure(&structure), mCompoundID(compoundID)
+		, mAsymID(asymID), mSeqID(seqID) {}
+
 	Residue(const Residue& rhs) = delete;
 	Residue& operator=(const Residue& rhs) = delete;
 
 	Residue(Residue&& rhs);
 	Residue& operator=(Residue&& rhs);
 
-	Residue(const Structure& structure, const std::string& compoundID,
-		const std::string& asymID, int seqID = 0)
-		: mStructure(&structure), mCompoundID(compoundID)
-		, mAsymID(asymID), mSeqID(seqID) {}
-
-	virtual ~Residue() {}
+	virtual ~Residue();
 	
 	const Compound&		compound() const;
 	const AtomView&		atoms() const;
@@ -285,14 +267,13 @@ class Monomer : public Residue
 class Polymer : public std::vector<Monomer>
 {
   public:
-//	Polymer(const Structure& s, const std::string& asymID);
 	Polymer(const Structure& s, const std::string& entityID, const std::string& asymID);
 
 	Polymer(const Polymer&) = delete;
 	Polymer& operator=(const Polymer&) = delete;
 	
-	Polymer(Polymer&& rhs);
-	Polymer& operator=(Polymer&& rhs);
+//	Polymer(Polymer&& rhs) = delete;
+//	Polymer& operator=(Polymer&& rhs) = de;
 
 	Monomer& getBySeqID(int seqID);
 	const Monomer& getBySeqID(int seqID) const;
@@ -360,7 +341,7 @@ class Structure
 	const AtomView& atoms() const;
 	AtomView waters() const;
 	
-	const std::vector<Polymer>& polymers() const;
+	const std::list<Polymer>& polymers() const;
 
 	std::vector<Residue> nonPolymers() const;
 
@@ -412,7 +393,7 @@ class Structure
 	File&					mFile;
 	uint32					mModelNr;
 	AtomView				mAtoms;
-	std::vector<Polymer>	mPolymers;
+	std::list<Polymer>		mPolymers;
 //	std::vector<Residue*>	mResidues;
 };
 

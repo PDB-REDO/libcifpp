@@ -591,13 +591,13 @@ Residue::Residue(Residue&& rhs)
 	: mStructure(rhs.mStructure), mCompoundID(move(rhs.mCompoundID)), mAsymID(move(rhs.mAsymID))
 	, mSeqID(rhs.mSeqID), mAtoms(move(rhs.mAtoms))
 {
-cerr << "move constructor residue" << endl;
+//cerr << "move constructor residue" << endl;
 	rhs.mStructure = nullptr;
 }
 
 Residue& Residue::operator=(Residue&& rhs)
 {
-cerr << "move assignment residue" << endl;
+//cerr << "move assignment residue" << endl;
 	mStructure = rhs.mStructure;		rhs.mStructure = nullptr;
 	mCompoundID = move(rhs.mCompoundID);
 	mAsymID = move(rhs.mAsymID);
@@ -605,6 +605,11 @@ cerr << "move assignment residue" << endl;
 	mAtoms = move(rhs.mAtoms);
 
 	return *this;
+}
+
+Residue::~Residue()
+{
+//cerr << "~Residue" << endl;	
 }
 
 string Residue::authInsCode() const
@@ -1036,29 +1041,31 @@ bool Monomer::isCis(const mmcif::Monomer& a, const mmcif::Monomer& b)
 //	
 //}
 
-Polymer::Polymer(Polymer&& rhs)
-	: vector<Monomer>(move(rhs))
-	, mStructure(rhs.mStructure)
-	, mEntityID(move(rhs.mEntityID)), mAsymID(move(rhs.mAsymID)), mPolySeq(move(rhs.mPolySeq))
-{
-	rhs.mStructure = nullptr;
-}
-
-Polymer& Polymer::operator=(Polymer&& rhs)
-{
-	vector<Monomer>::operator=(move(rhs));
-	mStructure = rhs.mStructure;			rhs.mStructure = nullptr;
-	mEntityID = move(rhs.mEntityID);
-	mAsymID = move(rhs.mAsymID);
-	mPolySeq = move(rhs.mPolySeq);
-	return *this;
-}
+//Polymer::Polymer(Polymer&& rhs)
+//	: vector<Monomer>(move(rhs))
+//	, mStructure(rhs.mStructure)
+//	, mEntityID(move(rhs.mEntityID)), mAsymID(move(rhs.mAsymID)), mPolySeq(move(rhs.mPolySeq))
+//{
+//	rhs.mStructure = nullptr;
+//}
+//
+//Polymer& Polymer::operator=(Polymer&& rhs)
+//{
+//	vector<Monomer>::operator=(move(rhs));
+//	mStructure = rhs.mStructure;			rhs.mStructure = nullptr;
+//	mEntityID = move(rhs.mEntityID);
+//	mAsymID = move(rhs.mAsymID);
+//	mPolySeq = move(rhs.mPolySeq);
+//	return *this;
+//}
 
 Polymer::Polymer(const Structure& s, const string& entityID, const string& asymID)
 	: mStructure(const_cast<Structure*>(&s)), mEntityID(entityID), mAsymID(asymID)
 	, mPolySeq(s.category("pdbx_poly_seq_scheme").find(cif::Key("asym_id") == mAsymID and cif::Key("entity_id") == mEntityID))
 {
 	map<uint32,uint32> ix;
+
+	reserve(mPolySeq.size());
 
 	for (auto r: mPolySeq)
 	{
@@ -1314,7 +1321,7 @@ AtomView Structure::waters() const
 	return result;
 }
 
-const vector<Polymer>& Structure::polymers() const
+const list<Polymer>& Structure::polymers() const
 {
 //	vector<Polymer> result;
 //	

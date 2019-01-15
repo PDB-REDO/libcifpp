@@ -773,7 +773,7 @@ struct DSSPImpl
 	DSSPImpl(const Structure& s);
 	
 	const Structure&		mStructure;
-	const vector<Polymer>&	mPolymers;
+	const list<Polymer>&	mPolymers;
 	vector<Res>				mResidues;
 };
 

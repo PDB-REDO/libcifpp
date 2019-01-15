@@ -34,6 +34,7 @@ class DistanceMap
 	const Structure& structure;
 	size_t dim;
 	std::unordered_map<std::string,size_t> index;
+	std::map<size_t,std::string> rIndex;
 	
 	struct key_hash
 	{

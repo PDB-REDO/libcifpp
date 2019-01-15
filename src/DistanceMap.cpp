@@ -58,7 +58,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 {
 	const float kMaxDistance = 5, kMaxDistanceSQ = kMaxDistance * kMaxDistance;
 	
-	auto atoms = p.atoms();
+	auto& atoms = p.atoms();
 	dim = atoms.size();
 	
 	vector<clipper::Coord_orth> locations(dim);
@@ -71,6 +71,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	{
 		size_t ix = index.size();
 		index[atom.id()] = ix;
+		rIndex[ix] = atom.id();
 		
 		locations[ix] = atom.location();
 		
@@ -281,29 +282,26 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 		throw runtime_error("atom " + a.id() + " not found in distance map");
 	}
 
-	for (auto& i: index)
+	for (auto& di: dist)
 	{
-		size_t ixb = i.second;
+		size_t dixa, dixb;
+		tie(dixa, dixb) = di.first;
 		
-		if (ixb == ixa)
-			continue;
-		
-		auto ii = 
-			ixa < ixb ?
-				dist.find(make_tuple(ixa, ixb)) :
-				dist.find(make_tuple(ixb, ixa));
-		
-		if (ii == dist.end())
+		if (dixa != ixa and dixb != ixa)
 			continue;
 		
 		float distance;
 		size_t rti;
-		tie(distance, rti) = ii->second;
+		tie(distance, rti) = di.second;
 		
 		if (distance > maxDistance)
 			continue;
 		
-		Atom a = structure.getAtomById(i.first);
+		size_t ixb = dixa;
+		if (ixb == ixa)
+			ixb = dixb;
+		
+		Atom a = structure.getAtomById(rIndex.at(ixb));
 		
 		result.push_back(a.symmetryCopy(mD, mRtOrth.at(rti)));
 	}
