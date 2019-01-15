@@ -164,8 +164,11 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 				
 				clipper::Coord_orth pi = locations[i];
 
-				for (size_t j = i + 1; j < locations.size(); ++j)
+				for (size_t j = 0; j < locations.size(); ++j)
 				{
+					if (j == i)
+						continue;
+					
 					// find nearest location based on spacegroup/cell
 					double minR2 = numeric_limits<double>::max();
 					
@@ -325,8 +328,8 @@ float DistanceMap::operator()(const Atom& a, const Atom& b) const
 		throw runtime_error("atom " + b.id() + " not found in distance map");
 	}
 	
-	if (ixb < ixa)
-		std::swap(ixa, ixb);
+//	if (ixb < ixa)
+//		std::swap(ixa, ixb);
 
 	size_t L = mIA[ixa];
 	size_t R = mIA[ixa + 1] - 1;
@@ -359,44 +362,19 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 		throw runtime_error("atom " + a.id() + " not found in distance map");
 	}
 
-	set<tuple<size_t,size_t>> bix;
+	vector<Atom> result;
 	
 	for (size_t bi = mIA[ixa]; bi < mIA[ixa + 1]; ++bi)
 	{
 		float d;
 		size_t rti;
 		tie(d, rti) = mA[bi];
-		if (d <= maxDistance)
-			bix.insert(make_tuple(mJA[bi], rti));
-	}
-	
-	for (size_t i = 0; i + 1 < dim; ++i)
-	{
-		for (size_t j = mIA[i]; j < mIA[i + 1]; ++j)
-		{
-			if (mJA[j] != ixa)
-				continue;
-			
-			float d;
-			size_t rti;
-			tie(d, rti) = mA[j];
-			if (d > maxDistance)
-				continue;
-			
-			bix.insert(make_tuple(i, rti));
-		}
-	}
-	
-	vector<Atom> result;
-	result.reserve(bix.size());
-	
-	for (auto& i: bix)
-	{
-		size_t ix, rti;
-		tie(ix, rti) = i;
-		
-		Atom a = structure.getAtomById(rIndex.at(ix));
-		result.push_back(a.symmetryCopy(mD, mRtOrth.at(rti)));
+
+		if (d > maxDistance)
+			continue;
+
+		Atom a = structure.getAtomById(rIndex.at(mJA[bi]));
+		result.emplace_back(a.symmetryCopy(mD, mRtOrth.at(rti)));
 	}
 	
 	return result;
