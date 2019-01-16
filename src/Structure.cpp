@@ -1666,7 +1666,7 @@ void Structure::moveAtom(Atom& a, Point p)
 	a.location(p);
 }
 
-void Structure::changeResidue(Residue& res, const string& newCompound,
+void Structure::changeResidue(const Residue& res, const string& newCompound,
 		const vector<tuple<string,string>>& remappedAtoms)
 {
 	cif::Datablock& db = *mFile.impl().mDb;

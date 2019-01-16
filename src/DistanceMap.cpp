@@ -278,49 +278,49 @@ void DistanceMap::AddDistancesForAtoms(const Residue& a, const Residue& b, DistM
 	}
 }
 
-//float DistanceMap::operator()(const Atom& a, const Atom& b) const
-//{
-//	size_t ixa, ixb;
-//	
-//	try
-//	{
-//		ixa = index.at(a.id());
-//	}
-//	catch (const out_of_range& ex)
-//	{
-//		throw runtime_error("atom " + a.id() + " not found in distance map");
-//	}
-//		
-//	try
-//	{
-//		ixb = index.at(b.id());
-//	}
-//	catch (const out_of_range& ex)
-//	{
-//		throw runtime_error("atom " + b.id() + " not found in distance map");
-//	}
-//	
-////	if (ixb < ixa)
-////		std::swap(ixa, ixb);
-//
-//	size_t L = mIA[ixa];
-//	size_t R = mIA[ixa + 1] - 1;
-//	
-//	while (L <= R)
-//	{
-//		size_t i = (L + R) / 2;
-//
-//		if (mJA[i] == ixb)
-//			return get<0>(mA[i]);
-//
-//		if (mJA[i] < ixb)
-//			L = i + 1;
-//		else
-//			R = i - 1;
-//	}
-//	
-//	return 100.f;
-//}
+float DistanceMap::operator()(const Atom& a, const Atom& b) const
+{
+	size_t ixa, ixb;
+	
+	try
+	{
+		ixa = index.at(a.id());
+	}
+	catch (const out_of_range& ex)
+	{
+		throw runtime_error("atom " + a.id() + " not found in distance map");
+	}
+		
+	try
+	{
+		ixb = index.at(b.id());
+	}
+	catch (const out_of_range& ex)
+	{
+		throw runtime_error("atom " + b.id() + " not found in distance map");
+	}
+	
+//	if (ixb < ixa)
+//		std::swap(ixa, ixb);
+
+	size_t L = mIA[ixa];
+	size_t R = mIA[ixa + 1] - 1;
+	
+	while (L <= R)
+	{
+		size_t i = (L + R) / 2;
+
+		if (mJA[i] == ixb)
+			return get<0>(mA[i]);
+
+		if (mJA[i] < ixb)
+			L = i + 1;
+		else
+			R = i - 1;
+	}
+	
+	return 100.f;
+}
 
 vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 {

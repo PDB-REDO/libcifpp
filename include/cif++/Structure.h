@@ -386,7 +386,7 @@ class Structure
 	void removeAtom(Atom& a);
 	void swapAtoms(Atom& a1, Atom& a2);	// swap the labels for these atoms
 	void moveAtom(Atom& a, Point p);	// move atom to a new location
-	void changeResidue(Residue& res, const std::string& newCompound,
+	void changeResidue(const Residue& res, const std::string& newCompound,
 		const std::vector<std::tuple<std::string,std::string>>& remappedAtoms);
 	
 	// iterator for all residues
