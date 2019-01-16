@@ -33,6 +33,9 @@ vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegrou
 {
 	vector<clipper::RTop_orth> result;
 	
+	// to make index 0 equal to identity, no 
+	result.push_back(clipper::RTop_orth::identity());
+	
 	for (int i = 0; i < spacegroup.num_symops(); ++i)
 	{
 		const auto& symop = spacegroup.symop(i);
@@ -53,11 +56,10 @@ vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegrou
 
 // --------------------------------------------------------------------
 
-DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
-	: structure(p), dim(0)
+DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell,
+		float maxDistance)
+	: structure(p), dim(0), mMaxDistance(maxDistance), mMaxDistanceSQ(maxDistance * maxDistance)
 {
-	const float kMaxDistance = 5, kMaxDistanceSQ = kMaxDistance * kMaxDistance;
-	
 	auto& atoms = p.atoms();
 	dim = atoms.size();
 	
@@ -138,72 +140,140 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		for_each(locations.begin(), locations.end(), [&](auto& p) { p += mD; });
 	}
 	
-	pMin -= kMaxDistance;	// extend bounding box
-	pMax += kMaxDistance;
+	pMin -= mMaxDistance;	// extend bounding box
+	pMax += mMaxDistance;
 
 	mRtOrth = AlternativeSites(spacegroup, cell);
 	
-	cif::Progress progress(locations.size() - 1, "Creating distance map");
+	DistMap dist;
 	
-	boost::thread_group t;
-	size_t N = boost::thread::hardware_concurrency();
-	atomic<size_t> next(0);
-	mutex m;
+	vector<const Residue*> residues;
+	residues.reserve(p.residues().size());
+	for (auto& r: p.residues())
+	{
+		residues.emplace_back(&r);
+
+		// Add distances for atoms in this residue		
+		AddDistancesForAtoms(r, r, dist, 0);
+	}
 	
-	map<tuple<size_t,size_t>,tuple<float,size_t>> dist;
+	cif::Progress progress(residues.size(), "Creating distance map");
 	
-	for (size_t i = 0; i < N; ++i)
-		t.create_thread([&]()
+	for (size_t i = 0; i + 1 < residues.size(); ++i)
+	{
+		progress.consumed(1);
+		
+		auto& ri = *residues[i];
+		
+		Point centerI;
+		float radiusI;
+		tie(centerI, radiusI) = ri.centerAndRadius();
+		
+		for (size_t j = i + 1; j < residues.size(); ++j)
 		{
-			for (;;)
+			auto& rj = *residues[j];
+			
+			// first case, no symmetry operations
+			
+			Point centerJ;
+			float radiusJ;
+			tie(centerJ, radiusJ) = rj.centerAndRadius();
+			
+			auto d = Distance(centerI, centerJ) - radiusI - radiusJ;
+			if (d < mMaxDistance)
 			{
-				size_t i = next++;
-				
-				if (i >= locations.size())
-					break;
-				
-				clipper::Coord_orth pi = locations[i];
+//				cout << ri.labelID() << " en " << rj.labelID() << " liggen dicht bij elkaar: " << (d - radiusI - radiusJ) << endl;
 
-				for (size_t j = 0; j < locations.size(); ++j)
-				{
-					if (j == i)
-						continue;
-					
-					// find nearest location based on spacegroup/cell
-					double minR2 = numeric_limits<double>::max();
-					
-					size_t kb = 0;
-					for (size_t k = 0; k < mRtOrth.size(); ++k)
-					{
-						auto& rt = mRtOrth[k];
-						
-						auto pj = locations[j];
-						
-						pj = pj.transform(rt);
-						double r2 = (pi - pj).lengthsq();
-
-						if (minR2 > r2)
-						{
-							minR2 = r2;
-							kb = k;
-						}
-					}
-					
-					if (minR2 < kMaxDistanceSQ)
-					{
-						float d = sqrt(minR2);
-						auto key = make_tuple(i, j);
-						
-						lock_guard<mutex> lock(m);
-						dist[key] = make_tuple(d, kb);
-					}
-				}
-
-				progress.consumed(1);
+				AddDistancesForAtoms(ri, rj, dist, 0);
+				continue;
 			}
-		});
-	
-	t.join_all();
+			
+			// now try all symmetry operations to see if we can move rj close to ri
+			
+			clipper::Coord_orth cI = centerI;
+			clipper::Coord_orth cJ = centerJ;
+			
+			auto minR2 = d;
+			
+			int32 kbest = 0;
+			for (int32 k = 1; k < static_cast<int32>(mRtOrth.size()); ++k)
+			{
+				auto& rt = mRtOrth[k];
+				
+				auto pJ = cJ.transform(rt);
+				double r2 = sqrt((cI - pJ).lengthsq()) - radiusI - radiusJ;
+
+				if (minR2 > r2)
+				{
+					minR2 = r2;
+					kbest = k;
+				}
+			}
+			
+			if (minR2 < mMaxDistance)
+			{
+//cout << ri.labelID() << " en " << rj.labelID() << " liggen dicht bij elkaar na symmetrie operatie: " << kbest << endl;
+				AddDistancesForAtoms(ri, rj, dist, kbest);
+			}
+		}
+	}
+
+//	cif::Progress progress(locations.size() - 1, "Creating distance map");
+//	
+//	boost::thread_group t;
+//	size_t N = boost::thread::hardware_concurrency();
+//	atomic<size_t> next(0);
+//	mutex m;
+//	
+//	for (size_t i = 0; i < N; ++i)
+//		t.create_thread([&]()
+//		{
+//			for (;;)
+//			{
+//				size_t i = next++;
+//				
+//				if (i >= locations.size())
+//					break;
+//				
+//				clipper::Coord_orth pi = locations[i];
+//
+//				for (size_t j = i + 1; j < locations.size(); ++j)
+//				{
+//					// find nearest location based on spacegroup/cell
+//					double minR2 = numeric_limits<double>::max();
+//					
+//					size_t kb = 0;
+//					for (size_t k = 0; k < mRtOrth.size(); ++k)
+//					{
+//						auto& rt = mRtOrth[k];
+//						
+//						auto pj = locations[j];
+//						
+//						pj = pj.transform(rt);
+//						double r2 = (pi - pj).lengthsq();
+//
+//						if (minR2 > r2)
+//						{
+//							minR2 = r2;
+//							kb = k;
+//						}
+//					}
+//					
+//					if (minR2 < mMaxDistanceSQ)
+//					{
+//						float d = sqrt(minR2);
+//						auto key = make_tuple(i, j);
+//						
+//						lock_guard<mutex> lock(m);
+//						dist[key] = make_tuple(d, kb);
+//					}
+//				}
+//
+//				progress.consumed(1);
+//			}
+//		});
+//	
+//	t.join_all();
 	
 	// Store as a sparse CSR compressed matrix
 	
@@ -306,52 +376,89 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 //		}
 }
 
-float DistanceMap::operator()(const Atom& a, const Atom& b) const
+// --------------------------------------------------------------------
+
+void DistanceMap::AddDistancesForAtoms(const Residue& a, const Residue& b, DistMap& dm, int32 rtix)
 {
-	size_t ixa, ixb;
-	
-	try
+	for (auto& aa: a.atoms())
 	{
-		ixa = index.at(a.id());
-	}
-	catch (const out_of_range& ex)
-	{
-		throw runtime_error("atom " + a.id() + " not found in distance map");
-	}
+		clipper::Coord_orth pa = aa.location();
+		size_t ixa = index[aa.id()];
 		
-	try
-	{
-		ixb = index.at(b.id());
-	}
-	catch (const out_of_range& ex)
-	{
-		throw runtime_error("atom " + b.id() + " not found in distance map");
-	}
-	
-//	if (ixb < ixa)
-//		std::swap(ixa, ixb);
+		for (auto& bb: b.atoms())
+		{
+			if (aa.id() == bb.id())
+				continue;
+			
+			clipper::Coord_orth pb = bb.location();
+			
+			if (rtix)
+				pb = pb.transform(mRtOrth[rtix]);
+			
+			auto d = (pa - pb).lengthsq();
+			if (d > mMaxDistanceSQ)
+				continue;
 
-	size_t L = mIA[ixa];
-	size_t R = mIA[ixa + 1] - 1;
-	
-	while (L <= R)
-	{
-		size_t i = (L + R) / 2;
+			d = sqrt(d);
 
-		if (mJA[i] == ixb)
-			return get<0>(mA[i]);
+			size_t ixb = index[bb.id()];
 
-		if (mJA[i] < ixb)
-			L = i + 1;
-		else
-			R = i - 1;
+			dm[make_tuple(ixa, ixb)] = make_tuple(d, rtix);
+			dm[make_tuple(ixb, ixa)] = make_tuple(d, -rtix);
+		}
 	}
-	
-	return 100.f;
 }
+
+//float DistanceMap::operator()(const Atom& a, const Atom& b) const
+//{
+//	size_t ixa, ixb;
+//	
+//	try
+//	{
+//		ixa = index.at(a.id());
+//	}
+//	catch (const out_of_range& ex)
+//	{
+//		throw runtime_error("atom " + a.id() + " not found in distance map");
+//	}
+//		
+//	try
+//	{
+//		ixb = index.at(b.id());
+//	}
+//	catch (const out_of_range& ex)
+//	{
+//		throw runtime_error("atom " + b.id() + " not found in distance map");
+//	}
+//	
+////	if (ixb < ixa)
+////		std::swap(ixa, ixb);
+//
+//	size_t L = mIA[ixa];
+//	size_t R = mIA[ixa + 1] - 1;
+//	
+//	while (L <= R)
+//	{
+//		size_t i = (L + R) / 2;
+//
+//		if (mJA[i] == ixb)
+//			return get<0>(mA[i]);
+//
+//		if (mJA[i] < ixb)
+//			L = i + 1;
+//		else
+//			R = i - 1;
+//	}
+//	
+//	return 100.f;
+//}
 
 vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 {
+	assert(maxDistance <= mMaxDistance);
+	if (maxDistance > mMaxDistance)
+		throw runtime_error("Invalid max distance in DistanceMap::near");
+	
 	size_t ixa;
 	try
 	{
@@ -364,17 +471,41 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 
 	vector<Atom> result;
 	
-	for (size_t bi = mIA[ixa]; bi < mIA[ixa + 1]; ++bi)
+	for (size_t i = mIA[ixa]; i < mIA[ixa + 1]; ++i)
 	{
 		float d;
-		size_t rti;
-		tie(d, rti) = mA[bi];
+		int32 rti;
+		tie(d, rti) = mA[i];
 
 		if (d > maxDistance)
 			continue;
 
-		Atom a = structure.getAtomById(rIndex.at(mJA[bi]));
-		result.emplace_back(a.symmetryCopy(mD, mRtOrth.at(rti)));
+		size_t ixb = mJA[i];
+		Atom b = structure.getAtomById(rIndex.at(ixb));
+		
+		if (rti > 0)
+			result.emplace_back(b.symmetryCopy(mD, mRtOrth.at(rti)));
+		else if (rti < 0)
+			result.emplace_back(b.symmetryCopy(mD, mRtOrth.at(-rti).inverse()));
+		else
+			result.emplace_back(b);
+
+#if 0 //DEBUG
+		if (rti != 0)
+			cerr << "symmetrie contact " << a.labelID() << " en " << result.back().labelID()
+				 << " d: " << d
+				 << " rti: " << rti
+				 << endl;
+		
+		auto d2 = Distance(a, result.back());
+		if (abs(d2 - d) > 0.01)
+			cerr << "Afstand " << a.labelID() << " en " << result.back().labelID()
+				 << " is niet gelijk aan verwachtte waarde:"
+				 << "d: " << d
+				 << " d2: " << d2
+				 << " rti: " << rti
+				 << endl;
+#endif
 	}
 	
 	return result;

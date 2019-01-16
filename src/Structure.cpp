@@ -589,9 +589,33 @@ float Atom::radius() const
 // --------------------------------------------------------------------
 // residue
 
+Residue::Residue(const Structure& structure, const std::string& compoundID,
+	const std::string& asymID, int seqID)
+	: mStructure(&structure), mCompoundID(compoundID)
+	, mAsymID(asymID), mSeqID(seqID)
+{
+	for (auto& a: mStructure->atoms())
+	{
+		if (mSeqID > 0 and a.labelSeqId() != mSeqID)
+			continue;
+		
+		if (a.labelAsymId() != mAsymID or
+			a.labelCompId() != mCompoundID)
+				continue;
+		
+		mAtoms.push_back(a);
+	}
+}
+
+Residue::Residue(const Structure& structure, const std::string& asymID, Atom water, int ndbSeqID)
+	: mStructure(&structure), mCompoundID("HOH")
+	, mAsymID(asymID), mNDBSeqID(ndbSeqID), mAtoms({water})
+{
+}
+
 Residue::Residue(Residue&& rhs)
 	: mStructure(rhs.mStructure), mCompoundID(move(rhs.mCompoundID)), mAsymID(move(rhs.mAsymID))
-	, mSeqID(rhs.mSeqID), mAtoms(move(rhs.mAtoms))
+	, mSeqID(rhs.mSeqID), mNDBSeqID(rhs.mNDBSeqID), mAtoms(move(rhs.mAtoms))
 {
 //cerr << "move constructor residue" << endl;
 	rhs.mStructure = nullptr;
@@ -604,6 +628,7 @@ Residue& Residue::operator=(Residue&& rhs)
 	mCompoundID = move(rhs.mCompoundID);
 	mAsymID = move(rhs.mAsymID);
 	mSeqID = rhs.mSeqID;
+	mNDBSeqID = rhs.mNDBSeqID;
 	mAtoms = move(rhs.mAtoms);
 
 	return *this;
@@ -663,65 +688,11 @@ const AtomView& Residue::atoms() const
 	if (mStructure == nullptr)
 		throw runtime_error("Invalid Residue object");
 
-	if (mAtoms.empty())
-	{
-		
-
-//#if 0
-		for (auto& a: mStructure->atoms())
-		{
-			if (mSeqID > 0 and a.labelSeqId() != mSeqID)
-				continue;
-			
-			if (a.labelAsymId() != mAsymID or
-				a.labelCompId() != mCompoundID)
-					continue;
-			
-//			if (not mAltID.empty() and a.property<string>("label_alt_id") != mAltID)
-//				continue;
-//			
-			const_cast<AtomView&>(mAtoms).push_back(a);
-		}
-
-if (not mAtoms.empty())
-	cerr << "loaded atoms for " << labelID() << endl;
-
-//#else
-//		auto& atomSites = mStructure->category("atom_site");
-//		
-//		auto query = cif::Key("label_asym_id") == mAsymID and cif::Key("label_comp_id") == mCompoundID;
-//		
-//		if (mSeqID != 0)
-//			query = move(query) and cif::Key("label_seq_id") == mSeqID;
-//		
-//		if (not mAltID.empty())
-//			query = move(query) and (cif::Key("label_alt_id") == cif::Empty() or cif::Key("label_alt_id") == mAltID);
-//	
-//		auto cifAtoms = atomSites.find(move(query));
-//
-//		for (auto cifAtom: cifAtoms)
-//			mAtoms.push_back(mStructure->getAtomById(cifAtom["id"].as<string>()));
-//#endif
-	}
-	
 	return mAtoms;
-	
-//	auto& atomSites = mStructure->category("atom_site");
-//	
-//	auto query = cif::Key("label_asym_id") == mAsymID and cif::Key("label_comp_id") == mCompoundID;
-//	
-//	if (not mSeqID.empty())
-//		query = move(query) and cif::Key("label_seq_id") == mSeqID;
-//	
-//	if (not mAltID.empty())
-//		query = move(query) and (cif::Key("label_alt_id") == cif::Empty() or cif::Key("label_alt_id") == mAltID);
-//
-//	return atomSites.find(move(query));
 }
 
 Atom Residue::atomByID(const string& atomID) const
 {
-//	for (auto& a: atoms())
 	for (auto& a: mAtoms)
 	{
 		if (a.labelAtomId() == atomID)
@@ -769,7 +740,29 @@ string Residue::authID() const
 
 string Residue::labelID() const
 {
-	return mAsymID + to_string(mSeqID);
+	if (mCompoundID == "HOH")
+		return mAsymID + to_string(mNDBSeqID);
+	else
+		return mAsymID + to_string(mSeqID);
+}
+
+tuple<Point,float> Residue::centerAndRadius() const
+{
+	vector<Point> pts;
+	for (auto& a: mAtoms)
+		pts.push_back(a.location());
+	
+	auto center = Centroid(pts);
+	float radius = 0;
+	
+	for (auto& pt: pts)
+	{
+		auto d = Distance(pt, center);
+		if (radius < d)
+			radius = d;
+	}
+	
+	return make_tuple(center, radius);
 }
 
 // --------------------------------------------------------------------
@@ -1080,16 +1073,6 @@ Polymer::Polymer(const Structure& s, const string& entityID, const string& asymI
 		ix[seqID] = index;
 		emplace_back(*this, index, seqID, compoundID);
 	}
-	
-	for (auto atom: s.atoms())
-	{
-		if (atom.labelAsymId() != mAsymID)
-			continue;
-		
-		uint32 index = ix.at(atom.labelSeqId());
-		
-		at(index).mAtoms.push_back(atom);
-	}
 }
 
 string Polymer::chainID() const
@@ -1259,22 +1242,7 @@ Structure::Structure(File& f, uint32 modelNr)
 			mAtoms.emplace_back(new AtomImpl(f, a["id"].as<string>(), a));
 	}
 	
-//	sort(mAtoms.begin(), mAtoms.end(), [](auto& a, auto& b) { return a.id() < b.id(); });
-
-	updateAtomIndex();
-
-	// polymers
-	auto& polySeqScheme = category("pdbx_poly_seq_scheme");
-	
-	for (auto& r: polySeqScheme)
-	{
-		string asymID, entityID, seqID, monID;
-		cif::tie(asymID, entityID, seqID, monID) =
-			r.get("asym_id", "entity_id", "seq_id", "mon_id");
-		
-		if (mPolymers.empty() or mPolymers.back().asymID() != asymID or mPolymers.back().entityID() != entityID)
-			mPolymers.emplace_back(*this, entityID, asymID);
-	}
+	loadData();
 }
 
 Structure::Structure(const Structure& s)
@@ -1283,7 +1251,16 @@ Structure::Structure(const Structure& s)
 	mAtoms.reserve(s.mAtoms.size());
 	for (auto& atom: s.mAtoms)
 		mAtoms.emplace_back(atom.clone());
+	
+	loadData();
+}
 
+Structure::~Structure()
+{
+}
+
+void Structure::loadData()
+{
 	updateAtomIndex();
 
 	auto& polySeqScheme = category("pdbx_poly_seq_scheme");
@@ -1297,10 +1274,40 @@ Structure::Structure(const Structure& s)
 		if (mPolymers.empty() or mPolymers.back().asymID() != asymID or mPolymers.back().entityID() != entityID)
 			mPolymers.emplace_back(*this, entityID, asymID);
 	}
-}
 
-Structure::~Structure()
-{
+	auto& nonPolyScheme = category("pdbx_nonpoly_scheme");
+	
+	vector<string> waterIDs;
+	for (auto& a: mAtoms)
+	{
+		if (a.isWater())
+			waterIDs.push_back(a.id());
+	}
+	auto waterIDIter = waterIDs.begin();
+	
+	for (auto& r: nonPolyScheme)
+	{
+		string asymID, monID;
+		int ndbSeqNum;
+		cif::tie(asymID, monID, ndbSeqNum) =
+			r.get("asym_id", "mon_id", "ndb_seq_num");
+		
+		if (monID == "HOH")
+		{
+			if (waterIDIter == waterIDs.end())
+				throw runtime_error("pdbx_nonpoly_scheme contains more waters than water atoms are available in atom_site");
+			
+			Atom water = getAtomById(*waterIDIter);
+			++waterIDIter;
+			
+			mNonPolymers.emplace_back(*this, asymID, water, ndbSeqNum);
+		}
+		else if (mNonPolymers.empty() or mNonPolymers.back().asymID() != asymID)
+			mNonPolymers.emplace_back(*this, monID, asymID);
+	}
+	
+	if (waterIDIter != waterIDs.end())
+		throw runtime_error("there are more waters in atom_site than referenced in pdbx_nonpoly_scheme");
 }
 
 void Structure::updateAtomIndex()
@@ -1310,11 +1317,6 @@ void Structure::updateAtomIndex()
 	iota(mAtomIndex.begin(), mAtomIndex.end(), 0);
 	
 	sort(mAtomIndex.begin(), mAtomIndex.end(), [this](size_t a, size_t b) { return mAtoms[a].id() < mAtoms[b].id(); });
-}
-
-const AtomView& Structure::atoms() const
-{
-	return mAtoms;
 }
 
 AtomView Structure::waters() const
@@ -1341,30 +1343,6 @@ AtomView Structure::waters() const
 	{
 		if (a.property<string>("label_entity_id") == waterEntityId)
 			result.push_back(a);
-	}
-	
-	return result;
-}
-
-const list<Polymer>& Structure::polymers() const
-{
-	return mPolymers;
-}
-
-vector<Residue> Structure::nonPolymers() const
-{
-	vector<Residue> result;
-
-	auto& nonPolyScheme = category("pdbx_nonpoly_scheme");
-	
-	for (auto& r: nonPolyScheme)
-	{
-		string asymID, monID;
-		cif::tie(asymID, monID) =
-			r.get("asym_id", "mon_id");
-		
-		if (result.empty() or result.back().asymID() != asymID)
-			result.emplace_back(*this, monID, asymID);
 	}
 	
 	return result;
@@ -1575,6 +1553,67 @@ void Structure::insertCompound(const string& compoundID, bool isEntity)
 		}
 	}
 }
+
+// --------------------------------------------------------------------
+
+Structure::residue_iterator::residue_iterator(const Structure* s, poly_iterator polyIter, size_t polyResIndex, size_t nonPolyIndex)
+	: mStructure(*s), mPolyIter(polyIter), mPolyResIndex(polyResIndex), mNonPolyIndex(nonPolyIndex)
+{
+	while (mPolyIter != mStructure.mPolymers.end() and mPolyResIndex == mPolyIter->size())
+		++mPolyIter;
+}
+
+auto Structure::residue_iterator::operator*() -> reference
+{
+	if (mPolyIter != mStructure.mPolymers.end())
+		return (*mPolyIter)[mPolyResIndex];
+	else
+		return mStructure.mNonPolymers[mNonPolyIndex];
+}
+
+auto Structure::residue_iterator::operator->() -> pointer
+{
+	if (mPolyIter != mStructure.mPolymers.end())
+		return &(*mPolyIter)[mPolyResIndex];
+	else
+		return &mStructure.mNonPolymers[mNonPolyIndex];
+}
+		
+Structure::residue_iterator& Structure::residue_iterator::operator++()
+{
+	if (mPolyIter != mStructure.mPolymers.end())
+	{
+		++mPolyResIndex;
+		if (mPolyResIndex >= mPolyIter->size())
+		{
+			++mPolyIter;
+			mPolyResIndex = 0;
+		}
+	}
+	else
+		++mNonPolyIndex;
+	
+	return *this;
+}
+
+Structure::residue_iterator Structure::residue_iterator::operator++(int)
+{
+	auto result = *this;
+	operator++();
+	return result;
+}
+		
+bool Structure::residue_iterator::operator==(const Structure::residue_iterator& rhs) const
+{
+	return mPolyIter == rhs.mPolyIter and mPolyResIndex == rhs.mPolyResIndex and mNonPolyIndex == rhs.mNonPolyIndex;
+}
+
+bool Structure::residue_iterator::operator!=(const Structure::residue_iterator& rhs) const
+{
+	return mPolyIter != rhs.mPolyIter or mPolyResIndex != rhs.mPolyResIndex or mNonPolyIndex != rhs.mNonPolyIndex;
+}
+
+// --------------------------------------------------------------------
 
 void Structure::removeAtom(Atom& a)
 {

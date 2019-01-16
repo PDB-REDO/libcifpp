@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <numeric>
+
 #include <boost/filesystem/operations.hpp>
 #include <boost/math/quaternion.hpp>
 
@@ -165,10 +167,12 @@ typedef std::vector<Atom> AtomView;
 class Residue
 {
   public:
+	// constructors should be private, but that's not possible for now (needed in emplace)
+	// constructor for waters
+	Residue(const Structure& structure, const std::string& asymID, Atom water, int ndbSeqID);
+
 	Residue(const Structure& structure, const std::string& compoundID,
-		const std::string& asymID, int seqID = 0)
-		: mStructure(&structure), mCompoundID(compoundID)
-		, mAsymID(asymID), mSeqID(seqID) {}
+		const std::string& asymID, int seqID = 0);
 
 	Residue(const Residue& rhs) = delete;
 	Residue& operator=(const Residue& rhs) = delete;
@@ -204,6 +208,9 @@ class Residue
 	const Structure& structure() const		{ return *mStructure; }
 
 	bool empty() const						{ return mStructure == nullptr; }
+	
+	// some routines for 3d work
+	std::tuple<Point,float> centerAndRadius() const;
 
   protected:
 
@@ -211,9 +218,11 @@ class Residue
 
 	friend class Polymer;
 
+	void calculateCenterAndRadius();
+
 	const Structure* mStructure = nullptr;
 	std::string	mCompoundID, mAsymID;
-	int mSeqID = 0;
+	int mSeqID = 0, mNDBSeqID = 0;
 	AtomView mAtoms;
 };
 
@@ -338,12 +347,11 @@ class Structure
 
 	File& getFile() const;
 
-	const AtomView& atoms() const;
+	const AtomView& atoms() const							{ return mAtoms; }
 	AtomView waters() const;
 	
-	const std::list<Polymer>& polymers() const;
-
-	std::vector<Residue> nonPolymers() const;
+	const std::list<Polymer>& polymers() const				{ return mPolymers; }
+	const std::vector<Residue>& nonPolymers() const			{ return mNonPolymers; }
 
 	Atom getAtomById(std::string id) const;
 	Atom getAtomByLocation(Point pt, float maxDistance) const;
@@ -381,22 +389,80 @@ class Structure
 	void changeResidue(Residue& res, const std::string& newCompound,
 		const std::vector<std::tuple<std::string,std::string>>& remappedAtoms);
 	
+	// iterator for all residues
+	
+	class residue_iterator : public std::iterator<std::forward_iterator_tag, const Residue>
+	{
+	  public:
+		typedef std::iterator<std::forward_iterator_tag, const Residue>	baseType;
+		typedef typename baseType::pointer								pointer;
+		typedef typename baseType::reference							reference;
+		
+		typedef std::list<Polymer>::const_iterator						poly_iterator;
+		
+		residue_iterator(const Structure* s, poly_iterator polyIter, size_t polyResIndex, size_t nonPolyIndex);
+		
+		reference operator*();
+		pointer operator->();
+		
+		residue_iterator& operator++();
+		residue_iterator operator++(int);
+		
+		bool operator==(const residue_iterator& rhs) const;
+		bool operator!=(const residue_iterator& rhs) const;
+		
+	  private:
+		const Structure&	mStructure;
+		poly_iterator		mPolyIter;
+		size_t				mPolyResIndex;
+		size_t				mNonPolyIndex;
+	};
+	
+	class residue_view
+	{
+	  public:
+		residue_view(const Structure* s) : mStructure(s) {}
+		residue_view(const residue_view& rhs) : mStructure(rhs.mStructure) {}
+		residue_view& operator=(residue_view& rhs)
+		{
+			mStructure = rhs.mStructure;
+			return *this;
+		}
+		
+		residue_iterator begin() const		{ return residue_iterator(mStructure, mStructure->mPolymers.begin(), 0, 0); }
+		residue_iterator end() const		{ return residue_iterator(mStructure, mStructure->mPolymers.end(), 0, mStructure->mNonPolymers.size()); }
+		size_t size() const
+		{
+			size_t ps = std::accumulate(mStructure->mPolymers.begin(), mStructure->mPolymers.end(), 0UL, [](size_t s, auto& p) { return s + p.size(); });
+			return ps + mStructure->mNonPolymers.size();
+		}
+
+	  private:
+		const Structure* mStructure;
+	};
+	
+	residue_view residues() const			{ return residue_view(this); }
+	
   private:
 	friend Polymer;
 	friend Residue;
+	friend residue_view;
+	friend residue_iterator;
 
 	cif::Category& category(const char* name) const;
 	cif::Datablock& datablock() const;
 
 	void insertCompound(const std::string& compoundID, bool isEntity);
 	
+	void loadData();
 	void updateAtomIndex();
-
+	
 	File&					mFile;
 	uint32					mModelNr;
 	AtomView				mAtoms;
 	std::vector<size_t>		mAtomIndex;
 	std::list<Polymer>		mPolymers;
+	std::vector<Residue>	mNonPolymers;
 };
 
 }
