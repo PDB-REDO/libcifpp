@@ -132,6 +132,8 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	mD.mY = calculateD(my, cell.b());
 	mD.mZ = calculateD(mz, cell.c());
 	
+	clipper::Coord_orth D = mD;
+	
 	if (mD.mX != 0 or mD.mY != 0 or mD.mZ != 0)
 	{
 		if (VERBOSE)
@@ -182,8 +184,6 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 			auto d = Distance(centerI, centerJ) - radiusI - radiusJ;
 			if (d < mMaxDistance)
 			{
-//				cout << ri.labelID() << " en " << rj.labelID() << " liggen dicht bij elkaar: " << (d - radiusI - radiusJ) << endl;
-
 				AddDistancesForAtoms(ri, rj, dist, 0);
 				continue;
 			}
@@ -200,7 +200,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 			{
 				auto& rt = mRtOrth[k];
 				
-				auto pJ = cJ.transform(rt);
+				auto pJ = (cJ + D).transform(rt) - D;
 				double r2 = sqrt((cI - pJ).lengthsq()) - radiusI - radiusJ;
 
 				if (minR2 > r2)
@@ -483,28 +483,51 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 		size_t ixb = mJA[i];
 		Atom b = structure.getAtomById(rIndex.at(ixb));
 		
+		clipper::RTop_orth rt = clipper::RTop_orth::identity();
+		
 		if (rti > 0)
-			result.emplace_back(b.symmetryCopy(mD, mRtOrth.at(rti)));
+		{
+			rt = mRtOrth.at(rti);
+			result.emplace_back(b.symmetryCopy(mD, rt));
+		}
 		else if (rti < 0)
-			result.emplace_back(b.symmetryCopy(mD, mRtOrth.at(-rti).inverse()));
+		{
+			rt = mRtOrth.at(-rti).inverse();
+			result.emplace_back(b.symmetryCopy(mD, rt));
+		}
 		else
 			result.emplace_back(b);
 
-#if 0 //DEBUG
-		if (rti != 0)
-			cerr << "symmetrie contact " << a.labelID() << " en " << result.back().labelID()
-				 << " d: " << d
-				 << " rti: " << rti
-				 << endl;
+#if 1 //DEBUG
+//		if (rti != 0)
+//			cerr << "symmetrie contact " << a.labelID() << " en " << result.back().labelID()
+//				 << " d: " << d
+//				 << " rti: " << rti
+//				 << endl;
 		
 		auto d2 = Distance(a, result.back());
 		if (abs(d2 - d) > 0.01)
+		{
+			cerr << "Voor a: " << a.location() << " en b: " << b.location() << " => " << result.back().location() << endl;
+			
 			cerr << "Afstand " << a.labelID() << " en " << result.back().labelID()
 				 << " is niet gelijk aan verwachtte waarde:"
 				 << "d: " << d
 				 << " d2: " << d2
 				 << " rti: " << rti
 				 << endl;
+			
+			rt = rt.inverse();
+			result.back() = b.symmetryCopy(mD, rt);
+			
+			d2 = Distance(a, result.back());
+
+			cerr << "inverse b: " << result.back().location() << endl;
+
+			
+			if (abs(d2 - d) < 0.01)
+				cerr << "==> But the inverse is correct" << endl;
+		}
 #endif
 	}
 	
