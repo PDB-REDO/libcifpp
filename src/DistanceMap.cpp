@@ -159,12 +159,10 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		AddDistancesForAtoms(r, r, dist, 0);
 	}
 	
-	cif::Progress progress(residues.size(), "Creating distance map");
+	cif::Progress progress(residues.size() * residues.size(), "Creating distance map");
 	
 	for (size_t i = 0; i + 1 < residues.size(); ++i)
 	{
-		progress.consumed(1);
-		
 		auto& ri = *residues[i];
 		
 		Point centerI;
@@ -173,6 +171,8 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 		
 		for (size_t j = i + 1; j < residues.size(); ++j)
 		{
+			progress.consumed(1);
+
 			auto& rj = *residues[j];
 			
 			// first case, no symmetry operations
@@ -211,69 +211,9 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 			}
 			
 			if (minR2 < mMaxDistance)
-			{
-//cout << ri.labelID() << " en " << rj.labelID() << " liggen dicht bij elkaar na symmetrie operatie: " << kbest << endl;
 				AddDistancesForAtoms(ri, rj, dist, kbest);
-			}
 		}
 	}
-
-//	cif::Progress progress(locations.size() - 1, "Creating distance map");
-//	
-//	boost::thread_group t;
-//	size_t N = boost::thread::hardware_concurrency();
-//	atomic<size_t> next(0);
-//	mutex m;
-//	
-//	for (size_t i = 0; i < N; ++i)
-//		t.create_thread([&]()
-//		{
-//			for (;;)
-//			{
-//				size_t i = next++;
-//				
-//				if (i >= locations.size())
-//					break;
-//				
-//				clipper::Coord_orth pi = locations[i];
-//
-//				for (size_t j = i + 1; j < locations.size(); ++j)
-//				{
-//					// find nearest location based on spacegroup/cell
-//					double minR2 = numeric_limits<double>::max();
-//					
-//					size_t kb = 0;
-//					for (size_t k = 0; k < mRtOrth.size(); ++k)
-//					{
-//						auto& rt = mRtOrth[k];
-//						
-//						auto pj = locations[j];
-//						
-//						pj = pj.transform(rt);
-//						double r2 = (pi - pj).lengthsq();
-//
-//						if (minR2 > r2)
-//						{
-//							minR2 = r2;
-//							kb = k;
-//						}
-//					}
-//					
-//					if (minR2 < mMaxDistanceSQ)
-//					{
-//						float d = sqrt(minR2);
-//						auto key = make_tuple(i, j);
-//						
-//						lock_guard<mutex> lock(m);
-//						dist[key] = make_tuple(d, kb);
-//					}
-//				}
-//
-//				progress.consumed(1);
-//			}
-//		});
-//	
-//	t.join_all();
 	
 	// Store as a sparse CSR compressed matrix
 	
@@ -303,77 +243,6 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 
 	for (size_t ri = lastR; ri < dim; ++ri)
 		mIA.push_back(mA.size());
-
-//// debug code
-//	
-//	assert(mIA.size() == dim + 1);
-//	assert(mA.size() == nnz);
-//	assert(mJA.size() == nnz);
-//	
-//cerr << "nnz: " << nnz << endl;
-//	
-//	auto get = [&](size_t i, size_t j)
-//	{
-//		if (i > j)
-//			std::swap(i, j);
-//		
-//		for (size_t cix = mIA[i]; cix < mIA[i + 1]; ++cix)
-//		{
-//			if (mJA[cix] == j)
-//				return std::get<0>(mA[cix]);
-//		}
-//		
-//		return 100.f;
-//	};
-//	
-//	auto get2 = [&](size_t ixa, size_t ixb)
-//	{
-//		if (ixb < ixa)
-//			std::swap(ixa, ixb);
-//	
-//		int32 L = mIA[ixa];
-//		int32 R = mIA[ixa + 1] - 1;
-//		
-//		while (L <= R)
-//		{
-//			int32 i = (L + R) / 2;
-//			
-//			if (mJA[i] == ixb)
-//				return std::get<0>(mA[i]);
-//	
-//			if (mJA[i] < ixb)
-//				L = i + 1;
-//			else
-//				R = i - 1;
-//		}
-//
-//		return 100.f;
-//	};
-//	
-//	// test all values
-//	for (size_t i = 0; i < dim; ++i)
-//		for (size_t j = 0; j < dim; ++j)
-//		{
-//			float a = get(i, j);
-//			
-//			auto ixa = i, ixb = j;
-//			if (ixb < ixa)
-//				std::swap(ixa, ixb);
-//			
-//			tuple<size_t,size_t> k{ ixa, ixb };
-//		
-//			auto ii = dist.find(k);
-//		
-//			float b = 100;
-//			
-//			if (ii != dist.end())
-//				b = std::get<0>(ii->second);
-//			
-//			assert(a == b);
-//			
-//			float c = get2(i, j);
-//			assert(a == c);
-//		}
 }
 
 // --------------------------------------------------------------------
@@ -483,52 +352,12 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 		size_t ixb = mJA[i];
 		Atom b = structure.getAtomById(rIndex.at(ixb));
 		
-		clipper::RTop_orth rt = clipper::RTop_orth::identity();
-		
 		if (rti > 0)
-		{
-			rt = mRtOrth.at(rti);
-			result.emplace_back(b.symmetryCopy(mD, rt));
-		}
+			result.emplace_back(b.symmetryCopy(mD, mRtOrth.at(rti)));
 		else if (rti < 0)
-		{
-			rt = mRtOrth.at(-rti).inverse();
-			result.emplace_back(b.symmetryCopy(mD, rt));
-		}
+			result.emplace_back(b.symmetryCopy(mD, mRtOrth.at(-rti).inverse()));
 		else
 			result.emplace_back(b);
-
-#if 1 //DEBUG
-//		if (rti != 0)
-//			cerr << "symmetrie contact " << a.labelID() << " en " << result.back().labelID()
-//				 << " d: " << d
-//				 << " rti: " << rti
-//				 << endl;
-		
-		auto d2 = Distance(a, result.back());
-		if (abs(d2 - d) > 0.01)
-		{
-			cerr << "Voor a: " << a.location() << " en b: " << b.location() << " => " << result.back().location() << endl;
-			
-			cerr << "Afstand " << a.labelID() << " en " << result.back().labelID()
-				 << " is niet gelijk aan verwachtte waarde:"
-				 << "d: " << d
-				 << " d2: " << d2
-				 << " rti: " << rti
-				 << endl;
-			
-			rt = rt.inverse();
-			result.back() = b.symmetryCopy(mD, rt);
-			
-			d2 = Distance(a, result.back());
-
-			cerr << "inverse b: " << result.back().location() << endl;
-
-			
-			if (abs(d2 - d) < 0.01)
-				cerr << "==> But the inverse is correct" << endl;
-		}
-#endif
 	}
 	
 	return result;

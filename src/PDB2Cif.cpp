@@ -4650,7 +4650,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				catch (const invalid_argument&)
 				{
 					if (VERBOSE)
-						cerr << "Distance value '" << distance << "' is not a valid float" << endl;
+						cerr << "Distance value '" << distance << "' is not a valid float in LINK record" << endl;
 					distance.clear();
 				}
 			}

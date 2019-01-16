@@ -57,11 +57,21 @@ BondMap::BondMap(const Structure& p)
 		if (compounds.count(c))
 			continue;
 		
-		if (VERBOSE)
+		if (VERBOSE > 1)
 			cerr << "Warning: mon_id " << c << " is missing in the chem_comp category" << endl;
 		compounds.insert(c);
 	}
 
+	cif::Progress progress(compounds.size(), "Creating bond map");
+
+	// some helper indices to speed things up a bit
+	map<tuple<string,int,string>,string> atomMapByAsymSeqAndAtom;
+	for (auto& a: p.atoms())
+	{
+		auto key = make_tuple(a.labelAsymId(), a.labelSeqId(), a.labelAtomId());
+		atomMapByAsymSeqAndAtom[key] = a.id();
+	}
+	
 	// first link all residues in a polyseq
 	
 	string lastAsymID;
@@ -80,16 +90,22 @@ BondMap::BondMap(const Structure& p)
 			continue;
 		}
 		
-		auto c = db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == lastSeqID and cif::Key("label_atom_id") == "C");
-		if (c.size() != 1 and VERBOSE > 1)
-			cerr << "Unexpected number (" << c.size() << ") of atoms with atom ID C in asym_id " << asymId << " with seq id " << lastSeqID << endl;
-		
-		auto n = db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == seqId and cif::Key("label_atom_id") == "N");
-		if (n.size() != 1 and VERBOSE > 1)
-			cerr << "Unexpected number (" << n.size() << ") of atoms with atom ID N in asym_id " << asymId << " with seq id " << seqId << endl;
-		
+		auto c = atomMapByAsymSeqAndAtom[make_tuple(asymId, lastSeqID, "C")];
+		auto n = atomMapByAsymSeqAndAtom[make_tuple(asymId, seqId, "N")];
+
+//		auto c = db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == lastSeqID and cif::Key("label_atom_id") == "C");
+//		if (c.size() != 1 and VERBOSE > 1)
+//			cerr << "Unexpected number (" << c.size() << ") of atoms with atom ID C in asym_id " << asymId << " with seq id " << lastSeqID << endl;
+//		
+//		auto n = db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == seqId and cif::Key("label_atom_id") == "N");
+//		if (n.size() != 1 and VERBOSE > 1)
+//			cerr << "Unexpected number (" << n.size() << ") of atoms with atom ID N in asym_id " << asymId << " with seq id " << seqId << endl;
+//		
+//		if (not (c.empty() or n.empty()))
+//			bindAtoms(c.front()["id"].as<string>(), n.front()["id"].as<string>());
+
 		if (not (c.empty() or n.empty()))
-			bindAtoms(c.front()["id"].as<string>(), n.front()["id"].as<string>());
+			bindAtoms(c, n);
 		
 		lastSeqID = seqId;
 	}
@@ -97,36 +113,39 @@ BondMap::BondMap(const Structure& p)
 	for (auto l: db["struct_conn"])
 	{
 		string asym1, asym2, atomId1, atomId2;
-		int seqId1, seqId2;
+		int seqId1 = 0, seqId2 = 0;
 		cif::tie(asym1, asym2, atomId1, atomId2, seqId1, seqId2) =
 			l.get("ptnr1_label_asym_id", "ptnr2_label_asym_id",
 				  "ptnr1_label_atom_id", "ptnr2_label_atom_id",
 				  "ptnr1_label_seq_id", "ptnr2_label_seq_id");
-		
-		auto a = 
-			l["ptnr1_label_seq_id"].empty() ?
-				db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_atom_id") == atomId1) :
-				db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_seq_id") == seqId1 and cif::Key("label_atom_id") == atomId1);
-		
-		if (a.size() != 1 and VERBOSE > 1)
-			cerr << "Unexpected number (" << a.size() << ") of atoms for link with asym_id " << asym1 << " seq_id " << seqId1 << " atom_id " << atomId1 << endl;
-		
-		auto b =
-			l["ptnr2_label_seq_id"].empty() ?
-				db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_atom_id") == atomId2) :
-				db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_seq_id") == seqId2 and cif::Key("label_atom_id") == atomId2);
 
-		if (b.size() != 1 and VERBOSE > 1)
-			cerr << "Unexpected number (" << b.size() << ") of atoms for link with asym_id " << asym2 << " seq_id " << seqId2 << " atom_id " << atomId2 << endl;
+		string a = atomMapByAsymSeqAndAtom[make_tuple(asym1, seqId1, atomId1)];
+		string b = atomMapByAsymSeqAndAtom[make_tuple(asym2, seqId2, atomId2)];
+			
+//		auto a = 
+//			l["ptnr1_label_seq_id"].empty() ?
+//				db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_atom_id") == atomId1) :
+//				db["atom_site"].find(cif::Key("label_asym_id") == asym1 and cif::Key("label_seq_id") == seqId1 and cif::Key("label_atom_id") == atomId1);
+//		
+//		if (a.size() != 1 and VERBOSE > 1)
+//			cerr << "Unexpected number (" << a.size() << ") of atoms for link with asym_id " << asym1 << " seq_id " << seqId1 << " atom_id " << atomId1 << endl;
 		
+//		auto b =
+//			l["ptnr2_label_seq_id"].empty() ?
+//				db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_atom_id") == atomId2) :
+//				db["atom_site"].find(cif::Key("label_asym_id") == asym2 and cif::Key("label_seq_id") == seqId2 and cif::Key("label_atom_id") == atomId2);
+//
+//		if (b.size() != 1 and VERBOSE > 1)
+//			cerr << "Unexpected number (" << b.size() << ") of atoms for link with asym_id " << asym2 << " seq_id " << seqId2 << " atom_id " << atomId2 << endl;
+		
+//		if (not (a.empty() or b.empty()))
+//			linkAtoms(a.front()["id"].as<string>(), b.front()["id"].as<string>());
 		if (not (a.empty() or b.empty()))
-			linkAtoms(a.front()["id"].as<string>(), b.front()["id"].as<string>());
+			linkAtoms(a, b);
 	}
 
 	// then link all atoms in the compounds
 	
-	cif::Progress progress(compounds.size(), "Creating bond map");
-
 	for (auto c: compounds)
 	{
 		auto* compound = mmcif::Compound::create(c);
