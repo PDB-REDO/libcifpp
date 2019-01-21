@@ -2437,8 +2437,10 @@ void File::loadDictionary(const char* dict)
 		}
 		catch (...) {}
 		
+		fs::path dictFile = string("dictionaries/") + dict + ".dic";
+
+		try
 		{
-			fs::path dictFile = string("dictionaries/") + dict + ".dic";
 			if (fs::exists(dictFile))
 			{
 				fs::ifstream is(dictFile);
@@ -2450,7 +2452,7 @@ void File::loadDictionary(const char* dict)
 		
 #if defined(USE_RSRC)
 		mrsrc::rsrc dictData(dictFile.string());
-	
+
 		if (dictData)
 		{
 			struct membuf : public streambuf
