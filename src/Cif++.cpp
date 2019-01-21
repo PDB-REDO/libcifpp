@@ -2426,20 +2426,27 @@ void File::loadDictionary(const char* dict)
 	{
 		string name(dict);
 		
-		if (fs::exists(name))
+		try
 		{
-			fs::ifstream is(name);
-			loadDictionary(is);
-			break;
+			if (fs::exists(name))
+			{
+				fs::ifstream is(name);
+				loadDictionary(is);
+				break;
+			}
 		}
+		catch (...) {}
 		
-		fs::path dictFile = string("dictionaries/") + dict + ".dic";
-		if (fs::exists(dictFile))
 		{
-			fs::ifstream is(dictFile);
-			loadDictionary(is);
-			break;
+			fs::path dictFile = string("dictionaries/") + dict + ".dic";
+			if (fs::exists(dictFile))
+			{
+				fs::ifstream is(dictFile);
+				loadDictionary(is);
+				break;
+			}
 		}
+		catch (...) {}
 		
 #if defined(USE_RSRC)
 		mrsrc::rsrc dictData(dictFile.string());
