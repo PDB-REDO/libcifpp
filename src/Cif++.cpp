@@ -2174,8 +2174,13 @@ void Row::assign(const Item& value, bool emplacing)
 
 size_t Row::ColumnForItemTag(const char* itemTag) const
 {
-	auto cat = mData->mCategory;
-	return cat->getColumnIndex(itemTag);
+	size_t result = 0;
+	if (mData != nullptr)
+	{
+		auto cat = mData->mCategory;
+		result = cat->getColumnIndex(itemTag);
+	}
+	return result;
 }
 
 bool Row::empty() const
