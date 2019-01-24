@@ -97,8 +97,14 @@ int ValidateType::compare(const char* a, const char* b) const
 							break;
 						}
 						
-						char ca = toupper(*ai);
-						char cb = toupper(*bi);
+						char ca = *ai;
+						char cb = *bi;
+
+						if (mPrimitiveType == ptUChar)
+						{
+							ca = toupper(ca);
+							cb = toupper(cb);
+						}
 						
 						result = ca - cb;
 						

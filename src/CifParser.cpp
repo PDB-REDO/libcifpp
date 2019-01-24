@@ -974,7 +974,7 @@ bool DictParser::collectItemTypes()
 		try
 		{
 			ValidateType v = {
-				code, mapToPrimitiveType(primitiveCode), regex(construct, regex::egrep | regex::optimize)
+				code, mapToPrimitiveType(primitiveCode), regex(construct, regex::extended | regex::optimize)
 			};
 			
 			mValidator.addTypeValidator(move(v));
