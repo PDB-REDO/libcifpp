@@ -1853,6 +1853,128 @@ void WriteRemark3XPlor(ostream& pdbFile, Datablock& db)
 			<< RM3("") << endl;
 }
 
+void WriteRemark3ProlSQ(ostream& pdbFile, Datablock& db)
+{
+	auto refine = db["refine"].front();
+	auto pdbx_refine = db["pdbx_refine"].front();
+	auto hist = db["refine_hist"].front();
+	auto reflns = db["reflns"].front();
+	auto analyze = db["refine_analyze"].front();
+	auto& ls_restr = db["refine_ls_restr"];
+	
+	pdbFile	<< RM3("") << endl
+			<< RM3(" DATA USED IN REFINEMENT.") << endl
+
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2)	<< Ff(refine, "ls_d_res_high") << endl
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2)	<< Ff(refine, "ls_d_res_low") << endl
+			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3)	<< Ff(refine, "pdbx_ls_sigma_F") << endl
+			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2)	<< Ff(refine, "ls_percent_reflns_obs") << endl
+			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6)	<< Fi(refine, "ls_number_reflns_obs") << endl
+
+			<< RM3("") << endl
+			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << endl
+			<< RM3("  CROSS-VALIDATION METHOD          : ")	<< Fs(refine, "pdbx_ls_cross_valid_method") << endl
+			<< RM3("  FREE R VALUE TEST SET SELECTION  : ")	<< Fs(refine, "pdbx_R_Free_selection_details") << endl
+			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 3)	<< Ff(refine, "ls_R_factor_obs") << endl
+			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3)	<< Ff(refine, "ls_R_factor_R_work") << endl
+			<< RM3("  FREE R VALUE                     : ", 7, 3)	<< Ff(refine, "ls_R_factor_R_free") << endl
+			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3)	<< Ff(refine, "ls_percent_reflns_R_free") << endl
+			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6)	<< Fi(refine, "ls_number_reflns_R_free") << endl
+
+			<< RM3("") << endl
+			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << endl
+			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ")	<< Fs(refine, "R_factor_all_no_cutoff") << endl
+			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ")	<< Fs(refine, "R_factor_obs_no_cutoff") << endl
+
+			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ")	<< Fs(pdbx_refine, "free_R_factor_no_cutoff") << endl
+			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ")	<< Fs(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << endl
+			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ")	<< Fs(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << endl
+			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ")	<< Fs(refine, "ls_number_reflns_all") << endl
+
+			<< RM3("") << endl
+			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << endl
+			<< RM3("  PROTEIN ATOMS            : ", 12, 6)	<< Fi(hist, "pdbx_number_atoms_protein") << endl
+			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6)	<< Fi(hist, "pdbx_number_atoms_nucleic_acid") << endl
+			<< RM3("  HETEROGEN ATOMS          : ", 12, 6)	<< Fi(hist, "pdbx_number_atoms_ligand") << endl
+			<< RM3("  SOLVENT ATOMS            : ", 12, 6)	<< Fi(hist, "number_atoms_solvent") << endl
+//			<< RM3("  ALL ATOMS                : ", 12, 6)	<< Fi(hist, "pdbx_number_atoms_protein") << endl
+
+			<< RM3("") << endl
+			<< RM3(" B VALUES.") << endl
+			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << endl
+			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2)	<< Ff(reflns, "B_iso_Wilson_estimate") << endl
+			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2)	<< Ff(refine, "B_iso_mean") << endl
+			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << endl
+			<< RM3("   B11 (A**2) : ", -7, 2)	<< Ff(refine, "aniso_B[1][1]") << endl
+			<< RM3("   B22 (A**2) : ", -7, 2)	<< Ff(refine, "aniso_B[2][2]") << endl
+			<< RM3("   B33 (A**2) : ", -7, 2)	<< Ff(refine, "aniso_B[3][3]") << endl
+			<< RM3("   B12 (A**2) : ", -7, 2)	<< Ff(refine, "aniso_B[1][2]") << endl
+			<< RM3("   B13 (A**2) : ", -7, 2)	<< Ff(refine, "aniso_B[1][3]") << endl
+			<< RM3("   B23 (A**2) : ", -7, 2)	<< Ff(refine, "aniso_B[2][3]") << endl
+			
+			<< RM3("") << endl
+			<< RM3(" ESTIMATED OVERALL COORDINATE ERROR.") << endl
+			<< RM3("  ESU BASED ON R VALUE                         (A) : ", 7, 2)	<< Ff(analyze, "pdbx_overall_ESU_R") << endl
+			<< RM3("  ESU BASED ON FREE R VALUE                    (A) : ", 7, 2)	<< Ff(analyze, "pdbx_overall_ESU_R_Free") << endl
+			<< RM3("  ESU BASED ON MAXIMUM LIKELIHOOD              (A) : ", 7, 2)	<< Ff(analyze, "overall_SU_ML") << endl
+			<< RM3("  ESU FOR B VALUES BASED ON MAXIMUM LIKELIHOOD (A) : ", 7, 2)	<< Ff(analyze, "overall_SU_B") << endl
+			
+			<< RM3("") << endl
+			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << endl
+			<< RM3("  DISTANCE RESTRAINTS.                    RMS    SIGMA") << endl
+			<< RM3("   BOND LENGTH                  (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_bond_d", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_bond_d", "dev_ideal_target") << endl
+			<< RM3("   ANGLE DISTANCE               (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_angle_d", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_angle_d", "dev_ideal_target") << endl
+			<< RM3("   INTRAPLANAR 1-4 DISTANCE     (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_planar_d", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_planar_d", "dev_ideal_target") << endl
+			<< RM3("   H-BOND OR METAL COORDINATION (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_hb_or_metal_coord", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_hb_or_metal_coord", "dev_ideal_target") << endl
+
+			<< RM3("") << endl
+			<< RM3("  PLANE RESTRAINT              (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_plane_restr", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_plane_restr", "dev_ideal_target") << endl
+			<< RM3("  CHIRAL-CENTER RESTRAINT   (A**3) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_chiral_restr", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_chiral_restr", "dev_ideal_target") << endl
+
+			<< RM3("") << endl
+			<< RM3("  NON-BONDED CONTACT RESTRAINTS.") << endl
+			<< RM3("   SINGLE TORSION               (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_singtor_nbd", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_singtor_nbd", "dev_ideal_target") << endl
+			<< RM3("   MULTIPLE TORSION             (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_multtor_nbd", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_multtor_nbd", "dev_ideal_target") << endl
+			<< RM3("   H-BOND (X...Y)               (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_xyhbond_nbd", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_xyhbond_nbd", "dev_ideal_target") << endl
+			<< RM3("   H-BOND (X-H...Y)             (A) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_xhyhbond_nbd", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_xhyhbond_nbd", "dev_ideal_target") << endl
+			
+			<< RM3("") << endl
+			<< RM3("  CONFORMATIONAL TORSION ANGLE RESTRAINTS.") << endl
+			<< RM3("   SPECIFIED              (DEGREES) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_special_tor", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_special_tor", "dev_ideal_target") << endl
+			<< RM3("   PLANAR                 (DEGREES) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_planar_tor", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_planar_tor", "dev_ideal_target") << endl
+			<< RM3("   STAGGERED              (DEGREES) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_staggered_tor", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_staggered_tor", "dev_ideal_target") << endl
+			<< RM3("   TRANSVERSE             (DEGREES) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_transverse_tor", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_transverse_tor", "dev_ideal_target") << endl
+
+			<< RM3("") << endl
+			<< RM3("  ISOTROPIC THERMAL FACTOR RESTRAINTS. RMS SIGMA") << endl
+			<< RM3("   MAIN-CHAIN BOND           (A**2) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_mcbond_it", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_mcbond_it", "dev_ideal_target") << endl
+			<< RM3("   MAIN-CHAIN ANGLE          (A**2) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_mcangle_it", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_mcangle_it", "dev_ideal_target") << endl
+			<< RM3("   SIDE-CHAIN BOND           (A**2) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_scbond_it", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_scbond_it", "dev_ideal_target") << endl
+			<< RM3("   SIDE-CHAIN ANGLE          (A**2) : ", 7, 3)	<< Ff(ls_restr, cif::Key("type") == "p_scangle_it", "dev_ideal") << " ; "
+																	<< Ff(ls_restr, cif::Key("type") == "p_scangle_it", "dev_ideal_target") << endl
+
+			<< RM3("") << endl;
+
+	
+}
+
 void WriteRemark3(ostream& pdbFile, Datablock& db)
 {
 	string program, authors;
@@ -1916,6 +2038,8 @@ void WriteRemark3(ostream& pdbFile, Datablock& db)
 			WriteRemark3Shelxl(pdbFile, db);
 		else if (cif::iequals(program, "PHENIX"))
 			WriteRemark3Phenix(pdbFile, db);
+		else if (cif::iequals(program, "PROLSQ") or cif::iequals(program, "NUCLSQ"))
+			WriteRemark3ProlSQ(pdbFile, db);
 	}
 
 	for (auto r: db["refine"])
