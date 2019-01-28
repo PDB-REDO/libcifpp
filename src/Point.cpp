@@ -1,6 +1,7 @@
 // Lib for working with structures as contained in mmCIF and PDB files
 
 #include <random>
+#include <valarray>
 
 #include "cif++/Point.h"
 

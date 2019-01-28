@@ -327,6 +327,74 @@ void PHENIX_Remark3Parser::fixup()
 	}
 }
 
+const TemplateLine kNUCLSQ_Template[] = {
+/* 0 */		{ R"(DATA USED IN REFINEMENT\.)", 1 },
+/* 1 */		{ R"(RESOLUTION RANGE HIGH \(ANGSTROMS\)\s*:\s*(.+))", 1, "refine", { "ls_d_res_high" } },
+/* 2 */		{ R"(RESOLUTION RANGE LOW \(ANGSTROMS\)\s*:\s*(.+))", 1, "refine", { "ls_d_res_low" } },
+/* 3 */		{ R"(DATA CUTOFF \(SIGMA\(F\)\)\s*:\s*(.+))", 1, "refine", { "pdbx_ls_sigma_F" } },
+/* 4 */		{ R"(COMPLETENESS FOR RANGE \(%\)\s*:\s*(.+))", 1, "refine", { "ls_percent_reflns_obs" } },
+/* 5 */		{ R"(NUMBER OF REFLECTIONS\s*:\s*(.+))", 1, "refine", { "ls_number_reflns_obs" } },
+/* 6 */		{ R"(FIT TO DATA USED IN REFINEMENT\.)", 1 },
+/* 7 */		{ R"(CROSS-VALIDATION METHOD\s*:\s*(.+))", 1, "refine", { "pdbx_ls_cross_valid_method" } },
+/* 8 */		{ R"(FREE R VALUE TEST SET SELECTION\s*:\s*(.+))", 1, "refine", { "pdbx_R_Free_selection_details" } },
+/* 9 */		{ R"(R VALUE \(WORKING \+ TEST SET\)\s*:\s*(.+))", 1, "refine", { "ls_R_factor_obs" } },
+/* 10 */	{ R"(R VALUE \(WORKING SET\)\s*:\s*(.+))", 1, "refine", { "ls_R_factor_R_work" } },
+/* 11 */	{ R"(FREE R VALUE\s*:\s*(.+))", 1, "refine", { "ls_R_factor_R_free" } },
+/* 12 */	{ R"(FREE R VALUE TEST SET SIZE \(%\)\s*:\s*(.+))", 1, "refine", { "ls_percent_reflns_R_free" } },
+/* 13 */	{ R"(FREE R VALUE TEST SET COUNT\s*:\s*(.+))", 1, "refine", { "ls_number_reflns_R_free" } },
+/* 14 */	{ R"(FIT/AGREEMENT OF MODEL WITH ALL DATA\.)", 1 },
+/* 15 */	{ R"(R VALUE \(WORKING \+ TEST SET, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "R_factor_all_no_cutoff" } },
+/* 16 */	{ R"(R VALUE \(WORKING SET, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "R_factor_obs_no_cutoff" } },
+/* 17 */	{ R"(FREE R VALUE \(NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "free_R_factor_no_cutoff" } },
+/* 18 */	{ R"(FREE R VALUE TEST SET SIZE \(%, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "free_R_val_test_set_size_perc_no_cutoff" } },
+/* 19 */	{ R"(FREE R VALUE TEST SET COUNT \(NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "free_R_val_test_set_ct_no_cutoff" } },
+/* 20 */	{ R"(TOTAL NUMBER OF REFLECTIONS \(NO CUTOFF\)\s*:\s*(.+))", 1, "refine", { "ls_number_reflns_all" } },
+/* 21 */	{ R"(NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT\.)", 1 },
+/* 22 */	{ R"(PROTEIN ATOMS\s*:\s*(.+))", 1, "refine_hist", { "pdbx_number_atoms_protein" } },
+/* 23 */	{ R"(NUCLEIC ACID ATOMS\s*:\s*(.+))", 1, "refine_hist", { "pdbx_number_atoms_nucleic_acid" } },
+/* 24 */	{ R"(HETEROGEN ATOMS\s*:\s*(.+))", 1, "refine_hist", { "pdbx_number_atoms_ligand" } },
+/* 25 */	{ R"(SOLVENT ATOMS\s*:\s*(.+))", 1, "refine_hist", { "number_atoms_solvent" } },
+/* 26 */	{ R"(B VALUES\.)", 1 },
+/* 27 */	{ R"(B VALUE TYPE\s*:\s*(.+))", 1, "refine", { "pdbx_TLS_residual_ADP_flag" } },
+/* 28 */	{ R"(FROM WILSON PLOT \(A\*\*2\)\s*:\s*(.+))", 1, "reflns", { "B_iso_Wilson_estimate" } },
+/* 29 */	{ R"(MEAN B VALUE \(OVERALL, A\*\*2\)\s*:\s*(.+))", 1, "refine", { "B_iso_mean" } },
+/* 30 */	{ R"(OVERALL ANISOTROPIC B VALUE\.)", 1 },
+/* 31 */	{ R"(B11 \(A\*\*2\)\s*:\s*(.+))", 1, "refine", { "aniso_B[1][1]" } },
+/* 32 */	{ R"(B22 \(A\*\*2\)\s*:\s*(.+))", 1, "refine", { "aniso_B[2][2]" } },
+/* 33 */	{ R"(B33 \(A\*\*2\)\s*:\s*(.+))", 1, "refine", { "aniso_B[3][3]" } },
+/* 34 */	{ R"(B12 \(A\*\*2\)\s*:\s*(.+))", 1, "refine", { "aniso_B[1][2]" } },
+/* 35 */	{ R"(B13 \(A\*\*2\)\s*:\s*(.+))", 1, "refine", { "aniso_B[1][3]" } },
+/* 36 */	{ R"(B23 \(A\*\*2\)\s*:\s*(.+))", 1, "refine", { "aniso_B[2][3]" } },
+/* 37 */	{ R"(ESTIMATED COORDINATE ERROR\.)", 1 },
+/* 38 */	{ R"(ESD FROM LUZZATI PLOT \(A\)\s*:\s*(.+))", 1, "refine_analyze", { "Luzzati_coordinate_error_obs" } },
+/* 39 */	{ R"(ESD FROM SIGMAA \(A\)\s*:\s*(.+))", 1, "refine_analyze", { "Luzzati_sigma_a_obs" } },
+/* 40 */	{ R"(LOW RESOLUTION CUTOFF \(A\)\s*:\s*(.+))", 1, "refine_analyze", { "Luzzati_d_res_low_obs" } },
+/* 41 */	{ R"(RMS DEVIATIONS FROM IDEAL VALUES\.)", 1 },
+/* 42 */	{ R"(DISTANCE RESTRAINTS\. RMS SIGMA)", 1 },
+/* 43 */	{ R"(SUGAR-BASE BOND DISTANCE \(A\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_sugar_bond_d", false },
+/* 44 */	{ R"(SUGAR-BASE BOND ANGLE DISTANCE \(A\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_sugar_bond_angle_d", false },
+/* 45 */	{ R"(PHOSPHATE BONDS DISTANCE \(A\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_phos_bond_d", false },
+/* 46 */	{ R"(PHOSPHATE BOND ANGLE, H-BOND \(A\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_phos_bond_angle_d", false },
+/* 47 */	{ R"(PLANE RESTRAINT \(A\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_plane_restr", false },
+/* 48 */	{ R"(CHIRAL-CENTER RESTRAINT \(A\*\*3\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_chiral_restr", false },
+/* 49 */	{ R"(NON-BONDED CONTACT RESTRAINTS\.)", 1 },
+/* 50 */	{ R"(SINGLE TORSION \(A\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_singtor_nbd", false },
+/* 51 */	{ R"(MULTIPLE TORSION \(A\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_multtor_nbd", false },
+/* 59 */	{ R"(ISOTROPIC THERMAL FACTOR RESTRAINTS\. RMS SIGMA)", 1 },
+/* 60 */	{ R"(SUGAR-BASE BONDS \(A\*\*2\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_sugar_bond_it", false },
+/* 61 */	{ R"(SUGAR-BASE ANGLES \(A\*\*2\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_sugar_angle_it", false },
+/* 62 */	{ R"(PHOSPHATE BONDS \(A\*\*2\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_phos_bond_it", false },
+/* 63 */	{ R"(PHOSPHATE BOND ANGLE, H-BOND \(A\*\*2\)\s*:\s*(.+)\s*;\s*(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "n_phos_angle_it", false },
+};
+
+class NUCLSQ_Remark3Parser : public Remark3Parser
+{
+  public:
+	NUCLSQ_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+		: Remark3Parser(name, expMethod, r, db, kNUCLSQ_Template, sizeof(kNUCLSQ_Template) / sizeof(TemplateLine),
+			regex(R"((NUCLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
+};
+
 const TemplateLine kPROLSQ_Template[] = {
 /* 0 */		{ R"(DATA USED IN REFINEMENT\.)", 1 },
 /* 1 */		{ R"(RESOLUTION RANGE HIGH \(ANGSTROMS\)\s*:\s*(.+))", 1, "refine", { "ls_d_res_high" } },
@@ -399,7 +467,7 @@ class PROLSQ_Remark3Parser : public Remark3Parser
   public:
 	PROLSQ_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kPROLSQ_Template, sizeof(kPROLSQ_Template) / sizeof(TemplateLine),
-			regex(R"((PROLSQ|NUCLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
+			regex(R"((PROLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
 };
 
 const TemplateLine kREFMAC_Template[] = {
@@ -1257,7 +1325,9 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 			tryParser(new CNS_Remark3Parser(program, expMethod, r, db));
 		else if (ba::starts_with(program, "PHENIX"))
 			tryParser(new PHENIX_Remark3Parser(program, expMethod, r, db));
-		else if (ba::starts_with(program, "PROLSQ") or ba::starts_with(program, "NUCLSQ"))
+		else if (ba::starts_with(program, "NUCLSQ"))
+			tryParser(new NUCLSQ_Remark3Parser(program, expMethod, r, db));
+		else if (ba::starts_with(program, "PROLSQ"))
 			tryParser(new PROLSQ_Remark3Parser(program, expMethod, r, db));
 		else if (ba::starts_with(program, "REFMAC"))
 		{
