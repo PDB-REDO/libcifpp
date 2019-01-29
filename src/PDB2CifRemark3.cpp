@@ -343,7 +343,7 @@ const TemplateLine kNUCLSQ_Template[] = {
 /* 12 */	{ R"(FREE R VALUE TEST SET SIZE \(%\)\s*:\s*(.+))", 1, "refine", { "ls_percent_reflns_R_free" } },
 /* 13 */	{ R"(FREE R VALUE TEST SET COUNT\s*:\s*(.+))", 1, "refine", { "ls_number_reflns_R_free" } },
 /* 14 */	{ R"(FIT/AGREEMENT OF MODEL WITH ALL DATA\.)", 1 },
-/* 15 */	{ R"(R VALUE \(WORKING \+ TEST SET, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "R_factor_all_no_cutoff" } },
+/* 15 */	{ R"(R VALUE \(WORKING \+ TEST SET, NO CUTOFF\)\s*:\s*(.+))", 1, "refine", { "ls_R_factor_all" } },
 /* 16 */	{ R"(R VALUE \(WORKING SET, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "R_factor_obs_no_cutoff" } },
 /* 17 */	{ R"(FREE R VALUE \(NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "free_R_factor_no_cutoff" } },
 /* 18 */	{ R"(FREE R VALUE TEST SET SIZE \(%, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "free_R_val_test_set_size_perc_no_cutoff" } },
@@ -393,6 +393,20 @@ class NUCLSQ_Remark3Parser : public Remark3Parser
 	NUCLSQ_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kNUCLSQ_Template, sizeof(kNUCLSQ_Template) / sizeof(TemplateLine),
 			regex(R"((NUCLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
+
+	virtual void fixup()
+	{
+		for (auto r: mDb["refine_hist"])
+		{
+			try
+			{
+				int p, n, h, s;
+				cif::tie(p, n, h, s) = r.get("pdbx_number_atoms_protein", "pdbx_number_atoms_nucleic_acid", "pdbx_number_atoms_ligand", "number_atoms_solvent");
+				r["number_atoms_total"] = p + n + h + s;
+			}
+			catch (...) {}
+		}
+	}
 };
 
 const TemplateLine kPROLSQ_Template[] = {
@@ -411,7 +425,7 @@ const TemplateLine kPROLSQ_Template[] = {
 /* 12 */	{ R"(FREE R VALUE TEST SET SIZE \(%\)\s*:\s*(.+))", 1, "refine", { "ls_percent_reflns_R_free" } },
 /* 13 */	{ R"(FREE R VALUE TEST SET COUNT\s*:\s*(.+))", 1, "refine", { "ls_number_reflns_R_free" } },
 /* 14 */	{ R"(FIT/AGREEMENT OF MODEL WITH ALL DATA\.)", 1 },
-/* 15 */	{ R"(R VALUE \(WORKING \+ TEST SET, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "R_factor_all_no_cutoff" } },
+/* 15 */	{ R"(R VALUE \(WORKING \+ TEST SET, NO CUTOFF\)\s*:\s*(.+))", 1, "refine", { "ls_R_factor_all" } },
 /* 16 */	{ R"(R VALUE \(WORKING SET, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "R_factor_obs_no_cutoff" } },
 /* 17 */	{ R"(FREE R VALUE \(NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "free_R_factor_no_cutoff" } },
 /* 18 */	{ R"(FREE R VALUE TEST SET SIZE \(%, NO CUTOFF\)\s*:\s*(.+))", 1, "pdbx_refine", { "free_R_val_test_set_size_perc_no_cutoff" } },
@@ -468,6 +482,20 @@ class PROLSQ_Remark3Parser : public Remark3Parser
 	PROLSQ_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kPROLSQ_Template, sizeof(kPROLSQ_Template) / sizeof(TemplateLine),
 			regex(R"((PROLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
+
+	virtual void fixup()
+	{
+		for (auto r: mDb["refine_hist"])
+		{
+			try
+			{
+				int p, n, h, s;
+				cif::tie(p, n, h, s) = r.get("pdbx_number_atoms_protein", "pdbx_number_atoms_nucleic_acid", "pdbx_number_atoms_ligand", "number_atoms_solvent");
+				r["number_atoms_total"] = p + n + h + s;
+			}
+			catch (...) {}
+		}
+	}
 };
 
 const TemplateLine kREFMAC_Template[] = {

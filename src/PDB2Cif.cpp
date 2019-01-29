@@ -750,8 +750,7 @@ class PDBFileParser
 	string pdb2cifDate(string s)
 	{
 		boost::system::error_code ec;		
-		pdb2cifDate(s, ec);
-		return s;
+		return pdb2cifDate(s, ec);
 	}
 	
 	string pdb2cifAuth(string author)
@@ -1531,9 +1530,9 @@ void PDBFileParser::ParseTitle()
 	while (mRec->is("REVDAT"))
 	{
 													//	 1 -  6       Record name    "REVDAT"                                             
-		int revNum = vI(8, 10);					//	 8 - 10       Integer        modNum        Modification number.                   
+		int revNum = vI(8, 10);						//	 8 - 10       Integer        modNum        Modification number.                   
 													//	11 - 12       Continuation   continuation  Allows concatenation of multiple records.
-		string date = pdb2cifDate(vS(14, 22));	//	14 - 22       Date           modDate       Date of modification (or release  for   
+		string date = pdb2cifDate(vS(14, 22));		//	14 - 22       Date           modDate       Date of modification (or release  for   
 													//	                                           new entries)  in DD-MMM-YY format. This is
 													//	                                           not repeated on continued lines.
 		string modId = vS(24, 27);					//	24 - 27       IDCode         modId         ID code of this datablock. This is not repeated on 
@@ -1564,8 +1563,8 @@ void PDBFileParser::ParseTitle()
 	}
 	
 /*
-	This is internal stuff for PDB, don't write it
-
+	This is internal stuff for PDB, don't write it ???
+*/
 	sort(revdats.begin(), revdats.end());
 	for (auto& revdat: revdats)
 	{
@@ -1587,7 +1586,7 @@ void PDBFileParser::ParseTitle()
 			});
 		}
 	}
-*/
+//*/
 
 	// SPRSDE
 	if (mRec->is("SPRSDE"))

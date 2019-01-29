@@ -1883,7 +1883,7 @@ void WriteRemark3NuclSQ(ostream& pdbFile, Datablock& db)
 
 			<< RM3("") << endl
 			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << endl
-			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ")	<< Fs(pdbx_refine, "R_factor_all_no_cutoff") << endl
+			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ")	<< Fs(refine, "ls_R_factor_all") << endl
 			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ")	<< Fs(pdbx_refine, "R_factor_obs_no_cutoff") << endl
 
 			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ")	<< Fs(pdbx_refine, "free_R_factor_no_cutoff") << endl
@@ -1901,7 +1901,7 @@ void WriteRemark3NuclSQ(ostream& pdbFile, Datablock& db)
 
 			<< RM3("") << endl
 			<< RM3(" B VALUES.") << endl
-			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << endl
+//			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << endl
 			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2)	<< Ff(reflns, "B_iso_Wilson_estimate") << endl
 			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2)	<< Ff(refine, "B_iso_mean") << endl
 			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << endl
@@ -1987,7 +1987,7 @@ void WriteRemark3ProlSQ(ostream& pdbFile, Datablock& db)
 
 			<< RM3("") << endl
 			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << endl
-			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ")	<< Fs(pdbx_refine, "R_factor_all_no_cutoff") << endl
+			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ")	<< Fs(refine, "ls_R_factor_all") << endl
 			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ")	<< Fs(pdbx_refine, "R_factor_obs_no_cutoff") << endl
 
 			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ")	<< Fs(pdbx_refine, "free_R_factor_no_cutoff") << endl
@@ -2005,7 +2005,7 @@ void WriteRemark3ProlSQ(ostream& pdbFile, Datablock& db)
 
 			<< RM3("") << endl
 			<< RM3(" B VALUES.") << endl
-			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << endl
+//			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << endl
 			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2)	<< Ff(reflns, "B_iso_Wilson_estimate") << endl
 			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2)	<< Ff(refine, "B_iso_mean") << endl
 			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << endl
