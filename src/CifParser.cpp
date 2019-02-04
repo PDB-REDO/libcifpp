@@ -500,32 +500,25 @@ SacParser::CIFToken SacParser::getNextToken()
 
 void SacParser::parseFile()
 {
-	try
+	while (mLookahead != eCIFTokenEOF)
 	{
-		while (mLookahead != eCIFTokenEOF)
+		switch (mLookahead)
 		{
-			switch (mLookahead)
-			{
-				case eCIFTokenGLOBAL:
-					parseGlobal();
-					break;
-				
-				case eCIFTokenDATA:
-					produceDatablock(mTokenValue);
+			case eCIFTokenGLOBAL:
+				parseGlobal();
+				break;
+			
+			case eCIFTokenDATA:
+				produceDatablock(mTokenValue);
 
-					match(eCIFTokenDATA);
-					parseDataBlock();
-					break;
-				
-				default:
-					error("This file does not seem to be an mmCIF file");
-					break;
-			}
+				match(eCIFTokenDATA);
+				parseDataBlock();
+				break;
+			
+			default:
+				error("This file does not seem to be an mmCIF file");
+				break;
 		}
-	}
-	catch (const exception& ex)
-	{
-		error(string("Error parsing file: '") + ex.what() + "'");
 	}
 }
 

@@ -421,7 +421,7 @@ Compound::Compound(const fs::path& file, const std::string& id,
 	}
 	catch (...)
 	{
-		throw_with_nested(runtime_error("Error loading ccp4 file for " + id));
+		throw_with_nested(runtime_error("Error loading ccp4 file for " + id + " from file " + file.string()));
 	}
 }
 
@@ -1333,7 +1333,14 @@ void CompoundFactory::pushDictionary(const string& inDictFile)
 //	if (not file.is_open())
 //		throw runtime_error("Could not open peptide list " + inDictFile);
 
-	mImpl = new CompoundFactoryImpl(inDictFile, mImpl);
+	try
+	{
+		mImpl = new CompoundFactoryImpl(inDictFile, mImpl);
+	}
+	catch (const exception& ex)
+	{
+		throw_with_nested(runtime_error("When trying to load dictionary file " + inDictFile));
+	}
 }
 
 void CompoundFactory::popDictionary()

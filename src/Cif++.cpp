@@ -2245,15 +2245,20 @@ File::File()
 File::File(istream& is, bool validate)
 	: File()
 {
-//	parser p(is, *this);
-//	p.parseFile();
 	load(is);
 }
 
 File::File(boost::filesystem::path p, bool validate)
 	: File()
 {
-	load(p);
+	try
+	{
+		load(p);
+	}
+	catch (const exception& ex)
+	{
+		throw_with_nested("Error while loading file " + p.string());
+	}
 }
 
 File::File(File&& rhs)
@@ -2316,7 +2321,14 @@ void File::load(fs::path p)
 	
 	in.push(inFile);
 
-	load(in);
+	try
+	{
+		load(in);
+	}
+	catch (const exception& ex)
+	{
+		throw_with_nested(runtime_error("Error loading file " + p.string()));
+	}
 }
 
 void File::save(fs::path p)

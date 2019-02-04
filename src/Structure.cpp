@@ -103,8 +103,7 @@ void FileImpl::load(fs::path p)
 	}
 	catch (const exception& ex)
 	{
-		cerr << "Failed trying to load file " << p << endl;
-		throw;
+		throw_with_nested(runtime_error("Error trying to load file " + p.string()));
 	}
 	
 	// Yes, we've parsed the data. Now locate the datablock.
