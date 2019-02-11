@@ -4065,9 +4065,9 @@ void PDBFileParser::ConstructEntities()
 			{ "mon_id", hetID },
 			{ "ndb_seq_num", seqNr },
 			{ "pdb_seq_num", het.seqNum },
-			{ "auth_seq_num", het.seqNum },	// ????
+//			{ "auth_seq_num", het.seqNum },	// ????
 			{ "pdb_mon_id", hetID },
-			{ "auth_mon_id", hetID },
+//			{ "auth_mon_id", hetID },
 			{ "pdb_strand_id", string{het.chainID} },
 			{ "pdb_ins_code", iCode }
 		});
