@@ -2681,7 +2681,7 @@ int WritePrimaryStructure(ostream& pdbFile, Datablock& db)
 			
 			cif::tie(idCode, chainID, seqBegin, insertBegin, seqEnd, insertEnd, dbAccession, dbseqBegin, dbinsBeg, dbseqEnd, dbinsEnd)
 				= r1.get("pdbx_PDB_id_code", "pdbx_strand_id", "pdbx_auth_seq_align_beg", "pdbx_seq_align_beg_ins_code", "pdbx_auth_seq_align_end",
-					"pdbx_seq_align_end_ins_code", "pdbx_db_accession", "db_align_beg", "db_align_beg_ins_code", "db_align_end", "db_align_end_ins_code");
+					"pdbx_seq_align_end_ins_code", "pdbx_db_accession", "db_align_beg", "pdbx_db_align_beg_ins_code", "db_align_end", "pdbx_db_align_end_ins_code");
 
 			if (dbAccession.length() > 8 or db_code.length() > 12 or atoi(dbseqEnd.c_str()) >= 100000)
 				pdbFile << (boost::format(
