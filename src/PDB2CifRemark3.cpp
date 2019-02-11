@@ -1315,7 +1315,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 
 	vector<programScore> scores;
 
-	auto tryParser = [&](Remark3Parser* p)
+	auto tryParser = [&](Remark3Parser* p, bool saveSoftware)
 	{
 		unique_ptr<Remark3Parser> parser(p);
 		float score = parser->parse();
@@ -1325,16 +1325,19 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 
 		if (score > 0)
 		{
-			auto& software = db["software"];
 			string program = parser->program();
 			string version = parser->version();
 
-			software.emplace({
-				{ "name", program },
-				{ "classification", "refinement" },
-				{ "version", version },
-				{ "pdbx_ordinal", software.size() + 1 }
-			});
+			if (saveSoftware)
+			{
+				auto& software = db["software"];
+				software.emplace({
+					{ "name", program },
+					{ "classification", "refinement" },
+					{ "version", version },
+					{ "pdbx_ordinal", software.size() + 1 }
+				});
+			}
 
 			scores.emplace_back(program, parser.release(), score);
 		}
@@ -1346,51 +1349,48 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 		string program(p->begin(), p->end());
 
 		if (ba::starts_with(program, "BUSTER"))
-			tryParser(new BUSTER_TNT_Remark3Parser(program, expMethod, r, db));
+			tryParser(new BUSTER_TNT_Remark3Parser(program, expMethod, r, db), true);
 		else if (ba::starts_with(program, "CNS") or ba::starts_with(program, "CNX"))
-			tryParser(new CNS_Remark3Parser(program, expMethod, r, db));
+			tryParser(new CNS_Remark3Parser(program, expMethod, r, db), true);
 		else if (ba::starts_with(program, "PHENIX"))
-			tryParser(new PHENIX_Remark3Parser(program, expMethod, r, db));
+			tryParser(new PHENIX_Remark3Parser(program, expMethod, r, db), true);
 		else if (ba::starts_with(program, "NUCLSQ"))
-			tryParser(new NUCLSQ_Remark3Parser(program, expMethod, r, db));
+			tryParser(new NUCLSQ_Remark3Parser(program, expMethod, r, db), true);
 		else if (ba::starts_with(program, "PROLSQ"))
-			tryParser(new PROLSQ_Remark3Parser(program, expMethod, r, db));
+			tryParser(new PROLSQ_Remark3Parser(program, expMethod, r, db), true);
 		else if (ba::starts_with(program, "REFMAC"))
 		{
 			// simply try both and take the best
-			tryParser(new REFMAC_Remark3Parser(program, expMethod, r, db));
-			tryParser(new REFMAC5_Remark3Parser(program, expMethod, r, db));
+			tryParser(new REFMAC_Remark3Parser(program, expMethod, r, db), true);
+			tryParser(new REFMAC5_Remark3Parser(program, expMethod, r, db), false);
 		}
 		else if (ba::starts_with(program, "SHELXL"))
-			tryParser(new SHELXL_Remark3Parser(program, expMethod, r, db));
+			tryParser(new SHELXL_Remark3Parser(program, expMethod, r, db), true);
 		else if (ba::starts_with(program, "TNT"))
-			tryParser(new TNT_Remark3Parser(program, expMethod, r, db));
+			tryParser(new TNT_Remark3Parser(program, expMethod, r, db), true);
 		else if (ba::starts_with(program, "X-PLOR"))
-			tryParser(new XPLOR_Remark3Parser(program, expMethod, r, db));
+			tryParser(new XPLOR_Remark3Parser(program, expMethod, r, db), true);
 		else if (VERBOSE)
 			cerr << "Skipping unknown program (" << program << ") in REMARK 3" << endl;
 	}
 
+	bool guessProgram = false;
 	if (scores.empty())
 	{
+		guessProgram = true;
+		
 		cerr << "Unknown program in REMARK 3, trying all parsers to see if there is a match" << endl;
 		
-		for (auto p = make_split_iterator(line, ba::first_finder(", "));
-			not p.eof(); ++p)
-		{
-			string program(p->begin(), p->end());
-	
-			tryParser(new BUSTER_TNT_Remark3Parser(program, expMethod, r, db));
-			tryParser(new CNS_Remark3Parser(program, expMethod, r, db));
-			tryParser(new PHENIX_Remark3Parser(program, expMethod, r, db));
-			tryParser(new NUCLSQ_Remark3Parser(program, expMethod, r, db));
-			tryParser(new PROLSQ_Remark3Parser(program, expMethod, r, db));
-			tryParser(new REFMAC_Remark3Parser(program, expMethod, r, db));
-			tryParser(new REFMAC5_Remark3Parser(program, expMethod, r, db));
-			tryParser(new SHELXL_Remark3Parser(program, expMethod, r, db));
-			tryParser(new TNT_Remark3Parser(program, expMethod, r, db));
-			tryParser(new XPLOR_Remark3Parser(program, expMethod, r, db));
-		}
+		tryParser(new BUSTER_TNT_Remark3Parser("BUSTER-TNT", expMethod, r, db), false);
+		tryParser(new CNS_Remark3Parser("CNS", expMethod, r, db), false);
+		tryParser(new PHENIX_Remark3Parser("PHENIX", expMethod, r, db), false);
+		tryParser(new NUCLSQ_Remark3Parser("NUCLSQ", expMethod, r, db), false);
+		tryParser(new PROLSQ_Remark3Parser("PROLSQ", expMethod, r, db), false);
+		tryParser(new REFMAC_Remark3Parser("REFMAC", expMethod, r, db), false);
+		tryParser(new REFMAC5_Remark3Parser("REFMAC5", expMethod, r, db), false);
+		tryParser(new SHELXL_Remark3Parser("SHELXL", expMethod, r, db), false);
+		tryParser(new TNT_Remark3Parser("TNT", expMethod, r, db), false);
+		tryParser(new XPLOR_Remark3Parser("XPLOR", expMethod, r, db), false);
 	}
 
 	bool result = false;
@@ -1403,8 +1403,22 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 
 		auto& best = scores.front();
 
-		if (VERBOSE >= 2)
-			cerr << "Choosing " << best.parser->program() << " version '" << best.parser->version() << "' as refinement program. Score = " << best.score << endl;
+		if (guessProgram)
+		{
+			if (VERBOSE)
+				cerr << "Choosing " << best.parser->program() << " version '" << best.parser->version() << "' as refinement program. Score = " << best.score << endl;
+
+			auto& software = db["software"];
+			string program = best.parser->program();
+			string version = best.parser->version();
+
+			software.emplace({
+				{ "name", program },
+				{ "classification", "refinement" },
+				{ "version", version },
+				{ "pdbx_ordinal", software.size() + 1 }
+			});
+		}
 
 		best.parser->fixup();
 
