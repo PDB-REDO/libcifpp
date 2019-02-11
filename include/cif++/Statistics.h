@@ -22,8 +22,7 @@ struct ResidueStatistics
 	std::string	asymID;
 	int			seqID;
 	std::string compID;
-	
-	std::string pdbID;	// comp_chain_seqnr''icode
+	std::string authSeqID;
 	
 	double RSR, SRSR, RSCCS, EDIAm, OPIA;
 	int ngrid;

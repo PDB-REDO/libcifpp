@@ -515,9 +515,9 @@ string Atom::authCompId() const
 	return property<string>("auth_comp_id");
 }
 
-int Atom::authSeqId() const
+string Atom::authSeqId() const
 {
-	return property<int>("auth_seq_id");
+	return property<string>("auth_seq_id");
 }
 
 string Atom::labelID() const
@@ -588,11 +588,35 @@ float Atom::radius() const
 // --------------------------------------------------------------------
 // residue
 
-Residue::Residue(const Structure& structure, const std::string& compoundID,
-	const std::string& asymID, int seqID)
+Residue::Residue(const Structure& structure, const string& compoundID,
+	const string& asymID, const string& authSeqID)
+	: mStructure(&structure), mCompoundID(compoundID)
+	, mAsymID(asymID), mAuthSeqID(authSeqID)
+{
+	assert(mCompoundID == "HOH");
+	
+	for (auto& a: mStructure->atoms())
+	{
+		if (a.labelAsymId() != mAsymID or
+			a.labelCompId() != mCompoundID)
+				continue;
+
+		if (not mAuthSeqID.empty() and a.authSeqId() != mAuthSeqID)		// water!
+			continue;
+		
+		mAtoms.push_back(a);
+	}
+	
+	assert(not mAtoms.empty());
+}
+
+Residue::Residue(const Structure& structure, const string& compoundID,
+	const string& asymID, int seqID)
 	: mStructure(&structure), mCompoundID(compoundID)
 	, mAsymID(asymID), mSeqID(seqID)
 {
+	assert(mCompoundID != "HOH");
+	
 	for (auto& a: mStructure->atoms())
 	{
 		if (mSeqID > 0 and a.labelSeqId() != mSeqID)
@@ -606,15 +630,9 @@ Residue::Residue(const Structure& structure, const std::string& compoundID,
 	}
 }
 
-Residue::Residue(const Structure& structure, const std::string& asymID, Atom water, int ndbSeqID)
-	: mStructure(&structure), mCompoundID("HOH")
-	, mAsymID(asymID), mNDBSeqID(ndbSeqID), mAtoms({water})
-{
-}
-
 Residue::Residue(Residue&& rhs)
 	: mStructure(rhs.mStructure), mCompoundID(move(rhs.mCompoundID)), mAsymID(move(rhs.mAsymID))
-	, mSeqID(rhs.mSeqID), mNDBSeqID(rhs.mNDBSeqID), mAtoms(move(rhs.mAtoms))
+	, mSeqID(rhs.mSeqID), mAuthSeqID(rhs.mAuthSeqID), mAtoms(move(rhs.mAtoms))
 {
 //cerr << "move constructor residue" << endl;
 	rhs.mStructure = nullptr;
@@ -627,7 +645,7 @@ Residue& Residue::operator=(Residue&& rhs)
 	mCompoundID = move(rhs.mCompoundID);
 	mAsymID = move(rhs.mAsymID);
 	mSeqID = rhs.mSeqID;
-	mNDBSeqID = rhs.mNDBSeqID;
+	mAuthSeqID = rhs.mAuthSeqID;
 	mAtoms = move(rhs.mAtoms);
 
 	return *this;
@@ -657,11 +675,11 @@ string Residue::authInsCode() const
 	return result;
 }
 
-int Residue::authSeqID() const
+string Residue::authSeqID() const
 {
 	assert(mStructure);
 
-	int result = 0;
+	string result;
 	
 	try
 	{
@@ -740,7 +758,7 @@ string Residue::authID() const
 string Residue::labelID() const
 {
 	if (mCompoundID == "HOH")
-		return mAsymID + to_string(mNDBSeqID);
+		return mAsymID + mAuthSeqID;
 	else
 		return mAsymID + to_string(mSeqID);
 }
@@ -1276,37 +1294,17 @@ void Structure::loadData()
 
 	auto& nonPolyScheme = category("pdbx_nonpoly_scheme");
 	
-	vector<string> waterIDs;
-	for (auto& a: mAtoms)
-	{
-		if (a.isWater())
-			waterIDs.push_back(a.id());
-	}
-	auto waterIDIter = waterIDs.begin();
-	
 	for (auto& r: nonPolyScheme)
 	{
-		string asymID, monID;
-		int ndbSeqNum;
-		cif::tie(asymID, monID, ndbSeqNum) =
-			r.get("asym_id", "mon_id", "ndb_seq_num");
+		string asymID, monID, pdbSeqNum;
+		cif::tie(asymID, monID, pdbSeqNum) =
+			r.get("asym_id", "mon_id", "pdb_seq_num");
 		
 		if (monID == "HOH")
-		{
-			if (waterIDIter == waterIDs.end())
-				throw runtime_error("pdbx_nonpoly_scheme contains more waters than water atoms are available in atom_site");
-			
-			Atom water = getAtomById(*waterIDIter);
-			++waterIDIter;
-			
-			mNonPolymers.emplace_back(*this, asymID, water, ndbSeqNum);
-		}
+			mNonPolymers.emplace_back(*this, monID, asymID, pdbSeqNum);
 		else if (mNonPolymers.empty() or mNonPolymers.back().asymID() != asymID)
 			mNonPolymers.emplace_back(*this, monID, asymID);
 	}
-	
-	if (waterIDIter != waterIDs.end())
-		throw runtime_error("there are more waters in atom_site than referenced in pdbx_nonpoly_scheme");
 }
 
 void Structure::updateAtomIndex()
@@ -1421,28 +1419,42 @@ tuple<char,int,char> Structure::MapLabelToAuth(
 }
 
 tuple<string,int,string,string> Structure::MapLabelToPDB(
-	const string& asymId, int seqId, const string& monId) const
+	const string& asymId, int seqId, const string& monId,
+	const string& authSeqID) const
 {
 	auto& db = datablock();
 	
 	tuple<string,int,string,string> result;
 	
-	for (auto r: db["pdbx_poly_seq_scheme"].find(
-						cif::Key("asym_id") == asymId and
-						cif::Key("seq_id") == seqId and
-						cif::Key("mon_id") == monId))
+	if (monId == "HOH")
 	{
-		result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-		break;
+		for (auto r: db["pdbx_nonpoly_scheme"].find(
+							cif::Key("asym_id") == asymId and
+							cif::Key("pdb_seq_num") == authSeqID and
+							cif::Key("mon_id") == monId))
+		{
+			result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
+			break;
+		}
 	}
-						
-	for (auto r: db["pdbx_nonpoly_scheme"].find(
-						cif::Key("asym_id") == asymId and
-						cif::Key("seq_id") == seqId and
-						cif::Key("mon_id") == monId))
+	else
 	{
-		result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-		break;
+		for (auto r: db["pdbx_poly_seq_scheme"].find(
+							cif::Key("asym_id") == asymId and
+							cif::Key("seq_id") == seqId and
+							cif::Key("mon_id") == monId))
+		{
+			result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
+			break;
+		}
+
+		for (auto r: db["pdbx_nonpoly_scheme"].find(
+							cif::Key("asym_id") == asymId and
+							cif::Key("mon_id") == monId))
+		{
+			result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
+			break;
+		}
 	}
 
 	return result;

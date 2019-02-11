@@ -1162,6 +1162,16 @@ size_t Category::getColumnIndex(const string& name) const
 			break;
 	}
 	
+	if (result == mColumns.size() and mCatValidator != nullptr)	// validate the name, if it is known at all (since it was not found)
+	{
+		auto iv = mCatValidator->getValidatorForItem(name);
+		if (iv == nullptr)
+		{
+			assert(false);
+			throw logic_error("Invalid name used? " + name + " is not a known column in " + mName);
+		}
+	}
+	
 	return result;
 }
 

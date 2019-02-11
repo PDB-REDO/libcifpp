@@ -108,7 +108,7 @@ class Atom
 	std::string authAtomId() const;
 	std::string authCompId() const;
 	std::string authAsymId() const;
-	int authSeqId() const;
+	std::string authSeqId() const;
 	std::string pdbxAuthInsCode() const;
 	std::string authAltId() const;
 	
@@ -169,7 +169,8 @@ class Residue
   public:
 	// constructors should be private, but that's not possible for now (needed in emplace)
 	// constructor for waters
-	Residue(const Structure& structure, const std::string& asymID, Atom water, int ndbSeqID);
+	Residue(const Structure& structure, const std::string& compoundID,
+		const std::string& asymID, const std::string& authSeqID);
 
 	Residue(const Structure& structure, const std::string& compoundID,
 		const std::string& asymID, int seqID = 0);
@@ -191,7 +192,7 @@ class Residue
 	const std::string&	asymID() const		{ return mAsymID; }
 	int					seqID() const		{ return mSeqID; }
 	
-	int					authSeqID() const;
+	std::string			authSeqID() const;
 	std::string			authInsCode() const;
 	
 	// return a human readable PDB-like auth id (chain+seqnr+iCode)
@@ -222,7 +223,8 @@ class Residue
 
 	const Structure* mStructure = nullptr;
 	std::string	mCompoundID, mAsymID;
-	int mSeqID = 0, mNDBSeqID = 0;
+	int mSeqID = 0;
+	std::string mAuthSeqID;
 	AtomView mAtoms;
 };
 
@@ -377,7 +379,8 @@ class Structure
 
 	// returns chain,seqnr,comp,iCode
 	std::tuple<std::string,int,std::string,std::string> MapLabelToPDB(
-		const std::string& asymId, int seqId, const std::string& compId) const;
+		const std::string& asymId, int seqId, const std::string& compId,
+		const std::string& authSeqID) const;
 
 	std::tuple<std::string,int,std::string> MapPDBToLabel(
 		const std::string& asymId, int seqId, const std::string& compId, const std::string& iCode) const;

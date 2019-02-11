@@ -25,8 +25,12 @@ using clipper::Xmap;
 
 ostream& operator<<(ostream& os, const ResidueStatistics& st)
 {
-	os << st.asymID << '_' << st.seqID << '_' << st.compID << '\t'
-	   << st.RSR << '\t'
+	if (st.compID == "HOH")
+		os << st.asymID << '_' << st.authSeqID << '_' << st.compID << '\t';
+	else
+		os << st.asymID << '_' << st.seqID << '_' << st.compID << '\t';
+	 
+	os << st.RSR << '\t'
 	   << st.SRSR << '\t'
 	   << st.RSCCS << '\t'
 	   << st.ngrid << '\t'
@@ -577,10 +581,13 @@ vector<ResidueStatistics> StatsCollector::collect() const
 	
 	for (auto atom: mStructure.atoms())
 	{
-		auto k = make_tuple(atom.labelAsymId(), atom.labelSeqId(), atom.labelCompId(), atom.pdbID());
+		if (atom.isWater())
+			continue;
+		
+		auto k = make_tuple(atom.labelAsymId(), atom.labelSeqId(), atom.labelCompId(), atom.authSeqId());
 //		auto k = make_tuple(atom.authAsymId(), atom.property<string>("auth_seq_id"), atom.authCompId());
 
-		if (not atom.isWater() and (residues.empty() or residues.back() != k))
+		if (residues.empty() or residues.back() != k)
 		{
 			residues.emplace_back(move(k));
 			atoms.emplace_back(move(atom));
@@ -598,9 +605,14 @@ vector<ResidueStatistics> StatsCollector::collect(const string& asymID, int resF
 	
 	for (auto atom: mStructure.atoms())
 	{
+		if (atom.isWater())	
+			continue;
+		
 		if (authNameSpace)
 		{
-			if (atom.authAsymId() != asymID or atom.authSeqId() < resFirst or atom.authSeqId() > resLast)
+			int authSeqID = stoi(atom.authSeqId());
+			
+			if (atom.authAsymId() != asymID or authSeqID < resFirst or authSeqID > resLast)
 				continue;
 		}
 		else
@@ -609,10 +621,10 @@ vector<ResidueStatistics> StatsCollector::collect(const string& asymID, int resF
 				continue;
 		}
 
-		auto k = make_tuple(atom.labelAsymId(), atom.labelSeqId(), atom.labelCompId(), atom.pdbID());
+		auto k = make_tuple(atom.labelAsymId(), atom.labelSeqId(), atom.labelCompId(), atom.authSeqId());
 //		auto k = make_tuple(atom.authAsymId(), atom.property<string>("auth_seq_id"), atom.authCompId());
 
-		if (not atom.isWater() and (residues.empty() or residues.back() != k))
+		if (residues.empty() or residues.back() != k)
 		{
 			residues.emplace_back(move(k));
 			atoms.emplace_back(move(atom));
@@ -661,8 +673,8 @@ vector<ResidueStatistics> StatsCollector::collect(const vector<tuple<string,int,
 	for (auto r: residues)
 	{
 		int seqID;
-		string asymID, compID, pdbID;
-		tie(asymID, seqID, compID, pdbID) = r;
+		string asymID, compID, authSeqID;
+		tie(asymID, seqID, compID, authSeqID) = r;
 		
 		AtomDataSums sums;
 		double ediaSum = 0;
@@ -718,7 +730,7 @@ vector<ResidueStatistics> StatsCollector::collect(const vector<tuple<string,int,
 		}
 		
 		result.emplace_back(ResidueStatistics{asymID, seqID, compID,
-			pdbID,
+			authSeqID,
 			(sums.rfSums[0] / sums.rfSums[1]),				// rsr
 			sums.srg(),										// srsr
 			sums.cc(),										// rsccs
@@ -737,7 +749,7 @@ vector<ResidueStatistics> StatsCollector::collect(const vector<tuple<string,int,
 				continue;
 	
 			result.emplace_back(ResidueStatistics{d.asymID, d.seqID, "HOH", 
-				atom.pdbID(),
+				atom.authSeqId(),
 				(d.sums.rfSums[0] / d.sums.rfSums[1]),			// rsr
 				d.sums.srg(),									// srsr
 				d.sums.cc(),									// rsccs
