@@ -1345,8 +1345,6 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 	{
 		string program(p->begin(), p->end());
 
-		unique_ptr<Remark3Parser> parser;
-
 		if (ba::starts_with(program, "BUSTER"))
 			tryParser(new BUSTER_TNT_Remark3Parser(program, expMethod, r, db));
 		else if (ba::starts_with(program, "CNS") or ba::starts_with(program, "CNX"))
@@ -1371,6 +1369,28 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 			tryParser(new XPLOR_Remark3Parser(program, expMethod, r, db));
 		else if (VERBOSE)
 			cerr << "Skipping unknown program (" << program << ") in REMARK 3" << endl;
+	}
+
+	if (scores.empty())
+	{
+		cerr << "Unknown program in REMARK 3, trying all parsers to see if there is a match" << endl;
+		
+		for (auto p = make_split_iterator(line, ba::first_finder(", "));
+			not p.eof(); ++p)
+		{
+			string program(p->begin(), p->end());
+	
+			tryParser(new BUSTER_TNT_Remark3Parser(program, expMethod, r, db));
+			tryParser(new CNS_Remark3Parser(program, expMethod, r, db));
+			tryParser(new PHENIX_Remark3Parser(program, expMethod, r, db));
+			tryParser(new NUCLSQ_Remark3Parser(program, expMethod, r, db));
+			tryParser(new PROLSQ_Remark3Parser(program, expMethod, r, db));
+			tryParser(new REFMAC_Remark3Parser(program, expMethod, r, db));
+			tryParser(new REFMAC5_Remark3Parser(program, expMethod, r, db));
+			tryParser(new SHELXL_Remark3Parser(program, expMethod, r, db));
+			tryParser(new TNT_Remark3Parser(program, expMethod, r, db));
+			tryParser(new XPLOR_Remark3Parser(program, expMethod, r, db));
+		}
 	}
 
 	bool result = false;
