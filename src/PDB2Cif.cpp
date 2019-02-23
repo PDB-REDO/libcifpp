@@ -951,8 +951,8 @@ void PDBFileParser::PreParseInput(istream& is)
 	uint32 lineNr = 1;
 	getline(is, lookahead);
 
-	if (ba::starts_with(lookahead, "HEADER") == false)
-		throw runtime_error("This does not look like a PDB file, should start with a HEADER line");
+//	if (ba::starts_with(lookahead, "HEADER") == false)
+//		throw runtime_error("This does not look like a PDB file, should start with a HEADER line");
 
 	auto contNr = [&lookahead](int offset, int len) -> int
 	{
@@ -1236,21 +1236,28 @@ void PDBFileParser::ParseTitle()
 	//	                                               coordinates  were received at the PDB.
 	//	63 - 66       IDcode         idCode            This identifier is unique within the PDB.
 
-	Match("HEADER", true);
+	Match("HEADER", false);
 	
-	mStructureId		= vS(63, 66);
-	string keywords		= vS(11, 50);
-	mOriginalDate		= pdb2cifDate(vS(51, 59));
+	string keywords;
+	
+	if (mRec->is("HEADER"))
+	{
+		mStructureId		= vS(63, 66);
+		keywords			= vS(11, 50);
+		mOriginalDate		= pdb2cifDate(vS(51, 59));
+	
+		ba::trim(keywords);
+		
+		GetNextRecord();
+	}
+	else
+		mStructureId = "nohd";
 
 	mDatablock = new cif::Datablock(mStructureId);
-	
-	ba::trim(keywords);
-	
+		
 	auto cat = getCategory("entry");
 //	cat->addColumn("id");
 	cat->emplace({ {"id", mStructureId} });
-	
-	GetNextRecord();
 	
 	// OBSLTE
 	if (mRec->is("OBSLTE"))
