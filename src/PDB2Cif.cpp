@@ -1372,7 +1372,8 @@ void PDBFileParser::ParseTitle()
 		}	
 	}
 
-	GetNextRecord();
+	if (mRec->is("COMPND"))
+		GetNextRecord();
 
 	// SOURCE
 	Match("SOURCE", false);
