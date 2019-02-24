@@ -224,9 +224,10 @@ int PDBRecord::vI(int columnFirst, int columnLast)
 			}
 		}
 	}
-	catch (...)
+	catch (const exception& ex)
 	{
-		throw_with_nested(runtime_error("Trying to parse '" + string(mValue + columnFirst - 7, mValue + columnLast - 7) + '\''));
+		cerr << "Trying to parse '" << string(mValue + columnFirst - 7, mValue + columnLast - 7) << '\'' << endl;
+		throw;
 	}
 	
 	if (negate)
@@ -629,7 +630,7 @@ class PDBFileParser
 		{
 			return mChainSeq2AsymSeq.at(key);
 		}
-		catch (...)
+		catch (const exception& ex)
 		{
 			throw_with_nested(runtime_error(string("Residue ") + chainID + to_string(resSeq) + iCode + " could not be mapped"));
 		}
@@ -1085,7 +1086,7 @@ void PDBFileParser::PreParseInput(istream& is)
 				{
 					compNr = stoi(value.substr(1, 3));
 				}
-				catch (...)
+				catch (const exception& ex)
 				{
 					throw_with_nested(runtime_error("Invalid component number '" + value.substr(1, 3) + '\''));
 				}
@@ -1108,9 +1109,10 @@ void PDBFileParser::PreParseInput(istream& is)
 					throw_with_nested(runtime_error("Invalid component number '" + lookahead.substr(7, 3) + '\''));
 				}
 			}
-			catch (...)
+			catch (const exception& ex)
 			{
-				throw_with_nested(runtime_error("When parsing FORMUL at line " + to_string(lineNr)));
+				cerr << "Error parsing FORMUL at line " << lineNr << endl;
+				throw;
 			}
 		}
 		else if (type == "HETNAM" or
@@ -2555,7 +2557,8 @@ void PDBFileParser::ParseRemarks()
 		}
 		catch (const exception& ex)
 		{
-			throw_with_nested(runtime_error("Error parsing REMARK " + to_string(remarkNr)));
+			cerr << "Error parsing REMARK " << remarkNr << endl;
+			throw;
 		}
 	}
 
@@ -5274,7 +5277,8 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 		}
 		catch (const exception& ex)
 		{
-			throw_with_nested(runtime_error("Error parsing REMARK 3"));
+			cerr << "Error parsing REMARK 3" << endl;
+			throw;
 		}
 //		
 //		auto cat = getCategory("pdbx_refine_tls_group");
@@ -5305,10 +5309,8 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 	}
 	catch (const exception& ex)
 	{
-		if (mRec != nullptr)
-			throw_with_nested(runtime_error("Error parsing PDB at line " + to_string(mRec->mLineNr)));
-		else
-			throw;
+		cerr << "Error parsing PDB at line " << mRec->mLineNr << endl;
+		throw;
 	}
 }
 

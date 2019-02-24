@@ -419,9 +419,10 @@ Compound::Compound(const fs::path& file, const std::string& id,
 				i->atomID.push_back(atom_id);
 		}
 	}
-	catch (...)
+	catch (const exception& ex)
 	{
-		throw_with_nested(runtime_error("Error loading ccp4 file for " + id + " from file " + file.string()));
+		cerr << "Error loading ccp4 file for " << id << " from file " << file << endl;
+		throw;
 	}
 }
 
@@ -1339,7 +1340,8 @@ void CompoundFactory::pushDictionary(const string& inDictFile)
 	}
 	catch (const exception& ex)
 	{
-		throw_with_nested(runtime_error("When trying to load dictionary file " + inDictFile));
+		cerr << "Error loading dictionary " << inDictFile << endl;
+		throw;
 	}
 }
 

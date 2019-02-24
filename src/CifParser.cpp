@@ -905,7 +905,8 @@ void DictParser::loadDictionary()
 	}
 	catch (const exception& ex)
 	{
-		throw_with_nested(runtime_error("Error parsing dictionary"));
+		cerr << "Error parsing dictionary" << endl;
+		throw;
 	}
 
 	// store all validators

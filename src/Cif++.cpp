@@ -1925,7 +1925,8 @@ void Row::assign(const string& name, const string& value, bool emplacing)
 	}
 	catch (const exception& ex)
 	{
-		throw_with_nested(logic_error("Could not assigning value '" + value + "' to column " + name));
+		cerr << "Could not assigning value '" << value << "' to column " << name << endl;
+		throw;
 	}
 }
 
@@ -2264,7 +2265,8 @@ File::File(boost::filesystem::path p, bool validate)
 	}
 	catch (const exception& ex)
 	{
-		throw_with_nested("Error while loading file " + p.string());
+		cerr << "Error while loading file " << p << endl;
+		throw;
 	}
 }
 
@@ -2334,7 +2336,8 @@ void File::load(fs::path p)
 	}
 	catch (const exception& ex)
 	{
-		throw_with_nested(runtime_error("Error loading file " + p.string()));
+		cerr << "Error loading file " << p << endl;
+		throw;
 	}
 }
 
