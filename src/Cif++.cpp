@@ -361,6 +361,21 @@ void Datablock::setValidator(Validator* v)
 		cat.setValidator(v);
 }
 
+void Datablock::add_software(const string& name, const string& classification, const string& versionNr, const string& versionDate)
+{
+	Category& cat = operator[]("software");
+	int ordNr = cat.size() + 1;
+	// TODO: should we check this ordinal number???
+	
+	cat.emplace({
+		{ "pdbx_ordinal", ordNr },
+		{ "name", name },
+		{ "version", versionNr },
+		{ "date", versionDate },
+		{ "classification", classification }
+	});
+}
+
 void Datablock::getTagOrder(vector<string>& tags) const
 {
 	for (auto& cat: *this)

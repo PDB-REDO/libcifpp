@@ -215,6 +215,10 @@ class Datablock
 	void getTagOrder(vector<string>& tags) const;
 	void write(std::ostream& os, const vector<string>& order);
 	void write(std::ostream& os);
+	
+	// convenience function, add a line to the software category
+	void add_software(const std::string& name, const std::string& classification,
+		const std::string& versionNr, const std::string& versionDate);
 
   private:
 
