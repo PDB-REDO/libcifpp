@@ -977,10 +977,12 @@ void PDBFileParser::PreParseInput(istream& is)
 
 	for (;;)
 	{
+		string type;
+		
 		if (lookahead.empty())
-			break;
-	
-		string type = lookahead.substr(0, 6);
+			cerr << "Line number " << lineNr << " is empty!" << endl;
+
+		type = lookahead.substr(0, 6);
 		string value;
 		if (lookahead.length() > 6)
 			value = ba::trim_right_copy(lookahead.substr(6));
@@ -989,6 +991,9 @@ void PDBFileParser::PreParseInput(istream& is)
 
 		uint32 curLineNr = lineNr;
 		++lineNr;
+
+		if (type.empty())
+			continue;
 		
 		if (kSupportedRecords.count(type) == 0)
 		{
