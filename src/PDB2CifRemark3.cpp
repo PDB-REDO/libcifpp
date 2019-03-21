@@ -1126,7 +1126,7 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 				cat.emplace({
 					{ "pdbx_refine_id", mExpMethod },
 					{ "entry_id", mDb.getName() },
-#warning("???")
+#warning("this diffrn-id is probably not correct?")
 					{ "pdbx_diffrn_id", 1 }
 				});
 			else if (iequals(category, "refine_analyze") or iequals(category, "pdbx_refine"))
@@ -1187,11 +1187,17 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 			else if (iequals(category, "pdbx_reflns_twin"))
 			{
 				cat.emplace({
-#warning("???")
+#warning("crystal id, diffrn id, what should be put here?")
 					{ "crystal_id", 1 },
 					{ "diffrn_id", 1 }
 				});
 			}
+			else if (iequals(category, "reflns"))
+				cat.emplace({
+					{ "pdbx_ordinal", cat.size() + 1 },
+					{ "entry_id", mDb.getName() },
+					{ "pdbx_diffrn_id", 1 }
+				});
 			else
 				cat.emplace({});
 			
