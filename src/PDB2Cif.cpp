@@ -1261,7 +1261,9 @@ void PDBFileParser::ParseTitle()
 		
 		GetNextRecord();
 	}
-	else
+
+	ba::trim(mStructureId);
+	if (mStructureId.empty())
 		mStructureId = "nohd";
 
 	mDatablock = new cif::Datablock(mStructureId);

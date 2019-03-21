@@ -116,7 +116,7 @@ const TemplateLine kBusterTNT_Template[] = {
 /* 76 */	{ R"(TLS DETAILS\.?)", 1 },
 /* 77 */	{ R"(NUMBER OF TLS GROUPS :.+)", 1 },
 /* 78 */	{ R"(TLS GROUP :\s*(\d+))", 1, "pdbx_refine_tls", { "id" }, nullptr, true },
-/* 79 */	{ R"((?:SELECTION|SET):\s+(.+?))", 1, "pdbx_refine_tls_group", { "selection_details" }, nullptr, true },
+/* 79 */	{ R"((?:SELECTION|SET) *:\s+(.+?))", 1, "pdbx_refine_tls_group", { "selection_details" }, nullptr, true },
 /* 80 */	{ R"(ORIGIN FOR THE GROUP \(A\):\s+(.+?)\s+(.+?)\s+(.+?))", 1, "pdbx_refine_tls", { "origin_x", "origin_y", "origin_z" } },
 /* 81 */	{ R"(T TENSOR)", 1 },
 /* 82 */	{ R"(T11:\s+(.+?) T22:\s+(.+?))", 1, "pdbx_refine_tls", { "T[1][1]", "T[2][2]" } },
