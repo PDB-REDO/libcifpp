@@ -2538,6 +2538,7 @@ void PDBFileParser::ParseRemarks()
 				case 2:
 				case 290:
 				case 300:
+				case 620:
 					GetNextRecord();
 					break;
 	
