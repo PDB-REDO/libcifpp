@@ -2127,7 +2127,7 @@ void WriteRemark3(ostream& pdbFile, Datablock& db)
 		if (s != string::npos)
 			program.erase(s, string::npos);
 		
-		if (cif::iequals(program, "BUSTER") or cif::iequals(program, "BUSTER-TNT"))
+		if (cif::iequals(program, "BUSTER") or cif::iequals(program, "BUSTER-TNT") or cif::iequals(program, "TNT"))
 			WriteRemark3BusterTNT(pdbFile, db);
 		else if (cif::iequals(program, "CNS") or cif::iequals(program, "CNX"))
 			WriteRemark3CNS(pdbFile, db);
