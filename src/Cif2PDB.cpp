@@ -545,11 +545,15 @@ void WriteTitle(ostream& pdbFile, Datablock& db)
 		WriteOneContinuedLine(pdbFile, "KEYWDS  ", 2, keywords);
 	
 	// EXPDTA
-	for (auto r: db["exptl"])
+	
+	auto& dbexpt = db["exptl"];
+	if (not dbexpt.empty())
 	{
-		string method = r["method"].as<string>();
+		vector<string> method;
+		for (auto r: dbexpt)
+			method.push_back(r["method"].as<string>());
 		if (not method.empty())
-			WriteOneContinuedLine(pdbFile, "EXPDTA  ", 2, method);
+			WriteOneContinuedLine(pdbFile, "EXPDTA  ", 2, ba::join(method, "; "));
 	}
 	
 	// NUMMDL
@@ -2449,19 +2453,19 @@ void WriteRemark350(ostream& pdbFile, Datablock& db)
 
 			auto r = db["pdbx_struct_oper_list"][cif::Key("id") == oper_id];
 			
-			pdbFile << RM("  BIOMT1 ", -3) <<	Fi(r, "id")
+			pdbFile << RM("  BIOMT1 ", -3) <<	Fs(r, "id")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[1][1]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[1][2]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[1][3]")
 					<< SEP(" ", -14, 5) <<	Ff(r, "vector[1]")
 					<< endl
-					<< RM("  BIOMT2 ", -3) <<	Fi(r, "id")
+					<< RM("  BIOMT2 ", -3) <<	Fs(r, "id")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[2][1]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[2][2]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[2][3]")
 					<< SEP(" ", -14, 5) <<	Ff(r, "vector[2]")
 					<< endl
-					<< RM("  BIOMT3 ", -3) <<	Fi(r, "id")
+					<< RM("  BIOMT3 ", -3) <<	Fs(r, "id")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[3][1]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[3][2]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[3][3]")
