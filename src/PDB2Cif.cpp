@@ -114,7 +114,7 @@ const set<string> kSupportedRecords{
 
 bool isWater(const string& resname)
 {
-	return resname == "HOH" or resname == "H2O" or resname == "OH2" or resname == "WAT" or resname == "DOD";
+	return resname == "HOH" or resname == "H2O" or resname == "OH2" or resname == "WAT" or resname == "DOD" or resname == "WAT";
 }
 
 // --------------------------------------------------------------------
@@ -3489,7 +3489,7 @@ void PDBFileParser::ConstructEntities()
 			int residueCount = (residuePerChainCounter[chainID] += 1);
 			
 			// There appears to be a program that writes out HETATM records as ATOM records....
-			if (r->is("HETATM") or
+			if (not (CompoundFactory::instance().isKnownPeptide(resName) or CompoundFactory::instance().isKnownBase(resName)) or
 				terminatedChains.count(chainID) or
 				(chain.mTerIndex > 0 and residueCount >= chain.mTerIndex))
 			{
@@ -5099,23 +5099,42 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 
 		string groupPDB = mRec->is("ATOM  ") ? "ATOM" : "HETATM";
 //		int serial = vI(7, 11);			//	 7 - 11        Integer       serial       Atom  serial number.
-		string name = vS(13, 16);			//	13 - 16        Atom          name         Atom name.
-		char altLoc = vC(17);				//	17             Character     altLoc       Alternate location indicator.
-		string resName = vS(18, 20);		//	18 - 20        Residue name  resName      Residue name.
-		char chainID = vC(22);				//	22             Character     chainID      Chain identifier.
-		int resSeq = vI(23, 26);			//	23 - 26        Integer       resSeq       Residue sequence number.
-		char iCode = vC(27);				//	27             AChar         iCode        Code for insertion of residues.
-		string x = vF(31, 38);				//	31 - 38        Real(8.3)     x            Orthogonal coordinates for X in Angstroms.
-		string y = vF(39, 46);				//	39 - 46        Real(8.3)     y            Orthogonal coordinates for Y in Angstroms.
-		string z = vF(47, 54);				//	47 - 54        Real(8.3)     z            Orthogonal coordinates for Z in Angstroms.
-		string occupancy = vF(55, 60);		//	55 - 60        Real(6.2)     occupancy    Occupancy.
+		string name = vS(13, 16);		//	13 - 16        Atom          name         Atom name.
+		char altLoc = vC(17);			//	17             Character     altLoc       Alternate location indicator.
+		string resName = vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
+		char chainID = vC(22);			//	22             Character     chainID      Chain identifier.
+		int resSeq = vI(23, 26);		//	23 - 26        Integer       resSeq       Residue sequence number.
+		char iCode = vC(27);			//	27             AChar         iCode        Code for insertion of residues.
+		string x = vF(31, 38);			//	31 - 38        Real(8.3)     x            Orthogonal coordinates for X in Angstroms.
+		string y = vF(39, 46);			//	39 - 46        Real(8.3)     y            Orthogonal coordinates for Y in Angstroms.
+		string z = vF(47, 54);			//	47 - 54        Real(8.3)     z            Orthogonal coordinates for Z in Angstroms.
+		string occupancy = vF(55, 60);	//	55 - 60        Real(6.2)     occupancy    Occupancy.
 		string tempFactor = vF(61, 66);	//	61 - 66        Real(6.2)     tempFactor   Temperature  factor.
-		string element = vS(77, 78);		//	77 - 78        LString(2)    element      Element symbol, right-justified.
+		string element = vS(77, 78);	//	77 - 78        LString(2)    element      Element symbol, right-justified.
 		string charge = vS(79, 80);		//	79 - 80        LString(2)    charge       Charge  on the atom.
 
 		string entityId = mAsymID2EntityID[asymId];
 		
 		charge = pdb2cifCharge(charge);
+
+		if (CompoundFactory::instance().isKnownPeptide(resName) or CompoundFactory::instance().isKnownBase(resName))
+		{
+			if (groupPDB == "HETATM")
+			{
+				if (VERBOSE)
+					cerr << "Changing atom from HETATM to ATOM at line " << mRec->mLineNr << endl;
+				groupPDB = "ATOM";
+			}
+		}
+		else
+		{
+			if (groupPDB == "ATOM")
+			{
+				if (VERBOSE)
+					cerr << "Changing atom from ATOM to HETATM at line " << mRec->mLineNr << endl;
+				groupPDB = "HETATM";
+			}
+		}
 
 		getCategory("atom_site")->emplace({
 			{ "group_PDB" , groupPDB },

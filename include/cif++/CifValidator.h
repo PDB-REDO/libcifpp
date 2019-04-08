@@ -63,15 +63,18 @@ struct ValidateItem
 	const ValidateType*		mType;
 	cif::iset				mEnums;
 	std::string				mDefault;
-	ValidateItem*			mParent = nullptr;
-	std::set<ValidateItem*>
-							mChildren;
 	ValidateCategory*		mCategory = nullptr;
-	std::set<ValidateItem*>
-							mForeignKeys;
-	
-	void setParent(ValidateItem* parent);
 
+	// ItemLinked is used for non-key links
+	struct ItemLinked
+	{
+		ValidateItem*		mParent;
+		std::string			mParentItem;
+		std::string			mChildItem;
+	};
+
+	std::vector<ItemLinked>	mLinked;
+	
 	bool operator<(const ValidateItem& rhs) const
 	{
 		return icompare(mTag, rhs.mTag) < 0;
@@ -108,6 +111,12 @@ struct ValidateCategory
 	}
 };
 
+struct ValidateLink
+{
+	ValidateItem*			mParent;
+	ValidateItem*			mChild;
+};
+
 // --------------------------------------------------------------------
 
 class Validator
@@ -130,6 +139,10 @@ class Validator
 	void addCategoryValidator(ValidateCategory&& v);
 	const ValidateCategory* getValidatorForCategory(std::string category) const;
 
+	void addLinkValidator(ValidateLink&& v);
+	std::vector<ValidateLink> getLinksForParent(std::string category, std::string item) const;
+	std::vector<ValidateLink> getLinksForChild(std::string category, std::string item) const;
+
 	void reportError(const std::string& msg, bool fatal);
 	
 	std::string dictName() const					{ return mName; }
@@ -149,6 +162,7 @@ class Validator
 //	std::set<uint32>			mSubCategories;
 	std::set<ValidateType>		mTypeValidators;
 	std::set<ValidateCategory>	mCategoryValidators;
+	std::vector<ValidateLink>	mLinkValidators;
 };
 
 }

@@ -666,6 +666,7 @@ struct DictParserDataImpl
 	// temporary values for constructing dictionaries
 	vector<ValidateCategory>			mCategoryValidators;
 	map<string,vector<ValidateItem>>	mItemValidators;
+	set<tuple<string,string>>			mLinkedItems;
 };
 
 DictParser::DictParser(Validator& validator, std::istream& is)
@@ -838,6 +839,16 @@ void DictParser::parseSaveFrame()
 				// ...
 			}
 		}
+		
+		// collect the dict from our dataBlock and construct validators
+		for (auto i: dict["item_linked"])
+		{
+			string childTagName, parentTagName;
+			
+			cif::tie(childTagName, parentTagName) = i.get("child_name", "parent_name");
+			
+			mImpl->mLinkedItems.emplace(childTagName, parentTagName);
+		}
 	}
 }
 
@@ -861,7 +872,26 @@ void DictParser::linkItems()
 		if (piv == nullptr)
 			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 		
-		civ->setParent(piv);
+//		civ->setParent(piv);
+//		civ->addLinked(piv, piv->mTag, civ->mTag);
+		mValidator.addLinkValidator({piv, civ});
+	}
+
+	for (auto li: mImpl->mLinkedItems)
+	{
+		string child, parent;
+		std::tie(child, parent) = li;
+		
+		auto civ = mValidator.getValidatorForItem(child);
+		if (civ == nullptr)
+			error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
+		
+		auto piv = mValidator.getValidatorForItem(parent);
+		if (piv == nullptr)
+			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
+		
+//		civ->addLinked(piv, piv->mTag, civ->mTag);
+		mValidator.addLinkValidator({piv, civ});
 	}
 	
 	// now make sure the itemType is specified for all itemValidators

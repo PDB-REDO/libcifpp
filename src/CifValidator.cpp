@@ -138,21 +138,25 @@ int ValidateType::compare(const char* a, const char* b) const
 
 // --------------------------------------------------------------------
 
-void ValidateItem::setParent(ValidateItem* parent)
-{
-	mParent = parent;
-
-	if (mType == nullptr and mParent != nullptr)
-		mType = mParent->mType;
-		
-	if (mParent != nullptr)
-	{
-		mParent->mChildren.insert(this);
-	
-		if (mCategory->mKeys == vector<string>{mTag})
-			mParent->mForeignKeys.insert(this);
-	}
-}
+//void ValidateItem::addLinked(ValidateItem* parent, const std::string& parentItem, const std::string& childItem)
+//{
+////	if (mParent != nullptr and VERBOSE)
+////		cerr << "replacing parent in " << mCategory->mName << " from " << mParent->mCategory->mName << " to " << parent->mCategory->mName << endl;
+////	mParent = parent;
+//
+//	if (mType == nullptr and parent != nullptr)
+//		mType = parent->mType;
+//		
+//	if (parent != nullptr)
+//	{
+//		mLinked.push_back({parent, parentItem, childItem});
+//
+//		parent->mChildren.insert(this);
+////	
+////		if (mCategory->mKeys == vector<string>{mTag})
+////			parent->mForeignKeys.insert(this);
+//	}
+//}
 
 void ValidateItem::operator()(string value) const
 {
@@ -257,6 +261,37 @@ ValidateItem* Validator::getValidatorForItem(string tag) const
 
 	return result;
 }
+
+void Validator::addLinkValidator(ValidateLink&& v)
+{
+	if (v.mChild->mType == nullptr and v.mParent->mType != nullptr)
+		v.mChild->mType = v.mParent->mType;
+	
+	mLinkValidators.emplace_back(move(v));
+}
+
+vector<ValidateLink> Validator::getLinksForParent(string category, string item) const
+{
+	vector<ValidateLink> result;
+	for (auto& l: mLinkValidators)
+	{
+		if (l.mParent->mCategory->mName == category and l.mParent->mTag == item)
+			result.push_back(l);
+	}
+	return result;
+}
+
+vector<ValidateLink> Validator::getLinksForChild(string category, string item) const
+{
+	vector<ValidateLink> result;
+	for (auto& l: mLinkValidators)
+	{
+		if (l.mChild->mCategory->mName == category and l.mChild->mTag == item)
+			result.push_back(l);
+	}
+	return result;
+}
+
 
 void Validator::reportError(const string& msg, bool fatal)
 {

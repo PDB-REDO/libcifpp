@@ -1446,28 +1446,46 @@ void Category::erase(Row r)
 	
 	for (auto& col: mColumns)
 	{
-		auto iv = col.mValidator;
-		if (iv == nullptr or iv->mChildren.empty())
-			continue;
-		
-		if (not keys.count(col.mName))
-			continue;
-		
-		const char* value = r[col.mName].c_str();
-		
-		for (auto child: iv->mChildren)
+		for (auto& l: mValidator->getLinksForParent(mName, col.mName))
 		{
-			if (child->mCategory == nullptr)
-				continue;
+			assert(l.mParent == col.mValidator);
 			
-			auto childCat = mDb.get(child->mCategory->mName);
+			if (not keys.count(col.mName))
+				continue;
+		
+			const char* value = r[col.mName].c_str();
+		
+			auto childCat = mDb.get(l.mChild->mCategory->mName);
 			if (childCat == nullptr)
 				continue;
-				
-			auto rows = childCat->find(Key(child->mTag) == value);
+					
+			auto rows = childCat->find(Key(l.mChild->mTag) == value);
 			for (auto& cr: rows)
 				childCat->erase(cr);
 		}
+		
+//		auto iv = col.mValidator;
+//		if (iv == nullptr or iv->mChildren.empty())
+//			continue;
+//		
+//		if (not keys.count(col.mName))
+//			continue;
+//		
+//		const char* value = r[col.mName].c_str();
+//		
+//		for (auto child: iv->mChildren)
+//		{
+//			if (child->mCategory == nullptr)
+//				continue;
+//			
+//			auto childCat = mDb.get(child->mCategory->mName);
+//			if (childCat == nullptr)
+//				continue;
+//				
+//			auto rows = childCat->find(Key(child->mTag) == value);
+//			for (auto& cr: rows)
+//				childCat->erase(cr);
+//		}
 	}
 
 	if (mHead == nullptr)
@@ -2033,28 +2051,29 @@ void Row::assign(size_t column, const string& value, bool emplacing)
 	if (reinsert)
 		cat->mIndex->insert(mData);
 
-	// see if we need to update any child categories that depend on this value
-	auto iv = col.mValidator;
-	if (not emplacing and iv != nullptr and not iv->mChildren.empty())
-	{
-		for (auto child: iv->mChildren)
-		{
-			if (child->mCategory == nullptr)
-				continue;
-			
-			auto childCat = db.get(child->mCategory->mName);
-			if (childCat == nullptr)
-				continue;
-
-#if DEBUG
-cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
-#endif
-				
-			auto rows = childCat->find(Key(child->mTag) == oldStrValue);
-			for (auto& cr: rows)
-				cr.assign(child->mTag, value, false);
-		}
-	}
+#pragma warning("doen!")
+//	// see if we need to update any child categories that depend on this value
+//	auto iv = col.mValidator;
+//	if (not emplacing and iv != nullptr and not iv->mChildren.empty())
+//	{
+//		for (auto child: iv->mChildren)
+//		{
+//			if (child->mCategory == nullptr)
+//				continue;
+//			
+//			auto childCat = db.get(child->mCategory->mName);
+//			if (childCat == nullptr)
+//				continue;
+//
+//#if DEBUG
+//cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
+//#endif
+//				
+//			auto rows = childCat->find(Key(child->mTag) == oldStrValue);
+//			for (auto& cr: rows)
+//				cr.assign(child->mTag, value, false);
+//		}
+//	}
 }
 
 void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
@@ -2156,38 +2175,39 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 		cat->mIndex->insert(b);
 	}
 
-	// see if we need to update any child categories that depend on these values
-	auto iv = col.mValidator;
-	if ((ai != nullptr or bi != nullptr) and
-		iv != nullptr and not iv->mChildren.empty())
-	{
-		for (auto child: iv->mChildren)
-		{
-			if (child->mCategory == nullptr)
-				continue;
-			
-			auto childCat = db.get(child->mCategory->mName);
-			if (childCat == nullptr)
-				continue;
-
-#if DEBUG
-cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
-#endif
-			if (ai != nullptr)
-			{
-				auto rows = childCat->find(Key(child->mTag) == string(ai->mText));
-				for (auto& cr: rows)
-					cr.assign(child->mTag, bi == nullptr ? "" : bi->mText, false);
-			}
-
-			if (bi != nullptr)
-			{
-				auto rows = childCat->find(Key(child->mTag) == string(bi->mText));
-				for (auto& cr: rows)
-					cr.assign(child->mTag, ai == nullptr ? "" : ai->mText, false);
-			}
-		}
-	}
+#pragma warning("doen!")
+//	// see if we need to update any child categories that depend on these values
+//	auto iv = col.mValidator;
+//	if ((ai != nullptr or bi != nullptr) and
+//		iv != nullptr and not iv->mChildren.empty())
+//	{
+//		for (auto child: iv->mChildren)
+//		{
+//			if (child->mCategory == nullptr)
+//				continue;
+//			
+//			auto childCat = db.get(child->mCategory->mName);
+//			if (childCat == nullptr)
+//				continue;
+//
+//#if DEBUG
+//cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
+//#endif
+//			if (ai != nullptr)
+//			{
+//				auto rows = childCat->find(Key(child->mTag) == string(ai->mText));
+//				for (auto& cr: rows)
+//					cr.assign(child->mTag, bi == nullptr ? "" : bi->mText, false);
+//			}
+//
+//			if (bi != nullptr)
+//			{
+//				auto rows = childCat->find(Key(child->mTag) == string(bi->mText));
+//				for (auto& cr: rows)
+//					cr.assign(child->mTag, ai == nullptr ? "" : ai->mText, false);
+//			}
+//		}
+//	}
 }
 
 void Row::assign(const Item& value, bool emplacing)
