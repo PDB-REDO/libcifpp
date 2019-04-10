@@ -113,8 +113,10 @@ struct ValidateCategory
 
 struct ValidateLink
 {
-	ValidateItem*			mParent;
-	ValidateItem*			mChild;
+	std::string					mParentCategory;
+	std::vector<std::string>	mParentKeys;
+	std::string					mChildCategory;
+	std::vector<std::string>	mChildKeys;
 };
 
 // --------------------------------------------------------------------
@@ -140,8 +142,8 @@ class Validator
 	const ValidateCategory* getValidatorForCategory(std::string category) const;
 
 	void addLinkValidator(ValidateLink&& v);
-	std::vector<ValidateLink> getLinksForParent(std::string category, std::string item) const;
-	std::vector<ValidateLink> getLinksForChild(std::string category, std::string item) const;
+	std::vector<const ValidateLink*> getLinksForParent(const std::string& category) const;
+	std::vector<const ValidateLink*> getLinksForChild(const std::string& category) const;
 
 	void reportError(const std::string& msg, bool fatal);
 	

@@ -858,11 +858,15 @@ void DictParser::linkItems()
 		error("no datablock");
 	
 	auto& dict = *mDataBlock;
+
+	map<tuple<string,string,int>,size_t> linkIndex;
+	vector<tuple<vector<string>,vector<string>>> linkKeys;
 	
 	for (auto gl: dict["pdbx_item_linked_group_list"])
 	{
 		string child, parent;
-		cif::tie(child, parent) = gl.get("child_name", "parent_name");
+		int link_group_id;
+		cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
 		
 		auto civ = mValidator.getValidatorForItem(child);
 		if (civ == nullptr)
@@ -872,26 +876,54 @@ void DictParser::linkItems()
 		if (piv == nullptr)
 			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 		
-//		civ->setParent(piv);
-//		civ->addLinked(piv, piv->mTag, civ->mTag);
-		mValidator.addLinkValidator({piv, civ});
+		auto key = make_tuple(piv->mCategory->mName, civ->mCategory->mName, link_group_id);
+		if (not linkIndex.count(key))
+		{
+			linkIndex[key] = linkKeys.size();
+			linkKeys.push_back({});
+		}
+		
+		size_t ix = linkIndex.at(key);
+		
+		get<0>(linkKeys.at(ix)).push_back(piv->mTag);
+		get<1>(linkKeys.at(ix)).push_back(civ->mTag);
 	}
 
-	for (auto li: mImpl->mLinkedItems)
+//	for (auto li: mImpl->mLinkedItems)
+//	{
+//		string child, parent;
+//		std::tie(child, parent) = li;
+//		
+//		auto civ = mValidator.getValidatorForItem(child);
+//		if (civ == nullptr)
+//			error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
+//		
+//		auto piv = mValidator.getValidatorForItem(parent);
+//		if (piv == nullptr)
+//			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
+//		
+//		auto key = make_tuple(piv->mCategory->mName, civ->mCategory->mName, piv->mTag);
+//		if (not linkIndex.count(key))
+//		{
+//			linkIndex[key] = linkKeys.size();
+//			linkKeys.push_back({});
+//		}
+//		
+//		size_t ix = linkIndex.at(key);
+//		auto& keys = linkKeys.at(ix);
+//		
+//		keys.insert(civ->mTag);
+//	}
+	
+	// now store the links in the validator
+	for (auto& kv: linkIndex)
 	{
-		string child, parent;
-		std::tie(child, parent) = li;
+		ValidateLink link;
+		std::tie(link.mParentCategory, link.mChildCategory, std::ignore) = kv.first;
 		
-		auto civ = mValidator.getValidatorForItem(child);
-		if (civ == nullptr)
-			error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
+		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
 		
-		auto piv = mValidator.getValidatorForItem(parent);
-		if (piv == nullptr)
-			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
-		
-//		civ->addLinked(piv, piv->mTag, civ->mTag);
-		mValidator.addLinkValidator({piv, civ});
+		mValidator.addLinkValidator(move(link));
 	}
 	
 	// now make sure the itemType is specified for all itemValidators

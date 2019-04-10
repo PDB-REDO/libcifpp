@@ -264,34 +264,57 @@ ValidateItem* Validator::getValidatorForItem(string tag) const
 
 void Validator::addLinkValidator(ValidateLink&& v)
 {
-	if (v.mChild->mType == nullptr and v.mParent->mType != nullptr)
-		v.mChild->mType = v.mParent->mType;
+	assert(v.mParentKeys.size() == v.mChildKeys.size());
+	if (v.mParentKeys.size() != v.mChildKeys.size())
+		throw runtime_error("unequal number of keys for parent and child in link");
+	
+	auto pcv = getValidatorForCategory(v.mParentCategory);
+	auto ccv = getValidatorForCategory(v.mChildCategory);
+	
+	if (pcv == nullptr)
+		throw runtime_error("unknown parent category " + v.mParentCategory);
+
+	if (ccv == nullptr)
+		throw runtime_error("unknown child category " + v.mChildCategory);
+
+	for (size_t i = 0; i < v.mParentKeys.size(); ++i)
+	{
+		auto piv = pcv->getValidatorForItem(v.mParentKeys[i]);
+	
+		if (piv == nullptr)
+			throw runtime_error("unknown parent tag _" + v.mParentCategory + '.' + v.mParentKeys[i]);
+
+		auto civ = ccv->getValidatorForItem(v.mChildKeys[i]);
+		if (civ == nullptr)
+			throw runtime_error("unknown child tag _" + v.mChildCategory + '.' + v.mChildKeys[i]);
+		
+		if (civ->mType == nullptr and piv->mType != nullptr)
+			const_cast<ValidateItem*>(civ)->mType = piv->mType;
+	}		
 	
 	mLinkValidators.emplace_back(move(v));
 }
 
-vector<ValidateLink> Validator::getLinksForParent(string category, string item) const
+vector<const ValidateLink*> Validator::getLinksForParent(const string& category) const
 {
-	vector<ValidateLink> result;
+	vector<const ValidateLink*> result;
+
 	for (auto& l: mLinkValidators)
 	{
-		if (l.mParent->mCategory->mName == category and l.mParent->mTag == item)
-			result.push_back(l);
+		if (l.mParentCategory == category)
+			result.push_back(&l);
 	}
+	
 	return result;
 }
 
-vector<ValidateLink> Validator::getLinksForChild(string category, string item) const
-{
-	vector<ValidateLink> result;
-	for (auto& l: mLinkValidators)
-	{
-		if (l.mChild->mCategory->mName == category and l.mChild->mTag == item)
-			result.push_back(l);
-	}
-	return result;
-}
-
+//const ValidateLink* Validator::getLinksForChild(const string& category) const
+//{
+//	auto i = find_if(mLinkValidators.begin(), mLinkValidators.end(),
+//		[&](auto& l) { return l.mChildCategory == category; });
+//	
+//	return i == mLinkValidators.end() ? nullptr : &(*i);
+//}
 
 void Validator::reportError(const string& msg, bool fatal)
 {
@@ -300,6 +323,5 @@ void Validator::reportError(const string& msg, bool fatal)
 	else if (VERBOSE)
 		cerr << msg << endl;
 }
-
 
 }

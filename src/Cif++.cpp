@@ -1429,6 +1429,8 @@ void Category::erase(Condition&& cond)
 			remove.push_back(r);
 	}
 
+cerr << "Erasing " << remove.size() << " entries" << endl;
+
 	for (auto r: remove)
 		erase(r);
 }
@@ -1443,50 +1445,96 @@ void Category::erase(Row r)
 	iset keys;
 	if (mCatValidator)
 		keys = iset(mCatValidator->mKeys.begin(), mCatValidator->mKeys.end());
-	
-	for (auto& col: mColumns)
+
+	// links are created based on the _pdbx_item_linked_group_list entries
+	// in mmcif_pdbx.dic dictionary.
+	//
+	// For each link group in _pdbx_item_linked_group_list 
+	// a set of keys from one category is mapped to another.
+	// If all values in a child are the same as the specified parent ones
+	// the child is removed as well, recursively of course.
+
+	for (auto& link: mValidator->getLinksForParent(mName))
 	{
-		for (auto& l: mValidator->getLinksForParent(mName, col.mName))
+		
+cerr << "Follow links from " << endl
+	 << "\t" << mName << " - " << ba::join(link->mParentKeys, ", ")
+	 << "\t" << "to" << endl
+	 << "\t" << link->mChildCategory << " - " << ba::join(link->mChildKeys, ", ")
+	 << endl;
+
+		auto childCat = mDb.get(link->mChildCategory);
+		if (childCat == nullptr)
+			continue;
+		
+		Condition cond;
+		
+		for (size_t ix = 0; ix < link->mParentKeys.size(); ++ix)
 		{
-			assert(l.mParent == col.mValidator);
+			const char* value = r[link->mParentKeys[ix]].c_str();
 			
-			if (not keys.count(col.mName))
-				continue;
-		
-			const char* value = r[col.mName].c_str();
-		
-			auto childCat = mDb.get(l.mChild->mCategory->mName);
-			if (childCat == nullptr)
-				continue;
-					
-			auto rows = childCat->find(Key(l.mChild->mTag) == value);
-			for (auto& cr: rows)
-				childCat->erase(cr);
+			cond = move(cond) && (Key(link->mChildKeys[ix]) == value);
 		}
 		
-//		auto iv = col.mValidator;
-//		if (iv == nullptr or iv->mChildren.empty())
-//			continue;
-//		
-//		if (not keys.count(col.mName))
-//			continue;
-//		
-//		const char* value = r[col.mName].c_str();
-//		
-//		for (auto child: iv->mChildren)
+cerr << "about to erase: " << cond << endl;
+
+		childCat->erase(move(cond));
+	}
+	
+//	for (auto& col: mColumns)
+//	{
+//		for (auto& l: mValidator->getLinksForParent(mName, col.mName))
 //		{
-//			if (child->mCategory == nullptr)
-//				continue;
+//			assert(l.mParent == col.mValidator);
+//
+//cerr << __FILE__ << ':' << __LINE__ << " "
+//	 << l.mParent->mCategory->mName << '.' << l.mParent->mTag << " linked to "
+//	 << l.mChild->mCategory->mName << '.' << l.mChild->mTag << endl;
 //			
-//			auto childCat = mDb.get(child->mCategory->mName);
+////			if (not keys.count(col.mName))
+////				continue;
+//
+//cerr << __FILE__ << ':' << __LINE__ << endl;
+//		
+//			const char* value = r[col.mName].c_str();
+//		
+//			auto childCat = mDb.get(l.mChild->mCategory->mName);
 //			if (childCat == nullptr)
 //				continue;
-//				
-//			auto rows = childCat->find(Key(child->mTag) == value);
+//
+//cerr << __FILE__ << ':' << __LINE__ << endl;
+//					
+//			auto rows = childCat->find(Key(l.mChild->mTag) == value);
 //			for (auto& cr: rows)
+//			{
+//cerr << __FILE__ << ':' << __LINE__ << " erase" << endl;
 //				childCat->erase(cr);
+//			}
 //		}
-	}
+//		
+////		auto iv = col.mValidator;
+////		if (iv == nullptr or iv->mChildren.empty())
+////			continue;
+////		
+////		if (not keys.count(col.mName))
+////			continue;
+////		
+////		const char* value = r[col.mName].c_str();
+////		
+////		for (auto child: iv->mChildren)
+////		{
+////			if (child->mCategory == nullptr)
+////				continue;
+////			
+////			auto childCat = mDb.get(child->mCategory->mName);
+////			if (childCat == nullptr)
+////				continue;
+////				
+////			auto rows = childCat->find(Key(child->mTag) == value);
+////			for (auto& cr: rows)
+////				childCat->erase(cr);
+////		}
+//	}
 
 	if (mHead == nullptr)
 		throw runtime_error("erase");

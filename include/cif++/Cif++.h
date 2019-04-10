@@ -641,10 +641,17 @@ struct ConditionImpl
 	virtual std::string str() const = 0;
 };
 
+struct AllConditionImpl : public ConditionImpl
+{
+	virtual bool test(const Category& c, const Row& r) const { return true; }
+	virtual std::string str() const { return "ALL"; }
+};
+
 }
 
 struct Condition
 {
+	Condition() : mImpl(new detail::AllConditionImpl()) {}
 	Condition(detail::ConditionImpl* impl) : mImpl(impl) {}
 
 	Condition(Condition&& rhs)
@@ -918,6 +925,13 @@ inline Condition operator&&(Condition&& a, Condition&& b)
 inline Condition operator||(Condition&& a, Condition&& b)
 {
 	return Condition(new detail::orConditionImpl(std::move(a), std::move(b)));
+}
+
+inline
+std::ostream& operator<<(std::ostream& os, const Condition& rhs)
+{
+	os << rhs.str();
+	return os;
 }
 
 struct Empty {};
