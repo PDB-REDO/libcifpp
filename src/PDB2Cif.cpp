@@ -3368,6 +3368,9 @@ void PDBFileParser::ConstructEntities()
 		}
 	}
 	
+	// prune completely empty chains?
+	mChains.erase(remove_if(mChains.begin(), mChains.end(), [](auto& chain) { return chain.mResiduesSeen.empty() and chain.mSeqres.empty(); }), mChains.end());
+	
 	for (auto& chain: mChains)
 	{
 		if (not (chain.mSeqres.empty() or chain.mResiduesSeen.empty()))

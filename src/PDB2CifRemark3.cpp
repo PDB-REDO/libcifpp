@@ -1396,7 +1396,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 		tryParser(new REFMAC5_Remark3Parser("REFMAC5", expMethod, r, db), false);
 		tryParser(new SHELXL_Remark3Parser("SHELXL", expMethod, r, db), false);
 		tryParser(new TNT_Remark3Parser("TNT", expMethod, r, db), false);
-		tryParser(new XPLOR_Remark3Parser("XPLOR", expMethod, r, db), false);
+		tryParser(new XPLOR_Remark3Parser("X-PLOR", expMethod, r, db), false);
 	}
 
 	bool result = false;
