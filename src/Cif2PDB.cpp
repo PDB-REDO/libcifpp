@@ -3292,12 +3292,11 @@ void WriteConnectivity(ostream& pdbFile, cif::Datablock& db)
 	
 	// LINK
 	
-	boost::format kLINK("LINK        %-4.4s%1.1s%3.3s %1.1s%4.4d%1.1s               %-4.4s%1.1s%3.3s %1.1s%4.4d%1.1s  %6.6s %6.6s %5.2f");
+	boost::format kLINK("LINK        %-4.4s%1.1s%3.3s %1.1s%4.4d%1.1s               %-4.4s%1.1s%3.3s %1.1s%4.4d%1.1s  %6.6s %6.6s");
 	for (auto r: db["struct_conn"].find(cif::Key("conn_type_id") == "metalc" or cif::Key("conn_type_id") == "covale"))
 	{
-		string name1, altLoc1, resName1, chainID1, iCode1, name2, altLoc2, resName2, chainID2, iCode2, sym1, sym2;
+		string name1, altLoc1, resName1, chainID1, iCode1, name2, altLoc2, resName2, chainID2, iCode2, sym1, sym2, Length;
 		int resSeq1, resSeq2;
-		float Length;
 		
 		cif::tie(name1, altLoc1, resName1, chainID1, resSeq1, iCode1, name2, altLoc2, resName2, chainID2, resSeq2, iCode2, sym1, sym2, Length) = 
 			r.get("ptnr1_label_atom_id", "pdbx_ptnr1_label_alt_id", "ptnr1_label_comp_id", "ptnr1_auth_asym_id", "ptnr1_auth_seq_id", "pdbx_ptnr1_PDB_ins_code",
@@ -3328,8 +3327,12 @@ void WriteConnectivity(ostream& pdbFile, cif::Datablock& db)
 			% resSeq2
 			% iCode2
 			% sym1
-			% sym2
-			% Length) << endl;
+			% sym2);
+		
+		if (not Length.empty())
+			pdbFile << boost::format("%5.2f") % stod(Length);
+			
+		pdbFile << endl;
 	}
 
 	// CISPEP

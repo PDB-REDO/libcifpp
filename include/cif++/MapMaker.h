@@ -25,6 +25,8 @@ class Map
 	
 	operator Xmap& ()									{ return mMap; }
 	operator const Xmap& () const						{ return mMap; }
+	Xmap& get()											{ return mMap; }
+	const Xmap& get() const								{ return mMap; }
 	
 	// These routines work with CCP4 map files
 	void read(const boost::filesystem::path& f);
