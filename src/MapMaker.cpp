@@ -152,12 +152,14 @@ MapMaker<FTYPE>::~MapMaker()
 template<typename FTYPE>
 void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 	initializer_list<string> fbLabels, initializer_list<string> fdLabels,
-	initializer_list<string> foLabels, initializer_list<string> fcLabels)
+	initializer_list<string> foLabels, initializer_list<string> fcLabels,
+	initializer_list<string> faLabels)
 {
 	if (VERBOSE)
 		cerr << "Reading map from " << hklin << endl
 			 << "  with labels: FB: " << ba::join(fbLabels, ",") << endl
 			 << "  with labels: FD: " << ba::join(fdLabels, ",") << endl
+			 << "  with labels: FA: " << ba::join(faLabels, ",") << endl
 			 << "  with labels: FO: " << ba::join(foLabels, ",") << endl
 			 << "  with labels: FC: " << ba::join(fcLabels, ",") << endl;
 
@@ -202,10 +204,26 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 	
 	mtzin.import_hkl_info(mHKLInfo);
 	
+	bool hasFAN = false;
+	const regex rx(R"(^/[^/]+/[^/]+/(.+) \S$)");
+	
+	for (auto& label: mtzin.column_labels())
+	{
+		smatch m;
+		if (regex_match(label, m, rx) and m[1] == "FAN")
+		{
+			hasFAN = true;
+			break;
+		}
+	}
+		
 	mtzin.import_hkl_data(mFbData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fbLabels, ",")).str());
 	mtzin.import_hkl_data(mFdData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(fdLabels, ",")).str());
+	if (hasFAN)
+		mtzin.import_hkl_data(mFaData,
+			(boost::format(kBasePath) % "*" % "*" % ba::join(faLabels, ",")).str());
 	mtzin.import_hkl_data(mFoData,
 		(boost::format(kBasePath) % "*" % "*" % ba::join(foLabels, ",")).str());
 	mtzin.import_hkl_data(mFcData,
@@ -245,12 +263,19 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 	
 	clipper::Xmap<FTYPE>& fbMap = mFb;
 	clipper::Xmap<FTYPE>& fdMap = mFd;
+	clipper::Xmap<FTYPE>& faMap = mFa;
 	
 	fbMap.init(spacegroup, cell, mGrid);	// define map
 	fbMap.fft_from(mFbData);				// generate map
 	
 	fdMap.init(spacegroup, cell, mGrid);	// define map
 	fdMap.fft_from(mFdData);				// generate map
+	
+	if (not mFaData.is_null())
+	{
+		faMap.init(spacegroup, cell, mGrid);
+		faMap.fft_from(mFaData);
+	}
 
 	if (VERBOSE)
 	{
@@ -560,10 +585,10 @@ void MapMaker<FTYPE>::recalc(const Structure& structure,
 	clipper::Xmap<FTYPE>& fdMap = mFd;
 
 	fbMap.init(spacegroup, cell, mGrid);			// define map
-	fbMap.fft_from(mFbData);								// generate map
+	fbMap.fft_from(mFbData);						// generate map
 	
 	fdMap.init(spacegroup, cell, mGrid);			// define map
-	fdMap.fft_from(mFdData);								// generate map
+	fdMap.fft_from(mFdData);						// generate map
 
 	if (VERBOSE)
 	{

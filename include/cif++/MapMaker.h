@@ -80,7 +80,8 @@ class MapMaker
 		std::initializer_list<std::string> fbLabels = { "FWT", "PHWT" },
 		std::initializer_list<std::string> fdLabels = { "DELFWT", "PHDELWT" },
 		std::initializer_list<std::string> foLabels = { "FP", "SIGFP" },
-		std::initializer_list<std::string> fcLabels = { "FC_ALL", "PHIC_ALL" });
+		std::initializer_list<std::string> fcLabels = { "FC_ALL", "PHIC_ALL" },
+		std::initializer_list<std::string> faLabels = { "FAN", "PHAN" });
 
 	void loadMaps(
 		const boost::filesystem::path& fbMapFile,
@@ -106,9 +107,11 @@ class MapMaker
 
 	MapType& fb()								{ return mFb; }
 	MapType& fd()								{ return mFd; }
+	MapType& fa()								{ return mFa; }
 
 	const MapType& fb() const					{ return mFb; }
 	const MapType& fd() const					{ return mFd; }
+	const MapType& fa() const					{ return mFa; }
 	
 	double resLow() const						{ return mResLow; }
 	double resHigh() const						{ return mResHigh; }
@@ -116,7 +119,6 @@ class MapMaker
 	const Spacegroup& spacegroup() const		{ return mHKLInfo.spacegroup(); }
 	const Cell& cell() const					{ return mHKLInfo.cell(); }
 	const Grid_sampling& gridSampling() const	{ return mGrid; }
-
 
   private:
 
@@ -127,7 +129,7 @@ class MapMaker
 	
 	void fixMTZ();
 	
-	MapType				mFb, mFd;
+	MapType				mFb, mFd, mFa;
 	Grid_sampling		mGrid;
 	float				mSamplingRate;
 	double				mResLow, mResHigh;
@@ -137,7 +139,7 @@ class MapMaker
 	HKL_info			mHKLInfo;
 	HKL_data<F_sigF>	mFoData;
 	HKL_data<Flag>		mFreeData;
-	HKL_data<F_phi>		mFcData, mFbData, mFdData;
+	HKL_data<F_phi>		mFcData, mFbData, mFdData, mFaData;
 	HKL_data<Phi_fom>	mPhiFomData;
 };
 
