@@ -665,8 +665,10 @@ string Residue::authInsCode() const
 	
 	try
 	{
-		tie(ignore, ignore, result) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
+		char iCode;
+		tie(ignore, ignore, iCode) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
 		
+		result = string{ iCode };
 		ba::trim(result);
 	}
 	catch (...)
@@ -684,7 +686,9 @@ string Residue::authSeqID() const
 	
 	try
 	{
-		tie(ignore, result, ignore) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
+		int seqID;
+		tie(ignore, seqID, ignore) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
+		result = to_string(seqID);
 	}
 	catch (...)
 	{
