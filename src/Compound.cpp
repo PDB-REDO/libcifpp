@@ -546,7 +546,7 @@ bool Compound::isSugar() const
 
 CompoundAtom Compound::getAtomById(const string& atomId) const
 {
-	CompoundAtom result;
+	CompoundAtom result = {};
 	for (auto& a: mAtoms)
 	{
 		if (a.id == atomId)

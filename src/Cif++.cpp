@@ -1429,8 +1429,6 @@ void Category::erase(Condition&& cond)
 			remove.push_back(r);
 	}
 
-cerr << "Erasing " << remove.size() << " entries" << endl;
-
 	for (auto r: remove)
 		erase(r);
 }
@@ -1456,13 +1454,6 @@ void Category::erase(Row r)
 
 	for (auto& link: mValidator->getLinksForParent(mName))
 	{
-		
-cerr << "Follow links from " << endl
-	 << "\t" << mName << " - " << ba::join(link->mParentKeys, ", ")
-	 << "\t" << "to" << endl
-	 << "\t" << link->mChildCategory << " - " << ba::join(link->mChildKeys, ", ")
-	 << endl;
-
 		auto childCat = mDb.get(link->mChildCategory);
 		if (childCat == nullptr)
 			continue;
@@ -1475,67 +1466,10 @@ cerr << "Follow links from " << endl
 			
 			cond = move(cond) && (Key(link->mChildKeys[ix]) == value);
 		}
-		
-cerr << "about to erase: " << cond << endl;
 
 		childCat->erase(move(cond));
 	}
 	
-//	for (auto& col: mColumns)
-//	{
-//		for (auto& l: mValidator->getLinksForParent(mName, col.mName))
-//		{
-//			assert(l.mParent == col.mValidator);
-//
-//cerr << __FILE__ << ':' << __LINE__ << " "
-//	 << l.mParent->mCategory->mName << '.' << l.mParent->mTag << " linked to "
-//	 << l.mChild->mCategory->mName << '.' << l.mChild->mTag << endl;
-//			
-////			if (not keys.count(col.mName))
-////				continue;
-//
-//cerr << __FILE__ << ':' << __LINE__ << endl;
-//		
-//			const char* value = r[col.mName].c_str();
-//		
-//			auto childCat = mDb.get(l.mChild->mCategory->mName);
-//			if (childCat == nullptr)
-//				continue;
-//
-//cerr << __FILE__ << ':' << __LINE__ << endl;
-//					
-//			auto rows = childCat->find(Key(l.mChild->mTag) == value);
-//			for (auto& cr: rows)
-//			{
-//cerr << __FILE__ << ':' << __LINE__ << " erase" << endl;
-//				childCat->erase(cr);
-//			}
-//		}
-//		
-////		auto iv = col.mValidator;
-////		if (iv == nullptr or iv->mChildren.empty())
-////			continue;
-////		
-////		if (not keys.count(col.mName))
-////			continue;
-////		
-////		const char* value = r[col.mName].c_str();
-////		
-////		for (auto child: iv->mChildren)
-////		{
-////			if (child->mCategory == nullptr)
-////				continue;
-////			
-////			auto childCat = mDb.get(child->mCategory->mName);
-////			if (childCat == nullptr)
-////				continue;
-////				
-////			auto rows = childCat->find(Key(child->mTag) == value);
-////			for (auto& cr: rows)
-////				childCat->erase(cr);
-////		}
-//	}
-
 	if (mHead == nullptr)
 		throw runtime_error("erase");
 
@@ -1560,6 +1494,15 @@ cerr << "about to erase: " << cond << endl;
 				break;
 			}
 		}
+	}
+
+	// reset mTail, if needed
+	if (r == mTail)
+	{
+		mTail = mHead;
+		if (mTail != nullptr)
+			while (mTail->mNext != nullptr)
+				mTail = mTail->mNext;
 	}
 }
 
@@ -2018,7 +1961,6 @@ void Row::assign(size_t column, const string& value, bool emplacing)
 	
 	auto cat = mData->mCategory;
 	auto& col = cat->mColumns[column];
-	auto& db = cat->mDb;
 
 	const char* oldValue = nullptr;
 	for (auto iv = mData->mValues; iv != nullptr; iv = iv->mNext)
@@ -2134,8 +2076,6 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 		throw logic_error("Categories not same in swap");
 	
 	auto cat = a->mCategory;
-	auto& col = cat->mColumns[cix];
-	auto& db = cat->mDb;
 
 	// If the field is part of the Key for this Category, remove it from the index
 	// before updating
