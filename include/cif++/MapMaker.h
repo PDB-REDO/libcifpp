@@ -31,6 +31,10 @@ class Map
 	// These routines work with CCP4 map files
 	void read(const boost::filesystem::path& f);
 	void write(const boost::filesystem::path& f);
+
+	void write_masked(std::ostream& os, clipper::Grid_range range);
+	void write_masked(const boost::filesystem::path& f, 
+		clipper::Grid_range range);
 	
 	clipper::Spacegroup spacegroup() const				{ return mMap.spacegroup(); }
 	clipper::Cell cell() const							{ return mMap.cell(); }
@@ -38,6 +42,7 @@ class Map
   private:
 
 	Xmap mMap;
+	double mMinDensity, mMaxDensity;
 	double mRMSDensity, mMeanDensity;
 };
 

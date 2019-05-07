@@ -25,7 +25,228 @@ extern int VERBOSE;
 
 namespace mmcif
 {
-	
+
+// --------------------------------------------------------------------
+// a private ccp4 map file implementation
+
+
+//  1      NC              # of Columns    (fastest changing in map)
+//  2      NR              # of Rows
+//  3      NS              # of Sections   (slowest changing in map)
+//  4      MODE            Data type
+//                           0 = envelope stored as signed bytes (from
+//                               -128 lowest to 127 highest)
+//                           1 = Image     stored as Integer*2
+//                           2 = Image     stored as Reals
+//                           3 = Transform stored as Complex Integer*2
+//                           4 = Transform stored as Complex Reals
+//                           5 == 0	
+ 
+//                           Note: Mode 2 is the normal mode used in
+//                                 the CCP4 programs. Other modes than 2 and 0
+//                                 may NOT WORK
+ 
+//  5      NCSTART         Number of first COLUMN  in map
+//  6      NRSTART         Number of first ROW     in map
+//  7      NSSTART         Number of first SECTION in map
+//  8      NX              Number of intervals along X
+//  9      NY              Number of intervals along Y
+// 10      NZ              Number of intervals along Z
+// 11      X length        Cell Dimensions (Angstroms)
+// 12      Y length                     "
+// 13      Z length                     "
+// 14      Alpha           Cell Angles     (Degrees)
+// 15      Beta                         "
+// 16      Gamma                        "
+// 17      MAPC            Which axis corresponds to Cols.  (1,2,3 for X,Y,Z)
+// 18      MAPR            Which axis corresponds to Rows   (1,2,3 for X,Y,Z)
+// 19      MAPS            Which axis corresponds to Sects. (1,2,3 for X,Y,Z)
+// 20      AMIN            Minimum density value
+// 21      AMAX            Maximum density value
+// 22      AMEAN           Mean    density value    (Average)
+// 23      ISPG            Space group number
+// 24      NSYMBT          Number of bytes used for storing symmetry operators
+// 25      LSKFLG          Flag for skew transformation, =0 none, =1 if foll
+// 26-34   SKWMAT          Skew matrix S (in order S11, S12, S13, S21 etc) if
+//                         LSKFLG .ne. 0.
+// 35-37   SKWTRN          Skew translation t if LSKFLG .ne. 0.
+//                         Skew transformation is from standard orthogonal
+//                         coordinate frame (as used for atoms) to orthogonal
+//                         map frame, as
+ 
+//                                 Xo(map) = S * (Xo(atoms) - t)
+ 
+// 38      future use       (some of these are used by the MSUBSX routines
+//  .          "              in MAPBRICK, MAPCONT and FRODO)
+//  .          "   (all set to zero by default)
+//  .          "
+// 52          "
+
+// 53	MAP	        Character string 'MAP ' to identify file type
+// 54	MACHST		Machine stamp indicating the machine type
+// 			which wrote file
+// 55      ARMS            Rms deviation of map from mean density
+// 56      NLABL           Number of labels being used
+// 57-256  LABEL(20,10)    10  80 character text labels (ie. A4 format)
+
+enum CCP4MapFileMode : uint32
+{
+	AS_REALS = 2		// do not support anything else for now...
+};
+
+struct CCP4MapFileHeader
+{
+	uint32				NC, NR, NS;
+	CCP4MapFileMode		MODE;
+	int32				NCSTART, NRSTART, NSSTART;
+	uint32				NX, NY, NZ;
+	float				cellLengths[3];
+	float				cellAngles[3];
+	uint32				MAPC, MAPR, MAPS;
+	float				AMIN, AMAX, AMEAN;
+	uint32				ISPG;
+	uint32				NSYMBT;
+	uint32				LSKFLG;
+	float				SKWMAT[9];
+	float				SKWTRN[3];
+	uint32				UNUSED[15];
+	char				MAP[4] = { 'M', 'A', 'P', ' ' };
+	uint32				MACHST = 0x00004144;
+	float				ARMS;
+	uint32				NLABL = 1;
+	char				LABEL[200 * 4];
+};
+
+template<typename FTYPE>
+tuple<float,float,float,float> CalculateMapStatistics(const clipper::Xmap<FTYPE>& xmap, clipper::Grid_range r)
+{
+	float
+		amin = numeric_limits<float>::max(),
+		amax = numeric_limits<float>::min();
+	long double asum = 0, asum2 = 0;
+	size_t n = 0;
+
+	clipper::Xmap_base::Map_reference_coord c(xmap);
+	for (int g0 = r.min()[0]; g0 <= r.max()[0]; ++g0)
+		for (int g1 = r.min()[1]; g1 <= r.max()[0]; ++g1)
+			for (int g2 = r.min()[2]; g2 <= r.max()[2]; ++g2)
+			{
+				c.set_coord({ g0, g1, g2});
+				float v = xmap[c];
+
+				asum += v;
+				asum2 += v * v;
+				if (amin > v)
+					amin = v;
+				if (amax < v)
+					amax = v;
+
+				++n;
+			}
+
+	float mean = static_cast<float>(asum / n);
+	float rmsd = static_cast<float>(sqrt((asum2 / n) - (mean * mean)));
+
+	return make_tuple(amin, amax, mean, rmsd);
+}
+
+template<typename FTYPE>
+void writeCCP4MapFile(ostream& os, clipper::Xmap<FTYPE>& xmap, clipper::Grid_range range)
+{
+	static_assert(sizeof(CCP4MapFileHeader) == 256 * 4);
+
+	auto& spacegroup = xmap.spacegroup();
+	int spaceGroupNumber = spacegroup.descr().spacegroup_number();
+	int orderFMS[3] = { 3, 1, 2 };
+
+	switch (spaceGroupNumber)
+	{
+		case 1:  case 2:  case 3:  case 4:
+		case 10: case 16: case 17: case 18:
+		case 20: case 21: case 23:
+			orderFMS[0] = 2;
+			orderFMS[2] = 3;
+			break;
+	}
+
+	int orderXYZ[3];
+	for (size_t i = 0; i < 3; ++i)
+		orderXYZ[orderFMS[i] - 1] = i;
+
+	int grid[3], gridFMSMin[3], gridFMSMax[3], dim[3];
+	for (size_t i = 0; i < 3; ++i)
+	{
+		grid[i] = xmap.grid_sampling()[i];
+
+		gridFMSMin[orderXYZ[i]] = range.min()[i];
+		gridFMSMax[orderXYZ[i]] = range.max()[i];
+	}
+
+	for (size_t i = 0; i < 3; ++i)
+		dim[i] = gridFMSMax[i] - gridFMSMin[i] + 1;
+
+	auto cellDescription = xmap.cell().descr();
+
+	CCP4MapFileHeader h = {};
+
+	int r = snprintf(h.LABEL, sizeof(h.LABEL), "%s", "Map created with map-maker from the PDB-REDO suite of applications");
+	for (size_t i = r; i < sizeof(h.LABEL); ++i)
+		h.LABEL[i] = ' ';
+
+	h.NC = dim[0];
+	h.NR = dim[1];
+	h.NS = dim[2];
+	h.MODE = AS_REALS;
+	h.NCSTART = gridFMSMin[0];
+	h.NRSTART = gridFMSMin[1];
+	h.NSSTART = gridFMSMin[2];
+	h.NX = grid[0];
+	h.NY = grid[1];
+	h.NZ = grid[2];
+	h.cellLengths[0] = cellDescription.a();
+	h.cellLengths[1] = cellDescription.b();
+	h.cellLengths[2] = cellDescription.c();
+	h.cellAngles[0] = cellDescription.alpha_deg();
+	h.cellAngles[1] = cellDescription.beta_deg();
+	h.cellAngles[2] = cellDescription.gamma_deg();
+	h.MAPC = orderFMS[0];
+	h.MAPR = orderFMS[1];
+	h.MAPS = orderFMS[2];
+	h.ISPG = spaceGroupNumber;
+	h.NSYMBT = spacegroup.num_symops() * 80;
+
+	tie(h.AMIN, h.AMAX, h.AMEAN, h.ARMS) = CalculateMapStatistics(xmap, range);
+
+	os.write(reinterpret_cast<char*>(&h), sizeof(h));
+
+	const string kSpaces(80, ' ');
+	for (size_t si = 0; si < spacegroup.num_symops(); ++si)
+	{
+		string symop = spacegroup.symop(si).format();
+		os.write(symop.c_str(), symop.length());
+		os.write(kSpaces.c_str(), 80 - symop.length());
+	}
+
+	clipper::Xmap_base::Map_reference_coord c(xmap);
+	const uint32 kSectionLength = dim[0] * dim[1];
+	vector<float> section(kSectionLength);
+
+	int g[3];
+	for (g[2] = gridFMSMin[2]; g[2] <= gridFMSMax[2]; ++g[2])
+	{
+		auto si = section.begin();
+		for (g[1] = gridFMSMin[1]; g[1] <= gridFMSMax[1]; ++g[1])
+			for (g[0] = gridFMSMin[0]; g[0] <= gridFMSMax[0]; ++g[0])
+			{
+				c.set_coord({ g[orderXYZ[0]], g[orderXYZ[1]], g[orderXYZ[2]] });
+				*si++ = xmap[c];
+			}
+		
+		assert(si == section.end());
+		os.write(reinterpret_cast<char*>(section.data()), kSectionLength * sizeof(float));
+	}
+}
+
 // --------------------------------------------------------------------
 
 bool IsMTZFile(const fs::path& p)
@@ -60,7 +281,10 @@ void Map<FTYPE>::calculateStats()
 {
 	double sum = 0, sum2 = 0;
 	int count = 0;
-	
+
+	mMinDensity = numeric_limits<double>::max();
+	mMaxDensity = numeric_limits<double>::min();
+
 	for (auto ix = mMap.first(); not ix.last(); ix.next())
 	{
 		auto v = mMap[ix];
@@ -68,6 +292,11 @@ void Map<FTYPE>::calculateStats()
 		if (isnan(v))
 			throw runtime_error("map contains NaN values");
 		
+		if (mMinDensity > v)
+			mMinDensity = v;
+		if (mMaxDensity < v)
+			mMaxDensity = v;
+
 		++count;
 		sum += v;
 		sum2 += v * v;
@@ -131,7 +360,23 @@ void Map<FTYPE>::read(const fs::path& mapFile)
 template<typename FTYPE>
 void Map<FTYPE>::write(const fs::path& f)
 {
-	assert(false);
+	write_masked(f, mMap.grid_asu());
+}
+
+template<typename FTYPE>
+void Map<FTYPE>::write_masked(ostream& os, clipper::Grid_range r)
+{
+	writeCCP4MapFile(os, mMap, r);
+}
+
+template<typename FTYPE>
+void Map<FTYPE>::write_masked(const fs::path& f, clipper::Grid_range r)
+{
+	fs::ofstream file(f, ios_base::binary);
+	if (not file.is_open())
+		throw runtime_error("Could not open map file for writing: " + f.string());
+	
+	write_masked(file, r);
 }
 
 template class Map<float>;
