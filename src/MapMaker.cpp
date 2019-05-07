@@ -154,6 +154,7 @@ template<typename FTYPE>
 void writeCCP4MapFile(ostream& os, clipper::Xmap<FTYPE>& xmap, clipper::Grid_range range)
 {
 	static_assert(sizeof(CCP4MapFileHeader) == 256 * 4);
+	static_assert(__BYTE_ORDER == __LITTLE_ENDIAN);
 
 	auto& spacegroup = xmap.spacegroup();
 	int spaceGroupNumber = spacegroup.descr().spacegroup_number();
@@ -220,7 +221,7 @@ void writeCCP4MapFile(ostream& os, clipper::Xmap<FTYPE>& xmap, clipper::Grid_ran
 	os.write(reinterpret_cast<char*>(&h), sizeof(h));
 
 	const string kSpaces(80, ' ');
-	for (size_t si = 0; si < spacegroup.num_symops(); ++si)
+	for (int si = 0; si < spacegroup.num_symops(); ++si)
 	{
 		string symop = spacegroup.symop(si).format();
 		os.write(symop.c_str(), symop.length());
