@@ -2041,29 +2041,48 @@ void Row::assign(size_t column, const string& value, bool emplacing)
 	if (reinsert)
 		cat->mIndex->insert(mData);
 
-#pragma warning("doen!")
-//	// see if we need to update any child categories that depend on this value
-//	auto iv = col.mValidator;
-//	if (not emplacing and iv != nullptr and not iv->mChildren.empty())
-//	{
-//		for (auto child: iv->mChildren)
-//		{
-//			if (child->mCategory == nullptr)
-//				continue;
-//			
-//			auto childCat = db.get(child->mCategory->mName);
-//			if (childCat == nullptr)
-//				continue;
-//
-//#if DEBUG
-//cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
-//#endif
-//				
-//			auto rows = childCat->find(Key(child->mTag) == oldStrValue);
-//			for (auto& cr: rows)
-//				cr.assign(child->mTag, value, false);
-//		}
-//	}
+	// see if we need to update any child categories that depend on this value
+	auto iv = col.mValidator;
+	if (not emplacing and iv != nullptr)
+	{
+		auto& validator = cat->getValidator();
+		auto& db = cat->db();
+
+		for (auto linked: validator.getLinksForParent(cat->mName))
+		{
+			auto childCat = db.get(linked->mChildCategory);
+			if (childCat == nullptr)
+				continue;
+
+			if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
+				continue;
+
+			Condition cond;
+			string childTag;
+			
+			for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+			{
+				string pk = linked->mParentKeys[ix];
+				string ck = linked->mChildKeys[ix];
+
+				if (pk == iv->mTag)
+				{
+					childTag = ck;
+					cond = move(cond) && (Key(ck) == oldStrValue);
+				}
+				else
+				{
+					const char* value = (*this)[pk].c_str();
+					cond = move(cond) && (Key(ck) == value);
+				}
+				
+			}
+
+			auto rows = childCat->find(move(cond));
+			for (auto& cr: rows)
+				cr.assign(childTag, value, false);
+		}
+	}
 }
 
 void Row::swap(size_t cix, ItemRow* a, ItemRow* b)

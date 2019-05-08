@@ -1136,6 +1136,8 @@ class Category
 
 	const Validator& getValidator() const;
 	const ValidateCategory* getCatValidator() const		{ return mCatValidator; }
+
+	Datablock& db()										{ return mDb; }
 	
 	void setValidator(Validator* v);
 

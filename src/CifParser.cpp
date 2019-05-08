@@ -919,7 +919,7 @@ void DictParser::linkItems()
 	for (auto& kv: linkIndex)
 	{
 		ValidateLink link;
-		std::tie(link.mParentCategory, link.mChildCategory, std::ignore) = kv.first;
+		std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupId) = kv.first;
 		
 		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
 		

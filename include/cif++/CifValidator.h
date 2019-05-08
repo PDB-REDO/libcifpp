@@ -113,6 +113,7 @@ struct ValidateCategory
 
 struct ValidateLink
 {
+	int							mLinkGroupId;
 	std::string					mParentCategory;
 	std::vector<std::string>	mParentKeys;
 	std::string					mChildCategory;
