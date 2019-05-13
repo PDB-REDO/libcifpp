@@ -221,7 +221,7 @@ struct AtomImpl
 		if (not mRow["pdbx_formal_charge"].empty())
 		{
 			int charge = mRow["pdbx_formal_charge"].as<int>();
-			if (abs(charge > 1))
+			if (abs(charge) > 1)
 				element += to_string(charge);
 			if (charge < 0)
 				element += '-';

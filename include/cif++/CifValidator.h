@@ -5,9 +5,9 @@
 #include <boost/filesystem/path.hpp>
 
 //// the std regex of gcc is crashing....
-//#include <boost/regex.hpp>
+#include <boost/regex.hpp>
 
-#include <regex>
+// #include <regex>
 #include <set>
 
 namespace cif
@@ -40,7 +40,7 @@ struct ValidateType
 {
 	std::string				mName;
 	DDL_PrimitiveType		mPrimitiveType;
-	std::regex				mRx;
+	boost::regex			mRx;
 
 	bool operator<(const ValidateType& rhs) const
 	{

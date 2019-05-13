@@ -675,7 +675,7 @@ vector<tuple<string,string>> Compound::mapToIsomer(const Compound& c) const
 	if (not check)
 		throw runtime_error("Compounds " + id() + " and " + c.id() + " are not isomers in call to mapToIsomer");
 	
-	return move(result);
+	return result;
 }
 
 vector<string> Compound::isomers() const

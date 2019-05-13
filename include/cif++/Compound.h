@@ -312,7 +312,7 @@ class CompoundFactory
 	
 	static CompoundFactory* sInstance;
 
-	struct CompoundFactoryImpl* mImpl;
+	class CompoundFactoryImpl* mImpl;
 };
 
 }
