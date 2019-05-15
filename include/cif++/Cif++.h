@@ -237,11 +237,9 @@ class Datablock
 namespace detail
 {
 	// ItemReference is a helper class
-	struct ItemReference
+	class ItemReference
 	{
-		const char*		mName;
-		size_t			mColumn;
-		ItemRow*		mRow;
+	public:
 
 		template<typename T>
 		ItemReference& operator=(const T& value)
@@ -293,6 +291,20 @@ namespace detail
 		
 		bool operator!=(const string& s) const		{ return s != c_str(); }
 		bool operator==(const string& s) const		{ return s == c_str(); }
+
+	private:
+		friend class ::cif::Row;
+
+		ItemReference(const char* name, size_t column, Row& row)
+			: mName(name), mColumn(column), mRow(row) {}
+
+		ItemReference(const char* name, size_t column, const Row& row)
+			: mName(name), mColumn(column), mRow(const_cast<Row&>(row)), mConst(true) {}
+
+		const char*		mName;
+		size_t			mColumn;
+		Row&			mRow;
+		bool			mConst = false;
 	};
 
 	template<>
@@ -514,10 +526,28 @@ class Row
 	friend class RowComparator;
 	friend struct detail::ItemReference;
 
-	Row(ItemRow* data = nullptr) : mData(data) {}
+	Row(ItemRow* data = nullptr, bool cascadeUpdate = true)
+		: mData(data), mCascadeUpdate(cascadeUpdate) {}
+
+	Row(const ItemRow* data)
+		: Row(const_cast<ItemRow*>(data), false)
+	{}
+
 	Row(const Row& rhs);
 	Row& operator=(const Row& rhs);
+
+	/// When updating a value, you might want to change linked records as well
+	/// But not always.
+	void setCascadeUpdate(bool cascadeUpdate)
+	{
+		mCascadeUpdate = cascadeUpdate;
+	}
 	
+	void setCascadeDelet(bool cascadeDelete)
+	{
+		mCascadeDelete = cascadeDelete;
+	}
+
 	struct const_iterator : public std::iterator<std::forward_iterator_tag, const Item>
 	{
 		typedef std::iterator<std::forward_iterator_tag, Item>	baseType;
@@ -557,33 +587,35 @@ class Row
 
 // TODO: implement real const version?
 	
+	friend class detail::ItemReference;
+
 	const detail::ItemReference operator[](size_t column) const
 	{
-		return detail::ItemReference{"<anonymous column>", column, mData};
+		return detail::ItemReference("<anonymous column>", column, *this);
 	}
 
 	const detail::ItemReference operator[](const char* itemTag) const
 	{
 		size_t column = ColumnForItemTag(itemTag);
-		return detail::ItemReference{itemTag, column, mData};
+		return detail::ItemReference(itemTag, column, *this);
 	}
 
 	detail::ItemReference operator[](const char* itemTag)
 	{
 		size_t column = ColumnForItemTag(itemTag);
-		return detail::ItemReference{itemTag, column, mData};
+		return detail::ItemReference(itemTag, column, *this);
 	}
 
 	const detail::ItemReference operator[](const string& itemTag) const
 	{
 		size_t column = ColumnForItemTag(itemTag.c_str());
-		return detail::ItemReference{itemTag.c_str(), column, mData};
+		return detail::ItemReference(itemTag.c_str(), column, *this);
 	}
 
 	detail::ItemReference operator[](const string& itemTag)
 	{
 		size_t column = ColumnForItemTag(itemTag.c_str());
-		return detail::ItemReference{itemTag.c_str(), column, mData};
+		return detail::ItemReference(itemTag.c_str(), column, *this);
 	}
 
 	template<typename... C>
@@ -612,6 +644,8 @@ class Row
 	
   private:
 
+	friend std::ostream& operator<<(std::ostream& os, const Row& row);
+
 	void assign(const string& name, const string& value, bool emplacing);
 	void assign(size_t column, const string& value, bool emplacing);
 	void assign(const Item& i, bool emplacing);
@@ -622,9 +656,13 @@ class Row
 
 	ItemRow*	mData;
 	uint32		mLineNr = 0;
+	bool		mCascadeUpdate = true;
+	bool		mCascadeDelete = true;
 };
 
 // swap for Rows is defined below
+
+std::ostream& operator<<(std::ostream& os, const Row& row);
 
 // --------------------------------------------------------------------
 // some more templates to be able to do querying
@@ -651,7 +689,7 @@ struct AllConditionImpl : public ConditionImpl
 
 struct Condition
 {
-	Condition() : mImpl(new detail::AllConditionImpl()) {}
+	Condition() : mImpl(nullptr) {}
 	Condition(detail::ConditionImpl* impl) : mImpl(impl) {}
 
 	Condition(Condition&& rhs)
@@ -673,7 +711,8 @@ struct Condition
 	
 	void prepare(const Category& c)
 	{
-		mImpl->prepare(c);
+		if (mImpl)
+			mImpl->prepare(c);
 		mPrepared = true;
 	}
 	
@@ -681,12 +720,12 @@ struct Condition
 	{
 		assert(mImpl);
 		assert(mPrepared);
-		return mImpl->test(c, r);
+		return mImpl ? mImpl->test(c, r) : false;
 	}
 	
 	std::string str() const
 	{
-		return mImpl->str();
+		return mImpl ? mImpl->str() : "";
 	}
 
 	detail::ConditionImpl*	mImpl;
@@ -919,12 +958,20 @@ struct orConditionImpl : public ConditionImpl
 
 inline Condition operator&&(Condition&& a, Condition&& b)
 {
-	return Condition(new detail::andConditionImpl(std::move(a), std::move(b)));
+	if (a.mImpl and b.mImpl)
+		return Condition(new detail::andConditionImpl(std::move(a), std::move(b)));
+	if (a.mImpl)
+		return Condition(std::move(a));
+	return Condition(std::move(b));
 }
 
 inline Condition operator||(Condition&& a, Condition&& b)
 {
-	return Condition(new detail::orConditionImpl(std::move(a), std::move(b)));
+	if (a.mImpl and b.mImpl)
+		return Condition(new detail::orConditionImpl(std::move(a), std::move(b)));
+	if (a.mImpl)
+		return Condition(std::move(a));
+	return Condition(std::move(b));
 }
 
 inline
@@ -1073,8 +1120,6 @@ class Category
 
 	const string name() const						{ return mName; }
 	
-	const detail::ItemReference getFirstItem(const char* ItemName) const;
-
 	struct iterator : public std::iterator<std::forward_iterator_tag, Row>
 	{
 		friend class Category;
@@ -1100,6 +1145,32 @@ class Category
 	
 	iterator begin();
 	iterator end();
+
+	struct const_iterator : public std::iterator<std::forward_iterator_tag, const Row>
+	{
+		friend class Category;
+		
+		typedef std::iterator<std::forward_iterator_tag, const Row>	baseType;
+		typedef typename baseType::pointer							pointer;
+		typedef typename baseType::reference						reference;
+		
+		const_iterator(const ItemRow* data) : mCurrent(data) {}
+		
+		reference operator*()						{ return mCurrent; }
+		pointer operator->()						{ return &mCurrent; }
+		
+		const_iterator& operator++();
+		const_iterator operator++(int)				{ const_iterator result(*this); this->operator++(); return result; } 
+
+		bool operator==(const const_iterator& rhs) const	{ return mCurrent == rhs.mCurrent; } 
+		bool operator!=(const const_iterator& rhs) const	{ return not (mCurrent == rhs.mCurrent); } 
+		
+	  private:
+		const Row mCurrent;
+	};
+
+	const_iterator begin() const;
+	const_iterator end() const;
 
 	bool empty() const;
 	size_t size() const;
@@ -1132,6 +1203,12 @@ class Category
 	void erase(Row r);
 	void erase(iterator ri);
 
+	void eraseOrphans(Condition&& cond);
+
+	/// an orphan is a row that is the child side of one or more
+	/// links and for which there is no single parent left.
+	bool isOrphan(Row r);
+
 	bool isValid();
 
 	const Validator& getValidator() const;
@@ -1157,6 +1234,7 @@ class Category
 	vector<string> getColumnNames() const;
 
 	void reorderByIndex();
+	void sort(std::function<int(const Row&, const Row&)> comparator);
 
   private:
 

@@ -212,7 +212,10 @@ namespace detail
 template<>
 ItemReference& ItemReference::operator=(const string& value)
 {
-	Row(mRow).assign(mName, value, false);
+	if (mConst)
+		throw logic_error("Attempt to write to a constant row");
+
+	mRow.assign(mName, value, false);
 	return *this;
 }
 
@@ -220,11 +223,11 @@ const char* ItemReference::c_str() const
 {
 	const char* result = kEmptyResult;
 	
-	if (mRow != nullptr /* and mRow->mCategory != nullptr*/)
+	if (mRow.mData != nullptr /* and mRow.mData->mCategory != nullptr*/)
 	{
-//		assert(mRow->mCategory);
+//		assert(mRow.mData->mCategory);
 		
-		for (auto iv = mRow->mValues; iv != nullptr; iv = iv->mNext)
+		for (auto iv = mRow.mData->mValues; iv != nullptr; iv = iv->mNext)
 		{
 			if (iv->mColumnIndex == mColumn)
 			{
@@ -243,9 +246,9 @@ const char* ItemReference::c_str(const char* defaultValue) const
 {
 	const char* result = defaultValue;
 	
-	if (mRow != nullptr and mRow->mCategory != nullptr)
+	if (mRow.mData != nullptr and mRow.mData->mCategory != nullptr)
 	{
-		for (auto iv = mRow->mValues; iv != nullptr; iv = iv->mNext)
+		for (auto iv = mRow.mData->mValues; iv != nullptr; iv = iv->mNext)
 		{
 			if (iv->mColumnIndex == mColumn)
 			{
@@ -257,9 +260,9 @@ const char* ItemReference::c_str(const char* defaultValue) const
 			}
 		}
 
-		if (result == defaultValue and mColumn < mRow->mCategory->mColumns.size())	// not found, perhaps the category has a default defined?
+		if (result == defaultValue and mColumn < mRow.mData->mCategory->mColumns.size())	// not found, perhaps the category has a default defined?
 		{
-			auto iv = mRow->mCategory->mColumns[mColumn].mValidator;
+			auto iv = mRow.mData->mCategory->mColumns[mColumn].mValidator;
 			if (iv != nullptr and not iv->mDefault.empty())
 				result = iv->mDefault.c_str();
 		}
@@ -275,7 +278,7 @@ bool ItemReference::empty() const
 
 void ItemReference::swap(ItemReference& b)
 {
-	Row::swap(mColumn, mRow, b.mRow);
+	Row::swap(mColumn, mRow.mData, b.mRow.mData);
 }
 
 }
@@ -304,7 +307,12 @@ string Datablock::firstItem(const string& tag) const
 	{
 		if (iequals(cat.name(), catName))
 		{
-			result = cat.getFirstItem(itemName.c_str()).as<string>();
+			for (auto row: cat)
+			{
+				result = row[itemName].as<string>();
+				break;
+			}
+
 			break;
 		}
 	}
@@ -1227,6 +1235,35 @@ void Category::reorderByIndex()
 		std::tie(mHead, mTail) = mIndex->reorder();
 }
 
+void Category::sort(std::function<int(const Row&, const Row&)> comparator)
+{
+	if (mHead == nullptr)
+		return;
+
+	vector<ItemRow*> rows;
+	for (auto itemRow = mHead; itemRow != nullptr; itemRow = itemRow->mNext)
+		rows.push_back(itemRow);
+
+	std::stable_sort(rows.begin(), rows.end(),
+		[&rows,&comparator](ItemRow* ia, ItemRow* ib)
+		{
+			Row ra(ia);
+			Row rb(ib);
+			return comparator(ra, rb) < 0;
+		});
+
+	mHead = rows.front();
+	mTail = rows.back();
+
+	auto r = mHead;
+	for (size_t i = 1; i < rows.size(); ++i)
+		r = r->mNext = rows[i];
+	r->mNext = nullptr;
+
+	assert(r == mTail);
+	assert(size() == rows.size());
+}
+
 size_t Category::size() const
 {
 	size_t result = 0;
@@ -1433,6 +1470,29 @@ void Category::erase(Condition&& cond)
 		erase(r);
 }
 
+void Category::eraseOrphans(Condition&& cond)
+{
+	RowSet remove(*this);
+	
+	cond.prepare(*this);
+
+	for (auto r: *this)
+	{
+		if (cond(*this, r) and isOrphan(r))
+		{
+			if (VERBOSE > 1)
+				cerr << "Removing orphaned record: " << endl
+					 << r << endl
+					 << endl;
+
+			remove.push_back(r);
+		}
+	}
+
+	for (auto r: remove)
+		erase(r);
+}
+
 void Category::erase(iterator p)
 {
 	erase(*p);
@@ -1443,6 +1503,30 @@ void Category::erase(Row r)
 	iset keys;
 	if (mCatValidator)
 		keys = iset(mCatValidator->mKeys.begin(), mCatValidator->mKeys.end());
+
+	if (mHead == nullptr)
+		throw runtime_error("erase");
+
+	if (mIndex != nullptr)
+		mIndex->erase(r.mData);
+	
+	if (r == mHead)
+	{
+		mHead = mHead->mNext;
+		r.mData->mNext = nullptr;
+	}
+	else
+	{
+		for (auto pi = mHead; pi != nullptr; pi = pi->mNext)
+		{
+			if (pi->mNext == r.mData)
+			{
+				pi->mNext = r.mData->mNext;
+				r.mData->mNext = nullptr;
+				break;
+			}
+		}
+	}
 
 	// links are created based on the _pdbx_item_linked_group_list entries
 	// in mmcif_pdbx.dic dictionary.
@@ -1467,34 +1551,10 @@ void Category::erase(Row r)
 			cond = move(cond) && (Key(link->mChildKeys[ix]) == value);
 		}
 
-		childCat->erase(move(cond));
+		childCat->eraseOrphans(move(cond));
 	}
-	
-	if (mHead == nullptr)
-		throw runtime_error("erase");
 
-	if (mIndex != nullptr)
-		mIndex->erase(r.mData);
-	
-	if (r == mHead)
-	{
-		mHead = mHead->mNext;
-		r.mData->mNext = nullptr;
-		delete r.mData;
-	}
-	else
-	{
-		for (auto pi = mHead; pi != nullptr; pi = pi->mNext)
-		{
-			if (pi->mNext == r.mData)
-			{
-				pi->mNext = r.mData->mNext;
-				r.mData->mNext = nullptr;
-				delete r.mData;
-				break;
-			}
-		}
-	}
+	delete r.mData;
 
 	// reset mTail, if needed
 	if (r == mTail)
@@ -1512,12 +1572,6 @@ void Category::getTagOrder(vector<string>& tags) const
 		tags.push_back("_" + mName + "." + c.mName);
 }
 
-const detail::ItemReference Category::getFirstItem(const char* itemName) const
-{
-	size_t column = getColumnIndex(itemName);
-	return detail::ItemReference{itemName, column, mHead};
-}
-
 Category::iterator Category::begin()
 {
 	return iterator(mHead);
@@ -1526,6 +1580,46 @@ Category::iterator Category::begin()
 Category::iterator Category::end()
 {
 	return iterator(nullptr);
+}
+
+Category::const_iterator Category::begin() const
+{
+	return const_iterator(mHead);
+}
+
+Category::const_iterator Category::end() const
+{
+	return const_iterator(nullptr);
+}
+
+bool Category::isOrphan(Row r)
+{
+	// be safe
+	if (mCatValidator == nullptr)
+		return false;
+
+	bool isOrphan = true;
+	for (auto& link: mValidator->getLinksForChild(mName))
+	{
+		auto parentCat = mDb.get(link->mParentCategory);
+		if (parentCat == nullptr)
+			continue;
+		
+		Condition cond;
+		for (size_t ix = 0; ix < link->mChildKeys.size(); ++ix)
+		{
+			const char* value = r[link->mChildKeys[ix]].c_str();
+			cond = move(cond) && (Key(link->mParentKeys[ix]) == value);
+		}
+
+		if (parentCat->exists(std::move(cond)))
+		{
+			isOrphan = false;
+			break;
+		}
+	}
+
+	return isOrphan;
 }
 
 bool Category::isValid()
@@ -1931,12 +2025,14 @@ void Category::write(ostream& os, const vector<string>& columns)
 
 Row::Row(const Row& rhs)
 	: mData(rhs.mData)
+	, mCascadeUpdate(rhs.mCascadeUpdate)
 {
 }
 
 Row& Row::operator=(const Row& rhs)
 {
 	mData = rhs.mData;
+	mCascadeUpdate = rhs.mCascadeUpdate;
 	return *this;
 }
 
@@ -2043,7 +2139,7 @@ void Row::assign(size_t column, const string& value, bool emplacing)
 
 	// see if we need to update any child categories that depend on this value
 	auto iv = col.mValidator;
-	if (not emplacing and iv != nullptr)
+	if (not emplacing and iv != nullptr and mCascadeUpdate)
 	{
 		auto& validator = cat->getValidator();
 		auto& db = cat->db();
@@ -2282,6 +2378,19 @@ void Row::const_iterator::fetch()
 	mCurrent = Item(
 		mData->mCategory->getColumnName(mPtr->mColumnIndex),
 		mPtr->mText);
+}
+
+std::ostream& operator<<(std::ostream& os, const Row& row)
+{
+	auto category = row.mData->mCategory;
+	string catName = category->name();
+	for (auto item = row.mData->mValues; item != nullptr; item = item->mNext)
+	{
+		string tagName = category->getColumnName(item->mColumnIndex);
+		os << '_' << catName << '.' << tagName << ' ' << item->mText << endl;
+	}
+
+	return os;
 }
 
 // --------------------------------------------------------------------

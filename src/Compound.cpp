@@ -342,7 +342,7 @@ Compound::Compound(const fs::path& file, const std::string& id,
 			else if (iequals(type, "double") or iequals(type, "doub"))	b.type = doubleBond;
 			else if (iequals(type, "triple") or iequals(type, "trip"))	b.type = tripleBond;
 			else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
-												b.type = delocalizedBond;
+				b.type = delocalizedBond;
 			else
 			{
 				if (VERBOSE)

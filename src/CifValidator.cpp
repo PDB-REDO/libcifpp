@@ -308,13 +308,18 @@ vector<const ValidateLink*> Validator::getLinksForParent(const string& category)
 	return result;
 }
 
-//const ValidateLink* Validator::getLinksForChild(const string& category) const
-//{
-//	auto i = find_if(mLinkValidators.begin(), mLinkValidators.end(),
-//		[&](auto& l) { return l.mChildCategory == category; });
-//	
-//	return i == mLinkValidators.end() ? nullptr : &(*i);
-//}
+vector<const ValidateLink*> Validator::getLinksForChild(const string& category) const
+{
+	vector<const ValidateLink*> result;
+
+	for (auto& l: mLinkValidators)
+	{
+		if (l.mChildCategory == category)
+			result.push_back(&l);
+	}
+	
+	return result;
+}
 
 void Validator::reportError(const string& msg, bool fatal)
 {

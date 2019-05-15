@@ -349,7 +349,17 @@ struct AtomImpl
 		else
 			return i->second;
 	}
-	
+
+	int compare(const AtomImpl& b) const
+	{
+		int d = mAsymID.compare(b.mAsymID);
+		if (d == 0)
+			d = mSeqID - b.mSeqID;
+		if (d == 0)
+			d = mAtomID.compare(b.mAtomID);
+		return d;
+	}
+
 	const File&			mFile;
 	string				mId;
 	AtomType			mType;
@@ -584,6 +594,16 @@ void Atom::calculateRadius(float resHigh, float resLow, float perc)
 float Atom::radius() const
 {
 	return mImpl->mRadius;
+}
+
+int Atom::compare(const Atom& b) const
+{
+	return mImpl == b.mImpl ? 0 : mImpl->compare(*b.mImpl);
+}
+
+void Atom::setID(int id)
+{
+	mImpl->mId = to_string(id);
 }
 
 // --------------------------------------------------------------------
@@ -1321,6 +1341,20 @@ void Structure::updateAtomIndex()
 	sort(mAtomIndex.begin(), mAtomIndex.end(), [this](size_t a, size_t b) { return mAtoms[a].id() < mAtoms[b].id(); });
 }
 
+void Structure::sortAtoms()
+{
+	sort(mAtoms.begin(), mAtoms.end(), [](auto& a, auto& b) { return a.compare(b) < 0; });
+
+	int id = 1;
+	for (auto& atom: mAtoms)
+	{
+		atom.setID(id);
+		++id;
+	}
+
+	updateAtomIndex();
+}
+
 AtomView Structure::waters() const
 {
 	AtomView result;
@@ -1670,11 +1704,11 @@ void Structure::swapAtoms(Atom& a1, Atom& a2)
 	
 	auto l1 = r1.front()["label_atom_id"];
 	auto l2 = r2.front()["label_atom_id"];
-	std::swap(l1, l2);
+	l1.swap(l2);
 	
 	auto l3 = r1.front()["auth_atom_id"];
 	auto l4 = r2.front()["auth_atom_id"];
-	std::swap(l3, l4);
+	l3.swap(l4);
 }
 
 void Structure::moveAtom(Atom& a, Point p)

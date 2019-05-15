@@ -141,7 +141,12 @@ class Atom
 		std::swap(mImpl, b.mImpl);
 	}
 
+	int compare(const Atom& b) const;
+
   private:
+	friend class Structure;
+	void setID(int id);
+
  	struct AtomImpl*			mImpl;
 };
 
@@ -391,6 +396,10 @@ class Structure
 	void moveAtom(Atom& a, Point p);	// move atom to a new location
 	void changeResidue(const Residue& res, const std::string& newCompound,
 		const std::vector<std::tuple<std::string,std::string>>& remappedAtoms);
+
+	/// To sort the atoms in order of model > asym-id > res-id > atom-id
+	/// Will asssign new atom_id's to all atoms. Be carefull
+	void sortAtoms();
 	
 	// iterator for all residues
 	
