@@ -1245,7 +1245,7 @@ void Category::sort(std::function<int(const Row&, const Row&)> comparator)
 		rows.push_back(itemRow);
 
 	std::stable_sort(rows.begin(), rows.end(),
-		[&rows,&comparator](ItemRow* ia, ItemRow* ib)
+		[&comparator](ItemRow* ia, ItemRow* ib)
 		{
 			Row ra(ia);
 			Row rb(ib);

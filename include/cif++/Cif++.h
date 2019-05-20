@@ -345,177 +345,61 @@ namespace detail
 	ItemReference& ItemReference::operator=(const string& value);
 
 	// some helper classes to help create tuple result types
-	
-	template<typename...> struct tupleCatter;
-	
-	template<typename... Ts>
-	struct tupleCatter<std::tuple<Ts...>>
-	{
-		typedef std::tuple<Ts...> type;
-	};
-	
-	template<typename... T1s, typename... T2s, typename... Rem>
-	struct tupleCatter<std::tuple<T1s...>, std::tuple<T2s...>, Rem...>
-	{
-		typedef typename tupleCatter<std::tuple<T1s..., T2s...>, Rem...>::type type;
-	};
-	
-	template<typename...> struct colGetter;
-	
-	template<typename T>
-	struct colGetter<T>
-	{
-		typedef std::tuple<const ItemReference>	type;
-		
-		template<typename Res>
-		static type get(Res& rs)
-		{
-			size_t index = Res::N - 1;
-			return std::tuple<const ItemReference>{ rs[index] };
-		}
-	};
-	
-	template<typename T, typename... Ts>
-	struct colGetter<T, Ts...>
-	{
-		typedef colGetter<Ts...> next;
-		typedef typename tupleCatter<std::tuple<const ItemReference>, typename next::type>::type type;
-		
-		template<typename Res>
-		static type get(Res& rs)
-		{
-			typedef colGetter<Ts...> next;
-			size_t index = Res::N - 1 - sizeof...(Ts);
-			return std::tuple_cat(std::tuple<const ItemReference>{ rs[index]}, next::get(rs));
-		}
-	};
-
 	template<typename... C>
 	struct getRowResult
 	{
-		enum { N = sizeof...(C) };
-		typedef typename colGetter<C...>::type tupleType;
-	
-//		const ItemReference operator[](const string& col) const
-//		{
-//			return mRow[col];
-//		}
-		
-		const ItemReference operator[](size_t ix) const
-		{
-			return mRow[mColumns[ix]];
-		}
+		static constexpr size_t N = sizeof...(C);
 		
 		getRowResult(const Row& r, std::array<size_t, N>&& columns)
 			: mRow(r), mColumns(std::move(columns))
 		{
 		}
 	
-		template<typename... Ts>
-		operator std::tuple<Ts...>() const;
+		const ItemReference operator[](size_t ix) const
+		{
+			return mRow[mColumns[ix]];
+		}
+		
+		template<typename... Ts, std::enable_if_t<N == sizeof...(Ts), int> = 0>
+		operator std::tuple<Ts...>() const
+		{
+			return get<Ts...>(std::index_sequence_for<Ts...>{});
+		}
 	
+		template<typename... Ts, std::size_t... Is>
+		std::tuple<Ts...> get(std::index_sequence<Is...>) const
+		{
+			return std::tuple<Ts...>{mRow[mColumns[Is]].template as<Ts>()...};
+		}
+
 		const Row& mRow;
 		std::array<size_t, N> mColumns;
 	};
 	
 	// we want to be able to tie some variables to a RowResult, for this we use tiewraps
-
-	template<int IX, typename... Ts>
-	struct tieWrap;
-	
-	template<int IX, typename T>
-	struct tieWrap<IX,T>
-	{
-		tieWrap(T& t)
-			: mVal(t) {}
-	
-		template<typename Res>
-		void operator=(const Res& rr)
-		{
-			typedef typename std::remove_reference<T>::type basicType;
-
-			const ItemReference v = rr[IX];
-			basicType tv = v.as<basicType>();
-			mVal = tv;
-		}
-		
-		T& 		mVal;
-	};
-	
-	template<int IX, typename T, typename... Ts>
-	struct tieWrap<IX, T, Ts...>
-	{
-		typedef tieWrap<IX + 1, Ts...> next;
-	
-		tieWrap(T& t, Ts&... ts)
-			: mVal(t), mNext(ts...) {}
-	
-		template<typename Res>
-		void operator=(const Res& rr)
-		{
-			typedef typename std::remove_reference<T>::type basicType;
-			
-			const ItemReference v = rr[IX];
-			basicType tv = v.as<basicType>();
-			mVal = tv;
-
-			mNext.operator=(rr);
-		}
-		
-		T& 		mVal;
-		next	mNext;
-	};
-	
-	// And to convert a getRowResult to a std::tuple
-	template<int IX, typename... Ts>
-	struct toTuple;
-	
-	template<int IX, typename T>
-	struct toTuple<IX,T>
-	{
-		template<typename RR>
-		std::tuple<T> operator()(RR& rr)
-		{
-			typedef typename std::remove_reference<T>::type basicType;
-
-			const ItemReference v = rr[IX];
-			std::tuple<T> tv = std::make_tuple(v.as<basicType>());
-			return tv;
-		};
-	};
-	
-	template<int IX, typename T, typename... Ts>
-	struct toTuple<IX,T,Ts...>
-	{
-		typedef toTuple<IX + 1, Ts...> next;
-	
-		template<typename RR>
-		std::tuple<T,Ts...> operator()(RR& rr)
-		{
-			typedef typename std::remove_reference<T>::type basicType;
-
-			const ItemReference v = rr[IX];
-			std::tuple<T> tv = std::make_tuple(v.as<basicType>());
-			
-			next n;
-			return std::tuple_cat(tv, n(rr));
-		};
-	};
-	
-	template<typename... C>
 	template<typename... Ts>
-	getRowResult<C...>::operator std::tuple<Ts...>() const
+	struct tieWrap
 	{
-		typedef toTuple<0, Ts...> ToTuple;
-		ToTuple tt;
-		return tt(*this);
-	}
+		tieWrap(Ts... args) : mVal(args...) {}
+
+		template<typename RR>
+		void operator=(const RR&& rr)
+		{
+			// getRowResult will do the conversion, but only if the types
+			// are compatible. That means the number of parameters to the get()
+			// of the row should be equal to the number of items in the tuple
+			// you are trying to tie.
+			mVal = rr;
+		}
+
+		std::tuple<Ts...>	mVal;
+	};
 }
 
 template<typename... Ts>
-auto tie(Ts&... v) -> detail::tieWrap<0, Ts...>
+auto tie(Ts&... v) -> detail::tieWrap<Ts...>
 {
-	return detail::tieWrap<0, Ts...>(v...);
+	return detail::tieWrap<Ts...>(v...);
 }
 
 class Row
@@ -524,7 +408,7 @@ class Row
 	friend class Category;
 	friend class CatIndex;
 	friend class RowComparator;
-	friend struct detail::ItemReference;
+	friend class detail::ItemReference;
 
 	Row(ItemRow* data = nullptr, bool cascadeUpdate = true)
 		: mData(data), mCascadeUpdate(cascadeUpdate) {}
@@ -543,7 +427,7 @@ class Row
 		mCascadeUpdate = cascadeUpdate;
 	}
 	
-	void setCascadeDelet(bool cascadeDelete)
+	void setCascadeDelete(bool cascadeDelete)
 	{
 		mCascadeDelete = cascadeDelete;
 	}
@@ -641,10 +525,10 @@ class Row
 	{
 		std::swap(mData, rhs.mData);
 	}
-	
-  private:
 
 	friend std::ostream& operator<<(std::ostream& os, const Row& row);
+
+  private:
 
 	void assign(const string& name, const string& value, bool emplacing);
 	void assign(size_t column, const string& value, bool emplacing);
@@ -659,10 +543,6 @@ class Row
 	bool		mCascadeUpdate = true;
 	bool		mCascadeDelete = true;
 };
-
-// swap for Rows is defined below
-
-std::ostream& operator<<(std::ostream& os, const Row& row);
 
 // --------------------------------------------------------------------
 // some more templates to be able to do querying
@@ -1111,7 +991,7 @@ class Category
   public:
 	friend class Datablock;
 	friend class Row;
-	friend struct detail::ItemReference;
+	friend class detail::ItemReference;
 
 	Category(Datablock& db, const string& name, Validator* Validator);
 	Category(const Category&) = delete;

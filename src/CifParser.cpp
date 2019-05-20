@@ -1018,10 +1018,8 @@ bool DictParser::collectItemTypes()
 	
 	for (auto& t: dict["item_type_list"])
 	{
-		auto ts = t.get("code", "primitive_code", "construct");
-
 		string code, primitiveCode, construct;
-		cif::tie(code, primitiveCode, construct) = ts;
+		cif::tie(code, primitiveCode, construct) = t.get("code", "primitive_code", "construct");
 		
 		ba::replace_all(construct, "\\n", "\n");
 		ba::replace_all(construct, "\\t", "\t");

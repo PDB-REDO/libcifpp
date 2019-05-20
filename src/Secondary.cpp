@@ -141,15 +141,15 @@ enum HelixFlag
 // --------------------------------------------------------------------
 
 const double
-	kSSBridgeDistance = 3.0,
+	// kSSBridgeDistance = 3.0,
 	kMinimalDistance = 0.5,
 	kMinimalCADistance = 9.0,
 	kMinHBondEnergy = -9.9,
 	kMaxHBondEnergy = -0.5,
-	kCouplingConstant = -27.888,	//	= -332 * 0.42 * 0.2
-	kMaxPeptideBondLength = 2.5;
+	kCouplingConstant = -27.888;	//	= -332 * 0.42 * 0.2
+	// kMaxPeptideBondLength = 2.5;
 
-const uint32 kHistogramSize = 30;
+// const uint32 kHistogramSize = 30;
 
 struct Res
 {

@@ -153,8 +153,8 @@ tuple<float,float,float,float> CalculateMapStatistics(const clipper::Xmap<FTYPE>
 template<typename FTYPE>
 void writeCCP4MapFile(ostream& os, clipper::Xmap<FTYPE>& xmap, clipper::Grid_range range)
 {
-	static_assert(sizeof(CCP4MapFileHeader) == 256 * 4);
-	static_assert(__BYTE_ORDER == __LITTLE_ENDIAN);
+	static_assert(sizeof(CCP4MapFileHeader) == 256 * 4, "Map header is of incorrect size");
+	static_assert(__BYTE_ORDER == __LITTLE_ENDIAN, "Code for big endian systems is not implemented yet");
 
 	auto& spacegroup = xmap.spacegroup();
 	int spaceGroupNumber = spacegroup.descr().spacegroup_number();
