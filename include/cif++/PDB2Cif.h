@@ -7,12 +7,12 @@
 struct PDBRecord
 {
 	PDBRecord*	mNext;
-	uint32		mLineNr;
+	uint32_t		mLineNr;
 	char		mName[11];
 	size_t		mVlen;
 	char		mValue[0];
 
-	PDBRecord(uint32 lineNr, const std::string& name, const std::string& value);
+	PDBRecord(uint32_t lineNr, const std::string& name, const std::string& value);
 	~PDBRecord();
 	
 	void* operator new(size_t);

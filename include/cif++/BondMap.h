@@ -24,8 +24,8 @@ class BondMap
 
 	bool is1_4(const Atom& a, const Atom& b) const
 	{
-		uint32 ixa = index.at(a.id());
-		uint32 ixb = index.at(b.id());
+		uint32_t ixa = index.at(a.id());
+		uint32_t ixb = index.at(b.id());
 	
 		return bond_1_4.count(key(ixa, ixb));
 	}
@@ -35,29 +35,29 @@ class BondMap
 	
   private:
 
-	bool isBonded(uint32 ai, uint32 bi) const
+	bool isBonded(uint32_t ai, uint32_t bi) const
 	{
 		return bond.count(key(ai, bi)) != 0;
 	}
 
-	uint64 key(uint32 a, uint32 b) const
+	uint64_t key(uint32_t a, uint32_t b) const
 	{
 		if (a > b)
 			std::swap(a, b);
-		return static_cast<uint64>(a) | (static_cast<uint64>(b) << 32);
+		return static_cast<uint64_t>(a) | (static_cast<uint64_t>(b) << 32);
 	}
 	
-	std::tuple<uint32,uint32> dekey(uint64 k) const
+	std::tuple<uint32_t,uint32_t> dekey(uint64_t k) const
 	{
 		return std::make_tuple(
-			static_cast<uint32>(k >> 32),
-			static_cast<uint32>(k)
+			static_cast<uint32_t>(k >> 32),
+			static_cast<uint32_t>(k)
 		);
 	}
 	
-	uint32 dim;
-	std::unordered_map<std::string,uint32> index;
-	std::set<uint64> bond, bond_1_4;
+	uint32_t dim;
+	std::unordered_map<std::string,uint32_t> index;
+	std::set<uint64_t> bond, bond_1_4;
 
 	std::map<std::string,std::set<std::string>> link;
 };

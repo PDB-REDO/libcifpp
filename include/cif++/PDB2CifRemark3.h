@@ -19,7 +19,7 @@ class Remark3Parser
   protected:
 
 	Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db,
-			const TemplateLine templatelines[], uint32 templateLineCount, std::regex programVersion);
+			const TemplateLine templatelines[], uint32_t templateLineCount, std::regex programVersion);
 
 	virtual float parse();
 	std::string nextLine();
@@ -37,10 +37,10 @@ class Remark3Parser
 	cif::Datablock	mDb;
 	std::string		mLine;
 	std::smatch		mM;
-	uint32			mState;
+	uint32_t			mState;
 
 	const TemplateLine*	mTemplate;
-	uint32				mTemplateCount;
+	uint32_t				mTemplateCount;
 	std::regex			mProgramVersion;
 };
 

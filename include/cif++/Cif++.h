@@ -462,8 +462,8 @@ class Row
 	operator bool() const									{ return mData != nullptr; }
 	
 	// for debugging
-	uint32 lineNr() const;
-	void lineNr(uint32 l);
+	uint32_t lineNr() const;
+	void lineNr(uint32_t l);
 	
 	bool empty() const;
 	const_iterator begin() const;
@@ -539,7 +539,7 @@ class Row
 	size_t ColumnForItemTag(const char* itemTag) const;
 
 	ItemRow*	mData;
-	uint32		mLineNr = 0;
+	uint32_t		mLineNr = 0;
 	bool		mCascadeUpdate = true;
 	bool		mCascadeDelete = true;
 };

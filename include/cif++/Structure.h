@@ -246,8 +246,8 @@ class Monomer : public Residue
 	Monomer(Monomer&& rhs);
 	Monomer& operator=(Monomer&& rhs);
 
-//	Monomer(const Polymer& polymer, uint32 index);
-	Monomer(const Polymer& polymer, uint32 index, int seqID,
+//	Monomer(const Polymer& polymer, uint32_t index);
+	Monomer(const Polymer& polymer, uint32_t index, int seqID,
 		const std::string& compoundID);
 
 	// Assuming this is really an amino acid...
@@ -275,7 +275,7 @@ class Monomer : public Residue
 	
   private:
 	const Polymer*	mPolymer;
-	uint32			mIndex;
+	uint32_t			mIndex;
 };
 
 // --------------------------------------------------------------------
@@ -345,7 +345,7 @@ class File : public std::enable_shared_from_this<File>
 class Structure
 {
   public:
-	Structure(File& p, uint32 modelNr = 1);
+	Structure(File& p, uint32_t modelNr = 1);
 	Structure& operator=(const Structure&) = delete;
 	~Structure();
 
@@ -470,7 +470,7 @@ class Structure
 	void updateAtomIndex();
 	
 	File&					mFile;
-	uint32					mModelNr;
+	uint32_t					mModelNr;
 	AtomView				mAtoms;
 	std::vector<size_t>		mAtomIndex;
 	std::list<Polymer>		mPolymers;

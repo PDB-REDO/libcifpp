@@ -915,7 +915,7 @@ class XPLOR_Remark3Parser : public Remark3Parser
 // --------------------------------------------------------------------
 
 Remark3Parser::Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db,
-			const TemplateLine templatelines[], uint32 templateLineCount, std::regex programversion)
+			const TemplateLine templatelines[], uint32_t templateLineCount, std::regex programversion)
 	: mName(name), mExpMethod(expMethod), mRec(r), mDb(db.getName())
 	, mTemplate(templatelines), mTemplateCount(templateLineCount), mProgramVersion(programversion)
 {

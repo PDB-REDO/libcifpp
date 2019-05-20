@@ -31,7 +31,7 @@ namespace cif
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
 
-const uint8 kCharToLowerMap[256] =
+const uint8_t kCharToLowerMap[256] =
 {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 
 	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 
@@ -254,7 +254,7 @@ string::const_iterator nextLineBreak(string::const_iterator text, string::const_
 /* JT */ { 	DBK, 	PBK, 	PBK, 	IBK, 	IBK, 	IBK, 	PBK, 	PBK, 	PBK, 	DBK, 	IBK, 	DBK, 	DBK, 	DBK, 	IBK, 	IBK, 	IBK, 	DBK, 	DBK, 	PBK, 	CIB, 	PBK, 	DBK, 	DBK, 	DBK, 	DBK, 	IBK },
 		};
 
-	uint8 ch = static_cast<uint8>(*text);
+	uint8_t ch = static_cast<uint8_t>(*text);
 
 	LineBreakClass cls;
 	
@@ -387,12 +387,12 @@ vector<string> wordWrap(const string& text, unsigned int width)
 // --------------------------------------------------------------------
 
 #ifdef _MSC_VER
-uint32 get_terminal_width()
+uint32_t get_terminal_width()
 {
 	return TERM_WIDTH;
 }
 #else
-uint32 get_terminal_width()
+uint32_t get_terminal_width()
 {
 	struct winsize w;
 	ioctl(0, TIOCGWINSZ, &w);
@@ -404,7 +404,7 @@ uint32 get_terminal_width()
 
 struct ProgressImpl
 {
-					ProgressImpl(int64 inMax, const string& inAction)
+					ProgressImpl(int64_t inMax, const string& inAction)
 						: mMax(inMax), mConsumed(0), mAction(inAction), mMessage(inAction)
 						, mThread(boost::bind(&ProgressImpl::Run, this)) {}
 
@@ -413,9 +413,9 @@ struct ProgressImpl
 	void			PrintProgress();
 	void			PrintDone();
 
-	int64			mMax;
-	atomic<int64>	mConsumed;
-	int64			mLastConsumed = 0;
+	int64_t			mMax;
+	atomic<int64_t>	mConsumed;
+	int64_t			mLastConsumed = 0;
 	int				mSpinnerIndex = 0;
 	string			mAction, mMessage;
 	boost::mutex	mMutex;
@@ -477,7 +477,7 @@ void ProgressImpl::PrintProgress()
 		"=",			// 8
 	};
 
-	uint32 width = get_terminal_width();
+	uint32_t width = get_terminal_width();
 	
 	string msg;
 	msg.reserve(width + 1);
@@ -492,7 +492,7 @@ void ProgressImpl::PrintProgress()
 	
 	msg += " |";
 	
-	int64 consumed = mConsumed;
+	int64_t consumed = mConsumed;
 	float progress = static_cast<float>(consumed) / mMax;
 	int pi = static_cast<int>(ceil(progress * 33 * 8));
 //	int tw = width - 28;
@@ -542,7 +542,7 @@ void ProgressImpl::PrintDone()
 {
 	string msg = mAction + " done in " + mTimer.format(0, "%ts cpu / %ws wall");
 
-	uint32 width = get_terminal_width();
+	uint32_t width = get_terminal_width();
 
 	if (msg.length() < width)
 		msg += string(width - msg.length(), ' ');
@@ -550,7 +550,7 @@ void ProgressImpl::PrintDone()
 	cout << '\r' << msg << endl;
 }
 
-Progress::Progress(int64 inMax, const string& inAction)
+Progress::Progress(int64_t inMax, const string& inAction)
 	: mImpl(nullptr)
 {
 	if (isatty(STDOUT_FILENO))
@@ -568,7 +568,7 @@ Progress::~Progress()
 	delete mImpl;
 }
 	
-void Progress::consumed(int64 inConsumed)
+void Progress::consumed(int64_t inConsumed)
 {
 	if (mImpl != nullptr and 
 		(mImpl->mConsumed += inConsumed) >= mImpl->mMax and
@@ -579,7 +579,7 @@ void Progress::consumed(int64 inConsumed)
 	}
 }
 
-void Progress::progress(int64 inProgress)
+void Progress::progress(int64_t inProgress)
 {
 	if (mImpl != nullptr and 
 		(mImpl->mConsumed = inProgress) >= mImpl->mMax and

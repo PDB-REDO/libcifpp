@@ -162,7 +162,7 @@ class Validator
 	std::string					mName;
 	std::string					mVersion;
 	bool						mStrict = false;
-//	std::set<uint32>			mSubCategories;
+//	std::set<uint32_t>			mSubCategories;
 	std::set<ValidateType>		mTypeValidators;
 	std::set<ValidateCategory>	mCategoryValidators;
 	std::vector<ValidateLink>	mLinkValidators;

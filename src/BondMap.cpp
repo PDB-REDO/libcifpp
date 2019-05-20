@@ -29,8 +29,8 @@ BondMap::BondMap(const Structure& p)
 	
 	auto bindAtoms = [this](const string& a, const string& b)
 	{
-		uint32 ixa = index[a];
-		uint32 ixb = index[b];
+		uint32_t ixa = index[a];
+		uint32_t ixb = index[b];
 		
 		bond.insert(key(ixa, ixb));
 	};
@@ -174,9 +174,9 @@ BondMap::BondMap(const Structure& p)
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
 				[&](auto& a) { return a.labelAsymId() == asymId and a.labelSeqId() == seqId; });
 			
-			for (uint32 i = 0; i + 1 < rAtoms.size(); ++i)
+			for (uint32_t i = 0; i + 1 < rAtoms.size(); ++i)
 			{
-				for (uint32 j = i + 1; j < rAtoms.size(); ++j)
+				for (uint32_t j = i + 1; j < rAtoms.size(); ++j)
 				{
 					if (compound->atomsBonded(rAtoms[i].labelAtomId(), rAtoms[j].labelAtomId()))
 						bindAtoms(rAtoms[i].id(), rAtoms[j].id());
@@ -196,14 +196,14 @@ BondMap::BondMap(const Structure& p)
 //			for (auto a: db["atom_site"].find(cif::Key("label_asym_id") == asymId))
 //				rAtoms.push_back(p.getAtomById(a["id"].as<string>()));
 			
-			for (uint32 i = 0; i + 1 < rAtoms.size(); ++i)
+			for (uint32_t i = 0; i + 1 < rAtoms.size(); ++i)
 			{
-				for (uint32 j = i + 1; j < rAtoms.size(); ++j)
+				for (uint32_t j = i + 1; j < rAtoms.size(); ++j)
 				{
 					if (compound->atomsBonded(rAtoms[i].labelAtomId(), rAtoms[j].labelAtomId()))
 					{
-						uint32 ixa = index[rAtoms[i].id()];
-						uint32 ixb = index[rAtoms[j].id()];
+						uint32_t ixa = index[rAtoms[i].id()];
+						uint32_t ixb = index[rAtoms[j].id()];
 						
 						bond.insert(key(ixa, ixb));
 					}
@@ -217,10 +217,10 @@ BondMap::BondMap(const Structure& p)
 
 //cout << "Maken van b1_2 voor " << bond.size() << " bindingen" << endl;
 	
-	multimap<uint32,uint32> b1_2;
+	multimap<uint32_t,uint32_t> b1_2;
 	for (auto& bk: bond)
 	{
-		uint32 a, b;
+		uint32_t a, b;
 		tie(a, b) = dekey(bk);
 		
 		b1_2.insert({ a, b });
@@ -229,12 +229,12 @@ BondMap::BondMap(const Structure& p)
 	
 //cout << "Afmeting b1_2: " << b1_2.size() << endl;
 
-	multimap<uint32,uint32> b1_3;
-	for (uint32 i = 0; i < dim; ++i)
+	multimap<uint32_t,uint32_t> b1_3;
+	for (uint32_t i = 0; i < dim; ++i)
 	{
 		auto a = b1_2.equal_range(i);
 		
-		vector<uint32> s;
+		vector<uint32_t> s;
 		for (auto j = a.first; j != a.second; ++j)
 			s.push_back(j->second);
 
@@ -242,8 +242,8 @@ BondMap::BondMap(const Structure& p)
 		{
 			for (size_t si2 = si1 + 1; si2 < s.size(); ++si2)
 			{
-				uint32 x = s[si1];
-				uint32 y = s[si2];
+				uint32_t x = s[si1];
+				uint32_t y = s[si2];
 				
 				if (isBonded(x, y))
 					continue;
@@ -256,7 +256,7 @@ BondMap::BondMap(const Structure& p)
 
 //cout << "Afmeting b1_3: " << b1_3.size() << endl;
 
-	for (uint32 i = 0; i < dim; ++i)
+	for (uint32_t i = 0; i < dim; ++i)
 	{
 		auto a1 = b1_2.equal_range(i);
 		auto a2 = b1_3.equal_range(i);
@@ -265,8 +265,8 @@ BondMap::BondMap(const Structure& p)
 		{
 			for (auto ai2 = a2.first; ai2 != a2.second; ++ai2)
 			{
-				uint32 b1 = ai1->second;
-				uint32 b2 = ai2->second;
+				uint32_t b1 = ai1->second;
+				uint32_t b2 = ai2->second;
 				
 				if (isBonded(b1, b2))
 					continue;

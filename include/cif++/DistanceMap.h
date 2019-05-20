@@ -32,9 +32,9 @@ class DistanceMap
 
   private:
 
-	typedef std::map<std::tuple<size_t,size_t>,std::tuple<float,int32>> DistMap;
+	typedef std::map<std::tuple<size_t,size_t>,std::tuple<float,int32_t>> DistMap;
 
-	void AddDistancesForAtoms(const Residue& a, const Residue& b, DistMap& dm, int32 rtix);
+	void AddDistancesForAtoms(const Residue& a, const Residue& b, DistMap& dm, int32_t rtix);
 
 	const Structure&						structure;
 	size_t									dim;
@@ -43,7 +43,7 @@ class DistanceMap
 	
 	float									mMaxDistance, mMaxDistanceSQ;
 	
-	std::vector<std::tuple<float,int32>>	mA;
+	std::vector<std::tuple<float,int32_t>>	mA;
 	std::vector<size_t>						mIA, mJA;
 	Point									mD;			// needed to move atoms to center
 	std::vector<clipper::RTop_orth>			mRtOrth;

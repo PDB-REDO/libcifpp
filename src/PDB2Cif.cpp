@@ -122,7 +122,7 @@ bool isWater(const string& resname)
 //	data. Therefore we first obtain all records where a record has the
 //	value flattened out for continuation.
 
-PDBRecord::PDBRecord(uint32 lineNr, const string& name, const string& value)
+PDBRecord::PDBRecord(uint32_t lineNr, const string& name, const string& value)
 	: mNext(nullptr), mLineNr(lineNr), mVlen(value.length())
 {
 	assert(name.length() <= 10);
@@ -949,7 +949,7 @@ void PDBFileParser::MapChainID2AsymIDS(char chainID, vector<string>& asymIds)
 void PDBFileParser::PreParseInput(istream& is)
 {
 	string lookahead;
-	uint32 lineNr = 1;
+	uint32_t lineNr = 1;
 	getline(is, lookahead);
 
 //	if (ba::starts_with(lookahead, "HEADER") == false)
@@ -995,7 +995,7 @@ void PDBFileParser::PreParseInput(istream& is)
 		if (lookahead.length() > 6)
 			value = ba::trim_right_copy(lookahead.substr(6));
 
-		uint32 curLineNr = lineNr;
+		uint32_t curLineNr = lineNr;
 		getline(is, lookahead);
 		++lineNr;
 		
@@ -3612,7 +3612,7 @@ void PDBFileParser::ConstructEntities()
 	}
 	
 	// We have now created all compounds, write them out
-	uint32 structRefId = 0, structRefSeqAlignId = 0;
+	uint32_t structRefId = 0, structRefSeqAlignId = 0;
 	
 	for (auto& cmp: mCompounds)
 	{
@@ -5249,7 +5249,7 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 		ParseCrystallographic();
 		ParseCoordinateTransformation();
 	
-		uint32 modelNr = 1;
+		uint32_t modelNr = 1;
 		bool hasAtoms = false;
 	
 		while (mRec->is("MODEL ") or mRec->is("ATOM  ") or mRec->is("HETATM"))
@@ -5371,7 +5371,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 		throw runtime_error(string("Number of residues in ATOM records for chain ") + mDbref.chainID + " is zero");
 
 	matrix<float> B(dimX, dimY), Ix(dimX, dimY), Iy(dimX, dimY);
-	matrix<int8> tb(dimX, dimY);
+	matrix<int8_t> tb(dimX, dimY);
 	
 	int x, y;
 	

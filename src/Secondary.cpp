@@ -118,9 +118,9 @@ enum BridgeType
 struct Bridge
 {
 	BridgeType		type;
-	uint32			sheet, ladder;
+	uint32_t			sheet, ladder;
 	set<Bridge*>	link;
-	deque<uint32>	i, j;
+	deque<uint32_t>	i, j;
 	string			chainI, chainJ;
 	
 	bool			operator<(const Bridge& b) const		{ return chainI < b.chainI or (chainI == b.chainI and i.front() < b.i.front()); }
@@ -129,7 +129,7 @@ struct Bridge
 struct BridgeParner
 {
 	Res*		residue;
-	uint32		ladder;
+	uint32_t		ladder;
 	bool		parallel;
 };
 
@@ -149,7 +149,7 @@ const double
 	kCouplingConstant = -27.888;	//	= -332 * 0.42 * 0.2
 	// kMaxPeptideBondLength = 2.5;
 
-// const uint32 kHistogramSize = 30;
+// const uint32_t kHistogramSize = 30;
 
 struct Res
 {
@@ -188,7 +188,7 @@ struct Res
 	void SetSecondaryStructure(SecondaryStructureType inSS)	{ mSecondaryStructure = inSS; }
 	SecondaryStructureType GetSecondaryStructure() const	{ return mSecondaryStructure; }
 	
-	void SetBetaPartner(uint32 n, Res& inResidue, uint32 inLadder, bool inParallel)
+	void SetBetaPartner(uint32_t n, Res& inResidue, uint32_t inLadder, bool inParallel)
 	{
 		assert(n == 0 or n == 1);
 		
@@ -197,44 +197,44 @@ struct Res
 		mBetaPartner[n].parallel = inParallel;
 	}
 	
-	BridgeParner GetBetaPartner(uint32 n) const
+	BridgeParner GetBetaPartner(uint32_t n) const
 	{
 		assert(n == 0 or n == 1);
 		return mBetaPartner[n];
 	}
 						
-	void SetSheet(uint32 inSheet)						{ mSheet = inSheet; }
-	uint32 GetSheet() const								{ return mSheet; }
+	void SetSheet(uint32_t inSheet)						{ mSheet = inSheet; }
+	uint32_t GetSheet() const								{ return mSheet; }
 	
 	bool IsBend() const									{ return mBend; }
 	void SetBend(bool inBend)							{ mBend = inBend; }
 	
-	HelixFlag GetHelixFlag(uint32 inHelixStride) const
+	HelixFlag GetHelixFlag(uint32_t inHelixStride) const
 	{
 		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
 		return mHelixFlags[inHelixStride - 3];
 	}
 
-	bool IsHelixStart(uint32 inHelixStride) const
+	bool IsHelixStart(uint32_t inHelixStride) const
 	{
 		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
 		return mHelixFlags[inHelixStride - 3] == helixStart or mHelixFlags[inHelixStride - 3] == helixStartAndEnd;
 	}
 
-	void SetHelixFlag(uint32 inHelixStride, HelixFlag inHelixFlag)
+	void SetHelixFlag(uint32_t inHelixStride, HelixFlag inHelixFlag)
 	{
 		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
 		mHelixFlags[inHelixStride - 3] = inHelixFlag;
 	}
 
-	void SetSSBridgeNr(uint8 inBridgeNr)
+	void SetSSBridgeNr(uint8_t inBridgeNr)
 	{
 		if (mType != kCysteine)
 			throw runtime_error("Only cysteine residues can form sulphur bridges");
 		mSSBridgeNr = inBridgeNr;
 	}
 	
-	uint8 GetSSBridgeNr() const
+	uint8_t GetSSBridgeNr() const
 	{
 		if (mType != kCysteine)
 			throw runtime_error("Only cysteine residues can form sulphur bridges");
@@ -248,11 +248,11 @@ struct Res
 	Point mCAlpha, mC, mN, mO, mH;
 	
 	ResidueType mType;
-	uint8 mSSBridgeNr = 0;
+	uint8_t mSSBridgeNr = 0;
 	SecondaryStructureType mSecondaryStructure = ssLoop;
 	HBond mHBondDonor[2] = {}, mHBondAcceptor[2] = {};
 	BridgeParner mBetaPartner[2] = {};
-	uint32 mSheet = 0;
+	uint32_t mSheet = 0;
 	HelixFlag mHelixFlags[3] = { helixNone, helixNone, helixNone };	//
 	bool mBend = false;
 };
@@ -318,11 +318,11 @@ double CalculateHBondEnergy(Res& inDonor, Res& inAcceptor)
 void CalculateHBondEnergies(vector<Res>& inResidues)
 {
 	// Calculate the HBond energies
-	for (uint32 i = 0; i + 1 < inResidues.size(); ++i)
+	for (uint32_t i = 0; i + 1 < inResidues.size(); ++i)
 	{
 		auto& ri = inResidues[i];
 		
-		for (uint32 j = i + 1; j < inResidues.size(); ++j)
+		for (uint32_t j = i + 1; j < inResidues.size(); ++j)
 		{
 			auto& rj = inResidues[j];
 			
@@ -402,11 +402,11 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 	vector<Bridge> bridges;
 	if (inResidues.size() > 4)
 	{
-		for (uint32 i = 1; i + 4 < inResidues.size(); ++i)
+		for (uint32_t i = 1; i + 4 < inResidues.size(); ++i)
 		{
 			auto& ri = inResidues[i];
 			
-			for (uint32 j = i + 3; j + 1 < inResidues.size(); ++j)
+			for (uint32_t j = i + 3; j + 1 < inResidues.size(); ++j)
 			{
 				auto& rj = inResidues[j];
 				
@@ -456,18 +456,18 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 	// extend ladders
 	sort(bridges.begin(), bridges.end());
 	
-	for (uint32 i = 0; i < bridges.size(); ++i)
+	for (uint32_t i = 0; i < bridges.size(); ++i)
 	{
-		for (uint32 j = i + 1; j < bridges.size(); ++j)
+		for (uint32_t j = i + 1; j < bridges.size(); ++j)
 		{
-			uint32 ibi = bridges[i].i.front();
-			uint32 iei = bridges[i].i.back();
-			uint32 jbi = bridges[i].j.front();
-			uint32 jei = bridges[i].j.back();
-			uint32 ibj = bridges[j].i.front();
-			uint32 iej = bridges[j].i.back();
-			uint32 jbj = bridges[j].j.front();
-			uint32 jej = bridges[j].j.back();
+			uint32_t ibi = bridges[i].i.front();
+			uint32_t iei = bridges[i].i.back();
+			uint32_t jbi = bridges[i].j.front();
+			uint32_t jei = bridges[i].j.back();
+			uint32_t ibj = bridges[j].i.front();
+			uint32_t iej = bridges[j].i.back();
+			uint32_t jbj = bridges[j].j.front();
+			uint32_t jej = bridges[j].j.back();
 
 			if (bridges[i].type != bridges[j].type or
 				NoChainBreak(inResidues[min(ibi, ibj)], inResidues[max(iei, iej)]) == false or
@@ -503,7 +503,7 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 	{
 		ladderset.insert(&bridge);
 		
-//		uint32 n = bridge.i.size();
+//		uint32_t n = bridge.i.size();
 //		if (n > kHistogramSize)
 //			n = kHistogramSize;
 //		
@@ -513,7 +513,7 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 //			mAntiparallelBridgesPerLadderHistogram[n - 1] += 1;
 	}
 	
-	uint32 sheet = 1, ladder = 0;
+	uint32_t sheet = 1, ladder = 0;
 	while (not ladderset.empty())
 	{
 		set<Bridge*> sheetset;
@@ -550,7 +550,7 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 			++ladder;
 		}
 		
-//		uint32 nrOfLaddersPerSheet = sheetset.size();
+//		uint32_t nrOfLaddersPerSheet = sheetset.size();
 //		if (nrOfLaddersPerSheet > kHistogramSize)
 //			nrOfLaddersPerSheet = kHistogramSize;
 //		if (nrOfLaddersPerSheet == 1 and (*sheetset.begin())->i.size() > 1)
@@ -566,9 +566,9 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 		// find out if any of the i and j set members already have
 		// a bridge assigned, if so, we're assigning bridge 2
 		
-		uint32 betai = 0, betaj = 0;
+		uint32_t betai = 0, betaj = 0;
 		
-		for (uint32 l : bridge.i)
+		for (uint32_t l : bridge.i)
 		{
 			if (inResidues[l].GetBetaPartner(0).residue != nullptr)
 			{
@@ -577,7 +577,7 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 			}
 		}
 
-		for (uint32 l : bridge.j)
+		for (uint32_t l : bridge.j)
 		{
 			if (inResidues[l].GetBetaPartner(0).residue != nullptr)
 			{
@@ -594,35 +594,35 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 		{
 //			mNrOfHBondsInParallelBridges += bridge.i.back() - bridge.i.front() + 2;
 			
-			deque<uint32>::iterator j = bridge.j.begin();
-			for (uint32 i : bridge.i)
+			deque<uint32_t>::iterator j = bridge.j.begin();
+			for (uint32_t i : bridge.i)
 				inResidues[i].SetBetaPartner(betai, inResidues[*j++], bridge.ladder, true);
 
 			j = bridge.i.begin();
-			for (uint32 i : bridge.j)
+			for (uint32_t i : bridge.j)
 				inResidues[i].SetBetaPartner(betaj, inResidues[*j++], bridge.ladder, true);
 		}
 		else
 		{
 //			mNrOfHBondsInAntiparallelBridges += bridge.i.back() - bridge.i.front() + 2;
 
-			deque<uint32>::reverse_iterator j = bridge.j.rbegin();
-			for (uint32 i : bridge.i)
+			deque<uint32_t>::reverse_iterator j = bridge.j.rbegin();
+			for (uint32_t i : bridge.i)
 				inResidues[i].SetBetaPartner(betai, inResidues[*j++], bridge.ladder, false);
 
 			j = bridge.i.rbegin();
-			for (uint32 i : bridge.j)
+			for (uint32_t i : bridge.j)
 				inResidues[i].SetBetaPartner(betaj, inResidues[*j++], bridge.ladder, false);
 		}
 
-		for (uint32 i = bridge.i.front(); i <= bridge.i.back(); ++i)
+		for (uint32_t i = bridge.i.front(); i <= bridge.i.back(); ++i)
 		{
 			if (inResidues[i].GetSecondaryStructure() != ssStrand)
 				inResidues[i].SetSecondaryStructure(ss);
 			inResidues[i].SetSheet(bridge.sheet);
 		}
 
-		for (uint32 i = bridge.j.front(); i <= bridge.j.back(); ++i)
+		for (uint32_t i = bridge.j.front(); i <= bridge.j.back(); ++i)
 		{
 			if (inResidues[i].GetSecondaryStructure() != ssStrand)
 				inResidues[i].SetSecondaryStructure(ss);
@@ -637,14 +637,14 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 void CalculateAlphaHelices(vector<Res>& inResidues, bool inPreferPiHelices = true)
 {
 	// Helix and Turn
-	for (uint32 stride = 3; stride <= 5; ++stride)
+	for (uint32_t stride = 3; stride <= 5; ++stride)
 	{
-		for (uint32 i = 0; i + stride < inResidues.size(); ++i)
+		for (uint32_t i = 0; i + stride < inResidues.size(); ++i)
 		{
 			if (NoChainBreak(inResidues[i], inResidues[i + stride]) and TestBond(&inResidues[i + stride], &inResidues[i]))
 			{
 				inResidues[i + stride].SetHelixFlag(stride, helixEnd);
-				for (uint32 j = i + 1; j < i + stride; ++j)
+				for (uint32_t j = i + 1; j < i + stride; ++j)
 				{
 					if (inResidues[j].GetHelixFlag(stride) == helixNone)
 						inResidues[j].SetHelixFlag(stride, helixMiddle);
@@ -664,54 +664,54 @@ void CalculateAlphaHelices(vector<Res>& inResidues, bool inPreferPiHelices = tru
 		r.SetBend(kappa != 360 and kappa > 70);
 	}
 
-	for (uint32 i = 1; i + 4 < inResidues.size(); ++i)
+	for (uint32_t i = 1; i + 4 < inResidues.size(); ++i)
 	{
 		if (inResidues[i].IsHelixStart(4) and inResidues[i - 1].IsHelixStart(4))
 		{
-			for (uint32 j = i; j <= i + 3; ++j)
+			for (uint32_t j = i; j <= i + 3; ++j)
 				inResidues[j].SetSecondaryStructure(ssAlphahelix);
 		}
 	}
 
-	for (uint32 i = 1; i + 3 < inResidues.size(); ++i)
+	for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
 	{
 		if (inResidues[i].IsHelixStart(3) and inResidues[i - 1].IsHelixStart(3))
 		{
 			bool empty = true;
-			for (uint32 j = i; empty and j <= i + 2; ++j)
+			for (uint32_t j = i; empty and j <= i + 2; ++j)
 				empty = inResidues[j].GetSecondaryStructure() == ssLoop or inResidues[j].GetSecondaryStructure() == ssHelix_3;
 			if (empty)
 			{
-				for (uint32 j = i; j <= i + 2; ++j)
+				for (uint32_t j = i; j <= i + 2; ++j)
 					inResidues[j].SetSecondaryStructure(ssHelix_3);
 			}
 		}
 	}
 
-	for (uint32 i = 1; i + 5 < inResidues.size(); ++i)
+	for (uint32_t i = 1; i + 5 < inResidues.size(); ++i)
 	{
 		if (inResidues[i].IsHelixStart(5) and inResidues[i - 1].IsHelixStart(5))
 		{
 			bool empty = true;
-			for (uint32 j = i; empty and j <= i + 4; ++j)
+			for (uint32_t j = i; empty and j <= i + 4; ++j)
 				empty = inResidues[j].GetSecondaryStructure() == ssLoop or inResidues[j].GetSecondaryStructure() == ssHelix_5 or
 							(inPreferPiHelices and inResidues[j].GetSecondaryStructure() == ssAlphahelix);
 			if (empty)
 			{
-				for (uint32 j = i; j <= i + 4; ++j)
+				for (uint32_t j = i; j <= i + 4; ++j)
 					inResidues[j].SetSecondaryStructure(ssHelix_5);
 			}
 		}
 	}
 			
-	for (uint32 i = 1; i + 1 < inResidues.size(); ++i)
+	for (uint32_t i = 1; i + 1 < inResidues.size(); ++i)
 	{
 		if (inResidues[i].GetSecondaryStructure() == ssLoop)
 		{
 			bool isTurn = false;
-			for (uint32 stride = 3; stride <= 5 and not isTurn; ++stride)
+			for (uint32_t stride = 3; stride <= 5 and not isTurn; ++stride)
 			{
-				for (uint32 k = 1; k < stride and not isTurn; ++k)
+				for (uint32_t k = 1; k < stride and not isTurn; ++k)
 					isTurn = (i >= k) and inResidues[i - k].IsHelixStart(stride);
 			}
 			
@@ -779,24 +779,24 @@ struct DSSPImpl
 
 ostream& operator<<(ostream& os, const chrono::duration<double>& t)
 {
-	uint64 s = static_cast<uint64>(trunc(t.count()));
+	uint64_t s = static_cast<uint64_t>(trunc(t.count()));
 	if (s > 24 * 60 * 60)
 	{
-		uint32 days = s / (24 * 60 * 60);
+		uint32_t days = s / (24 * 60 * 60);
 		os << days << "d ";
 		s %= 24 * 60 * 60;
 	}
 	
 	if (s > 60 * 60)
 	{
-		uint32 hours = s / (60 * 60);
+		uint32_t hours = s / (60 * 60);
 		os << hours << "h ";
 		s %= 60 * 60;
 	}
 	
 	if (s > 60)
 	{
-		uint32 minutes = s / 60;
+		uint32_t minutes = s / 60;
 		os << minutes << "m ";
 		s %= 60;
 	}

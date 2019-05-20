@@ -89,31 +89,31 @@ namespace mmcif
 // 56      NLABL           Number of labels being used
 // 57-256  LABEL(20,10)    10  80 character text labels (ie. A4 format)
 
-enum CCP4MapFileMode : uint32
+enum CCP4MapFileMode : uint32_t
 {
 	AS_REALS = 2		// do not support anything else for now...
 };
 
 struct CCP4MapFileHeader
 {
-	uint32				NC, NR, NS;
+	uint32_t				NC, NR, NS;
 	CCP4MapFileMode		MODE;
-	int32				NCSTART, NRSTART, NSSTART;
-	uint32				NX, NY, NZ;
+	int32_t				NCSTART, NRSTART, NSSTART;
+	uint32_t				NX, NY, NZ;
 	float				cellLengths[3];
 	float				cellAngles[3];
-	uint32				MAPC, MAPR, MAPS;
+	uint32_t				MAPC, MAPR, MAPS;
 	float				AMIN, AMAX, AMEAN;
-	uint32				ISPG;
-	uint32				NSYMBT;
-	uint32				LSKFLG;
+	uint32_t				ISPG;
+	uint32_t				NSYMBT;
+	uint32_t				LSKFLG;
 	float				SKWMAT[9];
 	float				SKWTRN[3];
-	uint32				UNUSED[15];
+	uint32_t				UNUSED[15];
 	char				MAP[4] = { 'M', 'A', 'P', ' ' };
-	uint32				MACHST = 0x00004144;
+	uint32_t				MACHST = 0x00004144;
 	float				ARMS;
-	uint32				NLABL = 1;
+	uint32_t				NLABL = 1;
 	char				LABEL[200 * 4];
 };
 
@@ -229,7 +229,7 @@ void writeCCP4MapFile(ostream& os, clipper::Xmap<FTYPE>& xmap, clipper::Grid_ran
 	}
 
 	clipper::Xmap_base::Map_reference_coord c(xmap);
-	const uint32 kSectionLength = dim[0] * dim[1];
+	const uint32_t kSectionLength = dim[0] * dim[1];
 	vector<float> section(kSectionLength);
 
 	int g[3];

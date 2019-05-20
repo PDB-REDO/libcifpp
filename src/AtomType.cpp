@@ -136,7 +136,7 @@ const AtomTypeInfo kKnownAtoms[] =
 	{ Og,	"Oganesson",		"Og",	294,	true,  {	kNA,	kNA,	kNA,	157,	kNA,	kNA,	kNA } }   //	118	Og	 Oga­nesson        
 };                                                                                                                                                    
 
-uint32 kKnownAtomsCount = sizeof(kKnownAtoms) / sizeof(AtomTypeInfo);
+uint32_t kKnownAtomsCount = sizeof(kKnownAtoms) / sizeof(AtomTypeInfo);
 
 // --------------------------------------------------------------------
 // The coefficients from Waasmaier & Kirfel (1995), Acta Cryst. A51, 416-431.
@@ -144,7 +144,7 @@ uint32 kKnownAtomsCount = sizeof(kKnownAtoms) / sizeof(AtomTypeInfo);
 struct SFDataArrayElement
 {
 	AtomType				symbol;
-	int8					charge;
+	int8_t					charge;
 	AtomTypeTraits::SFData	sf;
 };
 

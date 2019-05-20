@@ -195,8 +195,8 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 			
 			auto minR2 = d;
 			
-			int32 kbest = 0;
-			for (int32 k = 1; k < static_cast<int32>(mRtOrth.size()); ++k)
+			int32_t kbest = 0;
+			for (int32_t k = 1; k < static_cast<int32_t>(mRtOrth.size()); ++k)
 			{
 				auto& rt = mRtOrth[k];
 				
@@ -247,7 +247,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 
 // --------------------------------------------------------------------
 
-void DistanceMap::AddDistancesForAtoms(const Residue& a, const Residue& b, DistMap& dm, int32 rtix)
+void DistanceMap::AddDistancesForAtoms(const Residue& a, const Residue& b, DistMap& dm, int32_t rtix)
 {
 	for (auto& aa: a.atoms())
 	{
@@ -343,7 +343,7 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 	for (size_t i = mIA[ixa]; i < mIA[ixa + 1]; ++i)
 	{
 		float d;
-		int32 rti;
+		int32_t rti;
 		tie(d, rti) = mA[i];
 
 		if (d > maxDistance)

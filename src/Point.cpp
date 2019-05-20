@@ -94,7 +94,7 @@ Point Centroid(vector<Point>& Points)
 double RMSd(const vector<Point>& a, const vector<Point>& b)
 {
 	double sum = 0;
-	for (uint32 i = 0; i < a.size(); ++i)
+	for (uint32_t i = 0; i < a.size(); ++i)
 	{
 		valarray<double> d(3);
 		
@@ -154,7 +154,7 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 //	// First calculate M, a 3x3 matrix containing the sums of products of the coordinates of A and B
 //	matrix<double> M(3, 3, 0);
 //
-//	for (uint32 i = 0; i < pa.size(); ++i)
+//	for (uint32_t i = 0; i < pa.size(); ++i)
 //	{
 //		const Point& a = pa[i];
 //		const Point& b = pb[i];
@@ -220,7 +220,7 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 //	// calculate a matrix of cofactors for t
 //	matrix<double> cf(4, 4);
 //
-//	const uint32 ixs[4][3] =
+//	const uint32_t ixs[4][3] =
 //	{
 //		{ 1, 2, 3 },
 //		{ 0, 2, 3 },
@@ -228,14 +228,14 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 //		{ 0, 1, 2 }
 //	};
 //
-//	uint32 maxR = 0;
-//	for (uint32 r = 0; r < 4; ++r)
+//	uint32_t maxR = 0;
+//	for (uint32_t r = 0; r < 4; ++r)
 //	{
-//		const uint32* ir = ixs[r];
+//		const uint32_t* ir = ixs[r];
 //		
-//		for (uint32 c = 0; c < 4; ++c)
+//		for (uint32_t c = 0; c < 4; ++c)
 //		{
-//			const uint32* ic = ixs[c];
+//			const uint32_t* ic = ixs[c];
 //
 //			cf(r, c) =
 //				t(ir[0], ic[0]) * t(ir[1], ic[1]) * t(ir[2], ic[2]) +

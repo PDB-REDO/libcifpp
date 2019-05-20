@@ -37,11 +37,11 @@ typedef std::set<std::string, iless>	iset;
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
 
-extern const uint8 kCharToLowerMap[256];
+extern const uint8_t kCharToLowerMap[256];
 
 inline char tolower(char ch)
 {
-	return static_cast<char>(kCharToLowerMap[static_cast<uint8>(ch)]);
+	return static_cast<char>(kCharToLowerMap[static_cast<uint8_t>(ch)]);
 }
 
 // --------------------------------------------------------------------
@@ -56,7 +56,7 @@ std::vector<std::string> wordWrap(const std::string& text, unsigned int width);
 // --------------------------------------------------------------------
 //	Code helping with terminal i/o
 
-uint32 get_terminal_width();
+uint32_t get_terminal_width();
 
 // --------------------------------------------------------------------
 //	some manipulators to write coloured text to terminals
@@ -135,11 +135,11 @@ inline auto coloured(std::basic_string<CharT, Traits, Alloc>& s, StringColour fo
 class Progress
 {
   public:
-				Progress(int64 inMax, const std::string& inAction);
+				Progress(int64_t inMax, const std::string& inAction);
 	virtual		~Progress();
 	
-	void		consumed(int64 inConsumed);	// consumed is relative
-	void		progress(int64 inProgress);	// progress is absolute
+	void		consumed(int64_t inConsumed);	// consumed is relative
+	void		progress(int64_t inProgress);	// progress is absolute
 
 	void		message(const std::string& inMessage);
 

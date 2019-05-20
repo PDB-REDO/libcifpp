@@ -815,7 +815,7 @@ tuple<Point,float> Residue::centerAndRadius() const
 //{
 //}
 
-Monomer::Monomer(const Polymer& polymer, uint32 index, int seqID, const string& compoundID)
+Monomer::Monomer(const Polymer& polymer, uint32_t index, int seqID, const string& compoundID)
 	: Residue(*polymer.structure(), compoundID, polymer.asymID(), seqID)
 	, mPolymer(&polymer)
 	, mIndex(index)
@@ -1008,7 +1008,7 @@ bool Monomer::isCis(const mmcif::Monomer& a, const mmcif::Monomer& b)
 // --------------------------------------------------------------------
 // polymer
 //
-//Polymer::iterator::iterator(const Polymer& p, uint32 index)
+//Polymer::iterator::iterator(const Polymer& p, uint32_t index)
 //	: mPolymer(&p), mIndex(index), mCurrent(p, index)
 //{
 //	auto& polySeq = mPolymer->mPolySeq;
@@ -1100,7 +1100,7 @@ Polymer::Polymer(const Structure& s, const string& entityID, const string& asymI
 	: mStructure(const_cast<Structure*>(&s)), mEntityID(entityID), mAsymID(asymID)
 	, mPolySeq(s.category("pdbx_poly_seq_scheme").find(cif::Key("asym_id") == mAsymID and cif::Key("entity_id") == mEntityID))
 {
-	map<uint32,uint32> ix;
+	map<uint32_t,uint32_t> ix;
 
 	reserve(mPolySeq.size());
 
@@ -1270,7 +1270,7 @@ cif::File& File::file()
 // --------------------------------------------------------------------
 //	Structure
 
-Structure::Structure(File& f, uint32 modelNr)
+Structure::Structure(File& f, uint32_t modelNr)
 	: mFile(f), mModelNr(modelNr)
 {
 	auto& db = *mFile.impl().mDb;
@@ -1280,7 +1280,7 @@ Structure::Structure(File& f, uint32 modelNr)
 	{
 		auto modelNr = a["pdbx_PDB_model_num"];
 		
-		if (modelNr.empty() or modelNr.as<uint32>() == mModelNr)
+		if (modelNr.empty() or modelNr.as<uint32_t>() == mModelNr)
 			mAtoms.emplace_back(new AtomImpl(f, a["id"].as<string>(), a));
 	}
 	

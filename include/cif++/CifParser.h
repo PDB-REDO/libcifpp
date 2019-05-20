@@ -12,16 +12,16 @@ namespace cif
 class CifParserError : public std::runtime_error
 {
   public:
-	CifParserError(uint32 lineNr, const std::string& message);
+	CifParserError(uint32_t lineNr, const std::string& message);
 };
 
 // --------------------------------------------------------------------
 
-extern const uint32 kMaxLineLength;
+extern const uint32_t kMaxLineLength;
 
-extern const uint8 kCharTraitsTable[128];
+extern const uint8_t kCharTraitsTable[128];
 
-enum CharTraitsMask: uint8 {
+enum CharTraitsMask: uint8_t {
 	kOrdinaryMask = 1 << 0,
 	kNonBlankMask = 1 << 1,
 	kTextLeadMask = 1 << 2,
@@ -157,7 +157,7 @@ class SacParser
 
 	// Parser state
 	bool					mValidate;
-	uint32					mLineNr;
+	uint32_t					mLineNr;
 	bool					mBol;
 	int						mState, mStart;
 	CIFToken				mLookahead;

@@ -44,10 +44,10 @@ static const char* kEmptyResult = "";
 struct ItemValue
 {
 	ItemValue*				mNext;
-	uint32					mColumnIndex;
+	uint32_t					mColumnIndex;
 	char					mText[0];
 	
-	ItemValue(const char* v, uint32 columnIndex);
+	ItemValue(const char* v, uint32_t columnIndex);
 	~ItemValue();
 	
 	void* operator new(size_t size, size_t dataSize);
@@ -56,7 +56,7 @@ struct ItemValue
 
 // --------------------------------------------------------------------
 
-ItemValue::ItemValue(const char* value, uint32 columnIndex)
+ItemValue::ItemValue(const char* value, uint32_t columnIndex)
 	: mNext(nullptr), mColumnIndex(columnIndex)
 {
 	strcpy(mText, value);
@@ -100,8 +100,8 @@ struct ItemRow
 {
 	~ItemRow();
 
-	void drop(uint32 columnIx);
-	const char* c_str(uint32 columnIx) const;
+	void drop(uint32_t columnIx);
+	const char* c_str(uint32_t columnIx) const;
 	
 	string str() const
 	{
@@ -124,7 +124,7 @@ struct ItemRow
 	ItemRow*				mNext;
 	Category*				mCategory;
 	ItemValue*				mValues;
-	uint32					mLineNr = 0;
+	uint32_t					mLineNr = 0;
 };
 
 ostream& operator<<(ostream& os, const ItemRow& r)
@@ -157,7 +157,7 @@ ItemRow::~ItemRow()
 	delete mValues;
 }
 
-void ItemRow::drop(uint32 columnIx)
+void ItemRow::drop(uint32_t columnIx)
 {
 	if (mValues != nullptr and mValues->mColumnIndex == columnIx)
 	{
@@ -188,7 +188,7 @@ void ItemRow::drop(uint32 columnIx)
 #endif
 }
 
-const char* ItemRow::c_str(uint32 columnIx) const
+const char* ItemRow::c_str(uint32_t columnIx) const
 {
 	const char* result = kEmptyResult;
 	
@@ -661,7 +661,7 @@ class CatIndex
 	entry* insert(entry* h, ItemRow* v);
 	entry* erase(entry* h, ItemRow* k);
 
-//	void validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& minBlack, uint32& maxBlack) const;
+//	void validate(entry* h, bool isParentRed, uint32_t blackDepth, uint32_t& minBlack, uint32_t& maxBlack) const;
 
 	entry* rotateLeft(entry* h)
 	{
@@ -1006,8 +1006,8 @@ size_t CatIndex::size() const
 //	
 //	if (mRoot != nullptr)
 //	{
-//		uint32 minBlack = numeric_limits<uint32>::max();
-//		uint32 maxBlack = 0;
+//		uint32_t minBlack = numeric_limits<uint32_t>::max();
+//		uint32_t maxBlack = 0;
 //		
 //		assert(not mRoot->mRed);
 //		
@@ -1018,7 +1018,7 @@ size_t CatIndex::size() const
 //	return result;
 //}
 //
-//bool CatIndex::validate(entry* h, bool isParentRed, uint32 blackDepth, uint32& minBlack, uint32& maxBlack) const
+//bool CatIndex::validate(entry* h, bool isParentRed, uint32_t blackDepth, uint32_t& minBlack, uint32_t& maxBlack) const
 //{
 //	bool result = true;
 //	
@@ -1287,7 +1287,7 @@ void Category::drop(const string& field)
 
 	if (ci != mColumns.end())
 	{
-		uint32 columnIx = ci - mColumns.begin();
+		uint32_t columnIx = ci - mColumns.begin();
 		
 		for (auto pi = mHead; pi != nullptr; pi = pi->mNext)
 			pi->drop(columnIx);
@@ -2344,12 +2344,12 @@ auto Row::end() const -> const_iterator
 	return const_iterator(mData, nullptr);
 }
 
-uint32 Row::lineNr() const
+uint32_t Row::lineNr() const
 {
 	return mData ? mData->mLineNr : 0;
 }
 
-void Row::lineNr(uint32 l)
+void Row::lineNr(uint32_t l)
 {
 	if (mData)
 		mData->mLineNr = l;

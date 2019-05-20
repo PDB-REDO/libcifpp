@@ -430,7 +430,7 @@ string Compound::formula() const
 {
 	string result;
 	
-	map<string,uint32> atoms;
+	map<string,uint32_t> atoms;
 	float chargeSum = 0;
 
 	for (auto r: mAtoms)
@@ -1212,7 +1212,7 @@ Compound* CompoundFactoryImpl::create(std::string id)
 			auto row = rs.front();
 
 			string name, group;
-			uint32 numberAtomsAll, numberAtomsNh;
+			uint32_t numberAtomsAll, numberAtomsNh;
 			cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
 				row.get("name", "group", "number_atoms_all", "number_atoms_nh");
 			

@@ -16,9 +16,9 @@ extern int VERBOSE;
 namespace cif
 {
 
-const uint32 kMaxLineLength = 132;
+const uint32_t kMaxLineLength = 132;
 
-const uint8 kCharTraitsTable[128] = {
+const uint8_t kCharTraitsTable[128] = {
 	//	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
 		14,	15,	14,	14,	14,	15,	15,	14,	15,	15,	15,	15,	15,	15,	15,	15,	//	2
 		15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	10,	15,	15,	15,	15,	//	3
@@ -30,7 +30,7 @@ const uint8 kCharTraitsTable[128] = {
 
 // --------------------------------------------------------------------
 
-CifParserError::CifParserError(uint32 lineNr, const string& message)
+CifParserError::CifParserError(uint32_t lineNr, const string& message)
 	: runtime_error("parse error at line " + to_string(lineNr) + ": " + message)
 {
 }

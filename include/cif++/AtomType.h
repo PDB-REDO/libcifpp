@@ -10,7 +10,7 @@
 namespace mmcif
 {
 
-enum AtomType : uint8
+enum AtomType : uint8_t
 {
 	Nn = 0,		// Unknown
 	

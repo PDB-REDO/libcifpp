@@ -339,7 +339,7 @@ class SphericalDots
 	}
 	
 	size_t size() const							{ return mPoints.size(); }
-	const Point operator[](uint32 inIx) const	{ return mPoints[inIx]; }
+	const Point operator[](uint32_t inIx) const	{ return mPoints[inIx]; }
 	iterator begin() const						{ return mPoints.begin(); }
 	iterator end() const						{ return mPoints.end(); }
 
@@ -356,7 +356,7 @@ class SphericalDots
 		
 		auto p = mPoints.begin();
 		
-		for (int32 i = -N; i <= N; ++i)
+		for (int32_t i = -N; i <= N; ++i)
 		{
 			double lat = std::asin((2.0 * i) / P);
 			double lon = std::fmod(i, kGoldenRatio) * 2 * kPI / kGoldenRatio;
