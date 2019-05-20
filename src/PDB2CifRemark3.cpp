@@ -6,7 +6,7 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
-#include <boost/numeric/ublas/matrix.hpp>
+// #include <boost/numeric/ublas/matrix.hpp>
 
 #include "cif++/AtomType.h"
 #include "cif++/Compound.h"

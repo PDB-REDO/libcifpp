@@ -96,24 +96,24 @@ enum CCP4MapFileMode : uint32_t
 
 struct CCP4MapFileHeader
 {
-	uint32_t				NC, NR, NS;
+	uint32_t			NC, NR, NS;
 	CCP4MapFileMode		MODE;
 	int32_t				NCSTART, NRSTART, NSSTART;
-	uint32_t				NX, NY, NZ;
+	uint32_t			NX, NY, NZ;
 	float				cellLengths[3];
 	float				cellAngles[3];
-	uint32_t				MAPC, MAPR, MAPS;
+	uint32_t			MAPC, MAPR, MAPS;
 	float				AMIN, AMAX, AMEAN;
-	uint32_t				ISPG;
-	uint32_t				NSYMBT;
-	uint32_t				LSKFLG;
+	uint32_t			ISPG;
+	uint32_t			NSYMBT;
+	uint32_t			LSKFLG;
 	float				SKWMAT[9];
 	float				SKWTRN[3];
-	uint32_t				UNUSED[15];
+	uint32_t			UNUSED[15];
 	char				MAP[4] = { 'M', 'A', 'P', ' ' };
-	uint32_t				MACHST = 0x00004144;
+	uint32_t			MACHST = 0x00004144;
 	float				ARMS;
-	uint32_t				NLABL = 1;
+	uint32_t			NLABL = 1;
 	char				LABEL[200 * 4];
 };
 
