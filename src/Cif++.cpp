@@ -44,8 +44,8 @@ static const char* kEmptyResult = "";
 struct ItemValue
 {
 	ItemValue*				mNext;
-	uint32_t					mColumnIndex;
-	char					mText[0];
+	uint32_t				mColumnIndex;
+	char					mText[4];
 	
 	ItemValue(const char* v, uint32_t columnIndex);
 	~ItemValue();
@@ -76,7 +76,7 @@ ItemValue::~ItemValue()
 
 void* ItemValue::operator new(size_t size, size_t dataSize)
 {
-	return malloc(size + dataSize + 1);
+	return malloc(size - 4 + dataSize + 1);
 }
 
 void ItemValue::operator delete(void* p)

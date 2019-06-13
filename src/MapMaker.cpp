@@ -128,7 +128,7 @@ tuple<float,float,float,float> CalculateMapStatistics(const clipper::Xmap<FTYPE>
 
 	clipper::Xmap_base::Map_reference_coord c(xmap);
 	for (int g0 = r.min()[0]; g0 <= r.max()[0]; ++g0)
-		for (int g1 = r.min()[1]; g1 <= r.max()[0]; ++g1)
+		for (int g1 = r.min()[1]; g1 <= r.max()[1]; ++g1)
 			for (int g2 = r.min()[2]; g2 <= r.max()[2]; ++g2)
 			{
 				c.set_coord({ g0, g1, g2});

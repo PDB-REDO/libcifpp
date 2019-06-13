@@ -389,7 +389,10 @@ namespace detail
 			// are compatible. That means the number of parameters to the get()
 			// of the row should be equal to the number of items in the tuple
 			// you are trying to tie.
-			mVal = rr;
+
+            using RType = std::tuple<typename std::remove_reference<Ts>::type...>;
+
+			mVal = static_cast<RType>(rr);
 		}
 
 		std::tuple<Ts...>	mVal;
@@ -397,9 +400,9 @@ namespace detail
 }
 
 template<typename... Ts>
-auto tie(Ts&... v) -> detail::tieWrap<Ts...>
+auto tie(Ts&... v) -> detail::tieWrap<Ts&...>
 {
-	return detail::tieWrap<Ts...>(v...);
+	return detail::tieWrap<Ts&...>(std::forward<Ts&>(v)...);
 }
 
 class Row
