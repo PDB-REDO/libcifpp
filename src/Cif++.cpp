@@ -124,7 +124,7 @@ struct ItemRow
 	ItemRow*				mNext;
 	Category*				mCategory;
 	ItemValue*				mValues;
-	uint32_t					mLineNr = 0;
+	uint32_t				mLineNr = 0;
 };
 
 ostream& operator<<(ostream& os, const ItemRow& r)
