@@ -989,7 +989,7 @@ float Monomer::chi(size_t nr) const
 	{
 		vector<string> atoms{ "N", "CA", "CB" };
 
-		atoms.insert(atoms.begin(), i->second.begin(), i->second.end());
+		atoms.insert(atoms.end(), i->second.begin(), i->second.end());
 
         // in case we have a positive chiral volume we need to swap atoms
         if (chiralVolume() > 0)
