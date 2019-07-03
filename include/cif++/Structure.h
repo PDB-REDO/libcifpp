@@ -256,6 +256,10 @@ class Monomer : public Residue
 	float psi() const;
 	float alpha() const;
 	float kappa() const;
+
+    // torsion angles
+    size_t nrOfChis() const;
+    float chi(size_t i) const;
 	
 	bool isCis() const;
 
@@ -272,10 +276,13 @@ class Monomer : public Residue
 
 	static bool areBonded(const Monomer& a, const Monomer& b, float errorMargin = 0.5f);
 	static bool isCis(const Monomer& a, const Monomer& b);
+
+    // for LEU and VAL
+    float chiralVolume() const;
 	
   private:
 	const Polymer*	mPolymer;
-	uint32_t			mIndex;
+	uint32_t		mIndex;
 };
 
 // --------------------------------------------------------------------

@@ -947,6 +947,68 @@ float Monomer::kappa() const
 	return result;
 }
 
+const map<string,vector<string>> kChiAtomsMap = {
+   	{ "ASP", {"CG", "OD1"} },
+	{ "ASN", {"CG", "OD1"} },
+    { "ARG", {"CG", "CD", "NE", "CZ"} },
+    { "HIS", {"CG", "ND1"} },
+    { "GLN", {"CG", "CD", "OE1"} },
+	{ "GLU", {"CG", "CD", "OE1"} },
+    { "SER", {"OG"} },
+    { "THR", {"OG1"} },
+    { "LYS", {"CG", "CD", "CE", "NZ"} },
+    { "TYR", {"CG", "CD1"} },
+    { "PHE", {"CG", "CD1"} },
+    { "LEU", {"CG", "CD1"} },
+    { "TRP", {"CG", "CD1"} },
+    { "CYS", {"SG"} },
+    { "ILE", {"CG1", "CD1"} },
+    { "MET", {"CG", "SD", "CE"} },
+    { "MSE", {"CG", "SE", "CE"} },
+    { "PRO", {"CG", "CD"} },
+    { "VAL", {"CG1"} }
+};
+
+size_t Monomer::nrOfChis() const
+{
+	size_t result = 0;
+
+	auto i = kChiAtomsMap.find(mCompoundID);
+	if (i != kChiAtomsMap.end())
+		result = i->second.size();
+	
+	return result;
+}
+
+float Monomer::chi(size_t nr) const
+{
+	float result = 0;
+
+	auto i = kChiAtomsMap.find(mCompoundID);
+	if (i != kChiAtomsMap.end() and nr < i->second.size())
+	{
+		vector<string> atoms{ "N", "CA", "CB" };
+
+		atoms.insert(atoms.begin(), i->second.begin(), i->second.end());
+
+        // in case we have a positive chiral volume we need to swap atoms
+        if (chiralVolume() > 0)
+        {
+            if (mCompoundID == "LEU") atoms.back() = "CD2";
+            if (mCompoundID == "VAL") atoms.back() = "CG2";
+        }
+
+        result = DihedralAngle(
+            atomByID(atoms[nr + 0]).location(),
+            atomByID(atoms[nr + 1]).location(),
+            atomByID(atoms[nr + 2]).location(),
+            atomByID(atoms[nr + 3]).location()
+        );
+	}
+	
+	return result;
+}
+
 bool Monomer::isCis() const
 {
 	bool result = false;
@@ -958,6 +1020,34 @@ bool Monomer::isCis() const
 		result = Monomer::isCis(*this, next);
 	}
 	
+	return result;
+}
+
+float Monomer::chiralVolume() const
+{
+	float result = 0;
+
+	if (mCompoundID == "LEU")
+	{
+		auto centre = atomByID("CG");
+		auto atom1 = atomByID("CB");
+		auto atom2 = atomByID("CD1");
+		auto atom3 = atomByID("CD2");
+
+		result = DotProduct(atom1.location() - centre.location(),
+			CrossProduct(atom2.location() - centre.location(), atom3.location() - centre.location()));
+	}
+	else if (mCompoundID == "VAL")
+	{
+		auto centre = atomByID("CB");
+		auto atom1 = atomByID("CA");
+		auto atom2 = atomByID("CG1");
+		auto atom3 = atomByID("CG2");
+
+		result = DotProduct(atom1.location() - centre.location(),
+			CrossProduct(atom2.location() - centre.location(), atom3.location() - centre.location()));
+	}
+
 	return result;
 }
 
