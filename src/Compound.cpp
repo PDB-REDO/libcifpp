@@ -10,8 +10,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
 
-#include <zeep/xml/document.hpp>
-
 #include "cif++/Cif++.h"
 #include "cif++/Point.h"
 #include "cif++/Compound.h"
@@ -20,7 +18,6 @@
 using namespace std;
 namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
-namespace zx = zeep::xml;
 
 namespace mmcif
 {
@@ -58,23 +55,11 @@ struct CompoundBondLess
 struct IsomerSet
 {
 	vector<string>	compounds;
-	
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
-	{
-		ar & zx::make_element_nvp("compound", compounds);
-	}
 };
 
 struct IsomerSets
 {
 	vector<IsomerSet>	isomers;
-	
-	template<typename Archive>
-	void serialize(Archive& ar, unsigned long version)
-	{
-		ar & zx::make_element_nvp("isomer-set", isomers);
-	}
 };
 
 class IsomerDB
@@ -91,20 +76,31 @@ class IsomerDB
 	IsomerDB();
 	
 	IsomerSets			mData;
-//	map<string,size_t>	mIndex;
 };
 
 IsomerDB::IsomerDB()
 {
-//	mrsrc::rsrc isomers("isomers.xml");
-	mrsrc::rsrc isomers("isomers-with-sugar.xml");
+	mrsrc::rsrc isomers("isomers.txt");
+//	mrsrc::rsrc isomers("isomers-with-sugar.xml");
 	if (not isomers)
-		throw runtime_error("Missing isomers.xml resource");
+		throw runtime_error("Missing isomers.txt resource");
 	
-	zx::document doc(string(isomers.data(), isomers.size()));
-	zx::deserializer d(doc.root());
+	struct membuf : public streambuf
+	{
+		membuf(char* data, size_t length)		{ this->setg(data, data, data + length); }
+	} buffer(const_cast<char*>(isomers.data()), isomers.size());
 	
-	d & zx::make_element_nvp("isomers", mData);
+	istream is(&buffer);
+	string line;
+
+	while (getline(is, line))
+	{
+		IsomerSet compounds;
+		ba::split(compounds.compounds, line, ba::is_any_of(":"));
+
+		if (not compounds.compounds.empty())
+			mData.isomers.emplace_back(std::move(compounds));
+	}
 }
 
 IsomerDB& IsomerDB::instance()
