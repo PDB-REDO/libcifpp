@@ -15,6 +15,8 @@ Other requirements are:
 - [libzeep](https://github.com/mhekkel/libzeep), a library that contains a full validating XML parser as well as a complete HTTP and SOAP server implementation.
 - [nlohmann/json](https://github.com/nlohmann/json), a header only library to parse and write JSON. This requirement will be removed in a future release (once libzeep 4 is out of beta).
 
+Make sure you install the libraries and tools in this list first before building. You don't have to install them in system locations, paths can be set as described in the next section.
+
 ### Building
 
 There are two makefiles, one located in the directory libcif++ and one in tools.
