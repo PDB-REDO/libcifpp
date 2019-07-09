@@ -391,6 +391,21 @@ uint32_t get_terminal_width()
 {
 	return TERM_WIDTH;
 }
+
+// I don't have a windows machine to test the following code, please accept my apologies in case it fails...
+string GetExecutablePath()
+{
+	WCHAR buffer[4096];
+
+	DWORD n = ::GetModuleFileNameW(nullptr, buffer, sizeof(buffer) / sizeof(WCHAR));
+	if (n == 0)
+		throw runtime_error("could not get exe path");
+
+	wstring ws(buffer);
+
+	return string(ws.begin(), ws.end());
+}
+
 #else
 uint32_t get_terminal_width()
 {
@@ -398,6 +413,15 @@ uint32_t get_terminal_width()
 	ioctl(0, TIOCGWINSZ, &w);
 	return w.ws_col;
 }
+
+string get_executable_path()
+{
+	char path[PATH_MAX] = "";
+	if (readlink("/proc/self/exe", path, sizeof(path)) == -1)
+		throw runtime_error("could not get exe path "s + strerror(errno));
+	return { path };
+}
+
 #endif
 
 // --------------------------------------------------------------------

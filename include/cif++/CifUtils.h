@@ -59,6 +59,11 @@ std::vector<std::string> wordWrap(const std::string& text, unsigned int width);
 uint32_t get_terminal_width();
 
 // --------------------------------------------------------------------
+//	Path of the current executable
+
+std::string get_executable_path();
+
+// --------------------------------------------------------------------
 //	some manipulators to write coloured text to terminals
 
 enum StringColour {

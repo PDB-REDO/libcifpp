@@ -13,7 +13,11 @@
 #include "cif++/Cif++.h"
 #include "cif++/Point.h"
 #include "cif++/Compound.h"
+#include "cif++/CifUtils.h"
+
+#if defined(USE_RSRC)
 #include "cif++/mrsrc.h"
+#endif
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -80,6 +84,7 @@ class IsomerDB
 
 IsomerDB::IsomerDB()
 {
+#if defined(USE_RSRC)
 	mrsrc::rsrc isomers("isomers.txt");
 //	mrsrc::rsrc isomers("isomers-with-sugar.xml");
 	if (not isomers)
@@ -91,6 +96,17 @@ IsomerDB::IsomerDB()
 	} buffer(const_cast<char*>(isomers.data()), isomers.size());
 	
 	istream is(&buffer);
+#else
+	cerr << "resource support was not compiled in, falling back to a local file" << endl;
+	fs::path isomersFile = "isomers.txt";
+	if (not fs::exists(isomersFile))
+		isomersFile = fs::path(cif::get_executable_path()).parent_path() / "isomers.txt";
+
+	fs::ifstream is(isomersFile);
+	if (not is.is_open())
+		throw runtime_error("Could not open the file isomers.txt");
+#endif
+
 	string line;
 
 	while (getline(is, line))
