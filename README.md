@@ -9,6 +9,7 @@ The code for this library was written in C++14. You therefore need a recent comp
 
 Other requirements are:
 
+- GNU make version 4.1 or higher.
 - Boost libraries, the current version was developed using version 1.65
 - [mrc](https://github.com/mhekkel/mrc), a resource compiler that allows including data files into the executable making them easier to install. Strictly this is optional, but at the expense of a lot of functionality.
 - [newuoa-cpp](https://github.com/elsid/newuoa-cpp), required to calculate atom radii.
