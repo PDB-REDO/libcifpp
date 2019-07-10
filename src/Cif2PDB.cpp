@@ -716,7 +716,17 @@ class Ff : public FBase
 				os << string(os.width() - 4, ' ');
 		}
 		else
-			os << stod(s);
+        {
+            try
+            {
+                os << stod(s);
+            }
+            catch (const exception& ex)
+            {
+                cerr << "Failed to write '" << s << "' as a double, this indicates an error in the code for writing PDB files" << endl;
+                os << s;
+            }
+        }
 	}
 };
 
@@ -1593,7 +1603,7 @@ void WriteRemark3Phenix(ostream& pdbFile, Datablock& db)
 			
 			<< RM3("") << endl
 			<< RM3(" B VALUES.") << endl
-			<< RM3("  B VALUE TYPE                      : ", 7, 4)					<< Ff(refine, "pdbx_TLS_residual_ADP_flag") << endl
+			<< RM3("  B VALUE TYPE                      : ")    					<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << endl
 			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 4)					<< Ff(reflns, "B_iso_Wilson_estimate") << endl
 			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 4)					<< Ff(refine, "B_iso_mean") << endl
 			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << endl
