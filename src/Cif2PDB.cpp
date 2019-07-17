@@ -1458,8 +1458,7 @@ void WriteRemark3Shelxl(ostream& pdbFile, Datablock& db)
 	
 	auto c = [](const char* t) -> cif::Condition { return cif::Key("type") == t; };
 	
-	pdbFile	<< RM3("  AUTHORS     : G.M.SHELDRICK") << endl
-			<< RM3("") << endl
+	pdbFile	<< RM3("") << endl
 			<< RM3(" DATA USED IN REFINEMENT.") << endl
 			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2)	<< Ff(refine, "ls_d_res_high") << endl
 			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2)	<< Ff(refine, "ls_d_res_low") << endl
@@ -3563,7 +3562,7 @@ tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, Datablock& db,
 		
 		cif::tie(id, group, name, altLoc, resName, chainID, resSeq, iCode, x, y, z, occupancy, tempFactor, element, charge) =
 			r.get("id", "group_PDB", "label_atom_id", "label_alt_id", "auth_comp_id", "auth_asym_id", "auth_seq_id",
-				"pdbx_PDB_ins_code", "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol", "pdbx_format_charge");
+				"pdbx_PDB_ins_code", "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol", "pdbx_formal_charge");
 		
 		if (name.length() < 4 and (element.length() == 1 or not cif::iequals(name, element)))
 			name.insert(name.begin(), ' ');
