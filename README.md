@@ -13,6 +13,8 @@ have been used.
 
 Other requirements are:
 
+- A recent CCP4 environment (with the clipper libraries that have
+  electrion scattering support).
 - GNU make version 4.1 or higher.
 - Boost libraries, the current version was developed using version 1.65
 - [mrc](https://github.com/mhekkel/mrc), a resource compiler that
