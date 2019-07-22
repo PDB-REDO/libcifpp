@@ -3503,8 +3503,8 @@ tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, Datablock& db,
 	int serial = 1;
 	auto ri = atom_site.begin();
 	
-	string id, group, name, altLoc, resName, chainID, iCode, element, charge;
-	int resSeq;
+	string id, group, name, altLoc, resName, chainID, iCode, element;
+	int resSeq, charge;
 	
 	for (;;)
 	{
@@ -3567,6 +3567,10 @@ tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, Datablock& db,
 		if (name.length() < 4 and (element.length() == 1 or not cif::iequals(name, element)))
 			name.insert(name.begin(), ' ');
 		
+		string sCharge;
+		if (charge != 0)
+			sCharge = (charge > 0 ? '+' : '-') + to_string(charge);
+
 		pdbFile << (kATOM
 			% group
 			% serial
@@ -3582,7 +3586,7 @@ tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, Datablock& db,
 			% occupancy
 			% tempFactor
 			% element
-			% charge) << endl;
+			% sCharge) << endl;
 		
 		++numCoord;
 		
@@ -3612,7 +3616,7 @@ tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, Datablock& db,
 				% lrintf(u13 * 10000)
 				% lrintf(u23 * 10000)
 				% element
-				% charge) << endl;
+				% sCharge) << endl;
 		}
 		
 		++serial;
