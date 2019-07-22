@@ -8,8 +8,8 @@ Requirements
 ------------
 
 The code for this library was written in C++14. You therefore need a
-recent compiler to be able to build it. For the development gcc 7.4
-and clang 6.0 have been used.
+recent compiler to build it. For the development gcc 7.4 and clang 6.0
+have been used.
 
 Other requirements are:
 
@@ -29,8 +29,9 @@ Other requirements are:
   have a libzeep version older than version 4.
 
 As stated, the nlohmann library is only needed if you use libzeep 3.0.x
-which is bundled with Debian and derivatives. If you clone the version
-of libzeep on github the nlohmann json library will not be used.
+which is bundled with Debian and derivatives (`apt-get install libzeep-dev`).
+If you clone the version of libzeep on github the nlohmann json library will
+not be used.
 
 Building
 --------
