@@ -1612,8 +1612,14 @@ bool Category::isOrphan(Row r)
 			cond = move(cond) && (Key(link->mParentKeys[ix]) == value);
 		}
 
+		if (VERBOSE > 2)
+			cerr << "Check condition '" << cond << "' in parent category " << link->mParentCategory << " for child cat " << mName << endl;
+
 		if (parentCat->exists(std::move(cond)))
 		{
+			if (VERBOSE > 2)
+				cerr << "Not removing because row has a parent in category " << link->mParentCategory << endl;
+
 			isOrphan = false;
 			break;
 		}
