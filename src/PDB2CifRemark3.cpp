@@ -1411,6 +1411,8 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 	{
 		result = true;
 
+		sort(scores.begin(), scores.end());
+
 		auto& best = scores.front();
 
 		if (VERBOSE)
