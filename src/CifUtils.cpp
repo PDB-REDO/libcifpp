@@ -409,9 +409,15 @@ string GetExecutablePath()
 #else
 uint32_t get_terminal_width()
 {
-	struct winsize w;
-	ioctl(0, TIOCGWINSZ, &w);
-	return w.ws_col;
+    uint32_t result = 80;
+
+    if (isatty(STDOUT_FILENO))
+    {
+        struct winsize w;
+        ioctl(0, TIOCGWINSZ, &w);
+        result = w.ws_col;
+    }
+    return result;
 }
 
 string get_executable_path()
