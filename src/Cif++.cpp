@@ -1175,6 +1175,11 @@ void Category::setValidator(Validator* v)
 		mCatValidator = nullptr;
 }
 
+bool Category::hasColumn(const string& name) const
+{
+    return getColumnIndex(name) < mColumns.size();
+}
+
 size_t Category::getColumnIndex(const string& name) const
 {
 	size_t result;

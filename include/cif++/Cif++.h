@@ -767,6 +767,21 @@ struct anyMatchesConditionImpl : public ConditionImpl
 	std::regex mRx;
 };
 
+struct allConditionImpl : public ConditionImpl
+{
+	allConditionImpl() {}
+	
+	virtual bool test(const Category& c, const Row& r) const
+    {
+        return true;
+    }
+
+	virtual std::string str() const
+	{
+		return "ALL";
+	}
+};
+
 struct andConditionImpl : public ConditionImpl
 {
 	andConditionImpl(Condition&& a, Condition&& b)
@@ -835,6 +850,37 @@ struct orConditionImpl : public ConditionImpl
 	
 	ConditionImpl* mA;
 	ConditionImpl* mB;
+};
+
+struct notConditionImpl : public ConditionImpl
+{
+	notConditionImpl(Condition&& a)
+		: mA(nullptr)
+	{
+		std::swap(mA, a.mImpl);
+	}
+	
+	~notConditionImpl()
+	{
+		delete mA;
+	}
+	
+	virtual void prepare(const Category& c)
+	{
+		mA->prepare(c);
+	}
+	
+	virtual bool test(const Category& c, const Row& r) const
+	{
+		return not mA->test(c, r);
+	}
+		
+	virtual std::string str() const
+	{
+		return "NOT (" + mA->str() + ")";
+	}
+	
+	ConditionImpl* mA;
 };
 
 }
@@ -959,6 +1005,16 @@ inline
 Condition any::operator==(const std::regex& rx) const
 {
 	return Condition(new detail::anyMatchesConditionImpl(rx));
+}
+
+inline Condition All()
+{
+    return Condition(new detail::allConditionImpl());
+}
+
+inline Condition Not(Condition&& cond)
+{
+    return Condition(new detail::notConditionImpl(std::move(cond)));
 }
 
 // --------------------------------------------------------------------
@@ -1113,6 +1169,7 @@ class Category
 
 	// return index for known column, or the next available column index
 	size_t getColumnIndex(const string& name) const;
+    bool hasColumn(const string& name) const;
 	const string& getColumnName(size_t columnIndex) const;
 	vector<string> getColumnNames() const;
 
