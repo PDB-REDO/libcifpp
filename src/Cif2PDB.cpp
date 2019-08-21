@@ -2615,7 +2615,7 @@ void WriteRemark470(ostream& pdbFile, Datablock& db)
 
 void WriteRemark610(ostream& pdbFile, Datablock& db)
 {
-	#warning("unimplemented!");
+	// #warning("unimplemented!");
 }
 
 void WriteRemark800(ostream& pdbFile, Datablock& db)

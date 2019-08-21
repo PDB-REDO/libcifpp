@@ -2120,7 +2120,17 @@ void PDBFileParser::ParseRemarks()
 									char chain2 = vC(44);
 									int seq2 = vI(46, 50);
 									
-									string symop = pdb2cifSymmetry(vS(54, 59));
+									string symop;
+									try
+									{
+										symop = pdb2cifSymmetry(vS(54, 59));
+									}
+									catch (const std::exception& ex)
+									{
+										if (VERBOSE)
+											cerr << "Dropping REMARK 500 at line " << mRec->mLineNr << " due to invalid symmetry operation" << endl;
+										continue;
+									}
 									
 									string distance = vF(63, 71);
 									
@@ -4564,6 +4574,18 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				alt1.push_back(0);
 			if (alt2.empty())
 				alt2.push_back(0);
+
+			string sym1, sym2;
+			try {
+				sym1 = pdb2cifSymmetry(vS(60, 65));
+				sym2 = pdb2cifSymmetry(vS(67, 72));
+			}
+			catch (const std::exception& ex)
+			{
+				if (VERBOSE)
+					cerr << "Dropping SSBOND " << vI(8, 10) << " due to invalid symmetry operation" << endl;
+				continue;
+			}
 			
 			for (auto a1: alt1)
 			{
@@ -4578,7 +4600,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 						{ "ptnr1_label_comp_id", vS(12, 14) },
 						{ "ptnr1_label_seq_id", p1Seq ? to_string(p1Seq) : "." },
 						{ "ptnr1_label_atom_id", "SG" },
-						{ "ptnr1_symmetry", pdb2cifSymmetry(vS(60, 65)) },
+						{ "ptnr1_symmetry", sym1 },
 			
 						{ "ptnr2_label_asym_id", p2Asym },
 						{ "pdbx_ptnr2_label_alt_id", a2 ? string{ a2 } : string() },
@@ -4593,7 +4615,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 						{ "ptnr2_auth_comp_id", vS(26, 28) },
 						{ "ptnr2_auth_seq_id", vI(32, 35) },
 			
-						{ "ptnr2_symmetry", pdb2cifSymmetry(vS(67, 72)) },
+						{ "ptnr2_symmetry", sym2 },
 						
 						{ "pdbx_dist_value", vS(74, 78) },
 					});
@@ -4683,7 +4705,19 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			{
 				details = vS(74, 78);	// the link ID 
 			}
-			
+
+			string sym1, sym2;
+			try {
+				sym1 = pdb2cifSymmetry(vS(60, 65));
+				sym2 = pdb2cifSymmetry(vS(67, 72));
+			}
+			catch (const std::exception& ex)
+			{
+				if (VERBOSE)
+					cerr << "Dropping LINK record at line " << mRec->mLineNr << " due to invalid symmetry operation" << endl;
+				continue;
+			}
+
 			getCategory("struct_conn")->emplace({
 				{ "id", type + to_string(linkNr) },
 				{ "conn_type_id", type },
@@ -4697,7 +4731,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{ "pdbx_ptnr1_label_alt_id", vS(17, 17) },
 				{ "pdbx_ptnr1_PDB_ins_code", vS(27, 27) },
 				{ "pdbx_ptnr1_standard_comp_id", "" },
-				{ "ptnr1_symmetry", pdb2cifSymmetry(vS(60, 65)) },
+				{ "ptnr1_symmetry", sym1 },
 	
 				{ "ptnr2_label_asym_id", p2Asym },
 				{ "ptnr2_label_comp_id", vS(48, 50) },
@@ -4713,7 +4747,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{ "ptnr2_auth_comp_id", vS(48, 50) },
 				{ "ptnr2_auth_seq_id", vI(53, 56) },
 	
-				{ "ptnr2_symmetry", pdb2cifSymmetry(vS(67, 72)) },
+				{ "ptnr2_symmetry", sym2 },
 				
 				{ "pdbx_dist_value", distance }
 			});
