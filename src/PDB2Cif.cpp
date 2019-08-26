@@ -4746,7 +4746,10 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{ "ptnr2_auth_asym_id", vS(52, 52) },
 				{ "ptnr2_auth_comp_id", vS(48, 50) },
 				{ "ptnr2_auth_seq_id", vI(53, 56) },
-	
+
+				{ "ptnr1_auth_atom_id", vS(13, 16) },
+				{ "ptnr2_auth_atom_id", vS(43, 46) },
+
 				{ "ptnr2_symmetry", sym2 },
 				
 				{ "pdbx_dist_value", distance }
