@@ -1077,22 +1077,26 @@ bool Monomer::areBonded(const Monomer& a, const Monomer& b, float errorMargin)
 	return result;
 }
 
-bool Monomer::isCis(const mmcif::Monomer& a, const mmcif::Monomer& b)
+float Monomer::omega(const mmcif::Monomer& a, const mmcif::Monomer& b)
 {
-	bool result = false;
+	float result = 360;
 	
 	try
 	{
-		double omega = DihedralAngle(
+		result = DihedralAngle(
 			a.atomByID("CA").location(),
 			a.atomByID("C").location(),
 			b.atomByID("N").location(),
 			b.atomByID("CA").location());
-		result = abs(omega) <= 30.0;
 	}
 	catch (...) {}
 
 	return result;
+}
+
+bool Monomer::isCis(const mmcif::Monomer& a, const mmcif::Monomer& b)
+{
+	return omega(a, b) < 30.0f;
 }
 
 // --------------------------------------------------------------------

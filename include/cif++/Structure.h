@@ -276,6 +276,7 @@ class Monomer : public Residue
 
 	static bool areBonded(const Monomer& a, const Monomer& b, float errorMargin = 0.5f);
 	static bool isCis(const Monomer& a, const Monomer& b);
+	static float omega(const Monomer& a, const Monomer& b);
 
     // for LEU and VAL
     float chiralVolume() const;
