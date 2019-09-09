@@ -1192,7 +1192,9 @@ void PDBFileParser::PreParseInput(istream& is)
 
 		last = cur;
 
-		if (type == "END   ")
+		ba::trim(type);
+
+		if (type == "END")
 			break;
 	}
 	
