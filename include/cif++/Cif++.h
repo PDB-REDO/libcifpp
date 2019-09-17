@@ -15,8 +15,6 @@
 
 #include "cif++/CifUtils.h"
 
-extern int VERBOSE;
-
 /*
 	Simple C++ interface to CIF files.
 	
@@ -82,6 +80,9 @@ extern int VERBOSE;
 
 namespace cif
 {
+
+// flag for verbose output
+extern int VERBOSE;
 
 using std::string;
 using std::vector;

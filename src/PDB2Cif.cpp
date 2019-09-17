@@ -281,7 +281,7 @@ tuple<string,string> SpecificationListParser::GetNextSpecification()
 				}
 				else if (not isspace(ch))
 				{
-					if (VERBOSE)
+					if (cif::VERBOSE)
 						cerr << "skipping invalid character in SOURCE ID: " << ch << endl;
 				}
 				break;
@@ -298,7 +298,7 @@ tuple<string,string> SpecificationListParser::GetNextSpecification()
 			case eColon:
 				if (ch == ';')
 				{
-					if (VERBOSE)
+					if (cif::VERBOSE)
 						cerr << "Empty value for SOURCE: " << id << endl;
 					state = eStart;
 				}
@@ -362,7 +362,7 @@ tuple<string,string> SpecificationListParser::GetNextSpecification()
 			case eError:
 				if (ch == ';')
 				{
-					if (VERBOSE)
+					if (cif::VERBOSE)
 						cerr << "Skipping invalid header line: '" << string(start, mP) << endl;
 					state = eStart;
 				}
@@ -645,7 +645,7 @@ class PDBFileParser
 		if (not mChainSeq2AsymSeq.count(key))
 		{
 			ec = error::make_error_code(error::pdbErrors::residueNotFound);
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "Residue " << chainID << resSeq << iCode << " could not be mapped" << endl;
 		}
 		else
@@ -740,7 +740,7 @@ class PDBFileParser
 		}
 		catch (const exception& ex)
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << ex.what() << endl;
 			ec = error::make_error_code(error::pdbErrors::invalidDate);
 		}
@@ -1224,7 +1224,7 @@ void PDBFileParser::Match(const string& expected, bool throwIfMissing)
 	{
 		if (throwIfMissing)
 			throw runtime_error("Expected record " + expected + " but found " + mRec->mName);
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "Expected record " + expected + " but found " + mRec->mName << endl;
 	}
 }
@@ -1412,7 +1412,7 @@ void PDBFileParser::ParseTitle()
 //			auto colon = s.find(": ");
 //			if (colon == string::npos)
 //			{
-//				if (VERBOSE)
+//				if (cif::VERBOSE)
 //					cerr << "invalid source field, missing colon (" << s << ')' << endl;
 //				continue;
 //			}
@@ -1504,7 +1504,7 @@ void PDBFileParser::ParseTitle()
 	// NUMMDL
 	if (mRec->is("NUMMDL"))
 	{
-		if (VERBOSE)	
+		if (cif::VERBOSE)	
 			cerr << "skipping unimplemented NUMMDL record" << endl;
 		GetNextRecord();
 	}
@@ -1614,7 +1614,7 @@ void PDBFileParser::ParseTitle()
 	// SPRSDE
 	if (mRec->is("SPRSDE"))
 	{
-		if (VERBOSE)	
+		if (cif::VERBOSE)	
 			cerr << "skipping unimplemented SPRSDE record" << endl;
 		GetNextRecord();
 	}
@@ -2050,7 +2050,7 @@ void PDBFileParser::ParseRemarks()
 								else if (subtopic == "PLANAR GROUPS")						state = ePG;
 								else if (subtopic == "MAIN CHAIN PLANARITY")				state = eMCP;
 								else if (subtopic == "CHIRAL CENTERS")						state = eChC;
-								else if (VERBOSE)
+								else if (cif::VERBOSE)
 									throw runtime_error("Unknown subtopic in REMARK 500: " + subtopic);
 								
 								headerSeen = false;
@@ -2129,7 +2129,7 @@ void PDBFileParser::ParseRemarks()
 									}
 									catch (const std::exception& ex)
 									{
-										if (VERBOSE)
+										if (cif::VERBOSE)
 											cerr << "Dropping REMARK 500 at line " << mRec->mLineNr << " due to invalid symmetry operation" << endl;
 										continue;
 									}
@@ -2470,7 +2470,7 @@ void PDBFileParser::ParseRemarks()
 							case sStart:
 	 							if (s == "SITE")
 	 								state = sId;
-								else if (VERBOSE)
+								else if (cif::VERBOSE)
 									throw runtime_error("Invalid REMARK 800 record, expected SITE");
 	 							break;
 							
@@ -2480,7 +2480,7 @@ void PDBFileParser::ParseRemarks()
 									id = m[1].str();
 									state = sEvidence;
 								}
-								else if (VERBOSE)
+								else if (cif::VERBOSE)
 									throw runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
 								break;
 							
@@ -2490,7 +2490,7 @@ void PDBFileParser::ParseRemarks()
 									evidence = m[1].str();
 									state = sDesc;
 								}
-								else if (VERBOSE)
+								else if (cif::VERBOSE)
 									throw runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
 								break;
 							
@@ -2705,7 +2705,7 @@ void PDBFileParser::ParseRemark200()
 		collectionDate = pdb2cifDate(rm200("DATE OF DATA COLLECTION", diffrnNr), ec);
 		if (ec)
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << ec.message() << " for pdbx_collection_date" << endl;
 			
 			// The date field can become truncated when multiple values are available		
@@ -2834,7 +2834,7 @@ void PDBFileParser::ParseRemark200()
 	else if (inRM200({ "HIGHEST RESOLUTION SHELL, RANGE LOW (A)", "COMPLETENESS FOR SHELL (%)",
 		"R MERGE FOR SHELL (I)", "R SYM FOR SHELL (I)", "<I/SIGMA(I)> FOR SHELL", "DATA REDUNDANCY IN SHELL" }))
 	{
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "Not writing reflns_shell record since d_res_high is missing" << endl;
 	}
 }
@@ -3400,7 +3400,7 @@ void PDBFileParser::ConstructEntities()
 			{
 				auto& r = chain.mResiduesSeen[lastResidueIndex + 1];
 
-				if (VERBOSE)
+				if (cif::VERBOSE)
 				{
 					cerr << "Detected residues that cannot be aligned to SEQRES" << endl
 						 << "First residue is " << chain.mDbref.chainID << ':' << r.mSeqNum << r.mIcode << endl;
@@ -3812,7 +3812,7 @@ void PDBFileParser::ConstructEntities()
 					tie(asym, labelSeq, ignore) = MapResidue(seqadv.chainID, seqadv.seqNum, seqadv.iCode, ec);
 					if (ec)
 					{
-						if (VERBOSE)
+						if (cif::VERBOSE)
 							cerr << "dropping unmatched SEQADV record" << endl;
 						continue;
 					}
@@ -4133,7 +4133,7 @@ void PDBFileParser::ConstructEntities()
 		tie(asymId, seq, ignore) = MapResidue(chainID, seqNum, iCode, ec);
 		if (ec)	// no need to write a modres if it could not be found
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "dropping unmapped MODRES record" << endl;
 			continue;
 		}
@@ -4226,7 +4226,7 @@ void PDBFileParser::ConstructEntities()
 		tie(asymId, seqNr, isPolymer) = MapResidue(unobs.chain, unobs.seq, unobs.iCode, ec);
 		if (ec)
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "error mapping unobserved residue" << endl;
 			continue;
 		}
@@ -4308,7 +4308,7 @@ void PDBFileParser::ParseSecondaryStructure()
 		
 		if (ec)
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "Could not map residue for HELIX " << vI(8, 10) << endl;
 		}
 		else
@@ -4429,7 +4429,7 @@ void PDBFileParser::ParseSecondaryStructure()
 		
 		if (ec)
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "Dropping SHEET record " << vI(8, 10) << endl;
 		}
 		else
@@ -4466,7 +4466,7 @@ void PDBFileParser::ParseSecondaryStructure()
 				
 				if (ec)
 				{
-					if (VERBOSE)
+					if (cif::VERBOSE)
 						cerr << "skipping unmatched pdbx_struct_sheet_hbond record" << endl;
 				}
 				else
@@ -4564,7 +4564,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			
 			if (ec)
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Dropping SSBOND " << vI(8, 10) << endl;
 				continue;
 			}
@@ -4584,7 +4584,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			}
 			catch (const std::exception& ex)
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Dropping SSBOND " << vI(8, 10) << " due to invalid symmetry operation" << endl;
 				continue;
 			}
@@ -4629,7 +4629,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 		
 		if (mRec->is("LINK  ") or mRec->is("LINKR "))
 		{
-			if (VERBOSE and mRec->is("LINKR "))
+			if (cif::VERBOSE and mRec->is("LINKR "))
 				cerr << "Accepting non-standard LINKR record, but ignoring extra information" << endl;
 			
 											//	 1 -  6         Record name    "LINK  "
@@ -4682,7 +4682,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			
 			if (ec)
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Dropping LINK record at line " << mRec->mLineNr << endl;
 				continue;
 			}
@@ -4698,7 +4698,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				}
 				catch (const invalid_argument&)
 				{
-					if (VERBOSE)
+					if (cif::VERBOSE)
 						cerr << "Distance value '" << distance << "' is not a valid float in LINK record" << endl;
 					distance.clear();
 				}
@@ -4715,7 +4715,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			}
 			catch (const std::exception& ex)
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Dropping LINK record at line " << mRec->mLineNr << " due to invalid symmetry operation" << endl;
 				continue;
 			}
@@ -4788,7 +4788,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			
 			if (ec)
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Dropping CISPEP record at line " << mRec->mLineNr << endl;
 				continue;
 			}
@@ -4856,7 +4856,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 			
 			if (ec)
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "skipping struct_site_gen record" << endl;
 			}
 			else
@@ -5164,7 +5164,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		{
 			if (groupPDB == "HETATM")
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Changing atom from HETATM to ATOM at line " << mRec->mLineNr << endl;
 				groupPDB = "ATOM";
 			}
@@ -5173,7 +5173,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		{
 			if (groupPDB == "ATOM")
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Changing atom from ATOM to HETATM at line " << mRec->mLineNr << endl;
 				groupPDB = "HETATM";
 			}
@@ -5553,7 +5553,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 		cerr << endl;
 	};
 	
-	if (VERBOSE > 1)
+	if (cif::VERBOSE > 1)
 		printAlignment();
 	
 	try
@@ -5563,7 +5563,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 			switch (tb(x, y))
 			{
 				case -1:
-//					if (VERBOSE)
+//					if (cif::VERBOSE)
 //						cerr << "A residue found in the ATOM records "
 //							 << "(" << ry[y].mMonId << " @ " << mDbref.chainID << ":" << ry[y].mSeqNum
 //							 	<<  ((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : string{ ry[y].mIcode }) << ")"
@@ -5577,16 +5577,16 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 					break;
 				
 				case 1:
-					if (VERBOSE > 3)
+					if (cif::VERBOSE > 3)
 						cerr << "Missing residue in ATOM records: " << rx[x].mMonId << " at " << rx[x].mSeqNum << endl;
 	
 					--x;
 					break;
 				
 				case 0:
-					if (VERBOSE > 3 and rx[x].mMonId != ry[y].mMonId)
+					if (cif::VERBOSE > 3 and rx[x].mMonId != ry[y].mMonId)
 						cerr << "Warning, unaligned residues at " << x << "/" << y << "(" << rx[x].mMonId << '/' << ry[y].mMonId << ')' << endl;
-					else if (VERBOSE > 4)
+					else if (cif::VERBOSE > 4)
 						cerr << rx[x].mMonId << " -> " << ry[y].mMonId << " (" << ry[y].mSeqNum << ')' << endl;
 	
 					rx[x].mSeqNum = ry[y].mSeqNum;
@@ -5599,7 +5599,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	}
 	catch (const exception& ex)
 	{
-		if (VERBOSE == 1)
+		if (cif::VERBOSE == 1)
 			printAlignment();
 		
 		throw;

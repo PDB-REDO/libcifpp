@@ -15,9 +15,7 @@
 #include "cif++/Compound.h"
 #include "cif++/CifUtils.h"
 
-#if defined(USE_RSRC)
 #include "cif++/mrsrc.h"
-#endif
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -84,7 +82,7 @@ class IsomerDB
 
 IsomerDB::IsomerDB()
 {
-#if defined(USE_RSRC)
+// #if defined(USE_RSRC)
 	mrsrc::rsrc isomers("isomers.txt");
 //	mrsrc::rsrc isomers("isomers-with-sugar.xml");
 	if (not isomers)
@@ -96,16 +94,16 @@ IsomerDB::IsomerDB()
 	} buffer(const_cast<char*>(isomers.data()), isomers.size());
 	
 	istream is(&buffer);
-#else
-	cerr << "resource support was not compiled in, falling back to a local file" << endl;
-	fs::path isomersFile = "isomers.txt";
-	if (not fs::exists(isomersFile))
-		isomersFile = fs::path(cif::get_executable_path()).parent_path() / "isomers.txt";
+// #else
+// 	cerr << "resource support was not compiled in, falling back to a local file" << endl;
+// 	fs::path isomersFile = "isomers.txt";
+// 	if (not fs::exists(isomersFile))
+// 		isomersFile = fs::path(cif::get_executable_path()).parent_path() / "isomers.txt";
 
-	fs::ifstream is(isomersFile);
-	if (not is.is_open())
-		throw runtime_error("Could not open the file isomers.txt");
-#endif
+// 	fs::ifstream is(isomersFile);
+// 	if (not is.is_open())
+// 		throw runtime_error("Could not open the file isomers.txt");
+// #endif
 
 	string line;
 
@@ -357,7 +355,7 @@ Compound::Compound(const fs::path& file, const std::string& id,
 				b.type = delocalizedBond;
 			else
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Unimplemented chem_comp_bond.type " << type << " in " << id << endl;
 				b.type = singleBond;
 			}
@@ -407,7 +405,7 @@ Compound::Compound(const fs::path& file, const std::string& id,
 				cc.volumeSign = both;
 			else
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Unimplemented chem_comp_chir.volume_sign " << volumeSign << " in " << id << endl;
 				continue;
 			}
@@ -667,7 +665,7 @@ bool Compound::isIsomerOf(const Compound& c) const
 		vector<tuple<string,string>> mapping;
 		result = StructuresAreIsomeric(mAtoms, mBonds, c.mAtoms, c.mBonds, mapping);
 		
-		if (VERBOSE and result)
+		if (cif::VERBOSE and result)
 		{
 			for (auto& m: mapping)
 				cerr << "  " << get<0>(m) << " => " << get<1>(m) << endl;
@@ -801,7 +799,7 @@ Link::Link(cif::Datablock& db)
 											b.type = delocalizedBond;
 		else
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "Unimplemented chem_link_bond.type " << type << " in " << mId << endl;
 			b.type = singleBond;
 		}
@@ -863,7 +861,7 @@ Link::Link(cif::Datablock& db)
 			cc.volumeSign = both;
 		else
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "Unimplemented chem_link_chir.volume_sign " << volumeSign << " in " << mId << endl;
 			continue;
 		}

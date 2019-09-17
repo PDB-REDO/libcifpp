@@ -1,4 +1,5 @@
 #include "cif++/Config.h"
+#include "cif++/Cif++.h"
 
 #include <map>
 #include <set>
@@ -996,7 +997,7 @@ string Remark3Parser::nextLine()
 		break;
 	}
 
-	if (VERBOSE >= 2)
+	if (cif::VERBOSE >= 2)
 		cerr << "RM3: " << mLine << endl;
 
 	return mLine;
@@ -1010,7 +1011,7 @@ bool Remark3Parser::match(const char* expr, int nextState)
 
 	if (result)
 		mState = nextState;
-	else if (VERBOSE >= 3)
+	else if (cif::VERBOSE >= 3)
 		cerr << cif::coloured("No match:", cif::scWHITE, cif::scRED) << " '" << expr << '\'' << endl;
 
 	return result;
@@ -1070,7 +1071,7 @@ float Remark3Parser::parse()
 			continue;
 		}
 
-		if (VERBOSE >= 2)
+		if (cif::VERBOSE >= 2)
 			cerr << cif::coloured("Dropping line:", cif::scWHITE, cif::scRED) << " '" << mLine << '\'' << endl;
 
 		++dropped;
@@ -1122,7 +1123,7 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 		if (iequals(value, "NULL") or iequals(value, "NONE") or iequals(value, "Inf") or iequals(value, "+Inf") or iequals(value, string(value.length(), '*')))
 			continue;
 
-		if (VERBOSE >= 3)
+		if (cif::VERBOSE >= 3)
 			cerr << "storing: '" << value << "' in _" << category << '.' << item << endl;
 
 		auto& cat = mDb[category];
@@ -1291,7 +1292,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 
 	if (line != "REFINEMENT.")
 	{
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "Unexpected data in REMARK 3" << endl;
 		return false;
 	}
@@ -1303,7 +1304,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 
 	if (not regex_match(line, m, rxp))
 	{
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "Expected valid PROGRAM line in REMARK 3" << endl;
 		return false;
 	}
@@ -1343,7 +1344,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 			score = 0;
 		}
 
-		if (VERBOSE >= 2)
+		if (cif::VERBOSE >= 2)
 			cerr << "Score for " << parser->program() << ": " << score << endl;
 
 		if (score > 0)
@@ -1382,7 +1383,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 			tryParser(new TNT_Remark3Parser(program, expMethod, r, db));
 		else if (ba::starts_with(program, "X-PLOR"))
 			tryParser(new XPLOR_Remark3Parser(program, expMethod, r, db));
-		else if (VERBOSE)
+		else if (cif::VERBOSE)
 			cerr << "Skipping unknown program (" << program << ") in REMARK 3" << endl;
 	}
 
@@ -1415,7 +1416,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 
 		auto& best = scores.front();
 
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "Choosing " << best.parser->program() << " version '" << best.parser->version() << "' as refinement program. Score = " << best.score << endl;
 
 		auto& software = db["software"];

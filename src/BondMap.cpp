@@ -57,7 +57,7 @@ BondMap::BondMap(const Structure& p)
 		if (compounds.count(c))
 			continue;
 		
-		if (VERBOSE > 1)
+		if (cif::VERBOSE > 1)
 			cerr << "Warning: mon_id " << c << " is missing in the chem_comp category" << endl;
 		compounds.insert(c);
 	}
@@ -151,14 +151,14 @@ BondMap::BondMap(const Structure& p)
 		auto* compound = mmcif::Compound::create(c);
 		if (not compound)
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "Missing compound information for " << c << endl;
 			continue;
 		}
 		
 		if (compound->isWater())
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "skipping water in bond map calculation" << endl;
 			continue;
 		}

@@ -10,6 +10,27 @@
 #include <list>
 #include <exception>
 
+namespace mrsrc
+{
+
+class rsrc_not_found_exception : public std::exception
+{
+  public:
+    virtual const char* what() const throw()		{ return "resource not found"; }
+};
+
+class rsrc;
+typedef std::list<rsrc>	rsrc_list;
+
+}
+
+// --------------------------------------------------------------------
+// By default, we assume mrc is used to create the resources. If you need
+// local disk storage instead, use the NO_RSRC macro. See below for
+// usage.
+
+#if defined(USE_RSRC)
+
 /*
 	Resources are data sources for the application.
 	
@@ -46,15 +67,6 @@ extern const char				gResourceName[];
 
 namespace mrsrc
 {
-
-class rsrc_not_found_exception : public std::exception
-{
-  public:
-    virtual const char* what() const throw()		{ return "resource not found"; }
-};
-
-class rsrc;
-typedef std::list<rsrc>	rsrc_list;
 
 class rsrc
 {
@@ -148,5 +160,122 @@ rsrc::rsrc(const std::string& path)
 }
 
 }
+
+#else
+
+// --------------------------------------------------------------------
+// Fall back option for resources, locate the data in the path specified
+// in then environment variable RESOURCE_DIR
+
+#include <cstdlib>
+#include <unistd.h>
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <map>
+
+namespace mrsrc
+{
+
+namespace detail
+{
+
+class rsrc_loader
+{
+  public:
+
+	static rsrc_loader& instance()
+	{
+		static rsrc_loader sInstance;
+		return sInstance;
+	}
+
+	const std::vector<char>& load(const std::string& path)
+	{
+		if (not m_loaded.count(path))
+		{
+			std::string p = m_rsrc_dir + '/' + path;
+			
+			std::ifstream file(p);
+			std::vector<char> result;
+
+			if (file.is_open())
+			{
+				std::streambuf* b = file.rdbuf();
+				size_t length = b->pubseekoff(0, std::ios::end);
+				b->pubseekpos(0);
+
+				result.resize(length);
+				b->sgetn(result.data(), length);
+			}
+
+			m_loaded.emplace(path, std::move(result));
+		}
+
+		return m_loaded.at(path);
+	}
+
+  private:
+
+	rsrc_loader()
+	{
+		const char* rsrc_dir = getenv("RESOURCE_DIR");
+#if defined(RSRC_DIR)
+		if (rsrc_dir == nullptr)
+			rsrc_dir = RSRC_DIR;
+#endif
+		if (rsrc_dir == nullptr)
+		{
+			char pb[PATH_MAX];
+			const char* cwd = getcwd(pb, PATH_MAX);
+
+			if (cwd == nullptr)
+				throw std::runtime_error("Could not locate resource directory nor current directory");
+
+			std::cerr << "RESOURCE_DIR not defined, falling back to " << cwd << std::endl;
+
+			rsrc_dir = cwd;
+		}
+
+		m_rsrc_dir = rsrc_dir;
+	}
+
+	std::string m_rsrc_dir;
+	std::map<std::string,std::vector<char>> m_loaded;
+};
+
+}
+
+class rsrc
+{
+  public:
+	rsrc(const rsrc&) = delete;
+	rsrc& operator=(const rsrc&) = delete;
+
+	rsrc(const std::string& path)
+		: m_data(detail::rsrc_loader::instance().load(path))
+		// , m_name(path)
+	{}
+
+	// std::string			name() const			{ return m_name; }
+
+	const char*			data() const			{ return m_data.data(); }
+	
+	unsigned long		size() const			{ return m_data.size(); }
+
+	explicit			operator bool () const	{ return not m_data.empty(); }
+
+	// rsrc_list			children() const;
+
+  private:
+
+	const std::vector<char>&	m_data;
+	// const std::string			m_name;
+};
+
+}
+
+#endif
 
 #endif

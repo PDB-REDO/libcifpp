@@ -485,7 +485,7 @@ void StatsCollector::initialize()
 		
 		float radius = shape.radius();
 		
-		if (VERBOSE > 2)
+		if (cif::VERBOSE > 2)
 			cerr << (atomData.size() + 1) << '\t'
 				 << AtomTypeTraits(atom.type()).symbol() << '\t'
 				 << radius << endl;
@@ -551,7 +551,7 @@ void StatsCollector::initialize()
 			double qa = dd * (swxs * swy - swx * swxy);
 			double qb = dd * (sw * swxy - swx * swy);
 			
-			if (VERBOSE > 1)
+			if (cif::VERBOSE > 1)
 			{
 				swys = dd * (swys - (qa * swy + qb * swxy)) / (ns - 2);
 				cerr << endl
@@ -560,7 +560,7 @@ void StatsCollector::initialize()
 
 			qb += 1.0;
 		
-			if (VERBOSE > 1)
+			if (cif::VERBOSE > 1)
 			{
 				cerr << endl
 					 << "Rescale SD(delta-rho) using Q-Q plot for asym " << zsc.first << ':' << endl
@@ -656,7 +656,7 @@ vector<ResidueStatistics> StatsCollector::collect(const vector<tuple<string,int,
 		
 		float radius = shape.radius();
 		
-		if (VERBOSE > 2)
+		if (cif::VERBOSE > 2)
 			cerr << (atomData.size() + 1) << '\t'
 				 << AtomTypeTraits(atom.type()).symbol() << '\t'
 				 << radius << endl;
@@ -716,7 +716,7 @@ vector<ResidueStatistics> StatsCollector::collect(const vector<tuple<string,int,
 				{
 					if (compAtom.id == "OXT")
 						--n;
-					else if (VERBOSE > 1)
+					else if (cif::VERBOSE > 1)
 						cerr << "Missing atom '" << compAtom.id << "' in residue " << asymID << ':' << seqID << endl;
 					continue;
 				}
@@ -794,7 +794,7 @@ ResidueStatistics StatsCollector::collect(const vector<Atom>& atoms) const
 		
 		float radius = shape.radius();
 		
-		if (VERBOSE > 2)
+		if (cif::VERBOSE > 2)
 			cerr << (atomData.size() + 1) << '\t'
 				 << AtomTypeTraits(atom.type()).symbol() << '\t'
 				 << radius << endl;
@@ -995,7 +995,7 @@ EDIAStatsCollector::EDIAStatsCollector(MapMaker<float>& mm,
 	else
 		ediaBFactor = kAverageBFactors[i];
 
-	if (VERBOSE)
+	if (cif::VERBOSE)
 		cerr << "Calculating radii with B Factor " << ediaBFactor << endl;
 	
 	for (auto atom: mStructure.atoms())
@@ -1006,7 +1006,7 @@ EDIAStatsCollector::EDIAStatsCollector(MapMaker<float>& mm,
 		AtomShape shape(atom, mResHigh, mResLow, mElectronScattering, ediaBFactor);
 		mRadii[atom.type()] = shape.radius();
 		
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "Radius for atom with type " << AtomTypeTraits(atom.type()).symbol() << " is " << mRadii[atom.type()] << endl;
 	}
 }
@@ -1034,7 +1034,7 @@ void EDIAStatsCollector::calculate(vector<AtomData>& atomData) const
 		auto& atom = data.atom;
 		float radius = mRadii.at(atom.type());
 		
-//		if (VERBOSE > 2)
+//		if (cif::VERBOSE > 2)
 //			cerr << (atomData.size() + 1) << '\t'
 //				 << AtomTypeTraits(atom.type()).symbol() << '\t'
 //				 << radius << endl;
@@ -1127,7 +1127,7 @@ void EDIAStatsCollector::calculate(vector<AtomData>& atomData) const
 				}
 			}
 
-//					if (VERBOSE > 2)
+//					if (cif::VERBOSE > 2)
 //						cout << Point(p) << ":\td: " << xmap[iw] << "\tz: " << z << "\to: " << o << "\tzraw: " << ((xmap[iw] - meanDensity) / rmsDensity) << "\twp: " << wp << endl;
 			
 			ediaSum[0] += z * wp * o;

@@ -2932,7 +2932,7 @@ int WriteHeterogen(ostream& pdbFile, Datablock& db)
 			h->numHetAtoms += 1;
 	}
 	
-	if (VERBOSE > 1 and not missingHetNames.empty())
+	if (cif::VERBOSE > 1 and not missingHetNames.empty())
 		cerr << "Missing het name(s) for " << ba::join(missingHetNames, ", ") << endl;
 	
 	boost::format kHET("HET    %3.3s  %1.1s%4.4d%1.1s  %5.5d");

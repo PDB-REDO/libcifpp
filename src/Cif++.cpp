@@ -16,9 +16,7 @@
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 
-#if defined(USE_RSRC)
 #include "cif++/mrsrc.h"
-#endif
 
 #include "cif++/Cif++.h"
 #include "cif++/CifParser.h"
@@ -30,10 +28,10 @@ namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 
-extern int VERBOSE;
-
 namespace cif
 {
+
+int VERBOSE = 0;
 
 static const char* kEmptyResult = "";
 	
@@ -2690,7 +2688,6 @@ void File::loadDictionary(const char* dict)
 		}
 		catch (...) {}
 		
-#if defined(USE_RSRC)
 		mrsrc::rsrc dictData(dictFile.string());
 
 		if (dictData)
@@ -2708,7 +2705,6 @@ void File::loadDictionary(const char* dict)
 			loadDictionary(is);
 			break;
 		}
-#endif
 		
 		throw runtime_error("Dictionary not found or defined (" + name + ")");
 	}

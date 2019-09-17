@@ -753,7 +753,7 @@ void CalculateSecondaryStructure(Structure& s)
 	CalculateBetaSheets(residues);
 	CalculateAlphaHelices(residues);
 	
-	if (VERBOSE)
+	if (cif::VERBOSE)
 	{
 		for (auto& r: residues)
 		{
@@ -813,7 +813,7 @@ DSSPImpl::DSSPImpl(const Structure& s)
 	: mStructure(s)
 	, mPolymers(mStructure.polymers())
 {
-	if (VERBOSE)
+	if (cif::VERBOSE)
 		cerr << "Calculating DSSP ";
 	
 	size_t nRes = accumulate(mPolymers.begin(), mPolymers.end(),
@@ -835,18 +835,18 @@ DSSPImpl::DSSPImpl(const Structure& s)
 		mResidues[i + 1].assignHydrogen();
 	}
 	
-	if (VERBOSE) cerr << ".";
+	if (cif::VERBOSE) cerr << ".";
 	CalculateHBondEnergies(mResidues);
 
-	if (VERBOSE) cerr << ".";
+	if (cif::VERBOSE) cerr << ".";
 	CalculateBetaSheets(mResidues);
 
-	if (VERBOSE) cerr << ".";
+	if (cif::VERBOSE) cerr << ".";
 	CalculateAlphaHelices(mResidues);
 	
-	if (VERBOSE) cerr << endl;
+	if (cif::VERBOSE) cerr << endl;
 
-	if (VERBOSE > 1)
+	if (cif::VERBOSE > 1)
 	{
 		for (auto& r: mResidues)
 		{
@@ -892,7 +892,7 @@ SecondaryStructureType DSSP::operator()(const string& inAsymID, int inSeqID) con
 		[&](auto& r) { return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
 	if (i != mImpl->mResidues.end())
 		result = i->mSecondaryStructure;
-	else if (VERBOSE)
+	else if (cif::VERBOSE)
 		cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << endl;
 	return result;
 }
@@ -916,7 +916,7 @@ bool DSSP::isAlphaHelixEndBeforeStart(const string& inAsymID, int inSeqID) const
 
 	if (i != mImpl->mResidues.end() and i + 1 != mImpl->mResidues.end())
 		result = i->GetHelixFlag(4) == helixEnd and (i + 1)->GetHelixFlag(4) == helixStart;
-	else if (VERBOSE)
+	else if (cif::VERBOSE)
 		cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << endl;
 
 	return result;

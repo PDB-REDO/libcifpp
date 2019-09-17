@@ -115,7 +115,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	sort(c.begin(), c.end());
 	float mz = median();
 
-	if (VERBOSE > 1)
+	if (cif::VERBOSE > 1)
 		cerr << "median position of atoms: " << Point(mx, my, mz) << endl;
 	
 	auto calculateD = [&](float m, float c)
@@ -136,7 +136,7 @@ DistanceMap::DistanceMap(const Structure& p, const clipper::Spacegroup& spacegro
 	
 	if (mD.mX != 0 or mD.mY != 0 or mD.mZ != 0)
 	{
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "moving coorinates by " << mD.mX << ", " << mD.mY << " and " << mD.mZ << endl;
 		
 		for_each(locations.begin(), locations.end(), [&](auto& p) { p += mD; });
