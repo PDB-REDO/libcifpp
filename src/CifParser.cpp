@@ -915,6 +915,8 @@ void DictParser::linkItems()
 //		keys.insert(civ->mTag);
 //	}
 	
+	auto& linkedGroup = dict["pdbx_item_linked_group"];
+
 	// now store the links in the validator
 	for (auto& kv: linkIndex)
 	{
@@ -922,7 +924,14 @@ void DictParser::linkItems()
 		std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupId) = kv.first;
 		
 		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
-		
+
+		// look up the label
+		for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupId))
+		{
+			link.mLinkGroupLabel = r["label"].as<string>();
+			break;
+		}
+
 		mValidator.addLinkValidator(move(link));
 	}
 	

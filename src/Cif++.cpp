@@ -361,6 +361,12 @@ bool Datablock::isValid()
 	return result;
 }
 
+void Datablock::validateLinks() const
+{
+	for (auto& cat: *this)
+		cat.validateLinks();
+}
+
 void Datablock::setValidator(Validator* v)
 {
 	mValidator = v;
@@ -1333,7 +1339,7 @@ RowSet Category::find(Condition&& cond)
 	return result;
 }
 
-bool Category::exists(Condition&& cond)
+bool Category::exists(Condition&& cond) const
 {
 	bool result = false;
 
@@ -1597,6 +1603,21 @@ Category::const_iterator Category::end() const
 	return const_iterator(nullptr);
 }
 
+bool Category::hasParent(Row r, const Category& parentCat, const ValidateLink& link) const
+{
+	Condition cond;
+	for (size_t ix = 0; ix < link.mChildKeys.size(); ++ix)
+	{
+		const char* value = r[link.mChildKeys[ix]].c_str();
+		cond = move(cond) && (Key(link.mParentKeys[ix]) == value);
+	}
+
+	if (VERBOSE > 2)
+		cerr << "Check condition '" << cond << "' in parent category " << link.mParentCategory << " for child cat " << mName << endl;
+
+	return parentCat.exists(std::move(cond));
+}
+
 bool Category::isOrphan(Row r)
 {
 	// be safe
@@ -1728,6 +1749,29 @@ bool Category::isValid()
 	return result;
 }
 
+void Category::validateLinks() const
+{
+	auto& validator = getValidator();
+
+	for (auto linkValidator: validator.getLinksForChild(mName))
+	{
+		auto parent = mDb.get(linkValidator->mParentCategory);
+		if (parent == nullptr)
+			continue;
+
+		size_t missing = 0;
+		for (auto r: *this)
+			if (not hasParent(r, *parent, *linkValidator))
+				++missing;
+		
+		if (missing)
+		{
+			cerr << "Links for " << linkValidator->mLinkGroupLabel << " are incomplete" << endl
+				 << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parent->mName << endl;
+		}
+	}
+}
+
 const Validator& Category::getValidator() const
 {
 	if (mValidator == nullptr)
@@ -1787,6 +1831,12 @@ set<size_t> Category::keyFieldsByIndex() const
 }
 
 auto Category::iterator::operator++() -> iterator&
+{
+	mCurrent = Row(mCurrent.data()->mNext);
+	return *this;
+}
+
+auto Category::const_iterator::operator++() -> const_iterator&
 {
 	mCurrent = Row(mCurrent.data()->mNext);
 	return *this;
@@ -2590,6 +2640,12 @@ bool File::isValid()
 	for (auto d = mHead; d != nullptr; d = d->mNext)
 		result = d->isValid() and result;
 	return result;
+}
+
+void File::validateLinks() const
+{
+	for (auto d = mHead; d != nullptr; d = d->mNext)
+		d->validateLinks();
 }
 
 const Validator& File::getValidator() const

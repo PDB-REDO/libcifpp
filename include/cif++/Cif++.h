@@ -101,6 +101,7 @@ class Validator;
 
 struct ValidateItem;
 struct ValidateCategory;
+struct ValidateLink;
 
 struct ItemColumn;
 struct ItemRow;
@@ -207,6 +208,8 @@ class Datablock
 	std::tuple<iterator,bool> emplace(const std::string& name);
 	
 	bool isValid();
+	void validateLinks() const;
+
 	void setValidator(Validator* v);
 
 	// this one only looks up a Category, returns nullptr if it does not exist
@@ -1105,7 +1108,7 @@ class Category
 		bool operator!=(const const_iterator& rhs) const	{ return not (mCurrent == rhs.mCurrent); } 
 		
 	  private:
-		const Row mCurrent;
+		Row mCurrent;
 	};
 
 	const_iterator begin() const;
@@ -1121,7 +1124,7 @@ class Category
 	
 	Row operator[](Condition&& cond);
 	RowSet find(Condition&& cond);
-	bool exists(Condition&& cond);
+	bool exists(Condition&& cond) const;
 	
 	RowSet orderBy(const string& Item)
 		{ return orderBy({ Item }); }
@@ -1147,8 +1150,10 @@ class Category
 	/// an orphan is a row that is the child side of one or more
 	/// links and for which there is no single parent left.
 	bool isOrphan(Row r);
+	bool hasParent(Row r, const Category& parentCat, const ValidateLink& link) const;
 
 	bool isValid();
+	void validateLinks() const;
 
 	const Validator& getValidator() const;
 	const ValidateCategory* getCatValidator() const		{ return mCatValidator; }
@@ -1225,6 +1230,7 @@ class File
 	void loadDictionary(std::istream& is);		// load dictionary from input stream
 
 	bool isValid();
+	void validateLinks() const;
 	
 	Datablock& firstDatablock()			{ return *mHead; }
 	void append(Datablock* e);
