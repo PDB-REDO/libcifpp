@@ -152,7 +152,15 @@ class Item
 
 	void value(const string& v)	{ mValue = v; }
 	
-	bool empty() const			{ return mValue.empty(); }
+	// empty means either null or unknown
+	bool empty() const;
+
+	// is_null means the field contains '.'
+	bool is_null() const;
+
+	// is_unknown means the field contains '?'
+	bool is_unknown() const;
+
 	size_t length() const		{ return mValue.length(); }
 	const char* c_str() const	{ return mValue.c_str(); }
 	
@@ -284,9 +292,15 @@ namespace detail
 			return result;
 		}
 		
+		// empty means either null or unknown
 		bool empty() const;
-//		bool unapplicable() const;
-		
+
+		// is_null means the field contains '.'
+		bool is_null() const;
+
+		// is_unknown means the field contains '?'
+		bool is_unknown() const;
+
 		const char* c_str() const;
 		
 		// the following returns the defaultValue from either the parameter
@@ -614,6 +628,8 @@ struct Condition
 	{
 		return mImpl ? mImpl->str() : "";
 	}
+
+	bool empty() const		{ return mImpl == nullptr; }
 
 	detail::ConditionImpl*	mImpl;
 	bool mPrepared = false;

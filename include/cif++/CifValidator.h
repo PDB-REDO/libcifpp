@@ -63,6 +63,7 @@ struct ValidateItem
 	const ValidateType*		mType;
 	cif::iset				mEnums;
 	std::string				mDefault;
+	bool					mDefaultIsNull;
 	ValidateCategory*		mCategory = nullptr;
 
 	// ItemLinked is used for non-key links

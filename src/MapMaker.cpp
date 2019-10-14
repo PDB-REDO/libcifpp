@@ -13,6 +13,7 @@
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
 
+#include "cif++/Cif++.h"
 #include "cif++/MapMaker.h"
 #include "cif++/ResolutionCalculator.h"
 
@@ -20,8 +21,6 @@ using namespace std;
 namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 namespace ba = boost::algorithm;
-
-extern int VERBOSE;
 
 namespace mmcif
 {
@@ -312,7 +311,7 @@ void Map<FTYPE>::read(const fs::path& mapFile)
 {
 	fs::path dataFile = mapFile;
 
-	if (VERBOSE)
+	if (cif::VERBOSE)
 		cout << "Reading map from " << mapFile << endl;
 	
 	if (mapFile.extension() == ".gz" or mapFile.extension() == ".bz2")
@@ -401,7 +400,7 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 	initializer_list<string> foLabels, initializer_list<string> fcLabels,
 	initializer_list<string> faLabels)
 {
-	if (VERBOSE)
+	if (cif::VERBOSE)
 		cerr << "Reading map from " << hklin << endl
 			 << "  with labels: FB: " << ba::join(fbLabels, ",") << endl
 			 << "  with labels: FD: " << ba::join(fdLabels, ",") << endl
@@ -523,7 +522,7 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 		faMap.fft_from(mFaData);
 	}
 
-	if (VERBOSE)
+	if (cif::VERBOSE)
 	{
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
 		     << "  stored resolution: " << mHKLInfo.resolution().limit() << endl
@@ -660,7 +659,7 @@ void MapMaker<FTYPE>::loadFoFreeFromReflectionsFile(const fs::path& hklin)
 		
 		if (ix < 0)
 		{
-			if (VERBOSE)
+			if (cif::VERBOSE)
 				cerr << "Ignoring hkl(" << h << ", " << k << ", " << l << ")" << endl;
 			continue;
 		}
@@ -692,7 +691,7 @@ void MapMaker<FTYPE>::loadFoFreeFromReflectionsFile(const fs::path& hklin)
 				break;
 
 			default:
-				if (VERBOSE > 1)
+				if (cif::VERBOSE > 1)
 					cerr << "Unexpected value in status: '" << flag << "' for hkl(" << h << ", " << k << ", " << l << ")" << endl;
 				break;
 		}
@@ -705,7 +704,7 @@ template<typename FTYPE>
 void MapMaker<FTYPE>::loadFoFreeFromMTZFile(const fs::path& hklin,
 	initializer_list<std::string> foLabels, initializer_list<std::string> freeLabels)
 {
-	if (VERBOSE)
+	if (cif::VERBOSE)
 		cerr << "Recalculating maps from " << hklin << endl;
 	
 	const string kBasePath("/%1%/%2%/[%3%]");
@@ -761,7 +760,7 @@ void MapMaker<FTYPE>::recalc(const Structure& structure,
 		clipper::SFcalc_obs_bulk<float> sfcb;
 		sfcb(mFcData, mFoData, atoms);
 		
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "Bulk correction volume: " << sfcb.bulk_frac() << endl
 				 << "Bulk correction factor: " << sfcb.bulk_scale() << endl;
 	}
@@ -775,7 +774,7 @@ void MapMaker<FTYPE>::recalc(const Structure& structure,
 		else
 			sfscl(mFcData, mFoData);  // scale Fcal
 			
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "Anisotropic scaling:" << endl
 				 << sfscl.u_aniso_orth(F).format() << endl;
 	}
@@ -819,7 +818,7 @@ void MapMaker<FTYPE>::recalc(const Structure& structure,
 			mResLow = res;
 	}
 
-	if (VERBOSE > 1)
+	if (cif::VERBOSE > 1)
 		cerr << "calculated reshi = " << mResHigh << " reslo = " << mResLow << endl;
 
 	samplingRate /= 2;
@@ -836,7 +835,7 @@ void MapMaker<FTYPE>::recalc(const Structure& structure,
 	fdMap.init(spacegroup, cell, mGrid);			// define map
 	fdMap.fft_from(mFdData);						// generate map
 
-	if (VERBOSE)
+	if (cif::VERBOSE)
 	{
 		cerr << "Read Xmaps with sampling rate: " << samplingRate << endl
 			 << "  resolution: " << mResHigh
@@ -873,7 +872,7 @@ void MapMaker<FTYPE>::fixMTZ()
 	
 	// first run the tests to see if we need to fix anything
 	
-	if (VERBOSE)
+	if (cif::VERBOSE)
 		cerr << "Testing MTZ file" << endl;
 	
 	for (auto ih = mFbData.first(); not ih.last(); ih.next())
@@ -903,13 +902,13 @@ void MapMaker<FTYPE>::fixMTZ()
 			if (tests[T10] and abs(FM - FC) > 0.05)
 			{
 				tests[T10] = false;
-				if (VERBOSE) cerr << "Test 10 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test 10 failed at " << ih.hkl() << endl;
 			}
 			
 			if (tests[T11] and abs(FD) > 0.05)
 			{
 				tests[T11] = false;
-				if (VERBOSE) cerr << "Test 11 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test 11 failed at " << ih.hkl() << endl;
 			}
 		}
 		else if (cls.centric())
@@ -917,31 +916,31 @@ void MapMaker<FTYPE>::fixMTZ()
 			if (tests[C5] and abs(FC + FM - 2 * WFO) > 0.05)
 			{
 				tests[C5] = false;
-				if (VERBOSE) cerr << "Test C5 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test C5 failed at " << ih.hkl() << endl;
 			}
 			
 			if (tests[C6] and abs(FM - WFO) > 0.05)
 			{
 				tests[C6] = false;
-				if (VERBOSE) cerr << "Test C6 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test C6 failed at " << ih.hkl() << endl;
 			}
 			
 			if (tests[C7] and abs(FC + FD - WFO) > 0.05)
 			{
 				tests[C7] = false;
-				if (VERBOSE) cerr << "Test C7 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test C7 failed at " << ih.hkl() << endl;
 			}
 			
 			if (tests[C8] and abs(FC + 0.5 * FD - WFO) > 0.05)
 			{
 				tests[C8] = false;
-				if (VERBOSE) cerr << "Test C8 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test C8 failed at " << ih.hkl() << endl;
 			}
 			
 			if (tests[C9] and (1.01 * FC + Gd - WFO) < -0.05)
 			{
 				tests[C9] = false;
-				if (VERBOSE) cerr << "Test C9 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test C9 failed at " << ih.hkl() << endl;
 			}
 			
 		}
@@ -950,25 +949,25 @@ void MapMaker<FTYPE>::fixMTZ()
 			if (tests[A1] and abs(FC + FM - 2 * WFO) > 0.05)
 			{
 				tests[A1] = false;
-				if (VERBOSE) cerr << "Test A1 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test A1 failed at " << ih.hkl() << endl;
 			}
 			
 			if (tests[A2] and 1.01 * FC + FM - 2 * WFO < -0.05)
 			{
 				tests[A2] = false;
-				if (VERBOSE) cerr << "Test A2 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test A2 failed at " << ih.hkl() << endl;
 			}
 			
 			if (tests[A3] and abs(FM - FD - WFO) > 0.05)
 			{
 				tests[A3] = false;
-				if (VERBOSE) cerr << "Test A3 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test A3 failed at " << ih.hkl() << endl;
 			}
 			
 			if (tests[A4] and abs(FM - 0.5 * FD - WFO) > 0.05)
 			{
 				tests[A4] = false;
-				if (VERBOSE) cerr << "Test A4 failed at " << ih.hkl() << endl;
+				if (cif::VERBOSE) cerr << "Test A4 failed at " << ih.hkl() << endl;
 			}
 		}
 	}	

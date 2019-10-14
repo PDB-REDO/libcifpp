@@ -15,6 +15,7 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/logic/tribool.hpp>
 
 #include "cif++/mrsrc.h"
 
@@ -48,6 +49,10 @@ struct ItemValue
 	ItemValue(const char* v, uint32_t columnIndex);
 	~ItemValue();
 	
+	bool empty() const		{ return mText[0] == 0 or ((mText[0] == '.' or mText[0] == '?') and mText[1] == 0); }
+	bool null() const		{ return mText[0] == '.' and mText[1] == 0; }
+	bool unknown() const	{ return mText[0] == '?' and mText[1] == 0; }
+
 	void* operator new(size_t size, size_t dataSize);
 	void operator delete(void* p);
 };
@@ -272,6 +277,32 @@ const char* ItemReference::c_str(const char* defaultValue) const
 bool ItemReference::empty() const
 {
 	return c_str() == kEmptyResult;
+}
+
+bool ItemReference::is_null() const
+{
+	boost::tribool result;
+	
+	if (mRow.mData != nullptr and mRow.mData->mCategory != nullptr)
+	{
+		for (auto iv = mRow.mData->mValues; iv != nullptr; iv = iv->mNext)
+		{
+			if (iv->mColumnIndex == mColumn)
+			{
+				result = iv->mText[0] == '.' and iv->mText[1] == 0;
+				break;
+			}
+		}
+
+		if (result == boost::indeterminate and mColumn < mRow.mData->mCategory->mColumns.size())	// not found, perhaps the category has a default defined?
+		{
+			auto iv = mRow.mData->mCategory->mColumns[mColumn].mValidator;
+			if (iv != nullptr)
+				result = iv->mDefaultIsNull;
+		}
+	}
+	
+	return result;
 }
 
 void ItemReference::swap(ItemReference& b)
@@ -1603,17 +1634,39 @@ Category::const_iterator Category::end() const
 
 bool Category::hasParent(Row r, const Category& parentCat, const ValidateLink& link) const
 {
+	assert(mValidator != nullptr);
+	assert(mCatValidator != nullptr);
+
+	bool result = true;
+
 	Condition cond;
 	for (size_t ix = 0; ix < link.mChildKeys.size(); ++ix)
 	{
-		const char* value = r[link.mChildKeys[ix]].c_str();
-		cond = move(cond) && (Key(link.mParentKeys[ix]) == value);
+		auto& name = link.mChildKeys[ix];
+		auto field = r[name];
+		if (field.empty())
+		{
+			if (mCatValidator->mMandatoryFields.count(name) and field.is_null())
+				cond = move(cond) and (Key(link.mParentKeys[ix]) == Empty());
+		}
+		else
+		{
+	 		const char* value = field.c_str();
+			cond = move(cond) and (Key(link.mParentKeys[ix]) == value);
+		}
 	}
 
-	if (VERBOSE > 2)
-		cerr << "Check condition '" << cond << "' in parent category " << link.mParentCategory << " for child cat " << mName << endl;
+	if (result and not cond.empty())
+	{
+		result = parentCat.exists(std::move(cond));
 
-	return parentCat.exists(std::move(cond));
+		if (VERBOSE > 3 or (result == false and VERBOSE > 2))
+			cerr << "result = " << boolalpha << result << " for: '" << cond << "' in parent category " << link.mParentCategory << " for child cat " << mName << endl;
+	}
+	else if (VERBOSE > 3 and cond.empty())
+		cerr << "Condition is empty due to missing data in parent category " << link.mParentCategory << " for child cat " << mName << endl;
+
+	return result;
 }
 
 bool Category::isOrphan(Row r)
@@ -2263,9 +2316,9 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 		cat->mIndex->erase(b);
 	}
 
-	ItemValue* ap = nullptr;
+	ItemValue* ap = nullptr;	// parent of ai
 	ItemValue* ai = nullptr;
-	ItemValue* bp = nullptr;
+	ItemValue* bp = nullptr;	// parent of bi
 	ItemValue* bi = nullptr;
 	
 	if (a->mValues == nullptr)
@@ -2337,39 +2390,118 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 		cat->mIndex->insert(b);
 	}
 
-#pragma warning("doen!")
-//	// see if we need to update any child categories that depend on these values
-//	auto iv = col.mValidator;
-//	if ((ai != nullptr or bi != nullptr) and
-//		iv != nullptr and not iv->mChildren.empty())
-//	{
-//		for (auto child: iv->mChildren)
-//		{
-//			if (child->mCategory == nullptr)
-//				continue;
-//			
-//			auto childCat = db.get(child->mCategory->mName);
-//			if (childCat == nullptr)
-//				continue;
-//
-//#if DEBUG
-//cerr << "fixing linked item " << child->mCategory->mName << '.' << child->mTag << endl;
-//#endif
-//			if (ai != nullptr)
-//			{
-//				auto rows = childCat->find(Key(child->mTag) == string(ai->mText));
-//				for (auto& cr: rows)
-//					cr.assign(child->mTag, bi == nullptr ? "" : bi->mText, false);
-//			}
-//
-//			if (bi != nullptr)
-//			{
-//				auto rows = childCat->find(Key(child->mTag) == string(bi->mText));
-//				for (auto& cr: rows)
-//					cr.assign(child->mTag, ai == nullptr ? "" : ai->mText, false);
-//			}
-//		}
-//	}
+	if ((ai != nullptr or bi != nullptr))
+	{
+		auto parentColName = cat->getColumnName(cix);
+
+		// see if we need to update any child categories that depend on these values
+		auto& validator = cat->getValidator();
+		auto parentCatValidator = cat->getCatValidator();
+
+		for (auto& link: validator.getLinksForParent(cat->mName))
+		{
+			if (find(link->mParentKeys.begin(), link->mParentKeys.end(), parentColName) == link->mParentKeys.end())
+				continue;
+			
+			auto childCat = cat->db().get(link->mChildCategory);
+			if (childCat == nullptr or childCat->empty())
+				continue;
+			
+			auto childCatValidator = childCat->getCatValidator();
+			if (childCatValidator == nullptr)
+				continue;
+
+			string linkChildColName;
+
+			Condition cond[2];
+			for (size_t ab = 0; ab < 2; ++ab)
+			{
+				auto i = ab == 0 ? ai : bi;
+				auto r = ab == 0 ? a : b;
+
+				for (size_t ix = 0; ix < link->mChildKeys.size(); ++ix)
+				{
+					assert(ix < link->mParentKeys.size());
+					auto pcix = cat->getColumnIndex(link->mParentKeys[ix]);
+
+					auto childColName = link->mChildKeys[ix];
+					bool mandatory =
+						find(childCatValidator->mMandatoryFields.begin(), childCatValidator->mMandatoryFields.end(), childColName) != childCatValidator->mMandatoryFields.end() or
+						find(parentCatValidator->mMandatoryFields.begin(), parentCatValidator->mMandatoryFields.end(), link->mParentKeys[ix]) != parentCatValidator->mMandatoryFields.end();
+
+					string childValue;
+
+					if (pcix == cix)
+					{
+						linkChildColName = childColName;
+						if (not (i == nullptr or strcmp(i->mText, ".") == 0 or strcmp(i->mText, "?") == 0))
+							childValue = i->mText;
+					}
+					else
+					{
+						string ps = r->c_str(pcix);
+						if (not (ps.empty() or ps == "." or ps == "?"))
+							childValue = ps;
+					}
+
+					if (not childValue.empty())
+					{
+						if (mandatory or pcix == cix)
+							cond[ab] = move(cond[ab]) and Key(childColName) == childValue;
+						else
+							cond[ab] = move(cond[ab]) and (Key(childColName) == childValue or Key(childColName) == Empty());
+					}
+					else
+						cond[ab] = move(cond[ab]) and Key(childColName) == Empty();
+				}
+			}
+
+			RowSet rs[2] = { *childCat, *childCat };
+
+			// first find the respective rows, then flip values, otherwise you won't find them anymore!
+			for (size_t ab = 0; ab < 2; ++ab)
+			{
+				if (cond[ab].empty())
+					continue;
+
+				if (VERBOSE > 1)
+					cerr << "Fixing link from " << cat->mName << " to " << childCat->mName << " with " << endl
+						 << cond[ab] << endl;
+				
+				rs[ab] = childCat->find(move(cond[ab]));
+			}
+
+			for (size_t ab = 0; ab < 2; ++ab)
+			{
+				auto i = ab == 0 ? bi : ai;
+
+				for (auto r: rs[ab])
+				{
+					// now due to the way links are defined, we might have found a row
+					// that contains an empty value for all child columns...
+					// Now, that's not a real hit, is it?
+
+					size_t n = 0;
+					for (auto c: link->mChildKeys)
+						if (r[c].empty())
+							++n;
+					
+					if (n == link->mChildKeys.size())
+					{
+						if (VERBOSE > 1)
+							cerr << "All empty columns, skipping" << endl;
+					}
+					else
+					{
+						if (VERBOSE)
+							cerr << "In " << childCat->mName << " changing " << linkChildColName << ": " << r[linkChildColName] << " => " << (i ? i->mText : "") << endl;
+						r[linkChildColName] = i ? i->mText : "";
+					}
+				}
+			}
+
+		}
+	}
 }
 
 void Row::assign(const Item& value, bool emplacing)

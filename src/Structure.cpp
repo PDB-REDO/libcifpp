@@ -22,7 +22,7 @@ namespace ba = boost::algorithm;
 namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 
-extern int VERBOSE;
+extern int cif::VERBOSE;
 
 namespace mmcif
 {
@@ -72,14 +72,14 @@ void FileImpl::load(fs::path p)
 		{
 			try
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "unrecognized file extension, trying cif" << endl;
 	
 				mData.load(in);
 			}
 			catch (const cif::CifParserError& e)
 			{
-				if (VERBOSE)
+				if (cif::VERBOSE)
 					cerr << "Not cif, trying plain old PDB" << endl;
 	
 				// pffft...
@@ -114,7 +114,7 @@ void FileImpl::load(fs::path p)
 //	if (mData.getValidator() == nullptr)
 	mData.loadDictionary("mmcif_pdbx");
 	if (not mData.isValid())
-		cerr << "Invalid mmCIF file" << (VERBOSE ? "." : " use --verbose option to see errors") << endl;
+		cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << endl;
 }
 
 void FileImpl::save(fs::path p)
@@ -313,7 +313,7 @@ struct AtomImpl
 			
 			mCompound = Compound::create(compId);
 			
-			if (VERBOSE and mCompound == nullptr)
+			if (cif::VERBOSE and mCompound == nullptr)
 				cerr << "Compound not found: '" << compId << '\'' << endl;
 		}
 		
@@ -587,7 +587,7 @@ void Atom::calculateRadius(float resHigh, float resLow, float perc)
 	mImpl->mRadius = shape.radius();
 
 	// verbose
-	if (VERBOSE > 1)
+	if (cif::VERBOSE > 1)
 		cout << "Calculated radius for " << AtomTypeTraits(mImpl->mType).name() << " with charge " << charge() << " is " << mImpl->mRadius << endl;
 }
 
@@ -864,7 +864,7 @@ float Monomer::phi() const
 	}
 	catch (const exception& ex)
 	{
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << ex.what() << endl;
 	}
 
@@ -887,7 +887,7 @@ float Monomer::psi() const
 	}
 	catch (const exception& ex)
 	{
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << ex.what() << endl;
 	}
 
@@ -911,7 +911,7 @@ float Monomer::alpha() const
 	}
 	catch (const exception& ex)
 	{
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << ex.what() << endl;
 	}
 
@@ -939,7 +939,7 @@ float Monomer::kappa() const
 	}
 	catch (const exception& ex)
 	{
-		if (VERBOSE)
+		if (cif::VERBOSE)
 			cerr << "When trying to calculate kappa for " << asymID() << ':' << seqID() << ": "
 				 << ex.what() << endl;
 	}
