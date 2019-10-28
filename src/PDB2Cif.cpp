@@ -4687,7 +4687,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				continue;
 			}
 			
-			string distance, details;
+			string distance, ccp4LinkId;
 			
 			if (mRec->is("LINK  "))
 			{
@@ -4700,13 +4700,11 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{
 					if (cif::VERBOSE)
 						cerr << "Distance value '" << distance << "' is not a valid float in LINK record" << endl;
-					distance.clear();
+					swap(ccp4LinkId, distance); // assume this is a ccp4_link_id... oh really?
 				}
 			}
 			else	// LINKR
-			{
-				details = vS(74, 78);	// the link ID 
-			}
+				ccp4LinkId = vS(74, 78);	// the link ID 
 
 			string sym1, sym2;
 			try {
@@ -4724,7 +4722,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{ "id", type + to_string(linkNr) },
 				{ "conn_type_id", type },
 				
-				{ "details", details },
+				{ "ccp4_link_id", ccp4LinkId },
 	
 				{ "ptnr1_label_asym_id", p1Asym },
 				{ "ptnr1_label_comp_id", vS(18, 20) },
