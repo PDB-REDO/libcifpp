@@ -83,6 +83,8 @@ class Atom
 	void location(Point p);
 	
 	Atom symmetryCopy(const Point& d, const clipper::RTop_orth& rt);
+	bool isSymmetryCopy() const;
+	std::string symmetry() const;
 	
 	const Compound& comp() const;
 	bool isWater() const;

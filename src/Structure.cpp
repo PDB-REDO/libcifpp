@@ -154,6 +154,7 @@ struct AtomImpl
 		, mRefcount(1), mRow(i.mRow), mCompound(i.mCompound)
 		, mRadius(i.mRadius), mCachedProperties(i.mCachedProperties)
 		, mSymmetryCopy(i.mSymmetryCopy), mClone(true)
+		, mSymmetry(i.mSymmetry)
 	{
 	}
 	
@@ -185,6 +186,8 @@ struct AtomImpl
 		mLocation += d;
 		mLocation = ((clipper::Coord_orth)mLocation).transform(rt);
 		mLocation -= d;
+
+		mSymmetry = clipper::Symop(rt).format();
 	}
 
 	void prefetch()
@@ -379,6 +382,7 @@ struct AtomImpl
 	
 	bool				mSymmetryCopy = false;
 	bool				mClone = false;
+	string				mSymmetry;
 };
 
 //Atom::Atom(const File& f, const string& id)
@@ -506,6 +510,11 @@ string Atom::labelAsymId() const
 	return mImpl->mAsymID;
 }
 
+string Atom::labelAltId() const
+{
+	return mImpl->mAltID;
+}
+
 int Atom::labelSeqId() const
 {
 	return mImpl->mSeqID;
@@ -519,6 +528,16 @@ string Atom::authAsymId() const
 string Atom::authAtomId() const
 {
 	return property<string>("auth_atom_id");
+}
+
+string Atom::authAltId() const
+{
+	return property<string>("auth_alt_id");
+}
+
+string Atom::pdbxAuthInsCode() const
+{
+	return property<string>("pdbx_PDB_ins_code");
 }
 
 string Atom::authCompId() const
@@ -558,6 +577,16 @@ void Atom::location(Point p)
 Atom Atom::symmetryCopy(const Point& d, const clipper::RTop_orth& rt)
 {
 	return Atom(new AtomImpl(*mImpl, d, rt));
+}
+
+bool Atom::isSymmetryCopy() const
+{
+	return mImpl->mSymmetryCopy;
+}
+
+string Atom::symmetry() const
+{
+	return mImpl->mSymmetry;
 }
 
 const Compound& Atom::comp() const
