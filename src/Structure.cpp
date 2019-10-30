@@ -154,7 +154,7 @@ struct AtomImpl
 		, mRefcount(1), mRow(i.mRow), mCompound(i.mCompound)
 		, mRadius(i.mRadius), mCachedProperties(i.mCachedProperties)
 		, mSymmetryCopy(i.mSymmetryCopy), mClone(true)
-		, mSymmetry(i.mSymmetry)
+		, mRTop(i.mRTop), mD(i.mD)
 	{
 	}
 	
@@ -181,13 +181,11 @@ struct AtomImpl
 		, mAltID(impl.mAltID), mLocation(impl.mLocation), mRefcount(impl.mRefcount)
 		, mRow(impl.mRow), mCompound(impl.mCompound), mRadius(impl.mRadius)
 		, mCachedProperties(impl.mCachedProperties)
-		, mSymmetryCopy(true)
+		, mSymmetryCopy(true), mRTop(rt), mD(d)
 	{
 		mLocation += d;
 		mLocation = ((clipper::Coord_orth)mLocation).transform(rt);
 		mLocation -= d;
-
-		mSymmetry = clipper::Symop(rt).format();
 	}
 
 	void prefetch()
@@ -382,7 +380,9 @@ struct AtomImpl
 	
 	bool				mSymmetryCopy = false;
 	bool				mClone = false;
-	string				mSymmetry;
+
+	clipper::RTop_orth	mRTop;
+	Point				mD;
 };
 
 //Atom::Atom(const File& f, const string& id)
@@ -586,7 +586,7 @@ bool Atom::isSymmetryCopy() const
 
 string Atom::symmetry() const
 {
-	return mImpl->mSymmetry;
+	return clipper::Symop(mImpl->mRTop).format() + "\n" + mImpl->mRTop.format();
 }
 
 const Compound& Atom::comp() const
