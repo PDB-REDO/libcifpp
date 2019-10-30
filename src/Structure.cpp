@@ -383,6 +383,7 @@ struct AtomImpl
 
 	clipper::RTop_orth	mRTop;
 	Point				mD;
+	int32_t				mRTix;
 };
 
 //Atom::Atom(const File& f, const string& id)
@@ -530,9 +531,9 @@ string Atom::authAtomId() const
 	return property<string>("auth_atom_id");
 }
 
-string Atom::authAltId() const
+string Atom::pdbxAuthAltId() const
 {
-	return property<string>("auth_alt_id");
+	return property<string>("pdbx_auth_alt_id");
 }
 
 string Atom::pdbxAuthInsCode() const
@@ -587,6 +588,11 @@ bool Atom::isSymmetryCopy() const
 string Atom::symmetry() const
 {
 	return clipper::Symop(mImpl->mRTop).format() + "\n" + mImpl->mRTop.format();
+}
+
+const clipper::RTop_orth& Atom::symop() const
+{
+	return mImpl->mRTop;
 }
 
 const Compound& Atom::comp() const

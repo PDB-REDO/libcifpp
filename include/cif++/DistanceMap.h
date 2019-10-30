@@ -61,7 +61,9 @@ class SymmetryAtomIteratorFactory
 	// SymmetryAtomIteratorFactory(const Structure& p);
 	SymmetryAtomIteratorFactory(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
 		: mD(DistanceMap::CalculateOffsetForCell(p, spacegroup, cell))
-		, mRtOrth(DistanceMap::AlternativeSites(spacegroup, cell)) {}
+		, mRtOrth(DistanceMap::AlternativeSites(spacegroup, cell))
+		, mSpacegroup(spacegroup)
+		, mCell(cell) {}
 
 	SymmetryAtomIteratorFactory(const SymmetryAtomIteratorFactory&) = delete;
 	SymmetryAtomIteratorFactory& operator=(const SymmetryAtomIteratorFactory&) = delete;
@@ -156,9 +158,13 @@ class SymmetryAtomIteratorFactory
 		return SymmetryAtomIteratorRange(*this, a);
 	}
 
+	std::string symop_mmcif(const Atom& a) const;
+
   private:
 	Point									mD;			// needed to move atoms to center
 	std::vector<clipper::RTop_orth>			mRtOrth;
+	clipper::Spacegroup						mSpacegroup;
+	clipper::Cell							mCell;
 };
 
 }

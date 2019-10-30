@@ -85,6 +85,7 @@ class Atom
 	Atom symmetryCopy(const Point& d, const clipper::RTop_orth& rt);
 	bool isSymmetryCopy() const;
 	std::string symmetry() const;
+	const clipper::RTop_orth& symop() const;
 	
 	const Compound& comp() const;
 	bool isWater() const;
@@ -112,7 +113,7 @@ class Atom
 	std::string authAsymId() const;
 	std::string authSeqId() const;
 	std::string pdbxAuthInsCode() const;
-	std::string authAltId() const;
+	std::string pdbxAuthAltId() const;
 	
 	std::string labelID() const;// label_comp_id + '_' + label_asym_id + '_' + label_seq_id
 	std::string pdbID() const;	// auth_comp_id + '_' + auth_asym_id + '_' + auth_seq_id + pdbx_PDB_ins_code

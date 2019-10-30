@@ -450,4 +450,60 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 	return result;
 }
 
+// -----------------------------------------------------------------------
+
+string SymmetryAtomIteratorFactory::symop_mmcif(const Atom& a) const
+{
+	string result;
+
+	if (not a.isSymmetryCopy())
+		result = "1_555";
+	else
+	{
+		auto rtop_o = a.symop();
+
+		for (int i = 0; i < mSpacegroup.num_symops(); ++i)
+		{
+			const auto& symop = mSpacegroup.symop(i);
+
+			for (int u: { -1, 0, 1})
+				for (int v: { -1, 0, 1})
+					for (int w: { -1, 0, 1})
+					{
+						// if (i == 0 and u == 0 and v == 0 and w == 0)
+						// 	continue;
+
+						auto rtop = clipper::RTop_frac(
+								symop.rot(), symop.trn() + clipper::Vec3<>(u, v, w)
+							).rtop_orth(mCell);
+						
+						if (rtop.rot().equals(rtop_o.rot(), 0.00001) and rtop.trn().equals(rtop_o.trn(), 0.000001))
+						{
+							// gotcha
+
+							auto rtop_f = rtop.rtop_frac(mCell);
+
+							uint32_t t[3] = {
+								static_cast<uint32_t>(5 + static_cast<int>(rint(rtop_f.trn()[0]))),
+								static_cast<uint32_t>(5 + static_cast<int>(rint(rtop_f.trn()[1]))),
+								static_cast<uint32_t>(5 + static_cast<int>(rint(rtop_f.trn()[2])))
+							};
+
+							if (t[0] > 9 or t[1] > 9 or t[2] > 9)
+								throw runtime_error("Symmetry operation has an out-of-range translation.");
+
+							result += to_string(1 + i) + "_"
+								   + to_string(t[0])
+								   + to_string(t[1])
+								   + to_string(t[2]);
+
+							return result;
+						}
+					}
+		}
+	}
+
+	return result;
+}
+
 }
