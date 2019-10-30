@@ -8,6 +8,7 @@ clang++ -I ~/my-clipper/include -L ~/my-clipper/lib -o symop-map-generator symop
 #include <cassert>
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <regex>
 
@@ -22,94 +23,141 @@ std::regex kNameRx(R"(^(\d+) +(\d+) +(\d+) +(\S+) +(\S+) +(\S+) +'([^']+)'( +'([
 class SymopParser
 {
   public:
-	SymopParser(const std::string& s)
-		: m_s(s)
-		, m_p(s.begin())
-		, m_e(s.end())
-	{
-		m_lookahead = next_char();
-	}
+	SymopParser() {}
 
-	void parse()
+	array<int,15> parse(const string& s)
 	{
+		m_p = s.begin();
+		m_e = s.end();
+		m_lookahead = next_token();
+
 		parsepart(0);
-		match(',');
+		match((Token)',');
 		parsepart(1);
-		match(',');
+		match((Token)',');
 		parsepart(2);
-		if (m_lookahead != 0)
+
+		if (m_lookahead != 0 or m_p != m_e)
 			throw runtime_error("symmetry expression contains more data than expected");
+
+		return {
+			m_rot[0][0], m_rot[0][1], m_rot[0][2], 
+			m_rot[1][0], m_rot[1][1], m_rot[1][2], 
+			m_rot[2][0], m_rot[2][1], m_rot[2][2], 
+			m_trn[0][0], m_trn[0][1],
+			m_trn[1][0], m_trn[1][1],
+			m_trn[2][0], m_trn[2][1]
+		};
 	}
 
   private:
 
-	char next_char()
+	enum Token : int { Eof = 0, Number = 256, XYZ };
+
+	string to_string(Token t)
 	{
-		char result = 0;
+		switch (t)
+		{
+			case Eof:		return "end of expression";
+			case Number:	return "number";
+			case XYZ:		return "'x', 'y' or 'z'";
+			default:
+				if (isprint(t))
+					return string({'\'', static_cast<char>(t), '\''});
+				return "invalid character " + std::to_string(static_cast<int>(t));
+		}
+	}
+	
+	Token next_token()
+	{
+		Token result = Eof;
 		while (m_p != m_e)
 		{
 			char ch = *m_p++;
 			if (ch == ' ')
 				continue;
 
-			result = ch;
+			switch (ch)
+			{
+				case 'x':
+				case 'X':
+					result = XYZ;
+					m_nr = 0;
+					break;
+				
+				case 'y':
+				case 'Y':
+					result = XYZ;
+					m_nr = 1;
+					break;
+				
+				case 'z':
+				case 'Z':
+					result = XYZ;
+					m_nr = 2;
+					break;
+				
+				default:
+					if (isdigit(ch))
+					{
+						m_nr = ch - '0';
+						result = Number;
+					}
+					else
+						result = (Token)ch;
+					break;
+			}
 			break;
 		}
 
 		return result;
 	}
 
-	void retract()
+	void match(Token token)
 	{
-		--m_p;
-	}
-
-	void match(char c)
-	{
-		if (m_lookahead != c)
-			throw runtime_error("Unexpected character " + m_lookahead + " expected " + c);
+		if (m_lookahead != token)
+			throw runtime_error("Unexpected character " + to_string(m_lookahead) + " expected " + to_string(token));
 		
-		m_lookahead = next_char();
+		m_lookahead = next_token();
 	}
 
-	void parsepart(int xyz)
+	void parsepart(int row)
 	{
-		if (isdigit(m_lookahead))
-		{
-			parserational(xyz);
+		bool first = false;
 
-			switch (m_lookahead)
+		do
+		{
+			int sign = m_lookahead == '-' ? -1 : 1;
+			if (m_lookahead == '-' or m_lookahead == '+')
+				match(m_lookahead);
+
+			if (m_lookahead == Number)
 			{
-				case '-':
-					match('-');
-					break;
+				m_trn[row][0] = sign * m_nr;
+				match(Number);
+
+				match((Token)'/');
+
+				m_trn[row][1] = m_nr;
+				match(Number);
 			}
-
+			else
+			{
+				m_rot[row][m_nr] = sign;
+				match(XYZ);
+			}
 		}
-
-
-		}
-		if (m_lookahead == '+')
-		{
-			match('+');
-		}
-		else if (m_lookahead = '-')
-		{
-
-		}
-
-
+		while (m_lookahead == '+' or m_lookahead == '-');
 	}
 
-	tuple<int,int> parserational();
-
-	char m_lookahead;
+	Token m_lookahead;
+	char m_nr;
 
 	string m_s;
-	string::iterator m_p, m_e;
+	string::const_iterator m_p, m_e;
 
 	int m_rot[3][3] = {};
-	int m_trn[3] = {};
+	int m_trn[3][2] = {};
 };
 
 int main()
@@ -129,6 +177,21 @@ int main()
 		clipper::Spacegroup spacegroup;
 
 		enum class State { Initial, InSpacegroup, Error } state = State::Initial;
+		int symopnr = 0;
+
+		cout << R"(
+// This file was generated from $CLIBD/symop.lib
+
+struct SymopNrTable
+{
+	uint8_t spacegroupNr;
+	uint8_t	rotationalNr:7;
+	int8_t rot[3][3]:2;
+	uint8_t trn[3][2]:4;
+};
+
+kSymopNrTable[] = {
+)" << endl;
 
 		while (getline(file, line))
 		{
@@ -144,7 +207,21 @@ int main()
 						if (state == State::Error)
 							continue;
 						
-						
+						try
+						{
+							SymopParser p;
+							auto symop = p.parse(line);
+
+							cout << "    { " << setw(3) << spacegroup.spacegroup_number() << '\t' << symopnr++;
+							for (auto i: symop)
+								cout << ',' << setw(2) << i;
+							cout << " }," << endl;
+						}
+						catch (const exception& e)
+						{
+							cerr << line << endl
+								 << e.what() << endl;
+						}
 
 
 						continue;
@@ -170,7 +247,10 @@ int main()
 					try
 					{
 						spacegroup = clipper::Spacegroup(clipper::Spgr_descr(stoi(m[1].str())));
+						symopnr = 1;
 						
+						cout << "    // " << spacegroup.symbol_hm() << endl;
+
 						if (spacegroup.num_symops() != stoi(m[2]))
 						{
 							cerr << line << endl
@@ -191,7 +271,7 @@ int main()
 				}
 			}
 		}
-		
+		cout << "};" << endl;
 	}
 	catch (const exception& ex)
 	{
