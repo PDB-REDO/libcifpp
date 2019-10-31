@@ -14,8 +14,6 @@ clang++ -I ~/my-clipper/include -L ~/my-clipper/lib -o symop-map-generator symop
 
 #include <cstdlib>
 
-#include <clipper/clipper.h>
-
 using namespace std;
 
 std::regex kNameRx(R"(^(\d+) +(\d+) +(\d+) +(\S+) +(\S+) +(\S+) +'([^']+)'( +'([^']+)')?(?: +!.+)?$)");
@@ -172,26 +170,20 @@ int main()
 		ifstream file(CLIBD + "/symop.lib"s);
 		if (not file.is_open())
 			throw runtime_error("Could not open symop.lib file");
+
+		// --------------------------------------------------------------------
+		// unfortunately, the data in symop.lib is not sorted, so we have to
+		// store the data in memory before writing out.
+
+		vector<tuple<int,int,string,array<int,15>>> data;
+
+		// --------------------------------------------------------------------
 		
 		string line;
-		clipper::Spacegroup spacegroup;
+		string spacegroupName;
+		int spacegroupNr, symopnr;
 
 		enum class State { Initial, InSpacegroup, Error } state = State::Initial;
-		int symopnr = 0;
-
-		cout << R"(
-// This file was generated from $CLIBD/symop.lib
-
-struct SymopNrTable
-{
-	uint8_t spacegroupNr;
-	uint8_t	rotationalNr:7;
-	int8_t rot[3][3]:2;
-	uint8_t trn[3][2]:4;
-};
-
-kSymopNrTable[] = {
-)" << endl;
 
 		while (getline(file, line))
 		{
@@ -210,19 +202,14 @@ kSymopNrTable[] = {
 						try
 						{
 							SymopParser p;
-							auto symop = p.parse(line);
-
-							cout << "    { " << setw(3) << spacegroup.spacegroup_number() << '\t' << symopnr++;
-							for (auto i: symop)
-								cout << ',' << setw(2) << i;
-							cout << " }," << endl;
+							data.emplace_back(spacegroupNr, symopnr, spacegroupName, p.parse(line));
+							++symopnr;
 						}
 						catch (const exception& e)
 						{
 							cerr << line << endl
 								 << e.what() << endl;
 						}
-
 
 						continue;
 					}
@@ -237,40 +224,73 @@ kSymopNrTable[] = {
 						throw runtime_error("Name line does not match regular expression");
 					}
 
-					int nr = stoi(m[1].str());
-					if (nr > 230)
-					{
-						state = State::Error;
-						continue;
-					}
+					spacegroupNr = stoi(m[1]);
+					spacegroupName = m[7];
+					symopnr = 1;
 
-					try
-					{
-						spacegroup = clipper::Spacegroup(clipper::Spgr_descr(stoi(m[1].str())));
-						symopnr = 1;
-						
-						cout << "    // " << spacegroup.symbol_hm() << endl;
-
-						if (spacegroup.num_symops() != stoi(m[2]))
-						{
-							cerr << line << endl
-								 << "Num of symops do not match: " << spacegroup.num_symops() << " <> " << m[2] << endl;
-							state = State::Error;
-							continue;
-						}
-
-						state = State::InSpacegroup;
-					}
-					catch (const clipper::Message_fatal& e)
-					{
-						cerr << line << endl
-							 << e.text() << endl;
-						state = State::Error;
-					}
+					state = State::InSpacegroup;
 					break;
 				}
 			}
 		}
+
+		// --------------------------------------------------------------------
+
+		sort(data.begin(), data.end());
+
+		// --------------------------------------------------------------------
+
+		cout << R"(// This file was generated from $CLIBD/symop.lib
+
+union SymopData
+{
+	struct
+	{
+		int rot_0_0:2;
+		int rot_0_1:2;
+		int rot_0_2:2;
+		int rot_1_0:2;
+		int rot_1_1:2;
+		int rot_1_2:2;
+		int rot_2_0:2;
+		int rot_2_1:2;
+		int rot_2_2:2;
+		unsigned int trn_0_0:3;
+		unsigned int trn_0_1:3;
+		unsigned int trn_1_0:3;
+		unsigned int trn_1_1:3;
+		unsigned int trn_2_0:3;
+		unsigned int trn_2_1:3;
+	};
+	uint64_t iv:36;
+};
+
+struct SymopDataBlock
+{
+	uint16_t spacegroupNr;
+	uint8_t rotationalNr;
+	SymopData rt;
+} kSymopNrTable[] = {
+)" << endl;
+
+		spacegroupNr = 0;
+		for (auto& sd: data)
+		{
+			int sp, o;
+			string n;
+			tie(sp, o, n, ignore) = sd;
+
+			if (sp > spacegroupNr)
+				cout << "    // " << n << endl;
+			spacegroupNr = sp;
+
+			cout << "    { " << setw(3) << sp
+					<< ", " << setw(3) << o << ", { ";
+			for (auto i: get<3>(sd))
+				cout << setw(2) << i << ',';
+			cout << " } }," << endl;
+		}
+
 		cout << "};" << endl;
 	}
 	catch (const exception& ex)

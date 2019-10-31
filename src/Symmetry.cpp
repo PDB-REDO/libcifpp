@@ -130,6 +130,70 @@ vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegrou
 	return result;
 }
 
+// --------------------------------------------------------------------
+// Unfortunately, clipper has a different numbering scheme than PDB
+// for rotation numbers. So we created a table to map those.
+// Perhaps a bit over the top, but hey....
+
+#include "SymOpTable_data.cpp"
+
+int32_t GetRotationalIndexNumber(int spacegroup, const clipper::RTop_frac& rt)
+{
+	auto& rot = rt.rot();
+	auto& trn = rt.trn();
+
+	auto rte = [&rot](int i, int j) { return static_cast<int8_t>(lrint(rot(i, j))); };
+
+	SymopData k
+	{
+		rte(0, 0), rte(0, 1), rte(0, 2),
+		rte(1, 0), rte(1, 1), rte(1, 2),
+		rte(2, 0), rte(2, 1), rte(2, 2)
+	};
+
+	for (int i = 0; i < 3; ++i)
+	{
+		int n = lrint(trn[i] * 24);
+		int d = 24;
+
+		if (n == 0 or n == 24)
+			continue;		// is 0, 0 in our table
+
+		for (int i = 5; i > 1; --i)
+			if (n % i == 0 and d % i == 0)
+			{
+				n /= i;
+				d /= i;
+			}
+
+		switch (i)
+		{
+			case 0: k.trn_0_0 = n; k.trn_0_1 = d; break;
+			case 1: k.trn_1_0 = n; k.trn_1_1 = d; break;
+			case 2: k.trn_2_0 = n; k.trn_2_1 = d; break;
+		}
+	}
+
+	const size_t N = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
+	size_t L = 0, R = N - 1;
+	while (L <= R)
+	{
+		size_t i = (L + R) / 2;
+		if (kSymopNrTable[i].spacegroupNr < spacegroup)
+			L = i + 1;
+		else
+			R = i - 1;
+	}
+
+	for (size_t i = L; i < N and kSymopNrTable[i].spacegroupNr == spacegroup; ++i)
+	{
+		if (kSymopNrTable[i].rt.iv == k.iv)
+			return kSymopNrTable[i].rotationalNr;
+	}
+
+	throw runtime_error("Symmetry operation was not found in table, cannot find rotational number");
+}
+
 // -----------------------------------------------------------------------
 
 string SymmetryAtomIteratorFactory::symop_mmcif(const Atom& a) const
@@ -163,6 +227,8 @@ string SymmetryAtomIteratorFactory::symop_mmcif(const Atom& a) const
 
 							auto rtop_f = rtop.rtop_frac(mCell);
 
+							int rnr = GetRotationalIndexNumber(mSpacegroup.spacegroup_number(), rtop_f);
+
 							uint32_t t[3] = {
 								static_cast<uint32_t>(5 + static_cast<int>(rint(rtop_f.trn()[0]))),
 								static_cast<uint32_t>(5 + static_cast<int>(rint(rtop_f.trn()[1]))),
@@ -172,7 +238,7 @@ string SymmetryAtomIteratorFactory::symop_mmcif(const Atom& a) const
 							if (t[0] > 9 or t[1] > 9 or t[2] > 9)
 								throw runtime_error("Symmetry operation has an out-of-range translation.");
 
-							result += to_string(1 + i) + "_"
+							result += to_string(rnr) + "_"
 								   + to_string(t[0])
 								   + to_string(t[1])
 								   + to_string(t[2]);

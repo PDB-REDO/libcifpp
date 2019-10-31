@@ -12,8 +12,6 @@ namespace mmcif
 
 clipper::Coord_orth CalculateOffsetForCell(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell);
 std::vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegroup, const clipper::Cell& cell);
-int32_t GetRotationalIndexNumber(const clipper::Spacegroup& spacegroup, const clipper::Cell& cell,
-	const clipper::RTop_orth& rt);
 
 // --------------------------------------------------------------------
 // To iterate over all near symmetry copies of an atom
