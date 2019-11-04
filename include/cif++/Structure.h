@@ -372,14 +372,14 @@ class Structure
 	const std::vector<Residue>& nonPolymers() const			{ return mNonPolymers; }
 
 	Atom getAtomById(std::string id) const;
-	Atom getAtomByLocation(Point pt, float maxDistance) const;
+	// Atom getAtomByLocation(Point pt, float maxDistance) const;
 	
-	Atom getAtomForLabel(const std::string& atomId, const std::string& asymId,
+	Atom getAtomByLabel(const std::string& atomId, const std::string& asymId,
 		const std::string& compId, int seqId, const std::string& altId = "");
 	
-	Atom getAtomForAuth(const std::string& atomId, const std::string& asymId,
-		const std::string& compId, int seqId, const std::string& altId = "",
-		const std::string& pdbxAuthInsCode = "");
+	// Atom getAtomByAuth(const std::string& atomId, const std::string& asymId,
+	// 	const std::string& compId, int seqId, const std::string& altId = "",
+	// 	const std::string& pdbxAuthInsCode = "");
 	
 	// map between auth and label locations
 	

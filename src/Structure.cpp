@@ -361,6 +361,11 @@ struct AtomImpl
 		return d;
 	}
 
+	void swapAtomLabels(AtomImpl& b)
+	{
+		std::swap(mAtomID, b.mAtomID);
+	}
+
 	const File&			mFile;
 	string				mId;
 	AtomType			mType;
@@ -1527,6 +1532,23 @@ Atom Structure::getAtomById(string id) const
 	return mAtoms[*i];
 }
 
+Atom Structure::getAtomByLabel(const string& atomId, const string& asymId, const string& compId, int seqId, const string& altId)
+{
+	for (auto& a: mAtoms)
+	{
+		if (a.labelAtomId() == atomId and
+			a.labelAsymId() == asymId and
+			a.labelCompId() == compId and
+			a.labelSeqId() == seqId and
+			a.labelAltId() == altId)
+		{
+			return a;
+		}
+	}
+
+	throw out_of_range("Could not find atom with specified label");
+}
+
 File& Structure::getFile() const
 {
 	return mFile;
@@ -1835,6 +1857,8 @@ void Structure::swapAtoms(Atom& a1, Atom& a2)
 	auto l2 = r2.front()["label_atom_id"];
 	l1.swap(l2);
 	
+	a1.mImpl->swapAtomLabels(*a2.mImpl);
+
 	auto l3 = r1.front()["auth_atom_id"];
 	auto l4 = r2.front()["auth_atom_id"];
 	l3.swap(l4);

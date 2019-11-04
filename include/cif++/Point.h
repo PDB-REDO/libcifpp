@@ -260,6 +260,15 @@ inline PointF<F> CrossProduct(const PointF<F>& a, const PointF<F>& b)
 }
 
 template<typename F>
+double Angle(const PointF<F>& p1, const PointF<F>& p2, const PointF<F>& p3)
+{
+	PointF<F> v1 = p1 - p2;
+	PointF<F> v2 = p3 - p2;
+	
+	return std::acos(DotProduct(v1, v2) / (v1.length() * v2.length())) * 180 / kPI;
+}
+
+template<typename F>
 double DihedralAngle(const PointF<F>& p1, const PointF<F>& p2, const PointF<F>& p3, const PointF<F>& p4)
 {
 	PointF<F> v12 = p1 - p2;	// vector from p2 to p1

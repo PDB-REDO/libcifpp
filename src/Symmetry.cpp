@@ -175,10 +175,10 @@ int32_t GetRotationalIndexNumber(int spacegroup, const clipper::RTop_frac& rt)
 	}
 
 	const size_t N = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
-	size_t L = 0, R = N - 1;
+	int32_t L = 0, R = static_cast<int32_t>(N - 1);
 	while (L <= R)
 	{
-		size_t i = (L + R) / 2;
+		int32_t i = (L + R) / 2;
 		if (kSymopNrTable[i].spacegroupNr < spacegroup)
 			L = i + 1;
 		else
