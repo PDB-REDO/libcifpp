@@ -300,6 +300,5 @@ struct SymopDataBlock
 			 << ex.what() << endl;
 	}
 	
-	
 	return 0;
 }

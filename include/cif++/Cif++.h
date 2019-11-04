@@ -490,7 +490,7 @@ class Row
 	const_iterator begin() const;
 	const_iterator end() const;
 
-// TODO: implement real const version?
+	// TODO: implement real const version?
 	
 	friend class detail::ItemReference;
 
@@ -560,7 +560,7 @@ class Row
 	size_t ColumnForItemTag(const char* itemTag) const;
 
 	ItemRow*	mData;
-	uint32_t		mLineNr = 0;
+	uint32_t	mLineNr = 0;
 	bool		mCascadeUpdate = true;
 	bool		mCascadeDelete = true;
 };
