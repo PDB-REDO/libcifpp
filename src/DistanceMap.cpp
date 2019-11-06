@@ -87,14 +87,20 @@ clipper::Coord_orth DistanceMap::CalculateOffsetForCell(const Structure& p, cons
 	auto calculateD = [&](float m, float c)
 	{
 		float d = 0;
-		while (m + d < -(c / 2))
-			d += c;
-		while (m + d > (c / 2))
-			d -= c;
+		if (c != 0)
+		{
+			while (m + d < -(c / 2))
+				d += c;
+			while (m + d > (c / 2))
+				d -= c;
+		}
 		return d;
 	};
 
 	Point D;
+
+	if (cell.a() == 0 or cell.b() == 0 or cell.c() == 0)
+		throw runtime_error("Invalid cell, contains a dimension that is zero");
 
 	D.mX = calculateD(mx, cell.a());
 	D.mY = calculateD(my, cell.b());

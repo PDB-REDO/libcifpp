@@ -76,12 +76,19 @@ clipper::Coord_orth CalculateOffsetForCell(const Structure& p, const clipper::Sp
 	auto calculateD = [&](float m, float c)
 	{
 		float d = 0;
-		while (m + d < -(c / 2))
-			d += c;
-		while (m + d > (c / 2))
-			d -= c;
+		assert(c != 0);
+		if (c != 0)
+		{
+			while (m + d < -(c / 2))
+				d += c;
+			while (m + d > (c / 2))
+				d -= c;
+		}
 		return d;
 	};
+
+	if (cell.a() == 0 or cell.b() == 0 or cell.c() == 0)
+		throw runtime_error("Invalid cell, contains a dimension that is zero");
 
 	Point D;
 
