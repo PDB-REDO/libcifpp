@@ -160,7 +160,7 @@ int32_t GetRotationalIndexNumber(int spacegroup, const clipper::RTop_frac& rt)
 
 	for (int i = 0; i < 3; ++i)
 	{
-		int n = lrint(trn[i] * 24);
+		int n = (lrint(trn[i] * 24) + 24) % 24;
 		int d = 24;
 
 		if (n == 0 or abs(n) == 24)

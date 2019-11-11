@@ -441,6 +441,8 @@ class Row
 	Row(const Row& rhs);
 	Row& operator=(const Row& rhs);
 
+	void next();	///< make this row point to the next ItemRow
+
 	/// When updating a value, you might want to change linked records as well
 	/// But not always.
 	void setCascadeUpdate(bool cascadeUpdate)
@@ -1037,6 +1039,86 @@ inline Condition Not(Condition&& cond)
     return Condition(new detail::notConditionImpl(std::move(cond)));
 }
 
+// -----------------------------------------------------------------------
+// iterators
+
+template<typename RowType>
+class iterator_impl
+{
+  public:
+	using iterator_category = std::forward_iterator_tag;
+	using value_type = RowType;
+	using difference_type = std::ptrdiff_t;
+	using pointer = RowType*;
+	using reference = RowType&;
+
+	friend class Category;
+
+	iterator_impl(ItemRow* data) : mCurrent(data) {}
+
+	iterator_impl(ItemRow* data, Category& cat, const Condition& cond)
+		: mCurrent(data), mCat(&cat), mCondition(&cond)
+	{
+		while (mCurrent and not cond(cat, mCurrent))
+			mCurrent.next();
+	}
+
+	virtual ~iterator_impl() = default;
+
+	reference operator*()							{ return mCurrent; }
+	pointer operator->()							{ return &mCurrent; }
+	
+	iterator_impl& operator++()
+	{
+		do
+		{
+			mCurrent.next();
+		} while (mCurrent and mCondition != nullptr and not mCondition->operator()(*mCat, mCurrent));
+
+		return *this;
+	}
+
+	iterator_impl operator++(int)					{ iterator_impl result(*this); this->operator++(); return result; } 
+
+	bool operator==(const iterator_impl& rhs) const	{ return mCurrent == rhs.mCurrent; } 
+	bool operator!=(const iterator_impl& rhs) const	{ return not (mCurrent == rhs.mCurrent); } 
+
+  private:
+	Row mCurrent;
+	Category* mCat = nullptr;
+	const Condition* mCondition = nullptr;
+};
+
+
+template<typename RowType>
+class conditional_iterator_proxy
+{
+  public:
+	using iterator = iterator_impl<RowType>;
+	using reference = typename iterator::reference;
+
+	conditional_iterator_proxy(ItemRow* head, Category& cat, Condition&& cond)
+		: mHead(head), mCat(cat), mCondition(std::forward<Condition>(cond))
+	{
+		mCondition.prepare(cat);
+	}
+
+	iterator begin() const			{ return iterator(mHead, mCat, mCondition); }
+	iterator end() const			{ return iterator(nullptr, mCat, mCondition); }
+
+	bool empty() { return begin() == end(); }
+	size_t size() const { return std::distance(begin(), end()); }
+
+	reference front() { return *begin(); }
+
+	Category& category() const		{ return mCat;}
+
+  private:
+	ItemRow* mHead;
+	Category& mCat;
+	Condition mCondition;
+};
+
 // --------------------------------------------------------------------
 // class RowSet is used to return find results. Use it to re-order the results
 // or to group them 
@@ -1048,8 +1130,13 @@ class RowSet : public vector<Row>
   public:
 	RowSet(const RowSet& rhs);
 	RowSet(RowSet&& rhs);
+	RowSet(conditional_iterator_proxy<Row>&& results);
+
 	RowSet& operator=(const RowSet& rhs);
 	RowSet& operator=(RowSet&& rhs);
+
+	RowSet& operator=(conditional_iterator_proxy<Row>& results);
+	RowSet& operator=(conditional_iterator_proxy<const Row>& results);
 
 	RowSet(Category& cat);
 	
@@ -1061,6 +1148,8 @@ class RowSet : public vector<Row>
   private:
 	Category*	mCat;
 };
+
+
 
 // --------------------------------------------------------------------
 // class Category acts as an STL container for Row objects 
@@ -1078,55 +1167,15 @@ class Category
 	~Category();
 
 	const string name() const						{ return mName; }
-	
-	struct iterator : public std::iterator<std::forward_iterator_tag, Row>
-	{
-		friend class Category;
-		
-		typedef std::iterator<std::forward_iterator_tag, Row>	baseType;
-		typedef typename baseType::pointer						pointer;
-		typedef typename baseType::reference					reference;
-		
-		iterator(ItemRow* data) : mCurrent(data) {}
-		
-		reference operator*()						{ return mCurrent; }
-		pointer operator->()						{ return &mCurrent; }
-		
-		iterator& operator++();
-		iterator operator++(int)					{ iterator result(*this); this->operator++(); return result; } 
 
-		bool operator==(const iterator& rhs) const	{ return mCurrent == rhs.mCurrent; } 
-		bool operator!=(const iterator& rhs) const	{ return not (mCurrent == rhs.mCurrent); } 
-		
-	  private:
-		Row		mCurrent;
-	};
+	using iterator = iterator_impl<Row>;
+	using const_iterator = iterator_impl<const Row>;
 	
 	iterator begin();
 	iterator end();
 
-	struct const_iterator : public std::iterator<std::forward_iterator_tag, const Row>
-	{
-		friend class Category;
-		
-		typedef std::iterator<std::forward_iterator_tag, const Row>	baseType;
-		typedef typename baseType::pointer							pointer;
-		typedef typename baseType::reference						reference;
-		
-		const_iterator(const ItemRow* data) : mCurrent(data) {}
-		
-		reference operator*()						{ return mCurrent; }
-		pointer operator->()						{ return &mCurrent; }
-		
-		const_iterator& operator++();
-		const_iterator operator++(int)				{ const_iterator result(*this); this->operator++(); return result; } 
-
-		bool operator==(const const_iterator& rhs) const	{ return mCurrent == rhs.mCurrent; } 
-		bool operator!=(const const_iterator& rhs) const	{ return not (mCurrent == rhs.mCurrent); } 
-		
-	  private:
-		Row mCurrent;
-	};
+	const_iterator cbegin();
+	const_iterator cend();
 
 	const_iterator begin() const;
 	const_iterator end() const;
@@ -1140,7 +1189,12 @@ class Category
 	Row back()										{ return Row(mTail); }
 	
 	Row operator[](Condition&& cond);
-	RowSet find(Condition&& cond);
+
+	conditional_iterator_proxy<Row> find(Condition&& cond)
+	{
+		return conditional_iterator_proxy<Row>(mHead, *this, std::forward<Condition>(cond));
+	}
+
 	bool exists(Condition&& cond) const;
 	
 	RowSet orderBy(const string& Item)

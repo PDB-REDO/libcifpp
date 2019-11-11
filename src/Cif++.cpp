@@ -1114,6 +1114,12 @@ RowSet::RowSet(RowSet&& rhs)
 {
 }
 
+RowSet::RowSet(conditional_iterator_proxy<Row>&& results)
+	: vector<Row>(results.begin(), results.end())
+	, mCat(&results.category())
+{
+}
+
 RowSet& RowSet::operator=(const RowSet& rhs)
 {
 	if (this != &rhs)
@@ -1133,6 +1139,20 @@ RowSet& RowSet::operator=(RowSet&& rhs)
 		mCat = rhs.mCat;
 	}
 	
+	return *this;
+}
+
+RowSet& RowSet::operator=(conditional_iterator_proxy<Row>& results)
+{
+	clear();
+	insert(begin(), results.begin(), results.end());
+	return *this;
+}
+
+RowSet& RowSet::operator=(conditional_iterator_proxy<const Row>& results)
+{
+	clear();
+	insert(begin(), results.begin(), results.end());
 	return *this;
 }
 
@@ -1354,19 +1374,19 @@ Row Category::operator[](Condition&& cond)
 	return result;
 }	
 
-RowSet Category::find(Condition&& cond)
-{
-	RowSet result(*this);
+// RowSet Category::find(Condition&& cond)
+// {
+// 	RowSet result(*this);
 	
-	cond.prepare(*this);
+// 	cond.prepare(*this);
 	
-	for (auto r: *this)
-	{
-		if (cond(*this, r))
-			result.push_back(r);
-	}
-	return result;
-}
+// 	for (auto r: *this)
+// 	{
+// 		if (cond(*this, r))
+// 			result.push_back(r);
+// 	}
+// 	return result;
+// }
 
 bool Category::exists(Condition&& cond) const
 {
@@ -1881,17 +1901,17 @@ set<size_t> Category::keyFieldsByIndex() const
 	return result;
 }
 
-auto Category::iterator::operator++() -> iterator&
-{
-	mCurrent = Row(mCurrent.data()->mNext);
-	return *this;
-}
+// auto Category::iterator::operator++() -> iterator&
+// {
+// 	mCurrent = Row(mCurrent.data()->mNext);
+// 	return *this;
+// }
 
-auto Category::const_iterator::operator++() -> const_iterator&
-{
-	mCurrent = Row(mCurrent.data()->mNext);
-	return *this;
-}
+// auto Category::const_iterator::operator++() -> const_iterator&
+// {
+// 	mCurrent = Row(mCurrent.data()->mNext);
+// 	return *this;
+// }
 
 namespace detail
 {
@@ -2139,6 +2159,12 @@ Row::Row(const Row& rhs)
 	: mData(rhs.mData)
 	, mCascadeUpdate(rhs.mCascadeUpdate)
 {
+}
+
+void Row::next()
+{
+	if (mData != nullptr)
+		mData = mData->mNext;
 }
 
 Row& Row::operator=(const Row& rhs)
@@ -2468,7 +2494,8 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 					cerr << "Fixing link from " << cat->mName << " to " << childCat->mName << " with " << endl
 						 << cond[ab] << endl;
 				
-				rs[ab] = childCat->find(move(cond[ab]));
+				auto rsci = childCat->find(move(cond[ab]));
+				rs[ab] = rsci;
 			}
 
 			for (size_t ab = 0; ab < 2; ++ab)
