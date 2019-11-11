@@ -178,7 +178,7 @@ struct AtomImpl
 	AtomImpl(const AtomImpl& impl, const Point& d, const clipper::RTop_orth& rt)
 		: mFile(impl.mFile), mId(impl.mId), mType(impl.mType), mAtomID(impl.mAtomID)
 		, mCompID(impl.mCompID), mAsymID(impl.mAsymID), mSeqID(impl.mSeqID)
-		, mAltID(impl.mAltID), mLocation(impl.mLocation), mRefcount(impl.mRefcount)
+		, mAltID(impl.mAltID), mLocation(impl.mLocation), mRefcount(1)
 		, mRow(impl.mRow), mCompound(impl.mCompound), mRadius(impl.mRadius)
 		, mCachedProperties(impl.mCachedProperties)
 		, mSymmetryCopy(true), mRTop(rt), mD(d)
@@ -262,7 +262,7 @@ struct AtomImpl
 	
 	void release()
 	{
-		if (--mRefcount < 0)
+		if (--mRefcount <= 0)
 			delete this;
 	}
 	
