@@ -160,7 +160,7 @@ int32_t GetRotationalIndexNumber(int spacegroup, const clipper::RTop_frac& rt)
 
 	for (int i = 0; i < 3; ++i)
 	{
-		int n = (lrint(trn[i] * 24) + 24) % 24;
+		int n = lrint(trn[i] * 24);
 		int d = 24;
 
 		if (n == 0 or abs(n) == 24)
@@ -172,6 +172,8 @@ int32_t GetRotationalIndexNumber(int spacegroup, const clipper::RTop_frac& rt)
 				n /= i;
 				d /= i;
 			}
+		
+		n = (n + d) % d;
 
 		switch (i)
 		{
@@ -199,6 +201,38 @@ int32_t GetRotationalIndexNumber(int spacegroup, const clipper::RTop_frac& rt)
 	}
 
 	throw runtime_error("Symmetry operation was not found in table, cannot find rotational number");
+}
+
+// --------------------------------------------------------------------
+// And unfortunately, clipper does not know all the spacegroup names mentioned in symop.lib
+
+int GetSpacegroupNumber(const std::string& spacegroup)
+{
+	int result = 0;
+
+	const size_t N = sizeof(kSpaceGroups) / sizeof(Spacegroup);
+	int32_t L = 0, R = static_cast<int32_t>(N - 1);
+	while (L <= R)
+	{
+		int32_t i = (L + R) / 2;
+
+		int d = spacegroup.compare(kSpaceGroups[i].name);
+
+		if (d > 0)
+			L = i + 1;
+		else if (d < 0)
+			R = i - 1;
+		else
+		{
+			result = kSpaceGroups[i].nr;
+			break;
+		}
+	}
+
+	if (result == 0)
+		throw runtime_error("Spacegroup name " + spacegroup + " was not found in table");
+	
+	return result;
 }
 
 // -----------------------------------------------------------------------

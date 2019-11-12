@@ -121,8 +121,6 @@ class SymopParser
 
 	void parsepart(int row)
 	{
-		bool first = false;
-
 		do
 		{
 			int sign = m_lookahead == '-' ? -1 : 1;
@@ -149,7 +147,7 @@ class SymopParser
 	}
 
 	Token m_lookahead;
-	char m_nr;
+	int m_nr;
 
 	string m_s;
 	string::const_iterator m_p, m_e;
@@ -176,6 +174,8 @@ int main()
 		// store the data in memory before writing out.
 
 		vector<tuple<int,int,string,array<int,15>>> data;
+
+		vector<tuple<string,int>> spacegroups;
 
 		// --------------------------------------------------------------------
 		
@@ -228,6 +228,8 @@ int main()
 					spacegroupName = m[7];
 					symopnr = 1;
 
+					spacegroups.emplace_back(spacegroupName, spacegroupNr);
+
 					state = State::InSpacegroup;
 					break;
 				}
@@ -237,10 +239,25 @@ int main()
 		// --------------------------------------------------------------------
 
 		sort(data.begin(), data.end());
+		sort(spacegroups.begin(), spacegroups.end());
 
 		// --------------------------------------------------------------------
 
 		cout << R"(// This file was generated from $CLIBD/symop.lib
+
+struct Spacegroup
+{
+	const char* name;
+	int nr;
+} kSpaceGroups[] =
+{
+)";
+
+		for (auto& [name, nr]: spacegroups)
+			cout << "\t{ \"" << name << "\", " << nr << " }," << endl;
+
+cout << R"(
+};
 
 union SymopData
 {
