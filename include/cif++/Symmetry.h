@@ -13,6 +13,7 @@ namespace mmcif
 clipper::Coord_orth CalculateOffsetForCell(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell);
 std::vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegroup, const clipper::Cell& cell);
 int GetSpacegroupNumber(const std::string& spacegroup);	// alternative for clipper's parsing code
+std::string SpacegroupToxHM(std::string spacegroup);
 
 // --------------------------------------------------------------------
 // To iterate over all near symmetry copies of an atom
@@ -21,10 +22,19 @@ class SymmetryAtomIteratorFactory
 {
   public:
 	// SymmetryAtomIteratorFactory(const Structure& p);
+
 	SymmetryAtomIteratorFactory(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
-		: mD(CalculateOffsetForCell(p, spacegroup, cell))
-		, mRtOrth(AlternativeSites(spacegroup, cell))
+		: mSpacegroupNr(spacegroup.spacegroup_number())
 		, mSpacegroup(spacegroup)
+		, mD(CalculateOffsetForCell(p, spacegroup, cell))
+		, mRtOrth(AlternativeSites(spacegroup, cell))
+		, mCell(cell) {}
+
+	SymmetryAtomIteratorFactory(const Structure& p, int spacegroupNr, const clipper::Cell& cell)
+		: mSpacegroupNr(spacegroupNr)
+		, mSpacegroup(GetCCP4SpacegroupDescr(spacegroupNr))
+		, mD(CalculateOffsetForCell(p, mSpacegroup, cell))
+		, mRtOrth(AlternativeSites(mSpacegroup, cell))
 		, mCell(cell) {}
 
 	SymmetryAtomIteratorFactory(const SymmetryAtomIteratorFactory&) = delete;
@@ -123,9 +133,10 @@ class SymmetryAtomIteratorFactory
 	std::string symop_mmcif(const Atom& a) const;
 
   private:
+	int										mSpacegroupNr;
+	clipper::Spacegroup						mSpacegroup;
 	Point									mD;			// needed to move atoms to center
 	std::vector<clipper::RTop_orth>			mRtOrth;
-	clipper::Spacegroup						mSpacegroup;
 	clipper::Cell							mCell;
 };
 

@@ -237,6 +237,57 @@ int GetSpacegroupNumber(const std::string& spacegroup)
 
 // -----------------------------------------------------------------------
 
+std::string SpacegroupToxHM(std::string spacegroup)
+{
+	if (spacegroup == "P 1-")
+		spacegroup = "P -1";
+	else if (spacegroup == "P 21 21 2 A")
+		spacegroup = "P 21 21 2 (a)";
+	else if (spacegroup.empty())
+		throw runtime_error("No spacegroup, cannot continue");
+
+	int nr = GetSpacegroupNumber(spacegroup);
+
+	return kSpaceGroups[nr].xHM;
+}
+
+clipper::Spgr_descr GetCCP4SpacegroupDescr(int nr)
+{
+	const size_t N = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
+	int32_t L = 0, R = static_cast<int32_t>(N - 1);
+	while (L <= R)
+	{
+		int32_t i = (L + R) / 2;
+		if (kSymopNrTable[i].spacegroupNr < nr)
+			L = i + 1;
+		else
+			R = i - 1;
+	}
+
+	if (L < 0 or L >= N)
+		throw runtime_error("Invalid spacegroup number");
+
+	clipper::Spgr_descr::Symop_codes symop_codes;
+
+	for (size_t i = L; i < N and kSymopNrTable[i].spacegroupNr == nr; ++i)
+	{
+		auto& symop = kSymopNrTable[i];
+
+		clipper::ftype m[4][4] = {
+			{ symop.rt.rot_0_0, symop.rt.rot_0_1, symop.rt.rot_0_2, static_cast<float>(symop.rt.trn_0_0) / symop.rt.trn_0_1 },
+			{ symop.rt.rot_1_0, symop.rt.rot_1_1, symop.rt.rot_1_2, static_cast<float>(symop.rt.trn_1_0) / symop.rt.trn_1_1 },
+			{ symop.rt.rot_2_0, symop.rt.rot_2_1, symop.rt.rot_2_2, static_cast<float>(symop.rt.trn_2_0) / symop.rt.trn_2_1 },
+			{ 0, 0, 0, 1 }
+		};
+
+		symop_codes.emplace_back(clipper::Symop(m));
+	}
+
+	return clipper::Spgr_descr(symop_codes);
+}
+
+// -----------------------------------------------------------------------
+
 string SymmetryAtomIteratorFactory::symop_mmcif(const Atom& a) const
 {
 	string result;
@@ -268,7 +319,7 @@ string SymmetryAtomIteratorFactory::symop_mmcif(const Atom& a) const
 
 							auto rtop_f = rtop.rtop_frac(mCell);
 
-							int rnr = GetRotationalIndexNumber(mSpacegroup.spacegroup_number(), rtop_f);
+							int rnr = GetRotationalIndexNumber(mSpacegroupNr, rtop_f);
 
 							uint32_t t[3] = {
 								static_cast<uint32_t>(5 + static_cast<int>(rint(rtop_f.trn()[0]))),
