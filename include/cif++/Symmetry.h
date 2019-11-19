@@ -12,8 +12,8 @@ namespace mmcif
 
 clipper::Coord_orth CalculateOffsetForCell(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell);
 std::vector<clipper::RTop_orth> AlternativeSites(const clipper::Spacegroup& spacegroup, const clipper::Cell& cell);
-int GetSpacegroupNumber(const std::string& spacegroup);	// alternative for clipper's parsing code
-std::string SpacegroupToxHM(std::string spacegroup);
+int GetSpacegroupNumber(std::string spacegroup);	// alternative for clipper's parsing code
+// std::string SpacegroupToHall(std::string spacegroup);
 
 // --------------------------------------------------------------------
 // To iterate over all near symmetry copies of an atom
@@ -23,19 +23,14 @@ class SymmetryAtomIteratorFactory
   public:
 	// SymmetryAtomIteratorFactory(const Structure& p);
 
-	SymmetryAtomIteratorFactory(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
-		: mSpacegroupNr(spacegroup.spacegroup_number())
-		, mSpacegroup(spacegroup)
-		, mD(CalculateOffsetForCell(p, spacegroup, cell))
-		, mRtOrth(AlternativeSites(spacegroup, cell))
-		, mCell(cell) {}
+	// SymmetryAtomIteratorFactory(const Structure& p, const clipper::Spacegroup& spacegroup, const clipper::Cell& cell)
+	// 	: mSpacegroupNr(spacegroup.spacegroup_number())
+	// 	, mSpacegroup(spacegroup)
+	// 	, mD(CalculateOffsetForCell(p, spacegroup, cell))
+	// 	, mRtOrth(AlternativeSites(spacegroup, cell))
+	// 	, mCell(cell) {}
 
-	SymmetryAtomIteratorFactory(const Structure& p, int spacegroupNr, const clipper::Cell& cell)
-		: mSpacegroupNr(spacegroupNr)
-		, mSpacegroup(GetCCP4SpacegroupDescr(spacegroupNr))
-		, mD(CalculateOffsetForCell(p, mSpacegroup, cell))
-		, mRtOrth(AlternativeSites(mSpacegroup, cell))
-		, mCell(cell) {}
+	SymmetryAtomIteratorFactory(const Structure& p, int spacegroupNr, const clipper::Cell& cell);
 
 	SymmetryAtomIteratorFactory(const SymmetryAtomIteratorFactory&) = delete;
 	SymmetryAtomIteratorFactory& operator=(const SymmetryAtomIteratorFactory&) = delete;

@@ -157,7 +157,7 @@ class SymopParser
 	int m_trn[3][2] = {};
 };
 
-map<string,string> get_xhm_map(string path)
+map<string,string> get_Hall_map(string path)
 {
 	ifstream file(path);
 	if (not file.is_open())
@@ -166,9 +166,10 @@ map<string,string> get_xhm_map(string path)
 	enum class State { skip, spacegroup } state = State::skip;
 
 	string line;
-	string old, xHM;
+	string Hall;
+	vector<string> old;
 
-	const regex rx(R"(^symbol +(xHM|old) +'(.*)'$)");
+	const regex rx(R"(^symbol +(Hall|old) +'(.+?)'(?: +'(.+?)')?$)");
 
 	map<string,string> result;
 
@@ -186,21 +187,26 @@ map<string,string> get_xhm_map(string path)
 				smatch m;
 				if (regex_match(line, m, rx))
 				{
-cerr << "match " << m[1] << " => " << m[2] << endl;
-
 					if (m[1] == "old")
-						old = m[2];
-					else if (m[1] == "xHM")
-						xHM = m[2];
+					{
+						old.push_back(m[2]);
+						if (m[3].matched)
+							old.push_back(m[3]);
+					}
+					else
+						Hall = m[2];
 				}
 				else if (line == "end_spacegroup")
 				{
-					if (not (old.empty() or xHM.empty()))
-						result.emplace(old, xHM);
+					if (not Hall.empty())
+					{
+						for (auto& o: old)
+							result.emplace(o, Hall);
+					}
 					
 					state = State::skip;
 					old.clear();
-					xHM.clear();
+					Hall.clear();
 				}
 				break;
 			}
@@ -293,7 +299,7 @@ int main()
 
 		// -----------------------------------------------------------------------
 		
-		auto xhm_map = get_xhm_map(CLIBD + "/syminfo.lib"s);
+		auto Hall_map = get_Hall_map(CLIBD + "/syminfo.lib"s);
 
 		// --------------------------------------------------------------------
 
@@ -307,7 +313,7 @@ int main()
 struct Spacegroup
 {
 	const char* name;
-	const char* xHM;
+	const char* Hall;
 	int nr;
 } kSpaceGroups[] =
 {
@@ -315,11 +321,19 @@ struct Spacegroup
 
 		for (auto [name, nr]: spacegroups)
 		{
-			name = '"' + name + '"' + string(20 - name.length(), ' ');
-			string xHM = xhm_map[name];
-			xHM = '"' + xHM + '"' + string(20 - xHM.length(), ' ');
+			string Hall = Hall_map[name];
 
-			cout << "\t{ " << name << ", " << xHM << ", " << nr << " }," << endl;
+			name = '"' + name + '"' + string(20 - name.length(), ' ');
+
+			for (string::size_type p = Hall.length(); p > 0; --p)
+			{
+				if (Hall[p - 1] == '"')
+					Hall.insert(p - 1, "\\", 1);
+			}
+
+			Hall = '"' + Hall + '"' + string(40 - Hall.length(), ' ');
+
+			cout << "\t{ " << name << ", " << Hall << ", " << nr << " }," << endl;
 		}
 
 cout << R"(

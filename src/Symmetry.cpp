@@ -206,8 +206,13 @@ int32_t GetRotationalIndexNumber(int spacegroup, const clipper::RTop_frac& rt)
 // --------------------------------------------------------------------
 // And unfortunately, clipper does not know all the spacegroup names mentioned in symop.lib
 
-int GetSpacegroupNumber(const std::string& spacegroup)
+int GetSpacegroupNumber(std::string spacegroup)
 {
+	if (spacegroup == "P 21 21 2 A")
+		spacegroup = "P 21 21 2 (a)";
+	else if (spacegroup.empty())
+		throw runtime_error("No spacegroup, cannot continue");
+
 	int result = 0;
 
 	const size_t N = sizeof(kSpaceGroups) / sizeof(Spacegroup);
@@ -237,56 +242,97 @@ int GetSpacegroupNumber(const std::string& spacegroup)
 
 // -----------------------------------------------------------------------
 
-std::string SpacegroupToxHM(std::string spacegroup)
+std::string SpacegroupToHall(std::string spacegroup)
 {
-	if (spacegroup == "P 1-")
-		spacegroup = "P -1";
-	else if (spacegroup == "P 21 21 2 A")
+	if (spacegroup == "P 21 21 2 A")
 		spacegroup = "P 21 21 2 (a)";
 	else if (spacegroup.empty())
 		throw runtime_error("No spacegroup, cannot continue");
 
-	int nr = GetSpacegroupNumber(spacegroup);
+	string result;
 
-	return kSpaceGroups[nr].xHM;
-}
-
-clipper::Spgr_descr GetCCP4SpacegroupDescr(int nr)
-{
-	const size_t N = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
+	const size_t N = sizeof(kSpaceGroups) / sizeof(Spacegroup);
 	int32_t L = 0, R = static_cast<int32_t>(N - 1);
 	while (L <= R)
 	{
 		int32_t i = (L + R) / 2;
-		if (kSymopNrTable[i].spacegroupNr < nr)
+
+		int d = spacegroup.compare(kSpaceGroups[i].name);
+
+		if (d > 0)
 			L = i + 1;
-		else
+		else if (d < 0)
 			R = i - 1;
+		else
+		{
+			result = kSpaceGroups[i].Hall;
+			break;
+		}
 	}
 
-	if (L < 0 or L >= N)
-		throw runtime_error("Invalid spacegroup number");
+	if (result.empty())
+		throw runtime_error("Spacegroup name " + spacegroup + " was not found in table");
+	
+	return result;
+}
 
-	clipper::Spgr_descr::Symop_codes symop_codes;
+// clipper::Spgr_descr GetCCP4SpacegroupDescr(int nr)
+// {
+// 	const size_t N = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
+// 	int32_t L = 0, R = static_cast<int32_t>(N - 1);
+// 	while (L <= R)
+// 	{
+// 		int32_t i = (L + R) / 2;
+// 		if (kSymopNrTable[i].spacegroupNr < nr)
+// 			L = i + 1;
+// 		else
+// 			R = i - 1;
+// 	}
 
-	for (size_t i = L; i < N and kSymopNrTable[i].spacegroupNr == nr; ++i)
+// 	if (L < 0 or L >= N)
+// 		throw runtime_error("Invalid spacegroup number");
+
+// 	clipper::Spgr_descr::Symop_codes symop_codes;
+
+// 	for (size_t i = L; i < N and kSymopNrTable[i].spacegroupNr == nr; ++i)
+// 	{
+// 		auto& symop = kSymopNrTable[i];
+
+// 		clipper::ftype m[4][4] = {
+// 			{ symop.rt.rot_0_0, symop.rt.rot_0_1, symop.rt.rot_0_2, static_cast<float>(symop.rt.trn_0_0) / symop.rt.trn_0_1 },
+// 			{ symop.rt.rot_1_0, symop.rt.rot_1_1, symop.rt.rot_1_2, static_cast<float>(symop.rt.trn_1_0) / symop.rt.trn_1_1 },
+// 			{ symop.rt.rot_2_0, symop.rt.rot_2_1, symop.rt.rot_2_2, static_cast<float>(symop.rt.trn_2_0) / symop.rt.trn_2_1 },
+// 			{ 0, 0, 0, 1 }
+// 		};
+
+// 		symop_codes.emplace_back(clipper::Symop(m));
+// 	}
+
+// 	return clipper::Spgr_descr(symop_codes);
+// }
+
+clipper::Spgr_descr GetCCP4SpacegroupDescr(int nr)
+{
+	for (auto& sg: kSpaceGroups)
 	{
-		auto& symop = kSymopNrTable[i];
-
-		clipper::ftype m[4][4] = {
-			{ symop.rt.rot_0_0, symop.rt.rot_0_1, symop.rt.rot_0_2, static_cast<float>(symop.rt.trn_0_0) / symop.rt.trn_0_1 },
-			{ symop.rt.rot_1_0, symop.rt.rot_1_1, symop.rt.rot_1_2, static_cast<float>(symop.rt.trn_1_0) / symop.rt.trn_1_1 },
-			{ symop.rt.rot_2_0, symop.rt.rot_2_1, symop.rt.rot_2_2, static_cast<float>(symop.rt.trn_2_0) / symop.rt.trn_2_1 },
-			{ 0, 0, 0, 1 }
-		};
-
-		symop_codes.emplace_back(clipper::Symop(m));
+		if (sg.nr == nr)
+			return clipper::Spgr_descr(sg.Hall, clipper::Spgr_descr::Hall);
 	}
 
-	return clipper::Spgr_descr(symop_codes);
+	throw runtime_error("Invalid spacegroup number: " + to_string(nr));
 }
 
 // -----------------------------------------------------------------------
+
+SymmetryAtomIteratorFactory::SymmetryAtomIteratorFactory(const Structure& p, int spacegroupNr, const clipper::Cell& cell)
+	: mSpacegroupNr(spacegroupNr)
+	, mSpacegroup(GetCCP4SpacegroupDescr(spacegroupNr))
+	, mD(CalculateOffsetForCell(p, mSpacegroup, cell))
+	, mRtOrth(AlternativeSites(mSpacegroup, cell))
+	, mCell(cell)
+{
+
+}
 
 string SymmetryAtomIteratorFactory::symop_mmcif(const Atom& a) const
 {
