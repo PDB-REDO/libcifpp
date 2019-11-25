@@ -3564,7 +3564,7 @@ tuple<int,int> WriteCoordinatesForModel(ostream& pdbFile, Datablock& db,
 			r.get("id", "group_PDB", "label_atom_id", "label_alt_id", "auth_comp_id", "auth_asym_id", "auth_seq_id",
 				"pdbx_PDB_ins_code", "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol", "pdbx_formal_charge");
 		
-		if (name.length() < 4 and (element.length() == 1 or not cif::iequals(name, element)))
+		if (name.length() < 4 and (element.length() == 1 or std::toupper(name[0]) != std::toupper(element[0]) or std::toupper(name[1]) != std::toupper(element[1])))
 			name.insert(name.begin(), ' ');
 		
 		string sCharge;
