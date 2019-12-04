@@ -234,6 +234,19 @@ int GetSpacegroupNumber(std::string spacegroup)
 		}
 	}
 
+	// not found, see if we can find a match based on xHM name
+	if (result == 0)
+	{
+		for (auto& sp: kSpaceGroups)
+		{
+			if (sp.xHM == spacegroup)
+			{
+				result = sp.nr;
+				break;
+			}
+		}
+	}
+
 	if (result == 0)
 		throw runtime_error("Spacegroup name " + spacegroup + " was not found in table");
 	
@@ -244,28 +257,15 @@ int GetSpacegroupNumber(std::string spacegroup)
 
 std::string SpacegroupToHall(std::string spacegroup)
 {
-	if (spacegroup == "P 21 21 2 A")
-		spacegroup = "P 21 21 2 (a)";
-	else if (spacegroup.empty())
-		throw runtime_error("No spacegroup, cannot continue");
+	int nr = GetSpacegroupNumber(spacegroup);
 
+	// yeah, sucks, I know, might be looping three times this way
 	string result;
-
-	const size_t N = sizeof(kSpaceGroups) / sizeof(Spacegroup);
-	int32_t L = 0, R = static_cast<int32_t>(N - 1);
-	while (L <= R)
+	for (auto& sp: kSpaceGroups)
 	{
-		int32_t i = (L + R) / 2;
-
-		int d = spacegroup.compare(kSpaceGroups[i].name);
-
-		if (d > 0)
-			L = i + 1;
-		else if (d < 0)
-			R = i - 1;
-		else
+		if (sp.nr == nr)
 		{
-			result = kSpaceGroups[i].Hall;
+			result = sp.Hall;
 			break;
 		}
 	}

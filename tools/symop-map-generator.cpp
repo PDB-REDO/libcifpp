@@ -157,66 +157,6 @@ class SymopParser
 	int m_trn[3][2] = {};
 };
 
-map<string,string> get_Hall_map(string path)
-{
-	ifstream file(path);
-	if (not file.is_open())
-		throw runtime_error("Could not open syminfo.lib file");
-
-	enum class State { skip, spacegroup } state = State::skip;
-
-	string line;
-	string Hall;
-	vector<string> old;
-
-	const regex rx(R"(^symbol +(Hall|old) +'(.+?)'(?: +'(.+?)')?$)");
-
-	map<string,string> result;
-
-	while (getline(file, line))
-	{
-		switch (state)
-		{
-			case State::skip:
-				if (line == "begin_spacegroup")
-					state = State::spacegroup;
-				break;
-			
-			case State::spacegroup:
-			{
-				smatch m;
-				if (regex_match(line, m, rx))
-				{
-					if (m[1] == "old")
-					{
-						old.push_back(m[2]);
-						if (m[3].matched)
-							old.push_back(m[3]);
-					}
-					else
-						Hall = m[2];
-				}
-				else if (line == "end_spacegroup")
-				{
-					if (not Hall.empty())
-					{
-						for (auto& o: old)
-							result.emplace(o, Hall);
-					}
-					
-					state = State::skip;
-					old.clear();
-					Hall.clear();
-				}
-				break;
-			}
-		}
-	}
-
-	return result;
-}
-
-
 int main()
 {
 	try
@@ -226,104 +166,189 @@ int main()
 		if (CLIBD == nullptr)
 			throw runtime_error("CCP4 not sourced");
 
-		ifstream file(CLIBD + "/symop.lib"s);
-		if (not file.is_open())
-			throw runtime_error("Could not open symop.lib file");
-
 		// --------------------------------------------------------------------
-		// unfortunately, the data in symop.lib is not sorted, so we have to
-		// store the data in memory before writing out.
 
-		vector<tuple<int,int,string,array<int,15>>> data;
+		// store symop data here
+		vector<tuple<int,int,array<int,15>>> data;
 
-		vector<tuple<string,int>> spacegroups;
-
-		// --------------------------------------------------------------------
+		// -----------------------------------------------------------------------
 		
-		string line;
-		string spacegroupName;
-		int spacegroupNr, symopnr;
+		struct SymInfoBlock
+		{
+			int nr;
+			string xHM;
+			string Hall;
+			string old[2];
+		};
 
-		enum class State { Initial, InSpacegroup, Error } state = State::Initial;
+		map<int,SymInfoBlock> symInfo;
+		int symopnr, mysymnr = 10000;
+
+		ifstream file(CLIBD + "/syminfo.lib"s);
+		if (not file.is_open())
+			throw runtime_error("Could not open syminfo.lib file");
+
+		enum class State { skip, spacegroup } state = State::skip;
+
+		string line;
+		string Hall;
+		vector<string> old;
+
+		const regex rx(R"(^symbol +(Hall|xHM|old) +'(.+?)'(?: +'(.+?)')?$)"),
+			rx2(R"(symbol ccp4 (\d+))");;
+
+		SymInfoBlock cur = {};
 
 		while (getline(file, line))
 		{
-			if (line.empty())
-				throw runtime_error("Invalid symop.lib file, contains empty line");
-			
 			switch (state)
 			{
-				case State::Error:
-				case State::InSpacegroup:
-					if (line[0] == ' ')
+				case State::skip:
+					if (line == "begin_spacegroup")
 					{
-						if (state == State::Error)
-							continue;
-						
-						try
-						{
-							SymopParser p;
-							data.emplace_back(spacegroupNr, symopnr, spacegroupName, p.parse(line));
-							++symopnr;
-						}
-						catch (const exception& e)
-						{
-							cerr << line << endl
-								 << e.what() << endl;
-						}
-
-						continue;
+						state = State::spacegroup;
+						symopnr = 1;
+						++mysymnr;
+						cur = { mysymnr };
 					}
-					// fall through
+					break;
 				
-				case State::Initial:
+				case State::spacegroup:
 				{
 					smatch m;
-					if (not regex_match(line, m, kNameRx))
+					if (regex_match(line, m, rx))
 					{
-						cerr << line << endl;
-						throw runtime_error("Name line does not match regular expression");
+						if (m[1] == "old")
+						{
+							cur.old[0] = m[2];
+							if (m[3].matched)
+								cur.old[1] = m[3];
+						}
+						else if (m[1] == "xHM")
+							cur.xHM = m[2];
+						else if (m[1] == "Hall")
+							cur.Hall = m[2];
 					}
-
-					spacegroupNr = stoi(m[1]);
-					spacegroupName = m[7];
-					symopnr = 1;
-
-					spacegroups.emplace_back(spacegroupName, spacegroupNr);
-
-					state = State::InSpacegroup;
+					else if (regex_match(line, m, rx2))
+					{
+						int nr = stoi(m[1]);
+						if (nr != 0)
+							cur.nr = nr;
+					}
+					else if (line.compare(0, 6, "symop ") == 0)
+					{
+						SymopParser p;
+						data.emplace_back(cur.nr, symopnr, p.parse(line.substr(6)));
+						++symopnr;
+					}
+					else if (line == "end_spacegroup")
+					{
+						symInfo.emplace(cur.nr, cur);
+						state = State::skip;
+					}
 					break;
 				}
 			}
 		}
 
-		// -----------------------------------------------------------------------
+		// // --------------------------------------------------------------------
 		
-		auto Hall_map = get_Hall_map(CLIBD + "/syminfo.lib"s);
+		// string line;
+		// string spacegroupName;
+		// int spacegroupNr, symopnr;
+
+		// enum class State { Initial, InSpacegroup, Error } state = State::Initial;
+
+		// while (getline(file, line))
+		// {
+		// 	if (line.empty())
+		// 		throw runtime_error("Invalid symop.lib file, contains empty line");
+			
+		// 	switch (state)
+		// 	{
+		// 		case State::Error:
+		// 		case State::InSpacegroup:
+		// 			if (line[0] == ' ')
+		// 			{
+		// 				if (state == State::Error)
+		// 					continue;
+						
+		// 				try
+		// 				{
+		// 					SymopParser p;
+		// 					data.emplace_back(spacegroupNr, symopnr, spacegroupName, p.parse(line));
+		// 					++symopnr;
+		// 				}
+		// 				catch (const exception& e)
+		// 				{
+		// 					cerr << line << endl
+		// 						 << e.what() << endl;
+		// 				}
+
+		// 				continue;
+		// 			}
+		// 			// fall through
+				
+		// 		case State::Initial:
+		// 		{
+		// 			smatch m;
+		// 			if (not regex_match(line, m, kNameRx))
+		// 			{
+		// 				cerr << line << endl;
+		// 				throw runtime_error("Name line does not match regular expression");
+		// 			}
+
+		// 			spacegroupNr = stoi(m[1]);
+		// 			spacegroupName = m[7];
+		// 			symopnr = 1;
+
+		// 			if (not symInfo.count(spacegroupNr))
+		// 				throw runtime_error("Symmetry nr not found in syminfo.lib");
+					
+		// 			if (symInfo[spacegroupNr].xHM != spacegroupName)
+		// 				cerr << "Inconsistent data between symop.lib and syminfo.lib for spacegroup nr " << to_string(spacegroupNr) << endl;
+
+		// 			state = State::InSpacegroup;
+		// 			break;
+		// 		}
+		// 	}
+		// }
 
 		// --------------------------------------------------------------------
 
 		sort(data.begin(), data.end());
-		sort(spacegroups.begin(), spacegroups.end());
 
 		// --------------------------------------------------------------------
 
 		cout << R"(// This file was generated from $CLIBD/symop.lib
+// and $CLIBD/syminfo.lib using symop-map-generator,
+// part of the PDB-REDO suite of programs.
 
 struct Spacegroup
 {
 	const char* name;
+	const char* xHM;
 	const char* Hall;
 	int nr;
 } kSpaceGroups[] =
 {
 )";
 
-		for (auto [name, nr]: spacegroups)
-		{
-			string Hall = Hall_map[name];
+		vector<tuple<string,int,string,string>> spacegroups;
 
-			name = '"' + name + '"' + string(20 - name.length(), ' ');
+		for (auto& [nr, info]: symInfo)
+		{
+			spacegroups.emplace_back(info.old[0], nr, info.xHM, info.Hall);
+			if (info.old[1].empty() == false)
+				spacegroups.emplace_back(info.old[1], nr, info.xHM, info.Hall);
+		}
+
+		sort(spacegroups.begin(), spacegroups.end());
+
+		for (auto [old, nr, xHM, Hall]: spacegroups)
+		{
+			old = '"' + old + '"' + string(20 - old.length(), ' ');
+			xHM = '"' + xHM + '"' + string(30 - xHM.length(), ' ');
 
 			for (string::size_type p = Hall.length(); p > 0; --p)
 			{
@@ -333,7 +358,7 @@ struct Spacegroup
 
 			Hall = '"' + Hall + '"' + string(40 - Hall.length(), ' ');
 
-			cout << "\t{ " << name << ", " << Hall << ", " << nr << " }," << endl;
+			cout << "\t{ " << old << ", " << xHM << ", " << Hall << ", " << nr << " }," << endl;
 		}
 
 cout << R"(
@@ -370,20 +395,19 @@ struct SymopDataBlock
 } kSymopNrTable[] = {
 )" << endl;
 
-		spacegroupNr = 0;
+		int spacegroupNr = 0;
 		for (auto& sd: data)
 		{
 			int sp, o;
-			string n;
-			tie(sp, o, n, ignore) = sd;
+			tie(sp, o, ignore) = sd;
 
 			if (sp > spacegroupNr)
-				cout << "    // " << n << endl;
+				cout << "    // " << symInfo[sp].xHM << endl;
 			spacegroupNr = sp;
 
 			cout << "    { " << setw(3) << sp
 					<< ", " << setw(3) << o << ", { ";
-			for (auto i: get<3>(sd))
+			for (auto i: get<2>(sd))
 				cout << setw(2) << i << ',';
 			cout << " } }," << endl;
 		}
