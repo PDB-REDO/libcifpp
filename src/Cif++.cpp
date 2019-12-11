@@ -88,7 +88,6 @@ void ItemValue::operator delete(void* p)
 }
 
 // --------------------------------------------------------------------
-
 // itemColumn contains info about a column or field in a Category
 
 struct ItemColumn

@@ -117,8 +117,6 @@ struct ItemValue;
 class Item
 {
   public:
-	typedef enum { notApplicable, notDefined, text, number } ItemContentType;
-	
 	Item() {}
 	template<typename T>
 	Item(const string& name, const T& value);
@@ -191,9 +189,9 @@ class Datablock
   public:
 	friend class File;
 	
-	typedef std::list<Category> CategoryList;
-	typedef CategoryList::iterator iterator;
-	typedef CategoryList::const_iterator const_iterator;
+	using CategoryList = std::list<Category>;
+	using iterator = CategoryList::iterator;
+	using const_iterator = CategoryList::const_iterator;
 	
 	Datablock(const string& name);
 	~Datablock();
@@ -1042,7 +1040,7 @@ inline Condition Not(Condition&& cond)
 // -----------------------------------------------------------------------
 // iterators
 
-template<typename RowType>
+template<typename RowType, typename ConditionType = void>
 class iterator_impl
 {
   public:
@@ -1056,11 +1054,11 @@ class iterator_impl
 
 	iterator_impl(ItemRow* data) : mCurrent(data) {}
 
-	iterator_impl(ItemRow* data, Category& cat, const Condition& cond)
+	template<typename T, std::enable_if_t<std::is_same_v<ConditionType,T>, int> = 0>
+	iterator_impl(ItemRow* data, Category& cat, const T& cond)
 		: mCurrent(data), mCat(&cat), mCondition(&cond)
 	{
-		while (mCurrent and not cond(cat, mCurrent))
-			mCurrent.next();
+		skip();
 	}
 
 	virtual ~iterator_impl() = default;
@@ -1070,10 +1068,8 @@ class iterator_impl
 	
 	iterator_impl& operator++()
 	{
-		do
-		{
-			mCurrent.next();
-		} while (mCurrent and mCondition != nullptr and not mCondition->operator()(*mCat, mCurrent));
+		mCurrent.next();
+		skip();
 
 		return *this;
 	}
@@ -1084,17 +1080,26 @@ class iterator_impl
 	bool operator!=(const iterator_impl& rhs) const	{ return not (mCurrent == rhs.mCurrent); } 
 
   private:
+
+	void skip()
+	{
+		if constexpr (not std::is_void_v<ConditionType>)
+		{
+			while (mCurrent and not (*mCondition)(*mCat, mCurrent))
+				mCurrent.next();
+		}
+	}
+
 	Row mCurrent;
 	Category* mCat = nullptr;
 	const Condition* mCondition = nullptr;
 };
 
-
 template<typename RowType>
 class conditional_iterator_proxy
 {
   public:
-	using iterator = iterator_impl<RowType>;
+	using iterator = iterator_impl<RowType,Condition>;
 	using reference = typename iterator::reference;
 
 	conditional_iterator_proxy(ItemRow* head, Category& cat, Condition&& cond)
@@ -1148,8 +1153,6 @@ class RowSet : public vector<Row>
   private:
 	Category*	mCat;
 };
-
-
 
 // --------------------------------------------------------------------
 // class Category acts as an STL container for Row objects 
