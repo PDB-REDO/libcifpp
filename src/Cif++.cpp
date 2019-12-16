@@ -1724,6 +1724,37 @@ bool Category::isOrphan(Row r)
 	return isOrphan;
 }
 
+bool Category::hasChildren(Row r) const
+{
+	assert(mValidator != nullptr);
+	assert(mCatValidator != nullptr);
+
+	bool result = false;
+
+	for (auto& link: mValidator->getLinksForParent(mName))
+	{
+		auto childCat = mDb.get(link->mChildCategory);
+		if (childCat == nullptr)
+			continue;
+		
+		Condition cond;
+		
+		for (size_t ix = 0; ix < link->mParentKeys.size(); ++ix)
+		{
+			const char* value = r[link->mParentKeys[ix]].c_str();
+			
+			cond = move(cond) && (Key(link->mChildKeys[ix]) == value);
+		}
+
+		result = not childCat->find(std::move(cond)).empty();
+
+		if (result)
+			break;
+	}
+
+	return result;
+}
+
 bool Category::isValid()
 {
 	bool result = true;
@@ -2173,21 +2204,89 @@ Row& Row::operator=(const Row& rhs)
 	return *this;
 }
 
-void Row::assign(const string& name, const string& value, bool emplacing)
+void Row::assign(const std::vector<Item>& values)
+{
+	auto cat = mData->mCategory;
+
+	map<string,tuple<int,string,string>> changed;
+
+	for (auto& value: values)
+	{
+		auto columnIx = cat->addColumn(value.name());
+		auto& col = cat->mColumns[columnIx];
+		string tag = col.mValidator ? col.mValidator->mTag : to_string(columnIx);
+
+		changed[tag] = make_tuple(columnIx, operator[](columnIx).c_str(), value.value());
+
+		assign(columnIx, value.value(), true);
+	}
+
+	// see if we need to update any child categories that depend on these values
+	// auto iv = col.mValidator;
+	if (mCascadeUpdate)
+	{
+		auto& validator = cat->getValidator();
+		auto& db = cat->db();
+
+		for (auto linked: validator.getLinksForParent(cat->mName))
+		{
+			auto childCat = db.get(linked->mChildCategory);
+			if (childCat == nullptr)
+				continue;
+
+			// if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
+			// 	continue;
+
+			Condition cond;
+			string childTag;
+
+			vector<Item> newValues;
+			
+			for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+			{
+				string pk = linked->mParentKeys[ix];
+				string ck = linked->mChildKeys[ix];
+
+				if (changed.count(pk) > 0)
+				{
+					childTag = ck;
+					cond = move(cond) && (Key(ck) == std::get<1>(changed[pk]));
+					newValues.emplace_back(ck, std::get<2>(changed[pk]));
+				}
+				else
+				{
+					const char* value = (*this)[pk].c_str();
+					cond = move(cond) && (Key(ck) == value);
+				}
+			}
+
+			auto rows = childCat->find(move(cond));
+			for (auto& cr: rows)
+				cr.assign(newValues);
+		}
+	}
+}
+
+void Row::assign(const Item& value, bool skipUpdateLinked)
+{
+	assign(value.name(), value.value(), skipUpdateLinked);
+}
+
+void Row::assign(const string& name, const string& value, bool skipUpdateLinked)
 {
 	try
 	{
 		auto cat = mData->mCategory;
-		assign(cat->addColumn(name), value, emplacing);
+		assign(cat->addColumn(name), value, skipUpdateLinked);
 	}
 	catch (const exception& ex)
 	{
-		cerr << "Could not assigning value '" << value << "' to column " << name << endl;
+		cerr << "Could not assign value '" << value << "' to column _" << mData->mCategory->name() << '.' << name << endl;
 		throw;
 	}
 }
 
-void Row::assign(size_t column, const string& value, bool emplacing)
+void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 {
 	if (mData == nullptr)
 		throw logic_error("invalid Row, no data assigning value '" + value + "' to column with index " + to_string(column));
@@ -2221,7 +2320,7 @@ void Row::assign(size_t column, const string& value, bool emplacing)
 	
 	bool reinsert = false;
 	
-	if (not emplacing and	// an update of an Item's value
+	if (not skipUpdateLinked and	// an update of an Item's value
 		cat->mIndex != nullptr and cat->keyFieldsByIndex().count(column))
 	{
 		reinsert = cat->mIndex->find(mData);
@@ -2276,7 +2375,7 @@ void Row::assign(size_t column, const string& value, bool emplacing)
 
 	// see if we need to update any child categories that depend on this value
 	auto iv = col.mValidator;
-	if (not emplacing and iv != nullptr and mCascadeUpdate)
+	if (not skipUpdateLinked and iv != nullptr and mCascadeUpdate)
 	{
 		auto& validator = cat->getValidator();
 		auto& db = cat->db();
@@ -2528,11 +2627,6 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 
 		}
 	}
-}
-
-void Row::assign(const Item& value, bool emplacing)
-{
-	assign(value.name(), value.value(), emplacing);
 }
 
 size_t Row::ColumnForItemTag(const char* itemTag) const

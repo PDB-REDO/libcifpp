@@ -535,6 +535,8 @@ class Row
 		return detail::getRowResult<C...>(*this, std::move(cix));
 	}
 	
+	void assign(const std::vector<Item>& values);
+
 	bool operator==(const Row& rhs) const
 	{
 		return mData == rhs.mData;
@@ -551,9 +553,9 @@ class Row
 
   private:
 
-	void assign(const string& name, const string& value, bool emplacing);
-	void assign(size_t column, const string& value, bool emplacing);
-	void assign(const Item& i, bool emplacing);
+	void assign(const string& name, const string& value, bool updateLinked);
+	void assign(size_t column, const string& value, bool updateLinked);
+	void assign(const Item& i, bool updateLinked);
 	
 	static void swap(size_t column, ItemRow* a, ItemRow* b);
 
@@ -1225,6 +1227,8 @@ class Category
 	/// links and for which there is no single parent left.
 	bool isOrphan(Row r);
 	bool hasParent(Row r, const Category& parentCat, const ValidateLink& link) const;
+
+	bool hasChildren(Row r) const;
 
 	bool isValid();
 	void validateLinks() const;
