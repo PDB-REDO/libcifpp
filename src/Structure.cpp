@@ -1024,28 +1024,37 @@ float Monomer::chi(size_t nr) const
 {
 	float result = 0;
 
-	auto i = kChiAtomsMap.find(mCompoundID);
-	if (i != kChiAtomsMap.end() and nr < i->second.size())
+	try
 	{
-		vector<string> atoms{ "N", "CA", "CB" };
+		auto i = kChiAtomsMap.find(mCompoundID);
+		if (i != kChiAtomsMap.end() and nr < i->second.size())
+		{
+			vector<string> atoms{ "N", "CA", "CB" };
 
-		atoms.insert(atoms.end(), i->second.begin(), i->second.end());
+			atoms.insert(atoms.end(), i->second.begin(), i->second.end());
 
-        // in case we have a positive chiral volume we need to swap atoms
-        if (chiralVolume() > 0)
-        {
-            if (mCompoundID == "LEU") atoms.back() = "CD2";
-            if (mCompoundID == "VAL") atoms.back() = "CG2";
-        }
+			// in case we have a positive chiral volume we need to swap atoms
+			if (chiralVolume() > 0)
+			{
+				if (mCompoundID == "LEU") atoms.back() = "CD2";
+				if (mCompoundID == "VAL") atoms.back() = "CG2";
+			}
 
-        result = DihedralAngle(
-            atomByID(atoms[nr + 0]).location(),
-            atomByID(atoms[nr + 1]).location(),
-            atomByID(atoms[nr + 2]).location(),
-            atomByID(atoms[nr + 3]).location()
-        );
+			result = DihedralAngle(
+				atomByID(atoms[nr + 0]).location(),
+				atomByID(atoms[nr + 1]).location(),
+				atomByID(atoms[nr + 2]).location(),
+				atomByID(atoms[nr + 3]).location()
+			);
+		}
 	}
-	
+	catch(const std::exception& e)
+	{
+		if (cif::VERBOSE)
+			std::cerr << e.what() << std::endl;
+		result = 0;
+	}
+
 	return result;
 }
 
