@@ -1217,9 +1217,27 @@ class Category
 	template<class Iter>
 	std::tuple<Row,bool> emplace(Iter b, Iter e);
 
-	void erase(Condition&& cond);
+	size_t erase(Condition&& cond);
+	size_t erase(Condition&& cond, std::function<void(const Row&)>&& visit);
+
 	void erase(Row r);
-	void erase(iterator ri);
+	iterator erase(iterator ri);
+
+	// erase without cascade, should only be used when speed is needed
+
+	size_t erase_nocascade(Condition&& cond)
+	{
+		return erase_nocascade(std::forward<Condition>(cond), [](auto r){});
+	}
+
+	size_t erase_nocascade(Condition&& cond, std::function<void(const Row&)>&& visit)
+	{
+		auto savedValidator = mValidator;
+		mValidator = nullptr;
+		auto result = erase(std::forward<Condition>(cond), std::forward<std::function<void(const Row&)>>(visit));
+		mValidator = savedValidator;
+		return result;
+	}
 
 	void eraseOrphans(Condition&& cond);
 

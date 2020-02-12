@@ -1513,20 +1513,47 @@ tuple<Row,bool> Category::emplace(Row r)
 	return emplace(r.begin(), r.end());
 }
 
-void Category::erase(Condition&& cond)
+size_t Category::erase(Condition&& cond)
 {
-	RowSet remove(*this);
-	
+	size_t result = 0;
+
 	cond.prepare(*this);
 
-	for (auto r: *this)
+	auto ri = begin();
+	while (ri != end())
 	{
-		if (cond(*this, r))
-			remove.push_back(r);
+		if (cond(*this, *ri))
+		{
+			ri = erase(ri);
+			++result;
+		}
+		else
+			++ri;
 	}
 
-	for (auto r: remove)
-		erase(r);
+	return result;	
+}
+
+size_t Category::erase(Condition&& cond, std::function<void(const Row&)>&& verbose)
+{
+	size_t result = 0;
+
+	cond.prepare(*this);
+
+	auto ri = begin();
+	while (ri != end())
+	{
+		if (cond(*this, *ri))
+		{
+			verbose(*ri);
+			ri = erase(ri);
+			++result;
+		}
+		else
+			++ri;
+	}
+
+	return result;
 }
 
 void Category::eraseOrphans(Condition&& cond)
@@ -1552,13 +1579,16 @@ void Category::eraseOrphans(Condition&& cond)
 		erase(r);
 }
 
-void Category::erase(iterator p)
-{
-	erase(*p);
-}
-
 void Category::erase(Row r)
 {
+	erase(iterator(r.mData));
+}
+
+auto Category::erase(iterator pos) -> iterator
+{
+	auto r = *pos;
+	iterator result = ++pos;
+
 	iset keys;
 	if (mCatValidator)
 		keys = iset(mCatValidator->mKeys.begin(), mCatValidator->mKeys.end());
@@ -1595,22 +1625,25 @@ void Category::erase(Row r)
 	// If all values in a child are the same as the specified parent ones
 	// the child is removed as well, recursively of course.
 
-	for (auto& link: mValidator->getLinksForParent(mName))
+	if (mValidator != nullptr)
 	{
-		auto childCat = mDb.get(link->mChildCategory);
-		if (childCat == nullptr)
-			continue;
-		
-		Condition cond;
-		
-		for (size_t ix = 0; ix < link->mParentKeys.size(); ++ix)
+		for (auto& link: mValidator->getLinksForParent(mName))
 		{
-			const char* value = r[link->mParentKeys[ix]].c_str();
+			auto childCat = mDb.get(link->mChildCategory);
+			if (childCat == nullptr)
+				continue;
 			
-			cond = move(cond) && (Key(link->mChildKeys[ix]) == value);
-		}
+			Condition cond;
+			
+			for (size_t ix = 0; ix < link->mParentKeys.size(); ++ix)
+			{
+				const char* value = r[link->mParentKeys[ix]].c_str();
+				
+				cond = move(cond) && (Key(link->mChildKeys[ix]) == value);
+			}
 
-		childCat->eraseOrphans(move(cond));
+			childCat->eraseOrphans(move(cond));
+		}
 	}
 
 	delete r.mData;
@@ -1623,6 +1656,8 @@ void Category::erase(Row r)
 			while (mTail->mNext != nullptr)
 				mTail = mTail->mNext;
 	}
+
+	return result;
 }
 
 void Category::getTagOrder(vector<string>& tags) const

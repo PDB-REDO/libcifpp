@@ -16,7 +16,7 @@ int GetSpacegroupNumber(std::string spacegroup);	// alternative for clipper's pa
 // std::string SpacegroupToHall(std::string spacegroup);
 
 // --------------------------------------------------------------------
-// To iterate over all near symmetry copies of an atom
+// To iterate over all symmetry copies of an atom
 
 class SymmetryAtomIteratorFactory
 {
