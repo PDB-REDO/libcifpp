@@ -2432,18 +2432,26 @@ void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 				string pk = linked->mParentKeys[ix];
 				string ck = linked->mChildKeys[ix];
 
+				// TODO add code to *NOT* test mandatory fiels for Empty
+
 				if (pk == iv->mTag)
 				{
 					childTag = ck;
-					cond = move(cond) && (Key(ck) == oldStrValue);
+					cond = move(cond) && ((Key(ck) == oldStrValue) or Key(ck) == Empty());
 				}
 				else
 				{
 					const char* value = (*this)[pk].c_str();
-					cond = move(cond) && (Key(ck) == value);
+					cond = move(cond) && ((Key(ck) == value) or Key(ck) == Empty());
 				}
 				
 			}
+
+			// if (cif::VERBOSE > 2)
+			// {
+			// 	std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::endl
+			// 			  << cond << std::endl;
+			// }
 
 			auto rows = childCat->find(move(cond));
 			for (auto& cr: rows)

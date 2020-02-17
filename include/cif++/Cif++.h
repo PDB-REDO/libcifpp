@@ -950,6 +950,14 @@ struct Key
 		string value(v ? v : "");
 		return Condition(new detail::KeyIsConditionImpl<std::string>(mItemTag, value));
 	}
+
+	Condition operator==(const detail::ItemReference& v) const
+	{
+		if (v.empty())
+			return Condition(new detail::KeyIsEmptyConditionImpl(mItemTag));
+		else
+			return Condition(new detail::KeyIsConditionImpl<std::string>(mItemTag, v.c_str()));
+	}
 	
 	Condition operator==(const Empty&) const
 	{
