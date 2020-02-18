@@ -309,6 +309,12 @@ void ItemReference::swap(ItemReference& b)
 	Row::swap(mColumn, mRow.mData, b.mRow.mData);
 }
 
+std::ostream& operator<<(std::ostream& os, ItemReference& item)
+{
+	os << item.c_str();
+	return os;
+}
+
 }
 
 // --------------------------------------------------------------------

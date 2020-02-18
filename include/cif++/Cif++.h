@@ -308,6 +308,8 @@ namespace detail
 		bool operator!=(const string& s) const		{ return s != c_str(); }
 		bool operator==(const string& s) const		{ return s == c_str(); }
 
+		friend std::ostream& operator<<(std::ostream& os, ItemReference& item);
+
 	private:
 		friend class ::cif::Row;
 
