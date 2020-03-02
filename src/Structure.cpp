@@ -195,7 +195,8 @@ struct AtomImpl
 		cif::tie(symbol, mAtomID, mCompID, mAsymID, mSeqID, mAltID) =
 			mRow.get("type_symbol", "label_atom_id", "label_comp_id", "label_asym_id", "label_seq_id", "label_alt_id");
 		
-		mType = AtomTypeTraits(symbol).type();
+		if (symbol != "X")
+			mType = AtomTypeTraits(symbol).type();
 
 		float x, y, z;
 		cif::tie(x, y, z) = mRow.get("Cartn_x", "Cartn_y", "Cartn_z");
