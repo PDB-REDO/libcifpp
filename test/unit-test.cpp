@@ -57,3 +57,39 @@ _test.name
 
 	BOOST_CHECK_EQUAL(n, 1);
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(ut2)
+{
+	using namespace mmcif;
+
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+	)"_cf;
+
+	auto& db = f.firstDatablock();
+
+	BOOST_CHECK(db.getName() == "TEST");
+	
+	auto& test = db["test"];
+	BOOST_CHECK(test.size() == 3);
+
+	int n = 0;
+	for (auto r: test.find(cif::Key("name") == "aap"))
+	{
+		BOOST_CHECK(++n == 1);
+		BOOST_CHECK(r["id"].as<int>() == 1);
+		BOOST_CHECK(r["name"].as<std::string>() == "aap");
+	}
+
+	auto t = test.find(cif::Key("id") == 1);
+	BOOST_CHECK(not t.empty());
+	BOOST_CHECK(t.front()["name"].as<std::string>() == "aap");
+}

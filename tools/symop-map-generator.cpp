@@ -406,10 +406,10 @@ struct SymopDataBlock
 			spacegroupNr = sp;
 
 			cout << "    { " << setw(3) << sp
-					<< ", " << setw(3) << o << ", { ";
+					<< ", " << setw(3) << o << ", { { ";
 			for (auto i: get<2>(sd))
 				cout << setw(2) << i << ',';
-			cout << " } }," << endl;
+			cout << " } } }," << endl;
 		}
 
 		cout << "};" << endl;

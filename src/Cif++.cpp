@@ -1107,29 +1107,50 @@ size_t CatIndex::size() const
 
 // --------------------------------------------------------------------
 
+RowSet::RowSet(Category& cat)
+	: mCat(&cat)
+	// , mCond(nullptr)
+{
+}
+
+RowSet::RowSet(Category& cat, Condition&& cond)
+	: mCat(&cat)
+	// , mCond(new Condition(std::forward<Condition>(cond)))
+{
+	cond.prepare(cat);
+
+	for (auto r: cat)
+	{
+		if (cond(cat, r))
+			mItems.push_back(r.mData);
+	}
+}
+
 RowSet::RowSet(const RowSet& rhs)
-	: base_type(rhs)
-	, mCat(rhs.mCat)
+	: mCat(rhs.mCat)
+	, mItems(rhs.mItems)
+	// , mCond(nullptr)
 {
 }
 
 RowSet::RowSet(RowSet&& rhs)
-	: base_type(move(rhs))
-	, mCat(rhs.mCat)
+	: mCat(rhs.mCat)
+	, mItems(std::move(rhs.mItems))
+	// , mCond(rhs.mCond)
 {
+	// rhs.mCond = nullptr;
 }
 
-RowSet::RowSet(conditional_iterator_proxy<Row>&& results)
-	: vector<Row>(results.begin(), results.end())
-	, mCat(&results.category())
+RowSet::~RowSet()
 {
+	// delete mCond;
 }
 
 RowSet& RowSet::operator=(const RowSet& rhs)
 {
 	if (this != &rhs)
 	{
-		base_type::operator=(rhs);
+		mItems = rhs.mItems;
 		mCat = rhs.mCat;
 	}
 	
@@ -1140,37 +1161,18 @@ RowSet& RowSet::operator=(RowSet&& rhs)
 {
 	if (this != &rhs)
 	{
-		base_type::operator=(move(rhs));
+		std::swap(mItems, rhs.mItems);
 		mCat = rhs.mCat;
 	}
 	
 	return *this;
 }
 
-RowSet& RowSet::operator=(conditional_iterator_proxy<Row>& results)
-{
-	clear();
-	insert(begin(), results.begin(), results.end());
-	return *this;
-}
-
-RowSet& RowSet::operator=(conditional_iterator_proxy<const Row>& results)
-{
-	clear();
-	insert(begin(), results.begin(), results.end());
-	return *this;
-}
-
-RowSet::RowSet(Category& cat)
-	: mCat(&cat)
-{
-}
-
 RowSet& RowSet::orderBy(initializer_list<string> items)
 {
 	RowComparator c(mCat, items.begin(), items.end());
 	
-	stable_sort(begin(), end(), c);
+	stable_sort(mItems.begin(), mItems.end(), c);
 	
 	return *this;
 }
@@ -1293,6 +1295,21 @@ size_t Category::addColumn(const string& name)
 	
 	return result;
 }
+
+// RowSet Category::find(Condition&& cond)
+// {
+// 	RowSet result(*this);
+
+// 	cond.prepare(*this);
+
+// 	for (auto r: *this)
+// 	{
+// 		if (cond(*this, r))
+// 			result.push_back(r);
+// 	}
+
+// 	return result;
+// }
 
 void Category::reorderByIndex()
 {
@@ -1564,7 +1581,7 @@ size_t Category::erase(Condition&& cond, std::function<void(const Row&)>&& verbo
 
 void Category::eraseOrphans(Condition&& cond)
 {
-	RowSet remove(*this);
+	vector<ItemRow*> remove;
 	
 	cond.prepare(*this);
 
@@ -1577,12 +1594,12 @@ void Category::eraseOrphans(Condition&& cond)
 					 << r << endl
 					 << endl;
 
-			remove.push_back(r);
+			remove.push_back(r.mData);
 		}
 	}
 
 	for (auto r: remove)
-		erase(r);
+		erase(iterator(r));
 }
 
 void Category::erase(Row r)
@@ -2228,8 +2245,12 @@ void Category::write(ostream& os, const vector<string>& columns)
 
 Row::Row(const Row& rhs)
 	: mData(rhs.mData)
-	, mCascadeUpdate(rhs.mCascadeUpdate)
 {
+}
+
+Row::~Row()
+{
+	
 }
 
 void Row::next()
@@ -2241,12 +2262,14 @@ void Row::next()
 Row& Row::operator=(const Row& rhs)
 {
 	mData = rhs.mData;
-	mCascadeUpdate = rhs.mCascadeUpdate;
 	return *this;
 }
 
 void Row::assign(const std::vector<Item>& values)
 {
+	if (mConst)
+		throw logic_error("Row is const, cannot assign values");
+
 	auto cat = mData->mCategory;
 
 	map<string,tuple<int,string,string>> changed;
@@ -2264,47 +2287,45 @@ void Row::assign(const std::vector<Item>& values)
 
 	// see if we need to update any child categories that depend on these values
 	// auto iv = col.mValidator;
-	if (mCascadeUpdate)
+
+	auto& validator = cat->getValidator();
+	auto& db = cat->db();
+
+	for (auto linked: validator.getLinksForParent(cat->mName))
 	{
-		auto& validator = cat->getValidator();
-		auto& db = cat->db();
+		auto childCat = db.get(linked->mChildCategory);
+		if (childCat == nullptr)
+			continue;
 
-		for (auto linked: validator.getLinksForParent(cat->mName))
+		// if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
+		// 	continue;
+
+		Condition cond;
+		string childTag;
+
+		vector<Item> newValues;
+		
+		for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
 		{
-			auto childCat = db.get(linked->mChildCategory);
-			if (childCat == nullptr)
-				continue;
+			string pk = linked->mParentKeys[ix];
+			string ck = linked->mChildKeys[ix];
 
-			// if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
-			// 	continue;
-
-			Condition cond;
-			string childTag;
-
-			vector<Item> newValues;
-			
-			for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+			if (changed.count(pk) > 0)
 			{
-				string pk = linked->mParentKeys[ix];
-				string ck = linked->mChildKeys[ix];
-
-				if (changed.count(pk) > 0)
-				{
-					childTag = ck;
-					cond = move(cond) && (Key(ck) == std::get<1>(changed[pk]));
-					newValues.emplace_back(ck, std::get<2>(changed[pk]));
-				}
-				else
-				{
-					const char* value = (*this)[pk].c_str();
-					cond = move(cond) && (Key(ck) == value);
-				}
+				childTag = ck;
+				cond = move(cond) && (Key(ck) == std::get<1>(changed[pk]));
+				newValues.emplace_back(ck, std::get<2>(changed[pk]));
 			}
-
-			auto rows = childCat->find(move(cond));
-			for (auto& cr: rows)
-				cr.assign(newValues);
+			else
+			{
+				const char* value = (*this)[pk].c_str();
+				cond = move(cond) && (Key(ck) == value);
+			}
 		}
+
+		auto rows = childCat->find(move(cond));
+		for (auto& cr: rows)
+			cr.assign(newValues);
 	}
 }
 
@@ -2332,6 +2353,9 @@ void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 	if (mData == nullptr)
 		throw logic_error("invalid Row, no data assigning value '" + value + "' to column with index " + to_string(column));
 	
+	if (mConst)
+		throw logic_error("Row is const, cannot assign value '" + value + "' to column with index " + to_string(column));
+
 	auto cat = mData->mCategory;
 	auto& col = cat->mColumns[column];
 
@@ -2416,7 +2440,7 @@ void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 
 	// see if we need to update any child categories that depend on this value
 	auto iv = col.mValidator;
-	if (not skipUpdateLinked and iv != nullptr and mCascadeUpdate)
+	if (not skipUpdateLinked and iv != nullptr)
 	{
 		auto& validator = cat->getValidator();
 		auto& db = cat->db();

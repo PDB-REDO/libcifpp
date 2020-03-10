@@ -153,9 +153,11 @@ int32_t GetRotationalIndexNumber(int spacegroup, const clipper::RTop_frac& rt)
 
 	SymopData k
 	{
-		rte(0, 0), rte(0, 1), rte(0, 2),
-		rte(1, 0), rte(1, 1), rte(1, 2),
-		rte(2, 0), rte(2, 1), rte(2, 2)
+		{
+			rte(0, 0), rte(0, 1), rte(0, 2),
+			rte(1, 0), rte(1, 1), rte(1, 2),
+			rte(2, 0), rte(2, 1), rte(2, 2)
+		}
 	};
 
 	for (int i = 0; i < 3; ++i)
