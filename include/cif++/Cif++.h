@@ -437,12 +437,17 @@ class Row
 		: mData(data) {}
 
 	Row(const ItemRow* data)
-		: mData(const_cast<ItemRow*>(data)), mConst(true) {}
+		: mData(const_cast<ItemRow*>(data)), mCascade(false) {}
 
 	Row(const Row& rhs);
 	Row& operator=(const Row& rhs);
 
 	~Row();
+
+	void setCascading(bool cascade)
+	{
+		mCascade = cascade;
+	}
 
 	void next();	///< make this row point to the next ItemRow
 
@@ -556,7 +561,7 @@ class Row
 
 	ItemRow*	mData;
 	uint32_t	mLineNr = 0;
-	bool		mConst = false;
+	bool		mCascade = true;
 };
 
 // --------------------------------------------------------------------
@@ -1179,16 +1184,19 @@ class RowSet
 		iterator() {}
 
 		iterator(const iterator& i)
-			: mCurrentIter(i.mCurrentIter)
+			: mPos(i.mPos)
+			, mEnd(i.mEnd)
 			, mCurrentRow(i.mCurrentRow) {}
 
-		iterator(const std::vector<ItemRow*>::iterator& i)
-			: mCurrentIter(i)
-			, mCurrentRow(*i) {}
+		iterator(const std::vector<ItemRow*>::iterator& p, const std::vector<ItemRow*>::iterator& e)
+			: mPos(p)
+			, mEnd(e)
+			, mCurrentRow(p == e ? nullptr : *p) {}
 
 		iterator& operator=(const iterator& i)
 		{
-			mCurrentIter = i.mCurrentIter;
+			mPos = i.mPos;
+			mEnd = i.mEnd;
 			mCurrentRow = i.mCurrentRow;
 			return *this;
 		}
@@ -1198,8 +1206,11 @@ class RowSet
 
 		iterator& operator++()
 		{
-			++mCurrentIter;
-			mCurrentRow = Row(*mCurrentIter);
+			++mPos;
+			if (mPos != mEnd)
+				mCurrentRow = Row(*mPos);
+			else
+				mCurrentRow = Row();
 			return *this;
 		}
 
@@ -1232,24 +1243,24 @@ class RowSet
 
 		friend difference_type operator-(const iterator& a, const iterator& b)
 		{
-			return std::distance(a.mCurrentIter, b.mCurrentIter);
+			return std::distance(a.mPos, b.mPos);
 		}
 
-		bool operator==(const iterator& i) const		{ return mCurrentIter == i.mCurrentIter; }
-		bool operator!=(const iterator& i) const		{ return mCurrentIter != i.mCurrentIter; }
+		bool operator==(const iterator& i) const		{ return mPos == i.mPos; }
+		bool operator!=(const iterator& i) const		{ return mPos != i.mPos; }
 
 	  private:
 
 		friend class RowSet;
 
-		std::vector<ItemRow*>::iterator current() const	{ return mCurrentIter; }
+		std::vector<ItemRow*>::iterator current() const	{ return mPos; }
 
-		std::vector<ItemRow*>::iterator mCurrentIter;
+		std::vector<ItemRow*>::iterator mPos, mEnd;
 		Row mCurrentRow;
 	};
 
-	iterator begin()		{ return iterator(mItems.begin()); }
-	iterator end()			{ return iterator(mItems.end()); }
+	iterator begin()		{ return iterator(mItems.begin(), mItems.end()); }
+	iterator end()			{ return iterator(mItems.end(), mItems.end()); }
 
 	Row front() const		{ return Row(mItems.front()); }
 	size_t size() const		{ return mItems.size(); }
@@ -1271,7 +1282,7 @@ class RowSet
 
 	iterator insert(iterator pos, ItemRow* item)
 	{
-		return iterator(mItems.insert(pos.current(), item));
+		return iterator(mItems.insert(pos.current(), item), mItems.end());
 	}
 
   private:

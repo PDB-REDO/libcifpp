@@ -2245,12 +2245,13 @@ void Category::write(ostream& os, const vector<string>& columns)
 
 Row::Row(const Row& rhs)
 	: mData(rhs.mData)
+	, mCascade(rhs.mCascade)
 {
 }
 
 Row::~Row()
 {
-	
+
 }
 
 void Row::next()
@@ -2262,14 +2263,12 @@ void Row::next()
 Row& Row::operator=(const Row& rhs)
 {
 	mData = rhs.mData;
+	mCascade = rhs.mCascade;
 	return *this;
 }
 
 void Row::assign(const std::vector<Item>& values)
 {
-	if (mConst)
-		throw logic_error("Row is const, cannot assign values");
-
 	auto cat = mData->mCategory;
 
 	map<string,tuple<int,string,string>> changed;
@@ -2287,45 +2286,47 @@ void Row::assign(const std::vector<Item>& values)
 
 	// see if we need to update any child categories that depend on these values
 	// auto iv = col.mValidator;
-
-	auto& validator = cat->getValidator();
-	auto& db = cat->db();
-
-	for (auto linked: validator.getLinksForParent(cat->mName))
+	if (mCascade)
 	{
-		auto childCat = db.get(linked->mChildCategory);
-		if (childCat == nullptr)
-			continue;
+		auto& validator = cat->getValidator();
+		auto& db = cat->db();
 
-		// if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
-		// 	continue;
-
-		Condition cond;
-		string childTag;
-
-		vector<Item> newValues;
-		
-		for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+		for (auto linked: validator.getLinksForParent(cat->mName))
 		{
-			string pk = linked->mParentKeys[ix];
-			string ck = linked->mChildKeys[ix];
+			auto childCat = db.get(linked->mChildCategory);
+			if (childCat == nullptr)
+				continue;
 
-			if (changed.count(pk) > 0)
+			// if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
+			// 	continue;
+
+			Condition cond;
+			string childTag;
+
+			vector<Item> newValues;
+			
+			for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
 			{
-				childTag = ck;
-				cond = move(cond) && (Key(ck) == std::get<1>(changed[pk]));
-				newValues.emplace_back(ck, std::get<2>(changed[pk]));
+				string pk = linked->mParentKeys[ix];
+				string ck = linked->mChildKeys[ix];
+
+				if (changed.count(pk) > 0)
+				{
+					childTag = ck;
+					cond = move(cond) && (Key(ck) == std::get<1>(changed[pk]));
+					newValues.emplace_back(ck, std::get<2>(changed[pk]));
+				}
+				else
+				{
+					const char* value = (*this)[pk].c_str();
+					cond = move(cond) && (Key(ck) == value);
+				}
 			}
-			else
-			{
-				const char* value = (*this)[pk].c_str();
-				cond = move(cond) && (Key(ck) == value);
-			}
+
+			auto rows = childCat->find(move(cond));
+			for (auto& cr: rows)
+				cr.assign(newValues);
 		}
-
-		auto rows = childCat->find(move(cond));
-		for (auto& cr: rows)
-			cr.assign(newValues);
 	}
 }
 
@@ -2353,9 +2354,6 @@ void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 	if (mData == nullptr)
 		throw logic_error("invalid Row, no data assigning value '" + value + "' to column with index " + to_string(column));
 	
-	if (mConst)
-		throw logic_error("Row is const, cannot assign value '" + value + "' to column with index " + to_string(column));
-
 	auto cat = mData->mCategory;
 	auto& col = cat->mColumns[column];
 
@@ -2440,7 +2438,7 @@ void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 
 	// see if we need to update any child categories that depend on this value
 	auto iv = col.mValidator;
-	if (not skipUpdateLinked and iv != nullptr)
+	if (not skipUpdateLinked and iv != nullptr and mCascade)
 	{
 		auto& validator = cat->getValidator();
 		auto& db = cat->db();
