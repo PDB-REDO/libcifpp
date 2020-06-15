@@ -301,7 +301,7 @@ bool ItemReference::is_null() const
 		}
 	}
 	
-	return result;
+	return result ? true : false;
 }
 
 void ItemReference::swap(ItemReference& b)
