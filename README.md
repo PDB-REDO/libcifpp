@@ -1,8 +1,7 @@
-libcif++ and pdb-redo tools
-===========================
+libcif++
+========
 
-This is the README file for libcif++ and the suite of PDB-REDO tools
-using this library.
+This is the README file for libcif++.
 
 Requirements
 ------------
@@ -23,17 +22,6 @@ Other requirements are:
   functionality.
 - [newuoa-cpp](https://github.com/elsid/newuoa-cpp), required to
   calculate atom radii.
-- [libzeep](https://github.com/mhekkel/libzeep), a library that
-  contains a full validating XML parser as well as a complete HTTP,
-  SOAP and REST server implementation.
-- [nlohmann/json](https://github.com/nlohmann/json), a header only
-  library to parse and write JSON. This is only a requirement if you
-  have a libzeep version older than version 4.
-
-As stated, the nlohmann library is only needed if you use libzeep 3.0.x
-which is bundled with Debian and derivatives (`apt-get install libzeep-dev`).
-If you clone the version of libzeep on github the nlohmann json library will
-not be used.
 
 Building
 --------
