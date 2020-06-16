@@ -16,6 +16,9 @@ AC_DEFUN([read_test], [AC_LANG_SOURCE(
 AX_BOOST_BASE([1.73])
 
 AC_PROG_INSTALL
+dnl AC_DISABLE_SHARED
+dnl AC_PROG_LIBTOOL
+dnl AC_SUBST(LIBTOOL_DEPS)
 
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 
