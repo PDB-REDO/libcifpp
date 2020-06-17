@@ -138,6 +138,12 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 clean:
 	rm -rf .libs $(OBJDIR)/* $(LIB_TARGET)
 
+.PHONY: distclean
+distclean: clean
+	rm -f libtool config.lt
+	rm -f config.status config.cache config.log configure.lineno config.status.lineno
+	rm -f GNUmakefile
+
 # Test rules
 
 BOOST_LIBS = iostreams thread filesystem timer chrono regex
