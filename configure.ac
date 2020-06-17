@@ -2,7 +2,7 @@ AC_INIT([libcif++], 1.0, [m.hekkelman@nki.nl])
 
 dnl Switch to a C++ compiler, and check if it works.
 AC_LANG(C++)
-AX_CXX_COMPILE_STDCXX_14([noext])
+AX_CXX_COMPILE_STDCXX_17([noext])
 
 AC_CONFIG_SRCDIR([src/AtomShape.cpp])
 AC_CONFIG_AUX_DIR(config)
@@ -13,12 +13,10 @@ AC_PREFIX_DEFAULT(/usr/local)
 AC_DEFUN([read_test], [AC_LANG_SOURCE(
 	esyscmd(tools/m4esc.sh config-tests/$1))])
 
-AX_BOOST_BASE([1.73])
-
 AC_PROG_INSTALL
-dnl AC_DISABLE_SHARED
-dnl AC_PROG_LIBTOOL
-dnl AC_SUBST(LIBTOOL_DEPS)
+AC_ENABLE_STATIC
+AC_PROG_LIBTOOL
+AC_SUBST(LIBTOOL_DEPS)
 
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 
@@ -30,7 +28,44 @@ AS_IF([test x"$CCP4" != x""],
 	  [
 		CPPFLAGS="$CPPFLAGS -I ${CCP4}/include"
 		CXXFLAGS="$CXXFLAGS -I ${CCP4}/include"
+		LDFLAGS="$LDFLAGS -L${CCP4}/lib"
 	  ])
+
+AX_BOOST_BASE([1.73])
+AX_BOOST_REGEX
+
+dnl The ccp4 distribution comes bundled with boost libraries that are
+dnl most likely out of date. Since they also include .so files, this will
+dnl break your software.
+
+OLD_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS $BOOST_CPPFLAGS"
+OLD_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+OLD_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+OLD_LIBS="$LIBS"
+LIBS="-lboost_regex"
+
+AC_MSG_CHECKING([boost regex library version])
+AC_LINK_IFELSE(
+	[read_test(boost-regex-test.cpp)],
+	[AC_MSG_RESULT([yes])],
+	[AC_MSG_ERROR([You most likely have a conflict between the version
+of the boost header files and the boost libraries located in ccp4.
+This can be solved by deleting the libboost_*.so files in your CCP4
+library directory.
+Note: only the files with names ending in .so should be deleted.
+])])
+
+CXXFLAGS="$OLD_CXXFLAGS"
+CPPFLAGS="$OLD_CPPFLAGS"
+LDFLAGS="$OLD_LDFLAGS"
+LIBS="$OLD_LIBS"
+
+AX_BOOST_IOSTREAMS
+AX_BOOST_FILESYSTEM
+AX_BOOST_THREAD
 
 AC_ARG_WITH([clipper],
 	AS_HELP_STRING([--with-clipper=@<:@location@:>@],
@@ -39,6 +74,7 @@ AC_ARG_WITH([clipper],
 		[
 			CPPFLAGS="$CPPFLAGS -I ${withval}/include"
 			CXXFLAGS="$CXXFLAGS -I ${withval}/include"
+			LDFLAGS="$LDFLAGS -L${withval}/lib"
 		])
 
 AC_ARG_WITH([newuoa],
@@ -47,6 +83,7 @@ AC_ARG_WITH([newuoa],
 		[
 			CPPFLAGS="$CPPFLAGS -I ${withval}/include"
 			CXXFLAGS="$CXXFLAGS -I ${withval}/include"
+			LDFLAGS="$LDFLAGS -L${withval}/lib"
 		])
 
 AC_CHECK_HEADER(
@@ -72,6 +109,11 @@ Can't find the newuoa include file newuoa.h. Please install this
 library and specify its location with --with-newuoa=<path>.
 You can find newuoa at https://github.com/elsid/newuoa-cpp.git
 ])])
+
+AX_CHECK_LIBRARY([LIBZ], [zlib.h], [z], [],
+                 [AC_MSG_ERROR([libz not found - compressed files not supported])])
+AX_CHECK_LIBRARY([LIBBZ2], [bzlib.h], [bz2], [],
+                 [AC_MSG_ERROR([libbz2 not found - compressed files not supported])])
 
 # AC_ARG_ENABLE(
 # 	debug,

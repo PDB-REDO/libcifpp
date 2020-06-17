@@ -4,47 +4,40 @@
 firstTarget: all
 
 CXX					= @CXX@
-CXXFLAGS			= @CXXFLAGS@
-
-CXXFLAGS			+= @BOOST_CPPFLAGS@
-LDFLAGS				+= @BOOST_LDFLAGS@
+CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@ @LIBBZ2_CPPFLAGS@
+LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@ @LIBBZ2_LDFLAGS@
+LIBS				= @LIBS@
 
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@
 libdir				= @libdir@
 includedir			= @includedir@
 
-# LIBTOOL_DEPS = @LIBTOOL_DEPS@
-# libtool: $(LIBTOOL_DEPS)
-# 	$(SHELL) ./config.status --recheck
+LIB_NAME			= @PACKAGE_NAME@
+LIB_TARGET			= $(LIB_NAME).la
 
-LIB_NAME			= libcif++
+GNUmakefile: config.status GNUmakefile.in
+	$(SHELL) ./config.status
 
-# DIST_NAME           = $(LIB_NAME)$(VERSION)
-# SO_NAME             = $(LIB_NAME).so.$(VERSION_MAJOR)
-# SHARED_LIB_NAME     = $(SO_NAME).$(VERSION_MINOR)
-STATIC_LIB_NAME		= $(LIB_NAME).a
+config.status: configure
+	$(SHELL) ./config.status --recheck
 
-OUTPUT				= ./
+configure: configure.ac
+	autoconf
 
-# SHARED_LIB			= $(OUTPUT)/$(SHARED_LIB_NAME)
-STATIC_LIB			= $(OUTPUT)/$(STATIC_LIB_NAME)
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ./config.status --recheck
 
-LIBDIR              ?= $(PREFIX)/lib
-INCDIR              ?= $(PREFIX)/include
-MANDIR              ?= $(PREFIX)/man/man3
-DOCDIR              ?= $(PREFIX)/share/doc/libzeep-doc
+# libtool stuff
+
+LIBTOOL = $(SHELL) ./libtool
+CXXCOMPILE = $(LIBTOOL) --silent --tag=CXX --mode=compile $(CXX) $(CXXFLAGS)
+CXXLINK = $(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
 
 # main build variables
 CXXFLAGS            += -I. -pthread -I include/
 CXXFLAGS            += -Wall -Wno-multichar
-
-PACKAGES			+= 
-
-ifneq ($(PACKAGES),)
-CXXFLAGS			+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags $(PACKAGES))
-LDFLAGS				+= $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs $(PACKAGES) )
-endif
 
 # Use the DEBUG flag to build debug versions of the code
 DEBUG               = @DEBUG@
@@ -94,7 +87,7 @@ LIBCIF_SRC		= AtomShape.cpp \
 				  TlsParser.cpp
 
 SOURCES			= $(addprefix src/,$(LIBCIF_SRC))
-OBJECTS			= $(addprefix $(OBJDIR)/, $(notdir $(SOURCES:%.cpp=%.o)))
+OBJECTS			= $(addprefix $(OBJDIR)/, $(notdir $(SOURCES:%.cpp=%.lo)))
 
 # Special rules to generate symmetry operation number table
 tools/symop-map-generator: tools/symop-map-generator.cpp
@@ -102,78 +95,64 @@ tools/symop-map-generator: tools/symop-map-generator.cpp
 src/SymOpTable_data.cpp: tools/symop-map-generator $(CLIBD)/symop.lib
 	tools/symop-map-generator > $@
 
-$(OBJDIR)/Symmetry.o: src/SymOpTable_data.cpp
+$(OBJDIR)/Symmetry.lo: src/SymOpTable_data.cpp
 
-$(STATIC_LIB): $(OBJECTS)
-	ar rc $@ $(OBJECTS)
-	ranlib $@
+$(LIB_TARGET): $(OBJECTS)
+	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
 
-$(SHARED_LIB): $(OBJECTS)
-	$(CXX) -shared -o $(SHARED_LIB) -Wl,-soname=$(SO_NAME) $(OBJECTS) $(LDFLAGS)
-	ln -fs $(SHARED_LIB_NAME) $(OUTPUT)/$(SO_NAME)
-	ln -fs $(SHARED_LIB_NAME) $(OUTPUT)/$(LIB_NAME).so
-
-ifeq "$(BUILD_STATIC_LIB)" "1"
-BUILD_LIBS = $(STATIC_LIB)
-endif
-
-ifeq "$(BUILD_SHARED_LIB)" "1"
-BUILD_LIBS += $(SHARED_LIB)
-endif
-
-libs: $(BUILD_LIBS)
+libs: $(LIB_TARGET)
 .PHONY: libs
 
 all: libs
 .PHONY: all
 
-static-lib: $(STATIC_LIB)
-.PHONY: static-lib
+# install-libs: $(SHARED_LIB)
+# 	install -d $(LIBDIR)
+# 	install $(SHARED_LIB) $(LIBDIR)/$(SHARED_LIB_NAME)
+# 	strip --strip-unneeded $(LIBDIR)/$(SHARED_LIB_NAME)
+# 	ln -Tfs $(SHARED_LIB_NAME) $(LIBDIR)/$(SO_NAME)
+# 	ln -Tfs $(SHARED_LIB_NAME) $(LIBDIR)/$(LIB_NAME).so
+# 	$(LD_CONFIG) -n $(LIBDIR)
 
-shared-lib: $(SHARED_LIB)
-.PHONY: shared-lib
+# install-dev: $(STATIC_LIB)
+# 	install -d $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
+# 	for f in $(HEADERS); do install ../include/$$f $(INCDIR)/$$f; done
+# 	install $(STATIC_LIB) $(LIBDIR)/$(STATIC_LIB_NAME)
+# 	strip -SX $(LIBDIR)/$(STATIC_LIB_NAME)
 
-install-libs: $(SHARED_LIB)
-	install -d $(LIBDIR)
-	install $(SHARED_LIB) $(LIBDIR)/$(SHARED_LIB_NAME)
-	strip --strip-unneeded $(LIBDIR)/$(SHARED_LIB_NAME)
-	ln -Tfs $(SHARED_LIB_NAME) $(LIBDIR)/$(SO_NAME)
-	ln -Tfs $(SHARED_LIB_NAME) $(LIBDIR)/$(LIB_NAME).so
-	$(LD_CONFIG) -n $(LIBDIR)
+# install: install-libs install-dev
 
-install-dev: $(STATIC_LIB)
-	install -d $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
-	for f in $(HEADERS); do install ../include/$$f $(INCDIR)/$$f; done
-	install $(STATIC_LIB) $(LIBDIR)/$(STATIC_LIB_NAME)
-	strip -SX $(LIBDIR)/$(STATIC_LIB_NAME)
+-include $(OBJECTS:%.lo=%.d)
 
-install: install-libs install-dev
+$(OBJECTS:.lo=.d):
 
--include $(OBJECTS:%.o=%.d)
-
-$(OBJECTS:.o=.d):
+$(OBJDIR)/%.lo: %.cpp | $(OBJDIR)
+	@ echo ">>" $<
+	@ $(CXXCOMPILE) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@ echo ">>" $<
-	@ $(CXX) -MD -c -o $@ $< $(CFLAGS) $(CXXFLAGS)
+	@ $(CXX) $(CXXFLAGS) -MT $@ -MD -MP -MF $(OBJDIR)/$*.d -c -o $@ $<
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJDIR)/* $(OUTPUT)/$(LIB_NAME)*
+	rm -rf .libs $(OBJDIR)/* $(LIB_TARGET)
 
 # Test rules
 
-BOOST_LIBS = 
+BOOST_LIBS = iostreams thread filesystem timer chrono regex
+CLIPPER_LIBS = core ccp4
+CLIPPER_LIBS := $(CLIPPER_LIBS:%=-lclipper-%)
 
 define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
 
-$(1)_OBJECTS = $$(OBJECTS) $$(OBJDIR)/$(1)-test.o
+$(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
-test/$(1)-test: $$($(1)_OBJECTS)
+test/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	@ $(CXX) -o $$@ $$($(1)_OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(LDFLAGS) $(BOOST_LIBS:%=-lboost_%) -lstdc++fs
+	$(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -Wl,-rpath /srv/ccp4-7.1/lib -lbz2 -lz -lcif++ $(CLIPPER_LIBS) $(BOOST_LIBS:%=-lboost_%) $(LIBS) -lstdc++fs
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test
@@ -191,216 +170,3 @@ test: $(TESTS:%=%-test)
 dist-clean: clean
 
 FORCE:
-
-
-# ifeq ($(CLIB),)
-# $(warning "")
-# $(warning "The CCP4 environment seems to be unavailable, please source it")
-# $(warning "")
-
-# CLIBD ?= $(CLIB)/lib/data
-
-# make.config:
-# 	@ echo "No make.config file, writing a default one"
-# 	@ echo "#NO_RSRC = 1 # uncomment this line to disable resources" > make.config
-# 	@ echo "" >> make.config
-# 	@ echo "NEWUOA_DIR = # Please specify" >> make.config
-# 	@ echo "" >> make.config
-# 	@ echo "INCLUDE_DIR += \$$(NEWUOA_DIR:%=%/include) $(CINCL)" >> make.config
-# 	@ echo "LIBRARY_DIR += \$$(NEWUOA_DIR:%=%/lib) $(CLIB)" >> make.config
-# 	@ echo
-# 	@ echo "The default make.config now contains:"
-# 	@ cat make.config
-# 	@ echo
-# 	@ echo "Please update this make.config file to include the correct paths"
-
-# MRC					?= mrc
-
-# ifeq ($(NO_RSRC),)
-# ifeq ($(shell which $(MRC)),)
-# $(warning "")
-# $(warning "The executable mrc is not found in your path.")
-# $(warning "Please consider installing it to enable built-in data files.")
-# $(warning "See https://github.com/mhekkel/mrc")
-# $(warning "")
-# else
-# 	DEFINES			+= USE_RSRC
-# endif
-# endif
-
-# SO_NAME				= libcif++.so.1
-
-# CPU					= $(shell uname -m)
-# OS					= $(shell uname -o)
-# SYSLIBDIR			= /usr/lib
-
-# ifeq "$(OS)" "GNU/Linux"
-# 	SYSLIBDIR		:= $(SYSLIBDIR)/$(CPU)-linux-gnu
-# endif
-
-# WARNINGS			= all no-multichar no-unknown-pragmas no-deprecated-declarations
-
-# RANLIB				?= ranlib
-
-# INCLUDE_DIR			+= ./include
-# LIBRARY_DIR			+= 
-
-# CFLAGS				+= -std=c++17 -pthread -fPIC
-# CFLAGS				+= -ffunction-sections -fdata-sections
-# CFLAGS				+= $(addprefix -I, $(INCLUDE_DIR))
-
-# # generic defines
-
-# CFLAGS				+= $(addprefix -W, $(WARNINGS))
-# CFLAGS				+= $(addprefix -D, $(DEFINES))
-
-# LIBS				+= newuoa
-# # LDFLAGS				+= $(LIBRARY_DIR:%=-L %) $(LIBS:%=-l%) -g
-
-# OBJDIR				= obj
-
-# ifneq ($(DEBUG),1)
-# CFLAGS				+= -O3 -ffunction-sections -fdata-sections -DNDEBUG -g
-# else
-# CFLAGS				+= -g -DDEBUG 
-# OBJDIR				:= $(OBJDIR).dbg
-# endif
-
-# ifeq ($(PROFILE),1)
-# CFLAGS				+= -pg
-# LDFLAGS				+= -pg
-# OBJDIR				:= $(OBJDIR).profile
-# endif
-
-# CXXFLAGS			= $(CFLAGS)
-
-# LIBCIF_SRC		= AtomShape.cpp \
-# 				  AtomType.cpp \
-# 				  BondMap.cpp \
-# 				  Cif2PDB.cpp \
-# 				  Cif++.cpp \
-# 				  CifParser.cpp \
-# 				  CifUtils.cpp \
-# 				  CifValidator.cpp \
-# 				  Compound.cpp \
-# 				  DistanceMap.cpp \
-# 				  MapMaker.cpp \
-# 				  PDB2Cif.cpp \
-# 				  PDB2CifRemark3.cpp \
-# 				  Point.cpp \
-# 				  ResolutionCalculator.cpp \
-# 				  Secondary.cpp \
-# 				  Statistics.cpp \
-# 				  Structure.cpp \
-# 				  Symmetry.cpp \
-# 				  TlsParser.cpp
-
-# SOURCES			= $(addprefix src/,$(LIBCIF_SRC))
-# OBJECTS			= $(addprefix $(OBJDIR)/, $(notdir $(SOURCES:%.cpp=%.o)))
-
-# SOURCE_DIRS		= $(sort $(dir $(SOURCES)))
-
-# empty = 
-# space = $(empty) $(empty)
-# SRC_VPATH = $(subst $(space),:,$(SOURCE_DIRS))
-
-# VPATH += $(SRC_VPATH)
-
-# $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
-# 	@ echo ">>" $<
-# 	@ $(CXX) -MD -c -o $@ $< $(CFLAGS) $(CXXFLAGS)
-
-# -include $(OBJECTS:%.o=%.d)
-
-# $(OBJECTS:.o=.d):
-
-# $(OBJDIR):
-# 	@ test -d $@ || mkdir -p $@
-
-# # Special rules to generate symmetry operation number table
-# tools/symop-map-generator: tools/symop-map-generator.cpp
-
-# src/SymOpTable_data.cpp: tools/symop-map-generator $(CLIBD)/symop.lib
-# 	tools/symop-map-generator > $@
-
-# $(OBJDIR)/Symmetry.o: src/SymOpTable_data.cpp
-
-# .PHONY: clean all
-# clean:
-# 	rm -rf $(OBJDIR)/* libcif++.a
-
-# .PHONY: static-lib
-# static-lib: libcif++.a
-
-# libcif++.a: $(OBJECTS)
-# 	ar rc $@ $^
-# 	$(RANLIB) $@
-
-# .PHONY: shared-lib
-# shared-lib: libcif++.a
-
-# libcif++.so: $(OBJECTS)
-# 	$(CXX) -shared -o $(SO_NAME) $^ $(LDFLAGS) -Wl,-soname=$(SO_NAME)
-# 	ln -fs $(SO_NAME) $@
-
-# BOOST_LIB_DIR		?= $(SYSLIBDIR)
-
-# BOOST_LIBS			= date_time iostreams program_options filesystem thread math_c99 math_c99f timer chrono system regex random
-# BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
-# BOOST_LIBS			:= $(BOOST_LIBS:%=$(BOOST_LIB_DIR)/lib%.a)
-
-# CLIPPER_LIBS		= clipper-ccp4 clipper-minimol clipper-mmdb clipper-cns clipper-phs clipper-contrib clipper-core
-# CLIPPER_LIB_DIR		?= $(CLIB)
-# ifeq ($(STATIC_CPP4_LIBS),1)
-# CLIPPER_LIBS		:= $(CLIPPER_LIBS:%=$(CLIPPER_LIB_DIR)/lib%.a)
-# else
-# CLIPPER_LIBS		:= $(CLIPPER_LIBS:%=-l%)
-# endif
-
-# ZEEP_LIBS			?= xml el generic
-# ZEEP_LIBS			:= $(ZEEP_LIBS:%=-lzeep-%)
-
-# CCP4_LIBS			+= ccp4c mmdb2 rfftw fftw
-# CCP4_LIB_DIR		?= $(CLIB)
-# ifeq ($(STATIC_CPP4_LIBS),1)
-# CCP4_LIBS			:= $(CCP4_LIBS:%=$(CCP4_LIB_DIR)/lib%.a)
-# else
-# CCP4_LIBS			:= $(CCP4_LIB_DIR:%=-L%) $(CCP4_LIBS:%=-l%)
-# endif
-
-# TEST_LIBS			= $(LIBS)
-# TEST_LIBS			+= m rt
-# TEST_LIBS			:= $(TEST_LIBS:%=-l%)
-# TEST_LIBS			+= $(ZEEP_LIBS) $(BOOST_LIBS) $(CLIPPER_LIBS) $(CCP4_LIBS) -lz -lbz2 -lpthread 
-
-# TEST_LDFLAGS		= $(LDFLAGS)
-# TEST_LDFLAGS		+= $(LIBRARY_DIR:%=-L %) $(TEST_LIBS) -g
-# TEST_LDFLAGS		+= -Wl,-rpath=$(CLIB)
-
-# VPATH += test
-
-# define TEST_template =
-
-# $$(OBJDIR)/$(1)_rsrc.o: rsrc/dictionaries
-# 	$(MRC) -o $$@ $$^
-
-# test/$(1)-test: $$(OBJECTS) $$(OBJDIR)/$(1)-test.o libcif++.a $$(OBJDIR)/$(1)_rsrc.o
-# 	@ echo ">>> building $(1)-test"
-# 	@ $(CXX) -o $$@ $$(OBJDIR)/$(1)-test.o $$(OBJDIR)/$(1)_rsrc.o $$(OBJECTS) $$(CFLAGS) $$(CXXFLAGS) $(TEST_LDFLAGS)
-
-# .PHONY: $(1)-test
-# $(1)-test: test/$(1)-test
-# 	test/$(1)-test $$($(1)_PARAMS)
-
-# -include $$(OBJDIR)/$(1)-test.d
-
-# endef
-
-# TESTS = unit
-# $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
-
-# .PHONY: test
-# test: $(TESTS:%=%-test)
-
-# all: static-lib
-
