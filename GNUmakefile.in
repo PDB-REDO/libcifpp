@@ -47,7 +47,7 @@ DEFINES				+= DEBUG
 CXXFLAGS            += -g -O0
 LDFLAGS				+= -g
 else
-CXXFLAGS			+= -O2
+CXXFLAGS			+= -O3
 DEFINES				+= NDEBUG
 endif
 

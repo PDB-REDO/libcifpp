@@ -121,5 +121,6 @@ AX_CHECK_LIBRARY([LIBBZ2], [bzlib.h], [bz2], [],
 # 	[],
 # 	[enable_debug=auto])
 
-dnl Process Makefile.in to create Makefile
-AC_OUTPUT([GNUmakefile])
+dnl Process files
+AC_OUTPUT([GNUmakefile
+		   libcif++.pc])
