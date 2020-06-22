@@ -4895,11 +4895,11 @@ void PDBFileParser::ParseCrystallographic()
 		{ "Z_PDB", vF(67, 70) }                //	67 - 70       Integer       z              Z value.           
 	});
 	
-	string spageGroup, intTablesNr;
+	string spaceGroup, intTablesNr;
 	try
 	{
-		spageGroup = vS(56, 66);
-		clipper::Spacegroup sg(clipper::Spgr_descr{spageGroup});
+		spaceGroup = vS(56, 66);
+		clipper::Spacegroup sg(clipper::Spgr_descr{spaceGroup});
 		intTablesNr = to_string(sg.spacegroup_number());
 	}
 	catch (...)
@@ -4908,7 +4908,7 @@ void PDBFileParser::ParseCrystallographic()
 
 	getCategory("symmetry")->emplace({
 		{ "entry_id", mStructureId },
-		{ "space_group_name_H-M", spageGroup },
+		{ "space_group_name_H-M", spaceGroup },
 		{ "Int_Tables_number", intTablesNr }
 	});
 
