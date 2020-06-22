@@ -34,7 +34,6 @@
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include "cif++/CifUtils.h"
 #include "cif++/Structure.h"
@@ -43,7 +42,6 @@
 using namespace std;
 namespace po = boost::program_options;
 namespace ba = boost::algorithm;
-namespace fs = boost::filesystem;
 namespace c = mmcif;
 
 namespace cif

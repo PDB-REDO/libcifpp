@@ -4,7 +4,6 @@
 
 #include <numeric>
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/math/quaternion.hpp>
 
 #include <boost/any.hpp>
@@ -330,14 +329,14 @@ class File : public std::enable_shared_from_this<File>
 {
   public:
 	File();
-	File(boost::filesystem::path p);
+	File(const std::string& path);
 	~File();
 
 	File(const File&) = delete;
 	File& operator=(const File&) = delete;
 
-	void load(boost::filesystem::path p);
-	void save(boost::filesystem::path p);
+	void load(const std::string& path);
+	void save(const std::string& path);
 	
 	Structure* model(size_t nr = 1);
 

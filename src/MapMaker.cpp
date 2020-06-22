@@ -1,9 +1,17 @@
 #include "cif++/Config.h"
 
 #include <iomanip>
+#include <fstream>
+
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<boost/filesystem.hpp>)
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+#endif
 
 #include <boost/format.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
@@ -18,7 +26,6 @@
 #include "cif++/ResolutionCalculator.h"
 
 using namespace std;
-namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 namespace ba = boost::algorithm;
 
@@ -249,11 +256,11 @@ void writeCCP4MapFile(ostream& os, clipper::Xmap<FTYPE>& xmap, clipper::Grid_ran
 
 // --------------------------------------------------------------------
 
-bool IsMTZFile(const fs::path& p)
+bool IsMTZFile(const std::string& p)
 {
 	bool result = false;
 	
-	fs::ifstream f(p);
+	std::ifstream f(p);
 	if (f.is_open())
 	{
 		char sig[5] = {};
@@ -307,8 +314,9 @@ void Map<FTYPE>::calculateStats()
 }
 
 template<typename FTYPE>
-void Map<FTYPE>::read(const fs::path& mapFile)
+void Map<FTYPE>::read(const std::string& f)
 {
+	fs::path mapFile(f);
 	fs::path dataFile = mapFile;
 
 	if (cif::VERBOSE)
@@ -323,7 +331,7 @@ void Map<FTYPE>::read(const fs::path& mapFile)
 		
 		io::filtering_stream<io::input> in;
 		
-		fs::ifstream fi(mapFile);
+		std::ifstream fi(mapFile);
 		
 		if (mapFile.extension() == ".gz")
 			in.push(io::gzip_decompressor());
@@ -337,7 +345,7 @@ void Map<FTYPE>::read(const fs::path& mapFile)
 			throw runtime_error(string("Could not create temp file for map: ") + strerror(errno));
 		
 		dataFile = fs::path(tmpFileName);
-		fs::ofstream out(dataFile);
+		std::ofstream out(dataFile);
 		io::copy(in, out);
 	}
 	
@@ -358,7 +366,7 @@ void Map<FTYPE>::read(const fs::path& mapFile)
 }
 
 template<typename FTYPE>
-void Map<FTYPE>::write(const fs::path& f)
+void Map<FTYPE>::write(const std::string& f)
 {
 	write_masked(f, mMap.grid_asu());
 }
@@ -370,11 +378,11 @@ void Map<FTYPE>::write_masked(ostream& os, clipper::Grid_range r)
 }
 
 template<typename FTYPE>
-void Map<FTYPE>::write_masked(const fs::path& f, clipper::Grid_range r)
+void Map<FTYPE>::write_masked(const std::string& f, clipper::Grid_range r)
 {
-	fs::ofstream file(f, ios_base::binary);
+	std::ofstream file(f, ios_base::binary);
 	if (not file.is_open())
-		throw runtime_error("Could not open map file for writing: " + f.string());
+		throw runtime_error("Could not open map file for writing: " + f);
 	
 	write_masked(file, r);
 }
@@ -395,11 +403,13 @@ MapMaker<FTYPE>::~MapMaker()
 }
 
 template<typename FTYPE>
-void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
+void MapMaker<FTYPE>::loadMTZ(const std::string& f, float samplingRate,
 	initializer_list<string> fbLabels, initializer_list<string> fdLabels,
 	initializer_list<string> foLabels, initializer_list<string> fcLabels,
 	initializer_list<string> faLabels)
 {
+	fs::path hklin(f);
+
 	if (cif::VERBOSE)
 		cerr << "Reading map from " << hklin << endl
 			 << "  with labels: FB: " << ba::join(fbLabels, ",") << endl
@@ -419,7 +429,7 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 		
 		io::filtering_stream<io::input> in;
 		
-		fs::ifstream fi(hklin);
+		std::ifstream fi(hklin);
 		
 		if (hklin.extension() == ".gz")
 			in.push(io::gzip_decompressor());
@@ -433,7 +443,7 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 			throw runtime_error(string("Could not create temp file for mtz: ") + strerror(errno));
 		
 		dataFile = fs::path(tmpFileName);
-		fs::ofstream out(dataFile);
+		std::ofstream out(dataFile);
 		io::copy(in, out);
 	}
 	
@@ -542,7 +552,7 @@ void MapMaker<FTYPE>::loadMTZ(const fs::path& hklin, float samplingRate,
 
 template<typename FTYPE>
 void MapMaker<FTYPE>::loadMaps(
-	const fs::path& fbMapFile, const fs::path& fdMapFile, float reshi, float reslo)
+	const std::string& fbMapFile, const std::string& fdMapFile, float reshi, float reslo)
 {
 	mResHigh = reshi;
 	mResLow = reslo;
@@ -568,7 +578,7 @@ ostream& operator<<(ostream& os, const clipper::HKL& hkl)
 // --------------------------------------------------------------------
 
 template<typename FTYPE>
-void MapMaker<FTYPE>::calculate(const fs::path& hklin,
+void MapMaker<FTYPE>::calculate(const std::string& hklin,
 	const Structure& structure, bool noBulk, AnisoScalingFlag anisoScaling,
 	float samplingRate, bool electronScattering,
 	initializer_list<std::string> foLabels, initializer_list<std::string> freeLabels)
@@ -584,7 +594,7 @@ void MapMaker<FTYPE>::calculate(const fs::path& hklin,
 // --------------------------------------------------------------------
 	
 template<typename FTYPE>
-void MapMaker<FTYPE>::loadFoFreeFromReflectionsFile(const fs::path& hklin)
+void MapMaker<FTYPE>::loadFoFreeFromReflectionsFile(const std::string& hklin)
 {
 	using clipper::HKL;
 	
@@ -701,7 +711,7 @@ void MapMaker<FTYPE>::loadFoFreeFromReflectionsFile(const fs::path& hklin)
 // --------------------------------------------------------------------
 
 template<typename FTYPE>
-void MapMaker<FTYPE>::loadFoFreeFromMTZFile(const fs::path& hklin,
+void MapMaker<FTYPE>::loadFoFreeFromMTZFile(const std::string& hklin,
 	initializer_list<std::string> foLabels, initializer_list<std::string> freeLabels)
 {
 	if (cif::VERBOSE)
@@ -712,7 +722,7 @@ void MapMaker<FTYPE>::loadFoFreeFromMTZFile(const fs::path& hklin,
 	using clipper::CCP4MTZfile;
 
 	CCP4MTZfile mtzin;
-	mtzin.open_read(hklin.string());
+	mtzin.open_read(hklin);
 	
 	mtzin.import_hkl_info(mHKLInfo);
 	mtzin.import_hkl_data(mFoData,
@@ -1082,7 +1092,7 @@ void MapMaker<FTYPE>::printStats()
 }
 
 template<typename FTYPE>
-void MapMaker<FTYPE>::writeMTZ(const fs::path& file, const string& pname, const string& cname)
+void MapMaker<FTYPE>::writeMTZ(const std::string& file, const string& pname, const string& cname)
 {
 	if (mHKLInfo.is_null())
 		throw runtime_error("HKL info not initialized");
@@ -1093,7 +1103,7 @@ void MapMaker<FTYPE>::writeMTZ(const fs::path& file, const string& pname, const 
 
 	const string col = "/" + pname + "/" + cname + "/";
 	
-	mtz.open_write(file.string());
+	mtz.open_write(file);
 	mtz.export_hkl_info(mHKLInfo);
 	mtz.export_crystal(crystal, col);
 	mtz.export_dataset(dataset, col);

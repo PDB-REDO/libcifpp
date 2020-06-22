@@ -1,7 +1,6 @@
 #pragma once
 
 #include <clipper/clipper.h>
-#include <boost/filesystem/path.hpp>
 
 #include "cif++/Structure.h"
 
@@ -29,11 +28,11 @@ class Map
 	const Xmap& get() const								{ return mMap; }
 	
 	// These routines work with CCP4 map files
-	void read(const boost::filesystem::path& f);
-	void write(const boost::filesystem::path& f);
+	void read(const std::string& f);
+	void write(const std::string& f);
 
 	void write_masked(std::ostream& os, clipper::Grid_range range);
-	void write_masked(const boost::filesystem::path& f, 
+	void write_masked(const std::string& f, 
 		clipper::Grid_range range);
 	
 	clipper::Spacegroup spacegroup() const				{ return mMap.spacegroup(); }
@@ -59,7 +58,7 @@ using clipper::Grid_sampling;
 
 // --------------------------------------------------------------------
 
-bool IsMTZFile(const boost::filesystem::path& p);
+bool IsMTZFile(const std::string& p);
 
 // --------------------------------------------------------------------
 	
@@ -80,7 +79,7 @@ class MapMaker
 	MapMaker(const MapMaker&) = delete;
 	MapMaker& operator=(const MapMaker&) = delete;
 	
-	void loadMTZ(const boost::filesystem::path& mtzFile,
+	void loadMTZ(const std::string& mtzFile,
 		float samplingRate,
 		std::initializer_list<std::string> fbLabels = { "FWT", "PHWT" },
 		std::initializer_list<std::string> fdLabels = { "DELFWT", "PHDELWT" },
@@ -89,12 +88,12 @@ class MapMaker
 		std::initializer_list<std::string> faLabels = { "FAN", "PHAN" });
 
 	void loadMaps(
-		const boost::filesystem::path& fbMapFile,
-		const boost::filesystem::path& fdMapFile,
+		const std::string& fbMapFile,
+		const std::string& fdMapFile,
 		float reshi, float reslo);
 
 	// following works on both mtz files and structure factor files in CIF format
-	void calculate(const boost::filesystem::path& hklin,
+	void calculate(const std::string& hklin,
 		const Structure& structure,
 		bool noBulk, AnisoScalingFlag anisoScaling,
 		float samplingRate, bool electronScattering = false,
@@ -107,7 +106,7 @@ class MapMaker
 
 	void printStats();
 
-	void writeMTZ(const boost::filesystem::path& file,
+	void writeMTZ(const std::string& file,
 		const std::string& project, const std::string& crystal);
 
 	MapType& fb()								{ return mFb; }
@@ -127,8 +126,8 @@ class MapMaker
 
   private:
 
-	void loadFoFreeFromReflectionsFile(const boost::filesystem::path& hklin);
-	void loadFoFreeFromMTZFile(const boost::filesystem::path& hklin,
+	void loadFoFreeFromReflectionsFile(const std::string& hklin);
+	void loadFoFreeFromMTZFile(const std::string& hklin,
 		std::initializer_list<std::string> foLabels,
 		std::initializer_list<std::string> freeLabels);
 	

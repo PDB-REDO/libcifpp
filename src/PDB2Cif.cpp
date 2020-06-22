@@ -2,7 +2,7 @@
 
 #include <map>
 #include <set>
-#include <boost/regex.hpp>
+#include <system_error>
 
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/algorithm/string.hpp>
@@ -40,11 +40,11 @@ namespace error
 	
 	namespace detail
 	{
-		class pdbCategory : public boost::system::error_category
+		class pdbCategory : public std::error_category
 		{
 		  public:
 
-			const char* name() const BOOST_SYSTEM_NOEXCEPT
+			const char* name() const noexcept
 			{
 				return "pdb";
 			}
@@ -66,27 +66,26 @@ namespace error
 		};
 	}
 
-	boost::system::error_category& pdbCategory()
+	std::error_category& pdbCategory()
 	{
 		static detail::pdbCategory impl;
 		return impl;
 	}
 	
-	inline boost::system::error_code make_error_code(pdbErrors e)
+	inline std::error_code make_error_code(pdbErrors e)
 	{
-		return boost::system::error_code(static_cast<int>(e), pdbCategory());
+		return std::error_code(static_cast<int>(e), pdbCategory());
 	}
 }
 
-namespace boost {
-namespace system {
+namespace std
+{
 
 template<> struct is_error_code_enum<error::pdbErrors>
 {
 	static const bool value = true;
 };
 
-}
 }
 
 // --------------------------------------------------------------------
@@ -636,7 +635,7 @@ class PDBFileParser
 		}
 	}
 
-	tuple<string,int,bool> MapResidue(char chainID, int resSeq, char iCode, boost::system::error_code& ec) const
+	tuple<string,int,bool> MapResidue(char chainID, int resSeq, char iCode, std::error_code& ec) const
 	{
 		auto key = make_tuple(chainID, resSeq, iCode);
 		
@@ -697,7 +696,7 @@ class PDBFileParser
 	
 	vector<string> SplitCSV(const string& value);
 
-	string pdb2cifDate(string s, boost::system::error_code& ec)
+	string pdb2cifDate(string s, std::error_code& ec)
 	{
 		smatch m;
 		const regex
@@ -750,7 +749,7 @@ class PDBFileParser
 	
 	string pdb2cifDate(string s)
 	{
-		boost::system::error_code ec;		
+		std::error_code ec;		
 		return pdb2cifDate(s, ec);
 	}
 	
@@ -2701,7 +2700,7 @@ void PDBFileParser::ParseRemark200()
 		});
 		
 		string collectionDate;
-		boost::system::error_code ec;
+		std::error_code ec;
 		collectionDate = pdb2cifDate(rm200("DATE OF DATA COLLECTION", diffrnNr), ec);
 		if (ec)
 		{
@@ -3807,7 +3806,7 @@ void PDBFileParser::ConstructEntities()
 					
 					string asym, seqNum;
 					int labelSeq = -1;
-					boost::system::error_code ec;
+					std::error_code ec;
 
 					tie(asym, labelSeq, ignore) = MapResidue(seqadv.chainID, seqadv.seqNum, seqadv.iCode, ec);
 					if (ec)
@@ -4128,7 +4127,7 @@ void PDBFileParser::ConstructEntities()
 
 		string asymId;
 		int seq;
-		boost::system::error_code ec;
+		std::error_code ec;
 		
 		tie(asymId, seq, ignore) = MapResidue(chainID, seqNum, iCode, ec);
 		if (ec)	// no need to write a modres if it could not be found
@@ -4221,7 +4220,7 @@ void PDBFileParser::ConstructEntities()
 		bool isPolymer = false;
 		string asymId, compId = unobs.res;
 		int seqNr = 0;
-		boost::system::error_code ec;
+		std::error_code ec;
 		
 		tie(asymId, seqNr, isPolymer) = MapResidue(unobs.chain, unobs.seq, unobs.iCode, ec);
 		if (ec)
@@ -4300,7 +4299,7 @@ void PDBFileParser::ParseSecondaryStructure()
 
 		string begAsymId, endAsymId;
 		int begSeq, endSeq;
-		boost::system::error_code ec;
+		std::error_code ec;
 		
 		tie(begAsymId, begSeq, ignore) = MapResidue(vC(20), vI(22, 25), vC(26), ec);
 		if (not ec)
@@ -4421,7 +4420,7 @@ void PDBFileParser::ParseSecondaryStructure()
 
 		string begAsymId, endAsymId;
 		int begSeq, endSeq;
-		boost::system::error_code ec;
+		std::error_code ec;
 
 		tie(begAsymId, begSeq, ignore) = MapResidue(vC(22), vI(23, 26), vC(27), ec);
 		if (not ec)
@@ -4458,7 +4457,7 @@ void PDBFileParser::ParseSecondaryStructure()
 			{
 				string r1AsymId, r2AsymId;
 				int r1Seq, r2Seq;
-				boost::system::error_code ec;
+				std::error_code ec;
 				
 				tie(r1AsymId, r1Seq, ignore) = MapResidue(vC(65), vI(66, 69), vC(70), ec);
 				if (not ec)
@@ -4556,7 +4555,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 	
 			string p1Asym, p2Asym;
 			int p1Seq, p2Seq;
-			boost::system::error_code ec;
+			std::error_code ec;
 			
 			tie(p1Asym, p1Seq, ignore) = MapResidue(vC(16), vI(18, 21), vC(22), ec);
 			if (not ec)
@@ -4674,7 +4673,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			string p1Asym, p2Asym;
 			int p1Seq, p2Seq;
 			bool isResseq1, isResseq2;
-			boost::system::error_code ec;
+			std::error_code ec;
 			
 			tie(p1Asym, p1Seq, isResseq1) = MapResidue(vC(22), vI(23, 26), vC(27), ec);
 			if (not ec)
@@ -4778,7 +4777,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 	
 			string lAsym1, lAsym2;
 			int lResSeq1, lResSeq2;
-			boost::system::error_code ec;
+			std::error_code ec;
 	
 			tie(lAsym1, lResSeq1, ignore) = MapResidue(chainID1, seqNum1, iCode1, ec);
 			if (not ec)
@@ -4848,7 +4847,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 			int labelSeq;
 			string asym;
 			bool isResseq;
-			boost::system::error_code ec;
+			std::error_code ec;
 			
 			tie(asym, labelSeq, isResseq) = MapResidue(chainID, seq, iCode, ec);
 			

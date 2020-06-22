@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cstdio>
 #include <atomic>
+#include <mutex>
+#include <thread>
 
 #if defined(_MSC_VER)
 #define TERM_WIDTH 80
@@ -15,7 +17,6 @@
 #endif
 
 #include <boost/algorithm/string.hpp>
-#include <boost/thread.hpp>
 #if BOOST_VERSION >= 104800
 #include <boost/timer/timer.hpp>
 #endif
@@ -436,7 +437,7 @@ struct ProgressImpl
 {
 					ProgressImpl(int64_t inMax, const string& inAction)
 						: mMax(inMax), mConsumed(0), mAction(inAction), mMessage(inAction)
-						, mThread(boost::bind(&ProgressImpl::Run, this)) {}
+						, mThread(std::bind(&ProgressImpl::Run, this)) {}
 
 	void			Run();
 	
@@ -448,8 +449,8 @@ struct ProgressImpl
 	int64_t			mLastConsumed = 0;
 	int				mSpinnerIndex = 0;
 	string			mAction, mMessage;
-	boost::mutex	mMutex;
-	boost::thread	mThread;
+	std::mutex		mMutex;
+	std::thread		mThread;
 	boost::timer::cpu_timer
 					mTimer;
 };
@@ -460,11 +461,11 @@ void ProgressImpl::Run()
 	
 	try
 	{
-		boost::this_thread::sleep(boost::posix_time::seconds(5));
+		std::this_thread::sleep_for(std::chrono::seconds(5));
 			
 		for (;;)
 		{
-			boost::mutex::scoped_lock lock(mMutex);
+			std::unique_lock lock(mMutex);
 			
 			if (mConsumed == mMax)
 				break;
@@ -472,7 +473,7 @@ void ProgressImpl::Run()
 			PrintProgress();
 			printedAny = true;
 
-			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
 	catch (...) {}
@@ -591,7 +592,7 @@ Progress::~Progress()
 {
 	if (mImpl != nullptr and mImpl->mThread.joinable())
 	{
-		mImpl->mThread.interrupt();
+		// mImpl->mThread.interrupt();
 		mImpl->mThread.join();
 	}
 
@@ -604,7 +605,7 @@ void Progress::consumed(int64_t inConsumed)
 		(mImpl->mConsumed += inConsumed) >= mImpl->mMax and
 		mImpl->mThread.joinable())
 	{
-		mImpl->mThread.interrupt();
+		// mImpl->mThread.interrupt();
 		mImpl->mThread.join();
 	}
 }
@@ -615,7 +616,7 @@ void Progress::progress(int64_t inProgress)
 		(mImpl->mConsumed = inProgress) >= mImpl->mMax and
 		mImpl->mThread.joinable())
 	{
-		mImpl->mThread.interrupt();
+		// mImpl->mThread.interrupt();
 		mImpl->mThread.join();
 	}
 }
@@ -624,7 +625,7 @@ void Progress::message(const std::string& inMessage)
 {
 	if (mImpl != nullptr)
 	{
-		boost::mutex::scoped_lock lock(mImpl->mMutex);
+		std::unique_lock lock(mImpl->mMutex);
 		mImpl->mMessage = inMessage;
 	}
 }

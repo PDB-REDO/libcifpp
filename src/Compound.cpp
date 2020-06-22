@@ -4,11 +4,17 @@
 
 #include <map>
 #include <numeric>
+#include <shared_mutex>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/thread.hpp>
+
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<boost/filesystem.hpp>)
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+#endif
 
 #include "cif++/Cif++.h"
 #include "cif++/Point.h"
@@ -19,7 +25,6 @@
 
 using namespace std;
 namespace ba = boost::algorithm;
-namespace fs = boost::filesystem;
 
 namespace mmcif
 {
@@ -310,7 +315,7 @@ bool StructuresAreIsomeric(vector<CompoundAtom> atomsA, const vector<CompoundBon
 // --------------------------------------------------------------------
 // Compound
 
-Compound::Compound(const fs::path& file, const std::string& id,
+Compound::Compound(const std::string& file, const std::string& id,
 	const std::string& name, const std::string& group)
 	: mId(id), mName(name), mGroup(group)
 {
@@ -1018,7 +1023,7 @@ const map<string,char> kBaseMap{
 class CompoundFactoryImpl
 {
   public:
-	CompoundFactoryImpl(fs::path file, CompoundFactoryImpl* next);
+	CompoundFactoryImpl(const std::string& file, CompoundFactoryImpl* next);
 
 	~CompoundFactoryImpl()
 	{
@@ -1074,9 +1079,9 @@ class CompoundFactoryImpl
 	}
 
   private:
-	boost::shared_mutex			mMutex;
+	std::shared_timed_mutex		mMutex;
 
-	fs::path					mPath;
+	std::string					mPath;
 	vector<Compound*>			mCompounds;
 	vector<const Link*>			mLinks;
 	/*unordered_*/set<string>	mKnownPeptides;
@@ -1089,7 +1094,7 @@ class CompoundFactoryImpl
 
 // --------------------------------------------------------------------
 
-CompoundFactoryImpl::CompoundFactoryImpl(fs::path file, CompoundFactoryImpl* next)
+CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactoryImpl* next)
 	: mPath(file), mFile(file), mChemComp(mFile.firstDatablock()["chem_comp"]), mNext(next)
 {
 	const std::regex peptideRx("(?:[lmp]-)?peptide", std::regex::icase);
@@ -1185,7 +1190,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(fs::path file, CompoundFactoryImpl* nex
 
 Compound* CompoundFactoryImpl::get(string id)
 {
-	boost::shared_lock<boost::shared_mutex> lock(mMutex);
+	std::shared_lock lock(mMutex);
 
 	ba::to_upper(id);
 
@@ -1213,7 +1218,7 @@ Compound* CompoundFactoryImpl::create(std::string id)
 	Compound* result = get(id);
 	if (result == nullptr and mMissing.count(id) == 0)
 	{
-		boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
+		std::unique_lock lock(mMutex);
 
 		auto rs = mChemComp.find(cif::Key("three_letter_code") == id);
 	
@@ -1262,7 +1267,7 @@ Compound* CompoundFactoryImpl::create(std::string id)
 
 const Link* CompoundFactoryImpl::getLink(string id)
 {
-	boost::shared_lock<boost::shared_mutex> lock(mMutex);
+	std::shared_lock lock(mMutex);
 
 	ba::to_upper(id);
 
@@ -1291,7 +1296,7 @@ const Link* CompoundFactoryImpl::createLink(std::string id)
 
 	if (result == nullptr)
 	{
-		boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
+		std::unique_lock lock(mMutex);
 
 		auto db = mFile.get("link_" + id);
 		if (db != nullptr)

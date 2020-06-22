@@ -5,8 +5,6 @@
 #include <atomic>
 #include <mutex>
 
-#include <boost/thread.hpp>
-
 #include "cif++/Symmetry.h"
 #include "cif++/CifUtils.h"
 

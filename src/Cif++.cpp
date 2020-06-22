@@ -8,10 +8,17 @@
 #include <set>
 #include <unordered_map>
 #include <numeric>
+#include <fstream>
+
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<boost/filesystem.hpp>)
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+#endif
 
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -26,7 +33,6 @@
 
 using namespace std;
 namespace ba = boost::algorithm;
-namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 
 namespace cif
@@ -2789,16 +2795,16 @@ File::File(istream& is, bool validate)
 	load(is);
 }
 
-File::File(boost::filesystem::path p, bool validate)
+File::File(const std::string& path, bool validate)
 	: File()
 {
 	try
 	{
-		load(p);
+		load(path);
 	}
 	catch (const exception& ex)
 	{
-		cerr << "Error while loading file " << p << endl;
+		cerr << "Error while loading file " << path << endl;
 		throw;
 	}
 }
@@ -2841,24 +2847,26 @@ void File::append(Datablock* e)
 	}
 }
 
-void File::load(fs::path p)
+void File::load(const std::string& p)
 {
-	fs::ifstream inFile(p, ios_base::in | ios_base::binary);
+	fs::path path(p);
+
+	std::ifstream inFile(p, ios_base::in | ios_base::binary);
 	if (not inFile.is_open())
-		throw runtime_error("Could not open file: " + p.string());
+		throw runtime_error("Could not open file: " + path.string());
 	
 	io::filtering_stream<io::input> in;
-	string ext;
+	std::string ext;
 	
-	if (p.extension() == ".bz2")
+	if (path.extension() == ".bz2")
 	{
 		in.push(io::bzip2_decompressor());
-		ext = p.stem().extension().string();
+		ext = path.stem().extension().string();
 	}
-	else if (p.extension() == ".gz")
+	else if (path.extension() == ".gz")
 	{
 		in.push(io::gzip_decompressor());
-		ext = p.stem().extension().string();
+		ext = path.stem().extension().string();
 	}
 	
 	in.push(inFile);
@@ -2869,25 +2877,27 @@ void File::load(fs::path p)
 	}
 	catch (const exception& ex)
 	{
-		cerr << "Error loading file " << p << endl;
+		cerr << "Error loading file " << path << endl;
 		throw;
 	}
 }
 
-void File::save(fs::path p)
+void File::save(const std::string& p)
 {
-	fs::ofstream outFile(p, ios_base::out | ios_base::binary);
+	fs::path path(p);
+
+	std::ofstream outFile(p, ios_base::out | ios_base::binary);
 	io::filtering_stream<io::output> out;
 	
-	if (p.extension() == ".gz")
+	if (path.extension() == ".gz")
 	{
 		out.push(io::gzip_compressor());
-		p = p.stem();
+		path = path.stem();
 	}
-	else if (p.extension() == ".bz2")
+	else if (path.extension() == ".bz2")
 	{
 		out.push(io::bzip2_compressor());
-		p = p.stem();
+		path = path.stem();
 	}
 	
 	out.push(outFile);
@@ -2985,13 +2995,13 @@ void File::loadDictionary(const char* dict)
 {
 	for (;;)
 	{
-		string name(dict);
+		fs::path name(dict);
 		
 		try
 		{
 			if (fs::exists(name))
 			{
-				fs::ifstream is(name);
+				std::ifstream is(name);
 				loadDictionary(is);
 				break;
 			}
@@ -3004,7 +3014,7 @@ void File::loadDictionary(const char* dict)
 		{
 			if (fs::exists(dictFile))
 			{
-				fs::ifstream is(dictFile);
+				std::ifstream is(dictFile);
 				loadDictionary(is);
 				break;
 			}
@@ -3029,7 +3039,7 @@ void File::loadDictionary(const char* dict)
 			break;
 		}
 		
-		throw runtime_error("Dictionary not found or defined (" + name + ")");
+		throw runtime_error("Dictionary not found or defined (" + name.string() + ")");
 	}
 }
 

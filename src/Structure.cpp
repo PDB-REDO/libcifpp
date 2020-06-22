@@ -3,9 +3,17 @@
 #include "cif++/Structure.h"
 
 #include <numeric>
+#include <fstream>
+
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<boost/filesystem.hpp>)
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+#endif
 
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -19,7 +27,6 @@
 using namespace std;
 
 namespace ba = boost::algorithm;
-namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 
 extern int cif::VERBOSE;
@@ -35,28 +42,30 @@ struct FileImpl
 	cif::File			mData;
 	cif::Datablock*		mDb = nullptr;
 	
-	void load(fs::path p);
-	void save(fs::path p);
+	void load(const std::string& p);
+	void save(const std::string& p);
 };
 
-void FileImpl::load(fs::path p)
+void FileImpl::load(const std::string& p)
 {
-	fs::ifstream inFile(p, ios_base::in | ios_base::binary);
+	fs::path path(p);
+
+	std::ifstream inFile(path, ios_base::in | ios_base::binary);
 	if (not inFile.is_open())
-		throw runtime_error("No such file: " + p.string());
+		throw runtime_error("No such file: " + path.string());
 	
 	io::filtering_stream<io::input> in;
-	string ext = p.extension().string();
+	string ext = path.extension().string();
 	
-	if (p.extension() == ".bz2")
+	if (path.extension() == ".bz2")
 	{
 		in.push(io::bzip2_decompressor());
-		ext = p.stem().extension().string();
+		ext = path.stem().extension().string();
 	}
-	else if (p.extension() == ".gz")
+	else if (path.extension() == ".gz")
 	{
 		in.push(io::gzip_decompressor());
-		ext = p.stem().extension().string();
+		ext = path.stem().extension().string();
 	}
 	
 	in.push(inFile);
@@ -88,11 +97,11 @@ void FileImpl::load(fs::path p)
 				if (inFile.is_open())
 					inFile.seekg(0);
 				else
-					inFile.open(p, ios_base::in | ios::binary);
+					inFile.open(path, ios_base::in | ios::binary);
 	
-				if (p.extension() == ".bz2")
+				if (path.extension() == ".bz2")
 					in.push(io::bzip2_decompressor());
-				else if (p.extension() == ".gz")
+				else if (path.extension() == ".gz")
 					in.push(io::gzip_decompressor());
 				
 				in.push(inFile);
@@ -103,7 +112,7 @@ void FileImpl::load(fs::path p)
 	}
 	catch (const exception& ex)
 	{
-		cerr << "Error trying to load file " << p << endl;
+		cerr << "Error trying to load file " << path << endl;
 		throw;
 	}
 	
@@ -117,25 +126,27 @@ void FileImpl::load(fs::path p)
 		cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << endl;
 }
 
-void FileImpl::save(fs::path p)
+void FileImpl::save(const std::string& p)
 {
-	fs::ofstream outFile(p, ios_base::out | ios_base::binary);
+	fs::path path(p);
+
+	std::ofstream outFile(p, ios_base::out | ios_base::binary);
 	io::filtering_stream<io::output> out;
 	
-	if (p.extension() == ".gz")
+	if (path.extension() == ".gz")
 	{
 		out.push(io::gzip_compressor());
-		p = p.stem();
+		path = path.stem();
 	}
-	else if (p.extension() == ".bz2")
+	else if (path.extension() == ".bz2")
 	{
 		out.push(io::bzip2_compressor());
-		p = p.stem();
+		path = path.stem();
 	}
 	
 	out.push(outFile);
 	
-	if (p.extension() == ".pdb")
+	if (path.extension() == ".pdb")
 		WritePDBFile(out, mData);
 	else
 		mData.save(out);
@@ -1318,7 +1329,7 @@ File::File()
 {
 }
 
-File::File(fs::path File)
+File::File(const std::string& File)
 	: mImpl(new FileImpl)
 {
 	load(File);
@@ -1329,7 +1340,7 @@ File::~File()
 	delete mImpl;
 }
 
-void File::load(fs::path p)
+void File::load(const std::string& p)
 {
 	mImpl->load(p);
 	
@@ -1385,9 +1396,9 @@ void File::load(fs::path p)
 	
 }
 
-void File::save(boost::filesystem::path File)
+void File::save(const std::string& file)
 {
-	mImpl->save(File);
+	mImpl->save(file);
 }
 
 cif::Datablock& File::data()

@@ -108,7 +108,7 @@ class Compound
 {
   public:
 
-	Compound(const boost::filesystem::path& file, const std::string& id, const std::string& name,
+	Compound(const std::string& file, const std::string& id, const std::string& name,
 		const std::string& group);
 
 	// factory method, create a Compound based on the three letter code

@@ -2,8 +2,6 @@
 
 #include "cif++/Cif++.h"
 
-#include <boost/filesystem/path.hpp>
-
 //// the std regex of gcc is crashing....
 #include <boost/regex.hpp>
 

@@ -4,7 +4,6 @@
 
 #include "cif++/Config.h"
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/math/quaternion.hpp>
 
 #include "clipper/core/coords.h"
