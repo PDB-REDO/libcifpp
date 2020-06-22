@@ -3,9 +3,9 @@
 #include "cif++/Cif++.h"
 
 //// the std regex of gcc is crashing....
-#include <boost/regex.hpp>
+// #include <boost/regex.hpp>
 
-// #include <regex>
+#include <regex>
 #include <set>
 
 namespace cif
@@ -38,7 +38,7 @@ struct ValidateType
 {
 	std::string				mName;
 	DDL_PrimitiveType		mPrimitiveType;
-	boost::regex			mRx;
+	std::regex				mRx;
 
 	bool operator<(const ValidateType& rhs) const
 	{

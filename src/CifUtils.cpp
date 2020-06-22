@@ -29,6 +29,8 @@ namespace ba = boost::algorithm;
 namespace cif
 {
 
+extern int VERBOSE;
+
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
 
@@ -630,5 +632,120 @@ void Progress::message(const std::string& inMessage)
 	}
 }
 
+// --------------------------------------------------------------------
+
+std::unique_ptr<rsrc_loader> rsrc_loader::s_instance;
+
+struct rsrc_loader_impl
+{
+	virtual ~rsrc_loader_impl() {}
+	virtual rsrc load(const std::string& path) const = 0;
+};
+
+class rsrc_not_found_exception : public std::exception
+{
+  public:
+    virtual const char* what() const throw()		{ return "resource not found"; }
+};
+
+struct mrsrc_rsrc_loader_impl : public rsrc_loader_impl
+{
+	mrsrc_rsrc_loader_impl(const rsrc_loader_info& info);
+
+	virtual rsrc load(const std::string& path) const;
+
+	const rsrc_imp*	m_index;
+	const char*		m_data;
+	const char*		m_name;
+};
+
+mrsrc_rsrc_loader_impl::mrsrc_rsrc_loader_impl(const rsrc_loader_info& info)
+{
+	m_index = static_cast<const rsrc_imp*>(info.ptrs[0]);
+	m_data = reinterpret_cast<const char*>(info.ptrs[1]);
+	m_name = reinterpret_cast<const char*>(info.ptrs[2]);
+}
+
+rsrc mrsrc_rsrc_loader_impl::load(const std::string& path) const
+{
+	auto node = m_index;
+	
+	std::string p(path);
+	
+	while (not p.empty())
+	{
+		if (node->m_child == 0)	// no children, this is an error
+			return {};
+
+		node = m_index + node->m_child;
+		
+		std::string::size_type s = p.find('/');
+		std::string name;
+		
+		if (s != std::string::npos)
+		{
+			name = p.substr(0, s);
+			p.erase(0, s + 1);
+		}
+		else
+			std::swap(name, p);
+		
+		while (name != m_name + node->m_name)
+		{
+			if (node->m_next == 0)
+				return {};
+			node = m_index + node->m_next;
+		}
+	}
+
+	return { m_data + node->m_data, node->m_size };
+}
+
+rsrc_loader::rsrc_loader(const std::initializer_list<rsrc_loader_info>& loaders)
+{
+	for (auto& l: loaders)
+	{
+		try
+		{
+			switch (l.type)
+			{
+				case rsrc_loader_type::file:
+					break;
+
+				case rsrc_loader_type::mrsrc:
+					m_loaders.push_back(new mrsrc_rsrc_loader_impl(l));
+					break;
+				
+				default:
+					break;
+			}
+		}
+		catch (const std::exception& e)
+		{
+			if (VERBOSE)
+				std::cerr << e.what() << std::endl;
+		}
+	}
+}
+
+rsrc_loader::~rsrc_loader()
+{
+	for (auto l: m_loaders)
+		delete l;
+}
+
+rsrc rsrc_loader::do_load(const std::string& name)
+{
+	rsrc result;
+
+	for (auto loader: m_loaders)
+	{
+		result = loader->load(name);
+		if (result)
+			break;
+	}
+
+	return result;
+}
 
 }

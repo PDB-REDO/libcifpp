@@ -24,8 +24,6 @@ namespace fs = boost::filesystem;
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/logic/tribool.hpp>
 
-#include "cif++/mrsrc.h"
-
 #include "cif++/Cif++.h"
 #include "cif++/CifParser.h"
 #include "cif++/CifValidator.h"
@@ -3021,7 +3019,7 @@ void File::loadDictionary(const char* dict)
 		}
 		catch (...) {}
 		
-		mrsrc::rsrc dictData(dictFile.string());
+		auto dictData = rsrc_loader::load(dictFile.string());
 
 		if (dictData)
 		{

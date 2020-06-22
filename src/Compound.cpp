@@ -21,8 +21,6 @@ namespace fs = boost::filesystem;
 #include "cif++/Compound.h"
 #include "cif++/CifUtils.h"
 
-#include "cif++/mrsrc.h"
-
 using namespace std;
 namespace ba = boost::algorithm;
 
@@ -87,9 +85,7 @@ class IsomerDB
 
 IsomerDB::IsomerDB()
 {
-// #if defined(USE_RSRC)
-	mrsrc::rsrc isomers("isomers.txt");
-//	mrsrc::rsrc isomers("isomers-with-sugar.xml");
+	auto isomers = cif::rsrc_loader::load("isomers.txt");
 	if (not isomers)
 		throw runtime_error("Missing isomers.txt resource");
 	
