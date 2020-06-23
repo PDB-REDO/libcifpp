@@ -338,7 +338,7 @@ int WriteCitation(ostream& pdbFile, Datablock& db, Row r, int reference)
 	return result;
 }
 
-void WriteTitle(ostream& pdbFile, Datablock& db)
+void WriteHeaderLines(ostream& pdbFile, Datablock& db)
 {
 	//    0         1         2         3         4         5         6         7         8
 	//    HEADER    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxDDDDDDDDD   IIII
@@ -568,6 +568,11 @@ void WriteTitle(ostream& pdbFile, Datablock& db)
 		authors.push_back(cif2pdbAuth(r["name"].as<string>()));
 	if (not authors.empty())
 		WriteOneContinuedLine(pdbFile, "AUTHOR  ", 2, ba::join(authors, ","));
+}
+
+void WriteTitle(ostream& pdbFile, Datablock& db)
+{
+	WriteHeaderLines(pdbFile, db);
 	
 	// REVDAT
 	boost::format kRevDat("REVDAT %3.3d%2.2s %9.9s %4.4s    %1.1d      ");
@@ -3720,3 +3725,235 @@ void WritePDBFile(ostream& pdbFile, cif::File& cifFile)
 		<< "END" << endl;
 }
 
+void WritePDBHeaderLines(std::ostream& os, cif::File& cifFile)
+{
+	io::filtering_ostream out;
+	out.push(FillOutLineFilter());
+	out.push(os);
+
+	auto filter = out.component<FillOutLineFilter>(0);
+	assert(filter);
+
+	auto& db = cifFile.firstDatablock();
+
+	WriteHeaderLines(os, db);
+}
+
+std::string FixStringLength(const std::string& s, int l)
+{
+	auto result = s;
+
+	if (result.length() > l)
+		result = result.substr(0, l - 4) + "... ";
+	else if (result.length() < l)
+		result.append(l - result.length(), ' ');
+
+	return result;
+}
+
+std::string GetPDBHEADERLine(cif::File& cifFile, int truncate_at)
+{
+	auto& db = cifFile.firstDatablock();
+
+	//    0         1         2         3         4         5         6         7         8
+	//    HEADER    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxDDDDDDDDD   IIII
+	const char kHeader[] =
+		 "HEADER    %1$-40.40s"                           "%2$-9.9s""   %3$-4.4s";
+
+	// HEADER
+	
+	string keywords;
+	auto& cat1 = db["struct_keywords"];
+	
+	for (auto r: cat1)
+	{
+		keywords = r["keywords"].as<string>();
+		if (keywords.empty())
+			keywords = r["pdbx_keywords"].as<string>();
+		if (keywords.length() > truncate_at - 40)
+			keywords = keywords.substr(0, truncate_at - 44) + " ...";
+	}
+	
+	string date;
+	for (auto r: db["pdbx_database_status"])
+	{
+		date = r["recvd_initial_deposition_date"].as<string>();
+		if (date.empty())
+			continue;
+		date = cif2pdbDate(date);
+		break;
+	}
+	
+	if (date.empty())
+	{
+		for (auto r: db["database_PDB_rev"])
+		{
+			date = r["date_original"].as<string>();
+			if (date.empty())
+				continue;
+			date = cif2pdbDate(date);
+			break;
+		}
+	}
+	
+	return FixStringLength((boost::format(kHeader) % keywords % date % db.getName()).str(), truncate_at);
+}
+
+std::string GetPDBCOMPNDLine(cif::File& cifFile, int truncate_at)
+{
+	auto& db = cifFile.firstDatablock();
+
+	// COMPND
+	using namespace std::placeholders;
+	
+	int molID = 0;
+	vector<string> cmpnd;
+	
+	for (auto r: db["entity"])
+	{
+		if (r["type"] != "polymer")
+			continue;
+		
+		string entityId = r["id"].as<string>();
+		
+		++molID;
+		cmpnd.push_back("MOL_ID: " + to_string(molID));
+		
+		string molecule = r["pdbx_description"].as<string>();
+		cmpnd.push_back("MOLECULE: " + molecule);
+
+		auto poly = db["entity_poly"].find(cif::Key("entity_id") == entityId);
+		if (not poly.empty())
+		{
+			string chains = poly.front()["pdbx_strand_id"].as<string>();
+			ba::replace_all(chains, ",", ", ");
+			cmpnd.push_back("CHAIN: " + chains);
+		}
+
+		string fragment = r["pdbx_fragment"].as<string>();
+		if (not fragment.empty())
+			cmpnd.push_back("FRAGMENT: " + fragment);
+		
+		for (auto sr: db["entity_name_com"].find(cif::Key("entity_id") == entityId))
+		{
+			string syn = sr["name"].as<string>();
+			if (not syn.empty())
+				cmpnd.push_back("SYNONYM: " + syn);
+		}
+		
+		string mutation = r["pdbx_mutation"].as<string>();
+		if (not mutation.empty())
+			cmpnd.push_back("MUTATION: " + mutation);
+		
+		string ec = r["pdbx_ec"].as<string>();
+		if (not ec.empty())
+			cmpnd.push_back("EC: " + ec);
+		
+		if (r["src_method"] == "man" or r["src_method"] == "syn")
+			cmpnd.push_back("ENGINEERED: YES");
+
+		string details = r["details"].as<string>();
+		if (not details.empty())
+			cmpnd.push_back("OTHER_DETAILS: " + details);
+	}
+
+	return FixStringLength("COMPND    " + ba::join(cmpnd, "; "), truncate_at);
+}
+
+std::string GetPDBSOURCELine(cif::File& cifFile, int truncate_at)
+{
+	auto& db = cifFile.firstDatablock();
+
+	// SOURCE
+	
+	int molID = 0;
+	vector<string> source;
+	
+	for (auto r: db["entity"])
+	{
+		if (r["type"] != "polymer")
+			continue;
+		
+		string entityId = r["id"].as<string>();
+		
+		++molID;
+		source.push_back("MOL_ID: " + to_string(molID));
+		
+		if (r["src_method"] == "syn")
+			source.push_back("SYNTHETIC: YES");
+		
+		auto& gen = db["entity_src_gen"];
+		const pair<const char*,const char*> kGenSourceMapping[] = {
+			{ "gene_src_common_name",			"ORGANISM_COMMON" },
+			{ "pdbx_gene_src_gene",				"GENE" },
+			{ "gene_src_strain",				"STRAIN" },
+			{ "pdbx_gene_src_cell_line",		"CELL_LINE" },
+			{ "pdbx_gene_src_organelle",		"ORGANELLE" },
+			{ "pdbx_gene_src_cellular_location","CELLULAR_LOCATION" },
+			{ "pdbx_gene_src_scientific_name",	"ORGANISM_SCIENTIFIC" },
+			{ "pdbx_gene_src_ncbi_taxonomy_id",	"ORGANISM_TAXID" },
+			{ "pdbx_host_org_scientific_name",	"EXPRESSION_SYSTEM" },
+			{ "pdbx_host_org_ncbi_taxonomy_id",	"EXPRESSION_SYSTEM_TAXID" },
+			{ "pdbx_host_org_strain",			"EXPRESSION_SYSTEM_STRAIN" },
+			{ "pdbx_host_org_variant",			"EXPRESSION_SYSTEM_VARIANT" },
+			{ "pdbx_host_org_cellular_location","EXPRESSION_SYSTEM_CELLULAR_LOCATION" },
+			{ "pdbx_host_org_vector_type",		"EXPRESSION_SYSTEM_VECTOR_TYPE" },
+			{ "pdbx_host_org_vector",			"EXPRESSION_SYSTEM_VECTOR" },
+			{ "pdbx_host_org_gene",				"EXPRESSION_SYSTEM_GENE" },
+			{ "plasmid_name",					"EXPRESSION_SYSTEM_PLASMID" },
+			{ "details",						"OTHER_DETAILS" }
+		};
+
+		for (auto gr: gen.find(cif::Key("entity_id") == entityId))
+		{
+			for (auto m: kGenSourceMapping)
+			{
+				string cname, sname;
+				tie(cname, sname) = m;
+				
+				string s = gr[cname].as<string>();
+				if (not s.empty())
+					source.push_back(sname + ": " + s);
+			}
+		}
+		
+		auto& nat = db["entity_src_nat"];
+		const pair<const char*, const char*> kNatSourceMapping[] = {
+			{ "common_name",				"ORGANISM_COMMON" },
+			{ "strain",						"STRAIN" },
+			{ "pdbx_organism_scientific",	"ORGANISM_SCIENTIFIC" },
+			{ "pdbx_ncbi_taxonomy_id",		"ORGANISM_TAXID" },
+			{ "pdbx_cellular_location",		"CELLULAR_LOCATION" },
+			{ "pdbx_plasmid_name",			"PLASMID" },
+			{ "pdbx_organ",					"ORGAN" },
+			{ "details",					"OTHER_DETAILS" }
+		};
+		
+		for (auto nr: nat.find(cif::Key("entity_id") == entityId))
+		{
+			for (auto m: kNatSourceMapping)
+			{
+				string cname, sname;
+				tie(cname, sname) = m;
+				
+				string s = nr[cname].as<string>();
+				if (not s.empty())
+					source.push_back(sname + ": " + s);
+			}
+		}
+	}
+
+	return FixStringLength("SOURCE    " + ba::join(source, "; "), truncate_at);
+}
+
+std::string GetPDBAUTHORLine(cif::File& cifFile, int truncate_at)
+{
+	auto& db = cifFile.firstDatablock();
+
+	// AUTHOR
+	vector<string> author;
+	for (auto r: db["audit_author"])
+		author.push_back(cif2pdbAuth(r["name"].as<string>()));
+
+	return FixStringLength("AUTHOR    " + ba::join(author, "; "), truncate_at);
+}
