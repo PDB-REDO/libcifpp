@@ -920,7 +920,6 @@ float Monomer::phi() const
 			cerr << ex.what() << endl;
 	}
 
-
 	return result;
 }
 
@@ -952,7 +951,7 @@ float Monomer::alpha() const
 
 	try
 	{
-		if (mIndex > 1 and mIndex + 2 < mPolymer->size())
+		if (mIndex >= 1 and mIndex + 2 < mPolymer->size())
 		{
 			auto& prev = mPolymer->operator[](mIndex - 1);
 			auto& next = mPolymer->operator[](mIndex + 1);
@@ -976,7 +975,7 @@ float Monomer::kappa() const
 	
 	try
 	{
-		if (mIndex > 2 and mIndex + 2 < mPolymer->size())
+		if (mIndex >= 2 and mIndex + 2 < mPolymer->size())
 		{
 			auto& prevPrev = mPolymer->operator[](mIndex - 2);
 			auto& nextNext = mPolymer->operator[](mIndex + 2);
@@ -987,6 +986,29 @@ float Monomer::kappa() const
 				double skap = sqrt(1 - ckap * ckap);
 				result = atan2(skap, ckap) * 180 / kPI;
 			}
+		}
+	}
+	catch (const exception& ex)
+	{
+		if (cif::VERBOSE)
+			cerr << "When trying to calculate kappa for " << asymID() << ':' << seqID() << ": "
+				 << ex.what() << endl;
+	}
+
+	return result;
+}
+
+float Monomer::tco() const
+{
+	double result = 0.0;
+	
+	try
+	{
+		if (mIndex > 0)
+		{
+			auto& prev = mPolymer->operator[](mIndex - 1);
+			if (prev.mSeqID + 1 == mSeqID)
+				result = CosinusAngle(C().location(), O().location(), prev.C().location(), prev.O().location()); 
 		}
 	}
 	catch (const exception& ex)
@@ -1082,6 +1104,19 @@ bool Monomer::isCis() const
 	}
 	
 	return result;
+}
+
+bool Monomer::isComplete() const
+{
+	int seen = 0;
+	for (auto& a: mAtoms)
+	{
+		     if (a.labelAtomId() == "CA")		seen |= 1;
+		else if (a.labelAtomId() == "C")		seen |= 2;
+		else if (a.labelAtomId() == "N")		seen |= 4;
+		else if (a.labelAtomId() == "O")		seen |= 8;
+	}
+	return seen == 15;
 }
 
 float Monomer::chiralVolume() const

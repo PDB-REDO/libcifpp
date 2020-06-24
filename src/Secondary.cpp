@@ -10,13 +10,13 @@
 #include <numeric>
 #include <chrono>
 #include <iomanip>
+#include <future>
 
 #include <boost/algorithm/string.hpp>
 
 #include "cif++/Structure.h"
 #include "cif++/Secondary.h"
 
-using namespace std;
 namespace ba = boost::algorithm;
 
 // --------------------------------------------------------------------
@@ -86,7 +86,7 @@ const ResidueInfo kResidueInfo[] = {
 	{ kValine,			'V', "VAL" }
 };
 
-ResidueType MapResidue(string inName)
+ResidueType MapResidue(std::string inName)
 {
 	ba::trim(inName);
 
@@ -117,11 +117,11 @@ enum BridgeType
 
 struct Bridge
 {
-	BridgeType		type;
-	uint32_t			sheet, ladder;
-	set<Bridge*>	link;
-	deque<uint32_t>	i, j;
-	string			chainI, chainJ;
+	BridgeType				type;
+	uint32_t				sheet, ladder;
+	std::set<Bridge*>		link;
+	std::deque<uint32_t>	i, j;
+	std::string				chainI, chainJ;
 	
 	bool			operator<(const Bridge& b) const		{ return chainI < b.chainI or (chainI == b.chainI and i.front() < b.i.front()); }
 };
@@ -129,42 +129,77 @@ struct Bridge
 struct BridgeParner
 {
 	Res*		residue;
-	uint32_t		ladder;
+	uint32_t	ladder;
 	bool		parallel;
-};
-
-enum HelixFlag
-{
-	helixNone, helixStart, helixEnd, helixStartAndEnd, helixMiddle
 };
 
 // --------------------------------------------------------------------
 
-const double
+const float
 	// kSSBridgeDistance = 3.0,
 	kMinimalDistance = 0.5,
 	kMinimalCADistance = 9.0,
 	kMinHBondEnergy = -9.9,
 	kMaxHBondEnergy = -0.5,
-	kCouplingConstant = -27.888;	//	= -332 * 0.42 * 0.2
-	// kMaxPeptideBondLength = 2.5;
+	kCouplingConstant = -27.888,	//	= -332 * 0.42 * 0.2
+	kMaxPeptideBondLength = 2.5;
 
-// const uint32_t kHistogramSize = 30;
+const float
+	kRadiusN = 1.65,
+	kRadiusCA = 1.87,
+	kRadiusC = 1.76,
+	kRadiusO = 1.4,
+	kRadiusSideAtom = 1.8,
+	kRadiusWater = 1.4;
 
 struct Res
 {
-	Res(const Monomer& m)
-		: mM(m)
+	Res(const Monomer& m, int nr)
+		: mM(m), mNumber(nr)
 		, mType(MapResidue(m.compoundID()))
 	{
+		// update the box containing all atoms
+		mBox[0].mX = mBox[0].mY = mBox[0].mZ =  std::numeric_limits<double>::max();
+		mBox[1].mX = mBox[1].mY = mBox[1].mZ = -std::numeric_limits<double>::max();
+
 		for (auto& a: mM.atoms())
 		{
-			if (a.labelAtomId() == "CA")		mCAlpha = a.location();
-			else if (a.labelAtomId() == "C")	mC = a.location();
-			else if (a.labelAtomId() == "N")	mN = a.location();
-			else if (a.labelAtomId() == "O")	mO = a.location();
-//			else if (a.labelAtomId() == "H")	mH = a.location();
+			if (a.labelAtomId() == "CA")
+			{
+				mCAlpha = a.location();
+				ExtendBox(mCAlpha, kRadiusCA + 2 * kRadiusWater);
+			}
+			else if (a.labelAtomId() == "C")
+			{
+				mC = a.location();
+				ExtendBox(mC, kRadiusC + 2 * kRadiusWater);
+			}
+			else if (a.labelAtomId() == "N")
+			{
+				mN = a.location();
+				ExtendBox(mN, kRadiusN + 2 * kRadiusWater);
+			}
+			else if (a.labelAtomId() == "O")
+			{
+				mO = a.location();
+				ExtendBox(mO, kRadiusO + 2 * kRadiusWater);
+			}
+			else
+			{
+				mSideChain.push_back(a.location());
+				ExtendBox(a.location(), kRadiusSideAtom + 2 * kRadiusWater);
+			}
 		}
+
+		mRadius = mBox[1].mX - mBox[0].mX;
+		if (mRadius < mBox[1].mY - mBox[0].mY)
+			mRadius = mBox[1].mY - mBox[0].mY;
+		if (mRadius < mBox[1].mZ - mBox[0].mZ)
+			mRadius = mBox[1].mZ - mBox[0].mZ;
+
+		mCenter.mX = (mBox[0].mX + mBox[1].mX) / 2;
+		mCenter.mY = (mBox[0].mY + mBox[1].mY) / 2;
+		mCenter.mZ = (mBox[0].mZ + mBox[1].mZ) / 2;
 	}
 
 	void assignHydrogen()
@@ -204,12 +239,12 @@ struct Res
 	}
 						
 	void SetSheet(uint32_t inSheet)						{ mSheet = inSheet; }
-	uint32_t GetSheet() const								{ return mSheet; }
+	uint32_t GetSheet() const							{ return mSheet; }
 	
 	bool IsBend() const									{ return mBend; }
 	void SetBend(bool inBend)							{ mBend = inBend; }
 	
-	HelixFlag GetHelixFlag(uint32_t inHelixStride) const
+	Helix GetHelixFlag(uint32_t inHelixStride) const
 	{
 		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
 		return mHelixFlags[inHelixStride - 3];
@@ -218,10 +253,10 @@ struct Res
 	bool IsHelixStart(uint32_t inHelixStride) const
 	{
 		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
-		return mHelixFlags[inHelixStride - 3] == helixStart or mHelixFlags[inHelixStride - 3] == helixStartAndEnd;
+		return mHelixFlags[inHelixStride - 3] == Helix::Start or mHelixFlags[inHelixStride - 3] == Helix::StartAndEnd;
 	}
 
-	void SetHelixFlag(uint32_t inHelixStride, HelixFlag inHelixFlag)
+	void SetHelixFlag(uint32_t inHelixStride, Helix inHelixFlag)
 	{
 		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
 		mHelixFlags[inHelixStride - 3] = inHelixFlag;
@@ -230,22 +265,60 @@ struct Res
 	void SetSSBridgeNr(uint8_t inBridgeNr)
 	{
 		if (mType != kCysteine)
-			throw runtime_error("Only cysteine residues can form sulphur bridges");
+			throw std::runtime_error("Only cysteine residues can form sulphur bridges");
 		mSSBridgeNr = inBridgeNr;
 	}
 	
 	uint8_t GetSSBridgeNr() const
 	{
 		if (mType != kCysteine)
-			throw runtime_error("Only cysteine residues can form sulphur bridges");
+			throw std::runtime_error("Only cysteine residues can form sulphur bridges");
 		return mSSBridgeNr;
+	}
+
+	double CalculateSurface(const std::vector<Res>& inResidues);
+	double CalculateSurface(const Point& inAtom, float inRadius, const std::vector<Res*>& inNeighbours);
+
+	bool AtomIntersectsBox(const Point& atom, float inRadius) const
+	{
+		return
+			atom.mX + inRadius >= mBox[0].mX and
+			atom.mX - inRadius <= mBox[1].mX and
+			atom.mY + inRadius >= mBox[0].mY and
+			atom.mY - inRadius <= mBox[1].mY and
+			atom.mZ + inRadius >= mBox[0].mZ and
+			atom.mZ - inRadius <= mBox[1].mZ;
+	}
+
+	void ExtendBox(const Point& atom, float inRadius)
+	{
+		if (mBox[0].mX > atom.mX - inRadius)
+			mBox[0].mX = atom.mX - inRadius;
+		if (mBox[0].mY > atom.mY - inRadius)
+			mBox[0].mY = atom.mY - inRadius;
+		if (mBox[0].mZ > atom.mZ - inRadius)
+			mBox[0].mZ = atom.mZ - inRadius;
+		if (mBox[1].mX < atom.mX + inRadius)
+			mBox[1].mX = atom.mX + inRadius;
+		if (mBox[1].mY < atom.mY + inRadius)
+			mBox[1].mY = atom.mY + inRadius;
+		if (mBox[1].mZ < atom.mZ + inRadius)
+			mBox[1].mZ = atom.mZ + inRadius;
 	}
 
 	Res* mNext = nullptr;
 	Res* mPrev = nullptr;
+
 	const Monomer& mM;
 
+	int mNumber;
+
 	Point mCAlpha, mC, mN, mO, mH;
+	Point mBox[2] = {};
+	float mRadius;
+	Point mCenter;
+	std::vector<Point> mSideChain;
+	double mAccessibility = 0;
 	
 	ResidueType mType;
 	uint8_t mSSBridgeNr = 0;
@@ -253,9 +326,194 @@ struct Res
 	HBond mHBondDonor[2] = {}, mHBondAcceptor[2] = {};
 	BridgeParner mBetaPartner[2] = {};
 	uint32_t mSheet = 0;
-	HelixFlag mHelixFlags[3] = { helixNone, helixNone, helixNone };	//
+	Helix mHelixFlags[3] = { Helix::None, Helix::None, Helix::None };	//
 	bool mBend = false;
 };
+
+// --------------------------------------------------------------------
+
+class Accumulator
+{
+	public:
+
+	struct candidate
+	{
+		Point	location;
+		double	radius;
+		double	distance;
+
+		bool operator<(const candidate& rhs) const
+				{ return distance < rhs.distance; }
+	};
+
+	void operator()(const Point& a, const Point& b, double d, double r)
+	{
+		double distance = DistanceSquared(a, b);
+
+		d += kRadiusWater;
+		r += kRadiusWater;
+
+		double test = d + r;
+		test *= test;
+
+		if (distance < test and distance > 0.0001)
+		{
+			candidate c = { b - a, r * r, distance };
+
+			m_x.push_back(c);
+			push_heap(m_x.begin(), m_x.end());
+		}
+	}
+
+	void sort()
+	{
+		sort_heap(m_x.begin(), m_x.end());
+	}
+
+	std::vector<candidate>  m_x;
+};
+
+// we use a fibonacci spheres to calculate the even distribution of the dots
+class MSurfaceDots
+{
+  public:
+
+	static MSurfaceDots&  Instance();
+
+	size_t size() const							{ return mPoints.size(); }
+	const Point& operator[](size_t inIx) const	{ return mPoints[inIx]; }
+	double weight() const						{ return mWeight; }
+
+  private:
+	MSurfaceDots(int32_t inN);
+
+	std::vector<Point> mPoints;
+	double mWeight;
+};
+
+MSurfaceDots& MSurfaceDots::Instance()
+{
+	const int32_t kN = 200;
+
+	static MSurfaceDots sInstance(kN);
+	return sInstance;
+}
+
+MSurfaceDots::MSurfaceDots(int32_t N)
+{
+	auto P = 2 * N + 1;
+
+	const double kGoldenRatio = (1 + sqrt(5.0)) / 2;
+
+	mWeight = (4 * kPI) / P;
+
+	for (auto i = -N; i <= N; ++i)
+	{
+		double lat = asin((2.0 * i) / P);
+		double lon = fmod(i, kGoldenRatio) * 2 * kPI / kGoldenRatio;
+
+		mPoints.emplace_back(sin(lon) * cos(lat), cos(lon) * cos(lat), sin(lat));
+	}
+}
+
+double Res::CalculateSurface(const Point& inAtom, float inRadius, const std::vector<Res*>& inNeighbours)
+{
+	Accumulator accumulate;
+
+	for (auto r: inNeighbours)
+	{
+		if (r->AtomIntersectsBox(inAtom, inRadius))
+		{
+			accumulate(inAtom, r->mN, inRadius, kRadiusN);
+			accumulate(inAtom, r->mCAlpha, inRadius, kRadiusCA);
+			accumulate(inAtom, r->mC, inRadius, kRadiusC);
+			accumulate(inAtom, r->mO, inRadius, kRadiusO);
+
+			for (auto& atom: r->mSideChain)
+				accumulate(inAtom, atom, inRadius, kRadiusSideAtom);
+		}
+	}
+
+	accumulate.sort();
+
+	float radius = inRadius + kRadiusWater;
+	double surface = 0;
+
+	MSurfaceDots& surfaceDots = MSurfaceDots::Instance();
+
+	for (size_t i = 0; i < surfaceDots.size(); ++i)
+	{
+		Point xx = surfaceDots[i] * radius;
+
+		bool free = true;
+		for (size_t k = 0; free and k < accumulate.m_x.size(); ++k)
+			free = accumulate.m_x[k].radius < DistanceSquared(xx, accumulate.m_x[k].location);
+
+		if (free)
+			surface += surfaceDots.weight();
+	}
+
+	return surface * radius * radius;
+}
+
+double Res::CalculateSurface(const std::vector<Res>& inResidues)
+{
+	std::vector<Res*> neighbours;
+
+	for (auto& r: inResidues)
+	{
+		Point center = r.mCenter;
+		double radius = r.mRadius;
+
+		if (Distance(mCenter, center) < mRadius + radius)
+			neighbours.push_back(const_cast<Res*>(&r));
+	}
+
+	mAccessibility = CalculateSurface(mN, kRadiusN, neighbours) +
+					 CalculateSurface(mCAlpha, kRadiusCA, neighbours) +
+					 CalculateSurface(mC, kRadiusC, neighbours) +
+					 CalculateSurface(mO, kRadiusO, neighbours);
+
+	for (auto& atom: mSideChain)
+		mAccessibility += CalculateSurface(atom, kRadiusSideAtom, neighbours);
+	
+	return mAccessibility;
+}
+
+void CalculateAccessibilities(std::vector<Res>& inResidues, DSSP_Statistics& stats)
+{
+	if (cif::VERBOSE)
+		std::cerr << "Calculate accessibilities" << std::endl;
+
+	stats.accessibleSurface = 0;
+
+	for (auto& residue: inResidues)
+		stats.accessibleSurface += residue.CalculateSurface(inResidues);
+
+	// uint32_t nr_of_threads = boost::thread::hardware_concurrency();
+	// if (nr_of_threads <= 1)
+	// {
+	// 	foreach (MResidue* residue, inResidues)
+	// 		residue->CalculateSurface(inResidues);
+	// }
+	// else
+	// {
+	// 	MResidueQueue queue;
+
+	// 	boost::thread_group t;
+
+	// 	for (uint32 ti = 0; ti < nr_of_threads; ++ti)
+	// 		t.create_thread(boost::bind(&MProtein::CalculateAccessibility, this,
+	// 			boost::ref(queue), boost::ref(inResidues)));
+
+	// 	foreach (MResidue* residue, inResidues)
+	// 		queue.put(residue);
+
+	// 	queue.put(nullptr);
+
+	// 	t.join_all();
+	// }
+}
 
 // --------------------------------------------------------------------
 // TODO: use the angle to improve bond energy calculation.
@@ -315,7 +573,7 @@ double CalculateHBondEnergy(Res& inDonor, Res& inAcceptor)
 
 // --------------------------------------------------------------------
 
-void CalculateHBondEnergies(vector<Res>& inResidues)
+void CalculateHBondEnergies(std::vector<Res>& inResidues)
 {
 	// Calculate the HBond energies
 	for (uint32_t i = 0; i + 1 < inResidues.size(); ++i)
@@ -396,10 +654,10 @@ bool Linked(const Bridge& a, const Bridge& b)
 
 // --------------------------------------------------------------------
 
-void CalculateBetaSheets(vector<Res>& inResidues)
+void CalculateBetaSheets(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 {
 	// Calculate Bridges
-	vector<Bridge> bridges;
+	std::vector<Bridge> bridges;
 	if (inResidues.size() > 4)
 	{
 		for (uint32_t i = 1; i + 4 < inResidues.size(); ++i)
@@ -454,7 +712,7 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 	}
 
 	// extend ladders
-	sort(bridges.begin(), bridges.end());
+	std::sort(bridges.begin(), bridges.end());
 	
 	for (uint32_t i = 0; i < bridges.size(); ++i)
 	{
@@ -470,8 +728,8 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 			uint32_t jej = bridges[j].j.back();
 
 			if (bridges[i].type != bridges[j].type or
-				NoChainBreak(inResidues[min(ibi, ibj)], inResidues[max(iei, iej)]) == false or
-				NoChainBreak(inResidues[min(jbi, jbj)], inResidues[max(jei, jej)]) == false or
+				NoChainBreak(inResidues[std::min(ibi, ibj)], inResidues[std::max(iei, iej)]) == false or
+				NoChainBreak(inResidues[std::min(jbi, jbj)], inResidues[std::max(jei, jej)]) == false or
 				ibj - iei >= 6 or
 				(iei >= ibj and ibi <= iej))
 			{
@@ -498,25 +756,25 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 	}
 
 	// Sheet
-	set<Bridge*> ladderset;
+	std::set<Bridge*> ladderset;
 	for (Bridge& bridge : bridges)
 	{
 		ladderset.insert(&bridge);
 		
-//		uint32_t n = bridge.i.size();
-//		if (n > kHistogramSize)
-//			n = kHistogramSize;
-//		
-//		if (bridge.type == btParallel)
-//			mParallelBridgesPerLadderHistogram[n - 1] += 1;
-//		else
-//			mAntiparallelBridgesPerLadderHistogram[n - 1] += 1;
+		uint32_t n = bridge.i.size();
+		if (n > kHistogramSize)
+			n = kHistogramSize;
+		
+		if (bridge.type == btParallel)
+			stats.parallelBridgesPerLadderHistogram[n - 1] += 1;
+		else
+			stats.antiparallelBridgesPerLadderHistogram[n - 1] += 1;
 	}
 	
 	uint32_t sheet = 1, ladder = 0;
 	while (not ladderset.empty())
 	{
-		set<Bridge*> sheetset;
+		std::set<Bridge*> sheetset;
 		sheetset.insert(*ladderset.begin());
 		ladderset.erase(ladderset.begin());
 
@@ -550,13 +808,13 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 			++ladder;
 		}
 		
-//		uint32_t nrOfLaddersPerSheet = sheetset.size();
-//		if (nrOfLaddersPerSheet > kHistogramSize)
-//			nrOfLaddersPerSheet = kHistogramSize;
-//		if (nrOfLaddersPerSheet == 1 and (*sheetset.begin())->i.size() > 1)
-//			mLaddersPerSheetHistogram[0] += 1;
-//		else if (nrOfLaddersPerSheet > 1)
-//			mLaddersPerSheetHistogram[nrOfLaddersPerSheet - 1] += 1;
+		uint32_t nrOfLaddersPerSheet = sheetset.size();
+		if (nrOfLaddersPerSheet > kHistogramSize)
+			nrOfLaddersPerSheet = kHistogramSize;
+		if (nrOfLaddersPerSheet == 1 and (*sheetset.begin())->i.size() > 1)
+			stats.laddersPerSheetHistogram[0] += 1;
+		else if (nrOfLaddersPerSheet > 1)
+			stats.laddersPerSheetHistogram[nrOfLaddersPerSheet - 1] += 1;
 		
 		++sheet;
 	}
@@ -592,9 +850,9 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 		
 		if (bridge.type == btParallel)
 		{
-//			mNrOfHBondsInParallelBridges += bridge.i.back() - bridge.i.front() + 2;
+			stats.nrOfHBondsInParallelBridges += bridge.i.back() - bridge.i.front() + 2;
 			
-			deque<uint32_t>::iterator j = bridge.j.begin();
+			std::deque<uint32_t>::iterator j = bridge.j.begin();
 			for (uint32_t i : bridge.i)
 				inResidues[i].SetBetaPartner(betai, inResidues[*j++], bridge.ladder, true);
 
@@ -604,9 +862,9 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 		}
 		else
 		{
-//			mNrOfHBondsInAntiparallelBridges += bridge.i.back() - bridge.i.front() + 2;
+			stats.nrOfHBondsInAntiparallelBridges += bridge.i.back() - bridge.i.front() + 2;
 
-			deque<uint32_t>::reverse_iterator j = bridge.j.rbegin();
+			std::deque<uint32_t>::reverse_iterator j = bridge.j.rbegin();
 			for (uint32_t i : bridge.i)
 				inResidues[i].SetBetaPartner(betai, inResidues[*j++], bridge.ladder, false);
 
@@ -634,7 +892,7 @@ void CalculateBetaSheets(vector<Res>& inResidues)
 // --------------------------------------------------------------------
 // TODO: improve alpha helix calculation by better recognizing pi-helices 
 
-void CalculateAlphaHelices(vector<Res>& inResidues, bool inPreferPiHelices = true)
+void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats, bool inPreferPiHelices = true)
 {
 	// Helix and Turn
 	for (uint32_t stride = 3; stride <= 5; ++stride)
@@ -643,17 +901,17 @@ void CalculateAlphaHelices(vector<Res>& inResidues, bool inPreferPiHelices = tru
 		{
 			if (NoChainBreak(inResidues[i], inResidues[i + stride]) and TestBond(&inResidues[i + stride], &inResidues[i]))
 			{
-				inResidues[i + stride].SetHelixFlag(stride, helixEnd);
+				inResidues[i + stride].SetHelixFlag(stride, Helix::End);
 				for (uint32_t j = i + 1; j < i + stride; ++j)
 				{
-					if (inResidues[j].GetHelixFlag(stride) == helixNone)
-						inResidues[j].SetHelixFlag(stride, helixMiddle);
+					if (inResidues[j].GetHelixFlag(stride) == Helix::None)
+						inResidues[j].SetHelixFlag(stride, Helix::Middle);
 				}
 				
-				if (inResidues[i].GetHelixFlag(stride) == helixEnd)
-					inResidues[i].SetHelixFlag(stride, helixStartAndEnd);
+				if (inResidues[i].GetHelixFlag(stride) == Helix::End)
+					inResidues[i].SetHelixFlag(stride, Helix::StartAndEnd);
 				else
-					inResidues[i].SetHelixFlag(stride, helixStart);
+					inResidues[i].SetHelixFlag(stride, Helix::Start);
 			}
 		}
 	}
@@ -721,50 +979,74 @@ void CalculateAlphaHelices(vector<Res>& inResidues, bool inPreferPiHelices = tru
 				inResidues[i].SetSecondaryStructure(ssBend);
 		}
 	}
-}
 
-// --------------------------------------------------------------------
-
-void CalculateSecondaryStructure(Structure& s)
-{
-	auto& polymers = s.polymers();
-	
-	size_t nRes = accumulate(polymers.begin(), polymers.end(),
-		0.0, [](double s, auto& p) { return s + p.size(); });
-	
-	vector<Res> residues;
-	residues.reserve(nRes);
-	
-	for (auto& p: polymers)
+	std::string asym;
+	size_t helixLength = 0;
+	for (auto r: inResidues)
 	{
-		for (auto& m: p)
-			residues.emplace_back(m);
-	}
-	
-	for (size_t i = 0; i + 1 < residues.size(); ++i)
-	{
-		residues[i].mNext = &residues[i + 1];
-		residues[i + 1].mPrev = &residues[i];
-		
-		residues[i + 1].assignHydrogen();
-	}
-	
-	CalculateHBondEnergies(residues);
-	CalculateBetaSheets(residues);
-	CalculateAlphaHelices(residues);
-	
-	if (cif::VERBOSE)
-	{
-		for (auto& r: residues)
+		if (r.mM.asymID() != asym)
 		{
-			auto& m = r.mM;
-			
-			cout << m.asymID() << ':' << m.seqID() << '/' << m.compoundID() << '\t'
-				 << char(r.mSecondaryStructure)
-				 << endl;
+			helixLength = 0;
+			asym = r.mM.asymID();
+		}
+
+		if (r.GetSecondaryStructure() == ssAlphahelix)
+			++helixLength;
+		else if (helixLength > 0)
+		{
+			if (helixLength > kHistogramSize)
+				helixLength = kHistogramSize;
+
+			stats.residuesPerAlphaHelixHistogram[helixLength - 1] += 1;
+			helixLength = 0;
 		}
 	}
 }
+
+// // --------------------------------------------------------------------
+
+// void CalculateSecondaryStructure(Structure& s)
+// {
+// 	auto& polymers = s.polymers();
+	
+// 	size_t nRes = accumulate(polymers.begin(), polymers.end(),
+// 		0.0, [](double s, auto& p) { return s + p.size(); });
+	
+// 	vector<Res> residues;
+// 	residues.reserve(nRes);
+	
+// 	for (auto& p: polymers)
+// 	{
+// 		for (auto& m: p)
+// 			residues.emplace_back(m);
+// 	}
+	
+// 	auto fa = std::async(std::launch::async, std::bind(&CalculateAccessibilities, std::ref(residues)));
+
+// 	for (size_t i = 0; i + 1 < residues.size(); ++i)
+// 	{
+// 		residues[i].mNext = &residues[i + 1];
+// 		residues[i + 1].mPrev = &residues[i];
+		
+// 		residues[i + 1].assignHydrogen();
+// 	}
+	
+// 	CalculateHBondEnergies(residues);
+// 	CalculateBetaSheets(residues);
+// 	CalculateAlphaHelices(residues);
+	
+// 	if (cif::VERBOSE)
+// 	{
+// 		for (auto& r: residues)
+// 		{
+// 			auto& m = r.mM;
+			
+// 			cout << m.asymID() << ':' << m.seqID() << '/' << m.compoundID() << '\t'
+// 				 << char(r.mSecondaryStructure)
+// 				 << endl;
+// 		}
+// 	}
+// }
 
 // --------------------------------------------------------------------
 
@@ -772,14 +1054,24 @@ struct DSSPImpl
 {
 	DSSPImpl(const Structure& s);
 	
-	const Structure&		mStructure;
-	const list<Polymer>&	mPolymers;
-	vector<Res>				mResidues;
+	const Structure&			mStructure;
+	const std::list<Polymer>&	mPolymers;
+	std::vector<Res>			mResidues;
+	std::vector<std::pair<Res*,Res*>> mSSBonds;
+
+	auto findRes(const std::string& asymID, int seqID)
+	{
+		return std::find_if(mResidues.begin(), mResidues.end(), [&](auto& r) { return r.mM.asymID() == asymID and r.mM.seqID() == seqID; });
+	}
+
+	DSSP_Statistics				mStats = {};
 };
 
-ostream& operator<<(ostream& os, const chrono::duration<double>& t)
+// --------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const std::chrono::duration<double>& t)
 {
-	uint64_t s = static_cast<uint64_t>(trunc(t.count()));
+	uint64_t s = static_cast<uint64_t>(std::trunc(t.count()));
 	if (s > 24 * 60 * 60)
 	{
 		uint32_t days = s / (24 * 60 * 60);
@@ -803,28 +1095,45 @@ ostream& operator<<(ostream& os, const chrono::duration<double>& t)
 	
 	double ss = s + 1e-6 * (t.count() - s);
 	
-	os << fixed << setprecision(1) << ss << 's';
+	os << std::fixed << std::setprecision(1) << ss << 's';
 
 	return os;
 }
-
 
 DSSPImpl::DSSPImpl(const Structure& s)
 	: mStructure(s)
 	, mPolymers(mStructure.polymers())
 {
 	if (cif::VERBOSE)
-		cerr << "Calculating DSSP ";
-	
+		std::cerr << "Calculating DSSP ";
+
 	size_t nRes = accumulate(mPolymers.begin(), mPolymers.end(),
 		0.0, [](double s, auto& p) { return s + p.size(); });
-	
+
+	mStats.nrOfResidues = nRes;
+	mStats.nrOfChains = mPolymers.size();
+
 	mResidues.reserve(nRes);
+	int resNumber = 0;
 	
 	for (auto& p: mPolymers)
 	{
 		for (auto& m: p)
-			mResidues.emplace_back(m);
+		{
+			if (not m.isComplete())
+				continue;
+			
+			++resNumber;
+
+			if (not mResidues.empty() and
+				Distance(mResidues.back().mC, m.atomByID("N").location()) > kMaxPeptideBondLength)
+			{
+				++mStats.nrOfChains;
+				++resNumber;
+			}
+
+			mResidues.emplace_back(m, resNumber);
+		}
 	}
 	
 	for (size_t i = 0; i + 1 < mResidues.size(); ++i)
@@ -834,17 +1143,37 @@ DSSPImpl::DSSPImpl(const Structure& s)
 		
 		mResidues[i + 1].assignHydrogen();
 	}
-	
-	if (cif::VERBOSE) cerr << ".";
+
+	auto a = std::async(std::launch::async, &CalculateAccessibilities, std::ref(mResidues), std::ref(mStats));
+
+	auto& db = s.getFile().data();
+	for (auto r: db["struct_conn"].find(cif::Key("conn_type_id") == "disulf"))
+	{
+		std::string asym1, asym2;
+		int seq1, seq2;
+		cif::tie(asym1, seq1, asym2, seq2) = r.get("ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr2_label_asym_id", "ptnr2_label_seq_id");
+
+		auto r1 = findRes(asym1, seq1);
+		if (r1 == mResidues.end())
+			throw std::runtime_error("Invalid file, missing residue for SS bond");
+
+		auto r2 = findRes(asym2, seq2);
+		if (r2 == mResidues.end())
+			throw std::runtime_error("Invalid file, missing residue for SS bond");
+
+		mSSBonds.emplace_back(&*r1, &*r2);
+	}
+
+	if (cif::VERBOSE) std::cerr << ".";
 	CalculateHBondEnergies(mResidues);
 
-	if (cif::VERBOSE) cerr << ".";
-	CalculateBetaSheets(mResidues);
+	if (cif::VERBOSE) std::cerr << ".";
+	CalculateBetaSheets(mResidues, mStats);
 
-	if (cif::VERBOSE) cerr << ".";
-	CalculateAlphaHelices(mResidues);
-	
-	if (cif::VERBOSE) cerr << endl;
+	if (cif::VERBOSE) std::cerr << ".";
+	CalculateAlphaHelices(mResidues, mStats);
+
+	if (cif::VERBOSE) std::cerr << std::endl;
 
 	if (cif::VERBOSE > 1)
 	{
@@ -857,23 +1186,152 @@ DSSPImpl::DSSPImpl(const Structure& s)
 			{
 				switch (r.GetHelixFlag(stride))
 				{
-					case helixStart:		helix[stride - 3] = '>'; break;
-					case helixMiddle:		helix[stride - 3] = '0' + stride; break;
-					case helixStartAndEnd:	helix[stride - 3] = 'X'; break;
-					case helixEnd:			helix[stride - 3] = '<'; break;
-					case helixNone:			helix[stride - 3] = ' '; break;
+					case Helix::Start:			helix[stride - 3] = '>'; break;
+					case Helix::Middle:			helix[stride - 3] = '0' + stride; break;
+					case Helix::StartAndEnd:	helix[stride - 3] = 'X'; break;
+					case Helix::End:			helix[stride - 3] = '<'; break;
+					case Helix::None:			helix[stride - 3] = ' '; break;
 				}
 			}
 			
-			string id = m.asymID() + ':' + to_string(m.seqID()) + '/' + m.compoundID();
+			auto id = m.asymID() + ':' + std::to_string(m.seqID()) + '/' + m.compoundID();
 			
-			cerr << id << string(12 - id.length(), ' ')
-				 << char(r.mSecondaryStructure) << ' '
-				 << helix
-				 << endl;
+			std::cerr << id << std::string(12 - id.length(), ' ')
+					  << char(r.mSecondaryStructure) << ' '
+					  << helix
+					  << std::endl;
 		}
 	}
+
+	// finish statistics
+	mStats.nrOfSSBridges = mSSBonds.size();
+
+	mStats.nrOfIntraChainSSBridges = 0;
+	for (auto& ss: mSSBonds)
+	{
+		const auto& [a, b] = ss;
+		if (a->mM.asymID() != b->mM.asymID())
+			++mStats.nrOfIntraChainSSBridges;
+	}
+
+	mStats.nrOfHBonds = 0;
+	for (auto& r: mResidues)
+	{
+		auto donor = r.mHBondDonor;
+
+		for (int i = 0; i < 2; ++i)
+		{
+			if (donor[i].residue != nullptr and donor[i].energy < kMaxHBondEnergy)
+			{
+				++mStats.nrOfHBonds;
+				auto k = donor[i].residue->mNumber - r.mNumber;
+				if (k >= -5 and k <= 5)
+					mStats.nrOfHBondsPerDistance[k + 5] += 1;
+			}
+		}
+	}
+
+	a.get();
 }
+
+// --------------------------------------------------------------------
+
+DSSP::ResidueInfo::ResidueInfo(Res* res)
+	: mImpl(res)
+{
+}
+
+const Monomer& DSSP::ResidueInfo::residue() const
+{
+	return mImpl->mM;
+}
+
+ChainBreak DSSP::ResidueInfo::chainBreak() const
+{
+	return ChainBreak::None;
+}
+
+int DSSP::ResidueInfo::nr() const
+{
+	return mImpl->mNumber;
+}
+
+SecondaryStructureType DSSP::ResidueInfo::ss() const
+{
+	return mImpl->mSecondaryStructure;
+}
+
+int DSSP::ResidueInfo::ssBridgeNr() const
+{
+	return 0;
+}
+
+Helix DSSP::ResidueInfo::helix(int stride) const
+{
+	return mImpl->GetHelixFlag(stride);
+}
+
+bool DSSP::ResidueInfo::bend() const
+{
+	return mImpl->IsBend();
+}
+
+double DSSP::ResidueInfo::accessibility() const
+{
+	return mImpl->mAccessibility;
+}
+
+std::tuple<DSSP::ResidueInfo,int,bool> DSSP::ResidueInfo::bridgePartner(int i) const
+{
+	auto bp = mImpl->GetBetaPartner(i);
+
+	ResidueInfo ri(bp.residue);
+
+	return std::make_tuple(std::move(ri), bp.ladder, bp.parallel);
+}
+
+int DSSP::ResidueInfo::sheet() const
+{
+	return mImpl->GetSheet();
+}
+
+std::tuple<DSSP::ResidueInfo,double> DSSP::ResidueInfo::acceptor(int i) const
+{
+	auto& a = mImpl->mHBondAcceptor[i];
+	return { ResidueInfo(a.residue), a.energy };
+}
+
+std::tuple<DSSP::ResidueInfo,double> DSSP::ResidueInfo::donor(int i) const
+{
+	auto& d = mImpl->mHBondDonor[i];
+	return { ResidueInfo(d.residue), d.energy };
+}
+
+// --------------------------------------------------------------------
+
+DSSP::iterator::iterator(res_iter cur)
+	: mCurrent(&*cur)
+{
+}
+
+DSSP::iterator::iterator(const iterator& i)
+	: mCurrent(i.mCurrent)
+{
+}
+
+DSSP::iterator& DSSP::iterator::operator=(const iterator& i)
+{
+	mCurrent = i.mCurrent;
+	return *this;
+}
+
+DSSP::iterator& DSSP::iterator::operator++()
+{
+	++mCurrent.mImpl;
+	return *this;
+}
+
+// --------------------------------------------------------------------
 
 DSSP::DSSP(const Structure& s)
 	: mImpl(new DSSPImpl(s))
@@ -885,7 +1343,17 @@ DSSP::~DSSP()
 	delete mImpl;
 }
 
-SecondaryStructureType DSSP::operator()(const string& inAsymID, int inSeqID) const
+DSSP::iterator DSSP::begin() const
+{
+	return iterator(mImpl->mResidues.begin());
+}
+
+DSSP::iterator DSSP::end() const
+{
+	return iterator(mImpl->mResidues.end());
+}
+
+SecondaryStructureType DSSP::operator()(const std::string& inAsymID, int inSeqID) const
 {
 	SecondaryStructureType result = ssLoop;
 	auto i = find_if(mImpl->mResidues.begin(), mImpl->mResidues.end(),
@@ -893,7 +1361,7 @@ SecondaryStructureType DSSP::operator()(const string& inAsymID, int inSeqID) con
 	if (i != mImpl->mResidues.end())
 		result = i->mSecondaryStructure;
 	else if (cif::VERBOSE)
-		cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << endl;
+		std::cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << std::endl;
 	return result;
 }
 
@@ -902,12 +1370,29 @@ SecondaryStructureType DSSP::operator()(const Monomer& m) const
 	return operator()(m.asymID(), m.seqID());
 }
 
+double DSSP::accessibility(const std::string& inAsymID, int inSeqID) const
+{
+	SecondaryStructureType result = ssLoop;
+	auto i = find_if(mImpl->mResidues.begin(), mImpl->mResidues.end(),
+		[&](auto& r) { return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
+	if (i != mImpl->mResidues.end())
+		result = i->mSecondaryStructure;
+	else if (cif::VERBOSE)
+		std::cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << std::endl;
+	return result;
+}
+
+double DSSP::accessibility(const Monomer& m) const
+{
+	return accessibility(m.asymID(), m.seqID());
+}
+
 bool DSSP::isAlphaHelixEndBeforeStart(const Monomer& m) const
 {
 	return isAlphaHelixEndBeforeStart(m.asymID(), m.seqID());
 }
 
-bool DSSP::isAlphaHelixEndBeforeStart(const string& inAsymID, int inSeqID) const
+bool DSSP::isAlphaHelixEndBeforeStart(const std::string& inAsymID, int inSeqID) const
 {
 	auto i = find_if(mImpl->mResidues.begin(), mImpl->mResidues.end(),
 		[&](auto& r) { return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
@@ -915,11 +1400,16 @@ bool DSSP::isAlphaHelixEndBeforeStart(const string& inAsymID, int inSeqID) const
 	bool result = false;
 
 	if (i != mImpl->mResidues.end() and i + 1 != mImpl->mResidues.end())
-		result = i->GetHelixFlag(4) == helixEnd and (i + 1)->GetHelixFlag(4) == helixStart;
+		result = i->GetHelixFlag(4) == Helix::End and (i + 1)->GetHelixFlag(4) == Helix::Start;
 	else if (cif::VERBOSE)
-		cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << endl;
+		std::cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << std::endl;
 
 	return result;
+}
+
+DSSP_Statistics DSSP::GetStatistics() const
+{
+	return mImpl->mStats;
 }
 
 }

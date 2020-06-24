@@ -226,8 +226,6 @@ class Residue
 
 	friend class Polymer;
 
-	void calculateCenterAndRadius();
-
 	const Structure* mStructure = nullptr;
 	std::string	mCompoundID, mAsymID;
 	int mSeqID = 0;
@@ -258,12 +256,16 @@ class Monomer : public Residue
 	float psi() const;
 	float alpha() const;
 	float kappa() const;
+	float tco() const;
 
     // torsion angles
     size_t nrOfChis() const;
     float chi(size_t i) const;
 	
 	bool isCis() const;
+
+	/// \brief Returns true if the four atoms C, CA, N and O are present
+	bool isComplete() const;
 
 	Atom CAlpha() const		{ return atomByID("CA"); }
 	Atom C() const			{ return atomByID("C"); }
