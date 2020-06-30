@@ -352,9 +352,8 @@ void WriteHeaderLines(ostream& pdbFile, Datablock& db)
 	
 	for (auto r: cat1)
 	{
-		keywords = r["keywords"].as<string>();
-		if (keywords.empty())
-			keywords = r["pdbx_keywords"].as<string>();
+		keywords = r["pdbx_keywords"].as<string>();
+		break;
 	}
 	
 	string date;
@@ -404,7 +403,7 @@ void WriteHeaderLines(ostream& pdbFile, Datablock& db)
 		if (r["type"] != "polymer")
 			continue;
 		
-		string entityId = r["id"].as<string>();
+		string entityID = r["id"].as<string>();
 		
 		++molID;
 		cmpnd.push_back("MOL_ID: " + to_string(molID));
@@ -412,7 +411,7 @@ void WriteHeaderLines(ostream& pdbFile, Datablock& db)
 		string molecule = r["pdbx_description"].as<string>();
 		cmpnd.push_back("MOLECULE: " + molecule);
 
-		auto poly = db["entity_poly"].find(cif::Key("entity_id") == entityId);
+		auto poly = db["entity_poly"].find(cif::Key("entity_id") == entityID);
 		if (not poly.empty())
 		{
 			string chains = poly.front()["pdbx_strand_id"].as<string>();
@@ -424,7 +423,7 @@ void WriteHeaderLines(ostream& pdbFile, Datablock& db)
 		if (not fragment.empty())
 			cmpnd.push_back("FRAGMENT: " + fragment);
 		
-		for (auto sr: db["entity_name_com"].find(cif::Key("entity_id") == entityId))
+		for (auto sr: db["entity_name_com"].find(cif::Key("entity_id") == entityID))
 		{
 			string syn = sr["name"].as<string>();
 			if (not syn.empty())
@@ -459,7 +458,7 @@ void WriteHeaderLines(ostream& pdbFile, Datablock& db)
 		if (r["type"] != "polymer")
 			continue;
 		
-		string entityId = r["id"].as<string>();
+		string entityID = r["id"].as<string>();
 		
 		++molID;
 		source.push_back("MOL_ID: " + to_string(molID));
@@ -489,7 +488,7 @@ void WriteHeaderLines(ostream& pdbFile, Datablock& db)
 			{ "details",						"OTHER_DETAILS" }
 		};
 
-		for (auto gr: gen.find(cif::Key("entity_id") == entityId))
+		for (auto gr: gen.find(cif::Key("entity_id") == entityID))
 		{
 			for (auto m: kGenSourceMapping)
 			{
@@ -514,7 +513,7 @@ void WriteHeaderLines(ostream& pdbFile, Datablock& db)
 			{ "details",					"OTHER_DETAILS" }
 		};
 		
-		for (auto nr: nat.find(cif::Key("entity_id") == entityId))
+		for (auto nr: nat.find(cif::Key("entity_id") == entityID))
 		{
 			for (auto m: kNatSourceMapping)
 			{
@@ -3189,7 +3188,7 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, Datablock& db)
 				first = false;
 			}
 			
-			string initResName, initChainID, initICode, endResName, endChainID, endICode, curAtom, curResName, curChainId, curICode, prevAtom, prevResName, prevChainId, prevICode;
+			string initResName, initChainID, initICode, endResName, endChainID, endICode, curAtom, curResName, curChainID, curICode, prevAtom, prevResName, prevChainID, prevICode;
 			int initSeqNum, endSeqNum, curResSeq, prevResSeq;
 
 			auto r2 = db["struct_sheet_range"][cif::Key("sheet_id") == sheetID and cif::Key("id") == rangeID2];
@@ -3223,7 +3222,7 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, Datablock& db)
 				string compID[2];
 				cif::tie(compID[0], compID[1]) = h.front().get("range_2_label_comp_id", "range_1_label_comp_id");
 				
-				cif::tie(curAtom, curResName, curResSeq, curChainId, curICode, prevAtom, prevResName, prevResSeq, prevChainId, prevICode)
+				cif::tie(curAtom, curResName, curResSeq, curChainID, curICode, prevAtom, prevResName, prevResSeq, prevChainID, prevICode)
 					= h.front().get("range_2_auth_atom_id", "range_2_auth_comp_id", "range_2_auth_seq_id", "range_2_auth_asym_id", "range_2_PDB_ins_code",
 						"range_1_auth_atom_id", "range_1_auth_comp_id", "range_1_auth_seq_id", "range_1_auth_asym_id", "range_1_PDB_ins_code");
 				
@@ -3245,12 +3244,12 @@ tuple<int,int> WriteSecondaryStructure(ostream& pdbFile, Datablock& db)
 					% sense
 					% curAtom
 					% curResName
-					% curChainId
+					% curChainID
 					% curResSeq
 					% curICode
 					% prevAtom
 					% prevResName
-					% prevChainId
+					% prevChainID
 					% prevResSeq
 					% prevICode) << endl;
 			}
@@ -3727,12 +3726,12 @@ void WritePDBFile(ostream& pdbFile, cif::File& cifFile)
 
 void WritePDBHeaderLines(std::ostream& os, cif::File& cifFile)
 {
-	io::filtering_ostream out;
-	out.push(FillOutLineFilter());
-	out.push(os);
+	// io::filtering_ostream out;
+	// out.push(FillOutLineFilter());
+	// out.push(os);
 
-	auto filter = out.component<FillOutLineFilter>(0);
-	assert(filter);
+	// auto filter = out.component<FillOutLineFilter>(0);
+	// assert(filter);
 
 	auto& db = cifFile.firstDatablock();
 
@@ -3767,9 +3766,7 @@ std::string GetPDBHEADERLine(cif::File& cifFile, int truncate_at)
 	
 	for (auto r: cat1)
 	{
-		keywords = r["keywords"].as<string>();
-		if (keywords.empty())
-			keywords = r["pdbx_keywords"].as<string>();
+		keywords = r["pdbx_keywords"].as<string>();
 		if (keywords.length() > truncate_at - 40)
 			keywords = keywords.substr(0, truncate_at - 44) + " ...";
 	}
@@ -3814,7 +3811,7 @@ std::string GetPDBCOMPNDLine(cif::File& cifFile, int truncate_at)
 		if (r["type"] != "polymer")
 			continue;
 		
-		string entityId = r["id"].as<string>();
+		string entityID = r["id"].as<string>();
 		
 		++molID;
 		cmpnd.push_back("MOL_ID: " + to_string(molID));
@@ -3822,7 +3819,7 @@ std::string GetPDBCOMPNDLine(cif::File& cifFile, int truncate_at)
 		string molecule = r["pdbx_description"].as<string>();
 		cmpnd.push_back("MOLECULE: " + molecule);
 
-		auto poly = db["entity_poly"].find(cif::Key("entity_id") == entityId);
+		auto poly = db["entity_poly"].find(cif::Key("entity_id") == entityID);
 		if (not poly.empty())
 		{
 			string chains = poly.front()["pdbx_strand_id"].as<string>();
@@ -3834,7 +3831,7 @@ std::string GetPDBCOMPNDLine(cif::File& cifFile, int truncate_at)
 		if (not fragment.empty())
 			cmpnd.push_back("FRAGMENT: " + fragment);
 		
-		for (auto sr: db["entity_name_com"].find(cif::Key("entity_id") == entityId))
+		for (auto sr: db["entity_name_com"].find(cif::Key("entity_id") == entityID))
 		{
 			string syn = sr["name"].as<string>();
 			if (not syn.empty())
@@ -3874,7 +3871,7 @@ std::string GetPDBSOURCELine(cif::File& cifFile, int truncate_at)
 		if (r["type"] != "polymer")
 			continue;
 		
-		string entityId = r["id"].as<string>();
+		string entityID = r["id"].as<string>();
 		
 		++molID;
 		source.push_back("MOL_ID: " + to_string(molID));
@@ -3904,7 +3901,7 @@ std::string GetPDBSOURCELine(cif::File& cifFile, int truncate_at)
 			{ "details",						"OTHER_DETAILS" }
 		};
 
-		for (auto gr: gen.find(cif::Key("entity_id") == entityId))
+		for (auto gr: gen.find(cif::Key("entity_id") == entityID))
 		{
 			for (auto m: kGenSourceMapping)
 			{
@@ -3929,7 +3926,7 @@ std::string GetPDBSOURCELine(cif::File& cifFile, int truncate_at)
 			{ "details",					"OTHER_DETAILS" }
 		};
 		
-		for (auto nr: nat.find(cif::Key("entity_id") == entityId))
+		for (auto nr: nat.find(cif::Key("entity_id") == entityID))
 		{
 			for (auto m: kNatSourceMapping)
 			{

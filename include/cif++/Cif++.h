@@ -249,7 +249,11 @@ namespace detail
 	// ItemReference is a helper class
 	class ItemReference
 	{
-	public:
+	  public:
+
+		// some conversion helper classes
+		template<typename T, typename = void>
+		struct item_value_as;
 
 		template<typename T>
 		ItemReference& operator=(const T& value)
@@ -262,12 +266,15 @@ namespace detail
 		
 //		operator string() const	{ return c_str(); }
 		
+		// template<typename T, typename = void>
+		// T as() const;
+
 		template<typename T>
 		T as() const
 		{
-			return boost::lexical_cast<T>(c_str("0"));
+			return item_value_as<T>::convert(*this);
 		}
-		
+
 		template<typename T>
 		int compare(const T& value) const
 		{
@@ -292,6 +299,7 @@ namespace detail
 		
 		// empty means either null or unknown
 		bool empty() const;
+		explicit operator bool() const		{ return not empty(); }
 
 		// is_null means the field contains '.'
 		bool is_null() const;
@@ -325,20 +333,48 @@ namespace detail
 		bool			mConst = false;
 	};
 
-	template<>
-	inline
-	string ItemReference::as<string>() const
+	template<typename T>
+	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T>>>
 	{
-		return string(c_str(""));
-	}
-	
-	template<>
-	inline
-	const char* ItemReference::as<const char*>() const
+		static T convert(const ItemReference& ref)
+		{
+			T result = {};
+			if (not ref.empty())
+				result = boost::lexical_cast<T>(ref.c_str());
+			return result;
+		}
+	};
+
+	template<typename T>
+	struct ItemReference::item_value_as<std::optional<T>>
 	{
-		return c_str("");
-	}
-	
+		static std::optional<T> convert(const ItemReference& ref)
+		{
+			std::optional<T> result;
+			if (ref)
+				result = ref.as<T>();
+			return result;
+		}
+	};
+
+	template<>
+	struct ItemReference::item_value_as<const char*>
+	{
+		static const char* convert(const ItemReference& ref)
+		{
+			return ref.c_str();
+		}
+	};
+
+	template<>
+	struct ItemReference::item_value_as<std::string>
+	{
+		static std::string convert(const ItemReference& ref)
+		{
+			return ref.c_str();
+		}
+	};
+
 	template<>
 	inline
 	int ItemReference::compare<string>(const string& value) const

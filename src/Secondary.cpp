@@ -8,9 +8,8 @@
 #include "cif++/Config.h"
 
 #include <numeric>
-#include <chrono>
 #include <iomanip>
-#include <future>
+#include <thread>
 
 #include <boost/algorithm/string.hpp>
 
@@ -164,22 +163,22 @@ struct Res
 
 		for (auto& a: mM.atoms())
 		{
-			if (a.labelAtomId() == "CA")
+			if (a.labelAtomID() == "CA")
 			{
 				mCAlpha = a.location();
 				ExtendBox(mCAlpha, kRadiusCA + 2 * kRadiusWater);
 			}
-			else if (a.labelAtomId() == "C")
+			else if (a.labelAtomID() == "C")
 			{
 				mC = a.location();
 				ExtendBox(mC, kRadiusC + 2 * kRadiusWater);
 			}
-			else if (a.labelAtomId() == "N")
+			else if (a.labelAtomID() == "N")
 			{
 				mN = a.location();
 				ExtendBox(mN, kRadiusN + 2 * kRadiusWater);
 			}
-			else if (a.labelAtomId() == "O")
+			else if (a.labelAtomID() == "O")
 			{
 				mO = a.location();
 				ExtendBox(mO, kRadiusO + 2 * kRadiusWater);
@@ -489,30 +488,6 @@ void CalculateAccessibilities(std::vector<Res>& inResidues, DSSP_Statistics& sta
 
 	for (auto& residue: inResidues)
 		stats.accessibleSurface += residue.CalculateSurface(inResidues);
-
-	// uint32_t nr_of_threads = boost::thread::hardware_concurrency();
-	// if (nr_of_threads <= 1)
-	// {
-	// 	foreach (MResidue* residue, inResidues)
-	// 		residue->CalculateSurface(inResidues);
-	// }
-	// else
-	// {
-	// 	MResidueQueue queue;
-
-	// 	boost::thread_group t;
-
-	// 	for (uint32 ti = 0; ti < nr_of_threads; ++ti)
-	// 		t.create_thread(boost::bind(&MProtein::CalculateAccessibility, this,
-	// 			boost::ref(queue), boost::ref(inResidues)));
-
-	// 	foreach (MResidue* residue, inResidues)
-	// 		queue.put(residue);
-
-	// 	queue.put(nullptr);
-
-	// 	t.join_all();
-	// }
 }
 
 // --------------------------------------------------------------------
@@ -1003,51 +978,6 @@ void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats,
 	}
 }
 
-// // --------------------------------------------------------------------
-
-// void CalculateSecondaryStructure(Structure& s)
-// {
-// 	auto& polymers = s.polymers();
-	
-// 	size_t nRes = accumulate(polymers.begin(), polymers.end(),
-// 		0.0, [](double s, auto& p) { return s + p.size(); });
-	
-// 	vector<Res> residues;
-// 	residues.reserve(nRes);
-	
-// 	for (auto& p: polymers)
-// 	{
-// 		for (auto& m: p)
-// 			residues.emplace_back(m);
-// 	}
-	
-// 	auto fa = std::async(std::launch::async, std::bind(&CalculateAccessibilities, std::ref(residues)));
-
-// 	for (size_t i = 0; i + 1 < residues.size(); ++i)
-// 	{
-// 		residues[i].mNext = &residues[i + 1];
-// 		residues[i + 1].mPrev = &residues[i];
-		
-// 		residues[i + 1].assignHydrogen();
-// 	}
-	
-// 	CalculateHBondEnergies(residues);
-// 	CalculateBetaSheets(residues);
-// 	CalculateAlphaHelices(residues);
-	
-// 	if (cif::VERBOSE)
-// 	{
-// 		for (auto& r: residues)
-// 		{
-// 			auto& m = r.mM;
-			
-// 			cout << m.asymID() << ':' << m.seqID() << '/' << m.compoundID() << '\t'
-// 				 << char(r.mSecondaryStructure)
-// 				 << endl;
-// 		}
-// 	}
-// }
-
 // --------------------------------------------------------------------
 
 struct DSSPImpl
@@ -1068,37 +998,6 @@ struct DSSPImpl
 };
 
 // --------------------------------------------------------------------
-
-std::ostream& operator<<(std::ostream& os, const std::chrono::duration<double>& t)
-{
-	uint64_t s = static_cast<uint64_t>(std::trunc(t.count()));
-	if (s > 24 * 60 * 60)
-	{
-		uint32_t days = s / (24 * 60 * 60);
-		os << days << "d ";
-		s %= 24 * 60 * 60;
-	}
-	
-	if (s > 60 * 60)
-	{
-		uint32_t hours = s / (60 * 60);
-		os << hours << "h ";
-		s %= 60 * 60;
-	}
-	
-	if (s > 60)
-	{
-		uint32_t minutes = s / 60;
-		os << minutes << "m ";
-		s %= 60;
-	}
-	
-	double ss = s + 1e-6 * (t.count() - s);
-	
-	os << std::fixed << std::setprecision(1) << ss << 's';
-
-	return os;
-}
 
 DSSPImpl::DSSPImpl(const Structure& s)
 	: mStructure(s)
@@ -1144,7 +1043,7 @@ DSSPImpl::DSSPImpl(const Structure& s)
 		mResidues[i + 1].assignHydrogen();
 	}
 
-	auto a = std::async(std::launch::async, &CalculateAccessibilities, std::ref(mResidues), std::ref(mStats));
+	std::thread ta(std::bind(&CalculateAccessibilities, std::ref(mResidues), std::ref(mStats)));
 
 	auto& db = s.getFile().data();
 	for (auto r: db["struct_conn"].find(cif::Key("conn_type_id") == "disulf"))
@@ -1207,9 +1106,8 @@ DSSPImpl::DSSPImpl(const Structure& s)
 	mStats.nrOfSSBridges = mSSBonds.size();
 
 	mStats.nrOfIntraChainSSBridges = 0;
-	for (auto& ss: mSSBonds)
+	for (const auto& [a, b]: mSSBonds)
 	{
-		const auto& [a, b] = ss;
 		if (a->mM.asymID() != b->mM.asymID())
 			++mStats.nrOfIntraChainSSBridges;
 	}
@@ -1231,7 +1129,7 @@ DSSPImpl::DSSPImpl(const Structure& s)
 		}
 	}
 
-	a.get();
+	ta.join();
 }
 
 // --------------------------------------------------------------------

@@ -38,27 +38,6 @@ class Polymer;
 class Structure;
 class File;
 
-struct SecondaryStructure;
-
-// --------------------------------------------------------------------
-// We do not want to introduce a dependency on cif++ here, we might want
-// to change the backend storage in the future.
-// So, in order to access the data we use properties based on boost::any
-// Eventually this should be moved to std::variant, but that's only when
-// c++17 is acceptable.
-
-struct Property
-{
-	Property() {}
-	Property(const std::string& name, const boost::any& value)
-		: name(name), value(value) {}
-	
-	std::string name;
-	boost::any value;
-};
-
-typedef std::vector<Property>	PropertyList;
-
 // --------------------------------------------------------------------
 
 class Atom
@@ -101,18 +80,18 @@ class Atom
 	void property(const std::string& name, const T& value);
 	
 	// specifications
-	std::string labelAtomId() const;
-	std::string labelCompId() const;
-	std::string labelAsymId() const;
-	int labelSeqId() const;
-	std::string labelAltId() const;
+	std::string labelAtomID() const;
+	std::string labelCompID() const;
+	std::string labelAsymID() const;
+	int labelSeqID() const;
+	std::string labelAltID() const;
 	
-	std::string authAtomId() const;
-	std::string authCompId() const;
-	std::string authAsymId() const;
-	std::string authSeqId() const;
+	std::string authAtomID() const;
+	std::string authCompID() const;
+	std::string authAsymID() const;
+	std::string authSeqID() const;
 	std::string pdbxAuthInsCode() const;
-	std::string pdbxAuthAltId() const;
+	std::string pdbxAuthAltID() const;
 	
 	std::string labelID() const;// label_comp_id + '_' + label_asym_id + '_' + label_seq_id
 	std::string pdbID() const;	// auth_comp_id + '_' + auth_asym_id + '_' + auth_seq_id + pdbx_PDB_ins_code
@@ -134,8 +113,8 @@ class Atom
 	// convenience routine
 	bool isBackBone() const
 	{
-		return labelAtomId() == "N" or labelAtomId() == "O" or
-			labelAtomId() == "C" or labelAtomId() == "CA";
+		return labelAtomID() == "N" or labelAtomID() == "O" or
+			labelAtomID() == "C" or labelAtomID() == "CA";
 	}
 	
 	void swap(Atom& b)
@@ -199,6 +178,7 @@ class Residue
 	const std::string&	asymID() const		{ return mAsymID; }
 	int					seqID() const		{ return mSeqID; }
 	
+	std::string			authAsymID() const;
 	std::string			authSeqID() const;
 	std::string			authInsCode() const;
 	
@@ -354,10 +334,24 @@ class File : public std::enable_shared_from_this<File>
 
 // --------------------------------------------------------------------
 
+enum class StructureOpenOptions
+{
+	SkipHydrogen	= 1 << 0
+};
+
+inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
+{
+	return static_cast<int>(a) bitand static_cast<int>(b);
+}
+
+// --------------------------------------------------------------------
+
 class Structure
 {
   public:
-	Structure(File& p, uint32_t modelNr = 1);
+	Structure(File& p, StructureOpenOptions options = {})
+		: Structure(p, 1, options) {}
+	Structure(File& p, uint32_t modelNr = 1, StructureOpenOptions options = {});
 	Structure& operator=(const Structure&) = delete;
 	~Structure();
 
@@ -372,35 +366,35 @@ class Structure
 	const std::list<Polymer>& polymers() const				{ return mPolymers; }
 	const std::vector<Residue>& nonPolymers() const			{ return mNonPolymers; }
 
-	Atom getAtomById(std::string id) const;
+	Atom getAtomByID(std::string id) const;
 	// Atom getAtomByLocation(Point pt, float maxDistance) const;
 	
-	Atom getAtomByLabel(const std::string& atomId, const std::string& asymId,
-		const std::string& compId, int seqId, const std::string& altId = "");
+	Atom getAtomByLabel(const std::string& atomID, const std::string& asymID,
+		const std::string& compID, int seqID, const std::string& altID = "");
 	
-	// Atom getAtomByAuth(const std::string& atomId, const std::string& asymId,
-	// 	const std::string& compId, int seqId, const std::string& altId = "",
+	// Atom getAtomByAuth(const std::string& atomID, const std::string& asymID,
+	// 	const std::string& compID, int seqID, const std::string& altID = "",
 	// 	const std::string& pdbxAuthInsCode = "");
 	
 	// map between auth and label locations
 	
-	std::tuple<std::string,int,std::string> MapAuthToLabel(const std::string& asymId,
-		const std::string& seqId, const std::string& compId, const std::string& insCode = "");
+	std::tuple<std::string,int,std::string> MapAuthToLabel(const std::string& asymID,
+		const std::string& seqID, const std::string& compID, const std::string& insCode = "");
 	
 	std::tuple<std::string,std::string,std::string,std::string> MapLabelToAuth(
-		const std::string& asymId, int seqId, const std::string& compId);
+		const std::string& asymID, int seqID, const std::string& compID);
 
 	// returns chain, seqnr, icode
 	std::tuple<char,int,char> MapLabelToAuth(
-		const std::string& asymId, int seqId) const;
+		const std::string& asymID, int seqID) const;
 
 	// returns chain,seqnr,comp,iCode
 	std::tuple<std::string,int,std::string,std::string> MapLabelToPDB(
-		const std::string& asymId, int seqId, const std::string& compId,
+		const std::string& asymID, int seqID, const std::string& compID,
 		const std::string& authSeqID) const;
 
 	std::tuple<std::string,int,std::string> MapPDBToLabel(
-		const std::string& asymId, int seqId, const std::string& compId, const std::string& iCode) const;
+		const std::string& asymID, int seqID, const std::string& compID, const std::string& iCode) const;
 	
 	// Actions
 	void removeAtom(Atom& a);

@@ -127,7 +127,7 @@ class Compound
 	static void addMonomerLibraryPath(const std::string& dir);
 
 	// accessors
-	std::string id() const							{ return mId; }
+	std::string id() const							{ return mID; }
 	std::string	name() const						{ return mName; }
 	std::string	type() const;
 	std::string group() const						{ return mGroup; }
@@ -139,7 +139,7 @@ class Compound
 	std::vector<CompoundPlane> planes() const		{ return mPlanes; }
 	std::vector<CompoundTorsion> torsions() const	{ return mTorsions; }
 	
-	CompoundAtom getAtomById(const std::string& atomId) const;
+	CompoundAtom getAtomByID(const std::string& atomID) const;
 	
 	bool atomsBonded(const std::string& atomId_1, const std::string& atomId_2) const;
 	float atomBondValue(const std::string& atomId_1, const std::string& atomId_2) const;
@@ -162,7 +162,7 @@ class Compound
 
 	cif::File					mCF;
 
-	std::string					mId;
+	std::string					mID;
 	std::string					mName;
 	std::string					mGroup;
 	std::vector<CompoundAtom>	mAtoms;
@@ -254,7 +254,7 @@ class Link
 	static const Link& create(const std::string& id);
 
 	// accessors
-	std::string id() const								{ return mId; }
+	std::string id() const								{ return mID; }
 	std::vector<LinkBond> bonds() const					{ return mBonds; }
 	std::vector<LinkAngle> angles() const				{ return mAngles; }
 	std::vector<LinkChiralCentre> chiralCentres() const	{ return mChiralCentres; }
@@ -269,7 +269,7 @@ class Link
 
 	~Link();
 
-	std::string						mId;
+	std::string						mID;
 	std::vector<LinkBond>			mBonds;
 	std::vector<LinkAngle>			mAngles;
 	std::vector<LinkTorsion>		mTorsions;

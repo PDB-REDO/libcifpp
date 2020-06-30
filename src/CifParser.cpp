@@ -930,12 +930,12 @@ void DictParser::linkItems()
 	for (auto& kv: linkIndex)
 	{
 		ValidateLink link;
-		std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupId) = kv.first;
+		std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupID) = kv.first;
 		
 		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
 
 		// look up the label
-		for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupId))
+		for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
 		{
 			link.mLinkGroupLabel = r["label"].as<string>();
 			break;

@@ -286,10 +286,10 @@ struct AtomData
 {
 	AtomData(Atom atom, float radius)
 		: atom(atom)
-//		, asymID(atom.authAsymId())
+//		, asymID(atom.authAsymID())
 //		, seqID(atom.property<string>("auth_seq_id"))
-		, asymID(atom.labelAsymId())
-		, seqID(atom.labelSeqId())
+		, asymID(atom.labelAsymID())
+		, seqID(atom.labelSeqID())
 		, radius(radius) {}
 	
 	Atom					atom;
@@ -584,8 +584,8 @@ vector<ResidueStatistics> StatsCollector::collect() const
 		if (atom.isWater())
 			continue;
 		
-		auto k = make_tuple(atom.labelAsymId(), atom.labelSeqId(), atom.labelCompId(), atom.authSeqId());
-//		auto k = make_tuple(atom.authAsymId(), atom.property<string>("auth_seq_id"), atom.authCompId());
+		auto k = make_tuple(atom.labelAsymID(), atom.labelSeqID(), atom.labelCompID(), atom.authSeqID());
+//		auto k = make_tuple(atom.authAsymID(), atom.property<string>("auth_seq_id"), atom.authCompID());
 
 		if (residues.empty() or residues.back() != k)
 		{
@@ -610,19 +610,19 @@ vector<ResidueStatistics> StatsCollector::collect(const string& asymID, int resF
 		
 		if (authNameSpace)
 		{
-			int authSeqID = stoi(atom.authSeqId());
+			int authSeqID = stoi(atom.authSeqID());
 			
-			if (atom.authAsymId() != asymID or authSeqID < resFirst or authSeqID > resLast)
+			if (atom.authAsymID() != asymID or authSeqID < resFirst or authSeqID > resLast)
 				continue;
 		}
 		else
 		{
-			if (atom.labelAsymId() != asymID or atom.labelSeqId() < resFirst or atom.labelSeqId() > resLast)
+			if (atom.labelAsymID() != asymID or atom.labelSeqID() < resFirst or atom.labelSeqID() > resLast)
 				continue;
 		}
 
-		auto k = make_tuple(atom.labelAsymId(), atom.labelSeqId(), atom.labelCompId(), atom.authSeqId());
-//		auto k = make_tuple(atom.authAsymId(), atom.property<string>("auth_seq_id"), atom.authCompId());
+		auto k = make_tuple(atom.labelAsymID(), atom.labelSeqID(), atom.labelCompID(), atom.authSeqID());
+//		auto k = make_tuple(atom.authAsymID(), atom.property<string>("auth_seq_id"), atom.authCompID());
 
 		if (residues.empty() or residues.back() != k)
 		{
@@ -710,7 +710,7 @@ vector<ResidueStatistics> StatsCollector::collect(const vector<tuple<string,int,
 				++n;
 				
 				auto ci = find_if(atomData.begin(), atomData.end(),
-					[=](auto& d) { return d.asymID == asymID and d.seqID == seqID and d.atom.labelAtomId() == compAtom.id; });
+					[=](auto& d) { return d.asymID == asymID and d.seqID == seqID and d.atom.labelAtomID() == compAtom.id; });
 
 				if (ci == atomData.end())
 				{
@@ -749,7 +749,7 @@ vector<ResidueStatistics> StatsCollector::collect(const vector<tuple<string,int,
 				continue;
 	
 			result.emplace_back(ResidueStatistics{d.asymID, d.seqID, "HOH", 
-				atom.authSeqId(),
+				atom.authSeqID(),
 				(d.sums.rfSums[0] / d.sums.rfSums[1]),			// rsr
 				d.sums.srg(),									// srsr
 				d.sums.cc(),									// rsccs
@@ -813,7 +813,7 @@ ResidueStatistics StatsCollector::collect(const vector<Atom>& atoms) const
 		++n;
 		
 		auto ci = find_if(atomData.begin(), atomData.end(),
-			[=](auto& d) { return d.asymID == atom.labelAsymId() and d.seqID == atom.labelSeqId() and d.atom.labelAtomId() == atom.labelAtomId(); });
+			[=](auto& d) { return d.asymID == atom.labelAsymID() and d.seqID == atom.labelSeqID() and d.atom.labelAtomID() == atom.labelAtomID(); });
 		
 		if (ci == atomData.end())
 			continue;

@@ -5,10 +5,6 @@
 #include <string>
 #include <cstdint>
 
-#define HAVE_CPP0X_TEMPLATE_ALIASES 1
-#define HAVE_CPP0X_VARIADIC_TEMPLATES 1
-#define HAVE_CPP0X_INITIALIZER_LISTS 1
-
 #if defined(_MSC_VER)
 
 // These are Microsoft Visual C++ special settings

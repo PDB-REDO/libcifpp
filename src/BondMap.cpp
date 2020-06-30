@@ -68,7 +68,7 @@ BondMap::BondMap(const Structure& p)
 	map<tuple<string,int,string>,string> atomMapByAsymSeqAndAtom;
 	for (auto& a: p.atoms())
 	{
-		auto key = make_tuple(a.labelAsymId(), a.labelSeqId(), a.labelAtomId());
+		auto key = make_tuple(a.labelAsymID(), a.labelSeqID(), a.labelAtomID());
 		atomMapByAsymSeqAndAtom[key] = a.id();
 	}
 	
@@ -78,28 +78,28 @@ BondMap::BondMap(const Structure& p)
 	int lastSeqID = 0;
 	for (auto r: db["pdbx_poly_seq_scheme"])
 	{
-		string asymId;
-		int seqId;
+		string asymID;
+		int seqID;
 
-		cif::tie(asymId, seqId) = r.get("asym_id", "seq_id");
+		cif::tie(asymID, seqID) = r.get("asym_id", "seq_id");
 
-		if (asymId != lastAsymID)		// first in a new sequece
+		if (asymID != lastAsymID)		// first in a new sequece
 		{
-			lastAsymID = asymId;
-			lastSeqID = seqId;
+			lastAsymID = asymID;
+			lastSeqID = seqID;
 			continue;
 		}
 		
-		auto c = atomMapByAsymSeqAndAtom[make_tuple(asymId, lastSeqID, "C")];
-		auto n = atomMapByAsymSeqAndAtom[make_tuple(asymId, seqId, "N")];
+		auto c = atomMapByAsymSeqAndAtom[make_tuple(asymID, lastSeqID, "C")];
+		auto n = atomMapByAsymSeqAndAtom[make_tuple(asymID, seqID, "N")];
 
-//		auto c = db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == lastSeqID and cif::Key("label_atom_id") == "C");
+//		auto c = db["atom_site"].find(cif::Key("label_asym_id") == asymID and cif::Key("label_seq_id") == lastSeqID and cif::Key("label_atom_id") == "C");
 //		if (c.size() != 1 and VERBOSE > 1)
-//			cerr << "Unexpected number (" << c.size() << ") of atoms with atom ID C in asym_id " << asymId << " with seq id " << lastSeqID << endl;
+//			cerr << "Unexpected number (" << c.size() << ") of atoms with atom ID C in asym_id " << asymID << " with seq id " << lastSeqID << endl;
 //		
-//		auto n = db["atom_site"].find(cif::Key("label_asym_id") == asymId and cif::Key("label_seq_id") == seqId and cif::Key("label_atom_id") == "N");
+//		auto n = db["atom_site"].find(cif::Key("label_asym_id") == asymID and cif::Key("label_seq_id") == seqID and cif::Key("label_atom_id") == "N");
 //		if (n.size() != 1 and VERBOSE > 1)
-//			cerr << "Unexpected number (" << n.size() << ") of atoms with atom ID N in asym_id " << asymId << " with seq id " << seqId << endl;
+//			cerr << "Unexpected number (" << n.size() << ") of atoms with atom ID N in asym_id " << asymID << " with seq id " << seqID << endl;
 //		
 //		if (not (c.empty() or n.empty()))
 //			bindAtoms(c.front()["id"].as<string>(), n.front()["id"].as<string>());
@@ -107,7 +107,7 @@ BondMap::BondMap(const Structure& p)
 		if (not (c.empty() or n.empty()))
 			bindAtoms(c, n);
 		
-		lastSeqID = seqId;
+		lastSeqID = seqID;
 	}
 
 	for (auto l: db["struct_conn"])
@@ -166,19 +166,19 @@ BondMap::BondMap(const Structure& p)
 		// loop over poly_seq_scheme
 		for (auto r: db["pdbx_poly_seq_scheme"].find(cif::Key("mon_id") == c))
 		{
-			string asymId;
-			int seqId;
-			cif::tie(asymId, seqId) = r.get("asym_id", "seq_id");
+			string asymID;
+			int seqID;
+			cif::tie(asymID, seqID) = r.get("asym_id", "seq_id");
 			
 			vector<Atom> rAtoms;
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
-				[&](auto& a) { return a.labelAsymId() == asymId and a.labelSeqId() == seqId; });
+				[&](auto& a) { return a.labelAsymID() == asymID and a.labelSeqID() == seqID; });
 			
 			for (uint32_t i = 0; i + 1 < rAtoms.size(); ++i)
 			{
 				for (uint32_t j = i + 1; j < rAtoms.size(); ++j)
 				{
-					if (compound->atomsBonded(rAtoms[i].labelAtomId(), rAtoms[j].labelAtomId()))
+					if (compound->atomsBonded(rAtoms[i].labelAtomID(), rAtoms[j].labelAtomID()))
 						bindAtoms(rAtoms[i].id(), rAtoms[j].id());
 				}
 			}
@@ -187,20 +187,20 @@ BondMap::BondMap(const Structure& p)
 		// loop over pdbx_nonpoly_scheme
 		for (auto r: db["pdbx_nonpoly_scheme"].find(cif::Key("mon_id") == c))
 		{
-			string asymId;
-			cif::tie(asymId) = r.get("asym_id");
+			string asymID;
+			cif::tie(asymID) = r.get("asym_id");
 			
 			vector<Atom> rAtoms;
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
-				[&](auto& a) { return a.labelAsymId() == asymId; });
-//			for (auto a: db["atom_site"].find(cif::Key("label_asym_id") == asymId))
-//				rAtoms.push_back(p.getAtomById(a["id"].as<string>()));
+				[&](auto& a) { return a.labelAsymID() == asymID; });
+//			for (auto a: db["atom_site"].find(cif::Key("label_asym_id") == asymID))
+//				rAtoms.push_back(p.getAtomByID(a["id"].as<string>()));
 			
 			for (uint32_t i = 0; i + 1 < rAtoms.size(); ++i)
 			{
 				for (uint32_t j = i + 1; j < rAtoms.size(); ++j)
 				{
-					if (compound->atomsBonded(rAtoms[i].labelAtomId(), rAtoms[j].labelAtomId()))
+					if (compound->atomsBonded(rAtoms[i].labelAtomID(), rAtoms[j].labelAtomID()))
 					{
 						uint32_t ixa = index[rAtoms[i].id()];
 						uint32_t ixb = index[rAtoms[j].id()];

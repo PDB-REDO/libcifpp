@@ -19,7 +19,7 @@ namespace mmcif
 
 inline ostream& operator<<(ostream& os, const Atom& a)
 {
-	os << a.labelAsymId() << ':' << a.labelSeqId() << '/' << a.labelAtomId();
+	os << a.labelAsymID() << ':' << a.labelSeqID() << '/' << a.labelAtomID();
 	
 	return os;
 }
@@ -441,7 +441,7 @@ vector<Atom> DistanceMap::near(const Atom& a, float maxDistance) const
 			continue;
 
 		size_t ixb = mJA[i];
-		Atom b = structure.getAtomById(rIndex.at(ixb));
+		Atom b = structure.getAtomByID(rIndex.at(ixb));
 		
 		if (rti > 0)
 			result.emplace_back(b.symmetryCopy(mD, mRtOrth.at(rti)));

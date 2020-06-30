@@ -1166,14 +1166,14 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 			}
 			else if (iequals(category, "pdbx_refine_tls_group"))
 			{
-				string tlsGroupId;
+				string tlsGroupID;
 				if (not mDb["pdbx_refine_tls"].empty())
-					tlsGroupId = mDb["pdbx_refine_tls"].back()["id"].as<string>();
+					tlsGroupID = mDb["pdbx_refine_tls"].back()["id"].as<string>();
 
 				cat.emplace({
 					{ "pdbx_refine_id", mExpMethod },
-					{ "id", tlsGroupId },
-					{ "refine_tls_id", tlsGroupId }
+					{ "id", tlsGroupID },
+					{ "refine_tls_id", tlsGroupID }
 				});
 			}
 			else if (iequals(category, "pdbx_refine_tls"))

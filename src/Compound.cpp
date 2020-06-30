@@ -313,7 +313,7 @@ bool StructuresAreIsomeric(vector<CompoundAtom> atomsA, const vector<CompoundBon
 
 Compound::Compound(const std::string& file, const std::string& id,
 	const std::string& name, const std::string& group)
-	: mId(id), mName(name), mGroup(group)
+	: mID(id), mName(name), mGroup(group)
 {
 	try
 	{
@@ -531,7 +531,7 @@ string Compound::type() const
 	//	pyranose
 	//	saccharide
 	
-	if (cif::iequals(mId, "gly"))
+	if (cif::iequals(mID, "gly"))
 		result = "peptide linking";
 	else if (cif::iequals(mGroup, "l-peptide") or cif::iequals(mGroup, "L-peptide linking") or cif::iequals(mGroup, "peptide"))
 		result = "L-peptide linking";
@@ -547,7 +547,7 @@ string Compound::type() const
 
 bool Compound::isWater() const
 {
-	return mId == "HOH" or mId == "H2O";
+	return mID == "HOH" or mID == "H2O";
 }
 
 bool Compound::isSugar() const
@@ -555,20 +555,20 @@ bool Compound::isSugar() const
 	return cif::iequals(mGroup, "furanose") or cif::iequals(mGroup, "pyranose");
 }
 
-CompoundAtom Compound::getAtomById(const string& atomId) const
+CompoundAtom Compound::getAtomByID(const string& atomID) const
 {
 	CompoundAtom result = {};
 	for (auto& a: mAtoms)
 	{
-		if (a.id == atomId)
+		if (a.id == atomID)
 		{
 			result = a;
 			break;
 		}
 	}
 
-	if (result.id != atomId)	
-		throw out_of_range("No atom " + atomId + " in Compound " + mId);
+	if (result.id != atomID)	
+		throw out_of_range("No atom " + atomID + " in Compound " + mID);
 	
 	return result;
 }
@@ -612,7 +612,7 @@ bool Compound::isIsomerOf(const Compound& c) const
 	for (;;)
 	{
 		// easy tests first
-		if (mId == c.mId)
+		if (mID == c.mID)
 		{
 			result = true;
 			break;
@@ -694,11 +694,11 @@ vector<string> Compound::isomers() const
 	vector<string> result;
 	
 	auto& db = IsomerDB::instance();
-	if (db.count(mId))
+	if (db.count(mID))
 	{
-		result = db[mId];
+		result = db[mID];
 		
-		auto i = find(result.begin(), result.end(), mId);
+		auto i = find(result.begin(), result.end(), mID);
 		assert(i != result.end());
 		
 		result.erase(i);
@@ -777,7 +777,7 @@ float Compound::chiralVolume(const string& centreID) const
 
 Link::Link(cif::Datablock& db)
 {
-	mId = db.getName();
+	mID = db.getName();
 	
 	auto& linkBonds = db["chem_link_bond"];
 	
@@ -801,7 +801,7 @@ Link::Link(cif::Datablock& db)
 		else
 		{
 			if (cif::VERBOSE)
-				cerr << "Unimplemented chem_link_bond.type " << type << " in " << mId << endl;
+				cerr << "Unimplemented chem_link_bond.type " << type << " in " << mID << endl;
 			b.type = singleBond;
 		}
 		
@@ -863,7 +863,7 @@ Link::Link(cif::Datablock& db)
 		else
 		{
 			if (cif::VERBOSE)
-				cerr << "Unimplemented chem_link_chir.volume_sign " << volumeSign << " in " << mId << endl;
+				cerr << "Unimplemented chem_link_chir.volume_sign " << volumeSign << " in " << mID << endl;
 			continue;
 		}
 		
