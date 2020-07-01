@@ -128,6 +128,13 @@ class Atom
 
 	int compare(const Atom& b) const;
 
+	bool operator<(const Atom& rhs) const
+	{
+		return compare(rhs) < 0;
+	}
+
+	friend std::ostream& operator<<(std::ostream& os, const Atom& atom);
+
   private:
 	friend class Structure;
 	void setID(int id);
@@ -178,6 +185,9 @@ class Residue
 	
 	const Compound&		compound() const;
 	const AtomView&		atoms() const;
+
+	/// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
+	AtomView			unique_atoms() const;
 	
 	Atom				atomByID(const std::string& atomID) const;
 
@@ -208,6 +218,8 @@ class Residue
 
 	// some routines for 3d work
 	std::tuple<Point,float> centerAndRadius() const;
+
+	friend std::ostream& operator<<(std::ostream& os, const Residue& res);
 
   protected:
 

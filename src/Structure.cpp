@@ -19,6 +19,7 @@ namespace fs = boost::filesystem;
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/format.hpp>
 
+#include "cif++/Config.hpp"
 #include "cif++/PDB2Cif.hpp"
 #include "cif++/CifParser.hpp"
 #include "cif++/Cif2PDB.hpp"
@@ -683,6 +684,18 @@ void Atom::setID(int id)
 	impl()->mID = to_string(id);
 }
 
+std::ostream& operator<<(std::ostream& os, const Atom& atom)
+{
+	os << atom.labelCompID() << ' ' << atom.labelAsymID() << ':' << atom.labelSeqID();
+
+	if (atom.isAlternate())
+		os << '(' << atom.labelAltID() << ')';
+	if (atom.authAsymID() != atom.labelAsymID() or atom.authSeqID() != std::to_string(atom.labelSeqID()) or atom.pdbxAuthInsCode().empty() == false)
+		os << " [" << atom.authAsymID() << ':' << atom.authSeqID() << atom.pdbxAuthInsCode() << ']';
+
+	return os;
+}
+
 // --------------------------------------------------------------------
 // residue
 
@@ -828,6 +841,38 @@ const AtomView& Residue::atoms() const
 	return mAtoms;
 }
 
+AtomView Residue::unique_atoms() const
+{
+	if (mStructure == nullptr)
+		throw runtime_error("Invalid Residue object");
+
+	AtomView result;
+	std::string firstAlt;
+
+	for (auto& atom: mAtoms)
+	{
+		auto alt = atom.labelAltID();
+		if (alt.empty())
+		{
+			result.push_back(atom);
+			continue;
+		}
+
+		if (firstAlt.empty())
+			firstAlt = alt;
+		else if (alt != firstAlt)
+		{
+			if (cif::VERBOSE)
+				std::cerr << "skipping alternate atom " << atom << std::endl;
+			continue;
+		}
+
+		result.push_back(atom);
+	}
+	
+	return result;
+}
+
 Atom Residue::atomByID(const string& atomID) const
 {
 	Atom result;
@@ -913,6 +958,16 @@ tuple<Point,float> Residue::centerAndRadius() const
 bool Residue::hasAlternateAtoms() const
 {
 	return std::find_if(mAtoms.begin(), mAtoms.end(), [](const Atom& atom) { return atom.isAlternate(); }) != mAtoms.end();
+}
+
+std::ostream& operator<<(std::ostream& os, const Residue& res)
+{
+	os << res.compoundID() << ' ' << res.asymID() << ':' << res.seqID();
+
+	if (res.authAsymID() != res.asymID() or res.authSeqID() != std::to_string(res.seqID()))
+		os << " [" << res.authAsymID() << ':' << res.authSeqID() << ']';
+
+	return os;
 }
 
 // --------------------------------------------------------------------
@@ -1374,10 +1429,19 @@ Polymer::Polymer(const Structure& s, const string& entityID, const string& asymI
 		string compoundID;
 		cif::tie(seqID, compoundID) = r.get("seq_id", "mon_id");
 
-		auto index = size();
+		uint32_t index = size();
 		
-		ix[seqID] = index;
-		emplace_back(*this, index, seqID, compoundID);
+		// store only the first
+		if (not ix.count(seqID))
+		{
+			ix[seqID] = index;
+			emplace_back(*this, index, seqID, compoundID);
+		}
+		else if (cif::VERBOSE)
+		{
+			Monomer m{*this, index, seqID, compoundID};
+			std::cerr << "Dropping alternate residue " << m << std::endl;
+		}
 	}
 }
 

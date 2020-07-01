@@ -153,9 +153,10 @@ const float
 
 struct Res
 {
-	Res(const Monomer& m, int nr)
+	Res(const Monomer& m, int nr, ChainBreak brk)
 		: mM(m), mNumber(nr)
 		, mType(MapResidue(m.compoundID()))
+		, mChainBreak(brk)
 	{
 		// update the box containing all atoms
 		mBox[0].mX = mBox[0].mY = mBox[0].mZ =  std::numeric_limits<double>::max();
@@ -163,7 +164,7 @@ struct Res
 
 		mH = mmcif::Point{ std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
 
-		for (auto& a: mM.atoms())
+		for (auto& a: mM.unique_atoms())
 		{
 			if (a.labelAtomID() == "CA")
 			{
@@ -185,7 +186,7 @@ struct Res
 				mO = a.location();
 				ExtendBox(mO, kRadiusO + 2 * kRadiusWater);
 			}
-			else
+			else if (a.type() != AtomType::H)
 			{
 				mSideChain.push_back(a.location());
 				ExtendBox(a.location(), kRadiusSideAtom + 2 * kRadiusWater);
@@ -329,6 +330,7 @@ struct Res
 	uint32_t mSheet = 0;
 	Helix mHelixFlags[3] = { Helix::None, Helix::None, Helix::None };	//
 	bool mBend = false;
+	ChainBreak mChainBreak = ChainBreak::None;
 };
 
 // --------------------------------------------------------------------
@@ -1020,7 +1022,6 @@ DSSPImpl::DSSPImpl(const Structure& s)
 	size_t nRes = accumulate(mPolymers.begin(), mPolymers.end(),
 		0.0, [](double s, auto& p) { return s + p.size(); });
 
-	mStats.nrOfResidues = nRes;
 	mStats.nrOfChains = mPolymers.size();
 
 	mResidues.reserve(nRes);
@@ -1028,6 +1029,8 @@ DSSPImpl::DSSPImpl(const Structure& s)
 	
 	for (auto& p: mPolymers)
 	{
+		ChainBreak brk = ChainBreak::NewChain;
+
 		for (auto& m: p)
 		{
 			if (not m.isComplete())
@@ -1038,14 +1041,22 @@ DSSPImpl::DSSPImpl(const Structure& s)
 			if (not mResidues.empty() and
 				Distance(mResidues.back().mC, m.atomByID("N").location()) > kMaxPeptideBondLength)
 			{
-				++mStats.nrOfChains;
+				if (mResidues.back().mM.asymID() == m.asymID())
+				{
+					++mStats.nrOfChains;
+					brk = ChainBreak::Gap;
+				}
 				++resNumber;
 			}
 
-			mResidues.emplace_back(m, resNumber);
+			mResidues.emplace_back(m, resNumber, brk);
+
+			brk = ChainBreak::None;
 		}
 	}
-	
+
+	mStats.nrOfResidues = mResidues.size();
+
 	for (size_t i = 0; i + 1 < mResidues.size(); ++i)
 	{
 		mResidues[i].mNext = &mResidues[i + 1];
@@ -1117,10 +1128,16 @@ DSSPImpl::DSSPImpl(const Structure& s)
 	mStats.nrOfSSBridges = mSSBonds.size();
 
 	mStats.nrOfIntraChainSSBridges = 0;
+	int ssBondNr = 0;
 	for (const auto& [a, b]: mSSBonds)
 	{
-		if (a->mM.asymID() != b->mM.asymID())
+		if (a == b)
+			throw std::runtime_error("first and second residue are the same");
+
+		if (a->mM.asymID() == b->mM.asymID() and NoChainBreak(a, b))
 			++mStats.nrOfIntraChainSSBridges;
+
+		a->mSSBridgeNr = b->mSSBridgeNr = ++ssBondNr;
 	}
 
 	mStats.nrOfHBonds = 0;
@@ -1157,7 +1174,7 @@ const Monomer& DSSP::ResidueInfo::residue() const
 
 ChainBreak DSSP::ResidueInfo::chainBreak() const
 {
-	return ChainBreak::None;
+	return mImpl->mChainBreak;
 }
 
 int DSSP::ResidueInfo::nr() const
@@ -1172,7 +1189,7 @@ SecondaryStructureType DSSP::ResidueInfo::ss() const
 
 int DSSP::ResidueInfo::ssBridgeNr() const
 {
-	return 0;
+	return mImpl->mSSBridgeNr;
 }
 
 Helix DSSP::ResidueInfo::helix(int stride) const

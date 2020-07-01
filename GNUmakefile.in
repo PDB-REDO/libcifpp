@@ -75,6 +75,7 @@ LIBCIF_SRC		= AtomShape.cpp \
 				  CifValidator.cpp \
 				  Compound.cpp \
 				  DistanceMap.cpp \
+				  FixDMC.cpp \
 				  MapMaker.cpp \
 				  PDB2Cif.cpp \
 				  PDB2CifRemark3.cpp \

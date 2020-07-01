@@ -17,3 +17,8 @@
 #pragma warning (disable : 4996)
 #pragma warning (disable : 4355)
 #endif
+
+namespace cif
+{
+extern int VERBOSE;
+}

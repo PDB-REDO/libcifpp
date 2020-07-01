@@ -2,7 +2,7 @@
 
 #include <set>
 
-#include <cif++/Structure.h>
+#include <cif++/Structure.hpp>
 
 namespace mmcif
 {
@@ -36,22 +36,23 @@ void CreateMissingBackboneAtoms(Structure& structure, bool simplified)
 			if (mon.isComplete() or mon.hasAlternateBackboneAtoms())
 				continue;
 			
-			std::set<std::string> missing;
-			if (not mon.hasAtomWithID("C"))		missing.insert("C");
-			if (not mon.hasAtomWithID("CA"))	missing.insert("CA");
-			if (not mon.hasAtomWithID("N"))		missing.insert("N");
-			if (not mon.hasAtomWithID("O"))		missing.insert("O");
+			auto atomC = mon.atomByID("C");
+			auto atomCA = mon.atomByID("CA");
+			auto atomN = mon.atomByID("N");
+			auto atomO = mon.atomByID("O");
 
-			switch (missing.size())
+			int missing = (atomC ? 0 : 1) + (atomCA ? 0 : 1) + (atomN ? 0 : 1) + (atomO ? 0 : 1);
+
+			switch (missing)
 			{
 				case 1:
-					if (missing.count("O"))
+					if (not atomO)
 						addO(mon);
-					else if (missing.count("N"))
+					else if (not atomN)
 						addN(mon);
-					else if (missing.count("CA"))
+					else if (not atomCA)
 						addCA(mon);
-					else if (missing.count("C"))
+					else if (not atomC)
 						addC(mon);
 					break;
 			}
