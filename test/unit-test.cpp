@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE LibCifPP_Test
 #include <boost/test/included/unit_test.hpp>
 
-#include "cif++/DistanceMap.h"
+#include "cif++/DistanceMap.hpp"
 
 // --------------------------------------------------------------------
 

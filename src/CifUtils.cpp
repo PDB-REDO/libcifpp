@@ -1,6 +1,6 @@
 // CIF parser
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <tuple>
 #include <iostream>
@@ -21,7 +21,7 @@
 #include <boost/timer/timer.hpp>
 #endif
 
-#include "cif++/CifUtils.h"
+#include "cif++/CifUtils.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;

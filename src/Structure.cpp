@@ -1,6 +1,6 @@
 // Lib for working with structures as contained in file and PDB files
 
-#include "cif++/Structure.h"
+#include "cif++/Structure.hpp"
 
 #include <numeric>
 #include <fstream>
@@ -19,10 +19,10 @@ namespace fs = boost::filesystem;
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/format.hpp>
 
-#include "cif++/PDB2Cif.h"
-#include "cif++/CifParser.h"
-#include "cif++/Cif2PDB.h"
-#include "cif++/AtomShape.h"
+#include "cif++/PDB2Cif.hpp"
+#include "cif++/CifParser.hpp"
+#include "cif++/Cif2PDB.hpp"
+#include "cif++/AtomShape.hpp"
 
 using namespace std;
 
@@ -317,7 +317,7 @@ struct AtomImpl
 		mLocation = p;
 	}
 	
-	const Compound& comp()
+	const Compound& comp() const
 	{
 		if (mCompound == nullptr)
 		{
@@ -346,7 +346,7 @@ struct AtomImpl
 		return mRadius;
 	}
 
-	const string& property(const string& name)
+	const string& property(const string& name) const
 	{
 		static string kEmptyString;
 		
@@ -391,9 +391,9 @@ struct AtomImpl
 	Point				mLocation;
 	int					mRefcount;
 	cif::Row			mRow;
-	const Compound*		mCompound;
+	mutable const Compound*		mCompound;
 	float				mRadius = nan("4");
-	map<string,string>	mCachedProperties;
+	mutable map<string,string>	mCachedProperties;
 	
 	bool				mSymmetryCopy = false;
 	bool				mClone = false;
@@ -408,38 +408,58 @@ struct AtomImpl
 //{
 //}
 //
-Atom::Atom(AtomImpl* impl)
-	: mImpl(impl)
+
+Atom::Atom()
+	: mImpl_(nullptr)
 {
+}
+
+Atom::Atom(AtomImpl* impl)
+	: mImpl_(impl)
+{
+}
+
+AtomImpl* Atom::impl()
+{
+	if (mImpl_ == nullptr)
+		throw std::runtime_error("atom is not set");
+	return mImpl_;
+}
+
+const AtomImpl* Atom::impl() const
+{
+	if (mImpl_ == nullptr)
+		throw std::runtime_error("atom is not set");
+	return mImpl_;
 }
 
 Atom Atom::clone() const
 {
-	return Atom(new AtomImpl(*mImpl));
+	return Atom(mImpl_ ? new AtomImpl(*mImpl_) : nullptr);
 }
 
 Atom::Atom(const Atom& rhs)
-	: mImpl(rhs.mImpl)
+	: mImpl_(rhs.mImpl_)
 {
-	if (mImpl)
-		mImpl->reference();
+	if (mImpl_)
+		mImpl_->reference();
 }
 
 Atom::~Atom()
 {
-	if (mImpl)
-		mImpl->release();
+	if (mImpl_)
+		mImpl_->release();
 }
 
 Atom& Atom::operator=(const Atom& rhs)
 {
 	if (this != &rhs)
 	{
-		if (mImpl)
-			mImpl->release();
-		mImpl = rhs.mImpl;
-		if (mImpl)
-			mImpl->reference();
+		if (mImpl_)
+			mImpl_->release();
+		mImpl_ = rhs.mImpl_;
+		if (mImpl_)
+			mImpl_->reference();
 	}
 
 	return *this;
@@ -448,30 +468,30 @@ Atom& Atom::operator=(const Atom& rhs)
 template<>
 string Atom::property<string>(const string& name) const
 {
-	return mImpl->property(name);
+	return impl()->property(name);
 }
 
 template<>
 int Atom::property<int>(const string& name) const
 {
-	auto v = mImpl->property(name);
+	auto v = impl()->property(name);
 	return v.empty() ? 0 : stoi(v);
 }
 
 template<>
 float Atom::property<float>(const string& name) const
 {
-	return stof(mImpl->property(name));
+	return stof(impl()->property(name));
 }
 
 const string& Atom::id() const
 {
-	return mImpl->mID;
+	return impl()->mID;
 }
 
 AtomType Atom::type() const
 {
-	return mImpl->mType;
+	return impl()->mType;
 }
 
 int Atom::charge() const
@@ -483,8 +503,8 @@ string Atom::energyType() const
 {
 	string result;
 	
-	if (mImpl and mImpl->mCompound)
-		result = mImpl->mCompound->getAtomByID(mImpl->mAtomID).typeEnergy;
+	if (impl() and impl()->mCompound)
+		result = impl()->mCompound->getAtomByID(impl()->mAtomID).typeEnergy;
 	
 	return result;
 }
@@ -505,7 +525,7 @@ float Atom::uIso() const
 
 bool Atom::getAnisoU(float anisou[6]) const
 {
-	return mImpl->getAnisoU(anisou);
+	return impl()->getAnisoU(anisou);
 }
 
 float Atom::occupancy() const
@@ -515,27 +535,32 @@ float Atom::occupancy() const
 
 string Atom::labelAtomID() const
 {
-	return mImpl->mAtomID;
+	return impl()->mAtomID;
 }
 
 string Atom::labelCompID() const
 {
-	return mImpl->mCompID;
+	return impl()->mCompID;
 }
 
 string Atom::labelAsymID() const
 {
-	return mImpl->mAsymID;
+	return impl()->mAsymID;
 }
 
 string Atom::labelAltID() const
 {
-	return mImpl->mAltID;
+	return impl()->mAltID;
+}
+
+bool Atom::isAlternate() const
+{
+	return not impl()->mAltID.empty();
 }
 
 int Atom::labelSeqID() const
 {
-	return mImpl->mSeqID;
+	return impl()->mSeqID;
 }
 
 string Atom::authAsymID() const
@@ -570,7 +595,7 @@ string Atom::authSeqID() const
 
 string Atom::labelID() const
 {
-	return property<string>("label_comp_id") + '_' + mImpl->mAsymID + '_' + to_string(mImpl->mSeqID) + ':' + mImpl->mAtomID;
+	return property<string>("label_comp_id") + '_' + impl()->mAsymID + '_' + to_string(impl()->mSeqID) + ':' + impl()->mAtomID;
 }
 
 string Atom::pdbID() const
@@ -584,78 +609,78 @@ string Atom::pdbID() const
 
 Point Atom::location() const
 {
-	return mImpl->mLocation;
+	return impl()->mLocation;
 }
 
 void Atom::location(Point p)
 {
-	mImpl->moveTo(p);
+	impl()->moveTo(p);
 }
 
 Atom Atom::symmetryCopy(const Point& d, const clipper::RTop_orth& rt)
 {
-	return Atom(new AtomImpl(*mImpl, d, rt));
+	return Atom(new AtomImpl(*impl(), d, rt));
 }
 
 bool Atom::isSymmetryCopy() const
 {
-	return mImpl->mSymmetryCopy;
+	return impl()->mSymmetryCopy;
 }
 
 string Atom::symmetry() const
 {
-	return clipper::Symop(mImpl->mRTop).format() + "\n" + mImpl->mRTop.format();
+	return clipper::Symop(impl()->mRTop).format() + "\n" + impl()->mRTop.format();
 }
 
 const clipper::RTop_orth& Atom::symop() const
 {
-	return mImpl->mRTop;
+	return impl()->mRTop;
 }
 
 const Compound& Atom::comp() const
 {
-	return mImpl->comp();
+	return impl()->comp();
 }
 
 bool Atom::isWater() const
 {
-	return mImpl->isWater();
+	return impl()->isWater();
 }
 
 bool Atom::operator==(const Atom& rhs) const
 {
-	return mImpl == rhs.mImpl or
-		(&mImpl->mFile == &rhs.mImpl->mFile and mImpl->mID == rhs.mImpl->mID); 	
+	return impl() == rhs.impl() or
+		(&impl()->mFile == &rhs.impl()->mFile and impl()->mID == rhs.impl()->mID); 	
 }
 
 clipper::Atom Atom::toClipper() const
 {
-	return mImpl->toClipper();
+	return impl()->toClipper();
 }
 
 void Atom::calculateRadius(float resHigh, float resLow, float perc)
 {
 	AtomShape shape(*this, resHigh, resLow, false);
-	mImpl->mRadius = shape.radius();
+	impl()->mRadius = shape.radius();
 
 	// verbose
 	if (cif::VERBOSE > 1)
-		cout << "Calculated radius for " << AtomTypeTraits(mImpl->mType).name() << " with charge " << charge() << " is " << mImpl->mRadius << endl;
+		cout << "Calculated radius for " << AtomTypeTraits(impl()->mType).name() << " with charge " << charge() << " is " << impl()->mRadius << endl;
 }
 
 float Atom::radius() const
 {
-	return mImpl->mRadius;
+	return impl()->mRadius;
 }
 
 int Atom::compare(const Atom& b) const
 {
-	return mImpl == b.mImpl ? 0 : mImpl->compare(*b.mImpl);
+	return impl() == b.impl() ? 0 : impl()->compare(*b.impl());
 }
 
 void Atom::setID(int id)
 {
-	mImpl->mID = to_string(id);
+	impl()->mID = to_string(id);
 }
 
 // --------------------------------------------------------------------
@@ -805,13 +830,21 @@ const AtomView& Residue::atoms() const
 
 Atom Residue::atomByID(const string& atomID) const
 {
+	Atom result;
+
 	for (auto& a: mAtoms)
 	{
 		if (a.labelAtomID() == atomID)
-			return a;
+		{
+			result = a;
+			break;
+		}
 	}
-	
-	throw runtime_error("Atom with atom_id " + atomID + " not found in residue " + mAsymID + ':' + to_string(mSeqID));
+
+	if (not result and cif::VERBOSE)
+		std::cerr << "Atom with atom_id " << atomID << " not found in residue " << mAsymID << ':' << mSeqID << std::endl;
+
+	return result;
 }
 
 // Residue is a single entity if the atoms for the asym with mAsymID is equal
@@ -875,6 +908,11 @@ tuple<Point,float> Residue::centerAndRadius() const
 	}
 	
 	return make_tuple(center, radius);
+}
+
+bool Residue::hasAlternateAtoms() const
+{
+	return std::find_if(mAtoms.begin(), mAtoms.end(), [](const Atom& atom) { return atom.isAlternate(); }) != mAtoms.end();
 }
 
 // --------------------------------------------------------------------
@@ -1135,6 +1173,24 @@ bool Monomer::isComplete() const
 		else if (a.labelAtomID() == "O")		seen |= 8;
 	}
 	return seen == 15;
+}
+
+bool Monomer::hasAlternateBackboneAtoms() const
+{
+	bool result;
+	for (auto& a: mAtoms)
+	{
+		if (not a.isAlternate())
+			continue;
+
+		auto atomID = a.labelAtomID();
+		if (atomID == "CA" or atomID == "C" or atomID == "N" or atomID == "O")
+		{
+			result = true;
+			break;
+		}
+	}
+	return result;
 }
 
 float Monomer::chiralVolume() const
@@ -1939,7 +1995,7 @@ void Structure::swapAtoms(Atom& a1, Atom& a2)
 	auto l2 = r2.front()["label_atom_id"];
 	l1.swap(l2);
 	
-	a1.mImpl->swapAtomLabels(*a2.mImpl);
+	a1.impl()->swapAtomLabels(*a2.impl());
 
 	auto l3 = r1.front()["auth_atom_id"];
 	auto l4 = r2.front()["auth_atom_id"];

@@ -4,9 +4,9 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "cif++/Cif++.h"
-#include "cif++/CifParser.h"
-#include "cif++/CifValidator.h"
+#include "cif++/Cif++.hpp"
+#include "cif++/CifParser.hpp"
+#include "cif++/CifValidator.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;

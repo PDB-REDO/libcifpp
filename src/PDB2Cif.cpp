@@ -1,4 +1,4 @@
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <map>
 #include <set>
@@ -11,11 +11,11 @@
 
 #include <clipper/core/spacegroup.h>
 
-#include "cif++/PDB2Cif.h"
-#include "cif++/AtomType.h"
-#include "cif++/Compound.h"
-#include "cif++/PDB2CifRemark3.h"
-#include "cif++/CifUtils.h"
+#include "cif++/PDB2Cif.hpp"
+#include "cif++/AtomType.hpp"
+#include "cif++/Compound.hpp"
+#include "cif++/PDB2CifRemark3.hpp"
+#include "cif++/CifUtils.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;

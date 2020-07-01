@@ -1,6 +1,6 @@
 // cif parsing library
 
-#include "cif++/Cif++.h"
+#include "cif++/Cif++.hpp"
 
 //// the std regex of gcc is crashing....
 // #include <boost/regex.hpp>

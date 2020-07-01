@@ -1,12 +1,12 @@
 // copyright
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <atomic>
 #include <mutex>
 
-#include "cif++/Symmetry.h"
-#include "cif++/CifUtils.h"
+#include "cif++/Symmetry.hpp"
+#include "cif++/CifUtils.hpp"
 
 using namespace std;
 

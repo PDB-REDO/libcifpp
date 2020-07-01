@@ -2,7 +2,7 @@
 
 #include <clipper/clipper.h>
 
-#include "cif++/Structure.h"
+#include "cif++/Structure.hpp"
 
 namespace mmcif
 {

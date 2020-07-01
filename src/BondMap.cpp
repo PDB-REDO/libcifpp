@@ -1,11 +1,11 @@
 // copyright
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
-#include "cif++/Cif++.h"
-#include "cif++/BondMap.h"
-#include "cif++/Compound.h"
-#include "cif++/CifUtils.h"
+#include "cif++/Cif++.hpp"
+#include "cif++/BondMap.hpp"
+#include "cif++/Compound.hpp"
+#include "cif++/CifUtils.hpp"
 
 using namespace std;
 

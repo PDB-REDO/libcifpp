@@ -1,6 +1,6 @@
 // Lib for working with structures as contained in mmCIF and PDB files
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <map>
 #include <numeric>
@@ -16,10 +16,10 @@ namespace fs = std::filesystem;
 namespace fs = boost::filesystem;
 #endif
 
-#include "cif++/Cif++.h"
-#include "cif++/Point.h"
-#include "cif++/Compound.h"
-#include "cif++/CifUtils.h"
+#include "cif++/Cif++.hpp"
+#include "cif++/Point.hpp"
+#include "cif++/Compound.hpp"
+#include "cif++/CifUtils.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;

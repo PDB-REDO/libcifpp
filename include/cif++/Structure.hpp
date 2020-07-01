@@ -10,10 +10,10 @@
 
 #include <clipper/core/coords.h>
 
-#include "cif++/AtomType.h"
-#include "cif++/Point.h"
-#include "cif++/Compound.h"
-#include "cif++/Cif++.h"
+#include "cif++/AtomType.hpp"
+#include "cif++/Point.hpp"
+#include "cif++/Compound.hpp"
+#include "cif++/Cif++.hpp"
 
 /*
 	To modify a structure, you will have to use actions.
@@ -44,11 +44,14 @@ class Atom
 {
   public:
 //	Atom(const structure& s, const std::string& id);
+	Atom();
 	Atom(struct AtomImpl* impl);
 	Atom(const Atom& rhs);
 
 	~Atom();
-	
+
+	explicit operator bool() const			{ return mImpl_ != nullptr;	}
+
 	// return a copy of this atom, with data copied instead of referenced
 	Atom clone() const;
 	
@@ -85,6 +88,7 @@ class Atom
 	std::string labelAsymID() const;
 	int labelSeqID() const;
 	std::string labelAltID() const;
+	bool isAlternate() const;
 	
 	std::string authAtomID() const;
 	std::string authCompID() const;
@@ -113,13 +117,13 @@ class Atom
 	// convenience routine
 	bool isBackBone() const
 	{
-		return labelAtomID() == "N" or labelAtomID() == "O" or
-			labelAtomID() == "C" or labelAtomID() == "CA";
+		auto atomID = labelAtomID();
+		return atomID == "N" or atomID == "O" or atomID == "C" or atomID == "CA";
 	}
 	
 	void swap(Atom& b)
 	{
-		std::swap(mImpl, b.mImpl);
+		std::swap(mImpl_, b.mImpl_);
 	}
 
 	int compare(const Atom& b) const;
@@ -128,7 +132,10 @@ class Atom
 	friend class Structure;
 	void setID(int id);
 
- 	struct AtomImpl*			mImpl;
+	AtomImpl*			impl();
+	const AtomImpl*		impl() const;
+
+ 	struct AtomImpl*	mImpl_;
 };
 
 inline void swap(mmcif::Atom& a, mmcif::Atom& b)
@@ -196,7 +203,9 @@ class Residue
 	const Structure& structure() const		{ return *mStructure; }
 
 	bool empty() const						{ return mStructure == nullptr; }
-	
+
+	bool hasAlternateAtoms() const;
+
 	// some routines for 3d work
 	std::tuple<Point,float> centerAndRadius() const;
 
@@ -246,6 +255,9 @@ class Monomer : public Residue
 
 	/// \brief Returns true if the four atoms C, CA, N and O are present
 	bool isComplete() const;
+
+	/// \brief Returns true if any of the backbone atoms has an alternate
+	bool hasAlternateBackboneAtoms() const;
 
 	Atom CAlpha() const		{ return atomByID("CA"); }
 	Atom C() const			{ return atomByID("C"); }
@@ -364,6 +376,8 @@ class Structure
 	AtomView waters() const;
 	
 	const std::list<Polymer>& polymers() const				{ return mPolymers; }
+	std::list<Polymer>& polymers()							{ return mPolymers; }
+
 	const std::vector<Residue>& nonPolymers() const			{ return mNonPolymers; }
 
 	Atom getAtomByID(std::string id) const;

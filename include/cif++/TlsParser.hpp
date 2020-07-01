@@ -28,7 +28,7 @@
 #include <string>
 #include <tuple>
 
-#include "cif++/Cif++.h"
+#include "cif++/Cif++.hpp"
 
 namespace cif
 {

@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "cif++/MapMaker.h"
-#include "cif++/DistanceMap.h"
-#include "cif++/BondMap.h"
+#include "cif++/MapMaker.hpp"
+#include "cif++/DistanceMap.hpp"
+#include "cif++/BondMap.hpp"
 
 namespace mmcif
 {

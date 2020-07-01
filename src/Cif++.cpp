@@ -24,10 +24,10 @@ namespace fs = boost::filesystem;
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/logic/tribool.hpp>
 
-#include "cif++/Cif++.h"
-#include "cif++/CifParser.h"
-#include "cif++/CifValidator.h"
-#include "cif++/CifUtils.h"
+#include "cif++/Cif++.hpp"
+#include "cif++/CifParser.hpp"
+#include "cif++/CifValidator.hpp"
+#include "cif++/CifUtils.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;

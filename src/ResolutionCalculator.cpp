@@ -1,8 +1,8 @@
 // --------------------------------------------------------------------
 
-#include "cif++/ResolutionCalculator.h"
+#include "cif++/ResolutionCalculator.hpp"
 
-#include "cif++/Point.h"
+#include "cif++/Point.hpp"
 
 using namespace std;
 

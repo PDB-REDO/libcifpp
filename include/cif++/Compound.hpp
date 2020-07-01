@@ -7,8 +7,8 @@
 #include <vector>
 #include <map>
 
-#include "cif++/AtomType.h"
-#include "cif++/Cif++.h"
+#include "cif++/AtomType.hpp"
+#include "cif++/Cif++.hpp"
 
 namespace mmcif
 {

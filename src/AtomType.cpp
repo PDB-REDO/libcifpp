@@ -1,7 +1,7 @@
 // Lib for working with structures as contained in mmCIF and PDB files
 
-#include "cif++/AtomType.h"
-#include "cif++/Cif++.h"
+#include "cif++/AtomType.hpp"
+#include "cif++/Cif++.hpp"
 
 using namespace std;
 

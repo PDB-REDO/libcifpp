@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "cif++/ResolutionCalculator.h"
+#include "cif++/ResolutionCalculator.hpp"
 
 #include <clipper/clipper.h>
 

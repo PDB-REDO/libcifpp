@@ -24,7 +24,7 @@
 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <termios.h>
 #include <sys/ioctl.h>
@@ -35,9 +35,9 @@
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "cif++/CifUtils.h"
-#include "cif++/Structure.h"
-#include "cif++/TlsParser.h"
+#include "cif++/CifUtils.hpp"
+#include "cif++/Structure.hpp"
+#include "cif++/TlsParser.hpp"
 
 using namespace std;
 namespace po = boost::program_options;

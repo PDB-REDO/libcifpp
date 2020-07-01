@@ -3,9 +3,9 @@
 #include <thread>
 #include <mutex>
 
-#include "cif++/Structure.h"
-#include "cif++/AtomShape.h"
-#include "cif++/Point.h"
+#include "cif++/Structure.hpp"
+#include "cif++/AtomShape.hpp"
+#include "cif++/Point.hpp"
 
 #include <newuoa.h>
 

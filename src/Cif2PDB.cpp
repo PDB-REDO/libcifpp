@@ -1,4 +1,4 @@
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <map>
 #include <set>
@@ -13,9 +13,9 @@
 #include <boost/iostreams/concepts.hpp>    // output_filter
 #include <boost/iostreams/operations.hpp>  // put
 
-#include "cif++/Cif2PDB.h"
-#include "cif++/AtomType.h"
-#include "cif++/Compound.h"
+#include "cif++/Cif2PDB.hpp"
+#include "cif++/AtomType.hpp"
+#include "cif++/Compound.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;

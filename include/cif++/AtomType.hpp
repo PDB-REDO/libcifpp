@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <boost/math/quaternion.hpp>
 

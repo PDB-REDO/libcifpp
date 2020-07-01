@@ -5,7 +5,7 @@
 
 // Calculate DSSP-like secondary structure information
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <numeric>
 #include <iomanip>
@@ -13,8 +13,8 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "cif++/Structure.h"
-#include "cif++/Secondary.h"
+#include "cif++/Structure.hpp"
+#include "cif++/Secondary.hpp"
 
 namespace ba = boost::algorithm;
 

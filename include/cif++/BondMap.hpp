@@ -4,7 +4,7 @@
 
 #include <unordered_map>
 
-#include "cif++/Structure.h"
+#include "cif++/Structure.hpp"
 
 namespace mmcif
 {

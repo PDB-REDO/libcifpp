@@ -1,6 +1,6 @@
 // CIF Parser
 
-#include "cif++/Cif++.h"
+#include "cif++/Cif++.hpp"
 
 #include <stack>
 

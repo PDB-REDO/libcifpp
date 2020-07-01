@@ -1,5 +1,5 @@
-#include "cif++/Config.h"
-#include "cif++/Cif++.h"
+#include "cif++/Config.hpp"
+#include "cif++/Cif++.hpp"
 
 #include <map>
 #include <set>
@@ -9,10 +9,10 @@
 #include <boost/format.hpp>
 // #include <boost/numeric/ublas/matrix.hpp>
 
-#include "cif++/AtomType.h"
-#include "cif++/Compound.h"
-#include "cif++/PDB2CifRemark3.h"
-#include "cif++/CifUtils.h"
+#include "cif++/AtomType.hpp"
+#include "cif++/Compound.hpp"
+#include "cif++/PDB2CifRemark3.hpp"
+#include "cif++/CifUtils.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;

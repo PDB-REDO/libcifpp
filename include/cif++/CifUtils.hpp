@@ -6,7 +6,7 @@
 #include <set>
 #include <cassert>
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 struct rsrc_imp
 {

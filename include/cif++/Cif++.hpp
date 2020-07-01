@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <regex>
 #include <iostream>
@@ -12,7 +12,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/any.hpp>
 
-#include "cif++/CifUtils.h"
+#include "cif++/CifUtils.hpp"
 
 /*
 	Simple C++ interface to CIF files.

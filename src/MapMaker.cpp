@@ -1,4 +1,4 @@
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <iomanip>
 #include <fstream>
@@ -21,9 +21,9 @@ namespace fs = boost::filesystem;
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
 
-#include "cif++/Cif++.h"
-#include "cif++/MapMaker.h"
-#include "cif++/ResolutionCalculator.h"
+#include "cif++/Cif++.hpp"
+#include "cif++/MapMaker.hpp"
+#include "cif++/ResolutionCalculator.hpp"
 
 using namespace std;
 namespace io = boost::iostreams;

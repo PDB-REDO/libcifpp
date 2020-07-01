@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cif++/Cif++.h"
+#include "cif++/Cif++.hpp"
 
 void WritePDBFile(std::ostream& pdbFile, cif::File& cifFile);
 

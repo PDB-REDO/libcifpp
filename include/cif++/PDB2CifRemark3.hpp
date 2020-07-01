@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cif++/PDB2Cif.h"
+#include "cif++/PDB2Cif.hpp"
 
 // --------------------------------------------------------------------
 

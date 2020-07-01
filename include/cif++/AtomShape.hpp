@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "cif++/Structure.h"
+#include "cif++/Structure.hpp"
 
 namespace mmcif
 {

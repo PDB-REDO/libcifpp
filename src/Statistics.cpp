@@ -3,14 +3,14 @@
    Date: maandag 04 juni, 2018
 */
 
-#include "cif++/Config.h"
+#include "cif++/Config.hpp"
 
 #include <fstream>
 #include <numeric>
 
-#include "cif++/Structure.h"
-#include "cif++/AtomShape.h"
-#include "cif++/Statistics.h"
+#include "cif++/Structure.hpp"
+#include "cif++/AtomShape.hpp"
+#include "cif++/Statistics.hpp"
 
 using namespace std;
 
