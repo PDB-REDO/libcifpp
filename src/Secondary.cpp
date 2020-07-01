@@ -161,6 +161,8 @@ struct Res
 		mBox[0].mX = mBox[0].mY = mBox[0].mZ =  std::numeric_limits<double>::max();
 		mBox[1].mX = mBox[1].mY = mBox[1].mZ = -std::numeric_limits<double>::max();
 
+		mH = mmcif::Point{ std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+
 		for (auto& a: mM.atoms())
 		{
 			if (a.labelAtomID() == "CA")
@@ -175,7 +177,7 @@ struct Res
 			}
 			else if (a.labelAtomID() == "N")
 			{
-				mN = a.location();
+				mH = mN = a.location();
 				ExtendBox(mN, kRadiusN + 2 * kRadiusWater);
 			}
 			else if (a.labelAtomID() == "O")
@@ -573,12 +575,21 @@ void CalculateHBondEnergies(std::vector<Res>& inResidues)
 
 bool NoChainBreak(const Res* a, const Res* b)
 {
-	return a->mM.asymID() == b->mM.asymID();
+	bool result = a->mM.asymID() == b->mM.asymID();
+	for (auto r = a; result and r != b; r = r->mNext)
+	{
+		auto next = r->mNext;
+		if (next == nullptr)
+			result = false;
+		else
+			result = next->mNumber == r->mNumber + 1;
+	}
+	return result;
 }
 
 bool NoChainBreak(const Res& a, const Res& b)
 {
-	return a.mM.asymID() == b.mM.asymID();
+	return NoChainBreak(&a, &b);
 }
 
 // --------------------------------------------------------------------
