@@ -312,6 +312,7 @@ struct Res
 	Res* mPrev = nullptr;
 
 	const Monomer& mM;
+	std::string mAltID;
 
 	int mNumber;
 
@@ -1170,6 +1171,11 @@ DSSP::ResidueInfo::ResidueInfo(Res* res)
 const Monomer& DSSP::ResidueInfo::residue() const
 {
 	return mImpl->mM;
+}
+
+std::string DSSP::ResidueInfo::alt_id() const
+{
+	return mImpl->mAltID;
 }
 
 ChainBreak DSSP::ResidueInfo::chainBreak() const

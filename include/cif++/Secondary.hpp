@@ -114,6 +114,7 @@ class DSSP
 		bool empty() const					{ return mImpl == nullptr; }
 
 		const Monomer& residue() const;
+		std::string alt_id() const;
 
 		/// \brief return 0 if not a break, ' ' in case of a new chain and '*' in case of a broken chain
 		ChainBreak chainBreak() const;

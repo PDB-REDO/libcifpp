@@ -841,6 +841,16 @@ const AtomView& Residue::atoms() const
 	return mAtoms;
 }
 
+std::string Residue::unique_alt_id() const
+{
+	if (mStructure == nullptr)
+		throw runtime_error("Invalid Residue object");
+
+	auto firstAlt = std::find_if(mAtoms.begin(), mAtoms.end(), [](auto& a) { return not a.labelAltID().empty(); });
+
+	return firstAlt != mAtoms.end() ? firstAlt->labelAltID() : "";
+}
+
 AtomView Residue::unique_atoms() const
 {
 	if (mStructure == nullptr)
@@ -1012,6 +1022,27 @@ cerr << "move assignment monomer" << endl;
 	return *this;
 }
 
+bool Monomer::is_first_in_chain() const
+{
+	return mIndex == 0;
+}
+
+bool Monomer::is_last_in_chain() const
+{
+	return mIndex + 1 == mPolymer->size();
+}
+
+bool Monomer::has_alpha() const
+{
+	return
+		mIndex >= 1 and mIndex + 2 < mPolymer->size();
+}
+
+bool Monomer::has_kappa() const
+{
+	return mIndex >= 2 and mIndex + 2 < mPolymer->size();
+}
+
 float Monomer::phi() const
 {
 	float result = 360;
@@ -1126,6 +1157,25 @@ float Monomer::tco() const
 	{
 		if (cif::VERBOSE)
 			cerr << "When trying to calculate tco for " << asymID() << ':' << seqID() << ": "
+				 << ex.what() << endl;
+	}
+
+	return result;
+}
+
+float Monomer::omega() const
+{
+	double result = 360;
+	
+	try
+	{
+		if (not is_last_in_chain())
+			result = omega(*this, mPolymer->operator[](mIndex + 1));
+	}
+	catch (const exception& ex)
+	{
+		if (cif::VERBOSE)
+			cerr << "When trying to calculate omega for " << asymID() << ':' << seqID() << ": "
 				 << ex.what() << endl;
 	}
 

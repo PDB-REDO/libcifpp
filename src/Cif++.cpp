@@ -511,8 +511,7 @@ void Datablock::write(ostream& os, const vector<string>& order)
 		
 		cat.write(os);
 	}
-	
-	
+		
 //	// mmcif support, sort of. First write the 'entry' Category
 //	// and if it exists, _AND_ we have a Validator, write out the
 //	// auditConform record.

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include "cif++/Config.hpp"
 
 #include <boost/math/quaternion.hpp>

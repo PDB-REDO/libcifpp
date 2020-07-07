@@ -261,7 +261,15 @@ namespace detail
 			this->operator=(boost::lexical_cast<string>(value));
 			return *this;
 		}
-		
+
+		template<typename... Ts>
+		void os(const Ts& ... v)
+		{
+			std::ostringstream ss;
+			((ss << v), ...);
+			this->operator=(ss.str());
+		}
+
 		void swap(ItemReference& b);
 		
 //		operator string() const	{ return c_str(); }

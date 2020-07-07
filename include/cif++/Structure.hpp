@@ -188,7 +188,10 @@ class Residue
 
 	/// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
 	AtomView			unique_atoms() const;
-	
+
+	/// \brief The alt ID used for the unique atoms
+	std::string			unique_alt_id() const;
+
 	Atom				atomByID(const std::string& atomID) const;
 
 	const std::string&	compoundID() const	{ return mCompoundID; }
@@ -251,6 +254,13 @@ class Monomer : public Residue
 	Monomer(const Polymer& polymer, uint32_t index, int seqID,
 		const std::string& compoundID);
 
+	bool is_first_in_chain() const;
+	bool is_last_in_chain() const;
+
+	// convenience
+	bool has_alpha() const;
+	bool has_kappa() const;
+
 	// Assuming this is really an amino acid...
 	
 	float phi() const;
@@ -258,6 +268,7 @@ class Monomer : public Residue
 	float alpha() const;
 	float kappa() const;
 	float tco() const;
+	float omega() const;
 
     // torsion angles
     size_t nrOfChis() const;
@@ -373,8 +384,6 @@ inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
 class Structure
 {
   public:
-	Structure(File& p, StructureOpenOptions options = {})
-		: Structure(p, 1, options) {}
 	Structure(File& p, uint32_t modelNr = 1, StructureOpenOptions options = {});
 	Structure& operator=(const Structure&) = delete;
 	~Structure();
