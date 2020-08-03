@@ -5160,7 +5160,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		charge = pdb2cifCharge(charge);
 
 		// if (CompoundFactory::instance().isKnownPeptide(resName) or CompoundFactory::instance().isKnownBase(resName))
-		if (mmcif::kAAMap.count(resName) or mmcif::kBaseMap.count(resName))
+		if (resName == "UNK" or mmcif::kAAMap.count(resName) or mmcif::kBaseMap.count(resName))
 		{
 			if (groupPDB == "HETATM")
 			{
