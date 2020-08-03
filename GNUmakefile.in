@@ -98,30 +98,29 @@ src/SymOpTable_data.cpp: tools/symop-map-generator $(CLIBD)/symop.lib
 
 $(OBJDIR)/Symmetry.lo: src/SymOpTable_data.cpp
 
+# version info
+REVISION = $(shell git log --pretty=format:%h --max-count=1)
+REVISION_FILE = version-info-$(REVISION).txt
+
+$(REVISION_FILE):
+	rm -f version-info-*.txt
+	git describe --match=build --dirty --always > $@
+	git log --pretty=fuller -1 >> $@
+
+rsrc:
+	@ mkdir -p $@
+
+rsrc/lib-version.txt: $(REVISION_FILE) | rsrc
+	cp $? $@
+
 $(LIB_TARGET): $(OBJECTS)
 	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
 
 libs: $(LIB_TARGET)
 .PHONY: libs
 
-all: libs
+all: libs rsrc/lib-version.txt
 .PHONY: all
-
-# install-libs: $(SHARED_LIB)
-# 	install -d $(LIBDIR)
-# 	install $(SHARED_LIB) $(LIBDIR)/$(SHARED_LIB_NAME)
-# 	strip --strip-unneeded $(LIBDIR)/$(SHARED_LIB_NAME)
-# 	ln -Tfs $(SHARED_LIB_NAME) $(LIBDIR)/$(SO_NAME)
-# 	ln -Tfs $(SHARED_LIB_NAME) $(LIBDIR)/$(LIB_NAME).so
-# 	$(LD_CONFIG) -n $(LIBDIR)
-
-# install-dev: $(STATIC_LIB)
-# 	install -d $(LIBDIR) $(INCDIR)/zeep/xml $(INCDIR)/zeep/http $(INCDIR)/zeep/http/webapp
-# 	for f in $(HEADERS); do install ../include/$$f $(INCDIR)/$$f; done
-# 	install $(STATIC_LIB) $(LIBDIR)/$(STATIC_LIB_NAME)
-# 	strip -SX $(LIBDIR)/$(STATIC_LIB_NAME)
-
-# install: install-libs install-dev
 
 -include $(OBJECTS:%.lo=%.d)
 
