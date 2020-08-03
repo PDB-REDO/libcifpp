@@ -237,6 +237,9 @@ class rsrc_loader
 	static rsrc load(const std::string& name)
 	{
 		assert(s_instance);
+		if (not s_instance)
+			init();
+
 		return s_instance->do_load(name);
 	}
 
