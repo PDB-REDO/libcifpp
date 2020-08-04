@@ -104,8 +104,8 @@ REVISION_FILE = version-info-$(REVISION).txt
 
 $(REVISION_FILE):
 	rm -f version-info-*.txt
-	git describe --match=build --dirty --always > $@
-	git log --pretty=fuller -1 >> $@
+	git describe --match=build --dirty > $@
+	git log --pretty=medium --date=iso8601 -1 >> $@
 
 rsrc:
 	@ mkdir -p $@
