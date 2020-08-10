@@ -246,22 +246,25 @@ struct Res
 	bool IsBend() const									{ return mBend; }
 	void SetBend(bool inBend)							{ mBend = inBend; }
 	
-	Helix GetHelixFlag(uint32_t inHelixStride) const
+	Helix GetHelixFlag(HelixType helixType) const
 	{
-		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
-		return mHelixFlags[inHelixStride - 3];
+		size_t stride = static_cast<size_t>(helixType);
+		assert(stride < 4);
+		return mHelixFlags[stride];
 	}
 
-	bool IsHelixStart(uint32_t inHelixStride) const
+	bool IsHelixStart(HelixType helixType) const
 	{
-		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
-		return mHelixFlags[inHelixStride - 3] == Helix::Start or mHelixFlags[inHelixStride - 3] == Helix::StartAndEnd;
+		size_t stride = static_cast<size_t>(helixType);
+		assert(stride < 4);
+		return mHelixFlags[stride] == Helix::Start or mHelixFlags[stride] == Helix::StartAndEnd;
 	}
 
-	void SetHelixFlag(uint32_t inHelixStride, Helix inHelixFlag)
+	void SetHelixFlag(HelixType helixType, Helix inHelixFlag)
 	{
-		assert(inHelixStride == 3 or inHelixStride == 4 or inHelixStride == 5);
-		mHelixFlags[inHelixStride - 3] = inHelixFlag;
+		size_t stride = static_cast<size_t>(helixType);
+		assert(stride < 4);
+		mHelixFlags[stride] = inHelixFlag;
 	}
 
 	void SetSSBridgeNr(uint8_t inBridgeNr)
@@ -884,23 +887,25 @@ void CalculateBetaSheets(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats, bool inPreferPiHelices = true)
 {
 	// Helix and Turn
-	for (uint32_t stride = 3; stride <= 5; ++stride)
+	for (HelixType helixType: { HelixType::rh_3_10, HelixType::rh_alpha, HelixType::rh_pi })
 	{
+		uint32_t stride = static_cast<uint32_t>(helixType) + 3;
+
 		for (uint32_t i = 0; i + stride < inResidues.size(); ++i)
 		{
 			if (NoChainBreak(inResidues[i], inResidues[i + stride]) and TestBond(&inResidues[i + stride], &inResidues[i]))
 			{
-				inResidues[i + stride].SetHelixFlag(stride, Helix::End);
+				inResidues[i + stride].SetHelixFlag(helixType, Helix::End);
 				for (uint32_t j = i + 1; j < i + stride; ++j)
 				{
-					if (inResidues[j].GetHelixFlag(stride) == Helix::None)
-						inResidues[j].SetHelixFlag(stride, Helix::Middle);
+					if (inResidues[j].GetHelixFlag(helixType) == Helix::None)
+						inResidues[j].SetHelixFlag(helixType, Helix::Middle);
 				}
 				
-				if (inResidues[i].GetHelixFlag(stride) == Helix::End)
-					inResidues[i].SetHelixFlag(stride, Helix::StartAndEnd);
+				if (inResidues[i].GetHelixFlag(helixType) == Helix::End)
+					inResidues[i].SetHelixFlag(helixType, Helix::StartAndEnd);
 				else
-					inResidues[i].SetHelixFlag(stride, Helix::Start);
+					inResidues[i].SetHelixFlag(helixType, Helix::Start);
 			}
 		}
 	}
@@ -913,7 +918,7 @@ void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats,
 
 	for (uint32_t i = 1; i + 4 < inResidues.size(); ++i)
 	{
-		if (inResidues[i].IsHelixStart(4) and inResidues[i - 1].IsHelixStart(4))
+		if (inResidues[i].IsHelixStart(HelixType::rh_alpha) and inResidues[i - 1].IsHelixStart(HelixType::rh_alpha))
 		{
 			for (uint32_t j = i; j <= i + 3; ++j)
 				inResidues[j].SetSecondaryStructure(ssAlphahelix);
@@ -922,7 +927,7 @@ void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats,
 
 	for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
 	{
-		if (inResidues[i].IsHelixStart(3) and inResidues[i - 1].IsHelixStart(3))
+		if (inResidues[i].IsHelixStart(HelixType::rh_3_10) and inResidues[i - 1].IsHelixStart(HelixType::rh_3_10))
 		{
 			bool empty = true;
 			for (uint32_t j = i; empty and j <= i + 2; ++j)
@@ -937,7 +942,7 @@ void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats,
 
 	for (uint32_t i = 1; i + 5 < inResidues.size(); ++i)
 	{
-		if (inResidues[i].IsHelixStart(5) and inResidues[i - 1].IsHelixStart(5))
+		if (inResidues[i].IsHelixStart(HelixType::rh_pi) and inResidues[i - 1].IsHelixStart(HelixType::rh_pi))
 		{
 			bool empty = true;
 			for (uint32_t j = i; empty and j <= i + 4; ++j)
@@ -956,10 +961,11 @@ void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats,
 		if (inResidues[i].GetSecondaryStructure() == ssLoop)
 		{
 			bool isTurn = false;
-			for (uint32_t stride = 3; stride <= 5 and not isTurn; ++stride)
+			for (HelixType helixType: { HelixType::rh_3_10, HelixType::rh_alpha, HelixType::rh_pi })
 			{
+				int stride = 3 + static_cast<int>(helixType);
 				for (uint32_t k = 1; k < stride and not isTurn; ++k)
-					isTurn = (i >= k) and inResidues[i - k].IsHelixStart(stride);
+					isTurn = (i >= k) and inResidues[i - k].IsHelixStart(helixType);
 			}
 			
 			if (isTurn)
@@ -988,6 +994,86 @@ void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats,
 
 			stats.residuesPerAlphaHelixHistogram[helixLength - 1] += 1;
 			helixLength = 0;
+		}
+	}
+}
+
+// --------------------------------------------------------------------
+
+void CalculatePPHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats)
+{
+	size_t N = inResidues.size();
+
+	std::vector<float> phi(N), psi(N);
+
+	for (uint32_t i = 1; i + 1 < inResidues.size(); ++i)
+	{
+		// if (not NoChainBreak(inResidues[i], inResidues[i]))
+		// 	continue;
+		
+		phi[i] = inResidues[i].mM.phi();
+		psi[i] = inResidues[i].mM.psi();
+	}
+
+	for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
+	{
+		if (-95 > phi[i - 1] or phi[i - 1] > -55 or
+			-95 > phi[i + 0] or phi[i + 0] > -55 or
+			-95 > phi[i + 1] or phi[i + 1] > -55 or
+			-95 > phi[i + 2] or phi[i + 2] > -55)
+			continue;
+
+		if (125 > psi[i - 1] or psi[i - 1] > 165 or
+			125 > psi[i + 0] or psi[i + 0] > 165 or
+			125 > psi[i + 1] or psi[i + 1] > 165 or
+			125 > psi[i + 2] or psi[i + 2] > 165)
+			continue;
+
+		auto phi_avg = (phi[i - 1] + phi[i] + phi[i + 1] + phi[i + 2]) / 4;
+		auto phi_sq = (phi[i - 1] - phi_avg) * (phi[i - 1] - phi_avg) +
+					  (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg) +
+					  (phi[i + 1] - phi_avg) * (phi[i + 1] - phi_avg) +
+					  (phi[i + 2] - phi_avg) * (phi[i + 2] - phi_avg);
+		
+		if (phi_sq >= 400)
+			continue;
+
+		auto psi_avg = (psi[i - 1] + psi[i] + psi[i + 1] + psi[i + 2]) / 4;
+		auto psi_sq = (psi[i - 1] - psi_avg) * (psi[i - 1] - psi_avg) +
+					  (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg) +
+					  (psi[i + 1] - psi_avg) * (psi[i + 1] - psi_avg) +
+					  (psi[i + 2] - psi_avg) * (psi[i + 2] - psi_avg);
+
+		if (psi_sq >= 400)
+			continue;
+
+		switch (inResidues[i - 1].GetHelixFlag(HelixType::rh_pp))
+		{
+			case Helix::None:
+				inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::Start);
+				break;
+			
+			case Helix::End:
+				inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::StartAndEnd);
+				break;
+			
+			default:
+				break;
+		}
+
+		inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
+		inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
+		inResidues[i + 2].SetHelixFlag(HelixType::rh_pp, Helix::End);
+
+		if (inResidues[i - 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
+			inResidues[i + 0].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
+			inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
+			inResidues[i + 2].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+		{
+			inResidues[i - 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PP);
+			inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PP);
+			inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PP);
+			inResidues[i + 2].SetSecondaryStructure(SecondaryStructureType::ssHelix_PP);
 		}
 	}
 }
@@ -1095,6 +1181,9 @@ DSSPImpl::DSSPImpl(const Structure& s)
 	if (cif::VERBOSE) std::cerr << ".";
 	CalculateAlphaHelices(mResidues, mStats);
 
+	if (cif::VERBOSE) std::cerr << ".";
+	CalculatePPHelices(mResidues, mStats);
+
 	if (cif::VERBOSE) std::cerr << std::endl;
 
 	if (cif::VERBOSE > 1)
@@ -1103,16 +1192,16 @@ DSSPImpl::DSSPImpl(const Structure& s)
 		{
 			auto& m = r.mM;
 			
-			char helix[4] = { };
-			for (size_t stride: { 3, 4, 5 })
+			char helix[5] = { };
+			for (HelixType helixType: { HelixType::rh_3_10, HelixType::rh_alpha, HelixType::rh_pi, HelixType::rh_pp	})
 			{
-				switch (r.GetHelixFlag(stride))
+				switch (r.GetHelixFlag(helixType))
 				{
-					case Helix::Start:			helix[stride - 3] = '>'; break;
-					case Helix::Middle:			helix[stride - 3] = '0' + stride; break;
-					case Helix::StartAndEnd:	helix[stride - 3] = 'X'; break;
-					case Helix::End:			helix[stride - 3] = '<'; break;
-					case Helix::None:			helix[stride - 3] = ' '; break;
+					case Helix::Start:			helix[static_cast<int>(helixType)] = '>'; break;
+					case Helix::Middle:			helix[static_cast<int>(helixType)] = helixType == HelixType::rh_pp ? 'P' : '0' + static_cast<int>(helixType); break;
+					case Helix::StartAndEnd:	helix[static_cast<int>(helixType)] = 'X'; break;
+					case Helix::End:			helix[static_cast<int>(helixType)] = '<'; break;
+					case Helix::None:			helix[static_cast<int>(helixType)] = ' '; break;
 				}
 			}
 			
@@ -1198,9 +1287,9 @@ int DSSP::ResidueInfo::ssBridgeNr() const
 	return mImpl->mSSBridgeNr;
 }
 
-Helix DSSP::ResidueInfo::helix(int stride) const
+Helix DSSP::ResidueInfo::helix(HelixType helixType) const
 {
-	return mImpl->GetHelixFlag(stride);
+	return mImpl->GetHelixFlag(helixType);
 }
 
 bool DSSP::ResidueInfo::bend() const
@@ -1332,7 +1421,7 @@ bool DSSP::isAlphaHelixEndBeforeStart(const std::string& inAsymID, int inSeqID) 
 	bool result = false;
 
 	if (i != mImpl->mResidues.end() and i + 1 != mImpl->mResidues.end())
-		result = i->GetHelixFlag(4) == Helix::End and (i + 1)->GetHelixFlag(4) == Helix::Start;
+		result = i->GetHelixFlag(HelixType::rh_alpha) == Helix::End and (i + 1)->GetHelixFlag(HelixType::rh_alpha) == Helix::Start;
 	else if (cif::VERBOSE)
 		std::cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << std::endl;
 

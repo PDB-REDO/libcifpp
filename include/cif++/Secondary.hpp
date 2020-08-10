@@ -26,8 +26,14 @@ enum SecondaryStructureType : char
 	ssStrand		= 'E',
 	ssHelix_3		= 'G',
 	ssHelix_5		= 'I',
+	ssHelix_PP		= 'P',
 	ssTurn			= 'T',
 	ssBend			= 'S'
+};
+
+enum class HelixType
+{
+	rh_3_10, rh_alpha, rh_pi, rh_pp
 };
 
 enum class Helix
@@ -126,7 +132,7 @@ class DSSP
 		
 		int ssBridgeNr() const;
 
-		Helix helix(int stride) const;
+		Helix helix(HelixType helixType) const;
 
 		bool bend() const;
 
