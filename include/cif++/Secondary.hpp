@@ -26,7 +26,7 @@ enum SecondaryStructureType : char
 	ssStrand		= 'E',
 	ssHelix_3		= 'G',
 	ssHelix_5		= 'I',
-	ssHelix_PP		= 'P',
+	ssHelix_PPII	= 'P',
 	ssTurn			= 'T',
 	ssBend			= 'S'
 };

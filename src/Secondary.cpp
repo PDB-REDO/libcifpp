@@ -332,7 +332,7 @@ struct Res
 	HBond mHBondDonor[2] = {}, mHBondAcceptor[2] = {};
 	BridgeParner mBetaPartner[2] = {};
 	uint32_t mSheet = 0;
-	Helix mHelixFlags[3] = { Helix::None, Helix::None, Helix::None };	//
+	Helix mHelixFlags[4] = { Helix::None, Helix::None, Helix::None, Helix::None };	//
 	bool mBend = false;
 	ChainBreak mChainBreak = ChainBreak::None;
 };
@@ -1002,49 +1002,45 @@ void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats,
 
 void CalculatePPHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 {
+	// less strict variant: three residues instead of four
 	size_t N = inResidues.size();
+
+	const float epsilon = 29;
+	const float phi_min = -75 - epsilon;
+	const float phi_max = -75 + epsilon;
+	const float psi_min = 145 - epsilon;
+	const float psi_max = 145 + epsilon;
 
 	std::vector<float> phi(N), psi(N);
 
 	for (uint32_t i = 1; i + 1 < inResidues.size(); ++i)
 	{
-		// if (not NoChainBreak(inResidues[i], inResidues[i]))
-		// 	continue;
-		
 		phi[i] = inResidues[i].mM.phi();
 		psi[i] = inResidues[i].mM.psi();
 	}
 
 	for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
 	{
-		if (-95 > phi[i - 1] or phi[i - 1] > -55 or
-			-95 > phi[i + 0] or phi[i + 0] > -55 or
-			-95 > phi[i + 1] or phi[i + 1] > -55 or
-			-95 > phi[i + 2] or phi[i + 2] > -55)
+		if (phi_min > phi[i - 1] or phi[i - 1] > phi_max or
+			phi_min > phi[i + 0] or phi[i + 0] > phi_max)
 			continue;
 
-		if (125 > psi[i - 1] or psi[i - 1] > 165 or
-			125 > psi[i + 0] or psi[i + 0] > 165 or
-			125 > psi[i + 1] or psi[i + 1] > 165 or
-			125 > psi[i + 2] or psi[i + 2] > 165)
+		if (psi_min > psi[i - 1] or psi[i - 1] > psi_max or
+			psi_min > psi[i + 0] or psi[i + 0] > psi_max)
 			continue;
 
-		auto phi_avg = (phi[i - 1] + phi[i] + phi[i + 1] + phi[i + 2]) / 4;
+		auto phi_avg = (phi[i - 1] + phi[i]) / 2;
 		auto phi_sq = (phi[i - 1] - phi_avg) * (phi[i - 1] - phi_avg) +
-					  (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg) +
-					  (phi[i + 1] - phi_avg) * (phi[i + 1] - phi_avg) +
-					  (phi[i + 2] - phi_avg) * (phi[i + 2] - phi_avg);
+					  (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg);
 		
-		if (phi_sq >= 400)
+		if (phi_sq >= 200)
 			continue;
 
-		auto psi_avg = (psi[i - 1] + psi[i] + psi[i + 1] + psi[i + 2]) / 4;
+		auto psi_avg = (psi[i - 1] + psi[i]) / 2;
 		auto psi_sq = (psi[i - 1] - psi_avg) * (psi[i - 1] - psi_avg) +
-					  (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg) +
-					  (psi[i + 1] - psi_avg) * (psi[i + 1] - psi_avg) +
-					  (psi[i + 2] - psi_avg) * (psi[i + 2] - psi_avg);
+					  (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg);
 
-		if (psi_sq >= 400)
+		if (psi_sq >= 200)
 			continue;
 
 		switch (inResidues[i - 1].GetHelixFlag(HelixType::rh_pp))
@@ -1062,20 +1058,163 @@ void CalculatePPHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 		}
 
 		inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
-		inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
-		inResidues[i + 2].SetHelixFlag(HelixType::rh_pp, Helix::End);
+		inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::End);
 
 		if (inResidues[i - 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
 			inResidues[i + 0].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-			inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-			inResidues[i + 2].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+			inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
 		{
-			inResidues[i - 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PP);
-			inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PP);
-			inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PP);
-			inResidues[i + 2].SetSecondaryStructure(SecondaryStructureType::ssHelix_PP);
+			inResidues[i - 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+			inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+			inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
 		}
 	}
+
+
+
+	// // less strict variant: three residues instead of four
+	// size_t N = inResidues.size();
+
+	// std::vector<float> phi(N), psi(N);
+
+	// for (uint32_t i = 1; i + 1 < inResidues.size(); ++i)
+	// {
+	// 	// if (not NoChainBreak(inResidues[i], inResidues[i]))
+	// 	// 	continue;
+		
+	// 	phi[i] = inResidues[i].mM.phi();
+	// 	psi[i] = inResidues[i].mM.psi();
+	// }
+
+	// for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
+	// {
+	// 	if (phi_min > phi[i - 1] or phi[i - 1] > phi_max or
+	// 		phi_min > phi[i + 0] or phi[i + 0] > phi_max or
+	// 		phi_min > phi[i + 1] or phi[i + 1] > phi_max)
+	// 		continue;
+
+	// 	if (psi_min > psi[i - 1] or psi[i - 1] > psi_max or
+	// 		psi_min > psi[i + 0] or psi[i + 0] > psi_max or
+	// 		psi_min > psi[i + 1] or psi[i + 1] > psi_max)
+	// 		continue;
+
+	// 	// auto phi_avg = (phi[i - 1] + phi[i] + phi[i + 1]) / 3;
+	// 	// auto phi_sq = (phi[i - 1] - phi_avg) * (phi[i - 1] - phi_avg) +
+	// 	// 			  (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg) +
+	// 	// 			  (phi[i + 1] - phi_avg) * (phi[i + 1] - phi_avg);
+		
+	// 	// if (phi_sq >= 300)
+	// 	// 	continue;
+
+	// 	// auto psi_avg = (psi[i - 1] + psi[i] + psi[i + 1]) / 3;
+	// 	// auto psi_sq = (psi[i - 1] - psi_avg) * (psi[i - 1] - psi_avg) +
+	// 	// 			  (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg) +
+	// 	// 			  (psi[i + 1] - psi_avg) * (psi[i + 1] - psi_avg);
+
+	// 	// if (psi_sq >= 300)
+	// 	// 	continue;
+
+	// 	switch (inResidues[i - 1].GetHelixFlag(HelixType::rh_pp))
+	// 	{
+	// 		case Helix::None:
+	// 			inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::Start);
+	// 			break;
+			
+	// 		case Helix::End:
+	// 			inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::StartAndEnd);
+	// 			break;
+			
+	// 		default:
+	// 			break;
+	// 	}
+
+	// 	inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
+	// 	inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::End);
+
+	// 	if (inResidues[i - 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
+	// 		inResidues[i + 0].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
+	// 		inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+	// 	{
+	// 		inResidues[i - 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+	// 		inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+	// 		inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+	// 	}
+	// }
+
+	// size_t N = inResidues.size();
+
+	// std::vector<float> phi(N), psi(N);
+
+	// for (uint32_t i = 1; i + 1 < inResidues.size(); ++i)
+	// {
+	// 	// if (not NoChainBreak(inResidues[i], inResidues[i]))
+	// 	// 	continue;
+		
+	// 	phi[i] = inResidues[i].mM.phi();
+	// 	psi[i] = inResidues[i].mM.psi();
+	// }
+
+	// for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
+	// {
+	// 	if (phi_min > phi[i - 1] or phi[i - 1] > phi_max or
+	// 		phi_min > phi[i + 0] or phi[i + 0] > phi_max or
+	// 		phi_min > phi[i + 1] or phi[i + 1] > phi_max or
+	// 		phi_min > phi[i + 2] or phi[i + 2] > phi_max)
+	// 		continue;
+
+	// 	if (psi_min > psi[i - 1] or psi[i - 1] > psi_max or
+	// 		psi_min > psi[i + 0] or psi[i + 0] > psi_max or
+	// 		psi_min > psi[i + 1] or psi[i + 1] > psi_max or
+	// 		psi_min > psi[i + 2] or psi[i + 2] > psi_max)
+	// 		continue;
+
+	// 	auto phi_avg = (phi[i - 1] + phi[i] + phi[i + 1] + phi[i + 2]) / 4;
+	// 	auto phi_sq = (phi[i - 1] - phi_avg) * (phi[i - 1] - phi_avg) +
+	// 				  (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg) +
+	// 				  (phi[i + 1] - phi_avg) * (phi[i + 1] - phi_avg) +
+	// 				  (phi[i + 2] - phi_avg) * (phi[i + 2] - phi_avg);
+		
+	// 	if (phi_sq >= 400)
+	// 		continue;
+
+	// 	auto psi_avg = (psi[i - 1] + psi[i] + psi[i + 1] + psi[i + 2]) / 4;
+	// 	auto psi_sq = (psi[i - 1] - psi_avg) * (psi[i - 1] - psi_avg) +
+	// 				  (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg) +
+	// 				  (psi[i + 1] - psi_avg) * (psi[i + 1] - psi_avg) +
+	// 				  (psi[i + 2] - psi_avg) * (psi[i + 2] - psi_avg);
+
+	// 	if (psi_sq >= 400)
+	// 		continue;
+
+	// 	switch (inResidues[i - 1].GetHelixFlag(HelixType::rh_pp))
+	// 	{
+	// 		case Helix::None:
+	// 			inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::Start);
+	// 			break;
+			
+	// 		case Helix::End:
+	// 			inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::StartAndEnd);
+	// 			break;
+			
+	// 		default:
+	// 			break;
+	// 	}
+
+	// 	inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
+	// 	inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
+	// 	inResidues[i + 2].SetHelixFlag(HelixType::rh_pp, Helix::End);
+
+	// 	if (inResidues[i - 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
+	// 		inResidues[i + 0].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
+	// 		inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
+	// 		inResidues[i + 2].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+	// 	{
+	// 		inResidues[i - 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+	// 		inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+	// 		inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+	// 		inResidues[i + 2].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+	// 	}
+	// }
 }
 
 // --------------------------------------------------------------------
@@ -1198,7 +1337,7 @@ DSSPImpl::DSSPImpl(const Structure& s)
 				switch (r.GetHelixFlag(helixType))
 				{
 					case Helix::Start:			helix[static_cast<int>(helixType)] = '>'; break;
-					case Helix::Middle:			helix[static_cast<int>(helixType)] = helixType == HelixType::rh_pp ? 'P' : '0' + static_cast<int>(helixType); break;
+					case Helix::Middle:			helix[static_cast<int>(helixType)] = helixType == HelixType::rh_pp ? 'P' : '3' + static_cast<int>(helixType); break;
 					case Helix::StartAndEnd:	helix[static_cast<int>(helixType)] = 'X'; break;
 					case Helix::End:			helix[static_cast<int>(helixType)] = '<'; break;
 					case Helix::None:			helix[static_cast<int>(helixType)] = ' '; break;
