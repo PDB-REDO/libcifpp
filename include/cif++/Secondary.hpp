@@ -187,6 +187,8 @@ class DSSP
 	iterator begin() const;
 	iterator end() const;
 
+	bool empty() const		{ return begin() == end(); }
+
   private:
 	struct DSSPImpl* mImpl;
 };
