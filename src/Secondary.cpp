@@ -1000,9 +1000,8 @@ void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats,
 
 // --------------------------------------------------------------------
 
-void CalculatePPHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats)
+void CalculatePPHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats, int stretch_length)
 {
-	// less strict variant: three residues instead of four
 	size_t N = inResidues.size();
 
 	const float epsilon = 29;
@@ -1021,212 +1020,130 @@ void CalculatePPHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 
 	for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
 	{
-		if (phi_min > phi[i - 1] or phi[i - 1] > phi_max or
-			phi_min > phi[i + 0] or phi[i + 0] > phi_max)
-			continue;
-
-		if (psi_min > psi[i - 1] or psi[i - 1] > psi_max or
-			psi_min > psi[i + 0] or psi[i + 0] > psi_max)
-			continue;
-
-		auto phi_avg = (phi[i - 1] + phi[i]) / 2;
-		auto phi_sq = (phi[i - 1] - phi_avg) * (phi[i - 1] - phi_avg) +
-					  (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg);
-		
-		if (phi_sq >= 200)
-			continue;
-
-		auto psi_avg = (psi[i - 1] + psi[i]) / 2;
-		auto psi_sq = (psi[i - 1] - psi_avg) * (psi[i - 1] - psi_avg) +
-					  (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg);
-
-		if (psi_sq >= 200)
-			continue;
-
-		switch (inResidues[i - 1].GetHelixFlag(HelixType::rh_pp))
+		switch (stretch_length)
 		{
-			case Helix::None:
-				inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::Start);
+			case 2:
+			{
+				if (phi_min > phi[i + 0] or phi[i + 0] > phi_max or
+					phi_min > phi[i + 1] or phi[i + 1] > phi_max)
+					continue;
+
+				if (psi_min > psi[i + 0] or psi[i + 0] > psi_max or
+					psi_min > psi[i + 1] or psi[i + 1] > psi_max)
+					continue;
+
+				// auto phi_avg = (phi[i + 0] + phi[i + 1]) / 2;
+				// auto phi_sq = (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg) +
+				// 			  (phi[i + 1] - phi_avg) * (phi[i + 1] - phi_avg);
+				
+				// if (phi_sq >= 200)
+				// 	continue;
+
+				// auto psi_avg = (psi[i + 0] + psi[i + 1]) / 2;
+				// auto psi_sq = (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg) +
+				// 			  (psi[i + 1] - psi_avg) * (psi[i + 1] - psi_avg);
+
+				// if (psi_sq >= 200)
+				// 	continue;
+
+				switch (inResidues[i].GetHelixFlag(HelixType::rh_pp))
+				{
+					case Helix::None:
+						inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Start);
+						break;
+					
+					case Helix::End:
+						inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
+						break;
+					
+					default:
+						break;
+				}
+
+				inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::End);
+
+				if (inResidues[i].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+					inResidues[i].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+				if (inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+					inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+			}
+			break;
+
+			case 3:
+			{
+				if (phi_min > phi[i + 0] or phi[i + 0] > phi_max or
+					phi_min > phi[i + 1] or phi[i + 1] > phi_max or
+					phi_min > phi[i + 2] or phi[i + 2] > phi_max)
+					continue;
+
+				if (psi_min > psi[i + 0] or psi[i + 0] > psi_max or
+					psi_min > psi[i + 1] or psi[i + 1] > psi_max or
+					psi_min > psi[i + 2] or psi[i + 2] > psi_max)
+					continue;
+
+				// auto phi_avg = (phi[i + 0] + phi[i + 1] + phi[i + 2]) / 3;
+				// auto phi_sq = (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg) +
+				// 			  (phi[i + 1] - phi_avg) * (phi[i + 1] - phi_avg) +
+				// 			  (phi[i + 2] - phi_avg) * (phi[i + 2] - phi_avg);
+				
+				// if (phi_sq >= 300)
+				// 	continue;
+
+				// auto psi_avg = (psi[i + 0] + psi[i + 1] + psi[i + 2]) / 3;
+				// auto psi_sq = (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg) +
+				// 			  (psi[i + 1] - psi_avg) * (psi[i + 1] - psi_avg) +
+				// 			  (psi[i + 2] - psi_avg) * (psi[i + 2] - psi_avg);
+
+				// if (psi_sq >= 300)
+				// 	continue;
+
+				switch (inResidues[i].GetHelixFlag(HelixType::rh_pp))
+				{
+					case Helix::None:
+						inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Start);
+						break;
+					
+					case Helix::End:
+						inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::StartAndEnd);
+						break;
+					
+					default:
+						break;
+				}
+
+				inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
+				inResidues[i + 2].SetHelixFlag(HelixType::rh_pp, Helix::End);
+
+				if (inResidues[i + 0].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+					inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+
+				if (inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+					inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+				
+				if (inResidues[i + 2].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
+					inResidues[i + 2].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+
 				break;
-			
-			case Helix::End:
-				inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::StartAndEnd);
-				break;
-			
+			}
+
 			default:
-				break;
-		}
-
-		inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
-		inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::End);
-
-		if (inResidues[i - 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-			inResidues[i + 0].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-			inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
-		{
-			inResidues[i - 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-			inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-			inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
+				throw std::runtime_error("Unsupported stretch length");
 		}
 	}
-
-
-
-	// // less strict variant: three residues instead of four
-	// size_t N = inResidues.size();
-
-	// std::vector<float> phi(N), psi(N);
-
-	// for (uint32_t i = 1; i + 1 < inResidues.size(); ++i)
-	// {
-	// 	// if (not NoChainBreak(inResidues[i], inResidues[i]))
-	// 	// 	continue;
-		
-	// 	phi[i] = inResidues[i].mM.phi();
-	// 	psi[i] = inResidues[i].mM.psi();
-	// }
-
-	// for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
-	// {
-	// 	if (phi_min > phi[i - 1] or phi[i - 1] > phi_max or
-	// 		phi_min > phi[i + 0] or phi[i + 0] > phi_max or
-	// 		phi_min > phi[i + 1] or phi[i + 1] > phi_max)
-	// 		continue;
-
-	// 	if (psi_min > psi[i - 1] or psi[i - 1] > psi_max or
-	// 		psi_min > psi[i + 0] or psi[i + 0] > psi_max or
-	// 		psi_min > psi[i + 1] or psi[i + 1] > psi_max)
-	// 		continue;
-
-	// 	// auto phi_avg = (phi[i - 1] + phi[i] + phi[i + 1]) / 3;
-	// 	// auto phi_sq = (phi[i - 1] - phi_avg) * (phi[i - 1] - phi_avg) +
-	// 	// 			  (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg) +
-	// 	// 			  (phi[i + 1] - phi_avg) * (phi[i + 1] - phi_avg);
-		
-	// 	// if (phi_sq >= 300)
-	// 	// 	continue;
-
-	// 	// auto psi_avg = (psi[i - 1] + psi[i] + psi[i + 1]) / 3;
-	// 	// auto psi_sq = (psi[i - 1] - psi_avg) * (psi[i - 1] - psi_avg) +
-	// 	// 			  (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg) +
-	// 	// 			  (psi[i + 1] - psi_avg) * (psi[i + 1] - psi_avg);
-
-	// 	// if (psi_sq >= 300)
-	// 	// 	continue;
-
-	// 	switch (inResidues[i - 1].GetHelixFlag(HelixType::rh_pp))
-	// 	{
-	// 		case Helix::None:
-	// 			inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::Start);
-	// 			break;
-			
-	// 		case Helix::End:
-	// 			inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::StartAndEnd);
-	// 			break;
-			
-	// 		default:
-	// 			break;
-	// 	}
-
-	// 	inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
-	// 	inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::End);
-
-	// 	if (inResidues[i - 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-	// 		inResidues[i + 0].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-	// 		inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
-	// 	{
-	// 		inResidues[i - 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-	// 		inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-	// 		inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-	// 	}
-	// }
-
-	// size_t N = inResidues.size();
-
-	// std::vector<float> phi(N), psi(N);
-
-	// for (uint32_t i = 1; i + 1 < inResidues.size(); ++i)
-	// {
-	// 	// if (not NoChainBreak(inResidues[i], inResidues[i]))
-	// 	// 	continue;
-		
-	// 	phi[i] = inResidues[i].mM.phi();
-	// 	psi[i] = inResidues[i].mM.psi();
-	// }
-
-	// for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
-	// {
-	// 	if (phi_min > phi[i - 1] or phi[i - 1] > phi_max or
-	// 		phi_min > phi[i + 0] or phi[i + 0] > phi_max or
-	// 		phi_min > phi[i + 1] or phi[i + 1] > phi_max or
-	// 		phi_min > phi[i + 2] or phi[i + 2] > phi_max)
-	// 		continue;
-
-	// 	if (psi_min > psi[i - 1] or psi[i - 1] > psi_max or
-	// 		psi_min > psi[i + 0] or psi[i + 0] > psi_max or
-	// 		psi_min > psi[i + 1] or psi[i + 1] > psi_max or
-	// 		psi_min > psi[i + 2] or psi[i + 2] > psi_max)
-	// 		continue;
-
-	// 	auto phi_avg = (phi[i - 1] + phi[i] + phi[i + 1] + phi[i + 2]) / 4;
-	// 	auto phi_sq = (phi[i - 1] - phi_avg) * (phi[i - 1] - phi_avg) +
-	// 				  (phi[i + 0] - phi_avg) * (phi[i + 0] - phi_avg) +
-	// 				  (phi[i + 1] - phi_avg) * (phi[i + 1] - phi_avg) +
-	// 				  (phi[i + 2] - phi_avg) * (phi[i + 2] - phi_avg);
-		
-	// 	if (phi_sq >= 400)
-	// 		continue;
-
-	// 	auto psi_avg = (psi[i - 1] + psi[i] + psi[i + 1] + psi[i + 2]) / 4;
-	// 	auto psi_sq = (psi[i - 1] - psi_avg) * (psi[i - 1] - psi_avg) +
-	// 				  (psi[i + 0] - psi_avg) * (psi[i + 0] - psi_avg) +
-	// 				  (psi[i + 1] - psi_avg) * (psi[i + 1] - psi_avg) +
-	// 				  (psi[i + 2] - psi_avg) * (psi[i + 2] - psi_avg);
-
-	// 	if (psi_sq >= 400)
-	// 		continue;
-
-	// 	switch (inResidues[i - 1].GetHelixFlag(HelixType::rh_pp))
-	// 	{
-	// 		case Helix::None:
-	// 			inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::Start);
-	// 			break;
-			
-	// 		case Helix::End:
-	// 			inResidues[i - 1].SetHelixFlag(HelixType::rh_pp, Helix::StartAndEnd);
-	// 			break;
-			
-	// 		default:
-	// 			break;
-	// 	}
-
-	// 	inResidues[i].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
-	// 	inResidues[i + 1].SetHelixFlag(HelixType::rh_pp, Helix::Middle);
-	// 	inResidues[i + 2].SetHelixFlag(HelixType::rh_pp, Helix::End);
-
-	// 	if (inResidues[i - 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-	// 		inResidues[i + 0].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-	// 		inResidues[i + 1].GetSecondaryStructure() == SecondaryStructureType::ssLoop and
-	// 		inResidues[i + 2].GetSecondaryStructure() == SecondaryStructureType::ssLoop)
-	// 	{
-	// 		inResidues[i - 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-	// 		inResidues[i + 0].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-	// 		inResidues[i + 1].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-	// 		inResidues[i + 2].SetSecondaryStructure(SecondaryStructureType::ssHelix_PPII);
-	// 	}
-	// }
 }
 
 // --------------------------------------------------------------------
 
 struct DSSPImpl
 {
-	DSSPImpl(const Structure& s);
+	DSSPImpl(const Structure& s, int min_poly_proline_stretch_length);
 	
 	const Structure&			mStructure;
 	const std::list<Polymer>&	mPolymers;
 	std::vector<Res>			mResidues;
 	std::vector<std::pair<Res*,Res*>> mSSBonds;
+
+	int m_min_poly_proline_stretch_length;
 
 	auto findRes(const std::string& asymID, int seqID)
 	{
@@ -1238,9 +1155,10 @@ struct DSSPImpl
 
 // --------------------------------------------------------------------
 
-DSSPImpl::DSSPImpl(const Structure& s)
+DSSPImpl::DSSPImpl(const Structure& s, int min_poly_proline_stretch_length)
 	: mStructure(s)
 	, mPolymers(mStructure.polymers())
+	, m_min_poly_proline_stretch_length(min_poly_proline_stretch_length)
 {
 	if (cif::VERBOSE)
 		std::cerr << "Calculating DSSP ";
@@ -1321,7 +1239,7 @@ DSSPImpl::DSSPImpl(const Structure& s)
 	CalculateAlphaHelices(mResidues, mStats);
 
 	if (cif::VERBOSE) std::cerr << ".";
-	CalculatePPHelices(mResidues, mStats);
+	CalculatePPHelices(mResidues, mStats, m_min_poly_proline_stretch_length);
 
 	if (cif::VERBOSE) std::cerr << std::endl;
 
@@ -1493,8 +1411,8 @@ DSSP::iterator& DSSP::iterator::operator++()
 
 // --------------------------------------------------------------------
 
-DSSP::DSSP(const Structure& s)
-	: mImpl(new DSSPImpl(s))
+DSSP::DSSP(const Structure& s, int min_poly_proline_stretch)
+	: mImpl(new DSSPImpl(s, min_poly_proline_stretch))
 {
 }
 
