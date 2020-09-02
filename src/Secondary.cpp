@@ -1211,97 +1211,109 @@ DSSPImpl::DSSPImpl(const Structure& s, int min_poly_proline_stretch_length)
 
 	std::thread ta(std::bind(&CalculateAccessibilities, std::ref(mResidues), std::ref(mStats)));
 
-	auto& db = s.getFile().data();
-	for (auto r: db["struct_conn"].find(cif::Key("conn_type_id") == "disulf"))
+	try
 	{
-		std::string asym1, asym2;
-		int seq1, seq2;
-		cif::tie(asym1, seq1, asym2, seq2) = r.get("ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr2_label_asym_id", "ptnr2_label_seq_id");
+		auto& db = s.getFile().data();
+		for (auto r: db["struct_conn"].find(cif::Key("conn_type_id") == "disulf"))
+		{
+			std::string asym1, asym2;
+			int seq1, seq2;
+			cif::tie(asym1, seq1, asym2, seq2) = r.get("ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr2_label_asym_id", "ptnr2_label_seq_id");
 
-		auto r1 = findRes(asym1, seq1);
-		if (r1 == mResidues.end())
-			throw std::runtime_error("Invalid file, missing residue for SS bond");
+			auto r1 = findRes(asym1, seq1);
+			if (r1 == mResidues.end())
+				throw std::runtime_error("Invalid file, missing residue for SS bond");
 
-		auto r2 = findRes(asym2, seq2);
-		if (r2 == mResidues.end())
-			throw std::runtime_error("Invalid file, missing residue for SS bond");
+			auto r2 = findRes(asym2, seq2);
+			if (r2 == mResidues.end())
+				throw std::runtime_error("Invalid file, missing residue for SS bond");
 
-		mSSBonds.emplace_back(&*r1, &*r2);
-	}
+			mSSBonds.emplace_back(&*r1, &*r2);
+		}
 
-	if (cif::VERBOSE) std::cerr << ".";
-	CalculateHBondEnergies(mResidues);
+		if (cif::VERBOSE) std::cerr << ".";
+		CalculateHBondEnergies(mResidues);
 
-	if (cif::VERBOSE) std::cerr << ".";
-	CalculateBetaSheets(mResidues, mStats);
+		if (cif::VERBOSE) std::cerr << ".";
+		CalculateBetaSheets(mResidues, mStats);
 
-	if (cif::VERBOSE) std::cerr << ".";
-	CalculateAlphaHelices(mResidues, mStats);
+		if (cif::VERBOSE) std::cerr << ".";
+		CalculateAlphaHelices(mResidues, mStats);
 
-	if (cif::VERBOSE) std::cerr << ".";
-	CalculatePPHelices(mResidues, mStats, m_min_poly_proline_stretch_length);
+		if (cif::VERBOSE) std::cerr << ".";
+		CalculatePPHelices(mResidues, mStats, m_min_poly_proline_stretch_length);
 
-	if (cif::VERBOSE) std::cerr << std::endl;
+		if (cif::VERBOSE) std::cerr << std::endl;
 
-	if (cif::VERBOSE > 1)
-	{
+		if (cif::VERBOSE > 1)
+		{
+			for (auto& r: mResidues)
+			{
+				auto& m = r.mM;
+				
+				char helix[5] = { };
+				for (HelixType helixType: { HelixType::rh_3_10, HelixType::rh_alpha, HelixType::rh_pi, HelixType::rh_pp	})
+				{
+					switch (r.GetHelixFlag(helixType))
+					{
+						case Helix::Start:			helix[static_cast<int>(helixType)] = '>'; break;
+						case Helix::Middle:			helix[static_cast<int>(helixType)] = helixType == HelixType::rh_pp ? 'P' : '3' + static_cast<int>(helixType); break;
+						case Helix::StartAndEnd:	helix[static_cast<int>(helixType)] = 'X'; break;
+						case Helix::End:			helix[static_cast<int>(helixType)] = '<'; break;
+						case Helix::None:			helix[static_cast<int>(helixType)] = ' '; break;
+					}
+				}
+				
+				auto id = m.asymID() + ':' + std::to_string(m.seqID()) + '/' + m.compoundID();
+				
+				std::cerr << id << std::string(12 - id.length(), ' ')
+						<< char(r.mSecondaryStructure) << ' '
+						<< helix
+						<< std::endl;
+			}
+		}
+
+		// finish statistics
+		mStats.nrOfSSBridges = mSSBonds.size();
+
+		mStats.nrOfIntraChainSSBridges = 0;
+		int ssBondNr = 0;
+		for (const auto& [a, b]: mSSBonds)
+		{
+			if (a == b)
+			{
+				std::cerr << "In the SS bonds list, the residue " << a->mM << " is bonded to itself" << std::endl;
+				continue;
+			}
+				// throw std::runtime_error("first and second residue are the same");
+
+			if (a->mM.asymID() == b->mM.asymID() and NoChainBreak(a, b))
+				++mStats.nrOfIntraChainSSBridges;
+
+			a->mSSBridgeNr = b->mSSBridgeNr = ++ssBondNr;
+		}
+
+		mStats.nrOfHBonds = 0;
 		for (auto& r: mResidues)
 		{
-			auto& m = r.mM;
-			
-			char helix[5] = { };
-			for (HelixType helixType: { HelixType::rh_3_10, HelixType::rh_alpha, HelixType::rh_pi, HelixType::rh_pp	})
+			auto donor = r.mHBondDonor;
+
+			for (int i = 0; i < 2; ++i)
 			{
-				switch (r.GetHelixFlag(helixType))
+				if (donor[i].residue != nullptr and donor[i].energy < kMaxHBondEnergy)
 				{
-					case Helix::Start:			helix[static_cast<int>(helixType)] = '>'; break;
-					case Helix::Middle:			helix[static_cast<int>(helixType)] = helixType == HelixType::rh_pp ? 'P' : '3' + static_cast<int>(helixType); break;
-					case Helix::StartAndEnd:	helix[static_cast<int>(helixType)] = 'X'; break;
-					case Helix::End:			helix[static_cast<int>(helixType)] = '<'; break;
-					case Helix::None:			helix[static_cast<int>(helixType)] = ' '; break;
+					++mStats.nrOfHBonds;
+					auto k = donor[i].residue->mNumber - r.mNumber;
+					if (k >= -5 and k <= 5)
+						mStats.nrOfHBondsPerDistance[k + 5] += 1;
 				}
 			}
-			
-			auto id = m.asymID() + ':' + std::to_string(m.seqID()) + '/' + m.compoundID();
-			
-			std::cerr << id << std::string(12 - id.length(), ' ')
-					  << char(r.mSecondaryStructure) << ' '
-					  << helix
-					  << std::endl;
 		}
 	}
-
-	// finish statistics
-	mStats.nrOfSSBridges = mSSBonds.size();
-
-	mStats.nrOfIntraChainSSBridges = 0;
-	int ssBondNr = 0;
-	for (const auto& [a, b]: mSSBonds)
+	catch (const std::exception& ex)
 	{
-		if (a == b)
-			throw std::runtime_error("first and second residue are the same");
-
-		if (a->mM.asymID() == b->mM.asymID() and NoChainBreak(a, b))
-			++mStats.nrOfIntraChainSSBridges;
-
-		a->mSSBridgeNr = b->mSSBridgeNr = ++ssBondNr;
-	}
-
-	mStats.nrOfHBonds = 0;
-	for (auto& r: mResidues)
-	{
-		auto donor = r.mHBondDonor;
-
-		for (int i = 0; i < 2; ++i)
-		{
-			if (donor[i].residue != nullptr and donor[i].energy < kMaxHBondEnergy)
-			{
-				++mStats.nrOfHBonds;
-				auto k = donor[i].residue->mNumber - r.mNumber;
-				if (k >= -5 and k <= 5)
-					mStats.nrOfHBondsPerDistance[k + 5] += 1;
-			}
-		}
+		ta.join();
+		throw;
 	}
 
 	ta.join();
