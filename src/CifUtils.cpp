@@ -5,6 +5,7 @@
 #include <tuple>
 #include <iostream>
 #include <cstdio>
+#include <cmath>
 #include <atomic>
 #include <mutex>
 #include <thread>
@@ -527,7 +528,7 @@ void ProgressImpl::PrintProgress()
 	
 	int64_t consumed = mConsumed;
 	float progress = static_cast<float>(consumed) / mMax;
-	int pi = static_cast<int>(ceil(progress * 33 * 8));
+	int pi = static_cast<int>(std::ceil(progress * 33 * 8));
 //	int tw = width - 28;
 //	int twd = static_cast<int>(tw * progress + 0.5f);
 //	msg.append(twd, '=');
