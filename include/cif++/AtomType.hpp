@@ -14,6 +14,7 @@ enum AtomType : uint8_t
 	Nn = 0,		// Unknown
 	
 	H = 1,		// Hydro­gen
+	D = 129,	// Deuterium
 	He = 2,		// He­lium
 
 	Li = 3,		// Lith­ium

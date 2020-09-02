@@ -91,7 +91,7 @@ enum class ChainBreak
 class DSSP
 {
   public:
-	DSSP(const Structure& s, int min_poly_proline_stretch_length);
+	DSSP(const Structure& s, int min_poly_proline_stretch_length, bool calculateSurfaceAccessibility);
 	~DSSP();
 	
 	DSSP(const DSSP&) = delete;
