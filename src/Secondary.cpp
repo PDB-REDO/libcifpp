@@ -1282,7 +1282,8 @@ DSSPImpl::DSSPImpl(const Structure& s, int min_poly_proline_stretch_length)
 		{
 			if (a == b)
 			{
-				std::cerr << "In the SS bonds list, the residue " << a->mM << " is bonded to itself" << std::endl;
+				if (cif::VERBOSE)
+					std::cerr << "In the SS bonds list, the residue " << a->mM << " is bonded to itself" << std::endl;
 				continue;
 			}
 				// throw std::runtime_error("first and second residue are the same");
