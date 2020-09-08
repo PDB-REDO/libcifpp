@@ -1284,21 +1284,10 @@ void DSSPImpl::calculateSecondaryStructure()
 	{
 		if (a == b)
 		{
-<<<<<<< HEAD
-			if (a == b)
-			{
-				if (cif::VERBOSE)
-					std::cerr << "In the SS bonds list, the residue " << a->mM << " is bonded to itself" << std::endl;
-				continue;
-			}
-				// throw std::runtime_error("first and second residue are the same");
-=======
 			if (cif::VERBOSE)
 				std::cerr << "In the SS bonds list, the residue " << a->mM << " is bonded to itself" << std::endl;
 			continue;
 		}
-			// throw std::runtime_error("first and second residue are the same");
->>>>>>> 9c1aeff65b1d849a88f33e8839389cd9825184fc
 
 		if (a->mM.asymID() == b->mM.asymID() and NoChainBreak(a, b))
 			++mStats.nrOfIntraChainSSBridges;
