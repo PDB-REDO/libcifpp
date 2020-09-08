@@ -44,7 +44,7 @@ DEBUG               = @DEBUG@
 
 ifeq "$(DEBUG)" "1"
 DEFINES				+= DEBUG
-CXXFLAGS            += -g -O0
+CXXFLAGS            += -g -O0 -fstandalone-debug
 LDFLAGS				+= -g
 else
 CXXFLAGS			+= -O3

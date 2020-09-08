@@ -1224,11 +1224,21 @@ void DSSPImpl::calculateSecondaryStructure()
 
 		auto r1 = findRes(asym1, seq1);
 		if (r1 == mResidues.end())
-			throw std::runtime_error("Invalid file, missing residue for SS bond");
+		{
+			if (cif::VERBOSE)
+				std::cerr << "Missing (incomplete?) residue for SS bond when trying to find " << asym1 << '/' << seq1 << std::endl;
+			continue;
+			// throw std::runtime_error("Invalid file, missing residue for SS bond");
+		}
 
 		auto r2 = findRes(asym2, seq2);
 		if (r2 == mResidues.end())
-			throw std::runtime_error("Invalid file, missing residue for SS bond");
+		{
+			if (cif::VERBOSE)
+				std::cerr << "Missing (incomplete?) residue for SS bond when trying to find " << asym2 << '/' << seq2 << std::endl;
+			continue;
+			// throw std::runtime_error("Invalid file, missing residue for SS bond");
+		}
 
 		mSSBonds.emplace_back(&*r1, &*r2);
 	}

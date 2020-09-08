@@ -1276,6 +1276,7 @@ bool Monomer::isComplete() const
 		else if (a.labelAtomID() == "C")		seen |= 2;
 		else if (a.labelAtomID() == "N")		seen |= 4;
 		else if (a.labelAtomID() == "O")		seen |= 8;
+		// else if (a.labelAtomID() == "OXT")		seen |= 16;
 	}
 	return seen == 15;
 }
