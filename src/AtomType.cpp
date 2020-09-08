@@ -17,7 +17,6 @@ const AtomTypeInfo kKnownAtoms[] =
 {
 	{ Nn,	"Unknown",			"Nn",	0,		false, {	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },  //	0	Nn	 Unknown        
 	{ H,	"Hydrogen",			"H",	1.008,	false, {	53,		25,		37,		32,		kNA,	kNA,	120 } },  //	1	H	 Hydro­gen         
-	{ D,	"Deuterium",		"D",	2.014,	false, {	53,		25,		37,		32,		kNA,	kNA,	120 } },  //	1	D	 Deuterium         
 	{ He,	"Helium",			"He",	4.0026,	false, {	31,		kNA,	32,		46,		kNA,	kNA,	140 } },  //	2	He	 He­lium           
 	{ Li,	"Lithium",			"Li",	6.94,	true,  {	167,	145,	134,	133,	124,	kNA,	182 } },  //	3	Li	 Lith­ium          
 	{ Be,	"Beryllium",		"Be",	9.0122,	true,  {	112,	105,	90,		102,	90,		85,		kNA } },  //	4	Be	 Beryl­lium        
@@ -134,7 +133,9 @@ const AtomTypeInfo kKnownAtoms[] =
 	{ Mc,	"Moscovium",		"Mc",	290,	true,  {	kNA,	kNA,	kNA,	162,	kNA,	kNA,	kNA } },  //	115	Mc	 Moscov­ium        
 	{ Lv,	"Livermorium",		"Lv",	293,	true,  {	kNA,	kNA,	kNA,	175,	kNA,	kNA,	kNA } },  //	116	Lv	 Liver­morium      
 	{ Ts,	"Tennessine",		"Ts",	294,	true,  {	kNA,	kNA,	kNA,	165,	kNA,	kNA,	kNA } },  //	117	Ts	 Tenness­ine       
-	{ Og,	"Oganesson",		"Og",	294,	true,  {	kNA,	kNA,	kNA,	157,	kNA,	kNA,	kNA } }   //	118	Og	 Oga­nesson        
+	{ Og,	"Oganesson",		"Og",	294,	true,  {	kNA,	kNA,	kNA,	157,	kNA,	kNA,	kNA } },  //	118	Og	 Oga­nesson        
+
+	{ D,	"Deuterium",		"D",	2.014,	false, {	53,		25,		37,		32,		kNA,	kNA,	120 } },  //	1	D	 Deuterium         
 };                                                                                                                                                    
 
 uint32_t kKnownAtomsCount = sizeof(kKnownAtoms) / sizeof(AtomTypeInfo);

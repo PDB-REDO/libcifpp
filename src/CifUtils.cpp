@@ -18,9 +18,8 @@
 #endif
 
 #include <boost/algorithm/string.hpp>
-#if BOOST_VERSION >= 104800
 #include <boost/timer/timer.hpp>
-#endif
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "cif++/CifUtils.hpp"
 
@@ -440,9 +439,16 @@ struct ProgressImpl
 {
 					ProgressImpl(int64_t inMax, const string& inAction)
 						: mMax(inMax), mConsumed(0), mAction(inAction), mMessage(inAction)
-						, mThread(std::bind(&ProgressImpl::Run, this)) {}
+						, mThread(std::bind(&ProgressImpl::Run, this))
+						, mStart(boost::posix_time::second_clock::local_time()) {}
 
 	void			Run();
+	void			Stop()
+	{
+		mStop = true;
+		if (mThread.joinable())
+			mThread.join();
+	}
 	
 	void			PrintProgress();
 	void			PrintDone();
@@ -454,29 +460,35 @@ struct ProgressImpl
 	string			mAction, mMessage;
 	std::mutex		mMutex;
 	std::thread		mThread;
-	boost::timer::cpu_timer
-					mTimer;
+	boost::timer::cpu_timer mTimer;
+	boost::posix_time::ptime mStart;
+	bool			mStop = false;
 };
 
 void ProgressImpl::Run()
 {
+	using namespace boost::posix_time;
+	// using namespace boost::local_time;
+
 	bool printedAny = false;
 	
 	try
 	{
-		std::this_thread::sleep_for(std::chrono::seconds(5));
-			
 		for (;;)
 		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
 			std::unique_lock lock(mMutex);
 			
-			if (mConsumed == mMax)
+			if (mStop or mConsumed == mMax)
 				break;
-			
+
+			if (second_clock::local_time() - mStart < seconds(5))
+				continue;
+
 			PrintProgress();
 			printedAny = true;
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
 	catch (...) {}
@@ -593,11 +605,8 @@ Progress::Progress(int64_t inMax, const string& inAction)
 
 Progress::~Progress()
 {
-	if (mImpl != nullptr and mImpl->mThread.joinable())
-	{
-		// mImpl->mThread.interrupt();
-		mImpl->mThread.join();
-	}
+	if (mImpl != nullptr)
+		mImpl->Stop();
 
 	delete mImpl;
 }
@@ -605,22 +614,18 @@ Progress::~Progress()
 void Progress::consumed(int64_t inConsumed)
 {
 	if (mImpl != nullptr and 
-		(mImpl->mConsumed += inConsumed) >= mImpl->mMax and
-		mImpl->mThread.joinable())
+		(mImpl->mConsumed += inConsumed) >= mImpl->mMax)
 	{
-		// mImpl->mThread.interrupt();
-		mImpl->mThread.join();
+		mImpl->Stop();
 	}
 }
 
 void Progress::progress(int64_t inProgress)
 {
 	if (mImpl != nullptr and 
-		(mImpl->mConsumed = inProgress) >= mImpl->mMax and
-		mImpl->mThread.joinable())
+		(mImpl->mConsumed = inProgress) >= mImpl->mMax)
 	{
-		// mImpl->mThread.interrupt();
-		mImpl->mThread.join();
+		mImpl->Stop();
 	}
 }
 

@@ -32,6 +32,19 @@ AS_IF([test x"$CCP4" != x""],
 		LDFLAGS="$LDFLAGS -L${CCP4}/lib"
 	  ])
 
+AC_ARG_VAR([USE_RSRC], [Use resources to store internal data, requires mrc])
+AC_ARG_VAR([MRC], [Specify a location for the mrc executable])
+
+dnl We really like to use mrc
+if test "x$MRC" = "x"; then
+	AC_PATH_PROG([MRC], [mrc])
+fi
+if test "x$MRC" = "x"; then
+	AC_MSG_WARN([mrc not found, building without support for resources.])
+else
+	USE_RSRC=1
+fi
+
 AX_BOOST_BASE([1.73])
 AX_BOOST_REGEX
 
@@ -123,5 +136,4 @@ AX_CHECK_LIBRARY([LIBBZ2], [bzlib.h], [bz2], [],
 # 	[enable_debug=auto])
 
 dnl Process files
-AC_OUTPUT([GNUmakefile
-		   libcif++.pc])
+AC_OUTPUT([GNUmakefile])
