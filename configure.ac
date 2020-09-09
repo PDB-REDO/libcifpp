@@ -4,6 +4,8 @@ dnl Switch to a C++ compiler, and check if it works.
 AC_LANG(C++)
 AX_CXX_COMPILE_STDCXX_17([noext])
 
+AX_CHECK_COMPILE_FLAG([-fstandalone-debug], , , [-Werror])
+
 AC_CONFIG_SRCDIR([src/AtomShape.cpp])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([config/m4])

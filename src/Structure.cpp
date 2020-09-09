@@ -1468,7 +1468,7 @@ bool Monomer::isCis(const mmcif::Monomer& a, const mmcif::Monomer& b)
 
 Polymer::Polymer(const Structure& s, const string& entityID, const string& asymID)
 	: mStructure(const_cast<Structure*>(&s)), mEntityID(entityID), mAsymID(asymID)
-	, mPolySeq(s.category("pdbx_poly_seq_scheme").find(cif::Key("asym_id") == mAsymID and cif::Key("entity_id") == mEntityID))
+	, mPolySeq(s.category("pdbx_poly_seq_scheme"), cif::Key("asym_id") == mAsymID and cif::Key("entity_id") == mEntityID)
 {
 	map<uint32_t,uint32_t> ix;
 
@@ -2097,23 +2097,26 @@ void Structure::swapAtoms(Atom& a1, Atom& a2)
 	cif::Datablock& db = *mFile.impl().mDb;
 	auto& atomSites = db["atom_site"];
 
-	auto r1 = atomSites.find(cif::Key("id") == a1.id());
-	auto r2 = atomSites.find(cif::Key("id") == a2.id());
+	auto rs1 = atomSites.find(cif::Key("id") == a1.id());
+	auto rs2 = atomSites.find(cif::Key("id") == a2.id());
 	
-	if (r1.size() != 1)
-		throw runtime_error("Cannot swap atoms since the number of atoms with id " + a1.id() + " is " + to_string(r1.size()));
+	if (rs1.size() != 1)
+		throw runtime_error("Cannot swap atoms since the number of atoms with id " + a1.id() + " is " + to_string(rs1.size()));
 	
-	if (r2.size() != 1)
-		throw runtime_error("Cannot swap atoms since the number of atoms with id " + a2.id() + " is " + to_string(r2.size()));
+	if (rs2.size() != 1)
+		throw runtime_error("Cannot swap atoms since the number of atoms with id " + a2.id() + " is " + to_string(rs2.size()));
 	
-	auto l1 = r1.front()["label_atom_id"];
-	auto l2 = r2.front()["label_atom_id"];
+	auto r1 = rs1.front();
+	auto r2 = rs2.front();
+
+	auto l1 = r1["label_atom_id"];
+	auto l2 = r2["label_atom_id"];
 	l1.swap(l2);
 	
 	a1.impl()->swapAtomLabels(*a2.impl());
 
-	auto l3 = r1.front()["auth_atom_id"];
-	auto l4 = r2.front()["auth_atom_id"];
+	auto l3 = r1["auth_atom_id"];
+	auto l4 = r2["auth_atom_id"];
 	l3.swap(l4);
 }
 

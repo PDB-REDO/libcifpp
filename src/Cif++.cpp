@@ -1401,6 +1401,7 @@ Row Category::operator[](Condition&& cond)
 
 // RowSet Category::find(Condition&& cond)
 // {
+// 	// return RowSet(*this, std::forward<Condition>(cond));
 // 	RowSet result(*this);
 	
 // 	cond.prepare(*this);
@@ -1408,7 +1409,7 @@ Row Category::operator[](Condition&& cond)
 // 	for (auto r: *this)
 // 	{
 // 		if (cond(*this, r))
-// 			result.push_back(r);
+// 			result.insert(result.end(), r);
 // 	}
 // 	return result;
 // }
@@ -2252,6 +2253,13 @@ Row::Row(const Row& rhs)
 {
 }
 
+Row::Row(Row&& rhs)
+	: mData(rhs.mData)
+	, mCascade(rhs.mCascade)
+{
+	rhs.mData = nullptr;
+}
+
 Row::~Row()
 {
 
@@ -2261,6 +2269,13 @@ void Row::next()
 {
 	if (mData != nullptr)
 		mData = mData->mNext;
+}
+
+Row& Row::operator=(Row&& rhs)
+{
+	mData = rhs.mData;			rhs.mData = nullptr;
+	mCascade = rhs.mCascade;
+	return *this;
 }
 
 Row& Row::operator=(const Row& rhs)
@@ -2654,7 +2669,7 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 				}
 			}
 
-			RowSet rs[2] = { *childCat, *childCat };
+			std::vector<conditional_iterator_proxy<Row>> rs;
 
 			// first find the respective rows, then flip values, otherwise you won't find them anymore!
 			for (size_t ab = 0; ab < 2; ++ab)
@@ -2666,8 +2681,7 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 					cerr << "Fixing link from " << cat->mName << " to " << childCat->mName << " with " << endl
 						 << cond[ab] << endl;
 				
-				auto rsci = childCat->find(move(cond[ab]));
-				rs[ab] = rsci;
+				rs.push_back(childCat->find(move(cond[ab])));
 			}
 
 			for (size_t ab = 0; ab < 2; ++ab)
