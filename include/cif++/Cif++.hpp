@@ -1013,86 +1013,86 @@ struct Key
 	Key(const Key&) = delete;
 	Key& operator=(const Key&) = delete;
 	
-	template<typename T>
-	Condition operator==(const T& v) const
-	{
-		return Condition(new detail::KeyIsConditionImpl<T>(mItemTag, v));
-	}
-
-	Condition operator==(const char* v) const
-	{
-		string value(v ? v : "");
-		return Condition(new detail::KeyIsConditionImpl<std::string>(mItemTag, value));
-	}
-
-	Condition operator==(const detail::ItemReference& v) const
-	{
-		if (v.empty())
-			return Condition(new detail::KeyIsEmptyConditionImpl(mItemTag));
-		else
-			return Condition(new detail::KeyIsConditionImpl<std::string>(mItemTag, v.c_str()));
-	}
-	
-	Condition operator==(const Empty&) const
-	{
-		return Condition(new detail::KeyIsEmptyConditionImpl(mItemTag));
-	}
-	
-	template<typename T>
-	Condition operator!=(const T& v) const
-	{
-		return Condition(new detail::KeyIsNotConditionImpl<T>(mItemTag, v));
-	}
-
-	Condition operator!=(const char* v) const
-	{
-		string value(v ? v : "");
-		return Condition(new detail::KeyIsNotConditionImpl<std::string>(mItemTag, value));
-	}
-
-	template<typename T>
-	Condition operator>(const T& v) const
-	{
-		return Condition(new detail::KeyCompareConditionImpl(mItemTag, [this, v](const Category& c, const Row& r)
-			{ return r[this->mItemTag].as<T>() > v; }));
-	}
-
-	template<typename T>
-	Condition operator>=(const T& v) const
-	{
-		return Condition(new detail::KeyCompareConditionImpl(mItemTag, [this, v](const Category& c, const Row& r)
-			{ return r[this->mItemTag].as<T>() >= v; }));
-	}
-
-	template<typename T>
-	Condition operator<(const T& v) const
-	{
-		return Condition(new detail::KeyCompareConditionImpl(mItemTag, [this, v](const Category& c, const Row& r)
-			{ return r[this->mItemTag].as<T>() < v; }));
-	}
-
-	template<typename T>
-	Condition operator<=(const T& v) const
-	{
-		return Condition(new detail::KeyCompareConditionImpl(mItemTag, [this, v](const Category& c, const Row& r)
-			{ return r[this->mItemTag].as<T>() <= v; }));
-	}
-	
 	string mItemTag;
 };
 
-template<>
-inline
-Condition Key::operator==(const std::regex& rx) const
+template<typename T>
+Condition operator==(const Key& key, const T& v)
 {
-	return Condition(new detail::KeyMatchesConditionImpl(mItemTag, rx));
+	return Condition(new detail::KeyIsConditionImpl<T>(key.mItemTag, v));
+}
+
+inline Condition operator==(const Key& key, const char* v)
+{
+	string value(v ? v : "");
+	return Condition(new detail::KeyIsConditionImpl<std::string>(key.mItemTag, value));
+}
+
+inline Condition operator==(const Key& key, const detail::ItemReference& v)
+{
+	if (v.empty())
+		return Condition(new detail::KeyIsEmptyConditionImpl(key.mItemTag));
+	else
+		return Condition(new detail::KeyIsConditionImpl<std::string>(key.mItemTag, v.c_str()));
+}
+
+inline Condition operator==(const Key& key, const Empty&)
+{
+	return Condition(new detail::KeyIsEmptyConditionImpl(key.mItemTag));
+}
+
+template<typename T>
+Condition operator!=(const Key& key, const T& v)
+{
+	return Condition(new detail::KeyIsNotConditionImpl<T>(key.mItemTag, v));
+}
+
+inline Condition operator!=(const Key& key, const char* v)
+{
+	string value(v ? v : "");
+	return Condition(new detail::KeyIsNotConditionImpl<std::string>(key.mItemTag, value));
+}
+
+template<typename T>
+Condition operator>(const Key& key, const T& v)
+{
+	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
+		{ return r[tag].as<T>() > v; }));
+}
+
+template<typename T>
+Condition operator>=(const Key& key, const T& v)
+{
+	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
+		{ return r[tag].as<T>() >= v; }));
+}
+
+template<typename T>
+Condition operator<(const Key& key, const T& v)
+{
+	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
+		{ return r[tag].as<T>() < v; }));
+}
+
+template<typename T>
+Condition operator<=(const Key& key, const T& v)
+{
+	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
+		{ return r[tag].as<T>() <= v; }));
 }
 
 template<>
 inline
-Condition Key::operator==(const Empty&) const
+Condition operator==(const Key& key, const std::regex& rx)
 {
-	return Condition(new detail::KeyIsEmptyConditionImpl(mItemTag));
+	return Condition(new detail::KeyMatchesConditionImpl(key.mItemTag, rx));
+}
+
+template<>
+inline
+Condition operator==(const Key& key, const Empty&)
+{
+	return Condition(new detail::KeyIsEmptyConditionImpl(key.mItemTag));
 }
 
 struct any
