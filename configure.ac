@@ -47,7 +47,7 @@ else
 	USE_RSRC=1
 fi
 
-AX_BOOST_BASE([1.73])
+AX_BOOST_BASE([1.71])
 AX_BOOST_REGEX
 
 dnl The ccp4 distribution comes bundled with boost libraries that are
