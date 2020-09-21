@@ -647,12 +647,16 @@ class Condition
 	Condition() : mImpl(nullptr) {}
 	Condition(detail::ConditionImpl* impl) : mImpl(impl) {}
 
+	Condition(const Condition&) = delete;
+
 	Condition(Condition&& rhs)
 		: mImpl(nullptr)
 	{
 		std::swap(mImpl, rhs.mImpl);
 	}
-	
+
+	Condition& operator=(const Condition&) = delete;
+
 	Condition& operator=(Condition&& rhs)
 	{
 		std::swap(mImpl, rhs.mImpl);
@@ -662,6 +666,7 @@ class Condition
 	~Condition()
 	{
 		delete mImpl;
+		mImpl = nullptr;
 	}
 	
 	void prepare(const Category& c)
@@ -1002,8 +1007,11 @@ struct Empty {};
 
 struct Key
 {
-	Key(const string& ItemTag) : mItemTag(ItemTag) {}
-	Key(const char* ItemTag) : mItemTag(ItemTag) {}
+	Key(const string& itemTag) : mItemTag(itemTag) {}
+	Key(const char* itemTag) : mItemTag(itemTag) {}
+
+	Key(const Key&) = delete;
+	Key& operator=(const Key&) = delete;
 	
 	template<typename T>
 	Condition operator==(const T& v) const
@@ -1045,29 +1053,29 @@ struct Key
 	template<typename T>
 	Condition operator>(const T& v) const
 	{
-		auto comp = [this, v](const Category& c, const Row& r) -> bool { return r[this->mItemTag].as<T>() > v; };
-		return Condition(new detail::KeyCompareConditionImpl<decltype(comp)>(mItemTag, std::move(comp)));
+		return Condition(new detail::KeyCompareConditionImpl(mItemTag, [this, v](const Category& c, const Row& r)
+			{ return r[this->mItemTag].as<T>() > v; }));
 	}
 
 	template<typename T>
 	Condition operator>=(const T& v) const
 	{
-		auto comp = [this, v](const Category& c, const Row& r) -> bool { return r[this->mItemTag].as<T>() >= v; };
-		return Condition(new detail::KeyCompareConditionImpl<decltype(comp)>(mItemTag, std::move(comp)));
+		return Condition(new detail::KeyCompareConditionImpl(mItemTag, [this, v](const Category& c, const Row& r)
+			{ return r[this->mItemTag].as<T>() >= v; }));
 	}
 
 	template<typename T>
 	Condition operator<(const T& v) const
 	{
-		auto comp = [this, v](const Category& c, const Row& r) -> bool { return r[this->mItemTag].as<T>() < v; };
-		return Condition(new detail::KeyCompareConditionImpl<decltype(comp)>(mItemTag, std::move(comp)));
+		return Condition(new detail::KeyCompareConditionImpl(mItemTag, [this, v](const Category& c, const Row& r)
+			{ return r[this->mItemTag].as<T>() < v; }));
 	}
 
 	template<typename T>
 	Condition operator<=(const T& v) const
 	{
-		auto comp = [this, v](const Category& c, const Row& r) -> bool { return r[this->mItemTag].as<T>() <= v; };
-		return Condition(new detail::KeyCompareConditionImpl<decltype(comp)>(mItemTag, std::move(comp)));
+		return Condition(new detail::KeyCompareConditionImpl(mItemTag, [this, v](const Category& c, const Row& r)
+			{ return r[this->mItemTag].as<T>() <= v; }));
 	}
 	
 	string mItemTag;
@@ -1131,6 +1139,10 @@ class iterator_impl
 	iterator_impl(ItemRow* data) : mCurrent(data) {}
 	iterator_impl(const iterator_impl& i) : mCurrent(i.mCurrent) {}
 
+	template<typename IteratorType>
+	iterator_impl(IteratorType& i)
+		: mCurrent(*i) {}
+
 	iterator_impl& operator=(const iterator_impl& i)
 	{
 		mCurrent = i.mCurrent;
@@ -1170,6 +1182,8 @@ class conditional_iterator_proxy
 {
   public:
 
+	using base_iterator = iterator_impl<RowType>;
+
 	class conditional_iterator_impl
 	{
 	  public:
@@ -1178,8 +1192,6 @@ class conditional_iterator_proxy
 		using difference_type = std::ptrdiff_t;
 		using pointer = RowType*;
 		using reference = RowType&;
-
-		using base_iterator = iterator_impl<RowType>;
 
 		conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond);
 		conditional_iterator_impl(const conditional_iterator_impl& i) = default;
@@ -1223,11 +1235,7 @@ class conditional_iterator_proxy
 	using iterator = conditional_iterator_impl;
 	using reference = typename iterator::reference;
 
-	conditional_iterator_proxy(Category& cat, Condition&& cond)
-		: mCat(&cat), mCondition(std::move(cond))
-	{
-		mCondition.prepare(cat);
-	}
+	conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond);
 
 	conditional_iterator_proxy(conditional_iterator_proxy&& p);
 	conditional_iterator_proxy& operator=(conditional_iterator_proxy&& p);
@@ -1238,7 +1246,7 @@ class conditional_iterator_proxy
 	iterator begin() const;
 	iterator end() const;
 
-	bool empty()					{ return begin() == end(); }
+	bool empty() const;
 	size_t size() const				{ return std::distance(begin(), end()); }
 
 	RowType front()					{ return *begin(); }
@@ -1250,6 +1258,7 @@ class conditional_iterator_proxy
   private:
 	Category* mCat;
 	Condition mCondition;
+	base_iterator mCBegin, mCEnd;
 };
 
 // --------------------------------------------------------------------
@@ -1440,7 +1449,12 @@ class Category
 
 	conditional_iterator_proxy<Row> find(Condition&& cond)
 	{
-		return { *this, std::move(cond) };
+		return { *this, begin(), std::forward<Condition>(cond) };
+	}
+
+	conditional_iterator_proxy<Row> find(const_iterator pos, Condition&& cond)
+	{
+		return { *this, pos, std::forward<Condition>(cond) };
 	}
 
 	bool exists(Condition&& cond) const;
@@ -1701,7 +1715,7 @@ template<typename RowType>
 conditional_iterator_proxy<RowType>::conditional_iterator_impl::conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond)
 	: mCat(&cat), mBegin(pos), mEnd(cat.end()), mCondition(&cond)
 {
-	// skip if until the first row matching cond
+	// skip until the first row matching cond
 
 	while (mBegin != mEnd and not (*mCondition)(*mCat, *mBegin))
 		++mBegin;
@@ -1709,8 +1723,22 @@ conditional_iterator_proxy<RowType>::conditional_iterator_impl::conditional_iter
 
 template<typename RowType>
 conditional_iterator_proxy<RowType>::conditional_iterator_proxy(conditional_iterator_proxy&& p)
+	: mCat(nullptr), mCBegin(p.mCBegin), mCEnd(p.mCEnd)
 {
-	swap(p);
+	std::swap(mCat, p.mCat);
+	mCondition.swap(p.mCondition);
+}
+
+template<typename RowType>
+conditional_iterator_proxy<RowType>::conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond)
+	: mCat(&cat), mCondition(std::move(cond))
+	, mCBegin(pos)
+	, mCEnd(cat.end())
+{
+	mCondition.prepare(cat);
+
+	while (mCBegin != mCEnd and not mCondition(*mCat, *mCBegin))
+		++mCBegin;
 }
 
 template<typename RowType>
@@ -1723,13 +1751,19 @@ conditional_iterator_proxy<RowType>& conditional_iterator_proxy<RowType>::operat
 template<typename RowType>
 typename conditional_iterator_proxy<RowType>::iterator conditional_iterator_proxy<RowType>::begin() const
 {
-	return iterator(*mCat, mCat->begin(), mCondition);
+	return iterator(*mCat, mCBegin, mCondition);
 }
 
 template<typename RowType>
 typename conditional_iterator_proxy<RowType>::iterator conditional_iterator_proxy<RowType>::end() const
 {
-	return iterator(*mCat, mCat->end(), mCondition);
+	return iterator(*mCat, mCEnd, mCondition);
+}
+
+template<typename RowType>
+bool conditional_iterator_proxy<RowType>::empty() const
+{
+	return mCBegin != mCEnd;
 }
 
 template<typename RowType>
@@ -1737,8 +1771,9 @@ void conditional_iterator_proxy<RowType>::swap(conditional_iterator_proxy& rhs)
 {
 	std::swap(mCat, rhs.mCat);
 	mCondition.swap(rhs.mCondition);
+	std::swap(mCBegin, rhs.mCBegin);
+	std::swap(mCEnd, rhs.mCEnd);
 }
-
 
 }
 
