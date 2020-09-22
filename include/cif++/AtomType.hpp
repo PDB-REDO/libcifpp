@@ -28,9 +28,11 @@
 
 #pragma once
 
-#include "cif++/Config.hpp"
+#include <cstdint>
+#include <string>
+#include <stdexcept>
 
-#include <boost/math/quaternion.hpp>
+#include "cif++/Config.hpp"
 
 namespace mmcif
 {

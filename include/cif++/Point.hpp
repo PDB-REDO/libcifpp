@@ -32,8 +32,6 @@
 
 #include <boost/math/quaternion.hpp>
 
-#include "clipper/core/coords.h"
-
 namespace mmcif
 {
 
@@ -60,7 +58,7 @@ struct PointF
 	
 	PointF()							: mX(0), mY(0), mZ(0) {}
 	PointF(FType x, FType y, FType z)	: mX(x), mY(y), mZ(z) {}
-	PointF(const clipper::Coord_orth& pt): mX(pt[0]), mY(pt[1]), mZ(pt[2]) {}
+	// PointF(const clipper::Coord_orth& pt): mX(pt[0]), mY(pt[1]), mZ(pt[2]) {}
 	
 	template<typename PF>
 	PointF(const PointF<PF>& pt)
@@ -68,13 +66,13 @@ struct PointF
 		, mY(static_cast<F>(pt.mY))
 		, mZ(static_cast<F>(pt.mZ)) {}
 	
-	PointF& operator=(const clipper::Coord_orth& rhs)
-	{
-		mX = rhs[0];
-		mY = rhs[1];
-		mZ = rhs[2];
-		return *this;
-	}
+	// PointF& operator=(const clipper::Coord_orth& rhs)
+	// {
+	// 	mX = rhs[0];
+	// 	mY = rhs[1];
+	// 	mZ = rhs[2];
+	// 	return *this;
+	// }
 
 	template<typename PF>
 	PointF& operator=(const PointF<PF>& rhs)
@@ -171,10 +169,10 @@ struct PointF
 		mZ = p.R_component_4();
 	}
 	
-	operator clipper::Coord_orth() const
-	{
-		return clipper::Coord_orth(mX, mY, mZ);
-	}
+	// operator clipper::Coord_orth() const
+	// {
+	// 	return clipper::Coord_orth(mX, mY, mZ);
+	// }
 	
 	operator std::tuple<const FType&, const FType&, const FType&>() const
 	{

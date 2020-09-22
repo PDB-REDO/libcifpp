@@ -31,6 +31,8 @@
 #include <vector>
 #include <set>
 #include <cassert>
+#include <memory>
+#include <list>
 
 #include <unistd.h>
 

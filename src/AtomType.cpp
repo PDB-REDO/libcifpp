@@ -24,6 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
+
 #include "cif++/AtomType.hpp"
 #include "cif++/Cif++.hpp"
 
@@ -35,7 +37,7 @@ namespace mmcif
 namespace data
 {
 
-const float kNA = nan("1");
+const float kNA = std::nan("1");
 
 const AtomTypeInfo kKnownAtoms[] =
 {

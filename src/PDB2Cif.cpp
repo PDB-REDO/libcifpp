@@ -35,13 +35,12 @@
 #include <boost/format.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 
-#include <clipper/core/spacegroup.h>
-
 #include "cif++/PDB2Cif.hpp"
 #include "cif++/AtomType.hpp"
 #include "cif++/Compound.hpp"
 #include "cif++/PDB2CifRemark3.hpp"
 #include "cif++/CifUtils.hpp"
+#include "cif++/Symmetry.hpp"
 
 using namespace std;
 namespace ba = boost::algorithm;
@@ -4928,8 +4927,7 @@ void PDBFileParser::ParseCrystallographic()
 	try
 	{
 		spaceGroup = vS(56, 66);
-		clipper::Spacegroup sg(clipper::Spgr_descr{spaceGroup});
-		intTablesNr = to_string(sg.spacegroup_number());
+		intTablesNr = std::to_string(mmcif::GetSpacegroupNumber(spaceGroup));
 	}
 	catch (...)
 	{

@@ -6,7 +6,7 @@ AX_CXX_COMPILE_STDCXX_17([noext])
 
 AX_CHECK_COMPILE_FLAG([-fstandalone-debug], , , [-Werror])
 
-AC_CONFIG_SRCDIR([src/AtomShape.cpp])
+AC_CONFIG_SRCDIR([src/Cif++.cpp])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([config/m4])
 AC_CONFIG_HEADERS([include/cif++/Config.hpp])
@@ -31,28 +31,16 @@ AC_CHECK_HEADERS([sys/ioctl.h])
 AC_CHECK_HEADERS([termios.h])
 AC_CHECK_HEADER_STDBOOL
 AC_CHECK_TYPES([ptrdiff_t])
-AC_C_INLINE
-AC_FUNC_ERROR_AT_LINE
-AC_FUNC_MALLOC
-AC_FUNC_STRTOD
 AC_PROG_MAKE_SET
-AC_TYPE_INT32_T
-AC_TYPE_INT64_T
-AC_TYPE_INT8_T
-AC_TYPE_SIZE_T
-AC_TYPE_UINT16_T
-AC_TYPE_UINT32_T
-AC_TYPE_UINT64_T
-AC_TYPE_UINT8_T
 
-AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
+# AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
 
-AS_IF([test x"$CCP4" != x""],
-	  [
-		CPPFLAGS="$CPPFLAGS -I ${CCP4}/include"
-		CXXFLAGS="$CXXFLAGS -I ${CCP4}/include"
-		LDFLAGS="$LDFLAGS -L${CCP4}/lib"
-	  ])
+# AS_IF([test x"$CCP4" != x""],
+# 	  [
+# 		CPPFLAGS="$CPPFLAGS -I ${CCP4}/include"
+# 		CXXFLAGS="$CXXFLAGS -I ${CCP4}/include"
+# 		LDFLAGS="$LDFLAGS -L${CCP4}/lib"
+# 	  ])
 
 AC_ARG_VAR([USE_RSRC], [Use resources to store internal data, requires mrc])
 AC_ARG_VAR([MRC], [Specify a location for the mrc executable])
@@ -103,48 +91,48 @@ AX_BOOST_IOSTREAMS
 dnl AX_BOOST_FILESYSTEM
 AX_BOOST_THREAD
 
-AC_ARG_WITH([clipper],
-	AS_HELP_STRING([--with-clipper=@<:@location@:>@],
-		[Use the clipper library as specified.
-		@<:@location=$CCP4@:>@]),
-		[
-			CPPFLAGS="$CPPFLAGS -I ${withval}/include"
-			CXXFLAGS="$CXXFLAGS -I ${withval}/include"
-			LDFLAGS="$LDFLAGS -L${withval}/lib"
-		])
+# AC_ARG_WITH([clipper],
+# 	AS_HELP_STRING([--with-clipper=@<:@location@:>@],
+# 		[Use the clipper library as specified.
+# 		@<:@location=$CCP4@:>@]),
+# 		[
+# 			CPPFLAGS="$CPPFLAGS -I ${withval}/include"
+# 			CXXFLAGS="$CXXFLAGS -I ${withval}/include"
+# 			LDFLAGS="$LDFLAGS -L${withval}/lib"
+# 		])
 
-AC_ARG_WITH([newuoa],
-	AS_HELP_STRING([--with-newuoa=@<:@location@:>@],
-		[Use the newuoa library as specified.]),
-		[
-			CPPFLAGS="$CPPFLAGS -I ${withval}/include"
-			CXXFLAGS="$CXXFLAGS -I ${withval}/include"
-			LDFLAGS="$LDFLAGS -L${withval}/lib"
-		])
+# AC_ARG_WITH([newuoa],
+# 	AS_HELP_STRING([--with-newuoa=@<:@location@:>@],
+# 		[Use the newuoa library as specified.]),
+# 		[
+# 			CPPFLAGS="$CPPFLAGS -I ${withval}/include"
+# 			CXXFLAGS="$CXXFLAGS -I ${withval}/include"
+# 			LDFLAGS="$LDFLAGS -L${withval}/lib"
+# 		])
 
-AC_CHECK_HEADER(
-	[clipper/clipper.h],
-	[],
-	[AC_MSG_ERROR([
-Can't find the main clipper include file clipper/clipper.h. Please
-specify either the CCP4 location of the location of the installed
-clipper using --with-clipper=<path>
-])])
+# AC_CHECK_HEADER(
+# 	[clipper/clipper.h],
+# 	[],
+# 	[AC_MSG_ERROR([
+# Can't find the main clipper include file clipper/clipper.h. Please
+# specify either the CCP4 location of the location of the installed
+# clipper using --with-clipper=<path>
+# ])])
 
-AC_MSG_CHECKING([clipper version])
-AC_COMPILE_IFELSE(
-	[read_test(clipper-test.cpp)],
-	[],
-	[AC_MSG_ERROR([The version of clipper is not up to date])])
+# AC_MSG_CHECKING([clipper version])
+# AC_COMPILE_IFELSE(
+# 	[read_test(clipper-test.cpp)],
+# 	[],
+# 	[AC_MSG_ERROR([The version of clipper is not up to date])])
 
-AC_CHECK_HEADER(
-	[newuoa.h],
-	[],
-	[AC_MSG_ERROR([
-Can't find the newuoa include file newuoa.h. Please install this
-library and specify its location with --with-newuoa=<path>.
-You can find newuoa at https://github.com/elsid/newuoa-cpp.git
-])])
+# AC_CHECK_HEADER(
+# 	[newuoa.h],
+# 	[],
+# 	[AC_MSG_ERROR([
+# Can't find the newuoa include file newuoa.h. Please install this
+# library and specify its location with --with-newuoa=<path>.
+# You can find newuoa at https://github.com/elsid/newuoa-cpp.git
+# ])])
 
 AX_CHECK_LIBRARY([LIBZ], [zlib.h], [z], [],
                  [AC_MSG_ERROR([libz not found - compressed files not supported])])

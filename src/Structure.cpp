@@ -47,7 +47,7 @@ namespace fs = boost::filesystem;
 #include "cif++/PDB2Cif.hpp"
 #include "cif++/CifParser.hpp"
 #include "cif++/Cif2PDB.hpp"
-#include "cif++/AtomShape.hpp"
+// #include "cif++/AtomShape.hpp"
 
 using namespace std;
 
@@ -190,7 +190,7 @@ struct AtomImpl
 		, mRefcount(1), mRow(i.mRow), mCompound(i.mCompound)
 		, mRadius(i.mRadius), mCachedProperties(i.mCachedProperties)
 		, mSymmetryCopy(i.mSymmetryCopy), mClone(true)
-		, mRTop(i.mRTop), mD(i.mD)
+		// , mRTop(i.mRTop), mD(i.mD)
 	{
 	}
 	
@@ -211,18 +211,18 @@ struct AtomImpl
 		prefetch();
 	}
 
-	AtomImpl(const AtomImpl& impl, const Point& d, const clipper::RTop_orth& rt)
-		: mFile(impl.mFile), mID(impl.mID), mType(impl.mType), mAtomID(impl.mAtomID)
-		, mCompID(impl.mCompID), mAsymID(impl.mAsymID), mSeqID(impl.mSeqID)
-		, mAltID(impl.mAltID), mLocation(impl.mLocation), mRefcount(1)
-		, mRow(impl.mRow), mCompound(impl.mCompound), mRadius(impl.mRadius)
-		, mCachedProperties(impl.mCachedProperties)
-		, mSymmetryCopy(true), mRTop(rt), mD(d)
-	{
-		mLocation += d;
-		mLocation = ((clipper::Coord_orth)mLocation).transform(rt);
-		mLocation -= d;
-	}
+	// AtomImpl(const AtomImpl& impl, const Point& d, const clipper::RTop_orth& rt)
+	// 	: mFile(impl.mFile), mID(impl.mID), mType(impl.mType), mAtomID(impl.mAtomID)
+	// 	, mCompID(impl.mCompID), mAsymID(impl.mAsymID), mSeqID(impl.mSeqID)
+	// 	, mAltID(impl.mAltID), mLocation(impl.mLocation), mRefcount(1)
+	// 	, mRow(impl.mRow), mCompound(impl.mCompound), mRadius(impl.mRadius)
+	// 	, mCachedProperties(impl.mCachedProperties)
+	// 	, mSymmetryCopy(true), mRTop(rt), mD(d)
+	// {
+	// 	mLocation += d;
+	// 	mLocation = ((clipper::Coord_orth)mLocation).transform(rt);
+	// 	mLocation -= d;
+	// }
 
 	void prefetch()
 	{
@@ -245,52 +245,52 @@ struct AtomImpl
 		mCompound = Compound::create(compID);
 	}
 	
-	clipper::Atom toClipper() const
-	{
-		clipper::Atom result;
-		result.set_coord_orth(mLocation);
+	// clipper::Atom toClipper() const
+	// {
+	// 	clipper::Atom result;
+	// 	result.set_coord_orth(mLocation);
 		
-		if (mRow["occupancy"].empty())
-			result.set_occupancy(1.0);
-		else
-			result.set_occupancy(mRow["occupancy"].as<float>());
+	// 	if (mRow["occupancy"].empty())
+	// 		result.set_occupancy(1.0);
+	// 	else
+	// 		result.set_occupancy(mRow["occupancy"].as<float>());
 		
-		string element = mRow["type_symbol"].as<string>();
-		if (not mRow["pdbx_formal_charge"].empty())
-		{
-			int charge = mRow["pdbx_formal_charge"].as<int>();
-			if (abs(charge) > 1)
-				element += to_string(charge);
-			if (charge < 0)
-				element += '-';
-			else
-				element += '+';
-		}
-		result.set_element(element);
+	// 	string element = mRow["type_symbol"].as<string>();
+	// 	if (not mRow["pdbx_formal_charge"].empty())
+	// 	{
+	// 		int charge = mRow["pdbx_formal_charge"].as<int>();
+	// 		if (abs(charge) > 1)
+	// 			element += to_string(charge);
+	// 		if (charge < 0)
+	// 			element += '-';
+	// 		else
+	// 			element += '+';
+	// 	}
+	// 	result.set_element(element);
 		
-		if (not mRow["U_iso_or_equiv"].empty())
-			result.set_u_iso(mRow["U_iso_or_equiv"].as<float>());
-		else if (not mRow["B_iso_or_equiv"].empty())
-			result.set_u_iso(mRow["B_iso_or_equiv"].as<float>() / (8 * kPI * kPI));
-		else
-			throw runtime_error("Missing B_iso or U_iso");	
+	// 	if (not mRow["U_iso_or_equiv"].empty())
+	// 		result.set_u_iso(mRow["U_iso_or_equiv"].as<float>());
+	// 	else if (not mRow["B_iso_or_equiv"].empty())
+	// 		result.set_u_iso(mRow["B_iso_or_equiv"].as<float>() / (8 * kPI * kPI));
+	// 	else
+	// 		throw runtime_error("Missing B_iso or U_iso");	
 		
-		auto& db = *mFile.impl().mDb;
-		auto& cat = db["atom_site_anisotrop"];
-		auto r = cat[cif::Key("id") == mID];
-		if (r.empty())
-			result.set_u_aniso_orth(clipper::U_aniso_orth(nan("0"), 0, 0, 0, 0, 0));
-		else
-		{
-			float u11, u12, u13, u22, u23, u33;
-			cif::tie(u11, u12, u13, u22, u23, u33) =
-				r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
+	// 	auto& db = *mFile.impl().mDb;
+	// 	auto& cat = db["atom_site_anisotrop"];
+	// 	auto r = cat[cif::Key("id") == mID];
+	// 	if (r.empty())
+	// 		result.set_u_aniso_orth(clipper::U_aniso_orth(nan("0"), 0, 0, 0, 0, 0));
+	// 	else
+	// 	{
+	// 		float u11, u12, u13, u22, u23, u33;
+	// 		cif::tie(u11, u12, u13, u22, u23, u33) =
+	// 			r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
 			
-			result.set_u_aniso_orth(clipper::U_aniso_orth(u11, u22, u33, u12, u13, u23));
-		}
+	// 		result.set_u_aniso_orth(clipper::U_aniso_orth(u11, u22, u33, u12, u13, u23));
+	// 	}
 		
-		return result;
-	}
+	// 	return result;
+	// }
 
 	void reference()
 	{
@@ -423,9 +423,9 @@ struct AtomImpl
 	bool				mSymmetryCopy = false;
 	bool				mClone = false;
 
-	clipper::RTop_orth	mRTop;
-	Point				mD;
-	int32_t				mRTix;
+	// clipper::RTop_orth	mRTop;
+	// Point				mD;
+	// int32_t				mRTix;
 };
 
 //Atom::Atom(const File& f, const string& id)
@@ -642,25 +642,25 @@ void Atom::location(Point p)
 	impl()->moveTo(p);
 }
 
-Atom Atom::symmetryCopy(const Point& d, const clipper::RTop_orth& rt)
-{
-	return Atom(new AtomImpl(*impl(), d, rt));
-}
+// Atom Atom::symmetryCopy(const Point& d, const clipper::RTop_orth& rt)
+// {
+// 	return Atom(new AtomImpl(*impl(), d, rt));
+// }
 
-bool Atom::isSymmetryCopy() const
-{
-	return impl()->mSymmetryCopy;
-}
+// bool Atom::isSymmetryCopy() const
+// {
+// 	return impl()->mSymmetryCopy;
+// }
 
-string Atom::symmetry() const
-{
-	return clipper::Symop(impl()->mRTop).format() + "\n" + impl()->mRTop.format();
-}
+// string Atom::symmetry() const
+// {
+// 	return clipper::Symop(impl()->mRTop).format() + "\n" + impl()->mRTop.format();
+// }
 
-const clipper::RTop_orth& Atom::symop() const
-{
-	return impl()->mRTop;
-}
+// const clipper::RTop_orth& Atom::symop() const
+// {
+// 	return impl()->mRTop;
+// }
 
 const Compound& Atom::comp() const
 {
@@ -678,20 +678,20 @@ bool Atom::operator==(const Atom& rhs) const
 		(&impl()->mFile == &rhs.impl()->mFile and impl()->mID == rhs.impl()->mID); 	
 }
 
-clipper::Atom Atom::toClipper() const
-{
-	return impl()->toClipper();
-}
+// clipper::Atom Atom::toClipper() const
+// {
+// 	return impl()->toClipper();
+// }
 
-void Atom::calculateRadius(float resHigh, float resLow, float perc)
-{
-	AtomShape shape(*this, resHigh, resLow, false);
-	impl()->mRadius = shape.radius();
+// void Atom::calculateRadius(float resHigh, float resLow, float perc)
+// {
+// 	AtomShape shape(*this, resHigh, resLow, false);
+// 	impl()->mRadius = shape.radius();
 
-	// verbose
-	if (cif::VERBOSE > 1)
-		cout << "Calculated radius for " << AtomTypeTraits(impl()->mType).name() << " with charge " << charge() << " is " << impl()->mRadius << endl;
-}
+// 	// verbose
+// 	if (cif::VERBOSE > 1)
+// 		cout << "Calculated radius for " << AtomTypeTraits(impl()->mType).name() << " with charge " << charge() << " is " << impl()->mRadius << endl;
+// }
 
 float Atom::radius() const
 {

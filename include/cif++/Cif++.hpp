@@ -29,7 +29,6 @@
 #include "cif++/Config.hpp"
 
 #include <string>
-#include <cstdint>
 
 #include <regex>
 #include <iostream>
@@ -107,9 +106,6 @@ namespace cif
 // flag for verbose output
 extern int VERBOSE;
 
-using std::string;
-using std::vector;
-
 // mmCIF mapping
 // A CIF data file in this case contains entries (data blocks) which can contain
 // one or more Category objects. Each Category object contains arrays of Items.
@@ -144,10 +140,10 @@ class Item
 	Item() {}
 
 	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	Item(const string& name, const T& value)
+	Item(const std::string& name, const T& value)
 		: mName(name), mValue(std::to_string(value)) {}
 
-	Item(const string& name, const std::string& value)
+	Item(const std::string& name, const std::string& value)
 		: mName(name), mValue(value) {}
 
 	Item(const Item& rhs) : mName(rhs.mName), mValue(rhs.mValue) {}
@@ -175,10 +171,10 @@ class Item
 		return *this;
 	}
 	
-	const string& name() const	{ return mName; }
-	const string& value() const	{ return mValue; }
+	const std::string& name() const	{ return mName; }
+	const std::string& value() const	{ return mValue; }
 
-	void value(const string& v)	{ mValue = v; }
+	void value(const std::string& v)	{ mValue = v; }
 	
 	// empty means either null or unknown
 	bool empty() const;
@@ -193,8 +189,8 @@ class Item
 	const char* c_str() const	{ return mValue.c_str(); }
 	
   private:
-	string	mName;
-  	string	mValue;
+	std::string	mName;
+  	std::string	mValue;
 };
 
 // --------------------------------------------------------------------
@@ -209,16 +205,16 @@ class Datablock
 	using iterator = CategoryList::iterator;
 	using const_iterator = CategoryList::const_iterator;
 	
-	Datablock(const string& name);
+	Datablock(const std::string& name);
 	~Datablock();
 
 	Datablock(const Datablock&) = delete;
 	Datablock& operator=(const Datablock&) = delete;
 
-	string getName() const							{ return mName; }
-	void setName(const string& n)					{ mName = n; }
+	std::string getName() const							{ return mName; }
+	void setName(const std::string& n)					{ mName = n; }
 	
-	string firstItem(const string& tag) const;
+	std::string firstItem(const std::string& tag) const;
 
 	iterator begin()		{ return mCategories.begin(); }
 	iterator end()			{ return mCategories.end(); }
@@ -226,7 +222,7 @@ class Datablock
 	const_iterator begin() const	{ return mCategories.begin(); }
 	const_iterator end() const		{ return mCategories.end(); }
 
-	Category& operator[](const string& name);
+	Category& operator[](const std::string& name);
 
 	std::tuple<iterator,bool> emplace(const std::string& name);
 	
@@ -236,10 +232,10 @@ class Datablock
 	void setValidator(Validator* v);
 
 	// this one only looks up a Category, returns nullptr if it does not exist
-	Category* get(const string& name);
+	Category* get(const std::string& name);
 
-	void getTagOrder(vector<string>& tags) const;
-	void write(std::ostream& os, const vector<string>& order);
+	void getTagOrder(std::vector<std::string>& tags) const;
+	void write(std::ostream& os, const std::vector<std::string>& order);
 	void write(std::ostream& os);
 	
 	// convenience function, add a line to the software category
@@ -249,7 +245,7 @@ class Datablock
   private:
 
 	std::list<Category>	mCategories;
-	string				mName;
+	std::string				mName;
 	Validator*			mValidator;
 	Datablock*			mNext;
 };
@@ -296,7 +292,7 @@ namespace detail
 			return item_value_as<T>::convert(*this);
 		}
 
-		template<typename T>
+		template<typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 		int compare(const T& value) const
 		{
 			int result = 0;
@@ -317,6 +313,62 @@ namespace detail
 			
 			return result;
 		}
+
+		template<typename T, std::enable_if_t<std::is_same_v<T, char>, int> = 0>
+		int compare(const T& value) const
+		{
+			return icompare(std::string{value}, c_str());
+		}
+
+		template<typename T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T> and not std::is_same_v<T, char>, int> = 0>
+		int compare(const T& value) const
+		{
+			int result = 0;
+			try
+			{
+				auto v = std::stol(c_str());
+				if (v < value)
+					result = -1;
+				else if (v > value)
+					result = 1;
+			}
+			catch (...)
+			{
+				if (VERBOSE)
+					std::cerr << "conversion error in compare for '" << c_str() << '\'' << std::endl;
+				result = 1;
+			}
+			
+			return result;
+		}
+		
+		template<typename T, std::enable_if_t<std::is_integral_v<T> and std::is_unsigned_v<T>, int> = 0>
+		int compare(const T& value) const
+		{
+			int result = 0;
+			try
+			{
+				auto v = std::stoul(c_str());
+				if (v < value)
+					result = -1;
+				else if (v > value)
+					result = 1;
+			}
+			catch (...)
+			{
+				if (VERBOSE)
+					std::cerr << "conversion error in compare for '" << c_str() << '\'' << std::endl;
+				result = 1;
+			}
+			
+			return result;
+		}
+
+		template<typename T, std::enable_if_t<std::is_same_v<std::remove_cv_t<T>, std::string>, int> = 0>
+		int compare(const T& value) const
+		{
+			return icompare(c_str(), value.c_str());
+		}
 		
 		// empty means either null or unknown
 		bool empty() const;
@@ -334,8 +386,8 @@ namespace detail
 		// or, if specified, the value from _item_default.value in the dictionary
 		const char* c_str(const char* defaultValue) const;
 		
-		bool operator!=(const string& s) const		{ return s != c_str(); }
-		bool operator==(const string& s) const		{ return s == c_str(); }
+		bool operator!=(const std::string& s) const		{ return s != c_str(); }
+		bool operator==(const std::string& s) const		{ return s == c_str(); }
 
 		friend std::ostream& operator<<(std::ostream& os, ItemReference& item);
 
@@ -420,20 +472,6 @@ namespace detail
 		}
 	};
 
-	template<>
-	inline
-	int ItemReference::compare<string>(const string& value) const
-	{
-		return icompare(c_str(), value.c_str());
-	}
-
-	template<>
-	inline
-	int ItemReference::compare(const char* const& value) const
-	{
-		return cif::icompare(c_str(), value);
-	}
-	
 	inline std::ostream& operator<<(std::ostream& os, const ItemReference& rhs)
 	{
 		os << rhs.c_str();
@@ -592,13 +630,13 @@ class Row
 		return detail::ItemReference(itemTag, column, *this);
 	}
 
-	const detail::ItemReference operator[](const string& itemTag) const
+	const detail::ItemReference operator[](const std::string& itemTag) const
 	{
 		size_t column = ColumnForItemTag(itemTag.c_str());
 		return detail::ItemReference(itemTag.c_str(), column, *this);
 	}
 
-	detail::ItemReference operator[](const string& itemTag)
+	detail::ItemReference operator[](const std::string& itemTag)
 	{
 		size_t column = ColumnForItemTag(itemTag.c_str());
 		return detail::ItemReference(itemTag.c_str(), column, *this);
@@ -623,6 +661,11 @@ class Row
 		return mData == rhs.mData;
 	}
 
+	bool operator!=(const Row& rhs) const
+	{
+		return mData != rhs.mData;
+	}
+
 	ItemRow* data() const							{ return mData; }
 
 	void swap(Row& rhs)
@@ -634,8 +677,8 @@ class Row
 
   private:
 
-	void assign(const string& name, const string& value, bool updateLinked);
-	void assign(size_t column, const string& value, bool updateLinked);
+	void assign(const std::string& name, const std::string& value, bool updateLinked);
+	void assign(size_t column, const std::string& value, bool updateLinked);
 	void assign(const Item& i, bool updateLinked);
 	
 	static void swap(size_t column, ItemRow* a, ItemRow* b);
@@ -747,7 +790,7 @@ namespace detail
 
 struct KeyIsEmptyConditionImpl : public ConditionImpl
 {
-	KeyIsEmptyConditionImpl(const string& ItemTag)
+	KeyIsEmptyConditionImpl(const std::string& ItemTag)
 		: mItemTag(ItemTag) {}
 
 	virtual void prepare(const Category& c);
@@ -762,7 +805,7 @@ struct KeyIsEmptyConditionImpl : public ConditionImpl
 		return mItemTag + " == <empty>";
 	}
 	
-	string mItemTag;
+	std::string mItemTag;
 	size_t mItemIx;
 };
 
@@ -771,7 +814,7 @@ struct KeyIsConditionImpl : public ConditionImpl
 {
 	typedef T valueType;
 	
-	KeyIsConditionImpl(const string& ItemTag, const valueType& value)
+	KeyIsConditionImpl(const std::string& ItemTag, const valueType& value)
 		: mItemTag(ItemTag), mValue(value) {}
 	
 	virtual void prepare(const Category& c);
@@ -786,12 +829,13 @@ struct KeyIsConditionImpl : public ConditionImpl
 		return mItemTag + " == " + std::to_string(mValue);
 	}
 	
-	string mItemTag;
+	std::string mItemTag;
 	size_t mItemIx;
 	valueType mValue;
 };
 
 template<>
+inline
 std::string KeyIsConditionImpl<std::string>::str() const
 {
 	return mItemTag + " == " + mValue;
@@ -802,7 +846,7 @@ struct KeyIsNotConditionImpl : public ConditionImpl
 {
 	typedef T valueType;
 	
-	KeyIsNotConditionImpl(const string& ItemTag, const valueType& value)
+	KeyIsNotConditionImpl(const std::string& ItemTag, const valueType& value)
 		: mItemTag(ItemTag), mValue(value) {}
 	
 	virtual void prepare(const Category& c);
@@ -817,12 +861,13 @@ struct KeyIsNotConditionImpl : public ConditionImpl
 		return mItemTag + " != " + std::to_string(mValue);
 	}
 	
-	string mItemTag;
+	std::string mItemTag;
 	size_t mItemIx;
 	valueType mValue;
 };
 
 template<>
+inline
 std::string KeyIsNotConditionImpl<std::string>::str() const
 {
 	return mItemTag + " != " + mValue;
@@ -831,7 +876,7 @@ std::string KeyIsNotConditionImpl<std::string>::str() const
 template<typename COMP>
 struct KeyCompareConditionImpl : public ConditionImpl
 {
-	KeyCompareConditionImpl(const string& ItemTag, COMP&& comp)
+	KeyCompareConditionImpl(const std::string& ItemTag, COMP&& comp)
 		: mItemTag(ItemTag), mComp(std::move(comp)) {}
 	
 	virtual void prepare(const Category& c);
@@ -846,21 +891,21 @@ struct KeyCompareConditionImpl : public ConditionImpl
 		return mItemTag + " compare";
 	}
 	
-	string mItemTag;
+	std::string mItemTag;
 	size_t mItemIx;
 	COMP mComp;
 };
 
 struct KeyMatchesConditionImpl : public ConditionImpl
 {
-	KeyMatchesConditionImpl(const string& ItemTag, const std::regex& rx)
+	KeyMatchesConditionImpl(const std::string& ItemTag, const std::regex& rx)
 		: mItemTag(ItemTag), mRx(rx) {}
 	
 	virtual void prepare(const Category& c);
 	
 	virtual bool test(const Category& c, const Row& r) const
 	{
-		return std::regex_match(r[mItemIx].as<string>(), mRx);
+		return std::regex_match(r[mItemIx].as<std::string>(), mRx);
 	}
 	
 	virtual std::string str() const
@@ -868,7 +913,7 @@ struct KeyMatchesConditionImpl : public ConditionImpl
 		return mItemTag + " ~= " + "<rx>";
 	}
 	
-	string mItemTag;
+	std::string mItemTag;
 	size_t mItemIx;
 	std::regex mRx;
 };
@@ -1053,13 +1098,13 @@ struct Empty {};
 
 struct Key
 {
-	Key(const string& itemTag) : mItemTag(itemTag) {}
+	Key(const std::string& itemTag) : mItemTag(itemTag) {}
 	Key(const char* itemTag) : mItemTag(itemTag) {}
 
 	Key(const Key&) = delete;
 	Key& operator=(const Key&) = delete;
 	
-	string mItemTag;
+	std::string mItemTag;
 };
 
 template<typename T>
@@ -1070,7 +1115,7 @@ Condition operator==(const Key& key, const T& v)
 
 inline Condition operator==(const Key& key, const char* v)
 {
-	string value(v ? v : "");
+	std::string value(v ? v : "");
 	return Condition(new detail::KeyIsConditionImpl<std::string>(key.mItemTag, value));
 }
 
@@ -1095,7 +1140,7 @@ Condition operator!=(const Key& key, const T& v)
 
 inline Condition operator!=(const Key& key, const char* v)
 {
-	string value(v ? v : "");
+	std::string value(v ? v : "");
 	return Condition(new detail::KeyIsNotConditionImpl<std::string>(key.mItemTag, value));
 }
 
@@ -1214,7 +1259,7 @@ class iterator_impl
 	} 
 
 	bool operator==(const iterator_impl& rhs) const	{ return mCurrent == rhs.mCurrent; } 
-	bool operator!=(const iterator_impl& rhs) const	{ return not (mCurrent == rhs.mCurrent); } 
+	bool operator!=(const iterator_impl& rhs) const	{ return mCurrent != rhs.mCurrent; } 
 
   private:
 	Row mCurrent;
@@ -1270,7 +1315,7 @@ class conditional_iterator_proxy
 		} 
 
 		bool operator==(const conditional_iterator_impl& rhs) const	{ return mBegin == rhs.mBegin; } 
-		bool operator!=(const conditional_iterator_impl& rhs) const	{ return not (mBegin == rhs.mBegin); } 
+		bool operator!=(const conditional_iterator_impl& rhs) const	{ return mBegin != rhs.mBegin; } 
 
 	  private:
 	  	Category* mCat;
@@ -1313,7 +1358,7 @@ class conditional_iterator_proxy
 
 class RowSet
 {
-	typedef vector<Row>	base_type;
+	typedef std::vector<Row>	base_type;
 
   public:
 
@@ -1329,10 +1374,10 @@ class RowSet
 	RowSet& operator=(const RowSet& rhs);
 	RowSet& operator=(RowSet&& rhs);
 
-	RowSet& orderBy(const string& Item)
+	RowSet& orderBy(const std::string& Item)
 		{ return orderBy({ Item }); }
 	
-	RowSet& orderBy(std::initializer_list<string> Items);
+	RowSet& orderBy(std::initializer_list<std::string> Items);
 
 	class iterator
 	{
@@ -1449,7 +1494,7 @@ class RowSet
 
   private:
 	Category*			mCat;
-	vector<ItemRow*>	mItems;
+	std::vector<ItemRow*>	mItems;
 
 	// Condition*	mCond;
 };
@@ -1464,12 +1509,12 @@ class Category
 	friend class Row;
 	friend class detail::ItemReference;
 
-	Category(Datablock& db, const string& name, Validator* Validator);
+	Category(Datablock& db, const std::string& name, Validator* Validator);
 	Category(const Category&) = delete;
 	Category& operator=(const Category&) = delete;
 	~Category();
 
-	const string name() const						{ return mName; }
+	const std::string name() const						{ return mName; }
 
 	using iterator = iterator_impl<Row>;
 	using const_iterator = iterator_impl<const Row>;
@@ -1505,10 +1550,10 @@ class Category
 
 	bool exists(Condition&& cond) const;
 	
-	RowSet orderBy(const string& Item)
+	RowSet orderBy(const std::string& Item)
 		{ return orderBy({ Item }); }
 	
-	RowSet orderBy(std::initializer_list<string> Items);
+	RowSet orderBy(std::initializer_list<std::string> Items);
 	
 	std::tuple<Row,bool> emplace(Item value)		{ return emplace({ value }); }
 
@@ -1567,15 +1612,15 @@ class Category
 	
 	std::set<size_t> keyFieldsByIndex() const;
 	
-	void drop(const string& field);
+	void drop(const std::string& field);
 
-	void getTagOrder(vector<string>& tags) const;
+	void getTagOrder(std::vector<std::string>& tags) const;
 
 	// return index for known column, or the next available column index
-	size_t getColumnIndex(const string& name) const;
-    bool hasColumn(const string& name) const;
-	const string& getColumnName(size_t columnIndex) const;
-	vector<string> getColumnNames() const;
+	size_t getColumnIndex(const std::string& name) const;
+    bool hasColumn(const std::string& name) const;
+	const std::string& getColumnName(size_t columnIndex) const;
+	std::vector<std::string> getColumnNames() const;
 
 	void reorderByIndex();
 	void sort(std::function<int(const Row&, const Row&)> comparator);
@@ -1583,16 +1628,16 @@ class Category
   private:
 
 	void write(std::ostream& os);
-	void write(std::ostream& os, const vector<string>& order);
-	void write(std::ostream& os, const vector<int>& order, bool includeEmptyColumns);
+	void write(std::ostream& os, const std::vector<std::string>& order);
+	void write(std::ostream& os, const std::vector<int>& order, bool includeEmptyColumns);
 
-	size_t addColumn(const string& name);
+	size_t addColumn(const std::string& name);
 	
 	Datablock&			mDb;
-	string				mName;
+	std::string			mName;
 	Validator*			mValidator;
 	const ValidateCategory*	mCatValidator = nullptr;
-	vector<ItemColumn>	mColumns;
+	std::vector<ItemColumn>	mColumns;
 	ItemRow*			mHead;
 	ItemRow*			mTail;
 	class CatIndex*		mIndex;
@@ -1621,8 +1666,8 @@ class File
 	void load(std::istream& is);
 	void save(std::ostream& os);
 
-	void save(std::ostream& os, const vector<string>& order)	{ write(os, order); }
-	void write(std::ostream& os, const vector<string>& order);
+	void save(std::ostream& os, const std::vector<std::string>& order)	{ write(os, order); }
+	void write(std::ostream& os, const std::vector<std::string>& order);
 
 	void loadDictionary();						// load the default dictionary, that is mmcifDdl in this case
 	void loadDictionary(const char* dict);		// load one of the compiled in dictionaries 
@@ -1634,8 +1679,8 @@ class File
 	Datablock& firstDatablock()			{ return *mHead; }
 	void append(Datablock* e);
 	
-	Datablock* get(const string& name) const;
-	Datablock& operator[](const string& name);
+	Datablock* get(const std::string& name) const;
+	Datablock& operator[](const std::string& name);
 
 	struct iterator : public std::iterator<std::forward_iterator_tag, Datablock>
 	{
@@ -1662,7 +1707,7 @@ class File
 	iterator end() const;
 	
 	const Validator& getValidator() const;
-	void getTagOrder(vector<string>& tags) const;
+	void getTagOrder(std::vector<std::string>& tags) const;
 	
   private:
 
@@ -1706,7 +1751,7 @@ inline bool anyMatchesConditionImpl::test(const Category& c, const Row& r) const
 	{
 		try
 		{
-			if (std::regex_match(r[f].as<string>(), mRx))
+			if (std::regex_match(r[f].as<std::string>(), mRx))
 			{
 				result = true;
 				break;
@@ -1809,7 +1854,7 @@ typename conditional_iterator_proxy<RowType>::iterator conditional_iterator_prox
 template<typename RowType>
 bool conditional_iterator_proxy<RowType>::empty() const
 {
-	return mCBegin != mCEnd;
+	return mCBegin == mCEnd;
 }
 
 template<typename RowType>

@@ -34,13 +34,7 @@
 #include <numeric>
 #include <fstream>
 
-#if __has_include(<filesystem>)
 #include <filesystem>
-namespace fs = std::filesystem;
-#elif __has_include(<boost/filesystem.hpp>)
-#include <boost/filesystem.hpp>
-namespace fs = boost::filesystem;
-#endif
 
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -56,6 +50,7 @@ namespace fs = boost::filesystem;
 using namespace std;
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;
+namespace fs = std::filesystem;
 
 namespace cif
 {

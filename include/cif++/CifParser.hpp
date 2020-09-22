@@ -24,6 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 #include "cif++/Cif++.hpp"
 
 #include <stack>
@@ -155,7 +157,7 @@ class SacParser
 	virtual void produceDatablock(const std::string& name) = 0;
 	virtual void produceCategory(const std::string& name) = 0;
 	virtual void produceRow() = 0;
-	virtual void produceItem(const std::string& category, const std::string& item, const string& value) = 0;
+	virtual void produceItem(const std::string& category, const std::string& item, const std::string& value) = 0;
 
   protected:
 

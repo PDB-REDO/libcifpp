@@ -24,6 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 #include "cif++/Cif++.hpp"
 
 //// the std regex of gcc is crashing....
@@ -113,11 +115,11 @@ struct ValidateItem
 
 struct ValidateCategory
 {
-	std::string				mName;
-	std::vector<string>		mKeys;
-	cif::iset				mGroups;
-	cif::iset				mMandatoryFields;
-	std::set<ValidateItem>	mItemValidators;
+	std::string					mName;
+	std::vector<std::string>	mKeys;
+	cif::iset					mGroups;
+	cif::iset					mMandatoryFields;
+	std::set<ValidateItem>		mItemValidators;
 
 	bool operator<(const ValidateCategory& rhs) const
 	{

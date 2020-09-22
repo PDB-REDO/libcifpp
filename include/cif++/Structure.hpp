@@ -28,12 +28,6 @@
 
 #include <numeric>
 
-#include <boost/math/quaternion.hpp>
-
-#include <boost/any.hpp>
-
-#include <clipper/core/coords.h>
-
 #include "cif++/AtomType.hpp"
 #include "cif++/Point.hpp"
 #include "cif++/Compound.hpp"
@@ -87,10 +81,10 @@ class Atom
 	Point location() const;
 	void location(Point p);
 	
-	Atom symmetryCopy(const Point& d, const clipper::RTop_orth& rt);
-	bool isSymmetryCopy() const;
-	std::string symmetry() const;
-	const clipper::RTop_orth& symop() const;
+	// Atom symmetryCopy(const Point& d, const clipper::RTop_orth& rt);
+	// bool isSymmetryCopy() const;
+	// std::string symmetry() const;
+	// const clipper::RTop_orth& symop() const;
 	
 	const Compound& comp() const;
 	bool isWater() const;
@@ -126,8 +120,8 @@ class Atom
 	
 	bool operator==(const Atom& rhs) const;
 
-	// get clipper format Atom
-	clipper::Atom toClipper() const;
+	// // get clipper format Atom
+	// clipper::Atom toClipper() const;
 
 	// Radius calculation based on integrating the density until perc of electrons is found
 	void calculateRadius(float resHigh, float resLow, float perc);

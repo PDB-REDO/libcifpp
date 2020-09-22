@@ -30,7 +30,8 @@ firstTarget: all
 CXX					= @CXX@
 CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@ @LIBBZ2_CPPFLAGS@
 LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@ @LIBBZ2_LDFLAGS@
-LIBS				= @LIBS@
+LIBS				= @BOOST_IOSTREAMS_LIB@ \
+					  @LIBS@
 
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@
@@ -89,24 +90,18 @@ endif
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-LIBCIF_SRC		= AtomShape.cpp \
-				  AtomType.cpp \
-				  BondMap.cpp \
+LIBCIF_SRC		= AtomType.cpp \
 				  Cif2PDB.cpp \
 				  Cif++.cpp \
 				  CifParser.cpp \
 				  CifUtils.cpp \
 				  CifValidator.cpp \
 				  Compound.cpp \
-				  DistanceMap.cpp \
 				  FixDMC.cpp \
-				  MapMaker.cpp \
 				  PDB2Cif.cpp \
 				  PDB2CifRemark3.cpp \
 				  Point.cpp \
-				  ResolutionCalculator.cpp \
 				  Secondary.cpp \
-				  Statistics.cpp \
 				  Structure.cpp \
 				  Symmetry.cpp \
 				  TlsParser.cpp
@@ -170,10 +165,6 @@ distclean: clean
 
 # Test rules
 
-BOOST_LIBS = iostreams thread filesystem timer chrono regex
-CLIPPER_LIBS = core ccp4
-CLIPPER_LIBS := $(CLIPPER_LIBS:%=-lclipper-%)
-
 define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
@@ -182,7 +173,7 @@ $(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
 test/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	$(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -Wl,-rpath /srv/ccp4-7.1/lib -lbz2 -lz -lcif++ $(CLIPPER_LIBS) $(BOOST_LIBS:%=-lboost_%) $(LIBS) -lstdc++fs
+	$(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -lboost_timer -lcif++ $(LIBS)
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test

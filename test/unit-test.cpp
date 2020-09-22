@@ -27,7 +27,8 @@
 #define BOOST_TEST_MODULE LibCifPP_Test
 #include <boost/test/included/unit_test.hpp>
 
-#include "cif++/DistanceMap.hpp"
+// #include "cif++/DistanceMap.hpp"
+#include "cif++/Cif++.hpp"
 
 // --------------------------------------------------------------------
 
@@ -49,7 +50,7 @@ cif::File operator""_cf(const char* text, size_t length)
 
 BOOST_AUTO_TEST_CASE(ut1)
 {
-	using namespace mmcif;
+	// using namespace mmcif;
 
 	auto f = R"(data_TEST
 #
@@ -88,16 +89,17 @@ _test.name
 
 BOOST_AUTO_TEST_CASE(ut2)
 {
-	using namespace mmcif;
+	// using namespace mmcif;
 
 	auto f = R"(data_TEST
 #
 loop_
 _test.id
 _test.name
-1 aap
-2 noot
-3 mies
+_test.value
+1 aap   1.0
+2 noot  1.1
+3 mies  1.2
 	)"_cf;
 
 	auto& db = f.firstDatablock();
@@ -113,9 +115,14 @@ _test.name
 		BOOST_CHECK(++n == 1);
 		BOOST_CHECK(r["id"].as<int>() == 1);
 		BOOST_CHECK(r["name"].as<std::string>() == "aap");
+		BOOST_CHECK(r["value"].as<float>() == 1.0);
 	}
 
 	auto t = test.find(cif::Key("id") == 1);
 	BOOST_CHECK(not t.empty());
 	BOOST_CHECK(t.front()["name"].as<std::string>() == "aap");
+
+	auto t2 = test.find(cif::Key("value") == 1.2);
+	BOOST_CHECK(not t2.empty());
+	BOOST_CHECK(t2.front()["name"].as<std::string>() == "mies");
 }
