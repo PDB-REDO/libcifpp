@@ -47,7 +47,6 @@
 #include "cif++/CifValidator.hpp"
 #include "cif++/CifUtils.hpp"
 
-using namespace std;
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;
 namespace fs = std::filesystem;
@@ -115,7 +114,7 @@ void ItemValue::operator delete(void* p)
 
 struct ItemColumn
 {
-	string					mName;		// store lower-case, for optimization
+	std::string					mName;		// store lower-case, for optimization
 	const ValidateItem*		mValidator;
 };
 
@@ -128,9 +127,9 @@ struct ItemRow
 	void drop(uint32_t columnIx);
 	const char* c_str(uint32_t columnIx) const;
 	
-	string str() const
+	std::string str() const
 	{
-		stringstream s;
+		std::stringstream s;
 
 		s << '{';
 		for (auto v = mValues; v != nullptr; v = v->mNext)
@@ -152,7 +151,7 @@ struct ItemRow
 	uint32_t				mLineNr = 0;
 };
 
-ostream& operator<<(ostream& os, const ItemRow& r)
+std::ostream& operator<<(std::ostream& os, const ItemRow& r)
 {
 	os << r.mCategory->name() << '[';
 	for (auto iv = r.mValues; iv != nullptr; iv = iv->mNext)
@@ -234,10 +233,10 @@ const char* ItemRow::c_str(uint32_t columnIx) const
 namespace detail
 {
 
-ItemReference& ItemReference::operator=(const string& value)
+ItemReference& ItemReference::operator=(const std::string& value)
 {
 	if (mConst)
-		throw logic_error("Attempt to write to a constant row");
+		throw std::logic_error("Attempt to write to a constant row");
 
 	mRow.assign(mName, value, false);
 	return *this;
@@ -342,7 +341,7 @@ std::ostream& operator<<(std::ostream& os, ItemReference& item)
 // --------------------------------------------------------------------
 // Datablock implementation
 
-Datablock::Datablock(const string& name)
+Datablock::Datablock(const std::string& name)
 	: mName(name), mValidator(nullptr), mNext(nullptr)
 {
 }
@@ -352,11 +351,11 @@ Datablock::~Datablock()
 	delete mNext;
 }
 
-string Datablock::firstItem(const string& tag) const
+std::string Datablock::firstItem(const std::string& tag) const
 {
-	string result;
+	std::string result;
 
-	string catName, itemName;
+	std::string catName, itemName;
 	std::tie(catName, itemName) = splitTagName(tag);
 	
 	for (auto& cat: mCategories)
@@ -365,7 +364,7 @@ string Datablock::firstItem(const string& tag) const
 		{
 			for (auto row: cat)
 			{
-				result = row[itemName].as<string>();
+				result = row[itemName].as<std::string>();
 				break;
 			}
 
@@ -376,7 +375,7 @@ string Datablock::firstItem(const string& tag) const
 	return result;
 }
 
-auto Datablock::emplace(const string& name) -> tuple<iterator,bool>
+auto Datablock::emplace(const std::string& name) -> std::tuple<iterator,bool>
 {
 	bool isNew = false;
 	iterator i = find_if(begin(), end(), [name](const Category& cat) -> bool
@@ -388,17 +387,17 @@ auto Datablock::emplace(const string& name) -> tuple<iterator,bool>
 		i = mCategories.emplace(end(), *this, name, mValidator);
 	}
 	
-	return make_tuple(i, isNew);
+	return std::make_tuple(i, isNew);
 }
 
-Category& Datablock::operator[](const string& name)
+Category& Datablock::operator[](const std::string& name)
 {
 	iterator i;
-	std::tie(i, ignore) = emplace(name);
+	std::tie(i, std::ignore) = emplace(name);
 	return *i;
 }
 
-Category* Datablock::get(const string& name)
+Category* Datablock::get(const std::string& name)
 {
 	auto i = find_if(begin(), end(), [name](const Category& cat) -> bool 
 		{ return iequals(cat.name(), name); });
@@ -409,7 +408,7 @@ Category* Datablock::get(const string& name)
 bool Datablock::isValid()
 {
 	if (mValidator == nullptr)
-		throw runtime_error("Validator not specified");
+		throw std::runtime_error("Validator not specified");
 
 	bool result = true;
 	for (auto& cat: *this)
@@ -431,7 +430,7 @@ void Datablock::setValidator(Validator* v)
 		cat.setValidator(v);
 }
 
-void Datablock::add_software(const string& name, const string& classification, const string& versionNr, const string& versionDate)
+void Datablock::add_software(const std::string& name, const std::string& classification, const std::string& versionNr, const std::string& versionDate)
 {
 	Category& cat = operator[]("software");
 	int ordNr = cat.size() + 1;
@@ -446,16 +445,16 @@ void Datablock::add_software(const string& name, const string& classification, c
 	});
 }
 
-void Datablock::getTagOrder(vector<string>& tags) const
+void Datablock::getTagOrder(std::vector<std::string>& tags) const
 {
 	for (auto& cat: *this)
 		cat.getTagOrder(tags);
 }
 
-void Datablock::write(ostream& os)
+void Datablock::write(std::ostream& os)
 {
-	os << "data_" << mName << endl
-	   << "# " << endl;
+	os << "data_" << mName << std::endl
+	   << "# " << std::endl;
 	
 	// mmcif support, sort of. First write the 'entry' Category
 	// and if it exists, _AND_ we have a Validator, write out the
@@ -488,17 +487,17 @@ void Datablock::write(ostream& os)
 	}
 }
 
-void Datablock::write(ostream& os, const vector<string>& order)
+void Datablock::write(std::ostream& os, const std::vector<std::string>& order)
 {
-	os << "data_" << mName << endl
-	   << "# " << endl;
+	os << "data_" << mName << std::endl
+	   << "# " << std::endl;
 	
-	vector<string> catOrder;
+	std::vector<std::string> catOrder;
 	for (auto& o: order)
 	{
-		string cat, Item;
+		std::string cat, Item;
 		std::tie(cat, Item) = splitTagName(o);
-		if (find_if(catOrder.rbegin(), catOrder.rend(), [cat](const string& s) -> bool { return iequals(cat, s); }) == catOrder.rend())
+		if (find_if(catOrder.rbegin(), catOrder.rend(), [cat](const std::string& s) -> bool { return iequals(cat, s); }) == catOrder.rend())
 			catOrder.push_back(cat);
 	}
 
@@ -508,10 +507,10 @@ void Datablock::write(ostream& os, const vector<string>& order)
 		if (cat == nullptr)
 			continue;
 		
-		vector<string> items;
+		std::vector<std::string> items;
 		for (auto& o: order)
 		{
-			string catName, Item;
+			std::string catName, Item;
 			std::tie(catName, Item) = splitTagName(o);
 			
 			if (catName == c)
@@ -524,7 +523,7 @@ void Datablock::write(ostream& os, const vector<string>& order)
 	// for any Category we missed in the catOrder
 	for (auto& cat: mCategories)
 	{
-		if (find_if(catOrder.begin(), catOrder.end(), [&](const string& s) -> bool { return iequals(cat.name(), s); }) != catOrder.end())
+		if (find_if(catOrder.begin(), catOrder.end(), [&](const std::string& s) -> bool { return iequals(cat.name(), s); }) != catOrder.end())
 			continue;
 		
 		cat.write(os);
@@ -603,11 +602,11 @@ class RowComparator
 	}
 	
   private:
-	typedef function<int(const char*,const char*)>	compareFunc;
+	typedef std::function<int(const char*,const char*)>	compareFunc;
 
-	typedef tuple<size_t,compareFunc>	keyComp;
+	typedef std::tuple<size_t,compareFunc>	keyComp;
 
-	vector<keyComp>	mComp;
+	std::vector<keyComp>	mComp;
 };
 
 template<typename KeyIter>
@@ -617,19 +616,19 @@ RowComparator::RowComparator(Category* cat, KeyIter b, KeyIter e)
 	
 	for (auto ki = b; ki != e; ++ki)
 	{
-		string k = *ki;
+		std::string k = *ki;
 		
 		size_t ix = cat->getColumnIndex(k);
 
 		auto iv = cv->getValidatorForItem(k);
 		if (iv == nullptr)
-			throw runtime_error("Incomplete dictionary, no Item Validator for Key " + k);
+			throw std::runtime_error("Incomplete dictionary, no Item Validator for Key " + k);
 		
 		auto tv = iv->mType;
 		if (tv == nullptr)
-			throw runtime_error("Incomplete dictionary, no type Validator for Item " + k);
+			throw std::runtime_error("Incomplete dictionary, no type Validator for Item " + k);
 		
-		using namespace placeholders;
+		using namespace std::placeholders;
 		
 		mComp.emplace_back(ix, bind(&ValidateType::compare, tv, _1, _2));
 	}
@@ -680,9 +679,9 @@ class CatIndex
 	void reconstruct();
 	
 	// reorder the ItemRow's and returns new head and tail
-	tuple<ItemRow*,ItemRow*> reorder()
+	std::tuple<ItemRow*,ItemRow*> reorder()
 	{
-		tuple<ItemRow*,ItemRow*> result = make_tuple(nullptr, nullptr);
+		std::tuple<ItemRow*,ItemRow*> result = std::make_tuple(nullptr, nullptr);
 		
 		if (mRoot != nullptr)
 		{
@@ -691,7 +690,7 @@ class CatIndex
 			
 			tail->mRow->mNext = nullptr;
 			
-			result = make_tuple(head->mRow, tail->mRow);
+			result = std::make_tuple(head->mRow, tail->mRow);
 		}
 			
 		return result;
@@ -898,7 +897,7 @@ CatIndex::entry* CatIndex::insert(entry* h, ItemRow* v)
 	if (d < 0)		h->mLeft = insert(h->mLeft, v);
 	else if (d > 0)	h->mRight = insert(h->mRight, v);
 	else
-		throw runtime_error("Duplicate Key violation, cat: " + mCat.name() + " values: " + v->str());
+		throw std::runtime_error("Duplicate Key violation, cat: " + mCat.name() + " values: " + v->str());
 
 	if (isRed(h->mRight) and not isRed(h->mLeft))
 		h = rotateLeft(h);
@@ -969,9 +968,9 @@ void CatIndex::reconstruct()
 		insert(r.mData);
 
 // maybe reconstruction can be done quicker by using the following commented code.
-// however, I've not had the time to think of a way to set the red/black flag correctly in that case.
+// however, I've not had the time to think of a way to std::set the red/black flag correctly in that case.
 	
-//	vector<ItemRow*> rows;
+//	std::vector<ItemRow*> rows;
 //	transform(mCat.begin(), mCat.end(), backInserter(rows),
 //		[](Row r) -> ItemRow* { assert(r.mData); return r.mData; });
 //	
@@ -1039,7 +1038,7 @@ void CatIndex::reconstruct()
 
 size_t CatIndex::size() const
 {
-	stack<entry*> s;
+	std::stack<entry*> s;
 	s.push(mRoot);
 	
 	size_t result = 0;
@@ -1189,7 +1188,7 @@ RowSet& RowSet::operator=(RowSet&& rhs)
 	return *this;
 }
 
-RowSet& RowSet::orderBy(initializer_list<string> items)
+RowSet& RowSet::orderBy(std::initializer_list<std::string> items)
 {
 	RowComparator c(mCat, items.begin(), items.end());
 	
@@ -1200,7 +1199,7 @@ RowSet& RowSet::orderBy(initializer_list<string> items)
 
 // --------------------------------------------------------------------
 
-Category::Category(Datablock& db, const string& name, Validator* Validator)
+Category::Category(Datablock& db, const std::string& name, Validator* Validator)
 	: mDb(db), mName(name), mValidator(Validator)
 	, mHead(nullptr), mTail(nullptr), mIndex(nullptr)
 {
@@ -1258,12 +1257,12 @@ void Category::setValidator(Validator* v)
 		mCatValidator = nullptr;
 }
 
-bool Category::hasColumn(const string& name) const
+bool Category::hasColumn(const std::string& name) const
 {
     return getColumnIndex(name) < mColumns.size();
 }
 
-size_t Category::getColumnIndex(const string& name) const
+size_t Category::getColumnIndex(const std::string& name) const
 {
 	size_t result;
 
@@ -1277,26 +1276,26 @@ size_t Category::getColumnIndex(const string& name) const
 	{
 		auto iv = mCatValidator->getValidatorForItem(name);
 		if (iv == nullptr)
-			cerr << "Invalid name used '" + name + "' is not a known column in " + mName << endl;
+			std::cerr << "Invalid name used '" + name + "' is not a known column in " + mName << std::endl;
 	}
 	
 	return result;
 }
 
-const string& Category::getColumnName(size_t columnIx) const
+const std::string& Category::getColumnName(size_t columnIx) const
 {
 	return mColumns.at(columnIx).mName;
 }
 
-vector<string> Category::getColumnNames() const
+std::vector<std::string> Category::getColumnNames() const
 {
-	vector<string> result;
+	std::vector<std::string> result;
 	for (auto& c: mColumns)
 		result.push_back(c.mName);
 	return result;
 }
 
-size_t Category::addColumn(const string& name)
+size_t Category::addColumn(const std::string& name)
 {
 	size_t result = getColumnIndex(name);
 	
@@ -1343,7 +1342,7 @@ void Category::sort(std::function<int(const Row&, const Row&)> comparator)
 	if (mHead == nullptr)
 		return;
 
-	vector<ItemRow*> rows;
+	std::vector<ItemRow*> rows;
 	for (auto itemRow = mHead; itemRow != nullptr; itemRow = itemRow->mNext)
 		rows.push_back(itemRow);
 
@@ -1382,9 +1381,9 @@ bool Category::empty() const
 	return mHead == nullptr or mHead->mValues == nullptr;
 }
 
-void Category::drop(const string& field)
+void Category::drop(const std::string& field)
 {
-	using namespace placeholders;
+	using namespace std::placeholders;
 	auto ci = find_if(mColumns.begin(), mColumns.end(),
 		[field](ItemColumn& c) -> bool { return iequals(c.mName, field); });
 
@@ -1450,7 +1449,7 @@ bool Category::exists(Condition&& cond) const
 	return result;
 }
 
-RowSet Category::orderBy(std::initializer_list<string> items)
+RowSet Category::orderBy(std::initializer_list<std::string> items)
 {
 	RowSet result(*this);
 	result.insert(result.begin(), begin(), end());
@@ -1471,10 +1470,10 @@ void Category::clear()
 }
 
 template<class Iter>
-tuple<Row,bool> Category::emplace(Iter b, Iter e)
+std::tuple<Row,bool> Category::emplace(Iter b, Iter e)
 {
 	// First, make sure all mandatory fields are supplied
-	tuple<Row,bool> result = make_tuple(Row(), true);
+	std::tuple<Row,bool> result = std::make_tuple(Row(), true);
 
 	if (mCatValidator != nullptr and b != e)
 	{
@@ -1497,12 +1496,12 @@ tuple<Row,bool> Category::emplace(Iter b, Iter e)
 			}
 			
 			if (not seen and iv->mMandatory)
-				throw runtime_error("missing mandatory field " + col.mName + " for Category " + mName);
+				throw std::runtime_error("missing mandatory field " + col.mName + " for Category " + mName);
 		}
 		
 		if (mIndex != nullptr)
 		{
-			unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
+			std::unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
 			Row r(nr.get());
 			auto keys = keyFields(); 
 			
@@ -1516,13 +1515,13 @@ tuple<Row,bool> Category::emplace(Iter b, Iter e)
 			if (test != nullptr)
 			{
 				if (VERBOSE > 1)
-					cerr << "Not inserting new record in " << mName << " (duplicate Key)" << endl;
-				result = make_tuple(Row(test), false);
+					std::cerr << "Not inserting new record in " << mName << " (duplicate Key)" << std::endl;
+				result = std::make_tuple(Row(test), false);
 			}
 		}
 	}
 	
-	if (get<1>(result))
+	if (std::get<1>(result))
 	{
 		auto nr = new ItemRow{nullptr, this, nullptr};
 
@@ -1544,7 +1543,7 @@ tuple<Row,bool> Category::emplace(Iter b, Iter e)
 		for (auto v = b; v != e; ++v)
 			r.assign(*v, true);
 		
-		get<0>(result) = r;
+		std::get<0>(result) = r;
 
 		if (mIndex != nullptr)
 			mIndex->insert(nr);
@@ -1553,7 +1552,7 @@ tuple<Row,bool> Category::emplace(Iter b, Iter e)
 	return result;
 }
 
-tuple<Row,bool> Category::emplace(Row r)
+std::tuple<Row,bool> Category::emplace(Row r)
 {
 	return emplace(r.begin(), r.end());
 }
@@ -1603,7 +1602,7 @@ size_t Category::erase(Condition&& cond, std::function<void(const Row&)>&& verbo
 
 void Category::eraseOrphans(Condition&& cond)
 {
-	vector<ItemRow*> remove;
+	std::vector<ItemRow*> remove;
 	
 	cond.prepare(*this);
 
@@ -1612,9 +1611,9 @@ void Category::eraseOrphans(Condition&& cond)
 		if (cond(*this, r) and isOrphan(r))
 		{
 			if (VERBOSE > 1)
-				cerr << "Removing orphaned record: " << endl
-					 << r << endl
-					 << endl;
+				std::cerr << "Removing orphaned record: " << std::endl
+					 << r << std::endl
+					 << std::endl;
 
 			remove.push_back(r.mData);
 		}
@@ -1639,7 +1638,7 @@ auto Category::erase(iterator pos) -> iterator
 		keys = iset(mCatValidator->mKeys.begin(), mCatValidator->mKeys.end());
 
 	if (mHead == nullptr)
-		throw runtime_error("erase");
+		throw std::runtime_error("erase");
 
 	if (mIndex != nullptr)
 		mIndex->erase(r.mData);
@@ -1666,7 +1665,7 @@ auto Category::erase(iterator pos) -> iterator
 	// in mmcif_pdbx.dic dictionary.
 	//
 	// For each link group in _pdbx_item_linked_group_list 
-	// a set of keys from one category is mapped to another.
+	// a std::set of keys from one category is mapped to another.
 	// If all values in a child are the same as the specified parent ones
 	// the child is removed as well, recursively of course.
 
@@ -1684,10 +1683,10 @@ auto Category::erase(iterator pos) -> iterator
 			{
 				const char* value = r[link->mParentKeys[ix]].c_str();
 				
-				cond = move(cond) && (Key(link->mChildKeys[ix]) == value);
+				cond = std::move(cond) && (Key(link->mChildKeys[ix]) == value);
 			}
 
-			childCat->eraseOrphans(move(cond));
+			childCat->eraseOrphans(std::move(cond));
 		}
 	}
 
@@ -1705,7 +1704,7 @@ auto Category::erase(iterator pos) -> iterator
 	return result;
 }
 
-void Category::getTagOrder(vector<string>& tags) const
+void Category::getTagOrder(std::vector<std::string>& tags) const
 {
 	for (auto& c: mColumns)
 		tags.push_back("_" + mName + "." + c.mName);
@@ -1746,12 +1745,12 @@ bool Category::hasParent(Row r, const Category& parentCat, const ValidateLink& l
 		if (field.empty())
 		{
 			if (mCatValidator->mMandatoryFields.count(name) and field.is_null())
-				cond = move(cond) and (Key(link.mParentKeys[ix]) == Empty());
+				cond = std::move(cond) and (Key(link.mParentKeys[ix]) == Empty());
 		}
 		else
 		{
 	 		const char* value = field.c_str();
-			cond = move(cond) and (Key(link.mParentKeys[ix]) == value);
+			cond = std::move(cond) and (Key(link.mParentKeys[ix]) == value);
 		}
 	}
 
@@ -1760,10 +1759,10 @@ bool Category::hasParent(Row r, const Category& parentCat, const ValidateLink& l
 		result = parentCat.exists(std::move(cond));
 
 		if (VERBOSE > 3 or (result == false and VERBOSE > 2))
-			cerr << "result = " << boolalpha << result << " for: '" << cond << "' in parent category " << link.mParentCategory << " for child cat " << mName << endl;
+			std::cerr << "result = " << std::boolalpha << result << " for: '" << cond << "' in parent category " << link.mParentCategory << " for child cat " << mName << std::endl;
 	}
 	else if (VERBOSE > 3 and cond.empty())
-		cerr << "Condition is empty due to missing data in parent category " << link.mParentCategory << " for child cat " << mName << endl;
+		std::cerr << "Condition is empty due to missing data in parent category " << link.mParentCategory << " for child cat " << mName << std::endl;
 
 	return result;
 }
@@ -1785,16 +1784,16 @@ bool Category::isOrphan(Row r)
 		for (size_t ix = 0; ix < link->mChildKeys.size(); ++ix)
 		{
 			const char* value = r[link->mChildKeys[ix]].c_str();
-			cond = move(cond) && (Key(link->mParentKeys[ix]) == value);
+			cond = std::move(cond) && (Key(link->mParentKeys[ix]) == value);
 		}
 
 		if (VERBOSE > 2)
-			cerr << "Check condition '" << cond << "' in parent category " << link->mParentCategory << " for child cat " << mName << endl;
+			std::cerr << "Check condition '" << cond << "' in parent category " << link->mParentCategory << " for child cat " << mName << std::endl;
 
 		if (parentCat->exists(std::move(cond)))
 		{
 			if (VERBOSE > 2)
-				cerr << "Not removing because row has a parent in category " << link->mParentCategory << endl;
+				std::cerr << "Not removing because row has a parent in category " << link->mParentCategory << std::endl;
 
 			isOrphan = false;
 			break;
@@ -1823,7 +1822,7 @@ bool Category::hasChildren(Row r) const
 		{
 			const char* value = r[link->mParentKeys[ix]].c_str();
 			
-			cond = move(cond) && (Key(link->mChildKeys[ix]) == value);
+			cond = std::move(cond) && (Key(link->mChildKeys[ix]) == value);
 		}
 
 		result = not childCat->find(std::move(cond)).empty();
@@ -1840,12 +1839,12 @@ bool Category::isValid()
 	bool result = true;
 	
 	if (mValidator == nullptr)
-		throw runtime_error("no Validator specified");
+		throw std::runtime_error("no Validator specified");
 
 	if (empty())
 	{
 		if (VERBOSE > 2)
-			cerr << "Skipping validation of empty Category " << mName << endl;
+			std::cerr << "Skipping validation of empty Category " << mName << std::endl;
 		return true;
 	}
 	
@@ -1947,8 +1946,8 @@ void Category::validateLinks() const
 		
 		if (missing)
 		{
-			cerr << "Links for " << linkValidator->mLinkGroupLabel << " are incomplete" << endl
-				 << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parent->mName << endl;
+			std::cerr << "Links for " << linkValidator->mLinkGroupLabel << " are incomplete" << std::endl
+				 << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parent->mName << std::endl;
 		}
 	}
 }
@@ -1956,14 +1955,14 @@ void Category::validateLinks() const
 const Validator& Category::getValidator() const
 {
 	if (mValidator == nullptr)
-		throw runtime_error("no Validator defined yet");
+		throw std::runtime_error("no Validator defined yet");
 	return *mValidator;
 }
 
 iset Category::fields() const
 {
 	if (mValidator == nullptr)
-		throw runtime_error("No Validator specified");
+		throw std::runtime_error("No Validator specified");
 	
 	if (mCatValidator == nullptr)
 		mValidator->reportError("undefined Category", true);
@@ -1977,7 +1976,7 @@ iset Category::fields() const
 iset Category::mandatoryFields() const
 {
 	if (mValidator == nullptr)
-		throw runtime_error("No Validator specified");
+		throw std::runtime_error("No Validator specified");
 	
 	if (mCatValidator == nullptr)
 		mValidator->reportError("undefined Category", true);
@@ -1988,7 +1987,7 @@ iset Category::mandatoryFields() const
 iset Category::keyFields() const
 {
 	if (mValidator == nullptr)
-		throw runtime_error("No Validator specified");
+		throw std::runtime_error("No Validator specified");
 	
 	if (mCatValidator == nullptr)
 		mValidator->reportError("undefined Category", true);
@@ -1996,15 +1995,15 @@ iset Category::keyFields() const
 	return iset{ mCatValidator->mKeys.begin(), mCatValidator->mKeys.end() };
 }
 
-set<size_t> Category::keyFieldsByIndex() const
+std::set<size_t> Category::keyFieldsByIndex() const
 {
 	if (mValidator == nullptr)
-		throw runtime_error("No Validator specified");
+		throw std::runtime_error("No Validator specified");
 	
 	if (mCatValidator == nullptr)
 		mValidator->reportError("undefined Category", true);
 	
-	set<size_t> result;
+	std::set<size_t> result;
 	for (auto& k: mCatValidator->mKeys)
 		result.insert(getColumnIndex(k));
 	
@@ -2026,18 +2025,18 @@ set<size_t> Category::keyFieldsByIndex() const
 namespace detail
 {
 
-size_t writeValue(ostream& os, string value, size_t offset, size_t width)
+size_t writeValue(std::ostream& os, std::string value, size_t offset, size_t width)
 {
-	if (value.find('\n') != string::npos or width == 0 or value.length() >= 132)					// write as text field
+	if (value.find('\n') != std::string::npos or width == 0 or value.length() >= 132)					// write as text field
 	{
 		ba::replace_all(value, "\n;", "\n\\;");
 
 		if (offset > 0)
-			os << endl;
+			os << std::endl;
 		os << ';' << value;
 		if (not ba::ends_with(value, "\n"))
-			os << endl;
-		os << ';' << endl;
+			os << std::endl;
+		os << ';' << std::endl;
 		offset = 0;
 	}
 	else if (isUnquotedString(value.c_str()))
@@ -2046,7 +2045,7 @@ size_t writeValue(ostream& os, string value, size_t offset, size_t width)
 
 		if (value.length() < width)
 		{
-			os << string(width - value.length(), ' ');
+			os << std::string(width - value.length(), ' ');
 			offset += width;
 		}
 		else
@@ -2061,17 +2060,17 @@ size_t writeValue(ostream& os, string value, size_t offset, size_t width)
 		for (char q: { '\'', '"'})
 		{
 			auto p = value.find(q);	// see if we can use the quote character
-			while (p != string::npos and isNonBlank(value[p + 1]) and value[p + 1] != q)
+			while (p != std::string::npos and isNonBlank(value[p + 1]) and value[p + 1] != q)
 				p = value.find(q, p + 1);
 			
-			if (p != string::npos)
+			if (p != std::string::npos)
 				continue;
 			
 			os << q << value << q;
 
 			if (value.length() + 2 < width)
 			{
-				os << string(width - value.length() - 2, ' ');
+				os << std::string(width - value.length() - 2, ' ');
 				offset += width;
 			}
 			else
@@ -2087,9 +2086,9 @@ size_t writeValue(ostream& os, string value, size_t offset, size_t width)
 		if (not done)
 		{
 			if (offset > 0)
-				os << endl;
-			os << ';' << value << endl
-			   << ';' << endl;
+				os << std::endl;
+			os << ';' << value << std::endl
+			   << ';' << std::endl;
 			offset = 0;
 		}
 	}
@@ -2099,7 +2098,7 @@ size_t writeValue(ostream& os, string value, size_t offset, size_t width)
 	
 }
 
-void Category::write(ostream& os, const vector<int>& order, bool includeEmptyColumns)
+void Category::write(std::ostream& os, const std::vector<int>& order, bool includeEmptyColumns)
 {
 	if (empty())
 		return;
@@ -2109,14 +2108,14 @@ void Category::write(ostream& os, const vector<int>& order, bool includeEmptyCol
 	
 	if (needLoop)
 	{
-		os << "loop_" << endl;
+		os << "loop_" << std::endl;
 		
-		vector<size_t> columnWidths;
+		std::vector<size_t> columnWidths;
 		
 		for (auto cix: order)
 		{
 			auto& col = mColumns[cix];
-			os << '_' << mName << '.' << col.mName << ' ' << endl;
+			os << '_' << mName << '.' << col.mName << ' ' << std::endl;
 			columnWidths.push_back(2);
 		}
 		
@@ -2148,7 +2147,7 @@ void Category::write(ostream& os, const vector<int>& order, bool includeEmptyCol
 			{
 				size_t w = columnWidths[cix];
 				
-				string s;
+				std::string s;
 				for (auto iv = Row->mValues; iv != nullptr; iv = iv->mNext)
 				{
 					if (iv->mColumnIndex == cix)
@@ -2169,7 +2168,7 @@ void Category::write(ostream& os, const vector<int>& order, bool includeEmptyCol
 
 				if (offset + l >= 132 and offset > 0)
 				{
-					os << endl;
+					os << std::endl;
 					offset = 0;
 				}
 				
@@ -2177,13 +2176,13 @@ void Category::write(ostream& os, const vector<int>& order, bool includeEmptyCol
 				
 				if (offset >= 132)
 				{
-					os << endl;
+					os << std::endl;
 					offset = 0;
 				}
 			}
 			
 			if (offset > 0)
-				os << endl;
+				os << std::endl;
 		}
 	}
 	else
@@ -2193,7 +2192,7 @@ void Category::write(ostream& os, const vector<int>& order, bool includeEmptyCol
 		
 		for (auto& col: mColumns)
 		{
-			string tag = '_' + mName + '.' + col.mName;
+			std::string tag = '_' + mName + '.' + col.mName;
 			
 			if (l < tag.length())
 				l = tag.length();
@@ -2205,9 +2204,9 @@ void Category::write(ostream& os, const vector<int>& order, bool includeEmptyCol
 		{
 			auto& col = mColumns[cix];
 			
-			os << '_' << mName << '.' << col.mName << string(l - col.mName.length() - mName.length() - 2, ' ');
+			os << '_' << mName << '.' << col.mName << std::string(l - col.mName.length() - mName.length() - 2, ' ');
 			
-			string s;
+			std::string s;
 			for (auto iv = mHead->mValues; iv != nullptr; iv = iv->mNext)
 			{
 				if (iv->mColumnIndex == cix)
@@ -2223,32 +2222,32 @@ void Category::write(ostream& os, const vector<int>& order, bool includeEmptyCol
 			size_t offset = l;
 			if (s.length() + l >= kMaxLineLength)
 			{
-				os << endl;
+				os << std::endl;
 				offset = 0;
 			}
 
 			if (detail::writeValue(os, s, offset, 1) != 0)
-				os << endl;
+				os << std::endl;
 		}
 	}
 
-	os << "# " << endl;
+	os << "# " << std::endl;
 }
 
-void Category::write(ostream& os)
+void Category::write(std::ostream& os)
 {
-	vector<int> order(mColumns.size());
+	std::vector<int> order(mColumns.size());
 	iota(order.begin(), order.end(), 0);
 	write(os, order, false);
 }
 
-void Category::write(ostream& os, const vector<string>& columns)
+void Category::write(std::ostream& os, const std::vector<std::string>& columns)
 {
 	// make sure all columns are present
 	for (auto& c: columns)
 		addColumn(c);
 	
-	vector<int> order;
+	std::vector<int> order;
 	order.reserve(mColumns.size());
 
 	for (auto& c: columns)
@@ -2307,15 +2306,15 @@ void Row::assign(const std::vector<Item>& values)
 {
 	auto cat = mData->mCategory;
 
-	map<string,tuple<int,string,string>> changed;
+	std::map<std::string,std::tuple<int,std::string,std::string>> changed;
 
 	for (auto& value: values)
 	{
 		auto columnIx = cat->addColumn(value.name());
 		auto& col = cat->mColumns[columnIx];
-		string tag = col.mValidator ? col.mValidator->mTag : to_string(columnIx);
+		std::string tag = col.mValidator ? col.mValidator->mTag : std::to_string(columnIx);
 
-		changed[tag] = make_tuple(columnIx, operator[](columnIx).c_str(), value.value());
+		changed[tag] = std::make_tuple(columnIx, operator[](columnIx).c_str(), value.value());
 
 		assign(columnIx, value.value(), true);
 	}
@@ -2337,29 +2336,29 @@ void Row::assign(const std::vector<Item>& values)
 			// 	continue;
 
 			Condition cond;
-			string childTag;
+			std::string childTag;
 
-			vector<Item> newValues;
+			std::vector<Item> newValues;
 			
 			for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
 			{
-				string pk = linked->mParentKeys[ix];
-				string ck = linked->mChildKeys[ix];
+				std::string pk = linked->mParentKeys[ix];
+				std::string ck = linked->mChildKeys[ix];
 
 				if (changed.count(pk) > 0)
 				{
 					childTag = ck;
-					cond = move(cond) && (Key(ck) == std::get<1>(changed[pk]));
+					cond = std::move(cond) && (Key(ck) == std::get<1>(changed[pk]));
 					newValues.emplace_back(ck, std::get<2>(changed[pk]));
 				}
 				else
 				{
 					const char* value = (*this)[pk].c_str();
-					cond = move(cond) && (Key(ck) == value);
+					cond = std::move(cond) && (Key(ck) == value);
 				}
 			}
 
-			auto rows = childCat->find(move(cond));
+			auto rows = childCat->find(std::move(cond));
 			for (auto& cr: rows)
 				cr.assign(newValues);
 		}
@@ -2371,24 +2370,24 @@ void Row::assign(const Item& value, bool skipUpdateLinked)
 	assign(value.name(), value.value(), skipUpdateLinked);
 }
 
-void Row::assign(const string& name, const string& value, bool skipUpdateLinked)
+void Row::assign(const std::string& name, const std::string& value, bool skipUpdateLinked)
 {
 	try
 	{
 		auto cat = mData->mCategory;
 		assign(cat->addColumn(name), value, skipUpdateLinked);
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << "Could not assign value '" << value << "' to column _" << mData->mCategory->name() << '.' << name << endl;
+		std::cerr << "Could not assign value '" << value << "' to column _" << mData->mCategory->name() << '.' << name << std::endl;
 		throw;
 	}
 }
 
-void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
+void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 {
 	if (mData == nullptr)
-		throw logic_error("invalid Row, no data assigning value '" + value + "' to column with index " + to_string(column));
+		throw std::logic_error("invalid Row, no data assigning value '" + value + "' to column with index " + std::to_string(column));
 	
 	auto cat = mData->mCategory;
 	auto& col = cat->mColumns[column];
@@ -2408,7 +2407,7 @@ void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 	if (oldValue != nullptr and value == oldValue)	// no need to update
 		return;
 
-	string oldStrValue = oldValue ? oldValue : "";
+	std::string oldStrValue = oldValue ? oldValue : "";
 
 	// check the value
 	if (col.mValidator)
@@ -2489,35 +2488,35 @@ void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 				continue;
 
 			Condition cond;
-			string childTag;
+			std::string childTag;
 			
 			for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
 			{
-				string pk = linked->mParentKeys[ix];
-				string ck = linked->mChildKeys[ix];
+				std::string pk = linked->mParentKeys[ix];
+				std::string ck = linked->mChildKeys[ix];
 
 				// TODO add code to *NOT* test mandatory fiels for Empty
 
 				if (pk == iv->mTag)
 				{
 					childTag = ck;
-					cond = move(cond) && ((Key(ck) == oldStrValue) or Key(ck) == Empty());
+					cond = std::move(cond) && ((Key(ck) == oldStrValue) or Key(ck) == Empty());
 				}
 				else
 				{
 					const char* value = (*this)[pk].c_str();
-					cond = move(cond) && ((Key(ck) == value) or Key(ck) == Empty());
+					cond = std::move(cond) && ((Key(ck) == value) or Key(ck) == Empty());
 				}
 				
 			}
 
 			// if (cif::VERBOSE > 2)
 			// {
-			// 	std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::endl
-			// 			  << cond << std::endl;
+			// 	std::std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::std::endl
+			// 			  << cond << std::std::endl;
 			// }
 
-			auto rows = childCat->find(move(cond));
+			auto rows = childCat->find(std::move(cond));
 			for (auto& cr: rows)
 				cr.assign(childTag, value, false);
 		}
@@ -2527,11 +2526,11 @@ void Row::assign(size_t column, const string& value, bool skipUpdateLinked)
 void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 {
 	if (a == nullptr or b == nullptr)
-		throw logic_error("invalid Rows in swap");
+		throw std::logic_error("invalid Rows in swap");
 
 	assert(a->mCategory == b->mCategory);
 	if (a->mCategory != b->mCategory)
-		throw logic_error("Categories not same in swap");
+		throw std::logic_error("Categories not same in swap");
 	
 	auto cat = a->mCategory;
 
@@ -2642,7 +2641,7 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 			if (childCatValidator == nullptr)
 				continue;
 
-			string linkChildColName;
+			std::string linkChildColName;
 
 			Condition cond[2];
 			for (size_t ab = 0; ab < 2; ++ab)
@@ -2660,7 +2659,7 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 						find(childCatValidator->mMandatoryFields.begin(), childCatValidator->mMandatoryFields.end(), childColName) != childCatValidator->mMandatoryFields.end() or
 						find(parentCatValidator->mMandatoryFields.begin(), parentCatValidator->mMandatoryFields.end(), link->mParentKeys[ix]) != parentCatValidator->mMandatoryFields.end();
 
-					string childValue;
+					std::string childValue;
 
 					if (pcix == cix)
 					{
@@ -2670,7 +2669,7 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 					}
 					else
 					{
-						string ps = r->c_str(pcix);
+						std::string ps = r->c_str(pcix);
 						if (not (ps.empty() or ps == "." or ps == "?"))
 							childValue = ps;
 					}
@@ -2678,12 +2677,12 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 					if (not childValue.empty())
 					{
 						if (mandatory or pcix == cix)
-							cond[ab] = move(cond[ab]) and Key(childColName) == childValue;
+							cond[ab] = std::move(cond[ab]) and Key(childColName) == childValue;
 						else
-							cond[ab] = move(cond[ab]) and (Key(childColName) == childValue or Key(childColName) == Empty());
+							cond[ab] = std::move(cond[ab]) and (Key(childColName) == childValue or Key(childColName) == Empty());
 					}
 					else
-						cond[ab] = move(cond[ab]) and Key(childColName) == Empty();
+						cond[ab] = std::move(cond[ab]) and Key(childColName) == Empty();
 				}
 			}
 
@@ -2696,10 +2695,10 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 					continue;
 
 				if (VERBOSE > 1)
-					cerr << "Fixing link from " << cat->mName << " to " << childCat->mName << " with " << endl
-						 << cond[ab] << endl;
+					std::cerr << "Fixing link from " << cat->mName << " to " << childCat->mName << " with " << std::endl
+						 << cond[ab] << std::endl;
 				
-				rs.push_back(childCat->find(move(cond[ab])));
+				rs.push_back(childCat->find(std::move(cond[ab])));
 			}
 
 			for (size_t ab = 0; ab < 2; ++ab)
@@ -2720,12 +2719,12 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 					if (n == link->mChildKeys.size())
 					{
 						if (VERBOSE > 1)
-							cerr << "All empty columns, skipping" << endl;
+							std::cerr << "All empty columns, skipping" << std::endl;
 					}
 					else
 					{
 						if (VERBOSE)
-							cerr << "In " << childCat->mName << " changing " << linkChildColName << ": " << r[linkChildColName] << " => " << (i ? i->mText : "") << endl;
+							std::cerr << "In " << childCat->mName << " changing " << linkChildColName << ": " << r[linkChildColName] << " => " << (i ? i->mText : "") << std::endl;
 						r[linkChildColName] = i ? i->mText : "";
 					}
 				}
@@ -2800,11 +2799,11 @@ void Row::const_iterator::fetch()
 std::ostream& operator<<(std::ostream& os, const Row& row)
 {
 	auto category = row.mData->mCategory;
-	string catName = category->name();
+	std::string catName = category->name();
 	for (auto item = row.mData->mValues; item != nullptr; item = item->mNext)
 	{
-		string tagName = category->getColumnName(item->mColumnIndex);
-		os << '_' << catName << '.' << tagName << ' ' << item->mText << endl;
+		std::string tagName = category->getColumnName(item->mColumnIndex);
+		os << '_' << catName << '.' << tagName << ' ' << item->mText << std::endl;
 	}
 
 	return os;
@@ -2818,7 +2817,7 @@ File::File()
 {
 }
 
-File::File(istream& is, bool validate)
+File::File(std::istream& is, bool validate)
 	: File()
 {
 	load(is);
@@ -2831,9 +2830,9 @@ File::File(const std::string& path, bool validate)
 	{
 		load(path);
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << "Error while loading file " << path << endl;
+		std::cerr << "Error while loading file " << path << std::endl;
 		throw;
 	}
 }
@@ -2880,9 +2879,9 @@ void File::load(const std::string& p)
 {
 	fs::path path(p);
 
-	std::ifstream inFile(p, ios_base::in | ios_base::binary);
+	std::ifstream inFile(p, std::ios_base::in | std::ios_base::binary);
 	if (not inFile.is_open())
-		throw runtime_error("Could not open file: " + path.string());
+		throw std::runtime_error("Could not open file: " + path.string());
 	
 	io::filtering_stream<io::input> in;
 	std::string ext;
@@ -2904,9 +2903,9 @@ void File::load(const std::string& p)
 	{
 		load(in);
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << "Error loading file " << path << endl;
+		std::cerr << "Error loading file " << path << std::endl;
 		throw;
 	}
 }
@@ -2915,7 +2914,7 @@ void File::save(const std::string& p)
 {
 	fs::path path(p);
 
-	std::ofstream outFile(p, ios_base::out | ios_base::binary);
+	std::ofstream outFile(p, std::ios_base::out | std::ios_base::binary);
 	io::filtering_stream<io::output> out;
 	
 	if (path.extension() == ".gz")
@@ -2933,7 +2932,7 @@ void File::save(const std::string& p)
 	save(out);
 }
 
-void File::load(istream& is)
+void File::load(std::istream& is)
 {
 	Validator* saved = mValidator;
 	setValidator(nullptr);
@@ -2948,7 +2947,7 @@ void File::load(istream& is)
 	}
 }
 
-void File::save(ostream& os)
+void File::save(std::ostream& os)
 {
 	Datablock* e = mHead;
 	while (e != nullptr)
@@ -2958,7 +2957,7 @@ void File::save(ostream& os)
 	}
 }
 
-void File::write(ostream& os, const vector<string>& order)
+void File::write(std::ostream& os, const std::vector<std::string>& order)
 {
 	Datablock* e = mHead;
 	while (e != nullptr)
@@ -2968,7 +2967,7 @@ void File::write(ostream& os, const vector<string>& order)
 	}
 }
 
-Datablock* File::get(const string& name) const
+Datablock* File::get(const std::string& name) const
 {
 	const Datablock* result = mHead;
 	while (result != nullptr and not iequals(result->mName, name))
@@ -2976,13 +2975,13 @@ Datablock* File::get(const string& name) const
 	return const_cast<Datablock*>(result);
 }
 
-Datablock& File::operator[](const string& name)
+Datablock& File::operator[](const std::string& name)
 {
 	Datablock* result = mHead;
 	while (result != nullptr and not iequals(result->mName, name))
 		result = result->mNext;
 	if (result == nullptr)
-		throw runtime_error("Datablock " + name + " does not exist");
+		throw std::runtime_error("Datablock " + name + " does not exist");
 	return *result;
 }
 
@@ -2991,7 +2990,7 @@ bool File::isValid()
 	if (mValidator == nullptr)
 	{
 		if (VERBOSE)
-			cerr << "No dictionary loaded explicitly, loading default" << endl;
+			std::cerr << "No dictionary loaded explicitly, loading default" << std::endl;
 		
 		loadDictionary();
 	}
@@ -3011,7 +3010,7 @@ void File::validateLinks() const
 const Validator& File::getValidator() const
 {
 	if (mValidator == nullptr)
-		throw runtime_error("no Validator defined yet");
+		throw std::runtime_error("no Validator defined yet");
 	return *mValidator;
 }
 
@@ -3037,7 +3036,7 @@ void File::loadDictionary(const char* dict)
 		}
 		catch (...) {}
 		
-		fs::path dictFile = string("dictionaries/") + dict + ".dic";
+		fs::path dictFile = std::string("dictionaries/") + dict + ".dic";
 
 		try
 		{
@@ -3054,7 +3053,7 @@ void File::loadDictionary(const char* dict)
 
 		if (dictData)
 		{
-			struct membuf : public streambuf
+			struct membuf : public std::streambuf
 			{
 				membuf(char* dict, size_t length)
 				{
@@ -3062,19 +3061,19 @@ void File::loadDictionary(const char* dict)
 				}
 			} buffer(const_cast<char*>(dictData.data()), dictData.size());
 			
-			istream is(&buffer);
+			std::istream is(&buffer);
 			
 			loadDictionary(is);
 			break;
 		}
 		
-		throw runtime_error("Dictionary not found or defined (" + name.string() + ")");
+		throw std::runtime_error("Dictionary not found or defined (" + name.string() + ")");
 	}
 }
 
-void File::loadDictionary(istream& is)
+void File::loadDictionary(std::istream& is)
 {
-	unique_ptr<Validator> v(new Validator());
+	std::unique_ptr<Validator> v(new Validator());
 
 	DictParser p(*v, is);
 	p.loadDictionary();
@@ -3090,7 +3089,7 @@ void File::setValidator(Validator* v)
 		d->setValidator(mValidator);
 }
 
-void File::getTagOrder(vector<string>& tags) const
+void File::getTagOrder(std::vector<std::string>& tags) const
 {
 	for (auto d = mHead; d != nullptr; d = d->mNext)
 		d->getTagOrder(tags);

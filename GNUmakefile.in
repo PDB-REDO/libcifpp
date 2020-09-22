@@ -97,7 +97,6 @@ LIBCIF_SRC		= AtomType.cpp \
 				  CifUtils.cpp \
 				  CifValidator.cpp \
 				  Compound.cpp \
-				  FixDMC.cpp \
 				  PDB2Cif.cpp \
 				  PDB2CifRemark3.cpp \
 				  Point.cpp \

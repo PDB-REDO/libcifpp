@@ -32,7 +32,6 @@
 #include "cif++/CifParser.hpp"
 #include "cif++/CifValidator.hpp"
 
-using namespace std;
 namespace ba = boost::algorithm;
 
 extern int VERBOSE;
@@ -54,8 +53,8 @@ const uint8_t kCharTraitsTable[128] = {
 
 // --------------------------------------------------------------------
 
-CifParserError::CifParserError(uint32_t lineNr, const string& message)
-	: runtime_error("parse error at line " + to_string(lineNr) + ": " + message)
+CifParserError::CifParserError(uint32_t lineNr, const std::string& message)
+	: std::runtime_error("parse error at line " + std::to_string(lineNr) + ": " + message)
 {
 }
 
@@ -94,7 +93,7 @@ SacParser::SacParser(std::istream& is)
 	mLookahead = getNextToken();
 }
 
-void SacParser::error(const string& msg)
+void SacParser::error(const std::string& msg)
 {
 	throw CifParserError(mLineNr, msg);
 }
@@ -130,11 +129,11 @@ int SacParser::getNextChar()
 	
 	if (VERBOSE >= 6)
 	{
-		cerr << "getNextChar => ";
+		std::cerr << "getNextChar => ";
 		if (iscntrl(result) or not isprint(result))
-			cerr << int(result) << endl;
+			std::cerr << int(result) << std::endl;
 		else
-			cerr << char(result) << endl;
+			std::cerr << char(result) << std::endl;
 	}
 	
 	return result;
@@ -181,14 +180,14 @@ void SacParser::restart()
 void SacParser::match(SacParser::CIFToken t)
 {
 	if (mLookahead != t)
-		error(string("Unexpected token, expected ") + kTokenName[t] + " but found " + kTokenName[mLookahead]);
+		error(std::string("Unexpected token, expected ") + kTokenName[t] + " but found " + kTokenName[mLookahead]);
 	
 	mLookahead = getNextToken();
 }
 
 SacParser::CIFToken SacParser::getNextToken()
 {
-	const auto kEOF = char_traits<char>::eof();
+	const auto kEOF = std::char_traits<char>::eof();
 	
 	CIFToken result = eCIFTokenUnknown;
 	int quoteChar = 0;
@@ -291,7 +290,7 @@ SacParser::CIFToken SacParser::getNextToken()
 					error("unterminated textfield");
 				else if (not isAnyPrint(ch))
 //					error("invalid character in text field '" + string({ static_cast<char>(ch) }) + "' (" + to_string((int)ch) + ")");
-					cerr << "invalid character in text field '" << string({ static_cast<char>(ch) }) << "' (" << ch << ") line: " << mLineNr << endl;
+					std::cerr << "invalid character in text field '" << std::string({ static_cast<char>(ch) }) << "' (" << ch << ") line: " << mLineNr << std::endl;
 				break;
 			
 			case eStateTextField + 1:
@@ -469,7 +468,7 @@ SacParser::CIFToken SacParser::getNextToken()
 			case eStateValue + 1:
 				if (ch == '_')		// first _, check for keywords
 				{
-					string s = toLowerCopy(mTokenValue);
+					std::string s = toLowerCopy(mTokenValue);
 					
 					if (s == "global_")
 						result = eCIFTokenGLOBAL;
@@ -511,12 +510,12 @@ SacParser::CIFToken SacParser::getNextToken()
 
 	if (VERBOSE >= 5)
 	{
-		cerr << kTokenName[result];
+		std::cerr << kTokenName[result];
 		if (mTokenType != eCIFValueUnknown)
-			cerr << ' ' << kValueName[mTokenType];
+			std::cerr << ' ' << kValueName[mTokenType];
 		if (result != eCIFTokenEOF)
-			cerr << " '" << mTokenValue << '\'';
-		cerr << endl;
+			std::cerr << " '" << mTokenValue << '\'';
+		std::cerr << std::endl;
 	}
 	
 	return result;
@@ -558,7 +557,7 @@ void SacParser::parseGlobal()
 
 void SacParser::parseDataBlock()
 {
-	string cat;
+	std::string cat;
 	
 	while (mLookahead == eCIFTokenLOOP or mLookahead == eCIFTokenTag or mLookahead == eCIFTokenSAVE)
 	{
@@ -570,11 +569,11 @@ void SacParser::parseDataBlock()
 				
 				match(eCIFTokenLOOP);
 				
-				vector<string> tags;
+				std::vector<std::string> tags;
 				
 				while (mLookahead == eCIFTokenTag)
 				{
-					string catName, itemName;
+					std::string catName, itemName;
 					std::tie(catName, itemName) = splitTagName(mTokenValue);
 					
 					if (cat.empty())
@@ -607,7 +606,7 @@ void SacParser::parseDataBlock()
 		
 			case eCIFTokenTag:
 			{
-				string catName, itemName;
+				std::string catName, itemName;
 				std::tie(catName, itemName) = splitTagName(mTokenValue);
 
 				if (not iequals(cat, catName))
@@ -648,34 +647,34 @@ Parser::Parser(std::istream& is, File& f)
 {
 }
 
-void Parser::produceDatablock(const string& name)
+void Parser::produceDatablock(const std::string& name)
 {
 	mDataBlock = new Datablock(name);
 	mFile.append(mDataBlock);
 }
 
-void Parser::produceCategory(const string& name)
+void Parser::produceCategory(const std::string& name)
 {
 	if (VERBOSE >= 4)
-		cerr << "producing category " << name << endl;
+		std::cerr << "producing category " << name << std::endl;
 
-	std::tie(mCat, ignore) = mDataBlock->emplace(name);
+	std::tie(mCat, std::ignore) = mDataBlock->emplace(name);
 }
 
 void Parser::produceRow()
 {
 	if (VERBOSE >= 4)
-		cerr << "producing row for category " << mCat->name() << endl;
+		std::cerr << "producing row for category " << mCat->name() << std::endl;
 
 	mCat->emplace({});
 	mRow = mCat->back();
 	mRow.lineNr(mLineNr);
 }
 
-void Parser::produceItem(const string& category, const string& item, const string& value)
+void Parser::produceItem(const std::string& category, const std::string& item, const std::string& value)
 {
 	if (VERBOSE >= 4)
-		cerr << "producing _" << category << '.' << item << " -> " << value << endl;
+		std::cerr << "producing _" << category << '.' << item << " -> " << value << std::endl;
 
 	if (not iequals(category, mCat->name()))
 		error("inconsistent categories in loop_");
@@ -688,9 +687,9 @@ void Parser::produceItem(const string& category, const string& item, const strin
 struct DictParserDataImpl
 {
 	// temporary values for constructing dictionaries
-	vector<ValidateCategory>			mCategoryValidators;
-	map<string,vector<ValidateItem>>	mItemValidators;
-	set<tuple<string,string>>			mLinkedItems;
+	std::vector<ValidateCategory>			mCategoryValidators;
+	std::map<std::string,std::vector<ValidateItem>>	mItemValidators;
+	std::set<std::tuple<std::string,std::string>>			mLinkedItems;
 };
 
 DictParser::DictParser(Validator& validator, std::istream& is)
@@ -708,7 +707,7 @@ void DictParser::parseSaveFrame()
 	if (not mCollectedItemTypes)
 		mCollectedItemTypes = collectItemTypes();
 
-	string saveFrameName = mTokenValue;
+	std::string saveFrameName = mTokenValue;
 
 	if (saveFrameName.empty())
 		error("Invalid save frame, should contain more than just 'save_' here");
@@ -727,14 +726,14 @@ void DictParser::parseSaveFrame()
 				
 			match(eCIFTokenLOOP);
 			
-			vector<string> tags;
+			std::vector<std::string> tags;
 			while (mLookahead == eCIFTokenTag)
 			{
-				string catName, itemName;
+				std::string catName, itemName;
 				std::tie(catName, itemName) = splitTagName(mTokenValue);
 					
 				if (cat == dict.end())
-					std::tie(cat, ignore) = dict.emplace(catName);
+					std::tie(cat, std::ignore) = dict.emplace(catName);
 				else if (not iequals(cat->name(), catName))
 					error("inconsistent categories in loop_");
 				
@@ -758,11 +757,11 @@ void DictParser::parseSaveFrame()
 		}
 		else
 		{
-			string catName, itemName;
+			std::string catName, itemName;
 			std::tie(catName, itemName) = splitTagName(mTokenValue);
 
 			if (cat == dict.end() or not iequals(cat->name(), catName))
-				std::tie(cat, ignore) = dict.emplace(catName);
+				std::tie(cat, std::ignore) = dict.emplace(catName);
 
 			match(eCIFTokenTag);
 			
@@ -778,22 +777,22 @@ void DictParser::parseSaveFrame()
 	
 	if (isCategorySaveFrame)
 	{
-		string category = dict.firstItem("_category.id");
+		std::string category = dict.firstItem("_category.id");
 
-		vector<string> keys;
+		std::vector<std::string> keys;
 		for (auto k: dict["category_key"])
-			keys.push_back(get<1>(splitTagName(k["name"].as<string>())));
+			keys.push_back(std::get<1>(splitTagName(k["name"].as<std::string>())));
 		
 		iset groups;
 		for (auto g: dict["category_group"])
-			groups.insert(g["id"].as<string>());
+			groups.insert(g["id"].as<std::string>());
 			
 		mImpl->mCategoryValidators.push_back(ValidateCategory{category, keys, groups});
 	}
 	else
 	{
 		// if the type code is missing, this must be a pointer, just skip it
-		string typeCode = dict.firstItem("_item_type.code");
+		std::string typeCode = dict.firstItem("_item_type.code");
 
 		const ValidateType* tv = nullptr;
 		if (not (typeCode.empty() or typeCode == "?"))
@@ -801,9 +800,9 @@ void DictParser::parseSaveFrame()
 
 		iset ess;
 		for (auto e: dict["item_enumeration"])
-			ess.insert(e["value"].as<string>());
+			ess.insert(e["value"].as<std::string>());
 		
-		string defaultValue = dict.firstItem("_item_default.value");
+		std::string defaultValue = dict.firstItem("_item_default.value");
 		bool defaultIsNull = false;
 		if (defaultValue.empty())
 		{
@@ -817,11 +816,11 @@ void DictParser::parseSaveFrame()
 		// collect the dict from our dataBlock and construct validators
 		for (auto i: dict["item"])
 		{
-			string tagName, category, mandatory;
+			std::string tagName, category, mandatory;
 			
 			cif::tie(tagName, category, mandatory) = i.get("name", "category_id", "mandatory_code");
 			
-			string catName, itemName;
+			std::string catName, itemName;
 			std::tie(catName, itemName) = splitTagName(tagName);
 			
 			if (catName.empty() or itemName.empty())
@@ -844,12 +843,12 @@ void DictParser::parseSaveFrame()
 				{
 					if (VERBOSE > 2)
 					{
-						cerr << "inconsistent mandatory value for " << tagName << " in dictionary" << endl;
+						std::cerr << "inconsistent mandatory value for " << tagName << " in dictionary" << std::endl;
 						
 						if (iequals(tagName, saveFrameName))
-							cerr << "choosing " << mandatory << endl;
+							std::cerr << "choosing " << mandatory << std::endl;
 						else
-							cerr << "choosing " << (vi->mMandatory ? "Y" : "N") << endl;
+							std::cerr << "choosing " << (vi->mMandatory ? "Y" : "N") << std::endl;
 					}
 
 					if (iequals(tagName, saveFrameName))
@@ -859,7 +858,7 @@ void DictParser::parseSaveFrame()
 				if (vi->mType != nullptr and tv != nullptr and vi->mType != tv)
 				{
 					if (VERBOSE > 1)
-						cerr << "inconsistent type for " << tagName << " in dictionary" << endl;
+						std::cerr << "inconsistent type for " << tagName << " in dictionary" << std::endl;
 				}
 
 //				vi->mMandatory = (iequals(mandatory, "yes"));
@@ -876,7 +875,7 @@ void DictParser::parseSaveFrame()
 		// collect the dict from our dataBlock and construct validators
 		for (auto i: dict["item_linked"])
 		{
-			string childTagName, parentTagName;
+			std::string childTagName, parentTagName;
 			
 			cif::tie(childTagName, parentTagName) = i.get("child_name", "parent_name");
 			
@@ -892,12 +891,12 @@ void DictParser::linkItems()
 	
 	auto& dict = *mDataBlock;
 
-	map<tuple<string,string,int>,size_t> linkIndex;
-	vector<tuple<vector<string>,vector<string>>> linkKeys;
+	std::map<std::tuple<std::string,std::string,int>,size_t> linkIndex;
+	std::vector<std::tuple<std::vector<std::string>,std::vector<std::string>>> linkKeys;
 	
 	for (auto gl: dict["pdbx_item_linked_group_list"])
 	{
-		string child, parent;
+		std::string child, parent;
 		int link_group_id;
 		cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
 		
@@ -918,13 +917,13 @@ void DictParser::linkItems()
 		
 		size_t ix = linkIndex.at(key);
 		
-		get<0>(linkKeys.at(ix)).push_back(piv->mTag);
-		get<1>(linkKeys.at(ix)).push_back(civ->mTag);
+		std::get<0>(linkKeys.at(ix)).push_back(piv->mTag);
+		std::get<1>(linkKeys.at(ix)).push_back(civ->mTag);
 	}
 
 //	for (auto li: mImpl->mLinkedItems)
 //	{
-//		string child, parent;
+//		std::string child, parent;
 //		std::tie(child, parent) = li;
 //		
 //		auto civ = mValidator.getValidatorForItem(child);
@@ -961,11 +960,11 @@ void DictParser::linkItems()
 		// look up the label
 		for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
 		{
-			link.mLinkGroupLabel = r["label"].as<string>();
+			link.mLinkGroupLabel = r["label"].as<std::string>();
 			break;
 		}
 
-		mValidator.addLinkValidator(move(link));
+		mValidator.addLinkValidator(std::move(link));
 	}
 	
 	// now make sure the itemType is specified for all itemValidators
@@ -975,14 +974,14 @@ void DictParser::linkItems()
 		for (auto& iv: cv.mItemValidators)
 		{
 			if (iv.mType == nullptr)
-				cerr << "Missing item_type for " << iv.mTag << endl;
+				std::cerr << "Missing item_type for " << iv.mTag << std::endl;
 		}
 	}	
 }
 
 void DictParser::loadDictionary()
 {
-	unique_ptr<Datablock> dict;
+	std::unique_ptr<Datablock> dict;
 	Datablock* savedDatablock = mDataBlock;
 	
 	try
@@ -1007,15 +1006,15 @@ void DictParser::loadDictionary()
 			}
 		}
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << "Error parsing dictionary" << endl;
+		std::cerr << "Error parsing dictionary" << std::endl;
 		throw;
 	}
 
 	// store all validators
 	for (auto& ic: mImpl->mCategoryValidators)
-		mValidator.addCategoryValidator(move(ic));
+		mValidator.addCategoryValidator(std::move(ic));
 	mImpl->mCategoryValidators.clear();
 	
 	for (auto& iv: mImpl->mItemValidators)
@@ -1025,7 +1024,7 @@ void DictParser::loadDictionary()
 			error("Undefined category '" + iv.first);
 
 		for (auto& v: iv.second)
-			const_cast<ValidateCategory*>(cv)->addItemValidator(move(v));
+			const_cast<ValidateCategory*>(cv)->addItemValidator(std::move(v));
 	}
 		
 	// check all item validators for having a typeValidator
@@ -1040,8 +1039,8 @@ void DictParser::loadDictionary()
 	if (n)
 	{
 		auto r = info->front();
-		mValidator.dictName(r["title"].as<string>());
-		mValidator.dictVersion(r["version"].as<string>());
+		mValidator.dictName(r["title"].as<std::string>());
+		mValidator.dictVersion(r["version"].as<std::string>());
 	}
 
 	mDataBlock = savedDatablock;
@@ -1060,7 +1059,7 @@ bool DictParser::collectItemTypes()
 	
 	for (auto& t: dict["item_type_list"])
 	{
-		string code, primitiveCode, construct;
+		std::string code, primitiveCode, construct;
 		cif::tie(code, primitiveCode, construct) = t.get("code", "primitive_code", "construct");
 		
 		ba::replace_all(construct, "\\n", "\n");
@@ -1073,9 +1072,9 @@ bool DictParser::collectItemTypes()
 				code, mapToPrimitiveType(primitiveCode), std::regex(construct, std::regex::extended | std::regex::optimize)
 			};
 			
-			mValidator.addTypeValidator(move(v));
+			mValidator.addTypeValidator(std::move(v));
 		}
-		catch (const exception& ex)
+		catch (const std::exception& ex)
 		{
 			throw_with_nested(CifParserError(t.lineNr(), "error in regular expression"));
 		}
@@ -1086,7 +1085,7 @@ bool DictParser::collectItemTypes()
 //			mFileImpl.mTypeValidators.erase(v);
 
 		if (VERBOSE >= 5)
-			cerr << "Added type " << code << " (" << primitiveCode << ") => " << construct << endl;
+			std::cerr << "Added type " << code << " (" << primitiveCode << ") => " << construct << std::endl;
 		
 		result = true;
 	}

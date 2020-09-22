@@ -26,32 +26,18 @@
 
 #include "cif++/Config.hpp"
 
-#include <termios.h>
-#include <sys/ioctl.h>
-
-#include <iostream>
-#include <iomanip>
-
-#include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "cif++/CifUtils.hpp"
-#include "cif++/Structure.hpp"
 #include "cif++/TlsParser.hpp"
 
-using namespace std;
-namespace po = boost::program_options;
 namespace ba = boost::algorithm;
-namespace c = mmcif;
 
 namespace cif
 {
 
 const int
-	kResidueNrWildcard = numeric_limits<int>::min(),
-	kNoSeqNum = numeric_limits<int>::max() - 1;
-
-using namespace std;
+	kResidueNrWildcard = std::numeric_limits<int>::min(),
+	kNoSeqNum = std::numeric_limits<int>::max() - 1;
 
 // --------------------------------------------------------------------
 // We parse selection statements and create a selection expression tree
@@ -60,14 +46,14 @@ using namespace std;
 
 struct TLSResidue
 {
-	string	chainID;
-	int		seqNr;
-	char	iCode;
-	string	name;
-	bool	selected;
+	std::string	chainID;
+	int			seqNr;
+	char		iCode;
+	std::string	name;
+	bool		selected;
 	
-	string	asymID;
-	int		seqID;
+	std::string	asymID;
+	int			seqID;
 	
 	bool operator==(const TLSResidue& rhs) const
 	{
@@ -79,9 +65,9 @@ struct TLSResidue
 	}
 };
 
-void DumpSelection(const vector<TLSResidue>& selected, int indentLevel)
+void DumpSelection(const std::vector<TLSResidue>& selected, int indentLevel)
 {
-	string indent(indentLevel * 2, ' ');
+	std::string indent(indentLevel * 2, ' ');
 	
 	auto i = selected.begin();
 	bool first = true;
@@ -89,35 +75,35 @@ void DumpSelection(const vector<TLSResidue>& selected, int indentLevel)
 	// First print in PDB space	
 	while (i != selected.end())
 	{
-		auto b = find_if(i, selected.end(), [](auto s) -> bool { return s.selected; });
+		auto b = std::find_if(i, selected.end(), [](auto s) -> bool { return s.selected; });
 		if (b == selected.end())
 			break;
 		
 		if (first)
-			cout << indent << "PDB:" << endl;
+			std::cout << indent << "PDB:" << std::endl;
 		first = false;
 		
-		auto e = find_if(b, selected.end(), [b](auto s) -> bool { return s.chainID != b->chainID or not s.selected; });
+		auto e = std::find_if(b, selected.end(), [b](auto s) -> bool { return s.chainID != b->chainID or not s.selected; });
 		
-		cout << indent << " >> " << b->chainID << ' ' << b->seqNr << ':' << (e - 1)->seqNr << endl;
+		std::cout << indent << " >> " << b->chainID << ' ' << b->seqNr << ':' << (e - 1)->seqNr << std::endl;
 		i = e;
 	}
 	
 	// Then in mmCIF space
 	
 	if (not first)
-		cout << indent << "mmCIF:" << endl;
+		std::cout << indent << "mmCIF:" << std::endl;
 	
 	i = selected.begin();
 	while (i != selected.end())
 	{
-		auto b = find_if(i, selected.end(), [](auto s) -> bool { return s.selected; });
+		auto b = std::find_if(i, selected.end(), [](auto s) -> bool { return s.selected; });
 		if (b == selected.end())
 			break;
 		
-		auto e = find_if(b, selected.end(), [b](auto s) -> bool { return s.asymID != b->asymID or not s.selected; });
+		auto e = std::find_if(b, selected.end(), [b](auto s) -> bool { return s.asymID != b->asymID or not s.selected; });
 	
-		string asymID = b->asymID;
+		std::string asymID = b->asymID;
 		int from = b->seqID, to = from;
 
 		for (auto j = b + 1; j != e; ++j)
@@ -127,18 +113,18 @@ void DumpSelection(const vector<TLSResidue>& selected, int indentLevel)
 			else if (j->seqID != to)		// probably an insertion code
 			{
 				if (from == kNoSeqNum or to == kNoSeqNum)
-					cout << indent << " >> " << asymID << endl;
+					std::cout << indent << " >> " << asymID << std::endl;
 				else
-					cout << indent << " >> " << asymID << ' ' << from << ':' << to << endl;
+					std::cout << indent << " >> " << asymID << ' ' << from << ':' << to << std::endl;
 				asymID = b->asymID;
 				from = to = b->seqID;
 			}
 		}
 
 		if (from == kNoSeqNum or to == kNoSeqNum)
-			cout << indent << " >> " << asymID << endl;
+			std::cout << indent << " >> " << asymID << std::endl;
 		else
-			cout << indent << " >> " << asymID << ' ' << from << ':' << to << endl;
+			std::cout << indent << " >> " << asymID << ' ' << from << ':' << to << std::endl;
 
 		i = e;
 	}
@@ -146,22 +132,22 @@ void DumpSelection(const vector<TLSResidue>& selected, int indentLevel)
 	if (first)
 	{
 		if (isatty(STDOUT_FILENO))
-			cout << indent << cif::coloured("Empty selection") << endl;
+			std::cout << indent << cif::coloured("Empty selection") << std::endl;
 		else
-			cout << indent << cif::coloured("Empty selection") << endl;
+			std::cout << indent << cif::coloured("Empty selection") << std::endl;
 	}
 }
 
-vector<tuple<string,int,int>> TLSSelection::GetRanges(Datablock& db, bool pdbNamespace) const
+std::vector<std::tuple<std::string,int,int>> TLSSelection::GetRanges(Datablock& db, bool pdbNamespace) const
 {
-	vector<TLSResidue> selected;
+	std::vector<TLSResidue> selected;
 
 	// Collect the residues from poly seq scheme...		
 	for (auto r: db["pdbx_poly_seq_scheme"])
 	{
-		string chain, seqNr, iCode, name;
+		std::string chain, seqNr, iCode, name;
 
-		string asymID;
+		std::string asymID;
 		int seqID;
 		
 		if (pdbNamespace)
@@ -177,7 +163,7 @@ vector<tuple<string,int,int>> TLSSelection::GetRanges(Datablock& db, bool pdbNam
 			continue;
 
 		if (iCode.length() > 1)
-			throw runtime_error("invalid iCode");
+			throw std::runtime_error("invalid iCode");
 		
 		selected.push_back({chain, stoi(seqNr), iCode[0], name, false, asymID, seqID});
 	}
@@ -185,7 +171,7 @@ vector<tuple<string,int,int>> TLSSelection::GetRanges(Datablock& db, bool pdbNam
 	// ... those from the nonpoly scheme
 	for (auto r: db["pdbx_nonpoly_scheme"])
 	{
-		string chain, seqNr, iCode, name, asymID;
+		std::string chain, seqNr, iCode, name, asymID;
 
 		if (pdbNamespace)
 		{
@@ -204,7 +190,7 @@ vector<tuple<string,int,int>> TLSSelection::GetRanges(Datablock& db, bool pdbNam
 			continue;
 		
 		if (iCode.length() > 1)
-			throw runtime_error("invalid iCode");
+			throw std::runtime_error("invalid iCode");
 		
 		selected.push_back({chain, stoi(seqNr), iCode[0], name, false, asymID, kNoSeqNum});
 	}
@@ -222,17 +208,17 @@ vector<tuple<string,int,int>> TLSSelection::GetRanges(Datablock& db, bool pdbNam
 	
 	CollectResidues(db, selected);
 	
-	vector<tuple<string,int,int>> result;
+	std::vector<std::tuple<std::string,int,int>> result;
 
 	auto i = selected.begin();
 	
 	while (i != selected.end())
 	{
-		auto b = find_if(i, selected.end(), [](auto s) -> bool { return s.selected; });
+		auto b = std::find_if(i, selected.end(), [](auto s) -> bool { return s.selected; });
 		if (b == selected.end())
 			break;
 		
-		auto e = find_if(b, selected.end(), [b](auto s) -> bool { return s.asymID != b->asymID or not s.selected; });
+		auto e = std::find_if(b, selected.end(), [b](auto s) -> bool { return s.asymID != b->asymID or not s.selected; });
 
 		// return ranges with strict increasing sequence numbers.
 		// So when there's a gap in the sequence we split the range.
@@ -240,9 +226,9 @@ vector<tuple<string,int,int>> TLSSelection::GetRanges(Datablock& db, bool pdbNam
 		result.push_back(make_tuple(b->asymID, b->seqID, b->seqID));
 		for (auto j = b + 1; j != e; ++j)
 		{
-			if (j->seqID == get<2>(result.back()) + 1)
-				get<2>(result.back()) = j->seqID;
-			else if (j->seqID != get<2>(result.back()))		// probably an insertion code
+			if (j->seqID == std::get<2>(result.back()) + 1)
+				std::get<2>(result.back()) = j->seqID;
+			else if (j->seqID != std::get<2>(result.back()))		// probably an insertion code
 				result.push_back(make_tuple(b->asymID, j->seqID, j->seqID));
 		}
 
@@ -257,7 +243,7 @@ struct TLSSelectionNot : public TLSSelection
 	TLSSelectionNot(TLSSelectionPtr selection)
 		: selection(selection.release()) {}
 	
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		selection->CollectResidues(db, residues, indentLevel + 1);
 		
@@ -266,7 +252,7 @@ struct TLSSelectionNot : public TLSSelection
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "NOT" << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "NOT" << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
@@ -278,14 +264,14 @@ struct TLSSelectionAll : public TLSSelection
 {
 	TLSSelectionAll() {}
 	
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		for (auto& r: residues)
 			r.selected = true;
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "ALL" << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "ALL" << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
@@ -293,10 +279,10 @@ struct TLSSelectionAll : public TLSSelection
 
 struct TLSSelectionChain : public TLSSelectionAll
 {
-	TLSSelectionChain(const string& chainID)
+	TLSSelectionChain(const std::string& chainID)
 		: m_chain(chainID) {}
 	
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		bool allChains = m_chain == "*";
 		
@@ -305,12 +291,12 @@ struct TLSSelectionChain : public TLSSelectionAll
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "CHAIN " << m_chain << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "CHAIN " << m_chain << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
 
-	string	m_chain;
+	std::string	m_chain;
 };
 
 struct TLSSelectionResID : public TLSSelectionAll
@@ -318,14 +304,14 @@ struct TLSSelectionResID : public TLSSelectionAll
 	TLSSelectionResID(int seqNr, char iCode)
 		: m_seq_nr(seqNr), m_icode(iCode) {}
 	
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		for (auto& r: residues)
 			r.selected = r.seqNr == m_seq_nr and r.iCode == m_icode;
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "ResID " << m_seq_nr << (m_icode ? string { m_icode} : "") << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "ResID " << m_seq_nr << (m_icode ? std::string { m_icode} : "") << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
@@ -339,7 +325,7 @@ struct TLSSelectionRangeSeq : public TLSSelectionAll
 	TLSSelectionRangeSeq(int first, int last)
 		: m_first(first), m_last(last) {}
 	
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		for (auto& r: residues)
 		{
@@ -349,7 +335,7 @@ struct TLSSelectionRangeSeq : public TLSSelectionAll
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "Range " << m_first << ':' << m_last << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "Range " << m_first << ':' << m_last << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
@@ -362,21 +348,21 @@ struct TLSSelectionRangeID : public TLSSelectionAll
 	TLSSelectionRangeID(int first, int last, char icodeFirst = 0, char icodeLast = 0)
 		: m_first(first), m_last(last), m_icode_first(icodeFirst), m_icode_last(icodeLast) {}
 	
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		// need to do this per chain
-		set<string> chains;
+		std::set<std::string> chains;
 		for (auto& r: residues)
 			chains.insert(r.chainID);
 		
-		for (string chain: chains)
+		for (std::string chain: chains)
 		{
-			auto f = find_if(residues.begin(), residues.end(),
+			auto f = std::find_if(residues.begin(), residues.end(),
 				[=](auto r) -> bool {
 					return r.chainID == chain and r.seqNr == m_first and r.iCode == m_icode_first;
 				});
 			
-			auto l = find_if(residues.begin(), residues.end(),
+			auto l = std::find_if(residues.begin(), residues.end(),
 				[=](auto r) -> bool {
 					return r.chainID == chain and r.seqNr == m_last and r.iCode == m_icode_last;
 				});
@@ -392,7 +378,7 @@ struct TLSSelectionRangeID : public TLSSelectionAll
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "Through " << m_first << ':' << m_last << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "Through " << m_first << ':' << m_last << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
@@ -409,7 +395,7 @@ struct TLSSelectionUnion : public TLSSelection
 	TLSSelectionUnion(TLSSelectionPtr& lhs, TLSSelectionPtr&& rhs)
 		: lhs(lhs.release()), rhs(rhs.release()) {}
 	
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		auto a = residues;
 		for_each(a.begin(), a.end(), [](auto& r) { r.selected = false; });
@@ -425,7 +411,7 @@ struct TLSSelectionUnion : public TLSSelection
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "Union" << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "Union" << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
@@ -442,7 +428,7 @@ struct TLSSelectionIntersection : public TLSSelection
 	TLSSelectionIntersection(TLSSelectionPtr& lhs, TLSSelectionPtr&& rhs)
 		: lhs(lhs.release()), rhs(rhs.release()) {}
 	
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		auto a = residues;
 		for_each(a.begin(), a.end(), [](auto& r) { r.selected = false; });
@@ -458,7 +444,7 @@ struct TLSSelectionIntersection : public TLSSelection
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "Intersection" << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "Intersection" << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
@@ -470,31 +456,31 @@ struct TLSSelectionIntersection : public TLSSelection
 struct TLSSelectionByName : public TLSSelectionAll
 {
   public:
-	TLSSelectionByName(const string& resname)
+	TLSSelectionByName(const std::string& resname)
 		: m_name(resname) {}
 
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		for (auto& r: residues)
 			r.selected = r.name == m_name;
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "Name " << m_name << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "Name " << m_name << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
 
-	string	m_name;
+	std::string	m_name;
 };
 
 struct TLSSelectionByElement : public TLSSelectionAll
 {
   public:
-	TLSSelectionByElement(const string& element)
+	TLSSelectionByElement(const std::string& element)
 		: m_element(element) {}
 
-	virtual void CollectResidues(Datablock& db, vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
 	{
 		// rationale... We want to select residues only. So we select
 		// residues that have just a single atom of type m_element.
@@ -506,12 +492,12 @@ struct TLSSelectionByElement : public TLSSelectionAll
 
 		if (cif::VERBOSE)
 		{
-			cout << string(indentLevel * 2, ' ') << "Element " << m_element << endl;
+			std::cout << std::string(indentLevel * 2, ' ') << "Element " << m_element << std::endl;
 			DumpSelection(residues, indentLevel);
 		}
 	} 
 
-	string	m_element;
+	std::string	m_element;
 };
 
 // --------------------------------------------------------------------
@@ -519,7 +505,7 @@ struct TLSSelectionByElement : public TLSSelectionAll
 class TLSSelectionParserImpl
 {
   public:
-	TLSSelectionParserImpl(const string& selection)
+	TLSSelectionParserImpl(const std::string& selection)
 		: m_selection(selection), m_p(m_selection.begin()), m_end(m_selection.end()) {}
 	
 	virtual TLSSelectionPtr Parse() = 0;
@@ -528,12 +514,12 @@ class TLSSelectionParserImpl
 
 	virtual int GetNextToken() = 0;
 	virtual void Match(int token);
-	virtual string ToString(int token) = 0;
+	virtual std::string ToString(int token) = 0;
 
-	string				m_selection;
-	string::iterator	m_p, m_end;
+	std::string				m_selection;
+	std::string::iterator	m_p, m_end;
 	int					m_lookahead;
-	string				m_token;
+	std::string				m_token;
 };
 
 
@@ -543,19 +529,19 @@ void TLSSelectionParserImpl::Match(int token)
 		m_lookahead = GetNextToken();
 	else
 	{
-		string expected;
+		std::string expected;
 		if (token >= 256)
 			expected = ToString(token);
 		else
 			expected = { char(token) };
 		
-		string found;
+		std::string found;
 		if (m_lookahead >= 256)
 			found = ToString(m_lookahead) + " (" + m_token + ')';
 		else
 			found = { char(m_lookahead) };
 	
-		throw runtime_error("Expected " + expected + " but found " + found);
+		throw std::runtime_error("Expected " + expected + " but found " + found);
 	}
 }
 
@@ -564,7 +550,7 @@ void TLSSelectionParserImpl::Match(int token)
 class TLSSelectionParserImplPhenix : public TLSSelectionParserImpl
 {
   public:
-	TLSSelectionParserImplPhenix(const string& selection)
+	TLSSelectionParserImplPhenix(const std::string& selection)
 		: TLSSelectionParserImpl(selection)
 	{
 		m_lookahead = GetNextToken();
@@ -601,10 +587,10 @@ class TLSSelectionParserImplPhenix : public TLSSelectionParserImpl
 	};
 
 	virtual int GetNextToken();
-	virtual string ToString(int token);
+	virtual std::string ToString(int token);
 	
 	int m_value_i;
-	string m_value_s;
+	std::string m_value_s;
 	char m_icode;
 };
 
@@ -793,7 +779,7 @@ int TLSSelectionParserImplPhenix::GetNextToken()
 				if (ch == '\'')
 					result = pt_STRING;
 				else if (ch == 0)
-					throw runtime_error("Unexpected end of selection, missing quote character?");
+					throw std::runtime_error("Unexpected end of selection, missing quote character?");
 				else
 					m_value_s += ch;
 				break;
@@ -814,7 +800,7 @@ int TLSSelectionParserImplPhenix::GetNextToken()
 				if (ch == '\"')
 					result = pt_STRING;
 				else if (ch == 0)
-					throw runtime_error("Unexpected end of selection, missing quote character?");
+					throw std::runtime_error("Unexpected end of selection, missing quote character?");
 				else
 					m_value_s += ch;
 				break;
@@ -857,7 +843,7 @@ int TLSSelectionParserImplPhenix::GetNextToken()
 	return result;
 }
 
-string TLSSelectionParserImplPhenix::ToString(int token)
+std::string TLSSelectionParserImplPhenix::ToString(int token)
 {
 	switch (token)
 	{
@@ -891,7 +877,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::Parse()
 		Match(pt_KW_PDB);
 //		Match(pt_KW_ENTRY);
 		
-		throw runtime_error("Unimplemented PDB ENTRY specification");
+		throw std::runtime_error("Unimplemented PDB ENTRY specification");
 	}
 
 	TLSSelectionPtr result = ParseAtomSelection();
@@ -907,7 +893,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::Parse()
 	Match(pt_EOLN);
 	
 	if (extraParenthesis)
-		cerr << "WARNING: too many closing parenthesis in TLS selection statement" << endl;
+		std::cerr << "WARNING: too many closing parenthesis in TLS selection statement" << std::endl;
 	
 	return result;
 }
@@ -948,7 +934,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 			Match('(');
 			result = ParseAtomSelection();
 			if (m_lookahead == pt_EOLN)
-				cerr << "WARNING: missing closing parenthesis in TLS selection statement" << endl;
+				std::cerr << "WARNING: missing closing parenthesis in TLS selection statement" << std::endl;
 			else
 				Match(')');
 			break;
@@ -962,10 +948,10 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 		{
 			Match(pt_KW_CHAIN);
 			
-			string chainID = m_value_s;
+			std::string chainID = m_value_s;
 			if (m_lookahead == pt_NUMBER)	// sigh
 			{
-				chainID = to_string(m_value_i);
+				chainID = std::to_string(m_value_i);
 				Match(pt_NUMBER);
 			}
 			else
@@ -978,7 +964,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 		case pt_KW_RESNAME:
 		{
 			Match(pt_KW_RESNAME);
-			string name = m_value_s;
+			std::string name = m_value_s;
 			Match(pt_IDENT);
 			result.reset(new TLSSelectionByName(name));
 			break;
@@ -987,7 +973,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 		case pt_KW_ELEMENT:
 		{
 			Match(pt_KW_ELEMENT);
-			string element = m_value_s;
+			std::string element = m_value_s;
 			Match(pt_IDENT);
 			result.reset(new TLSSelectionByElement(element));
 			break;
@@ -1050,7 +1036,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 				else
 				{
 					if (cif::VERBOSE and (icode_from or icode_to))
-						cerr << "Warning, ignoring insertion codes" << endl;
+						std::cerr << "Warning, ignoring insertion codes" << std::endl;
 					
 					result.reset(new TLSSelectionRangeSeq(from, to));
 				}
@@ -1067,7 +1053,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 			break;
 		
 		default:
-			throw runtime_error("Unexpected token " + ToString(m_lookahead) + " (" + m_token + ')');
+			throw std::runtime_error("Unexpected token " + ToString(m_lookahead) + " (" + m_token + ')');
 	}
 	
 	return result;
@@ -1078,7 +1064,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 class TLSSelectionParserImplBuster : public TLSSelectionParserImpl
 {
   public:
-	TLSSelectionParserImplBuster(const string& selection);
+	TLSSelectionParserImplBuster(const std::string& selection);
 	
 	virtual TLSSelectionPtr Parse();
 	
@@ -1092,19 +1078,19 @@ class TLSSelectionParserImplBuster : public TLSSelectionParserImpl
 	};
 	
 	virtual int GetNextToken();
-	virtual string ToString(int token);
+	virtual std::string ToString(int token);
 		
 	TLSSelectionPtr ParseGroup();
-	tuple<string,int> ParseAtom();
+	std::tuple<std::string,int> ParseAtom();
 
 	TLSSelectionPtr ParseOldGroup();
 	
 	int m_value_i;
-	string m_value_s;
+	std::string m_value_s;
 	bool m_parsing_old_style = false;
 };
 
-TLSSelectionParserImplBuster::TLSSelectionParserImplBuster(const string& selection)
+TLSSelectionParserImplBuster::TLSSelectionParserImplBuster(const std::string& selection)
 	: TLSSelectionParserImpl(selection)
 {
 	m_lookahead = GetNextToken();
@@ -1192,12 +1178,12 @@ int TLSSelectionParserImplBuster::GetNextToken()
 	return result;
 }
 
-string TLSSelectionParserImplBuster::ToString(int token)
+std::string TLSSelectionParserImplBuster::ToString(int token)
 {
 	switch (token)
 	{
 		case bt_IDENT:	return "identifier (" + m_value_s + ')';
-		case bt_NUMBER:	return "number (" + to_string(m_value_i) + ')';
+		case bt_NUMBER:	return "number (" + std::to_string(m_value_i) + ')';
 		case bt_EOLN:	return "end of line";
 
 		default:
@@ -1210,7 +1196,7 @@ TLSSelectionPtr TLSSelectionParserImplBuster::ParseGroup()
 {
 	TLSSelectionPtr result;
 	
-	auto add = [&result](const string& chainID, int from, int to)
+	auto add = [&result](const std::string& chainID, int from, int to)
 	{
 		TLSSelectionPtr sc(new TLSSelectionChain(chainID));
 		TLSSelectionPtr sr(new TLSSelectionRangeSeq(from, to));
@@ -1226,13 +1212,13 @@ TLSSelectionPtr TLSSelectionParserImplBuster::ParseGroup()
 
 	do
 	{
-		string chain1;
+		std::string chain1;
 		int seqNr1;
 		std::tie(chain1, seqNr1) = ParseAtom();
 		
 		if (m_lookahead == '-')
 		{
-			string chain2;
+			std::string chain2;
 			int seqNr2 = seqNr1;
 
 			Match('-');
@@ -1247,7 +1233,7 @@ TLSSelectionPtr TLSSelectionParserImplBuster::ParseGroup()
 				std::tie(chain2, seqNr2) = ParseAtom();
 				if (chain1 != chain2)
 				{
-					cerr << "Warning, ranges over multiple chains detected" << endl;
+					std::cerr << "Warning, ranges over multiple chains detected" << std::endl;
 					
 					TLSSelectionPtr sc1(new TLSSelectionChain(chain1));
 					TLSSelectionPtr sr1(new TLSSelectionRangeSeq(seqNr1, kResidueNrWildcard));
@@ -1281,9 +1267,9 @@ TLSSelectionPtr TLSSelectionParserImplBuster::ParseGroup()
 	return result;
 }
 
-tuple<string,int> TLSSelectionParserImplBuster::ParseAtom()
+std::tuple<std::string,int> TLSSelectionParserImplBuster::ParseAtom()
 {
-	string chain = m_value_s;
+	std::string chain = m_value_s;
 	int seqNr = kResidueNrWildcard;
 	
 	if (m_lookahead == '*')
@@ -1303,10 +1289,10 @@ tuple<string,int> TLSSelectionParserImplBuster::ParseAtom()
 		if (m_lookahead == ':')
 		{
 			Match(':');
-			string atom = m_value_s;
+			std::string atom = m_value_s;
 			
 			if (cif::VERBOSE)
-				cerr << "Warning: ignoring atom ID '" << atom << "' in TLS selection" << endl;
+				std::cerr << "Warning: ignoring atom ID '" << atom << "' in TLS selection" << std::endl;
 			
 			Match(bt_IDENT);
 		}
@@ -1327,7 +1313,7 @@ TLSSelectionPtr TLSSelectionParserImplBuster::Parse()
 class TLSSelectionParserImplBusterOld : public TLSSelectionParserImpl
 {
   public:
-	TLSSelectionParserImplBusterOld(const string& selection)
+	TLSSelectionParserImplBusterOld(const std::string& selection)
 		: TLSSelectionParserImpl(selection)
 	{
 		m_lookahead = GetNextToken();
@@ -1368,10 +1354,10 @@ class TLSSelectionParserImplBusterOld : public TLSSelectionParserImpl
 	};
 
 	virtual int GetNextToken();
-	virtual string ToString(int token);
+	virtual std::string ToString(int token);
 	
 	int m_value_i;
-	string m_value_s;
+	std::string m_value_s;
 	int m_value_r[2];
 };
 
@@ -1493,7 +1479,7 @@ int TLSSelectionParserImplBusterOld::GetNextToken()
 			case st_CHAINRESID:
 				if (isalpha(ch))
 				{
-					m_value_s += to_string(m_value_i);
+					m_value_s += std::to_string(m_value_i);
 					m_value_s += ch;
 					state = st_IDENT;
 				}
@@ -1533,7 +1519,7 @@ int TLSSelectionParserImplBusterOld::GetNextToken()
 				if (ch == '\'')
 					result = pt_STRING;
 				else if (ch == 0)
-					throw runtime_error("Unexpected end of selection, missing quote character?");
+					throw std::runtime_error("Unexpected end of selection, missing quote character?");
 				else
 					m_value_s += ch;
 				break;
@@ -1570,14 +1556,14 @@ int TLSSelectionParserImplBusterOld::GetNextToken()
 	return result;
 }
 
-string TLSSelectionParserImplBusterOld::ToString(int token)
+std::string TLSSelectionParserImplBusterOld::ToString(int token)
 {
 	switch (token)
 	{
 		case pt_IDENT:	return "identifier (" + m_value_s + ')';
 		case pt_STRING:	return "string (" + m_value_s + ')';
-		case pt_NUMBER:	return "number (" + to_string(m_value_i) + ')';
-		case pt_RANGE:	return "range (" + to_string(m_value_r[0]) + ':' + to_string(m_value_r[1]) + ')'; 
+		case pt_NUMBER:	return "number (" + std::to_string(m_value_i) + ')';
+		case pt_RANGE:	return "range (" + std::to_string(m_value_r[0]) + ':' + std::to_string(m_value_r[1]) + ')'; 
 		case pt_EOLN:	return "end of line";
 
 		case pt_KW_ALL:		return "ALL";
@@ -1605,7 +1591,7 @@ TLSSelectionPtr TLSSelectionParserImplBusterOld::Parse()
 		Match(pt_KW_PDB);
 //		Match(pt_KW_ENTRY);
 		
-		throw runtime_error("Unimplemented PDB ENTRY specification");
+		throw std::runtime_error("Unimplemented PDB ENTRY specification");
 	}
 
 	TLSSelectionPtr result = ParseAtomSelection();
@@ -1662,10 +1648,10 @@ TLSSelectionPtr TLSSelectionParserImplBusterOld::ParseFactor()
 		{
 			Match(pt_KW_CHAIN);
 
-			string chainID = m_value_s;
+			std::string chainID = m_value_s;
 			if (m_lookahead == pt_NUMBER)	// sigh
 			{
-				chainID = to_string(m_value_i);
+				chainID = std::to_string(m_value_i);
 				Match(pt_NUMBER);
 			}
 			else
@@ -1678,7 +1664,7 @@ TLSSelectionPtr TLSSelectionParserImplBusterOld::ParseFactor()
 		case pt_KW_RESNAME:
 		{
 			Match(pt_KW_RESNAME);
-			string name = m_value_s;
+			std::string name = m_value_s;
 			Match(pt_IDENT);
 			result.reset(new TLSSelectionByName(name));
 			break;
@@ -1704,7 +1690,7 @@ TLSSelectionPtr TLSSelectionParserImplBusterOld::ParseFactor()
 			break;
 		
 		default:
-			throw runtime_error("Unexpected token " + ToString(m_lookahead));
+			throw std::runtime_error("Unexpected token " + ToString(m_lookahead));
 	}
 	
 	return result;
@@ -1766,7 +1752,7 @@ TLSSelectionPtr TLSSelectionParserImplBusterOld::ParseChainResid()
 		int from, to;
 		
 		from = to = m_value_i;
-		string chainID = m_value_s;
+		std::string chainID = m_value_s;
 		
 		Match(pt_CHAINRESID);
 
@@ -1776,7 +1762,7 @@ TLSSelectionPtr TLSSelectionParserImplBusterOld::ParseChainResid()
 			to = m_value_i;
 			
 			if (m_value_s != chainID)
-				throw runtime_error("Cannot have two different chainIDs in a range selection");
+				throw std::runtime_error("Cannot have two different chainIDs in a range selection");
 			
 			Match(pt_CHAINRESID);
 		}
@@ -1807,7 +1793,7 @@ TLSSelectionPtr TLSSelectionParserImplBusterOld::ParseChainResid()
 class TLSSelectionParserBase
 {
   public:
-	virtual TLSSelectionPtr Parse(const string& selection) const = 0;
+	virtual TLSSelectionPtr Parse(const std::string& selection) const = 0;
 	virtual ~TLSSelectionParserBase() {}
 };
 
@@ -1815,7 +1801,7 @@ template<typename IMPL>
 class TLSSelectionParser
 {
   public:
-	virtual TLSSelectionPtr Parse(const string& selection) const
+	virtual TLSSelectionPtr Parse(const std::string& selection) const
 	{
 		TLSSelectionPtr result;
 		
@@ -1824,9 +1810,9 @@ class TLSSelectionParser
 			IMPL p(selection);
 			result = p.Parse();
 		}
-		catch (const exception& ex)
+		catch (const std::exception& ex)
 		{
-			cerr << "ParseError: " << ex.what() << endl;
+			std::cerr << "ParseError: " << ex.what() << std::endl;
 		}
 		
 		return result;
@@ -1836,7 +1822,7 @@ class TLSSelectionParser
 // --------------------------------------------------------------------
 
 
-TLSSelectionPtr ParseSelectionDetails(const string& program, const string& selection)
+TLSSelectionPtr ParseSelectionDetails(const std::string& program, const std::string& selection)
 {
 	TLSSelectionParser<TLSSelectionParserImplPhenix> phenix;
 	TLSSelectionParser<TLSSelectionParserImplBuster> buster;
@@ -1851,14 +1837,14 @@ TLSSelectionPtr ParseSelectionDetails(const string& program, const string& selec
 		if (not result)
 		{
 			if (cif::VERBOSE)
-				cerr << "Falling back to old BUSTER" << endl;
+				std::cerr << "Falling back to old BUSTER" << std::endl;
 			result = busterOld.Parse(selection);
 		}
 		
 		if (not result)
 		{
 			if (cif::VERBOSE)
-				cerr << "Falling back to PHENIX" << endl;
+				std::cerr << "Falling back to PHENIX" << std::endl;
 			result = phenix.Parse(selection);
 		}
 	}
@@ -1869,35 +1855,35 @@ TLSSelectionPtr ParseSelectionDetails(const string& program, const string& selec
 		if (not result)
 		{
 			if (cif::VERBOSE)
-				cerr << "Falling back to BUSTER" << endl;
+				std::cerr << "Falling back to BUSTER" << std::endl;
 			result = buster.Parse(selection);
 		}
 
 		if (not result)
 		{
 			if (cif::VERBOSE)
-				cerr << "Falling back to old BUSTER" << endl;
+				std::cerr << "Falling back to old BUSTER" << std::endl;
 			result = busterOld.Parse(selection);
 		}
 	}
 	else
 	{
 		if (cif::VERBOSE)
-			cerr << "No known program specified, trying PHENIX" << endl;
+			std::cerr << "No known program specified, trying PHENIX" << std::endl;
 
 		result = phenix.Parse(selection);
 
 		if (not result)
 		{
 			if (cif::VERBOSE)
-				cerr << "Falling back to BUSTER" << endl;
+				std::cerr << "Falling back to BUSTER" << std::endl;
 			result = buster.Parse(selection);
 		}
 
 		if (not result)
 		{
 			if (cif::VERBOSE)
-				cerr << "Falling back to old BUSTER" << endl;
+				std::cerr << "Falling back to old BUSTER" << std::endl;
 			result = busterOld.Parse(selection);
 		}
 	}

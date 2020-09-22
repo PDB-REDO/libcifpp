@@ -32,8 +32,6 @@
 #include "cif++/Symmetry.hpp"
 #include "cif++/CifUtils.hpp"
 
-using namespace std;
-
 namespace mmcif
 {
 
@@ -51,7 +49,7 @@ int GetSpacegroupNumber(std::string spacegroup)
 	if (spacegroup == "P 21 21 2 A")
 		spacegroup = "P 21 21 2 (a)";
 	else if (spacegroup.empty())
-		throw runtime_error("No spacegroup, cannot continue");
+		throw std::runtime_error("No spacegroup, cannot continue");
 
 	int result = 0;
 
@@ -88,7 +86,7 @@ int GetSpacegroupNumber(std::string spacegroup)
 	}
 
 	if (result == 0)
-		throw runtime_error("Spacegroup name " + spacegroup + " was not found in table");
+		throw std::runtime_error("Spacegroup name " + spacegroup + " was not found in table");
 	
 	return result;
 }

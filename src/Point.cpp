@@ -29,8 +29,6 @@
 
 #include "cif++/Point.hpp"
 
-using namespace std;
-
 namespace mmcif
 {
 
@@ -38,7 +36,7 @@ namespace mmcif
 
 quaternion Normalize(quaternion q)
 {
-	valarray<double> t(4);
+	std::valarray<double> t(4);
 	
 	t[0] = q.R_component_1();
 	t[1] = q.R_component_2();
@@ -59,7 +57,7 @@ quaternion Normalize(quaternion q)
 
 // --------------------------------------------------------------------
 
-tuple<double,Point> QuaternionToAngleAxis(quaternion q)
+std::tuple<double,Point> QuaternionToAngleAxis(quaternion q)
 {
 	if (q.R_component_1() > 1)
 		q = Normalize(q);
@@ -75,10 +73,10 @@ tuple<double,Point> QuaternionToAngleAxis(quaternion q)
 	
 	Point axis(q.R_component_2() / s, q.R_component_3() / s, q.R_component_4() / s);
 
-	return make_tuple(angle, axis);
+	return std::make_tuple(angle, axis);
 }
 
-Point CenterPoints(vector<Point>& Points)
+Point CenterPoints(std::vector<Point>& Points)
 {
 	Point t;
 	
@@ -103,7 +101,7 @@ Point CenterPoints(vector<Point>& Points)
 	return t;
 }
 
-Point Centroid(vector<Point>& Points)
+Point Centroid(std::vector<Point>& Points)
 {
 	Point result;
 	
@@ -115,12 +113,12 @@ Point Centroid(vector<Point>& Points)
 	return result;
 }
 
-double RMSd(const vector<Point>& a, const vector<Point>& b)
+double RMSd(const std::vector<Point>& a, const std::vector<Point>& b)
 {
 	double sum = 0;
 	for (uint32_t i = 0; i < a.size(); ++i)
 	{
-		valarray<double> d(3);
+		std::valarray<double> d(3);
 		
 		d[0] = b[i].mX - a[i].mX;
 		d[1] = b[i].mY - a[i].mY;
@@ -131,7 +129,7 @@ double RMSd(const vector<Point>& a, const vector<Point>& b)
 		sum += d.sum();
 	}
 	
-	return sqrt(sum / a.size());
+	return std::sqrt(sum / a.size());
 }
 
 // The next function returns the largest solution for a quartic equation
@@ -145,30 +143,30 @@ double RMSd(const vector<Point>& a, const vector<Point>& b)
 //  sqrt of a negative number)
 double LargestDepressedQuarticSolution(double a, double b, double c)
 {
-	complex<double> P = - (a * a) / 12 - c;
-	complex<double> Q = - (a * a * a) / 108 + (a * c) / 3 - (b * b) / 8;
-	complex<double> R = - Q / 2.0 + sqrt((Q * Q) / 4.0 + (P * P * P) / 27.0);
+	std::complex<double> P = - (a * a) / 12 - c;
+	std::complex<double> Q = - (a * a * a) / 108 + (a * c) / 3 - (b * b) / 8;
+	std::complex<double> R = - Q / 2.0 + std::sqrt((Q * Q) / 4.0 + (P * P * P) / 27.0);
 	
-	complex<double> U = pow(R, 1 / 3.0);
+	std::complex<double> U = std::pow(R, 1 / 3.0);
 	
-	complex<double> y;
+	std::complex<double> y;
 	if (U == 0.0)
-		y = -5.0 * a / 6.0 + U - pow(Q, 1.0 / 3.0);
+		y = -5.0 * a / 6.0 + U - std::pow(Q, 1.0 / 3.0);
 	else
 		y = -5.0 * a / 6.0 + U - P / (3.0 * U);
 
-	complex<double> W = sqrt(a + 2.0 * y);
+	std::complex<double> W = std::sqrt(a + 2.0 * y);
 	
 	// And to get the final result:
 	// result = (±W + sqrt(-(3 * alpha + 2 * y ± 2 * beta / W))) / 2;
 	// We want the largest result, so:
 
-	valarray<double> t(4);
+	std::valarray<double> t(4);
 
-	t[0] = (( W + sqrt(-(3.0 * a + 2.0 * y + 2.0 * b / W))) / 2.0).real();
-	t[1] = (( W + sqrt(-(3.0 * a + 2.0 * y - 2.0 * b / W))) / 2.0).real();
-	t[2] = ((-W + sqrt(-(3.0 * a + 2.0 * y + 2.0 * b / W))) / 2.0).real();
-	t[3] = ((-W + sqrt(-(3.0 * a + 2.0 * y - 2.0 * b / W))) / 2.0).real();
+	t[0] = (( W + std::sqrt(-(3.0 * a + 2.0 * y + 2.0 * b / W))) / 2.0).real();
+	t[1] = (( W + std::sqrt(-(3.0 * a + 2.0 * y - 2.0 * b / W))) / 2.0).real();
+	t[2] = ((-W + std::sqrt(-(3.0 * a + 2.0 * y + 2.0 * b / W))) / 2.0).real();
+	t[3] = ((-W + std::sqrt(-(3.0 * a + 2.0 * y - 2.0 * b / W))) / 2.0).real();
 
 	return t.max();
 }
@@ -286,10 +284,10 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 Point Nudge(Point p, float offset)
 {
 	static std::random_device rd;
-	static mt19937_64 rng(rd());
+	static std::mt19937_64 rng(rd());
 
-	uniform_real_distribution<> randomAngle(0, 2 * kPI);
-	normal_distribution<> randomOffset(0, offset);
+	std::uniform_real_distribution<> randomAngle(0, 2 * kPI);
+	std::normal_distribution<> randomOffset(0, offset);
 
 	float theta = randomAngle(rng);
 	float phi1 = randomAngle(rng) - kPI;

@@ -47,7 +47,6 @@
 
 #include "cif++/CifUtils.hpp"
 
-using namespace std;
 namespace ba = boost::algorithm;
 
 namespace cif
@@ -80,7 +79,7 @@ const uint8_t kCharToLowerMap[256] =
 
 // --------------------------------------------------------------------
 
-bool iequals(const string& a, const string& b)
+bool iequals(const std::string& a, const std::string& b)
 {
 	bool result = a.length() == b.length();
 	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end() and bi != b.end(); ++ai, ++bi)
@@ -97,7 +96,7 @@ bool iequals(const char* a, const char* b)
 	return result and *a == *b;
 }
 
-int icompare(const string& a, const string& b)
+int icompare(const std::string& a, const std::string& b)
 {
 	int d = 0;
 	auto ai = a.begin(), bi = b.begin();
@@ -134,15 +133,15 @@ int icompare(const char* a, const char* b)
 	return d;
 }
 
-void toLower(string& s)
+void toLower(std::string& s)
 {
 	for (auto& c: s)
 		c = tolower(c);
 }
 
-string toLowerCopy(const string& s)
+std::string toLowerCopy(const std::string& s)
 {
-	string result(s);
+	std::string result(s);
 	for (auto& c: result)
 		c = tolower(c);
 	return result;
@@ -150,17 +149,17 @@ string toLowerCopy(const string& s)
 
 // --------------------------------------------------------------------
 
-tuple<string,string> splitTagName(const string& tag)
+std::tuple<std::string,std::string> splitTagName(const std::string& tag)
 {
 	if (tag.empty())
-		throw runtime_error("empty tag");
+		throw std::runtime_error("empty tag");
 	if (tag[0] != '_')
-		throw runtime_error("tag does not start with underscore");
+		throw std::runtime_error("tag does not start with underscore");
 
 	auto s = tag.find('.');
-	if (s == string::npos)
-		throw runtime_error("tag does not contain dot");
-	return tuple<string,string>{
+	if (s == std::string::npos)
+		throw std::runtime_error("tag does not contain dot");
+	return std::tuple<std::string,std::string>{
 		tag.substr(1, s - 1), tag.substr(s + 1)
 	};
 }	
@@ -236,7 +235,7 @@ const LineBreakClass kASCII_LBTable[128] =
 	kLBC_Alphabetic, kLBC_Alphabetic, kLBC_Alphabetic, kLBC_OpenPunctuation, kLBC_BreakAfter, kLBC_ClosePunctuation, kLBC_Alphabetic, kLBC_CombiningMark
 };
 
-string::const_iterator nextLineBreak(string::const_iterator text, string::const_iterator end)
+std::string::const_iterator nextLineBreak(std::string::const_iterator text, std::string::const_iterator end)
 {
 	if (text == end)
 		return text;
@@ -329,10 +328,10 @@ string::const_iterator nextLineBreak(string::const_iterator text, string::const_
 	return text;
 }
 
-vector<string> wrapLine(const string& text, unsigned int width)
+std::vector<std::string> wrapLine(const std::string& text, unsigned int width)
 {
-	vector<string> result;
-	vector<size_t> offsets = { 0 };
+	std::vector<std::string> result;
+	std::vector<size_t> offsets = { 0 };
 
 	auto b = text.begin();
 	while (b != text.end())
@@ -346,9 +345,9 @@ vector<string> wrapLine(const string& text, unsigned int width)
 	
 	size_t count = offsets.size() - 1;
 	
-	vector<size_t> minima(count + 1, 1000000);
+	std::vector<size_t> minima(count + 1, 1000000);
 	minima[0] = 0;
-	vector<size_t> breaks(count + 1, 0);
+	std::vector<size_t> breaks(count + 1, 0);
 	
 	for (size_t i = 0; i < count; ++i)
 	{
@@ -390,12 +389,12 @@ vector<string> wrapLine(const string& text, unsigned int width)
 	return result;
 }
 
-vector<string> wordWrap(const string& text, unsigned int width)
+std::vector<std::string> wordWrap(const std::string& text, unsigned int width)
 {
-	vector<string> paragraphs;
+	std::vector<std::string> paragraphs;
 	ba::split(paragraphs, text, ba::is_any_of("\n"));
 	
-	vector<string> result;
+	std::vector<std::string> result;
 	for (auto& p: paragraphs)
 	{
 		if (p.empty())
@@ -420,7 +419,7 @@ uint32_t get_terminal_width()
 }
 
 // I don't have a windows machine to test the following code, please accept my apologies in case it fails...
-string GetExecutablePath()
+std::string GetExecutablePath()
 {
 	WCHAR buffer[4096];
 
@@ -430,7 +429,7 @@ string GetExecutablePath()
 
 	wstring ws(buffer);
 
-	return string(ws.begin(), ws.end());
+	return std::string(ws.begin(), ws.end());
 }
 
 #else
@@ -447,11 +446,13 @@ uint32_t get_terminal_width()
     return result;
 }
 
-string get_executable_path()
+std::string get_executable_path()
 {
+	using namespace std::literals;
+
 	char path[PATH_MAX] = "";
 	if (readlink("/proc/self/exe", path, sizeof(path)) == -1)
-		throw runtime_error("could not get exe path "s + strerror(errno));
+		throw std::runtime_error("could not get exe path "s + strerror(errno));
 	return { path };
 }
 
@@ -461,7 +462,7 @@ string get_executable_path()
 
 struct ProgressImpl
 {
-					ProgressImpl(int64_t inMax, const string& inAction)
+					ProgressImpl(int64_t inMax, const std::string& inAction)
 						: mMax(inMax), mConsumed(0), mAction(inAction), mMessage(inAction)
 						, mThread(std::bind(&ProgressImpl::Run, this))
 						, mStart(boost::posix_time::second_clock::local_time()) {}
@@ -478,10 +479,10 @@ struct ProgressImpl
 	void			PrintDone();
 
 	int64_t			mMax;
-	atomic<int64_t>	mConsumed;
+	std::atomic<int64_t>	mConsumed;
 	int64_t			mLastConsumed = 0;
 	int				mSpinnerIndex = 0;
-	string			mAction, mMessage;
+	std::string			mAction, mMessage;
 	std::mutex		mMutex;
 	std::thread		mThread;
 	boost::timer::cpu_timer mTimer;
@@ -549,7 +550,7 @@ void ProgressImpl::PrintProgress()
 
 	uint32_t width = get_terminal_width();
 	
-	string msg;
+	std::string msg;
 	msg.reserve(width + 1);
 	if (mMessage.length() <= 20)
 	{
@@ -604,23 +605,23 @@ void ProgressImpl::PrintProgress()
 //	msg += to_string(perc);
 //	msg += '%';
 	
-	cout << '\r' << msg;
-	cout.flush();
+	std::cout << '\r' << msg;
+	std::cout.flush();
 }
 
 void ProgressImpl::PrintDone()
 {
-	string msg = mAction + " done in " + mTimer.format(0, "%ts cpu / %ws wall");
+	std::string msg = mAction + " done in " + mTimer.format(0, "%ts cpu / %ws wall");
 
 	uint32_t width = get_terminal_width();
 
 	if (msg.length() < width)
-		msg += string(width - msg.length(), ' ');
+		msg += std::string(width - msg.length(), ' ');
 	
-	cout << '\r' << msg << endl;
+	std::cout << '\r' << msg << std::endl;
 }
 
-Progress::Progress(int64_t inMax, const string& inAction)
+Progress::Progress(int64_t inMax, const std::string& inAction)
 	: mImpl(nullptr)
 {
 	if (isatty(STDOUT_FILENO))

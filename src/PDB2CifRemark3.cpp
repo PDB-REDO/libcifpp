@@ -33,14 +33,12 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
-// #include <boost/numeric/ublas/matrix.hpp>
 
 #include "cif++/AtomType.hpp"
 #include "cif++/Compound.hpp"
 #include "cif++/PDB2CifRemark3.hpp"
 #include "cif++/CifUtils.hpp"
 
-using namespace std;
 namespace ba = boost::algorithm;
 
 using cif::Datablock;
@@ -53,12 +51,12 @@ using cif::iequals;
 
 struct TemplateLine
 {
-	const char*						rx;
-	int								nextStateOffset;
-	const char*						category;
-	initializer_list<const char*>	items;
-	const char*						lsRestrType = nullptr;
-	bool							createNew;
+	const char*							rx;
+	int									nextStateOffset;
+	const char*							category;
+	std::initializer_list<const char*>	items;
+	const char*							lsRestrType = nullptr;
+	bool								createNew;
 };
 
 // --------------------------------------------------------------------
@@ -168,10 +166,10 @@ const TemplateLine kBusterTNT_Template[] = {
 class BUSTER_TNT_Remark3Parser : public Remark3Parser
 {
   public:
-	BUSTER_TNT_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	BUSTER_TNT_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db,
 			kBusterTNT_Template, sizeof(kBusterTNT_Template) / sizeof(TemplateLine),
-				regex(R"((BUSTER(?:-TNT)?)(?: (\d+(?:\..+)?))?)")) {}
+				std::regex(R"((BUSTER(?:-TNT)?)(?: (\d+(?:\..+)?))?)")) {}
 };
 
 const TemplateLine kCNS_Template[] = {
@@ -261,9 +259,9 @@ const TemplateLine kCNS_Template[] = {
 class CNS_Remark3Parser : public Remark3Parser
 {
   public:
-	CNS_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	CNS_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kCNS_Template,
-			sizeof(kCNS_Template) / sizeof(TemplateLine), regex(R"((CN[SX])(?: (\d+(?:\.\d+)?))?)")) {}
+			sizeof(kCNS_Template) / sizeof(TemplateLine), std::regex(R"((CN[SX])(?: (\d+(?:\.\d+)?))?)")) {}
 };
 
 const TemplateLine kPHENIX_Template[] = {
@@ -339,9 +337,9 @@ const TemplateLine kPHENIX_Template[] = {
 class PHENIX_Remark3Parser : public Remark3Parser
 {
   public:
-	PHENIX_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	PHENIX_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kPHENIX_Template, sizeof(kPHENIX_Template) / sizeof(TemplateLine),
-			regex(R"((PHENIX)(?: \(PHENIX\.REFINE:) (\d+(?:\.[^)]+)?)\)?)")) {}
+			std::regex(R"((PHENIX)(?: \(PHENIX\.REFINE:) (\d+(?:\.[^)]+)?)\)?)")) {}
 
 	virtual void fixup();
 };
@@ -423,9 +421,9 @@ const TemplateLine kNUCLSQ_Template[] = {
 class NUCLSQ_Remark3Parser : public Remark3Parser
 {
   public:
-	NUCLSQ_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	NUCLSQ_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kNUCLSQ_Template, sizeof(kNUCLSQ_Template) / sizeof(TemplateLine),
-			regex(R"((NUCLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
+			std::regex(R"((NUCLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
 
 	virtual void fixup()
 	{
@@ -512,9 +510,9 @@ const TemplateLine kPROLSQ_Template[] = {
 class PROLSQ_Remark3Parser : public Remark3Parser
 {
   public:
-	PROLSQ_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	PROLSQ_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kPROLSQ_Template, sizeof(kPROLSQ_Template) / sizeof(TemplateLine),
-			regex(R"((PROLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
+			std::regex(R"((PROLSQ)(?: (\d+(?:\.\d+)?))?)")) {}
 
 	virtual void fixup()
 	{
@@ -597,12 +595,12 @@ const TemplateLine kREFMAC_Template[] = {
 class REFMAC_Remark3Parser : public Remark3Parser
 {
   public:
-	REFMAC_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	REFMAC_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kREFMAC_Template, sizeof(kREFMAC_Template) / sizeof(TemplateLine),
-			regex(".+")) {}
+			std::regex(".+")) {}
 
-	virtual string program()	{ return "REFMAC"; }
-	virtual string version()	{ return ""; }
+	virtual std::string program()	{ return "REFMAC"; }
+	virtual std::string version()	{ return ""; }
 };
 
 const TemplateLine kREFMAC5_Template[] = {
@@ -749,9 +747,9 @@ const TemplateLine kREFMAC5_Template[] = {
 class REFMAC5_Remark3Parser : public Remark3Parser
 {
   public:
-	REFMAC5_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	REFMAC5_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kREFMAC5_Template, sizeof(kREFMAC5_Template) / sizeof(TemplateLine),
-			regex(R"((REFMAC)(?: (\d+(?:\..+)?))?)")) {}
+			std::regex(R"((REFMAC)(?: (\d+(?:\..+)?))?)")) {}
 };
 
 const TemplateLine kSHELXL_Template[] = {
@@ -807,9 +805,9 @@ const TemplateLine kSHELXL_Template[] = {
 class SHELXL_Remark3Parser : public Remark3Parser
 {
   public:
-	SHELXL_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	SHELXL_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kSHELXL_Template, sizeof(kSHELXL_Template) / sizeof(TemplateLine),
-			regex(R"((SHELXL)(?:-(\d+(?:\..+)?)))")) {}
+			std::regex(R"((SHELXL)(?:-(\d+(?:\..+)?)))")) {}
 };
 
 const TemplateLine kTNT_Template[] = {
@@ -862,9 +860,9 @@ const TemplateLine kTNT_Template[] = {
 class TNT_Remark3Parser : public Remark3Parser
 {
   public:
-	TNT_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	TNT_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kTNT_Template, sizeof(kTNT_Template) / sizeof(TemplateLine),
-			regex(R"((TNT)(?: V. (\d+.+)?)?)")) {}
+			std::regex(R"((TNT)(?: V. (\d+.+)?)?)")) {}
 };
 
 const TemplateLine kXPLOR_Template[] = {
@@ -940,9 +938,9 @@ const TemplateLine kXPLOR_Template[] = {
 class XPLOR_Remark3Parser : public Remark3Parser
 {
   public:
-	XPLOR_Remark3Parser(const string& name, const string& expMethod, PDBRecord* r, cif::Datablock& db)
+	XPLOR_Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 		: Remark3Parser(name, expMethod, r, db, kXPLOR_Template, sizeof(kXPLOR_Template) / sizeof(TemplateLine),
-			regex(R"((X-PLOR)(?: (\d+(?:\.\d+)?))?)")) {}
+			std::regex(R"((X-PLOR)(?: (\d+(?:\.\d+)?))?)")) {}
 };
 
 // --------------------------------------------------------------------
@@ -954,7 +952,7 @@ Remark3Parser::Remark3Parser(const std::string& name, const std::string& expMeth
 {
 }
 
-string Remark3Parser::nextLine()
+std::string Remark3Parser::nextLine()
 {
 	mLine.clear();
 
@@ -985,11 +983,11 @@ string Remark3Parser::nextLine()
 
 		if (valueIndent > 4)
 		{
-			string indent(valueIndent - 4, ' ');
+			std::string indent(valueIndent - 4, ' ');
 
 			while (mRec->is("REMARK   3") and mRec->mVlen > valueIndent)
 			{
-				string v(mRec->mValue + 4, mRec->mValue + mRec->mVlen);
+				std::string v(mRec->mValue + 4, mRec->mValue + mRec->mVlen);
 				if (not ba::starts_with(v, indent))
 					break;
 
@@ -1024,21 +1022,21 @@ string Remark3Parser::nextLine()
 	}
 
 	if (cif::VERBOSE >= 2)
-		cerr << "RM3: " << mLine << endl;
+		std::cerr << "RM3: " << mLine << std::endl;
 
 	return mLine;
 }
 
 bool Remark3Parser::match(const char* expr, int nextState)
 {
-	regex rx(expr);
+	std::regex rx(expr);
 
 	bool result = regex_match(mLine, mM, rx);
 
 	if (result)
 		mState = nextState;
 	else if (cif::VERBOSE >= 3)
-		cerr << cif::coloured("No match:", cif::scWHITE, cif::scRED) << " '" << expr << '\'' << endl;
+		std::cerr << cif::coloured("No match:", cif::scWHITE, cif::scRED) << " '" << expr << '\'' << std::endl;
 
 	return result;
 }
@@ -1046,7 +1044,7 @@ bool Remark3Parser::match(const char* expr, int nextState)
 float Remark3Parser::parse()
 {
 	int lineCount = 0, dropped = 0;
-	string remarks;
+	std::string remarks;
 	mState = 0;
 
 	while (mRec != nullptr)
@@ -1098,7 +1096,7 @@ float Remark3Parser::parse()
 		}
 
 		if (cif::VERBOSE >= 2)
-			cerr << cif::coloured("Dropping line:", cif::scWHITE, cif::scRED) << " '" << mLine << '\'' << endl;
+			std::cerr << cif::coloured("Dropping line:", cif::scWHITE, cif::scRED) << " '" << mLine << '\'' << std::endl;
 
 		++dropped;
 	}
@@ -1114,43 +1112,43 @@ float Remark3Parser::parse()
 	return score;
 }
 
-string Remark3Parser::program()
+std::string Remark3Parser::program()
 {
-	string result = mName;
+	std::string result = mName;
 
-	smatch m;
+	std::smatch m;
 	if (regex_match(mName, m, mProgramVersion))
 		result = m[1].str();
 
 	return result;
 }
 
-string Remark3Parser::version()
+std::string Remark3Parser::version()
 {
-	string result;
+	std::string result;
 
-	smatch m;
+	std::smatch m;
 	if (regex_match(mName, m, mProgramVersion))
 		result = m[2].str();
 
 	return result;
 }
 
-void Remark3Parser::storeCapture(const char* category, initializer_list<const char*> items, bool createNew)
+void Remark3Parser::storeCapture(const char* category, std::initializer_list<const char*> items, bool createNew)
 {
 	int capture = 0;
 	for (auto item: items)
 	{
 		++capture;
 
-		string value = mM[capture].str();
+		std::string value = mM[capture].str();
 		ba::trim(value);
 
-		if (iequals(value, "NULL") or iequals(value, "NONE") or iequals(value, "Inf") or iequals(value, "+Inf") or iequals(value, string(value.length(), '*')))
+		if (iequals(value, "NULL") or iequals(value, "NONE") or iequals(value, "Inf") or iequals(value, "+Inf") or iequals(value, std::string(value.length(), '*')))
 			continue;
 
 		if (cif::VERBOSE >= 3)
-			cerr << "storing: '" << value << "' in _" << category << '.' << item << endl;
+			std::cerr << "storing: '" << value << "' in _" << category << '.' << item << std::endl;
 
 		auto& cat = mDb[category];
 		if (cat.empty() or createNew)
@@ -1170,7 +1168,7 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 				});
 			else if (iequals(category, "refine_hist"))
 			{
-				string dResHigh, dResLow;
+				std::string dResHigh, dResLow;
 				for (auto r: mDb["refine"])
 				{
 					cif::tie(dResHigh, dResLow) = r.get("ls_d_res_high", "ls_d_res_low");
@@ -1192,9 +1190,9 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 			}
 			else if (iequals(category, "pdbx_refine_tls_group"))
 			{
-				string tlsGroupID;
+				std::string tlsGroupID;
 				if (not mDb["pdbx_refine_tls"].empty())
-					tlsGroupID = mDb["pdbx_refine_tls"].back()["id"].as<string>();
+					tlsGroupID = mDb["pdbx_refine_tls"].back()["id"].as<std::string>();
 
 				cat.emplace({
 					{ "pdbx_refine_id", mExpMethod },
@@ -1241,7 +1239,7 @@ void Remark3Parser::storeCapture(const char* category, initializer_list<const ch
 	}
 }
 
-void Remark3Parser::storeRefineLsRestr(const char* type, initializer_list<const char*> items)
+void Remark3Parser::storeRefineLsRestr(const char* type, std::initializer_list<const char*> items)
 {
 	Row r;
 	int capture = 0;
@@ -1250,9 +1248,9 @@ void Remark3Parser::storeRefineLsRestr(const char* type, initializer_list<const 
 	{
 		++capture;
 
-		string value = mM[capture].str();
+		std::string value = mM[capture].str();
 		ba::trim(value);
-		if (value.empty() or iequals(value, "NULL") or iequals(value, "Inf") or iequals(value, "+Inf") or iequals(value, string(value.length(), '*')))
+		if (value.empty() or iequals(value, "NULL") or iequals(value, "Inf") or iequals(value, "+Inf") or iequals(value, std::string(value.length(), '*')))
 			continue;
 
 		if (not r)
@@ -1267,7 +1265,7 @@ void Remark3Parser::storeRefineLsRestr(const char* type, initializer_list<const 
 	}
 }
 
-void Remark3Parser::updateRefineLsRestr(const char* type, initializer_list<const char*> items)
+void Remark3Parser::updateRefineLsRestr(const char* type, std::initializer_list<const char*> items)
 {
 	auto rows = mDb["refine_ls_restr"].find(cif::Key("type") == type and cif::Key("pdbx_refine_id") == mExpMethod);
 	if (rows.empty())
@@ -1281,9 +1279,9 @@ void Remark3Parser::updateRefineLsRestr(const char* type, initializer_list<const
 			{
 				++capture;
 
-				string value = mM[capture].str();
+				std::string value = mM[capture].str();
 				ba::trim(value);
-				if (iequals(value, "NULL") or iequals(value, string(value.length(), '*')))
+				if (iequals(value, "NULL") or iequals(value, std::string(value.length(), '*')))
 					value.clear();
 
 				r[item] = value;
@@ -1296,12 +1294,12 @@ void Remark3Parser::updateRefineLsRestr(const char* type, initializer_list<const
 
 // --------------------------------------------------------------------
 
-bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock& db)
+bool Remark3Parser::parse(const std::string& expMethod, PDBRecord* r, cif::Datablock& db)
 {
 	// simple version, only for the first few lines
 	auto getNextLine = [&]()
 	{
-		string result;
+		std::string result;
 
 		while (result.empty() and r != nullptr and r->is("REMARK   3"))
 		{
@@ -1314,24 +1312,24 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 
 	// All remark 3 records should start with the same data.
 
-	string line = getNextLine();
+	std::string line = getNextLine();
 
 	if (line != "REFINEMENT.")
 	{
 		if (cif::VERBOSE)
-			cerr << "Unexpected data in REMARK 3" << endl;
+			std::cerr << "Unexpected data in REMARK 3" << std::endl;
 		return false;
 	}
 
 	line = getNextLine();
 
-	regex rxp(R"(^PROGRAM\s*:\s*(.+))");
-	smatch m;
+	std::regex rxp(R"(^PROGRAM\s*:\s*(.+))");
+	std::smatch m;
 
-	if (not regex_match(line, m, rxp))
+	if (not std::regex_match(line, m, rxp))
 	{
 		if (cif::VERBOSE)
-			cerr << "Expected valid PROGRAM line in REMARK 3" << endl;
+			std::cerr << "Expected valid PROGRAM line in REMARK 3" << std::endl;
 		return false;
 	}
 	
@@ -1339,11 +1337,11 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 
 	struct programScore
 	{
-		programScore(const string& program, Remark3Parser* parser, float score)
+		programScore(const std::string& program, Remark3Parser* parser, float score)
 			: program(program), parser(parser), score(score) {}
 
-		string program;
-		unique_ptr<Remark3Parser> parser;
+		std::string program;
+		std::unique_ptr<Remark3Parser> parser;
 		float score;
 
 		bool operator<(const programScore& rhs) const
@@ -1352,11 +1350,11 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 		}
 	};
 
-	vector<programScore> scores;
+	std::vector<programScore> scores;
 
 	auto tryParser = [&](Remark3Parser* p)
 	{
-		unique_ptr<Remark3Parser> parser(p);
+		std::unique_ptr<Remark3Parser> parser(p);
 		float score;
 		
 		try
@@ -1365,18 +1363,18 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 		}
 		catch(const std::exception& e)
 		{
-			std::cerr << "Error parsing REMARK 3 with " << parser->program() << endl
+			std::cerr << "Error parsing REMARK 3 with " << parser->program() << std::endl
 					  << e.what() << '\n';
 			score = 0;
 		}
 
 		if (cif::VERBOSE >= 2)
-			cerr << "Score for " << parser->program() << ": " << score << endl;
+			std::cerr << "Score for " << parser->program() << ": " << score << std::endl;
 
 		if (score > 0)
 		{
-			string program = parser->program();
-			string version = parser->version();
+			std::string program = parser->program();
+			std::string version = parser->version();
 
 			scores.emplace_back(program, parser.release(), score);
 		}
@@ -1385,7 +1383,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 	for (auto p = make_split_iterator(line, ba::first_finder(", "));
 		not p.eof(); ++p)
 	{
-		string program(p->begin(), p->end());
+		std::string program(p->begin(), p->end());
 
 		if (ba::starts_with(program, "BUSTER"))
 			tryParser(new BUSTER_TNT_Remark3Parser(program, expMethod, r, db));
@@ -1410,7 +1408,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 		else if (ba::starts_with(program, "X-PLOR"))
 			tryParser(new XPLOR_Remark3Parser(program, expMethod, r, db));
 		else if (cif::VERBOSE)
-			cerr << "Skipping unknown program (" << program << ") in REMARK 3" << endl;
+			std::cerr << "Skipping unknown program (" << program << ") in REMARK 3" << std::endl;
 	}
 
 	sort(scores.begin(), scores.end());
@@ -1418,7 +1416,7 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 	bool guessProgram = scores.empty() or scores.front().score < 0.9f;;
 	if (guessProgram)
 	{
-		cerr << "Unknown or untrusted program in REMARK 3, trying all parsers to see if there is a match" << endl;
+		std::cerr << "Unknown or untrusted program in REMARK 3, trying all parsers to see if there is a match" << std::endl;
 		
 		tryParser(new BUSTER_TNT_Remark3Parser("BUSTER-TNT", expMethod, r, db));
 		tryParser(new CNS_Remark3Parser("CNS", expMethod, r, db));
@@ -1443,11 +1441,11 @@ bool Remark3Parser::parse(const string& expMethod, PDBRecord* r, cif::Datablock&
 		auto& best = scores.front();
 
 		if (cif::VERBOSE)
-			cerr << "Choosing " << best.parser->program() << " version '" << best.parser->version() << "' as refinement program. Score = " << best.score << endl;
+			std::cerr << "Choosing " << best.parser->program() << " version '" << best.parser->version() << "' as refinement program. Score = " << best.score << std::endl;
 
 		auto& software = db["software"];
-		string program = best.parser->program();
-		string version = best.parser->version();
+		std::string program = best.parser->program();
+		std::string version = best.parser->version();
 
 		software.emplace({
 			{ "name", program },

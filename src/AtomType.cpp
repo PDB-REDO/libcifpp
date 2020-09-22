@@ -29,8 +29,6 @@
 #include "cif++/AtomType.hpp"
 #include "cif++/Cif++.hpp"
 
-using namespace std;
-
 namespace mmcif
 {
 
@@ -1237,7 +1235,7 @@ SFDataArrayElement kELSFData[] = {
 // --------------------------------------------------------------------
 // AtomTypeTraits
 
-AtomTypeTraits::AtomTypeTraits(const string& symbol)
+AtomTypeTraits::AtomTypeTraits(const std::string& symbol)
 	: mInfo(nullptr)
 {
 	for (auto& i: data::kKnownAtoms)
@@ -1250,20 +1248,20 @@ AtomTypeTraits::AtomTypeTraits(const string& symbol)
 	}
 	
 	if (mInfo == nullptr)
-		throw invalid_argument("Not a known element: " + symbol);
+		throw std::invalid_argument("Not a known element: " + symbol);
 }
 
 AtomTypeTraits::AtomTypeTraits(AtomType t)
 {
 	if (t < H or t >= data::kKnownAtomsCount)
-		throw invalid_argument("atomType out of range");
+		throw std::invalid_argument("atomType out of range");
 	
 	mInfo = &data::kKnownAtoms[t];
 	
 	assert(mInfo->type == t);
 }
 
-bool AtomTypeTraits::isElement(const string& symbol)
+bool AtomTypeTraits::isElement(const std::string& symbol)
 {
 	bool result = false;
 	
@@ -1279,7 +1277,7 @@ bool AtomTypeTraits::isElement(const string& symbol)
 	return result;
 }
 
-bool AtomTypeTraits::isMetal(const string& symbol)
+bool AtomTypeTraits::isMetal(const std::string& symbol)
 {
 	bool result = false;
 	
@@ -1303,7 +1301,7 @@ auto AtomTypeTraits::wksf(int charge) const -> const SFData&
 			return sf.sf;
 	}
 
-	throw runtime_error("No scattering factor found for " + name() + to_string(charge));
+	throw std::runtime_error("No scattering factor found for " + name() + std::to_string(charge));
 }
 	
 auto AtomTypeTraits::elsf() const -> const SFData&
@@ -1314,7 +1312,7 @@ auto AtomTypeTraits::elsf() const -> const SFData&
 			return sf.sf;
 	}
 
-	throw runtime_error("No scattering factor found for " + name());
+	throw std::runtime_error("No scattering factor found for " + name());
 }
 	
 }

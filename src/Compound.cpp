@@ -32,21 +32,15 @@
 
 #include <boost/algorithm/string.hpp>
 
-#if __has_include(<filesystem>)
 #include <filesystem>
-namespace fs = std::filesystem;
-#elif __has_include(<boost/filesystem.hpp>)
-#include <boost/filesystem.hpp>
-namespace fs = boost::filesystem;
-#endif
 
 #include "cif++/Cif++.hpp"
 #include "cif++/Point.hpp"
 #include "cif++/Compound.hpp"
 #include "cif++/CifUtils.hpp"
 
-using namespace std;
 namespace ba = boost::algorithm;
+namespace fs = std::filesystem;
 
 namespace mmcif
 {
@@ -83,12 +77,12 @@ struct CompoundBondLess
 
 struct IsomerSet
 {
-	vector<string>	compounds;
+	std::vector<std::string>	compounds;
 };
 
 struct IsomerSets
 {
-	vector<IsomerSet>	isomers;
+	std::vector<IsomerSet>	isomers;
 };
 
 class IsomerDB
@@ -97,8 +91,8 @@ class IsomerDB
 	
 	static IsomerDB& instance();
 
-	size_t count(const string& compound) const;
-	const vector<string>& operator[](const string& compound) const;
+	size_t count(const std::string& compound) const;
+	const std::vector<std::string>& operator[](const std::string& compound) const;
 	
   private:
 	
@@ -111,14 +105,14 @@ IsomerDB::IsomerDB()
 {
 	auto isomers = cif::rsrc_loader::load("isomers.txt");
 	if (not isomers)
-		throw runtime_error("Missing isomers.txt resource");
+		throw std::runtime_error("Missing isomers.txt resource");
 	
-	struct membuf : public streambuf
+	struct membuf : public std::streambuf
 	{
 		membuf(char* data, size_t length)		{ this->setg(data, data, data + length); }
 	} buffer(const_cast<char*>(isomers.data()), isomers.size());
 	
-	istream is(&buffer);
+	std::istream is(&buffer);
 // #else
 // 	cerr << "resource support was not compiled in, falling back to a local file" << endl;
 // 	fs::path isomersFile = "isomers.txt";
@@ -127,12 +121,12 @@ IsomerDB::IsomerDB()
 
 // 	fs::ifstream is(isomersFile);
 // 	if (not is.is_open())
-// 		throw runtime_error("Could not open the file isomers.txt");
+// 		throw std::runtime_error("Could not open the file isomers.txt");
 // #endif
 
-	string line;
+	std::string line;
 
-	while (getline(is, line))
+	while (std::getline(is, line))
 	{
 		IsomerSet compounds;
 		ba::split(compounds.compounds, line, ba::is_any_of(":"));
@@ -148,7 +142,7 @@ IsomerDB& IsomerDB::instance()
 	return sInstance;
 }
 
-size_t IsomerDB::count(const string& compound) const
+size_t IsomerDB::count(const std::string& compound) const
 {
 	size_t n = 0;
 	for (auto& d: mData.isomers)
@@ -159,7 +153,7 @@ size_t IsomerDB::count(const string& compound) const
 	return n;
 }
 
-const vector<string>& IsomerDB::operator[](const string& compound) const
+const std::vector<std::string>& IsomerDB::operator[](const std::string& compound) const
 {
 	for (auto& d: mData.isomers)
 	{
@@ -167,7 +161,7 @@ const vector<string>& IsomerDB::operator[](const string& compound) const
 			return d.compounds;
 	}
 	
-	throw runtime_error("No isomer set found containing " + compound);
+	throw std::runtime_error("No isomer set found containing " + compound);
 }
 
 // --------------------------------------------------------------------
@@ -177,16 +171,16 @@ const vector<string>& IsomerDB::operator[](const string& compound) const
 
 struct Node
 {
-	string							id;
+	std::string							id;
 	AtomType						symbol;
-	vector<tuple<size_t,BondType>>	links;
+	std::vector<std::tuple<size_t,BondType>>	links;
 	size_t							hydrogens = 0;
 };
 
 // Check to see if the nodes a[iA] and b[iB] are the start of a similar sub structure
 bool SubStructuresAreIsomeric(
-	const vector<Node>& a, const vector<Node>& b, size_t iA, size_t iB,
-	vector<bool> visitedA, vector<bool> visitedB, vector<tuple<string,string>>& outMapping)
+	const std::vector<Node>& a, const std::vector<Node>& b, size_t iA, size_t iB,
+	std::vector<bool> visitedA, std::vector<bool> visitedB, std::vector<std::tuple<std::string,std::string>>& outMapping)
 {
 	auto& na = a[iA];
 	auto& nb = b[iB];
@@ -204,21 +198,21 @@ bool SubStructuresAreIsomeric(
 	// we now have two sets of links to compare. 
 	// Compare each permutation of the second set of indices with the first
 	
-	vector<size_t> ilb(N);
+	std::vector<size_t> ilb(N);
 	iota(ilb.begin(), ilb.end(), 0);
 	
 	for (;;)
 	{
 		result = true;
-		vector<tuple<string,string>> m;
+		std::vector<std::tuple<std::string,std::string>> m;
 		
 		for (size_t i = 0; result and i < N; ++i)
 		{
 			size_t lA, lB;
 			BondType typeA, typeB;
 
-			tie(lA, typeA) = na.links[i];			assert(lA < a.size());
-			tie(lB, typeB) = nb.links[ilb[i]];		assert(lB < b.size());
+			std::tie(lA, typeA) = na.links[i];			assert(lA < a.size());
+			std::tie(lB, typeB) = nb.links[ilb[i]];		assert(lB < b.size());
 			
 			if (typeA != typeB or visitedA[lA] != visitedB[lB])
 			{
@@ -255,15 +249,15 @@ bool SubStructuresAreIsomeric(
 	return result;
 }
 
-bool StructuresAreIsomeric(vector<CompoundAtom> atomsA, const vector<CompoundBond>& bondsA,
-	vector<CompoundAtom> atomsB, const vector<CompoundBond>& bondsB,
-	vector<tuple<string,string>>& outMapping)
+bool StructuresAreIsomeric(std::vector<CompoundAtom> atomsA, const std::vector<CompoundBond>& bondsA,
+	std::vector<CompoundAtom> atomsB, const std::vector<CompoundBond>& bondsB,
+	std::vector<std::tuple<std::string,std::string>>& outMapping)
 {
 	assert(atomsA.size() == atomsB.size());
 	assert(bondsA.size() == bondsB.size());
 
-	vector<Node> a, b;
-	map<string,size_t> ma, mb;
+	std::vector<Node> a, b;
+	std::map<std::string,size_t> ma, mb;
 	
 	for (auto& atomA: atomsA)
 	{
@@ -320,7 +314,7 @@ bool StructuresAreIsomeric(vector<CompoundAtom> atomsA, const vector<CompoundBon
 		if (b[ib].symbol != a[ia].symbol or a[ia].hydrogens != b[ib].hydrogens or a[ia].links.size() != b[ib].links.size())
 			continue;
 		
-		vector<bool> va(N, false), vb(N, false);
+		std::vector<bool> va(N, false), vb(N, false);
 
 		if (SubStructuresAreIsomeric(a, b, ia, ib, va, vb, outMapping))
 		{
@@ -350,7 +344,7 @@ Compound::Compound(const std::string& file, const std::string& id,
 		
 		for (auto row: compoundAtoms)
 		{
-			string id, symbol, energy;
+			std::string id, symbol, energy;
 			float charge;
 			
 			cif::tie(id, symbol, energy, charge) = row.get("atom_id", "type_symbol", "type_energy", "partial_charge");
@@ -366,7 +360,7 @@ Compound::Compound(const std::string& file, const std::string& id,
 		for (auto row: compBonds)
 		{
 			CompoundBond b;
-			string type, aromatic;
+			std::string type, aromatic;
 			
 			cif::tie(b.atomID[0], b.atomID[1], type, b.distance, b.esd) =
 				row.get("atom_id_1", "atom_id_2", "type", "value_dist", "value_dist_esd");
@@ -381,7 +375,7 @@ Compound::Compound(const std::string& file, const std::string& id,
 			else
 			{
 				if (cif::VERBOSE)
-					cerr << "Unimplemented chem_comp_bond.type " << type << " in " << id << endl;
+					std::cerr << "Unimplemented chem_comp_bond.type " << type << " in " << id << std::endl;
 				b.type = singleBond;
 			}
 			
@@ -415,7 +409,7 @@ Compound::Compound(const std::string& file, const std::string& id,
 		for (auto row: db["chem_comp_chir"])
 		{
 			CompoundChiralCentre cc;
-			string volumeSign;
+			std::string volumeSign;
 			
 			cif::tie(cc.id, cc.atomIDCentre, cc.atomID[0],
 				cc.atomID[1], cc.atomID[2], volumeSign) = 
@@ -431,7 +425,7 @@ Compound::Compound(const std::string& file, const std::string& id,
 			else
 			{
 				if (cif::VERBOSE)
-					cerr << "Unimplemented chem_comp_chir.volume_sign " << volumeSign << " in " << id << endl;
+					std::cerr << "Unimplemented chem_comp_chir.volume_sign " << volumeSign << " in " << id << std::endl;
 				continue;
 			}
 			
@@ -442,7 +436,7 @@ Compound::Compound(const std::string& file, const std::string& id,
 		
 		for (auto row: compPlanes)
 		{
-			string atom_id, plane_id;
+			std::string atom_id, plane_id;
 			float esd;	
 			
 			cif::tie(atom_id, plane_id, esd) = row.get("atom_id", "plane_id", "dist_esd");
@@ -454,18 +448,18 @@ Compound::Compound(const std::string& file, const std::string& id,
 				i->atomID.push_back(atom_id);
 		}
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << "Error loading ccp4 file for " << id << " from file " << file << endl;
+		std::cerr << "Error loading ccp4 file for " << id << " from file " << file << std::endl;
 		throw;
 	}
 }
 
-string Compound::formula() const
+std::string Compound::formula() const
 {
-	string result;
+	std::string result;
 	
-	map<string,uint32_t> atoms;
+	std::map<std::string,uint32_t> atoms;
 	float chargeSum = 0;
 
 	for (auto r: mAtoms)
@@ -480,7 +474,7 @@ string Compound::formula() const
 		result = "C";
 		
 		if (c->second > 1)
-			result += to_string(c->second);
+			result += std::to_string(c->second);
 		
 		atoms.erase(c);
 		
@@ -489,7 +483,7 @@ string Compound::formula() const
 		{
 			result += " H";
 			if (h->second > 1)
-				result += to_string(h->second);
+				result += std::to_string(h->second);
 			
 			atoms.erase(h);
 		}
@@ -502,12 +496,12 @@ string Compound::formula() const
 		
 		result += a.first;
 		if (a.second > 1)
-			result += to_string(a.second);	
+			result += std::to_string(a.second);	
 	}
 
 	int charge = lrint(chargeSum);
 	if (charge != 0)
-		result += ' ' + to_string(charge);
+		result += ' ' + std::to_string(charge);
 
 	return result;
 }
@@ -532,9 +526,9 @@ int Compound::charge() const
 	return lrint(result);
 }
 
-string Compound::type() const
+std::string Compound::type() const
 {
-	string result;
+	std::string result;
 	
 	// known groups are (counted from ccp4 monomer dictionary)
 
@@ -579,7 +573,7 @@ bool Compound::isSugar() const
 	return cif::iequals(mGroup, "furanose") or cif::iequals(mGroup, "pyranose");
 }
 
-CompoundAtom Compound::getAtomByID(const string& atomID) const
+CompoundAtom Compound::getAtomByID(const std::string& atomID) const
 {
 	CompoundAtom result = {};
 	for (auto& a: mAtoms)
@@ -592,12 +586,12 @@ CompoundAtom Compound::getAtomByID(const string& atomID) const
 	}
 
 	if (result.id != atomID)	
-		throw out_of_range("No atom " + atomID + " in Compound " + mID);
+		throw std::out_of_range("No atom " + atomID + " in Compound " + mID);
 	
 	return result;
 }
 
-const Compound* Compound::create(const string& id)
+const Compound* Compound::create(const std::string& id)
 {
 	auto result = CompoundFactory::instance().get(id);
 	if (result == nullptr)
@@ -605,7 +599,7 @@ const Compound* Compound::create(const string& id)
 	return result;
 }
 
-bool Compound::atomsBonded(const string& atomId_1, const string& atomId_2) const
+bool Compound::atomsBonded(const std::string& atomId_1, const std::string& atomId_2) const
 {
 	auto i = find_if(mBonds.begin(), mBonds.end(),
 		[&](const CompoundBond& b)
@@ -617,7 +611,7 @@ bool Compound::atomsBonded(const string& atomId_1, const string& atomId_2) const
 	return i != mBonds.end();
 }
 
-float Compound::atomBondValue(const string& atomId_1, const string& atomId_2) const
+float Compound::atomBondValue(const std::string& atomId_1, const std::string& atomId_2) const
 {
 	auto i = find_if(mBonds.begin(), mBonds.end(),
 		[&](const CompoundBond& b)
@@ -652,7 +646,7 @@ bool Compound::isIsomerOf(const Compound& c) const
 			break;
 
 		// same number of atoms of each type?
-		map<AtomType,int> aTypeCount, bTypeCount;
+		std::map<AtomType,int> aTypeCount, bTypeCount;
 		
 		bool sameAtomNames = true;
 		for (size_t i = 0; i < mAtoms.size(); ++i)
@@ -687,13 +681,13 @@ bool Compound::isIsomerOf(const Compound& c) const
 		
 		// implement rest of tests
 		
-		vector<tuple<string,string>> mapping;
+		std::vector<std::tuple<std::string,std::string>> mapping;
 		result = StructuresAreIsomeric(mAtoms, mBonds, c.mAtoms, c.mBonds, mapping);
 		
 		if (cif::VERBOSE and result)
 		{
 			for (auto& m: mapping)
-				cerr << "  " << get<0>(m) << " => " << get<1>(m) << endl;
+				std::cerr << "  " << std::get<0>(m) << " => " << std::get<1>(m) << std::endl;
 		}
 		
 		break;	
@@ -702,20 +696,20 @@ bool Compound::isIsomerOf(const Compound& c) const
 	return result;
 }
 
-vector<tuple<string,string>> Compound::mapToIsomer(const Compound& c) const
+std::vector<std::tuple<std::string,std::string>> Compound::mapToIsomer(const Compound& c) const
 {
-	vector<tuple<string,string>> result;
+	std::vector<std::tuple<std::string,std::string>> result;
 	
 	bool check = StructuresAreIsomeric(mAtoms, mBonds, c.mAtoms, c.mBonds, result);
 	if (not check)
-		throw runtime_error("Compounds " + id() + " and " + c.id() + " are not isomers in call to mapToIsomer");
+		throw std::runtime_error("Compounds " + id() + " and " + c.id() + " are not isomers in call to mapToIsomer");
 	
 	return result;
 }
 
-vector<string> Compound::isomers() const
+std::vector<std::string> Compound::isomers() const
 {
-	vector<string> result;
+	std::vector<std::string> result;
 	
 	auto& db = IsomerDB::instance();
 	if (db.count(mID))
@@ -731,7 +725,7 @@ vector<string> Compound::isomers() const
 	return result;
 }
 
-float Compound::bondAngle(const string& atomId_1, const string& atomId_2, const string& atomId_3) const
+float Compound::bondAngle(const std::string& atomId_1, const std::string& atomId_2, const std::string& atomId_3) const
 {
 	float result = nanf("1");
 	
@@ -759,7 +753,7 @@ float Compound::bondAngle(const string& atomId_1, const string& atomId_2, const 
 //	return c;
 //}
 
-float Compound::chiralVolume(const string& centreID) const
+float Compound::chiralVolume(const std::string& centreID) const
 {
 	float result = 0;
 	
@@ -808,7 +802,7 @@ Link::Link(cif::Datablock& db)
 	for (auto row: linkBonds)
 	{
 		LinkBond b;
-		string type, aromatic;
+		std::string type, aromatic;
 		
 		cif::tie(b.atom[0].compID, b.atom[0].atomID,
 				b.atom[1].compID, b.atom[1].atomID, type, b.distance, b.esd) =
@@ -825,7 +819,7 @@ Link::Link(cif::Datablock& db)
 		else
 		{
 			if (cif::VERBOSE)
-				cerr << "Unimplemented chem_link_bond.type " << type << " in " << mID << endl;
+				std::cerr << "Unimplemented chem_link_bond.type " << type << " in " << mID << std::endl;
 			b.type = singleBond;
 		}
 		
@@ -867,7 +861,7 @@ Link::Link(cif::Datablock& db)
 	for (auto row: linkChir)
 	{
 		LinkChiralCentre cc;
-		string volumeSign;
+		std::string volumeSign;
 		
 		cif::tie(cc.id, cc.atomCentre.compID, cc.atomCentre.atomID,
 				cc.atom[0].compID, cc.atom[0].atomID,
@@ -887,7 +881,7 @@ Link::Link(cif::Datablock& db)
 		else
 		{
 			if (cif::VERBOSE)
-				cerr << "Unimplemented chem_link_chir.volume_sign " << volumeSign << " in " << mID << endl;
+				std::cerr << "Unimplemented chem_link_chir.volume_sign " << volumeSign << " in " << mID << std::endl;
 			continue;
 		}
 		
@@ -898,7 +892,7 @@ Link::Link(cif::Datablock& db)
 	for (auto row: linkPlanes)
 	{
 		int compID;
-		string atomID, planeID;
+		std::string atomID, planeID;
 		float esd;	
 		
 		cif::tie(planeID, compID, atomID, esd) = row.get("plane_id", "atom_comp_id", "atom_id", "dist_esd");
@@ -906,7 +900,7 @@ Link::Link(cif::Datablock& db)
 		auto i = find_if(mPlanes.begin(), mPlanes.end(), [&](auto& p) { return p.id == planeID;});
 		if (i == mPlanes.end())
 		{
-			vector<LinkAtom> atoms{LinkAtom{ compID, atomID }};
+			std::vector<LinkAtom> atoms{LinkAtom{ compID, atomID }};
 			mPlanes.emplace_back(LinkPlane{ planeID, move(atoms), esd });
 		}
 		else
@@ -921,7 +915,7 @@ const Link& Link::create(const std::string& id)
 		result = CompoundFactory::instance().createLink(id);
 	
 	if (result == nullptr)
-		throw runtime_error("Link with id " + id + " not found");
+		throw std::runtime_error("Link with id " + id + " not found");
 	
 	return *result;
 }
@@ -960,7 +954,7 @@ float Link::bondAngle(const LinkAtom& atom1, const LinkAtom& atom2, const LinkAt
 	return result;
 }
 
-float Link::chiralVolume(const string& centreID) const
+float Link::chiralVolume(const std::string& centreID) const
 {
 	float result = 0;
 	
@@ -1001,7 +995,7 @@ float Link::chiralVolume(const string& centreID) const
 // --------------------------------------------------------------------
 // a factory class to generate compounds
 
-const map<string,char> kAAMap{
+const std::map<std::string,char> kAAMap{
 	{ "ALA", 'A' },
 	{ "ARG", 'R' },
 	{ "ASN", 'N' },
@@ -1026,7 +1020,7 @@ const map<string,char> kAAMap{
 	{ "ASX", 'B' }
 };
 
-const map<string,char> kBaseMap{
+const std::map<std::string,char> kBaseMap{
 	{ "A", 'A' },
 	{ "C", 'C' },
 	{ "G", 'G' },
@@ -1050,8 +1044,8 @@ class CompoundFactoryImpl
 		delete mNext;
 	}
 
-	Compound* get(string id);
-	Compound* create(string id);
+	Compound* get(std::string id);
+	Compound* create(std::string id);
 
 	const Link* getLink(std::string id);
 	const Link* createLink(std::string id);
@@ -1064,18 +1058,18 @@ class CompoundFactoryImpl
 		return result;
 	}
 
-	string unalias(const string& resName) const
+	std::string unalias(const std::string& resName) const
 	{
-		string result = resName;
+		std::string result = resName;
 		
 		auto& e = const_cast<cif::File&>(mFile)["comp_synonym_list"];
 		
 		for (auto& synonym: e["chem_comp_synonyms"])
 		{
-			if (ba::iequals(synonym["comp_alternative_id"].as<string>(), resName) == false)
+			if (ba::iequals(synonym["comp_alternative_id"].as<std::string>(), resName) == false)
 				continue;
 			
-			result = synonym["comp_id"].as<string>();
+			result = synonym["comp_id"].as<std::string>();
 			ba::trim(result);
 			break;
 		}
@@ -1086,13 +1080,13 @@ class CompoundFactoryImpl
 		return result;
 	}
 
-	bool isKnownPeptide(const string& resName)
+	bool isKnownPeptide(const std::string& resName)
 	{
 		return mKnownPeptides.count(resName) or
 			(mNext != nullptr and mNext->isKnownPeptide(resName));
 	}
 
-	bool isKnownBase(const string& resName)
+	bool isKnownBase(const std::string& resName)
 	{
 		return mKnownBases.count(resName) or
 			(mNext != nullptr and mNext->isKnownBase(resName));
@@ -1102,11 +1096,11 @@ class CompoundFactoryImpl
 	std::shared_timed_mutex		mMutex;
 
 	std::string					mPath;
-	vector<Compound*>			mCompounds;
-	vector<const Link*>			mLinks;
-	/*unordered_*/set<string>	mKnownPeptides;
-	set<string>					mKnownBases;
-	set<string>					mMissing;
+	std::vector<Compound*>			mCompounds;
+	std::vector<const Link*>			mLinks;
+	/*unordered_*/std::set<std::string>	mKnownPeptides;
+	std::set<std::string>					mKnownBases;
+	std::set<std::string>					mMissing;
 	cif::File					mFile;
 	cif::Category&				mChemComp;
 	CompoundFactoryImpl*		mNext;
@@ -1121,7 +1115,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactor
 
 	for (auto& chemComp: mChemComp)
 	{
-		string group, threeLetterCode;
+		std::string group, threeLetterCode;
 		
 		cif::tie(group, threeLetterCode) = chemComp.get("group", "three_letter_code");
 
@@ -1136,17 +1130,17 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactor
 //{
 //	CompoundFactoryImpl();
 //
-//	Compound* get(string id);
-//	Compound* create(string id);
+//	Compound* get(std::string id);
+//	Compound* create(std::string id);
 //	
 //	void pushDictionary(const boost::filesystem::path& dictFile);
 //
 //	// cif::File cf acts as owner of datablock
-//	cif::Datablock& getDatablock(const string& name, cif::File& cf);
+//	cif::Datablock& getDatablock(const std::string& name, cif::File& cf);
 //	
 //	deque<cif::File> mDictionaries;
 //	fs::path mClibdMon;
-//	vector<Compound*> mCompounds;
+//	std::vector<Compound*> mCompounds;
 //	boost::shared_mutex mMutex;
 //};
 //
@@ -1154,7 +1148,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactor
 //{
 //	const char* clibdMon = getenv("CLIBD_MON");
 //	if (clibdMon == nullptr)
-//		throw runtime_error("Cannot locate peptide list, please source the CCP4 environment");
+//		throw std::runtime_error("Cannot locate peptide list, please source the CCP4 environment");
 //	mClibdMon = clibdMon;
 //}
 //
@@ -1165,7 +1159,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactor
 //	mDictionaries.emplace_back(dictFile);
 //}
 //
-//cif::Datablock& CompoundFactoryImpl::getDatablock(const string& name, cif::File& cf)
+//cif::Datablock& CompoundFactoryImpl::getDatablock(const std::string& name, cif::File& cf)
 //{
 //	cif::Datablock* result = nullptr;
 //	
@@ -1195,7 +1189,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactor
 //			}
 //			catch (...)
 //			{
-//				throw_with_nested(runtime_error("Error while loading " + resFile));
+//				throw_with_nested(std::runtime_error("Error while loading " + resFile));
 //			}
 //			
 //			result = cf.get(name);
@@ -1203,12 +1197,12 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactor
 //	}
 //
 //	if (result == nullptr)
-//		throw runtime_error("Failed to load datablock " + name);	
+//		throw std::runtime_error("Failed to load datablock " + name);	
 //
 //	return *result;
 //}
 
-Compound* CompoundFactoryImpl::get(string id)
+Compound* CompoundFactoryImpl::get(std::string id)
 {
 	std::shared_lock lock(mMutex);
 
@@ -1246,7 +1240,7 @@ Compound* CompoundFactoryImpl::create(std::string id)
 		{
 			auto row = rs.front();
 
-			string name, group;
+			std::string name, group;
 			uint32_t numberAtomsAll, numberAtomsNh;
 			cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
 				row.get("name", "group", "number_atoms_all", "number_atoms_nh");
@@ -1285,7 +1279,7 @@ Compound* CompoundFactoryImpl::create(std::string id)
 	return result;
 }
 
-const Link* CompoundFactoryImpl::getLink(string id)
+const Link* CompoundFactoryImpl::getLink(std::string id)
 {
 	std::shared_lock lock(mMutex);
 
@@ -1341,7 +1335,7 @@ CompoundFactory::CompoundFactory()
 {
 	const char* clibdMon = getenv("CLIBD_MON");
 	if (clibdMon == nullptr)
-		throw runtime_error("Cannot locate peptide list, please source the CCP4 environment");
+		throw std::runtime_error("Cannot locate peptide list, please source the CCP4 environment");
 	
 	fs::path db = fs::path(clibdMon) / "list" / "mon_lib_list.cif";
 
@@ -1360,22 +1354,22 @@ CompoundFactory& CompoundFactory::instance()
 	return *sInstance;
 }
 
-void CompoundFactory::pushDictionary(const string& inDictFile)
+void CompoundFactory::pushDictionary(const std::string& inDictFile)
 {
 	if (not fs::exists(inDictFile))
-		throw runtime_error("file not found: " + inDictFile);
+		throw std::runtime_error("file not found: " + inDictFile);
 
 //	ifstream file(inDictFile);
 //	if (not file.is_open())
-//		throw runtime_error("Could not open peptide list " + inDictFile);
+//		throw std::runtime_error("Could not open peptide list " + inDictFile);
 
 	try
 	{
 		mImpl = new CompoundFactoryImpl(inDictFile, mImpl);
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << "Error loading dictionary " << inDictFile << endl;
+		std::cerr << "Error loading dictionary " << inDictFile << std::endl;
 		throw;
 	}
 }
@@ -1407,17 +1401,17 @@ const Link* CompoundFactory::createLink(std::string id)
 	return mImpl->createLink(id);
 }
 
-bool CompoundFactory::isKnownPeptide(const string& resName) const
+bool CompoundFactory::isKnownPeptide(const std::string& resName) const
 {
 	return mImpl->isKnownPeptide(resName);
 }
 
-bool CompoundFactory::isKnownBase(const string& resName) const
+bool CompoundFactory::isKnownBase(const std::string& resName) const
 {
 	return mImpl->isKnownBase(resName);
 }
 
-string CompoundFactory::unalias(const string& resName) const
+std::string CompoundFactory::unalias(const std::string& resName) const
 {
 	return mImpl->unalias(resName);
 }

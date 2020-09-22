@@ -42,7 +42,6 @@
 #include "cif++/CifUtils.hpp"
 #include "cif++/Symmetry.hpp"
 
-using namespace std;
 namespace ba = boost::algorithm;
 
 using cif::Datablock;
@@ -74,7 +73,7 @@ namespace error
 				return "pdb";
 			}
 			
-			string message(int value) const
+			std::string message(int value) const
 			{
 				switch (value)
 				{
@@ -115,14 +114,14 @@ template<> struct is_error_code_enum<error::pdbErrors>
 
 // --------------------------------------------------------------------
 
-const map<string,int> kMonths{
+const std::map<std::string,int> kMonths{
 	{ "JAN",  1 }, { "FEB",  2 }, { "MAR",  3 },
 	{ "APR",  4 }, { "MAY",  5 }, { "JUN",  6 },
 	{ "JUL",  7 }, { "AUG",  8 }, { "SEP",  9 },
 	{ "OCT", 10 }, { "NOV", 11 }, { "DEC", 12 },
 };
 
-const set<string> kSupportedRecords{
+const std::set<std::string> kSupportedRecords{
 	"HEADER", "OBSLTE", "TITLE ", "SPLIT ", "CAVEAT", "COMPND", "SOURCE",
 	"KEYWDS", "EXPDTA", "NUMMDL", "MDLTYP", "AUTHOR", "REVDAT", "SPRSDE",
 	"JRNL  ", "REMARK", "DBREF ", "DBREF1", "DBREF2", "SEQADV", "SEQRES",
@@ -136,7 +135,7 @@ const set<string> kSupportedRecords{
 	"LINKR "
 };
 
-bool isWater(const string& resname)
+bool isWater(const std::string& resname)
 {
 	return resname == "HOH" or resname == "H2O" or resname == "OH2" or resname == "WAT" or resname == "DOD" or resname == "WAT";
 }
@@ -146,7 +145,7 @@ bool isWater(const string& resname)
 //	data. Therefore we first obtain all records where a record has the
 //	value flattened out for continuation.
 
-PDBRecord::PDBRecord(uint32_t lineNr, const string& name, const string& value)
+PDBRecord::PDBRecord(uint32_t lineNr, const std::string& name, const std::string& value)
 	: mNext(nullptr), mLineNr(lineNr), mVlen(value.length())
 {
 	assert(name.length() <= 10);
@@ -182,16 +181,16 @@ char PDBRecord::vC(size_t column)
 	return result;
 }
 
-string PDBRecord::vS(size_t columnFirst, size_t columnLast)
+std::string PDBRecord::vS(size_t columnFirst, size_t columnLast)
 {
-	string result;
+	std::string result;
 	
 	if (columnLast > mVlen + 6)
 		columnLast = mVlen + 6;
 	
 	if (columnFirst < mVlen + 7)
 	{
-		result = string{mValue + columnFirst - 7, mValue + columnLast - 7 + 1};
+		result = std::string{mValue + columnFirst - 7, mValue + columnLast - 7 + 1};
 		ba::trim(result);
 	}
 
@@ -229,28 +228,28 @@ int PDBRecord::vI(int columnFirst, int columnLast)
 						state = digit;
 					}
 					else if (not isspace(*p))
-						throw runtime_error("Not a valid integer in PDB record");
+						throw std::runtime_error("Not a valid integer in PDB record");
 					break;
 					
 				case digit:
 					if (isspace(*p))
 						state = tail;
 					else if (not isdigit(*p))
-						throw runtime_error("Not a valid integer in PDB record");
+						throw std::runtime_error("Not a valid integer in PDB record");
 					else
 						result = result * 10 + *p - '0';
 					break;
 				
 				case tail:
 					if (not isspace(*p))
-						throw runtime_error("Not a valid integer in PDB record");
+						throw std::runtime_error("Not a valid integer in PDB record");
 					break;
 			}
 		}
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << "Trying to parse '" << string(mValue + columnFirst - 7, mValue + columnLast - 7) << '\'' << endl;
+		std::cerr << "Trying to parse '" << std::string(mValue + columnFirst - 7, mValue + columnLast - 7) << '\'' << std::endl;
 		throw;
 	}
 	
@@ -260,7 +259,7 @@ int PDBRecord::vI(int columnFirst, int columnLast)
 	return result;
 }
 
-string PDBRecord::vF(size_t columnFirst, size_t columnLast)
+std::string PDBRecord::vF(size_t columnFirst, size_t columnLast)
 {
 	// for now... TODO: check format?
 	return vS(columnFirst, columnLast);
@@ -271,21 +270,21 @@ string PDBRecord::vF(size_t columnFirst, size_t columnLast)
 class SpecificationListParser
 {
   public:
-	SpecificationListParser(const string& text)
+	SpecificationListParser(const std::string& text)
 		: mText(text), mP(mText.begin()) {}
 	
-	tuple<string,string> GetNextSpecification();
+	std::tuple<std::string,std::string> GetNextSpecification();
 	
   private:
-	string				mText;
-	string::iterator	mP;
+	std::string				mText;
+	std::string::iterator	mP;
 };
 
-tuple<string,string> SpecificationListParser::GetNextSpecification()
+std::tuple<std::string,std::string> SpecificationListParser::GetNextSpecification()
 {
-	string id, value;
+	std::string id, value;
 	
-	string::iterator start = mP, backup;
+	std::string::iterator start = mP, backup;
 
 	enum { eStart, eID, eColon, eValue, eNL, eNL_ID, eSemiColon, eError, eDone } state = eStart;
 	
@@ -306,7 +305,7 @@ tuple<string,string> SpecificationListParser::GetNextSpecification()
 				else if (not isspace(ch))
 				{
 					if (cif::VERBOSE)
-						cerr << "skipping invalid character in SOURCE ID: " << ch << endl;
+						std::cerr << "skipping invalid character in SOURCE ID: " << ch << std::endl;
 				}
 				break;
 			
@@ -323,7 +322,7 @@ tuple<string,string> SpecificationListParser::GetNextSpecification()
 				if (ch == ';')
 				{
 					if (cif::VERBOSE)
-						cerr << "Empty value for SOURCE: " << id << endl;
+						std::cerr << "Empty value for SOURCE: " << id << std::endl;
 					state = eStart;
 				}
 				else if (not isspace(ch))
@@ -387,7 +386,7 @@ tuple<string,string> SpecificationListParser::GetNextSpecification()
 				if (ch == ';')
 				{
 					if (cif::VERBOSE)
-						cerr << "Skipping invalid header line: '" << string(start, mP) << endl;
+						std::cerr << "Skipping invalid header line: '" << std::string(start, mP) << std::endl;
 					state = eStart;
 				}
 				break;
@@ -398,7 +397,7 @@ tuple<string,string> SpecificationListParser::GetNextSpecification()
 
 	ba::trim(value);
 
-	return make_tuple(id, value);
+	return std::make_tuple(id, value);
 }
 
 // --------------------------------------------------------------------
@@ -423,7 +422,7 @@ class PDBFileParser
 		}	
 	}
 	
-	void Parse(istream& is, cif::File& result);
+	void Parse(std::istream& is, cif::File& result);
 
   private:
 
@@ -431,41 +430,41 @@ class PDBFileParser
 	
 	struct DBREF
 	{
-		string	PDBIDCode;
-		char	chainID;
-		int		seqBegin;
-		char	insertBegin = ' ';
-		int		seqEnd;
-		char	insertEnd = ' ';
-		string	database;
-		string	dbAccession;
-		string	dbIdCode;
-		int		dbSeqBegin;
-		char	dbinsBeg;
-		int		dbSeqEnd;
-		char	dbinsEnd;
+		std::string	PDBIDCode;
+		char		chainID;
+		int			seqBegin;
+		char		insertBegin = ' ';
+		int			seqEnd;
+		char		insertEnd = ' ';
+		std::string	database;
+		std::string	dbAccession;
+		std::string	dbIdCode;
+		int			dbSeqBegin;
+		char		dbinsBeg;
+		int			dbSeqEnd;
+		char		dbinsEnd;
 	};
 
 	struct HET
 	{
-		string		hetID;
-		char		chainID;
-		int			seqNum;
-		char		iCode;
-		int			numHetAtoms;
-		string		text;
-		string		asymID;
-		set<int>	atoms;
+		std::string		hetID;
+		char			chainID;
+		int				seqNum;
+		char			iCode;
+		int				numHetAtoms;
+		std::string		text;
+		std::string		asymID;
+		std::set<int>	atoms;
 	};
 	
 	struct UNOBS
 	{
-		int modelNr;
-		string res;
-		char chain;
-		int seq;
-		char iCode;
-		vector<string> atoms;
+		int				modelNr;
+		std::string		res;
+		char			chain;
+		int				seq;
+		char			iCode;
+		std::vector<std::string>	atoms;
 	};
 	
 	// ----------------------------------------------------------------
@@ -487,23 +486,23 @@ class PDBFileParser
 
 	struct PDBCompound
 	{
-		int						mMolID;
-		string					mTitle;
-		set<char>				mChains;
-		map<string,string>		mInfo;
-		map<string,string>		mSource;
-		int						mCount = 0;
+		int							mMolID;
+		std::string					mTitle;
+		std::set<char>				mChains;
+		std::map<std::string,std::string>		mInfo;
+		std::map<std::string,std::string>		mSource;
+		int							mCount = 0;
 	};
 	
 	struct PDBSeqRes
 	{
-		string					mMonID;
+		std::string				mMonID;
 		int						mSeqNum;
 		char					mIcode;
 
 		int						mDbSeqNum;
 		bool					mSeen = false;
-		set<string>				mAlts;
+		std::set<std::string>	mAlts;
 		
 		bool operator==(const PDBSeqRes& rhs) const
 		{
@@ -513,13 +512,13 @@ class PDBFileParser
 	
 	struct PDBChain
 	{
-		PDBChain(const string& structureID, char chainID, int molID)
+		PDBChain(const std::string& structureID, char chainID, int molID)
 			: mDbref{structureID, chainID}, mWaters(0), mTerIndex(0), mMolID(molID), mNextSeqNum(1), mNextDbSeqNum(1)
 		{
 		}
 		
 		DBREF					mDbref;
-		vector<PDBSeqRes>		mSeqres, mHet;
+		std::vector<PDBSeqRes>	mSeqres, mHet;
 		int						mWaters;
 		int						mTerIndex;
 		
@@ -532,14 +531,14 @@ class PDBFileParser
 		// scratch value for aligning
 		struct AtomRes
 		{
-			string				mMonID;
+			std::string			mMonID;
 			int					mSeqNum;
 			char				mIcode;
 			
 			bool operator==(const AtomRes& rhs) const		{ return mSeqNum == rhs.mSeqNum and mIcode == rhs.mIcode; }
 			bool operator!=(const AtomRes& rhs) const		{ return mSeqNum != rhs.mSeqNum or mIcode != rhs.mIcode; }
 		};
-		vector<AtomRes>			mResiduesSeen;
+		std::vector<AtomRes>			mResiduesSeen;
 		
 		int AlignResToSeqRes();
 		bool SameSequence(const PDBChain& rhs) const;
@@ -549,12 +548,12 @@ class PDBFileParser
 
 	PDBCompound& GetOrCreateCompound(int molID)
 	{
-		auto i = find_if(mCompounds.begin(), mCompounds.end(), [molID](PDBCompound& comp) -> bool { return comp.mMolID == molID; });
+		auto i = std::find_if(mCompounds.begin(), mCompounds.end(), [molID](PDBCompound& comp) -> bool { return comp.mMolID == molID; });
 		if (i == mCompounds.end())
 		{
 			mCompounds.push_back(PDBCompound{ molID });
 			
-			mMolID2EntityID[molID] = to_string(mNextEntityNr++);
+			mMolID2EntityID[molID] = std::to_string(mNextEntityNr++);
 			
 			i = prev(mCompounds.end());
 		}
@@ -565,7 +564,7 @@ class PDBFileParser
 	// locate the PDBChain record for a chain ID, or create it with dummy data if missing
 	PDBChain& GetChainForID(char chainID, int numRes = 0)
 	{
-		auto i = find_if(mChains.begin(), mChains.end(), [chainID](PDBChain& ch) -> bool { return ch.mDbref.chainID == chainID; });
+		auto i = std::find_if(mChains.begin(), mChains.end(), [chainID](PDBChain& ch) -> bool { return ch.mDbref.chainID == chainID; });
 		
 		if (i == mChains.end())
 		{
@@ -588,13 +587,13 @@ class PDBFileParser
 		return *i;
 	};
 	
-	void InsertChemComp(const string& chemComp)
+	void InsertChemComp(const std::string& chemComp)
 	{
 		if (find(mChemComp.begin(), mChemComp.end(), chemComp) == mChemComp.end())
 			mChemComp.push_back(chemComp);
 	}
 
-	void InsertAtomType(const string& atomType)
+	void InsertAtomType(const std::string& atomType)
 	{
 		if (find(mAtomTypes.begin(), mAtomTypes.end(), atomType) == mAtomTypes.end())
 			mAtomTypes.push_back(atomType);
@@ -628,12 +627,12 @@ class PDBFileParser
 		return mRec->vC(column);
 	}
 	
-	string vS(size_t columnFirst, size_t columnLast = numeric_limits<size_t>::max()) const
+	std::string vS(size_t columnFirst, size_t columnLast = std::numeric_limits<size_t>::max()) const
 	{
 		return mRec->vS(columnFirst, columnLast);
 	}
 
-	string vF(size_t columnFirst, size_t columnLast) const
+	std::string vF(size_t columnFirst, size_t columnLast) const
 	{
 		return mRec->vF(columnFirst, columnLast);
 	}
@@ -646,31 +645,31 @@ class PDBFileParser
 	// ----------------------------------------------------------------
 	
 	// Map a PDB residue location to a seqnum in a struct_asym 
-	tuple<string,int,bool> MapResidue(char chainID, int resSeq, char iCode) const
+	std::tuple<std::string,int,bool> MapResidue(char chainID, int resSeq, char iCode) const
 	{
-		auto key = make_tuple(chainID, resSeq, iCode);
+		auto key = std::make_tuple(chainID, resSeq, iCode);
 		
 		try
 		{
 			return mChainSeq2AsymSeq.at(key);
 		}
-		catch (const exception& ex)
+		catch (const std::exception& ex)
 		{
-			throw_with_nested(runtime_error(string("Residue ") + chainID + to_string(resSeq) + iCode + " could not be mapped"));
+			throw_with_nested(std::runtime_error(std::string("Residue ") + chainID + std::to_string(resSeq) + iCode + " could not be mapped"));
 		}
 	}
 
-	tuple<string,int,bool> MapResidue(char chainID, int resSeq, char iCode, std::error_code& ec) const
+	std::tuple<std::string,int,bool> MapResidue(char chainID, int resSeq, char iCode, std::error_code& ec) const
 	{
-		auto key = make_tuple(chainID, resSeq, iCode);
+		auto key = std::make_tuple(chainID, resSeq, iCode);
 		
-		tuple<string,int,bool> result;
+		std::tuple<std::string,int,bool> result;
 		
 		if (not mChainSeq2AsymSeq.count(key))
 		{
 			ec = error::make_error_code(error::pdbErrors::residueNotFound);
 			if (cif::VERBOSE)
-				cerr << "Residue " << chainID << resSeq << iCode << " could not be mapped" << endl;
+				std::cerr << "Residue " << chainID << resSeq << iCode << " could not be mapped" << std::endl;
 		}
 		else
 			result = mChainSeq2AsymSeq.at(key);
@@ -678,22 +677,22 @@ class PDBFileParser
 		return result;
 	}
 	
-	tuple<string,int,bool> MapResidue(char chainID, int resSeq, char iCode, const string& resName);
+	std::tuple<std::string,int,bool> MapResidue(char chainID, int resSeq, char iCode, const std::string& resName);
 
 	// ----------------------------------------------------------------
 	
-	void PreParseInput(istream& is);
+	void PreParseInput(std::istream& is);
 
 	void GetNextRecord();
-	void Match(const string& expected, bool throwIfMissing);
+	void Match(const std::string& expected, bool throwIfMissing);
 
 	void ParseTitle();
-	void ParseCitation(const string& id);
+	void ParseCitation(const std::string& id);
 	void ParseRemarks();
 	
 //	void ParseRemark3();
-//	size_t ParseRemark3(const string& program, const Remark3Template templ[], size_t N);
-//	string NextRemark3Line();
+//	size_t ParseRemark3(const std::string& program, const Remark3Template templ[], size_t N);
+//	std::string NextRemark3Line();
 
 	void ParseRemark200();
 	void ParseRemark350();
@@ -712,19 +711,19 @@ class PDBFileParser
 
 	// ----------------------------------------------------------------
 
-	Category* getCategory(string name)
+	Category* getCategory(std::string name)
 	{
 		cif::Datablock::iterator i;
-		std::tie(i, ignore) = mDatablock->emplace(name);
+		std::tie(i, std::ignore) = mDatablock->emplace(name);
 		return &*i;
 	}
 	
-	vector<string> SplitCSV(const string& value);
+	std::vector<std::string> SplitCSV(const std::string& value);
 
-	string pdb2cifDate(string s, std::error_code& ec)
+	std::string pdb2cifDate(std::string s, std::error_code& ec)
 	{
-		smatch m;
-		const regex
+		std::smatch m;
+		const std::regex
 			rx1(R"((\d{2})-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{2}))"),
 			rx2(R"((JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{2}))");
 
@@ -737,7 +736,7 @@ class PDBFileParser
 				int day = stoi(m[1].str());
 				auto mi = kMonths.find(m[2].str());
 				if (mi == kMonths.end())
-					throw runtime_error("Invalid month: '" + m[2].str() + '\'');
+					throw std::runtime_error("Invalid month: '" + m[2].str() + '\'');
 				int month = mi->second;
 				int year = 1900 + stoi(m[3].str());
 				if (year < 1950)
@@ -751,7 +750,7 @@ class PDBFileParser
 			{
 				auto mi = kMonths.find(m[1].str());
 				if (mi == kMonths.end())
-					throw runtime_error("Invalid month: '" + m[1].str() + '\'');
+					throw std::runtime_error("Invalid month: '" + m[1].str() + '\'');
 				int month = mi->second;
 				int year = 1900 + stoi(m[2].str());
 				if (year < 1950)
@@ -762,28 +761,28 @@ class PDBFileParser
 			else
 				ec = error::make_error_code(error::pdbErrors::invalidDate);
 		}
-		catch (const exception& ex)
+		catch (const std::exception& ex)
 		{
 			if (cif::VERBOSE)
-				cerr << ex.what() << endl;
+				std::cerr << ex.what() << std::endl;
 			ec = error::make_error_code(error::pdbErrors::invalidDate);
 		}
 		
 		return s;
 	}
 	
-	string pdb2cifDate(string s)
+	std::string pdb2cifDate(std::string s)
 	{
 		std::error_code ec;		
 		return pdb2cifDate(s, ec);
 	}
 	
-	string pdb2cifAuth(string author)
+	std::string pdb2cifAuth(std::string author)
 	{
 		ba::trim(author);
 		
-		const regex rx(R"(((?:[A-Z]+\.)+)(.+))");
-		smatch m;
+		const std::regex rx(R"(((?:[A-Z]+\.)+)(.+))");
+		std::smatch m;
 		if (regex_match(author, m, rx))
 			author = m[2].str() + ", " + m[1].str();
 		
@@ -801,15 +800,15 @@ class PDBFileParser
 		return author;
 	}
 
-	string pdb2cifSymmetry(string s)
+	std::string pdb2cifSymmetry(std::string s)
 	{
-		static const regex sgRx(R"((\d{1,3})(\d{3}))");
+		static const std::regex sgRx(R"((\d{1,3})(\d{3}))");
 		
 		if (not s.empty())
 		{
-			smatch m;
-			if (not regex_match(s, m, sgRx))
-				throw runtime_error("invalid symmetry value '" + s + '\'');
+			std::smatch m;
+			if (not std::regex_match(s, m, sgRx))
+				throw std::runtime_error("invalid symmetry value '" + s + '\'');
 	
 			s = m[1].str() + "_" + m[2].str();
 		}
@@ -817,12 +816,12 @@ class PDBFileParser
 		return s;
 	}
 	
-	string pdb2cifCharge(string c)
+	std::string pdb2cifCharge(std::string c)
 	{
-		regex rx(R"((\d+)(\+|-))");
-		smatch m;
+		std::regex rx(R"((\d+)(\+|-))");
+		std::smatch m;
 		
-		if (regex_match(c, m, rx))
+		if (std::regex_match(c, m, rx))
 		{
 			if (m[2].str() == "-")
 				c = '-' + m[1].str();
@@ -833,12 +832,12 @@ class PDBFileParser
 		return c;
 	}
 	
-	string cifIdForInt(int nr) const
+	std::string cifIdForInt(int nr) const
 	{
-		string result;
+		std::string result;
 		
 		if (nr >= 26 * 26 * 26)
-			result = 'L' + to_string(nr);
+			result = 'L' + std::to_string(nr);
 		else
 		{
 			if (nr >= 26 * 26)
@@ -862,8 +861,8 @@ class PDBFileParser
 		return result;
 	}
 	
-	vector<char> altLocsForAtom(char chainID, int seqNum, char iCode, string atomName);
-	void MapChainID2AsymIDS(char chainID, vector<string>& asymIds);
+	std::vector<char> altLocsForAtom(char chainID, int seqNum, char iCode, std::string atomName);
+	void MapChainID2AsymIDS(char chainID, std::vector<std::string>& asymIds);
 
 	// ----------------------------------------------------------------
 	
@@ -871,66 +870,66 @@ class PDBFileParser
 	PDBRecord*	mRec;
 	cif::Datablock*	mDatablock = nullptr;
 
-	string		mStructureID;
-	string		mModelTypeDetails;
-	string		mOriginalDate;
-	string		mExpMethod = "X-RAY DIFFRACTION";
+	std::string		mStructureID;
+	std::string		mModelTypeDetails;
+	std::string		mOriginalDate;
+	std::string		mExpMethod = "X-RAY DIFFRACTION";
 	int			mCitationAuthorNr = 1, mCitationEditorNr = 1;
 	int			mNextMolID = 1, mNextEntityNr = 1;
 	int			mNextSoftwareOrd = 1;
 
 	struct SEQADV
 	{
-		string	resName;
+		std::string	resName;
 		char	chainID;
 		int		seqNum;
 		char	iCode;
-		string	database;
-		string	dbAccession;
-		string	dbRes;
+		std::string	database;
+		std::string	dbAccession;
+		std::string	dbRes;
 		int		dbSeq;
-		string	conflict;
+		std::string	conflict;
 	};
 
-	vector<SEQADV>						mSeqadvs;
+	std::vector<SEQADV>						mSeqadvs;
 	
-	list<PDBCompound>					mCompounds;
-	list<PDBChain>						mChains;
-	vector<HET> 						mHets;
-	map<string,string>					mHetnams;
-	map<string,string>					mHetsyns;
-	map<string,string>					mFormuls;
-	string								mWaterHetID;
-	vector<string>						mChemComp, mAtomTypes;
+	std::list<PDBCompound>					mCompounds;
+	std::list<PDBChain>						mChains;
+	std::vector<HET> 						mHets;
+	std::map<std::string,std::string>					mHetnams;
+	std::map<std::string,std::string>					mHetsyns;
+	std::map<std::string,std::string>					mFormuls;
+	std::string								mWaterHetID;
+	std::vector<std::string>						mChemComp, mAtomTypes;
 	
-	map<string,string>					mRemark200;
-	string								mRefinementSoftware;
+	std::map<std::string,std::string>					mRemark200;
+	std::string								mRefinementSoftware;
 	int									mAtomID = 0;
 	int									mPdbxDifOrdinal = 0;
 
-	vector<UNOBS>						mUnobs;
+	std::vector<UNOBS>						mUnobs;
 
 	// various maps between numbering schemes
-	map<tuple<char,int,char>,tuple<string,int,bool>>	mChainSeq2AsymSeq;
+	std::map<std::tuple<char,int,char>,std::tuple<std::string,int,bool>>	mChainSeq2AsymSeq;
 
-	map<int,string>							mMolID2EntityID;
-	map<string,string>						mHet2EntityID;
-	map<string,string>						mAsymID2EntityID;
-	map<string,string>						mMod2parent;
+	std::map<int,std::string>							mMolID2EntityID;
+	std::map<std::string,std::string>						mHet2EntityID;
+	std::map<std::string,std::string>						mAsymID2EntityID;
+	std::map<std::string,std::string>						mMod2parent;
 };
 
 // --------------------------------------------------------------------
 
-vector<char> PDBFileParser::altLocsForAtom(char inChainID, int inResSeq, char inICode, string inAtomName)
+std::vector<char> PDBFileParser::altLocsForAtom(char inChainID, int inResSeq, char inICode, std::string inAtomName)
 {
 	// well, maybe this could be optimized...
-	set<char> result;
+	std::set<char> result;
 	
 	for (auto r = mData; r != nullptr; r = r->mNext)
 	{
 		if (r->is("ATOM  ") or r->is("HETATM"))		//	 1 -  6        Record name   "ATOM  "
 		{											//	 ...
-			string name			= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
+			std::string name			= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
 			char altLoc			= r->vC(17);		//	17             Character     altLoc       Alternate location indicator.
 			char chainID		= r->vC(22);		//	22             Character     chainID      Chain identifier.
 			int resSeq			= r->vI(23, 26);	//	23 - 26        Integer       resSeq       Residue sequence number.
@@ -944,11 +943,11 @@ vector<char> PDBFileParser::altLocsForAtom(char inChainID, int inResSeq, char in
 	return { result.begin(), result.end() };
 }
 
-void PDBFileParser::MapChainID2AsymIDS(char chainID, vector<string>& asymIds)
+void PDBFileParser::MapChainID2AsymIDS(char chainID, std::vector<std::string>& asymIds)
 {
-	struct l : binary_function<string,string,bool>
+	struct l : std::binary_function<std::string,std::string,bool>
 	{
-		bool operator()(const string& a, const string& b) const
+		bool operator()(const std::string& a, const std::string& b) const
 		{
 			int d = a.length() - b.length();
 			if (d == 0)
@@ -957,12 +956,12 @@ void PDBFileParser::MapChainID2AsymIDS(char chainID, vector<string>& asymIds)
 		}
 	};
 	
-	set<string,l> asym(asymIds.begin(), asymIds.end());
+	std::set<std::string,l> asym(asymIds.begin(), asymIds.end());
 
 	for (auto& m: mChainSeq2AsymSeq)
 	{
-		if (get<0>(m.first) == chainID)
-			asym.insert(get<0>(m.second));
+		if (std::get<0>(m.first) == chainID)
+			asym.insert(std::get<0>(m.second));
 	}
 	
 	asymIds.assign(asym.begin(), asym.end());
@@ -970,18 +969,18 @@ void PDBFileParser::MapChainID2AsymIDS(char chainID, vector<string>& asymIds)
 
 // --------------------------------------------------------------------
 
-void PDBFileParser::PreParseInput(istream& is)
+void PDBFileParser::PreParseInput(std::istream& is)
 {
-	string lookahead;
+	std::string lookahead;
 	uint32_t lineNr = 1;
 	getline(is, lookahead);
 
 //	if (ba::starts_with(lookahead, "HEADER") == false)
-//		throw runtime_error("This does not look like a PDB file, should start with a HEADER line");
+//		throw std::runtime_error("This does not look like a PDB file, should start with a HEADER line");
 
 	auto contNr = [&lookahead](int offset, int len) -> int
 	{
-		string cs = lookahead.substr(offset, len);
+		std::string cs = lookahead.substr(offset, len);
 		ba::trim(cs);
 		int result;
 		
@@ -991,13 +990,13 @@ void PDBFileParser::PreParseInput(istream& is)
 		}
 		catch (...)
 		{
-			throw runtime_error("Continuation string '" + cs + "' is not valid");
+			throw std::runtime_error("Continuation std::string '" + cs + "' is not valid");
 		}
 		return result;
 	};
 
 	PDBRecord* last = nullptr;
-	set<string> dropped;
+	std::set<std::string> dropped;
 
 	for (;;)
 	{
@@ -1006,7 +1005,7 @@ void PDBFileParser::PreParseInput(istream& is)
 			if (is.eof())
 				break;
 
-			cerr << "Line number " << lineNr << " is empty!" << endl;
+			std::cerr << "Line number " << lineNr << " is empty!" << std::endl;
 
 			getline(is, lookahead);
 			++lineNr;
@@ -1014,8 +1013,8 @@ void PDBFileParser::PreParseInput(istream& is)
 			continue;		
 		}
 
-		string type = lookahead.substr(0, 6);
-		string value;
+		std::string type = lookahead.substr(0, 6);
+		std::string value;
 		if (lookahead.length() > 6)
 			value = ba::trim_right_copy(lookahead.substr(6));
 
@@ -1119,11 +1118,11 @@ void PDBFileParser::PreParseInput(istream& is)
 				{
 					compNr = stoi(value.substr(1, 3));
 				}
-				catch (const exception& ex)
+				catch (const std::exception& ex)
 				{
 					std::cerr << "Dropping FORMUL line (" << (lineNr - 1) << ") with invalid component number '" << value.substr(1, 3) << '\'' << std::endl;
 					continue;
-					// throw_with_nested(runtime_error("Invalid component number '" + value.substr(1, 3) + '\''));
+					// throw_with_nested(std::runtime_error("Invalid component number '" + value.substr(1, 3) + '\''));
 				}
 	
 				int n = 2;
@@ -1139,15 +1138,15 @@ void PDBFileParser::PreParseInput(istream& is)
 						++n;
 					}
 				}
-				catch (const invalid_argument& ex)
+				catch (const std::invalid_argument& ex)
 				{
 					continue;
-					// throw_with_nested(runtime_error("Invalid component number '" + lookahead.substr(7, 3) + '\''));
+					// throw_with_nested(std::runtime_error("Invalid component number '" + lookahead.substr(7, 3) + '\''));
 				}
 			}
-			catch (const exception& ex)
+			catch (const std::exception& ex)
 			{
-				cerr << "Error parsing FORMUL at line " << lineNr << endl;
+				std::cerr << "Error parsing FORMUL at line " << lineNr << std::endl;
 				throw;
 			}
 		}
@@ -1165,16 +1164,16 @@ void PDBFileParser::PreParseInput(istream& is)
 		}
 		else if (type == "SITE  ")
 		{
-			string siteName = value.substr(5, 3);
+			std::string siteName = value.substr(5, 3);
 			ba::trim_right(value);
 			size_t n = value.length() - 12;
-			value += string(11 - (n % 11), ' ');
+			value += std::string(11 - (n % 11), ' ');
 			
 			while (lookahead.substr(0, 6) == type and lookahead.substr(11, 3) == siteName)
 			{
-				string s = lookahead.substr(18);
+				std::string s = lookahead.substr(18);
 				ba::trim_right(s);
-				s += string(11 - (s.length() % 11), ' ');
+				s += std::string(11 - (s.length() % 11), ' ');
 				value += s;
 				
 // TODO: improve this... either use numRes or don't lump together all text
@@ -1192,13 +1191,13 @@ void PDBFileParser::PreParseInput(istream& is)
 			{
 				auto i = value.find(":");
 		
-				if (i != string::npos)
+				if (i != std::string::npos)
 				{
-					string k = value.substr(4, i - 4);
-					string v = value.substr(i + 1);
+					std::string k = value.substr(4, i - 4);
+					std::string v = value.substr(i + 1);
 					
 					ba::trim(k);
-					while (k.find("  ") != string::npos)
+					while (k.find("  ") != std::string::npos)
 						ba::replace_all(k, "  ", " ");
 					ba::trim(v);
 					
@@ -1227,7 +1226,7 @@ void PDBFileParser::PreParseInput(istream& is)
 	
 	if (not dropped.empty())
 	{
-		cerr << "Dropped unsupported records: " << ba::join(dropped, ", ") << endl;
+		std::cerr << "Dropped unsupported records: " << ba::join(dropped, ", ") << std::endl;
 	}
 	
 	mRec = mData;
@@ -1245,20 +1244,20 @@ void PDBFileParser::GetNextRecord()
 	}
 }
 
-void PDBFileParser::Match(const string& expected, bool throwIfMissing)
+void PDBFileParser::Match(const std::string& expected, bool throwIfMissing)
 {
 	if (mRec->mName != expected)
 	{
 		if (throwIfMissing)
-			throw runtime_error("Expected record " + expected + " but found " + mRec->mName);
+			throw std::runtime_error("Expected record " + expected + " but found " + mRec->mName);
 		if (cif::VERBOSE)
-			cerr << "Expected record " + expected + " but found " + mRec->mName << endl;
+			std::cerr << "Expected record " + expected + " but found " + mRec->mName << std::endl;
 	}
 }
 
-vector<string> PDBFileParser::SplitCSV(const string& value)
+std::vector<std::string> PDBFileParser::SplitCSV(const std::string& value)
 {
-	vector<string> vs;
+	std::vector<std::string> vs;
 	ba::split(vs, value, ba::is_any_of(","));
 	for (auto& v: vs)
 		ba::trim(v);
@@ -1271,14 +1270,14 @@ void PDBFileParser::ParseTitle()
 	
 	// HEADER
 	//	 1 -  6       Record name    "HEADER"
-	//	11 - 50       String(40)     classification    Classifies the molecule(s).
+	//	11 - 50       std::String(40)     classification    Classifies the molecule(s).
 	//	51 - 59       Date           depDate           Deposition date. This is the date the
 	//	                                               coordinates  were received at the PDB.
 	//	63 - 66       IDcode         idCode            This identifier is unique within the PDB.
 
 	Match("HEADER", false);
 	
-	string keywords;
+	std::string keywords;
 	
 	if (mRec->is("HEADER"))
 	{
@@ -1312,18 +1311,18 @@ void PDBFileParser::ParseTitle()
 		//	37 - 40       ...
 
 
-		string old		= vS(22, 25);
-		string date		= pdb2cifDate(vS(12, 20));
+		std::string old		= vS(22, 25);
+		std::string date		= pdb2cifDate(vS(12, 20));
 		cat = getCategory("pdbx_database_PDB_obs");
 		
-		string value = mRec->vS(32);
+		std::string value = mRec->vS(32);
 		for (auto i = make_split_iterator(value, ba::token_finder(ba::is_any_of(" "), ba::token_compress_on)); not i.eof(); ++i)
 		{
 			cat->emplace({
 				{ "id", "OBSLTE" },
 				{ "date", date },
 				{ "replace_pdb_id", old },
-				{ "pdb_id", string(i->begin(), i->end()) }
+				{ "pdb_id", std::string(i->begin(), i->end()) }
 			});
 		}
 
@@ -1332,10 +1331,10 @@ void PDBFileParser::ParseTitle()
 	
 	// TITLE
 	Match("TITLE ", false);
-	string title;
+	std::string title;
 	if (mRec->is("TITLE "))	//	 1 -  6       Record name    "TITLE "
 	{							//	 9 - 10       Continuation   continuation  Allows concatenation of multiple records.
-		title = vS(11);		//	11 - 80       String         title         Title of the  experiment.
+		title = vS(11);		//	11 - 80       std::String         title         Title of the  experiment.
 		GetNextRecord();
 	}
 	
@@ -1346,7 +1345,7 @@ void PDBFileParser::ParseTitle()
 		//	 9 - 10        Continuation  continuation  Allows concatenation of multiple records.
 		//	12 - 15        IDcode        idCode        ID code of related datablock.
 		
-		throw runtime_error("SPLIT PDB files are not supported");
+		throw std::runtime_error("SPLIT PDB files are not supported");
 	}
 	
 	// CAVEAT
@@ -1355,7 +1354,7 @@ void PDBFileParser::ParseTitle()
 	{
 		getCategory("database_PDB_caveat")->emplace({
 			{ "id", caveatID++ },
-			{ "text", string{mRec->vS(20) } }    		//	20 - 79       String        comment        Free text giving the reason for the  CAVEAT.
+			{ "text", std::string{mRec->vS(20) } }    		//	20 - 79       std::String        comment        Free text giving the reason for the  CAVEAT.
 		});
 		
 		GetNextRecord();
@@ -1368,8 +1367,8 @@ void PDBFileParser::ParseTitle()
 	//	11 - 80       Specification   compound      Description of the molecular components.
 	//	              list   
 
-	string value{mRec->vS(11)};
-	if (value.find(':') == string::npos)
+	std::string value{mRec->vS(11)};
+	if (value.find(':') == std::string::npos)
 	{
 			// special case for dumb, stripped files		
 		auto& comp = GetOrCreateCompound(1);
@@ -1381,7 +1380,7 @@ void PDBFileParser::ParseTitle()
 		
 		for (;;)
 		{
-			string key, value;
+			std::string key, value;
 			std::tie(key, value) = p.GetNextSpecification();
 
 			if (key.empty())
@@ -1389,7 +1388,7 @@ void PDBFileParser::ParseTitle()
 		
 			if (not iequals(key, "MOL_ID") and mCompounds.empty())
 			{
-				cerr << "Ignoring invalid COMPND record" << endl;
+				std::cerr << "Ignoring invalid COMPND record" << std::endl;
 				break;
 			}
 			
@@ -1400,7 +1399,7 @@ void PDBFileParser::ParseTitle()
 			}
 			else if (key == "CHAIN")
 			{
-				vector<string> chains;
+				std::vector<std::string> chains;
 				
 				ba::split(chains, value, ba::is_any_of(","));
 				for (auto& c: chains)
@@ -1427,27 +1426,27 @@ void PDBFileParser::ParseTitle()
 		//	11 - 79      Specification  srcName        Identifies the source of the
 		//	             List                          macromolecule in a  token: value format.
 		
-		map<string,string>* source = nullptr;
+		std::map<std::string,std::string>* source = nullptr;
 	
 //		value = { mRec->vS(11) };
 //		for (auto si = ba::make_split_iterator(value, ba::token_finder(ba::is_any_of(";"), ba::token_compress_on)); not si.eof(); ++si)
 //		{
-//			string s(si->begin(), si->end());
+//			std::string s(si->begin(), si->end());
 //			if (s.empty())
 //				continue;
 //			
 //			auto colon = s.find(": ");
-//			if (colon == string::npos)
+//			if (colon == std::string::npos)
 //			{
 //				if (cif::VERBOSE)
-//					cerr << "invalid source field, missing colon (" << s << ')' << endl;
+//					std::cerr << "invalid source field, missing colon (" << s << ')' << std::endl;
 //				continue;
 //			}
 		SpecificationListParser p(vS(11));
 		
 		for (;;)
 		{
-			string key, value;
+			std::string key, value;
 			std::tie(key, value) = p.GetNextSpecification();
 
 			if (key.empty())
@@ -1468,7 +1467,7 @@ void PDBFileParser::ParseTitle()
 			}
 			
 			if (source == nullptr)
-				throw runtime_error("At line " + to_string(mRec->mLineNr) + ": missing MOL_ID in SOURCE");
+				throw std::runtime_error("At line " + std::to_string(mRec->mLineNr) + ": missing MOL_ID in SOURCE");
 			
 			(*source)[key] = value;
 		}
@@ -1478,7 +1477,7 @@ void PDBFileParser::ParseTitle()
 
 	// KEYWDS
 	Match("KEYWDS", false);
-	string pdbxKeywords;
+	std::string pdbxKeywords;
 
 	if (mRec->is("KEYWDS"))		//	 1 -  6       Record name    "KEYWDS"  
 	{								//	 9 - 10       Continuation   continuation  Allows concatenation of records if necessary.
@@ -1504,7 +1503,7 @@ void PDBFileParser::ParseTitle()
 
 		cat = getCategory("exptl");
 		
-		vector<string> crystals;
+		std::vector<std::string> crystals;
 		ba::split(crystals, mRemark200["NUMBER OF CRYSTALS USED"], ba::is_any_of("; "));
 		if (crystals.empty())
 			crystals.push_back("");
@@ -1512,7 +1511,7 @@ void PDBFileParser::ParseTitle()
 		
 		for (auto si = ba::make_split_iterator(mExpMethod, ba::token_finder(ba::is_any_of(";"), ba::token_compress_on)); not si.eof(); ++si, ++ci)
 		{
-			string expMethod(si->begin(), si->end());
+			std::string expMethod(si->begin(), si->end());
 			ba::trim(expMethod);
 			
 			if (expMethod.empty())
@@ -1532,7 +1531,7 @@ void PDBFileParser::ParseTitle()
 	if (mRec->is("NUMMDL"))
 	{
 		if (cif::VERBOSE)	
-			cerr << "skipping unimplemented NUMMDL record" << endl;
+			std::cerr << "skipping unimplemented NUMMDL record" << std::endl;
 		GetNextRecord();
 	}
 	
@@ -1553,7 +1552,7 @@ void PDBFileParser::ParseTitle()
 		value = { mRec->vS(11) };
 		for (auto si = ba::make_split_iterator(value, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not si.eof(); ++si)
 		{
-			string author(si->begin(), si->end());
+			std::string author(si->begin(), si->end());
 			
 			cat->emplace({
 				{ "name", pdb2cifAuth(author) },
@@ -1569,28 +1568,28 @@ void PDBFileParser::ParseTitle()
 	bool firstRevDat = true;
 	struct RevDat {
 		int revNum;
-		string date, dateOriginal, replaces;
+		std::string date, dateOriginal, replaces;
 		int modType;
-		vector<string> types;
+		std::vector<std::string> types;
 
 		bool operator<(const RevDat& rhs) const { return revNum < rhs.revNum; }
 	};
-	vector<RevDat> revdats;
+	std::vector<RevDat> revdats;
 	
 	while (mRec->is("REVDAT"))
 	{
 													//	 1 -  6       Record name    "REVDAT"                                             
 		int revNum = vI(8, 10);						//	 8 - 10       Integer        modNum        Modification number.                   
 													//	11 - 12       Continuation   continuation  Allows concatenation of multiple records.
-		string date = pdb2cifDate(vS(14, 22));		//	14 - 22       Date           modDate       Date of modification (or release  for   
+		std::string date = pdb2cifDate(vS(14, 22));		//	14 - 22       Date           modDate       Date of modification (or release  for   
 													//	                                           new entries)  in DD-MMM-YY format. This is
 													//	                                           not repeated on continued lines.
-		string modID = vS(24, 27);					//	24 - 27       IDCode         modID         ID code of this datablock. This is not repeated on 
+		std::string modID = vS(24, 27);					//	24 - 27       IDCode         modID         ID code of this datablock. This is not repeated on 
 													//	                                           continuation lines.    
 		int modType = vI(32, 32);					//	32            Integer        modType       An integer identifying the type of    
 													//	                                           modification. For all  revisions, the
 													//	                                           modification type is listed as 1 
-		string value = vS(40);						//	40 - 45       LString(6)     record        Modification detail. 
+		std::string value = vS(40);						//	40 - 45       LString(6)     record        Modification detail. 
 													//	47 - 52       LString(6)     record        Modification detail. 
 													//	54 - 59       LString(6)     record        Modification detail. 
 													//	61 - 66       LString(6)     record        Modification detail.
@@ -1642,7 +1641,7 @@ void PDBFileParser::ParseTitle()
 	if (mRec->is("SPRSDE"))
 	{
 		if (cif::VERBOSE)	
-			cerr << "skipping unimplemented SPRSDE record" << endl;
+			std::cerr << "skipping unimplemented SPRSDE record" << std::endl;
 		GetNextRecord();
 	}
 	
@@ -1651,16 +1650,16 @@ void PDBFileParser::ParseTitle()
 		ParseCitation("primary");
 }
 
-void PDBFileParser::ParseCitation(const string& id)
+void PDBFileParser::ParseCitation(const std::string& id)
 {
 	const char* rec = mRec->mName;
 	
-	string auth, titl, edit, publ, refn, pmid, doi;
-	string pubname, volume, astm, country, issn, csd;
-	string pageFirst;
+	std::string auth, titl, edit, publ, refn, pmid, doi;
+	std::string pubname, volume, astm, country, issn, csd;
+	std::string pageFirst;
 	int year = 0;
 
-	auto extend = [](string& s, const string& p)
+	auto extend = [](std::string& s, const std::string& p)
 	{
 		if (not s.empty())	
 			s += ' ';
@@ -1669,7 +1668,7 @@ void PDBFileParser::ParseCitation(const string& id)
 
 	while (mRec->is(rec) and (id == "primary" or vC(12) == ' '))
 	{
-		string k = vS(13, 16);
+		std::string k = vS(13, 16);
 		if (k == "AUTH")				extend(auth, vS(20, 79));
 		else if (k == "TITL")			extend(titl, vS(20, 79));
 		else if (k == "EDIT")			extend(edit, vS(20, 79));
@@ -1708,7 +1707,7 @@ void PDBFileParser::ParseCitation(const string& id)
 		{ "journal_abbrev", pubname },
 		{ "journal_volume", volume },
 		{ "page_first", pageFirst },
-		{ "year", year > 0 ? to_string(year) : "" },
+		{ "year", year > 0 ? std::to_string(year) : "" },
 		{ "journal_id_ASTM", astm },
 		{ "country", country },
 		{ "journal_id_ISSN", issn },
@@ -1723,7 +1722,7 @@ void PDBFileParser::ParseCitation(const string& id)
 		cat = getCategory("citation_author");
 		for (auto si = ba::make_split_iterator(auth, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not si.eof(); ++si)
 		{
-			string author(si->begin(), si->end());
+			std::string author(si->begin(), si->end());
 			
 			cat->emplace({
 				{ "citation_id", id },
@@ -1740,7 +1739,7 @@ void PDBFileParser::ParseCitation(const string& id)
 		cat = getCategory("citation_editor");
 		for (auto si = ba::make_split_iterator(edit, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not si.eof(); ++si)
 		{
-			string editor(si->begin(), si->end());
+			std::string editor(si->begin(), si->end());
 			
 			cat->emplace({
 				{ "citation_id", id },
@@ -1755,7 +1754,7 @@ void PDBFileParser::ParseCitation(const string& id)
 
 void PDBFileParser::ParseRemarks()
 {
-	string sequenceDetails, compoundDetails, sourceDetails;
+	std::string sequenceDetails, compoundDetails, sourceDetails;
 	
 	while (ba::starts_with(mRec->mName, "REMARK"))
 	{
@@ -1770,7 +1769,7 @@ void PDBFileParser::ParseRemarks()
 					{
 						if (mRec->mVlen > 15 and vS(12, 20) == "REFERENCE")
 						{
-							string id = vS(22, 70);
+							std::string id = vS(22, 70);
 							GetNextRecord();
 							
 							ParseCitation(id);
@@ -1794,11 +1793,11 @@ void PDBFileParser::ParseRemarks()
 	
 				case 100:
 				{
-					const regex rx(R"(THE (\S+) ID CODE IS (\S+?)\.?\s*)");
-					smatch m;
-					string r = vS(12);
+					const std::regex rx(R"(THE (\S+) ID CODE IS (\S+?)\.?\s*)");
+					std::smatch m;
+					std::string r = vS(12);
 					
-					if (regex_match(r, m, rx))
+					if (std::regex_match(r, m, rx))
 					{
 						auto cat = getCategory("database_2");
 						cat->emplace({
@@ -1819,7 +1818,7 @@ void PDBFileParser::ParseRemarks()
 					
 					do
 					{
-						string r = mRec->vS(12);
+						std::string r = mRec->vS(12);
 	
 						if (ba::starts_with(r, "REMARK: "))
 						{
@@ -1842,22 +1841,22 @@ void PDBFileParser::ParseRemarks()
 	
 				case 280:
 				{
-					string density_Matthews, densityPercentSol, conditions;
+					std::string density_Matthews, densityPercentSol, conditions;
 					
-					const regex rx1(R"(SOLVENT CONTENT, VS +\(%\): *(.+))"),
+					const std::regex rx1(R"(SOLVENT CONTENT, VS +\(%\): *(.+))"),
 						rx2(R"(MATTHEWS COEFFICIENT, VM \(ANGSTROMS\*\*3/DA\): *(.+))");
 					
-					smatch m;
+					std::smatch m;
 	
 					do
 					{
-						string r = vS(12);
+						std::string r = vS(12);
 	
 						if (conditions.empty())
 						{
-							if (regex_match(r, m, rx1))
+							if (std::regex_match(r, m, rx1))
 								densityPercentSol = m[1].str();
-							else if (regex_match(r, m, rx2))
+							else if (std::regex_match(r, m, rx2))
 								density_Matthews = m[1].str();
 							else if (ba::starts_with(r, "CRYSTALLIZATION CONDITIONS: "))
 								conditions = r.substr(28);
@@ -1869,7 +1868,7 @@ void PDBFileParser::ParseRemarks()
 					}
 					while (mRec->is("REMARK 280"));
 					
-					string desc = mRemark200["REMARK"];
+					std::string desc = mRemark200["REMARK"];
 					if (desc == "NULL")
 						desc.clear();
 					
@@ -1881,19 +1880,19 @@ void PDBFileParser::ParseRemarks()
 					});
 					
 					// now try to parse the conditions
-					const regex rx3(R"(TEMPERATURE +(\d+)K)"), rx4(R"(PH *(?:: *)?(\d+(?:\.\d+)?))")/*, rx5(R"(\b(\d+)C\b)")*/;
+					const std::regex rx3(R"(TEMPERATURE +(\d+)K)"), rx4(R"(PH *(?:: *)?(\d+(?:\.\d+)?))")/*, rx5(R"(\b(\d+)C\b)")*/;
 					
-					string temp, ph, method;
+					std::string temp, ph, method;
 	
 					for (auto i = make_split_iterator(conditions, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not i.eof(); ++i)
 					{
-						string s(i->begin(), i->end());
+						std::string s(i->begin(), i->end());
 	
 						ba::trim(s);
 	
-						if (regex_search(s, m, rx3))
+						if (std::regex_search(s, m, rx3))
 							temp = m[1].str();
-						if (regex_search(s, m, rx4))
+						if (std::regex_search(s, m, rx4))
 							ph = m[1].str();
 						if (s.length() < 60 and
 							(ba::icontains(s, "drop") or ba::icontains(s, "vapor") or ba::icontains(s, "batch")))
@@ -1931,14 +1930,14 @@ void PDBFileParser::ParseRemarks()
 				
 				case 400:
 				{
-					stringstream s;
+					std::stringstream s;
 					GetNextRecord();
 					if (vS(12) == "COMPOUND")
 						GetNextRecord();
 					
 					while (mRec->is("REMARK 400"))
 					{
-						s << vS(12) << endl;
+						s << vS(12) << std::endl;
 						GetNextRecord();
 					}
 					
@@ -1948,14 +1947,14 @@ void PDBFileParser::ParseRemarks()
 				
 				case 450:
 				{
-					stringstream s;
+					std::stringstream s;
 					GetNextRecord();
 					if (vS(12) == "SOURCE")
 						GetNextRecord();
 					
 					while (mRec->is("REMARK 450"))
 					{
-						s << vS(12) << endl;
+						s << vS(12) << std::endl;
 						GetNextRecord();
 					}
 					
@@ -1966,19 +1965,19 @@ void PDBFileParser::ParseRemarks()
 				case 465:
 				{
 					bool headerSeen = false;
-					regex rx(R"( *MODELS *(\d+)-(\d+))");
+					std::regex rx(R"( *MODELS *(\d+)-(\d+))");
 					int models[2] = { -1, -1 };
 					
 					for (; mRec->is("REMARK 465"); GetNextRecord())
 					{
 						if (not headerSeen)
 						{
-							string line = vS(12);
-							smatch m;
+							std::string line = vS(12);
+							std::smatch m;
 	
-							if (regex_match(line, m, rx))
+							if (std::regex_match(line, m, rx))
 							{
-								models[0] = stoi(m[1].str());
+								models[0] = std::stoi(m[1].str());
 								models[1] = stoi(m[2].str());
 							}
 							else
@@ -1989,7 +1988,7 @@ void PDBFileParser::ParseRemarks()
 						if (models[0] == models[1])
 							models[0] = models[1] = vI(12, 14);
 						
-						string res = vS(16, 18);
+						std::string res = vS(16, 18);
 						char chain = vC(20);
 						int seq = vI(22, 26);
 						char iCode = vC(27);
@@ -2004,17 +2003,17 @@ void PDBFileParser::ParseRemarks()
 				case 470:
 				{
 					bool headerSeen = false;
-					regex rx(R"( *MODELS *(\d+)-(\d+))");
+					std::regex rx(R"( *MODELS *(\d+)-(\d+))");
 					int models[2] = { -1, -1 };
 					
 					for (; mRec->is("REMARK 470"); GetNextRecord())
 					{
 						if (not headerSeen)
 						{
-							string line = vS(12);
-							smatch m;
+							std::string line = vS(12);
+							std::smatch m;
 	
-							if (regex_match(line, m, rx))
+							if (std::regex_match(line, m, rx))
 							{
 								models[0] = stoi(m[1].str());
 								models[1] = stoi(m[2].str());
@@ -2027,13 +2026,13 @@ void PDBFileParser::ParseRemarks()
 						if (models[0] == models[1])
 							models[0] = models[1] = vI(12, 14);
 						
-						string res = vS(16, 18);
+						std::string res = vS(16, 18);
 						char chain = vC(20);
 						int seq = vI(21, 24);
 						char iCode = vC(25);
 						
-						vector<string> atoms;
-						string atomStr = mRec->vS(29);
+						std::vector<std::string> atoms;
+						std::string atomStr = mRec->vS(29);
 						for (auto i = make_split_iterator(atomStr, ba::token_finder(ba::is_any_of(" "), ba::token_compress_on)); not i.eof(); ++i)
 							atoms.push_back({ i-> begin(), i->end() });
 						
@@ -2054,7 +2053,7 @@ void PDBFileParser::ParseRemarks()
 					
 					for (; mRec->is("REMARK 500"); GetNextRecord())
 					{
-						string line = vS(12);
+						std::string line = vS(12);
 						
 						if (line == "GEOMETRY AND STEREOCHEMISTRY")
 							continue;
@@ -2066,7 +2065,7 @@ void PDBFileParser::ParseRemarks()
 								if (line.empty() or not ba::starts_with(line, "SUBTOPIC: "))
 									continue;
 	
-								string subtopic = line.substr(10);
+								std::string subtopic = line.substr(10);
 	
 								if (subtopic == "CLOSE CONTACTS IN SAME ASYMMETRIC UNIT")	state = eCCinSAU;
 								else if (subtopic == "CLOSE CONTACTS")						state = eCC;
@@ -2078,7 +2077,7 @@ void PDBFileParser::ParseRemarks()
 								else if (subtopic == "MAIN CHAIN PLANARITY")				state = eMCP;
 								else if (subtopic == "CHIRAL CENTERS")						state = eChC;
 								else if (cif::VERBOSE)
-									throw runtime_error("Unknown subtopic in REMARK 500: " + subtopic);
+									throw std::runtime_error("Unknown subtopic in REMARK 500: " + subtopic);
 								
 								headerSeen = false;
 								id = 0;
@@ -2094,33 +2093,33 @@ void PDBFileParser::ParseRemarks()
 									state = eStart;
 								else
 								{
-									string atom1 = vS(13, 16);
-									string res1 = vS(19, 21);
-									string alt1 = vS(17, 17);
+									std::string atom1 = vS(13, 16);
+									std::string res1 = vS(19, 21);
+									std::string alt1 = vS(17, 17);
 									char chain1 = vC(23);
 									int seq1 = vI(25, 29);
-									string iCode1 = vS(30, 30);
+									std::string iCode1 = vS(30, 30);
 									
-									string atom2 = vS(34, 37);
-									string alt2 = vS(38, 38);
-									string res2 = vS(40, 42);
+									std::string atom2 = vS(34, 37);
+									std::string alt2 = vS(38, 38);
+									std::string res2 = vS(40, 42);
 									char chain2 = vC(44);
 									int seq2 = vI(46, 50);
-									string iCode2 = vS(51, 51);
+									std::string iCode2 = vS(51, 51);
 									
-									string distance = vF(63, 71);
+									std::string distance = vF(63, 71);
 									
 									getCategory("pdbx_validate_close_contact")->emplace({
-										{ "id",				to_string(++id) },
+										{ "id",				std::to_string(++id) },
 										{ "PDB_model_num",	1 },
 										{ "auth_atom_id_1",	atom1 },
-										{ "auth_asym_id_1", string{ chain1 } },
+										{ "auth_asym_id_1", std::string{ chain1 } },
 										{ "auth_comp_id_1", res1 },
 										{ "auth_seq_id_1",	seq1 },
 										{ "PDB_ins_code_1", iCode1 },
 										{ "label_alt_id_1", alt1 },
 										{ "auth_atom_id_2",	atom2 },
-										{ "auth_asym_id_2", string { chain2 } },
+										{ "auth_asym_id_2", std::string { chain2 } },
 										{ "auth_comp_id_2", res2 },
 										{ "auth_seq_id_2",	seq2 },
 										{ "PDB_ins_code_2", iCode2 },
@@ -2139,17 +2138,17 @@ void PDBFileParser::ParseRemarks()
 									state = eStart;
 								else
 								{
-									string atom1 = vS(13, 16);
-									string res1 = vS(19, 21);
+									std::string atom1 = vS(13, 16);
+									std::string res1 = vS(19, 21);
 									char chain1 = vC(23);
 									int seq1 = vI(25, 29);
 									
-									string atom2 = vS(34, 37);
-									string res2 = vS(40, 42);
+									std::string atom2 = vS(34, 37);
+									std::string res2 = vS(40, 42);
 									char chain2 = vC(44);
 									int seq2 = vI(46, 50);
 									
-									string symop;
+									std::string symop;
 									try
 									{
 										symop = pdb2cifSymmetry(vS(54, 59));
@@ -2157,24 +2156,24 @@ void PDBFileParser::ParseRemarks()
 									catch (const std::exception& ex)
 									{
 										if (cif::VERBOSE)
-											cerr << "Dropping REMARK 500 at line " << mRec->mLineNr << " due to invalid symmetry operation" << endl;
+											std::cerr << "Dropping REMARK 500 at line " << mRec->mLineNr << " due to invalid symmetry operation" << std::endl;
 										continue;
 									}
 									
-									string distance = vF(63, 71);
+									std::string distance = vF(63, 71);
 									
 									getCategory("pdbx_validate_symm_contact")->emplace({
-										{ "id",				to_string(++id) },
+										{ "id",				std::to_string(++id) },
 										{ "PDB_model_num",	1 },
 										{ "auth_atom_id_1",	atom1 },
-										{ "auth_asym_id_1", string{ chain1 } },
+										{ "auth_asym_id_1", std::string{ chain1 } },
 										{ "auth_comp_id_1", res1 },
 										{ "auth_seq_id_1",	seq1 },
 	//									{ "PDB_ins_code_1", "" },
 	//									{ "label_alt_id_1", "" },
 										{ "site_symmetry_1", "1_555" },
 										{ "auth_atom_id_2",	atom2 },
-										{ "auth_asym_id_2", string { chain2 } },
+										{ "auth_asym_id_2", std::string { chain2 } },
 										{ "auth_comp_id_2", res2 },
 										{ "auth_seq_id_2",	seq2 },
 	//									{ "PDB_ins_code_2", "" },
@@ -2191,7 +2190,7 @@ void PDBFileParser::ParseRemarks()
 								if (not headerSeen)
 								{
 									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,2(A3,1X,A1,I4,A1,1X,A4,3X),1X,F6.3)")
-										throw runtime_error("Unexpected format in REMARK 500");
+										throw std::runtime_error("Unexpected format in REMARK 500");
 									
 									headerSeen = line == "M RES CSSEQI ATM1   RES CSSEQI ATM2   DEVIATION";
 								}
@@ -2200,27 +2199,27 @@ void PDBFileParser::ParseRemarks()
 								else
 								{
 									int model = vI(11, 13);
-									string resNam1 = vS(15, 17);
-									string chainID1 { vC(19) };
+									std::string resNam1 = vS(15, 17);
+									std::string chainID1 { vC(19) };
 									int seqNum1 = vI(20, 23);
-									string iCode1 { vC(24) };
-									string alt1 = vS(30, 30);
-									string atm1 = vS(26, 29);
+									std::string iCode1 { vC(24) };
+									std::string alt1 = vS(30, 30);
+									std::string atm1 = vS(26, 29);
 	
-									string resNam2 = vS(33, 35);
-									string chainID2 { vC(37) };
+									std::string resNam2 = vS(33, 35);
+									std::string chainID2 { vC(37) };
 									int seqNum2 = vI(38, 41);
-									string iCode2 { vC(42) };
-									string alt2 = vS(48, 48);
-									string atm2 = vS(44, 47);
+									std::string iCode2 { vC(42) };
+									std::string alt2 = vS(48, 48);
+									std::string atm2 = vS(44, 47);
 									
-									string deviation = vF(51, 57);
+									std::string deviation = vF(51, 57);
 									
 									if (iCode1 == " ") iCode1.clear();
 									if (iCode2 == " ") iCode2.clear();
 									
 									getCategory("pdbx_validate_rmsd_bond")->emplace({
-										{ "id",				to_string(++id) },
+										{ "id",				std::to_string(++id) },
 										{ "PDB_model_num",	model ? model : 1 },
 										{ "auth_atom_id_1",	atm1 },
 										{ "auth_asym_id_1", chainID1 },
@@ -2245,7 +2244,7 @@ void PDBFileParser::ParseRemarks()
 								if (not headerSeen)
 								{
 									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,A3,1X,A1,I4,A1,3(1X,A4,2X),12X,F5.1)")
-										throw runtime_error("Unexpected format in REMARK 500");
+										throw std::runtime_error("Unexpected format in REMARK 500");
 									
 									headerSeen = line == "M RES CSSEQI ATM1   ATM2   ATM3";
 								}
@@ -2254,21 +2253,21 @@ void PDBFileParser::ParseRemarks()
 								else if (vS(64) == "DEGREES")
 								{
 									int model = vI(11, 13);
-									string resNam = vS(15, 17);
-									string chainID { vC(19) };
+									std::string resNam = vS(15, 17);
+									std::string chainID { vC(19) };
 									int seqNum = vI(20, 23);
-									string iCode { vC(24) };
+									std::string iCode { vC(24) };
 									
 									if (iCode == " ")
 										iCode.clear();
 									
-									string atoms[3] = { vS(27, 30), vS(34, 37), vS(41, 44) };
-									string deviation = vF(57, 62);
+									std::string atoms[3] = { vS(27, 30), vS(34, 37), vS(41, 44) };
+									std::string deviation = vF(57, 62);
 									if (deviation == "*****")
 										deviation.clear();
 									
 									getCategory("pdbx_validate_rmsd_angle")->emplace({
-										{ "id",				to_string(++id) },
+										{ "id",				std::to_string(++id) },
 										{ "PDB_model_num",	model ? model : 1 },
 										{ "auth_atom_id_1",	atoms[0] },
 										{ "auth_asym_id_1", chainID },
@@ -2295,7 +2294,7 @@ void PDBFileParser::ParseRemarks()
 								if (not headerSeen)
 								{
 									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT:(10X,I3,1X,A3,1X,A1,I4,A1,4X,F7.2,3X,F7.2)")
-										throw runtime_error("Unexpected format in REMARK 500");
+										throw std::runtime_error("Unexpected format in REMARK 500");
 									
 									headerSeen = line == "M RES CSSEQI        PSI       PHI";
 								}
@@ -2304,19 +2303,19 @@ void PDBFileParser::ParseRemarks()
 								else
 								{
 									int model = vI(11, 13);
-									string resNam = vS(15, 17);
-									string chainID { vC(19) };
+									std::string resNam = vS(15, 17);
+									std::string chainID { vC(19) };
 									int seqNum = vI(20, 23);
-									string iCode { vC(24) };
+									std::string iCode { vC(24) };
 									
 									if (iCode == " ")
 										iCode.clear();
 									
-									string psi = vF(27, 35);
-									string phi = vF(37, 45);
+									std::string psi = vF(27, 35);
+									std::string phi = vF(37, 45);
 									
 									getCategory("pdbx_validate_torsion")->emplace({
-										{ "id",				to_string(++id) },
+										{ "id",				std::to_string(++id) },
 										{ "PDB_model_num",	model ? model : 1 },
 										{ "auth_comp_id", 	resNam },
 										{ "auth_asym_id", 	chainID },
@@ -2337,26 +2336,26 @@ void PDBFileParser::ParseRemarks()
 								{
 									int model = vI(45, 48);
 	
-									string resNam1 = vS(12, 14);
-									string chainID1 { vC(16) };
+									std::string resNam1 = vS(12, 14);
+									std::string chainID1 { vC(16) };
 									int seqNum1 = vI(17, 21);
-									string iCode1 { vC(22) };
+									std::string iCode1 { vC(22) };
 									
 									if (iCode1 == " ")
 										iCode1.clear();
 									
-									string resNam2 = vS(27, 29);
-									string chainID2 { vC(31) };
+									std::string resNam2 = vS(27, 29);
+									std::string chainID2 { vC(31) };
 									int seqNum2 = vI(32, 36);
-									string iCode2 { vC(37) };
+									std::string iCode2 { vC(37) };
 									
 									if (iCode2 == " ")
 										iCode2.clear();
 									
-									string omega = vF(54, 60);
+									std::string omega = vF(54, 60);
 									
 									getCategory("pdbx_validate_peptide_omega")->emplace({
-										{ "id",				to_string(++id) },
+										{ "id",				std::to_string(++id) },
 										{ "PDB_model_num",	model ? model : 1 },
 										{ "auth_comp_id_1",	resNam1 },
 										{ "auth_asym_id_1",	chainID1 },
@@ -2379,19 +2378,19 @@ void PDBFileParser::ParseRemarks()
 								else
 								{
 									int model = vI(11, 13);
-									string resNam = vS(15, 17);
-									string chainID { vC(19) };
+									std::string resNam = vS(15, 17);
+									std::string chainID { vC(19) };
 									int seqNum = vI(20, 23);
-									string iCode { vC(24) };
+									std::string iCode { vC(24) };
 									
 									if (iCode == " ")
 										iCode.clear();
 									
-									string rmsd = vF(32, 36);
-									string type = vS(41);
+									std::string rmsd = vF(32, 36);
+									std::string type = vS(41);
 									
 									getCategory("pdbx_validate_planes")->emplace({
-										{ "id",				to_string(++id) },
+										{ "id",				std::to_string(++id) },
 										{ "PDB_model_num",	model ? model : 1 },
 										{ "auth_comp_id",	resNam },
 										{ "auth_asym_id",	chainID },
@@ -2421,7 +2420,7 @@ void PDBFileParser::ParseRemarks()
 					{
 						if (not headerSeen)
 						{
-							string line = vS(12);
+							std::string line = vS(12);
 							headerSeen = ba::contains(line, "RES C SSEQI");
 							continue;
 						}
@@ -2429,7 +2428,7 @@ void PDBFileParser::ParseRemarks()
 						int modelNr = vI(12, 14);
 						if (modelNr == 0)
 							modelNr = 1;
-						string res = vS(16, 18);
+						std::string res = vS(16, 18);
 						char chain = vC(20);
 						int seq = vI(22, 25);
 						char iCode = vC(26);
@@ -2438,7 +2437,7 @@ void PDBFileParser::ParseRemarks()
 						if (compound == nullptr)
 							continue;
 						
-						vector<string> atoms;
+						std::vector<std::string> atoms;
 						for (auto atom: compound->atoms())
 						{
 							if (atom.typeSymbol != mmcif::H)
@@ -2453,13 +2452,13 @@ void PDBFileParser::ParseRemarks()
 				
 				case 800:
 				{
-					const regex rx1(R"(SITE_IDENTIFIER: (.+))"),
+					const std::regex rx1(R"(SITE_IDENTIFIER: (.+))"),
 						rx2(R"(EVIDENCE_CODE: (.+))"),
-						rx3(R"(SITE_DESCRIPTION: (binding site for residue ([[:alnum:]]{1,3}) ([[:alnum:]]) (\d+)|.+))", regex_constants::icase);
+						rx3(R"(SITE_DESCRIPTION: (binding site for residue ([[:alnum:]]{1,3}) ([[:alnum:]]) (\d+)|.+))", std::regex_constants::icase);
 					
-					string id, evidence, desc;
-					string pdbxAuthAsymID, pdbxAuthCompID, pdbxAuthSeqID, pdbxAuthInsCode;
-					smatch m;
+					std::string id, evidence, desc;
+					std::string pdbxAuthAsymID, pdbxAuthCompID, pdbxAuthSeqID, pdbxAuthInsCode;
+					std::smatch m;
 					
 					enum State { sStart, sID, sEvidence, sDesc, sDesc2 } state = sStart;
 					
@@ -2472,7 +2471,7 @@ void PDBFileParser::ParseRemarks()
 						});
 						
 						if (site == nullptr)
-							throw runtime_error("Invalid REMARK 800, no SITE record for id " + id);
+							throw std::runtime_error("Invalid REMARK 800, no SITE record for id " + id);
 						
 						// next record, store what we have	
 						getCategory("struct_site")->emplace({
@@ -2488,7 +2487,7 @@ void PDBFileParser::ParseRemarks()
 	
 					for ( ; mRec->is("REMARK 800"); GetNextRecord())
 					{
-						string s = mRec->vS(12);
+						std::string s = mRec->vS(12);
 						if (s.empty())
 							continue;
 	
@@ -2498,17 +2497,17 @@ void PDBFileParser::ParseRemarks()
 	 							if (s == "SITE")
 	 								state = sID;
 								else if (cif::VERBOSE)
-									throw runtime_error("Invalid REMARK 800 record, expected SITE");
+									throw std::runtime_error("Invalid REMARK 800 record, expected SITE");
 	 							break;
 							
 							case sID:
-								if (regex_match(s, m, rx1))
+								if (std::regex_match(s, m, rx1))
 								{
 									id = m[1].str();
 									state = sEvidence;
 								}
 								else if (cif::VERBOSE)
-									throw runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
+									throw std::runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
 								break;
 							
 							case sEvidence:
@@ -2518,7 +2517,7 @@ void PDBFileParser::ParseRemarks()
 									state = sDesc;
 								}
 								else if (cif::VERBOSE)
-									throw runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
+									throw std::runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
 								break;
 							
 							case sDesc:
@@ -2557,14 +2556,14 @@ void PDBFileParser::ParseRemarks()
 				
 				case 999:
 				{
-					stringstream s;
+					std::stringstream s;
 					GetNextRecord();
 					if (vS(12) == "SEQUENCE")
 						GetNextRecord();
 					
 					while (mRec->is("REMARK 999"))
 					{
-						s << vS(12) << endl;
+						s << vS(12) << std::endl;
 						GetNextRecord();
 					}
 					
@@ -2583,17 +2582,17 @@ void PDBFileParser::ParseRemarks()
 	
 				default:
 				{
-					string skipped = mRec->mName;
+					std::string skipped = mRec->mName;
 					
-					stringstream s;
+					std::stringstream s;
 					
 					if (not mRec->vS(11).empty())
-						s << mRec->vS(11) << endl;
+						s << mRec->vS(11) << std::endl;
 					GetNextRecord();
 						
 					while (mRec->is(skipped.c_str()))
 					{
-						s << mRec->vS(11) << endl;
+						s << mRec->vS(11) << std::endl;
 						GetNextRecord();
 					}
 					
@@ -2606,9 +2605,9 @@ void PDBFileParser::ParseRemarks()
 				}
 			}
 		}
-		catch (const exception& ex)
+		catch (const std::exception& ex)
 		{
-			cerr << "Error parsing REMARK " << remarkNr << endl;
+			std::cerr << "Error parsing REMARK " << remarkNr << std::endl;
 			throw;
 		}
 	}
@@ -2630,10 +2629,10 @@ void PDBFileParser::ParseRemarks()
 
 void PDBFileParser::ParseRemark200()
 {
-	auto rm200 = [&](const char* name, int diffrnNr) -> string
+	auto rm200 = [&](const char* name, int diffrnNr) -> std::string
 	{
 		int nr = 0;
-		string result;
+		std::string result;
 		
 		for (auto i = make_split_iterator(mRemark200[name],
 			ba::token_finder(ba::is_any_of(";"), ba::token_compress_off)); not i.eof(); ++i)
@@ -2653,7 +2652,7 @@ void PDBFileParser::ParseRemark200()
 		return result;
 	};
 
-	auto inRM200 = [this](initializer_list<const char*> s) -> bool
+	auto inRM200 = [this](std::initializer_list<const char*> s) -> bool
 	{
 		bool result = false;
 		
@@ -2703,17 +2702,17 @@ void PDBFileParser::ParseRemark200()
 		});
 	}
 
-	string scatteringType;
+	std::string scatteringType;
 	if (mRemark200["EXPERIMENT TYPE"] == "X-RAY DIFFRACTION")
 		scatteringType = "x-ray";
 	else if (mRemark200["EXPERIMENT TYPE"] == "NEUTRON DIFFRACTION")
 		scatteringType = "neutron";
 	
-	set<string> diffrnWaveLengths;
+	std::set<std::string> diffrnWaveLengths;
 	
 	for (int diffrnNr = 1; ; ++diffrnNr)
 	{
-		string ambientTemp = rm200("TEMPERATURE (KELVIN)", diffrnNr);
+		std::string ambientTemp = rm200("TEMPERATURE (KELVIN)", diffrnNr);
 		if (ambientTemp.empty())
 			break;
 		
@@ -2727,13 +2726,13 @@ void PDBFileParser::ParseRemark200()
 			{ "crystal_id", 1 }
 		});
 		
-		string collectionDate;
+		std::string collectionDate;
 		std::error_code ec;
 		collectionDate = pdb2cifDate(rm200("DATE OF DATA COLLECTION", diffrnNr), ec);
 		if (ec)
 		{
 			if (cif::VERBOSE)
-				cerr << ec.message() << " for pdbx_collection_date" << endl;
+				std::cerr << ec.message() << " for pdbx_collection_date" << std::endl;
 			
 			// The date field can become truncated when multiple values are available		
 			if (diffrnNr != 1)
@@ -2758,13 +2757,13 @@ void PDBFileParser::ParseRemark200()
 				{ "pdbx_scattering_type", scatteringType }
 			});
 
-		vector<string> wavelengths;
-		string wl = rm200("WAVELENGTH OR RANGE (A)", diffrnNr);
+		std::vector<std::string> wavelengths;
+		std::string wl = rm200("WAVELENGTH OR RANGE (A)", diffrnNr);
 		ba::split(wavelengths, wl, ba::is_any_of(", -"), ba::token_compress_on);
 		
 		diffrnWaveLengths.insert(wavelengths.begin(), wavelengths.end());
 
-		string source;
+		std::string source;
 		if (rm200("SYNCHROTRON (Y/N)", diffrnNr) == "Y")
 		{
 			getCategory("diffrn_source")->emplace({
@@ -2809,7 +2808,7 @@ void PDBFileParser::ParseRemark200()
 		auto cat = getCategory("refine");
 		assert(cat->empty());
 		
-		string resolution = mRemark200["RESOLUTION RANGE HIGH (A)"];
+		std::string resolution = mRemark200["RESOLUTION RANGE HIGH (A)"];
 		if (resolution.empty())
 			resolution = ".";
 		
@@ -2862,7 +2861,7 @@ void PDBFileParser::ParseRemark200()
 		"R MERGE FOR SHELL (I)", "R SYM FOR SHELL (I)", "<I/SIGMA(I)> FOR SHELL", "DATA REDUNDANCY IN SHELL" }))
 	{
 		if (cif::VERBOSE)
-			cerr << "Not writing reflns_shell record since d_res_high is missing" << endl;
+			std::cerr << "Not writing reflns_shell record since d_res_high is missing" << std::endl;
 	}
 }
 
@@ -2872,7 +2871,7 @@ void PDBFileParser::ParseRemark350()
 	
 	enum State { eStart, eInfo, eAnd, eApply, eBioMT } state = eStart;
 	
-	const regex
+	const std::regex
 		kRX1(R"(BIOMOLECULE: (\d+))"),
 		kRX2(R"(([^:]+): (.+?)(?: (ANGSTROM\*\*2|KCAL/MOL))?)"),
 		kRX8(R"(APPLY THE FOLLOWING TO CHAINS: (.+))"),
@@ -2880,17 +2879,17 @@ void PDBFileParser::ParseRemark350()
 		kRX10(R"(BIOMT([123])\s+(\d+)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?))");
 	
 	int biomolecule = 0, operID = 0;
-	vector<string> operExpression;
-	map<string,string> values;
-	vector<string> asymIdList;
-	smatch m;
+	std::vector<std::string> operExpression;
+	std::map<std::string,std::string> values;
+	std::vector<std::string> asymIdList;
+	std::smatch m;
 	Row genR;
 	
-	vector<double> mat, vec;
+	std::vector<double> mat, vec;
 	
 	for (mRec = FindRecord("REMARK 350"); mRec != nullptr and mRec->is("REMARK 350"); GetNextRecord())
 	{
-		string line = vS(11);
+		std::string line = vS(11);
 		
 		switch (state)
 		{
@@ -2907,12 +2906,12 @@ void PDBFileParser::ParseRemark350()
 				{
 					state = eApply;
 
-					string value = m[1].str();
+					std::string value = m[1].str();
 
 					for (auto i = make_split_iterator(value,
 						ba::token_finder(ba::is_any_of(", "), ba::token_compress_on)); not i.eof(); ++i)
 					{
-						string chain = boost::copy_range<string>(*i);
+						std::string chain = boost::copy_range<std::string>(*i);
 						
 						if (chain.empty())	// happens when we have a AND CHAIN line
 						{
@@ -2921,7 +2920,7 @@ void PDBFileParser::ParseRemark350()
 						}
 						
 						if (chain.length() != 1)
-							throw runtime_error("Invalid REMARK 350");
+							throw std::runtime_error("Invalid REMARK 350");
 						
 						MapChainID2AsymIDS(chain[0], asymIdList);
 					}
@@ -2935,11 +2934,11 @@ void PDBFileParser::ParseRemark350()
 				{
 					state = eApply;
 					
-					string value = m[1].str();
+					std::string value = m[1].str();
 					for (auto i = make_split_iterator(value,
 						ba::token_finder(ba::is_any_of(", "), ba::token_compress_on)); not i.eof(); ++i)
 					{
-						string chain = boost::copy_range<string>(*i);
+						std::string chain = boost::copy_range<std::string>(*i);
 						
 						if (chain.empty())	// happens when we have another AND CHAIN line
 						{
@@ -2959,10 +2958,10 @@ void PDBFileParser::ParseRemark350()
 				{
 					int mt = stoi(m[1].str());
 					if (mt != 1)
-						throw runtime_error("Invalid REMARK 350");
+						throw std::runtime_error("Invalid REMARK 350");
 
 					operID = stoi(m[2].str());
-					operExpression.push_back(to_string(operID));
+					operExpression.push_back(std::to_string(operID));
 
 					mat.push_back(stod(m[3].str())); 
 					mat.push_back(stod(m[4].str())); 
@@ -2980,10 +2979,10 @@ void PDBFileParser::ParseRemark350()
 					if (mt == 1)
 					{
 						operID = stoi(m[2].str());
-						operExpression.push_back(to_string(operID));
+						operExpression.push_back(std::to_string(operID));
 					}
 					else if (operID != stoi(m[2].str()))
-						throw runtime_error("Invalid REMARK 350");
+						throw std::runtime_error("Invalid REMARK 350");
 					
 					mat.push_back(stod(m[3].str())); 
 					mat.push_back(stod(m[4].str())); 
@@ -2993,25 +2992,25 @@ void PDBFileParser::ParseRemark350()
 					if (mt == 3)
 					{
 						if (vec.size() != 3 or mat.size() != 9)
-							throw runtime_error("Invalid REMARK 350");
+							throw std::runtime_error("Invalid REMARK 350");
 						
 						if (operID == 1)
 						{
-							string oligomer = values["AUTHOR DETERMINED BIOLOGICAL UNIT"];
+							std::string oligomer = values["AUTHOR DETERMINED BIOLOGICAL UNIT"];
 							if (oligomer.empty())
 								oligomer = values["SOFTWARE DETERMINED QUATERNARY STRUCTURE"];
 							ba::to_lower(oligomer);
 							
 							int count = 0;
-							smatch m;
+							std::smatch m;
 							
-							if (regex_match(oligomer, m, regex(R"((\d+)-meric)")))
+							if (std::regex_match(oligomer, m, std::regex(R"((\d+)-meric)")))
 							{
 								count = stoi(m[1].str());
 							}
 							else if (ba::ends_with(oligomer, "meric"))
 							{
-								string cs = oligomer.substr(0, oligomer.length() - 5);
+								std::string cs = oligomer.substr(0, oligomer.length() - 5);
 								if (cs == "mono")			count = 1;
 								else if (cs == "di")		count = 2;
 								else if (cs == "tri")		count = 3;
@@ -3021,7 +3020,7 @@ void PDBFileParser::ParseRemark350()
 								else if (cs == "dodeca")	count = 12;
 							}
 							
-							string details;
+							std::string details;
 							if (values["AUTHOR DETERMINED BIOLOGICAL UNIT"].empty())
 							{
 								if (not values["SOFTWARE DETERMINED QUATERNARY STRUCTURE"].empty())
@@ -3037,7 +3036,7 @@ void PDBFileParser::ParseRemark350()
 								{ "details", details },
 								{ "method_details", values["SOFTWARE USED"] },
 								{ "oligomeric_details", oligomer },
-								{ "oligomeric_count", count > 0 ? to_string(count) : "" }
+								{ "oligomeric_count", count > 0 ? std::to_string(count) : "" }
 							});
 							
 							auto cat = getCategory("pdbx_struct_assembly_prop");
@@ -3071,22 +3070,22 @@ void PDBFileParser::ParseRemark350()
 						getCategory("pdbx_struct_oper_list")->emplace({
 							{ "id", operID },
 							{ "type",
-								mat == vector<double>{ 1, 0, 0, 0, 1, 0, 0, 0, 1 } and vec == vector<double>{ 0, 0, 0 }
+								mat == std::vector<double>{ 1, 0, 0, 0, 1, 0, 0, 0, 1 } and vec == std::vector<double>{ 0, 0, 0 }
 									? "identity operation" : "crystal symmetry operation" },
 //										{ "name", "" }, 
 //										{ "symmetryOperation", "" },
 							{ "matrix[1][1]", (fmt % mat[0]).str() },
 							{ "matrix[1][2]", (fmt % mat[1]).str() },
 							{ "matrix[1][3]", (fmt % mat[2]).str() }, 
-							{ "vector[1]", (fmt % vec[0]).str() },
+							{ "std::vector[1]", (fmt % vec[0]).str() },
 							{ "matrix[2][1]", (fmt % mat[3]).str() },
 							{ "matrix[2][2]", (fmt % mat[4]).str() },
 							{ "matrix[2][3]", (fmt % mat[5]).str() },
-							{ "vector[2]", (fmt % vec[1]).str() },
+							{ "std::vector[2]", (fmt % vec[1]).str() },
 							{ "matrix[3][1]", (fmt % mat[6]).str() },
 							{ "matrix[3][2]", (fmt % mat[7]).str() },
 							{ "matrix[3][3]", (fmt % mat[8]).str() },
-							{ "vector[3]", (fmt % vec[2]).str() }
+							{ "std::vector[3]", (fmt % vec[2]).str() }
 						});
 
 						mat.clear();
@@ -3096,7 +3095,7 @@ void PDBFileParser::ParseRemark350()
 				else if (regex_match(line, m, kRX1))
 				{
 					if (not (vec.empty() and mat.empty()))
-						throw runtime_error("Invalid REMARK 350");
+						throw std::runtime_error("Invalid REMARK 350");
 
 					getCategory("pdbx_struct_assembly_gen")->emplace({
 						{ "assembly_id", biomolecule },
@@ -3178,7 +3177,7 @@ void PDBFileParser::ParsePrimaryStructure()
 		else if (mRec->is("DBREF2"))					//	 1 -  6       Record name   "DBREF2"                                        
 		{                                               //	 8 - 11       IDcode        idCode        ID code of this datablock.            
 			if (vC(13) != cur.chainID)			        //	13            Character     chainID       Chain identifier.                 
-				throw runtime_error("Chain ID's for DBREF1/DBREF2 records do not match");
+				throw std::runtime_error("Chain ID's for DBREF1/DBREF2 records do not match");
 			cur.dbAccession				= vS(19, 40);  //	19 - 40       LString       dbAccession   Sequence database accession code, 
                                                         //	                                          left justified.                   
 			cur.dbSeqBegin				= vI(46, 55);  //	46 - 55       Integer       seqBegin      Initial sequence number of the    
@@ -3225,14 +3224,14 @@ void PDBFileParser::ParsePrimaryStructure()
 										//	                                           is  used if there is only one chain.
 		int numRes = vI(14, 17);		//	14 - 17        Integer        numRes       Number of residues in the chain.
 										//	                                           This  value is repeated on every record.
-		string monomers = vS(20, 70);	//	20 - 22        Residue name   resName      Residue name.
+		std::string monomers = vS(20, 70);	//	20 - 22        Residue name   resName      Residue name.
 										//	 ...
 
 		auto& chain = GetChainForID(chainID, numRes);
 		
 		for (auto si = ba::make_split_iterator(monomers, ba::token_finder(ba::is_any_of(" "), ba::token_compress_on)); not si.eof(); ++si)
 		{
-			string monID(si->begin(), si->end());
+			std::string monID(si->begin(), si->end());
 			if (monID.empty())
 				continue;
 			
@@ -3247,12 +3246,12 @@ void PDBFileParser::ParsePrimaryStructure()
 	// First pass over MODRES, only store relevant information required in ConstructEntities
 	while (mRec->is("MODRES"))				//	 1 -  6        Record name   "MODRES"                                            												
 	{							 			//	 8 - 11        IDcode        idCode      ID code of this datablock.                  
-		string resName		= vS(13, 15);	//	13 - 15        Residue name  resName     Residue name used in this datablock.        
+		std::string resName		= vS(13, 15);	//	13 - 15        Residue name  resName     Residue name used in this datablock.        
 //		char chainID		= vC(17);		//	17             Character     chainID     Chain identifier.                       
 //		int seqNum			= vI(19, 22);	//	19 - 22        Integer       seqNum      Sequence number.                        
 //		char iCode			= vC(23);		//	23             AChar         iCode       Insertion code.                         
-		string stdRes		= vS(25, 27);	//	25 - 27        Residue name  stdRes      Standard residue name.                  
-//		string comment		= vS(30, 70);	//	30 - 70        String        comment     Description of the residue modification.
+		std::string stdRes		= vS(25, 27);	//	25 - 27        Residue name  stdRes      Standard residue name.                  
+//		std::string comment		= vS(30, 70);	//	30 - 70        std::String        comment     Description of the residue modification.
 
 		mMod2parent[resName] = stdRes;
 
@@ -3264,13 +3263,13 @@ void PDBFileParser::ParseHeterogen()
 {
 	while (mRec->is("HET   "))
 	{									//	 1 -  6       Record name   "HET   "                                                         
-		string hetID = vS(8, 10);      //	 8 - 10       LString(3)    hetID          Het identifier, right-justified.                  
+		std::string hetID = vS(8, 10);      //	 8 - 10       LString(3)    hetID          Het identifier, right-justified.                  
 		char chainID = vC(13);			//	13            Character     ChainID        Chain  identifier.                                
 		int seqNum = vI(14, 17);		//	14 - 17       Integer       seqNum         Sequence  number.                                 
 		char iCode = vC(18);			//	18            AChar         iCode          Insertion  code.                                  
 		int numHetAtoms = vI(21, 25);	//	21 - 25       Integer       numHetAtoms    Number of HETATM records for the group            
 										//	                                           present in the datablock.                             
-		string text = vS(31, 70);		//	31 - 70       String        text           Text describing Het group.                        
+		std::string text = vS(31, 70);		//	31 - 70       std::String        text           Text describing Het group.                        
 
 		mHets.push_back({ hetID, chainID, seqNum, iCode, numHetAtoms, text });
 		
@@ -3281,8 +3280,8 @@ void PDBFileParser::ParseHeterogen()
 	{
 		if (mRec->is("HETNAM"))		//	 1 -  6       Record name   "HETNAM"                                                 
 		{								//	 9 - 10       Continuation  continuation    Allows concatenation of multiple records.
-			string hetID = vS(12, 14);	//	12 - 14       LString(3)    hetID           Het identifier, right-justified.         
-	        string text = vS(16);		//	16 - 70       String        text            Chemical name.                           
+			std::string hetID = vS(12, 14);	//	12 - 14       LString(3)    hetID           Het identifier, right-justified.         
+	        std::string text = vS(16);		//	16 - 70       std::String        text            Chemical name.                           
 	
 			mHetnams[hetID] = text;
 			InsertChemComp(hetID);
@@ -3293,8 +3292,8 @@ void PDBFileParser::ParseHeterogen()
 	
 		if (mRec->is("HETSYN"))		 //	 1 -  6       Record name   "HETSYN"                                                           
 		{                                //	 9 - 10       Continuation  continuation   Allows concatenation of multiple records.           
-	         string hetID = vS(12, 14); //	12 - 14       LString(3)    hetID          Het identifier, right-justified.                    
-	         string syn = vS(16);		 //	16 - 70       SList         hetSynonyms    List of synonyms.                                   
+	         std::string hetID = vS(12, 14); //	12 - 14       LString(3)    hetID          Het identifier, right-justified.                    
+	         std::string syn = vS(16);		 //	16 - 70       SList         hetSynonyms    List of synonyms.                                   
 	
 			mHetsyns[hetID] = syn;
 	
@@ -3307,10 +3306,10 @@ void PDBFileParser::ParseHeterogen()
 	
 	while (mRec->is("FORMUL"))			//	 1 -  6        Record name   "FORMUL"                          
 	{                                   //	 9 - 10        Integer       compNum       Component  number.  
-        string hetID = vS(13, 15);     //	13 - 15        LString(3)    hetID         Het identifier.     
+        std::string hetID = vS(13, 15);     //	13 - 15        LString(3)    hetID         Het identifier.     
                                         //	17 - 18        Integer       continuation  Continuation number.
 		char waterMark = vC(19);		//	19             Character     asterisk      "*" for water.      
-		string formula = vS(20);		//	20 - 70        String        text          Chemical formula.   
+		std::string formula = vS(20);		//	20 - 70        std::String        text          Chemical formula.   
 		
 		mFormuls[hetID] = formula;
 		
@@ -3329,7 +3328,7 @@ void PDBFileParser::ConstructEntities()
 	// First iterate all ATOM records and store the residues as found in these records
 	int modelNr = 1;
 	
-	typedef map<tuple<char,int,char,char>,string> CompTypeMap;
+	typedef std::map<std::tuple<char,int,char,char>,std::string> CompTypeMap;
 	CompTypeMap residuesSeen;	// used to validate PDB files...
 	
 	for (auto r = mData; r != nullptr; r = r->mNext)
@@ -3344,19 +3343,19 @@ void PDBFileParser::ConstructEntities()
 
 		if (r->is("ATOM  ") or r->is("HETATM"))		//	 1 -  6        Record name   "ATOM  "
 		{											//	 ...
-			string name			= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
+			std::string name			= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
 			char altLoc			= r->vC(17);		//	17             Character     altLoc       Alternate location indicator.
-			string resName		= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
+			std::string resName		= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
 			char chainID		= r->vC(22);		//	22             Character     chainID      Chain identifier.
 			int resSeq			= r->vI(23, 26);	//	23 - 26        Integer       resSeq       Residue sequence number.
 			char iCode			= r->vC(27);		//	27             AChar         iCode        Code for insertion of residues.
 
 			// first validate, too sad this is required...
-			CompTypeMap::key_type k = make_tuple(chainID, resSeq, iCode, altLoc);
+			CompTypeMap::key_type k = std::make_tuple(chainID, resSeq, iCode, altLoc);
 			if (residuesSeen.count(k) == 0)
 				residuesSeen[k] = resName;
 			else if (residuesSeen[k] != resName)
-				throw runtime_error("inconsistent residue type for " + string{chainID} + to_string(resSeq) + iCode + altLoc + "\n" +
+				throw std::runtime_error("inconsistent residue type for " + std::string{chainID} + std::to_string(resSeq) + iCode + altLoc + "\n" +
 					"  (" + residuesSeen[k] + " != " + resName + ")");
 
 			auto& chain = GetChainForID(chainID);
@@ -3429,8 +3428,8 @@ void PDBFileParser::ConstructEntities()
 
 				if (cif::VERBOSE)
 				{
-					cerr << "Detected residues that cannot be aligned to SEQRES" << endl
-						 << "First residue is " << chain.mDbref.chainID << ':' << r.mSeqNum << r.mIcode << endl;
+					std::cerr << "Detected residues that cannot be aligned to SEQRES" << std::endl
+						 << "First residue is " << chain.mDbref.chainID << ':' << r.mSeqNum << r.mIcode << std::endl;
 				}
 				
 				chain.mTerIndex = lastResidueIndex + 1;
@@ -3445,7 +3444,7 @@ void PDBFileParser::ConstructEntities()
 			
 			for (int ix = chain.mTerIndex; ix < static_cast<int>(chain.mResiduesSeen.size()); ++ix)
 			{
-				string resName = chain.mResiduesSeen[ix].mMonID;
+				std::string resName = chain.mResiduesSeen[ix].mMonID;
 				
 				if (mmcif::kAAMap.count(resName) or
 					mmcif::kBaseMap.count(resName) or
@@ -3467,8 +3466,8 @@ void PDBFileParser::ConstructEntities()
 		}
 	}
 
-	set<char> terminatedChains;
-	map<char,int> residuePerChainCounter;
+	std::set<char> terminatedChains;
+	std::map<char,int> residuePerChainCounter;
 
 	for (auto r = mData; r != nullptr; r = r->mNext)
 	{
@@ -3485,7 +3484,7 @@ void PDBFileParser::ConstructEntities()
 			int serial = r->vI(7, 11);				//	 7 - 11        Integer       serial       Atom  serial number.
 													//	 ...
 			char altLoc = vC(17);					//	17             Character     altLoc       Alternate location indicator.
-			string resName		= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
+			std::string resName		= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
 			char chainID		= r->vC(22);		//	22             Character     chainID      Chain identifier.
 			int resSeq			= r->vI(23, 26);	//	23 - 26        Integer       resSeq       Residue sequence number.
 			char iCode			= r->vC(27);		//	27             AChar         iCode        Code for insertion of residues.
@@ -3591,7 +3590,7 @@ void PDBFileParser::ConstructEntities()
 		chain.mMolID = comp.mMolID;
 	}
 
-	set<string> structTitle, structDescription;
+	std::set<std::string> structTitle, structDescription;
 	
 	// Create poly_scheme and write pdbx_poly_seq_scheme and create mapping table
 
@@ -3599,8 +3598,8 @@ void PDBFileParser::ConstructEntities()
 	int asymNr = 0;
 	for (auto& chain: mChains)
 	{
-		string asymID = cifIdForInt(asymNr++);
-		string entityID = mMolID2EntityID[chain.mMolID];
+		std::string asymID = cifIdForInt(asymNr++);
+		std::string entityID = mMolID2EntityID[chain.mMolID];
 		
 		mAsymID2EntityID[asymID] = entityID;
 		
@@ -3615,21 +3614,21 @@ void PDBFileParser::ConstructEntities()
 		int seqNr = 1;
 		for (auto& res: chain.mSeqres)
 		{
-			mChainSeq2AsymSeq[make_tuple(chain.mDbref.chainID, res.mSeqNum, res.mIcode)] = make_tuple(asymID, seqNr, true);
+			mChainSeq2AsymSeq[std::make_tuple(chain.mDbref.chainID, res.mSeqNum, res.mIcode)] = std::make_tuple(asymID, seqNr, true);
 			
-			string seqID = to_string(seqNr);
+			std::string seqID = std::to_string(seqNr);
 			++seqNr;
 			
-			set<string> monIds = { res.mMonID };
+			std::set<std::string> monIds = { res.mMonID };
 			monIds.insert(res.mAlts.begin(), res.mAlts.end());
 			
-			for (string monID: monIds)
+			for (std::string monID: monIds)
 			{
-				string authMonID, authSeqNum;
+				std::string authMonID, authSeqNum;
 				if (res.mSeen)
 				{
 					authMonID = monID;
-					authSeqNum = to_string(res.mSeqNum);
+					authSeqNum = std::to_string(res.mSeqNum);
 				}
 
 				cat->emplace({
@@ -3642,8 +3641,8 @@ void PDBFileParser::ConstructEntities()
 					{ "auth_seq_num", authSeqNum },
 					{ "pdb_mon_id", authMonID },
 					{ "auth_mon_id", authMonID },
-					{ "pdb_strand_id", string{chain.mDbref.chainID} },
-					{ "pdb_ins_code", (res.mIcode == ' ' or res.mIcode == 0) ? "." : string{res.mIcode} },
+					{ "pdb_strand_id", std::string{chain.mDbref.chainID} },
+					{ "pdb_ins_code", (res.mIcode == ' ' or res.mIcode == 0) ? "." : std::string{res.mIcode} },
 					{ "hetero", res.mAlts.empty() ? "n" : "y" }
 				});
 			}
@@ -3657,7 +3656,7 @@ void PDBFileParser::ConstructEntities()
 	{
 		++structRefID;
 
-		string srcMethod;
+		std::string srcMethod;
 		
 		if (not cmp.mSource["SYNTHETIC"].empty())
 		{
@@ -3742,7 +3741,7 @@ void PDBFileParser::ConstructEntities()
 			});
 		}
 
-		string desc = cmp.mInfo["MOLECULE"];
+		std::string desc = cmp.mInfo["MOLECULE"];
 		if (not cmp.mInfo["EC"].empty())
 			desc += " (E.C." + cmp.mInfo["EC"] + ")";
 
@@ -3770,8 +3769,8 @@ void PDBFileParser::ConstructEntities()
 		bool nstdMonomer = false, nonstandardLinkage = false;
 		bool mightBePolyPeptide = true, mightBeDNA = true;
 		
-		vector<string> chains;
-		string seq, seqCan;
+		std::vector<std::string> chains;
+		std::string seq, seqCan;
 		
 		// write out the chains for this compound
 		for (auto& chain: mChains)
@@ -3786,7 +3785,7 @@ void PDBFileParser::ConstructEntities()
 			
 			if (not dbref.database.empty())
 			{
-				auto insToStr = [](char i) -> string { return i == ' ' or not isprint(i) ? "" : string{ i }; };
+				auto insToStr = [](char i) -> std::string { return i == ' ' or not isprint(i) ? "" : std::string{ i }; };
 				
 				auto& pdbxPolySeqScheme = *getCategory("pdbx_poly_seq_scheme");
 				
@@ -3812,7 +3811,7 @@ void PDBFileParser::ConstructEntities()
 					{ "align_id", structRefSeqAlignID },
 					{ "ref_id", structRefID },
 					{ "pdbx_PDB_id_code", dbref.PDBIDCode },
-					{ "pdbx_strand_id", string{ chain.mDbref.chainID } },
+					{ "pdbx_strand_id", std::string{ chain.mDbref.chainID } },
 					{ "seq_align_beg", seqAlignBeg },
 					{ "pdbx_seq_align_beg_ins_code", insToStr(dbref.insertBegin) },
 					{ "seq_align_end", seqAlignEnd },
@@ -3832,19 +3831,19 @@ void PDBFileParser::ConstructEntities()
 					if (seqadv.chainID != chain.mDbref.chainID or seqadv.resName.empty())
 						continue;
 					
-					string asym, seqNum;
+					std::string asym, seqNum;
 					int labelSeq = -1;
 					std::error_code ec;
 
-					tie(asym, labelSeq, ignore) = MapResidue(seqadv.chainID, seqadv.seqNum, seqadv.iCode, ec);
+					tie(asym, labelSeq, std::ignore) = MapResidue(seqadv.chainID, seqadv.seqNum, seqadv.iCode, ec);
 					if (ec)
 					{
 						if (cif::VERBOSE)
-							cerr << "dropping unmatched SEQADV record" << endl;
+							std::cerr << "dropping unmatched SEQADV record" << std::endl;
 						continue;
 					}
 					
-					seqNum = to_string(labelSeq);
+					seqNum = std::to_string(labelSeq);
 					
 					getCategory("struct_ref_seq_dif")->emplace({
 						{ "align_id", structRefSeqAlignID },
@@ -3852,7 +3851,7 @@ void PDBFileParser::ConstructEntities()
 						{ "mon_id", seqadv.resName },
 						{ "pdbx_pdb_strand_id", seqadv.chainID },
 						{ "seq_num", seqNum },
-						{ "pdbx_pdb_ins_code", seqadv.iCode == ' ' ? string{} : string{seqadv.iCode} },
+						{ "pdbx_pdb_ins_code", seqadv.iCode == ' ' ? std::string{} : std::string{seqadv.iCode} },
 						{ "pdbx_seq_db_name", seqadv.database },
 						{ "pdbx_seq_db_accession_code", seqadv.dbAccession },
 						{ "db_mon_id", seqadv.dbRes },
@@ -3866,17 +3865,17 @@ void PDBFileParser::ConstructEntities()
 			
 			if (not chains.empty())	// not the first one for this molID
 			{
-				chains.push_back( string{ chain.mDbref.chainID } );
+				chains.push_back( std::string{ chain.mDbref.chainID } );
 				continue;
 			}
 			
-			chains.push_back(string{chain.mDbref.chainID});
+			chains.push_back(std::string{chain.mDbref.chainID});
 
 			size_t seqLen = 0, seqCanLen = 0;
 			
 			for (auto& res: chain.mSeqres)
 			{
-				string letter, stdRes;
+				std::string letter, stdRes;
 
 				if (mMod2parent.count(res.mMonID))
 					stdRes = mMod2parent.at(res.mMonID);
@@ -3958,7 +3957,7 @@ void PDBFileParser::ConstructEntities()
 			}
 		}
 		
-		string type;
+		std::string type;
 		if (mightBePolyPeptide and not mightBeDNA)
 			type = "polypeptide(L)";
 		else if (mightBeDNA and not mightBePolyPeptide)
@@ -3985,8 +3984,8 @@ void PDBFileParser::ConstructEntities()
 		});
 	}
 	
-	map<char,string> waterChains;
-	map<tuple<string,string>,int> ndbSeqNum;	// for nonpoly scheme
+	std::map<char,std::string> waterChains;
+	std::map<std::tuple<std::string,std::string>,int> ndbSeqNum;	// for nonpoly scheme
 	
 	for (size_t i = 0; i < mHets.size(); ++i)
 	{
@@ -4009,15 +4008,15 @@ void PDBFileParser::ConstructEntities()
 		heti.asymID = cifIdForInt(asymNr++);
 	}
 
-	set<string> writtenAsyms;
+	std::set<std::string> writtenAsyms;
 
-	map<string,int> hetCount;		// for pdbx_number_of_molecules
+	std::map<std::string,int> hetCount;		// for pdbx_number_of_molecules
 	for (auto& het: mHets)
 		hetCount[het.hetID] += 1;
 	
 	for (auto& het: mHets)
 	{
-		string hetID = het.hetID;
+		std::string hetID = het.hetID;
 		
 		auto& chain = GetChainForID(het.chainID);
 		
@@ -4031,7 +4030,7 @@ void PDBFileParser::ConstructEntities()
 		// See if we've already added it to the entities
 		if (mHet2EntityID.count(hetID) == 0)
 		{
-			string entityID = to_string(mNextEntityNr++);
+			std::string entityID = std::to_string(mNextEntityNr++);
 			mHet2EntityID[hetID] = entityID;
 			
 			if (hetID == mWaterHetID)
@@ -4064,7 +4063,7 @@ void PDBFileParser::ConstructEntities()
 			}
 
 			// write a pdbx_entity_nonpoly record
-			string name = mHetnams[hetID];
+			std::string name = mHetnams[hetID];
 			if (name.empty() and hetID == mWaterHetID)
 				name = "water";
 			getCategory("pdbx_entity_nonpoly")->emplace({
@@ -4076,9 +4075,9 @@ void PDBFileParser::ConstructEntities()
 		
 		// create an asym for this het/chain combo, if needed
 
-		string asymID = het.asymID;
+		std::string asymID = het.asymID;
 
-		auto k = make_tuple(het.chainID, het.seqNum, het.iCode);
+		auto k = std::make_tuple(het.chainID, het.seqNum, het.iCode);
 		if (mChainSeq2AsymSeq.count(k) == 0)
 		{
 			if (hetID == mWaterHetID or isWater(hetID))
@@ -4102,7 +4101,7 @@ void PDBFileParser::ConstructEntities()
 			// but in pdbx_nonpoly_scheme there is such a number.
 			// Since this number is not used anywhere else we
 			// just use it here and do not store it in the table 
-			mChainSeq2AsymSeq[k] = make_tuple(asymID, 0, false);
+			mChainSeq2AsymSeq[k] = std::make_tuple(asymID, 0, false);
 
 			if (writtenAsyms.count(asymID) == 0)
 			{
@@ -4117,9 +4116,9 @@ void PDBFileParser::ConstructEntities()
 			}
 		}
 
-		int seqNr = ++ndbSeqNum[make_tuple(hetID, asymID)];
+		int seqNr = ++ndbSeqNum[std::make_tuple(hetID, asymID)];
 		
-		string iCode{het.iCode};
+		std::string iCode{het.iCode};
 		ba::trim(iCode);
 		if (iCode.empty())
 			iCode = { '.' };
@@ -4133,35 +4132,35 @@ void PDBFileParser::ConstructEntities()
 //			{ "auth_seq_num", het.seqNum },	// ????
 			{ "pdb_mon_id", hetID },
 //			{ "auth_mon_id", hetID },
-			{ "pdb_strand_id", string{het.chainID} },
+			{ "pdb_strand_id", std::string{het.chainID} },
 			{ "pdb_ins_code", iCode }
 		});
 
 		// mapping needed?
-		mChainSeq2AsymSeq[make_tuple(het.chainID, het.seqNum, het.iCode)] = make_tuple(asymID, seqNr, false);
+		mChainSeq2AsymSeq[std::make_tuple(het.chainID, het.seqNum, het.iCode)] = std::make_tuple(asymID, seqNr, false);
 	}
 
 	int modResID = 1;
-	set<string> modResSet;
+	std::set<std::string> modResSet;
 	for (auto rec = FindRecord("MODRES"); rec != nullptr and rec->is("MODRES");
 			rec = rec->mNext)					//	 1 -  6        Record name   "MODRES"                                            												
 	{								 			//	 8 - 11        IDcode        idCode      ID code of this datablock.                  
-		string resName		= rec->vS(13, 15);	//	13 - 15        Residue name  resName     Residue name used in this datablock.        
+		std::string resName		= rec->vS(13, 15);	//	13 - 15        Residue name  resName     Residue name used in this datablock.        
 		char chainID		= rec->vC(17);		//	17             Character     chainID     Chain identifier.                       
 		int seqNum			= rec->vI(19, 22);	//	19 - 22        Integer       seqNum      Sequence number.                        
 		char iCode			= rec->vC(23);		//	23             AChar         iCode       Insertion code.                         
-		string stdRes		= rec->vS(25, 27);	//	25 - 27        Residue name  stdRes      Standard residue name.                  
-		string comment		= rec->vS(30, 70);	//	30 - 70        String        comment     Description of the residue modification.
+		std::string stdRes		= rec->vS(25, 27);	//	25 - 27        Residue name  stdRes      Standard residue name.                  
+		std::string comment		= rec->vS(30, 70);	//	30 - 70        std::String        comment     Description of the residue modification.
 
-		string asymID;
+		std::string asymID;
 		int seq;
 		std::error_code ec;
 		
-		tie(asymID, seq, ignore) = MapResidue(chainID, seqNum, iCode, ec);
+		tie(asymID, seq, std::ignore) = MapResidue(chainID, seqNum, iCode, ec);
 		if (ec)	// no need to write a modres if it could not be found
 		{
 			if (cif::VERBOSE)
-				cerr << "dropping unmapped MODRES record" << endl;
+				std::cerr << "dropping unmapped MODRES record" << std::endl;
 			continue;
 		}
 		
@@ -4170,10 +4169,10 @@ void PDBFileParser::ConstructEntities()
 			{ "label_asym_id", asymID },
 			{ "label_seq_id", seq },
 			{ "label_comp_id", resName },
-			{ "auth_asym_id", string(1, chainID) },
+			{ "auth_asym_id", std::string(1, chainID) },
 			{ "auth_seq_id", seqNum },
 			{ "auth_comp_id", resName },
-			{ "PDB_ins_code", iCode == ' ' ? "" : string{ iCode } },
+			{ "PDB_ins_code", iCode == ' ' ? "" : std::string{ iCode } },
 			{ "parent_comp_id", stdRes },
 			{ "details", comment }
 		});
@@ -4189,23 +4188,23 @@ void PDBFileParser::ConstructEntities()
 			mMod2parent.count(cc) ? mMod2parent[cc] : cc
 		);
 		
-		string formula = mFormuls[cc];
+		std::string formula = mFormuls[cc];
 		if (formula.empty() and compound != nullptr)
 			formula = compound->formula();
 		else
 		{
-			const regex rx(R"(\d+\((.+)\))");
-			smatch m;
-			if (regex_match(formula, m, rx))
+			const std::regex rx(R"(\d+\((.+)\))");
+			std::smatch m;
+			if (std::regex_match(formula, m, rx))
 				formula = m[1].str();
 		}
 		
-		string name = mHetnams[cc];
+		std::string name = mHetnams[cc];
 		if (name.empty() and compound != nullptr)
 			name = compound->name();
 
-		string type = "other";
-		string nstd = ".";
+		std::string type = "other";
+		std::string nstd = ".";
 		
 		if (compound != nullptr)
 		{
@@ -4246,7 +4245,7 @@ void PDBFileParser::ConstructEntities()
 	for (auto& unobs: mUnobs)
 	{
 		bool isPolymer = false;
-		string asymID, compID = unobs.res;
+		std::string asymID, compID = unobs.res;
 		int seqNr = 0;
 		std::error_code ec;
 		
@@ -4254,24 +4253,24 @@ void PDBFileParser::ConstructEntities()
 		if (ec)
 		{
 			if (cif::VERBOSE)
-				cerr << "error mapping unobserved residue" << endl;
+				std::cerr << "error mapping unobserved residue" << std::endl;
 			continue;
 		}
 		
 		if (unobs.atoms.empty())
 		{
 			getCategory("pdbx_unobs_or_zero_occ_residues")->emplace({
-				{ "id",				to_string(++idRes) },
+				{ "id",				std::to_string(++idRes) },
 				{ "polymer_flag",	isPolymer ? "Y" : "N" },
 				{ "occupancy_flag",	1 },
 				{ "PDB_model_num",	unobs.modelNr ? unobs.modelNr : 1 },
 				{ "auth_asym_id",	unobs.chain },
 				{ "auth_comp_id",	unobs.res },
 				{ "auth_seq_id",	unobs.seq },
-				{ "PDB_ins_code",	unobs.iCode == ' ' ? "" : string{ unobs.iCode } },
+				{ "PDB_ins_code",	unobs.iCode == ' ' ? "" : std::string{ unobs.iCode } },
 				{ "label_asym_id",	asymID },
 				{ "label_comp_id",	compID },		// TODO: change to correct comp_id
-				{ "label_seq_id",	seqNr > 0 ? to_string(seqNr) : "" }
+				{ "label_seq_id",	seqNr > 0 ? std::to_string(seqNr) : "" }
 			});
 		}
 		else
@@ -4279,18 +4278,18 @@ void PDBFileParser::ConstructEntities()
 			for (auto& atom: unobs.atoms)
 			{
 				getCategory("pdbx_unobs_or_zero_occ_atoms")->emplace({
-					{ "id",				to_string(++idAtom) },
+					{ "id",				std::to_string(++idAtom) },
 					{ "polymer_flag",	isPolymer ? "Y" : "N" },
 					{ "occupancy_flag",	1 },
 					{ "PDB_model_num",	unobs.modelNr ? unobs.modelNr : 1 },
 					{ "auth_asym_id",	unobs.chain },
 					{ "auth_comp_id",	unobs.res },
 					{ "auth_seq_id",	unobs.seq },
-					{ "PDB_ins_code",	unobs.iCode == ' ' ? "" : string{ unobs.iCode } },
+					{ "PDB_ins_code",	unobs.iCode == ' ' ? "" : std::string{ unobs.iCode } },
 					{ "auth_atom_id",	atom },
 					{ "label_asym_id",	asymID },
 					{ "label_comp_id",	compID },		// TODO: change to correct comp_id
-					{ "label_seq_id",	seqNr > 0 ? to_string(seqNr) : "" },
+					{ "label_seq_id",	seqNr > 0 ? std::to_string(seqNr) : "" },
 					{ "label_atom_id",	atom }
 				});
 				
@@ -4322,28 +4321,28 @@ void PDBFileParser::ParseSecondaryStructure()
 		//	34 - 37        Integer        endSeqNum     Sequence number of the terminal residue.
 		//	38             AChar          endICode      Insertion code of the terminal residue.
 		//	39 - 40        Integer        helixClass    Helix class (see below).
-		//	41 - 70        String         comment       Comment about this helix.
+		//	41 - 70        std::String         comment       Comment about this helix.
 		//	72 - 76        Integer        length        Length of this helix.
 
-		string begAsymID, endAsymID;
+		std::string begAsymID, endAsymID;
 		int begSeq, endSeq;
 		std::error_code ec;
 		
-		tie(begAsymID, begSeq, ignore) = MapResidue(vC(20), vI(22, 25), vC(26), ec);
+		tie(begAsymID, begSeq, std::ignore) = MapResidue(vC(20), vI(22, 25), vC(26), ec);
 		if (not ec)
-			tie(endAsymID, endSeq, ignore) = MapResidue(vC(32), vI(34, 37), vC(38), ec);
+			tie(endAsymID, endSeq, std::ignore) = MapResidue(vC(32), vI(34, 37), vC(38), ec);
 		
 		if (ec)
 		{
 			if (cif::VERBOSE)
-				cerr << "Could not map residue for HELIX " << vI(8, 10) << endl;
+				std::cerr << "Could not map residue for HELIX " << vI(8, 10) << std::endl;
 		}
 		else
 		{
 			auto cat = getCategory("struct_conf");
 			cat->emplace({
 				{ "conf_type_id", "HELX_P" },
-				{ "id", "HELX_P" + to_string(vI(8, 10)) },
+				{ "id", "HELX_P" + std::to_string(vI(8, 10)) },
 				{ "pdbx_PDB_helix_id", vS(12, 14) },
 				{ "beg_label_comp_id", vS(16, 18) },
 				{ "beg_label_asym_id", begAsymID },
@@ -4379,7 +4378,7 @@ void PDBFileParser::ParseSecondaryStructure()
 		GetNextRecord();
 	}
 	
-	set<string> sheetsSeen;
+	std::set<std::string> sheetsSeen;
 	int rangeID = 1;
 	
 	while (mRec->is("SHEET "))
@@ -4421,7 +4420,7 @@ void PDBFileParser::ParseSecondaryStructure()
 		//	70             AChar         prevICode      Registration.  Insertion code in
 		//	                                            previous strand.
 		
-		string sheetID = ba::trim_copy(vS(12, 14));
+		std::string sheetID = ba::trim_copy(vS(12, 14));
 		if (sheetsSeen.count(sheetID) == 0)
 		{
 			sheetsSeen.insert(sheetID);
@@ -4446,18 +4445,18 @@ void PDBFileParser::ParseSecondaryStructure()
 			});
 		}
 
-		string begAsymID, endAsymID;
+		std::string begAsymID, endAsymID;
 		int begSeq, endSeq;
 		std::error_code ec;
 
-		tie(begAsymID, begSeq, ignore) = MapResidue(vC(22), vI(23, 26), vC(27), ec);
+		tie(begAsymID, begSeq, std::ignore) = MapResidue(vC(22), vI(23, 26), vC(27), ec);
 		if (not ec)
-			tie(endAsymID, endSeq, ignore) = MapResidue(vC(33), vI(34, 37), vC(38), ec);
+			tie(endAsymID, endSeq, std::ignore) = MapResidue(vC(33), vI(34, 37), vC(38), ec);
 		
 		if (ec)
 		{
 			if (cif::VERBOSE)
-				cerr << "Dropping SHEET record " << vI(8, 10) << endl;
+				std::cerr << "Dropping SHEET record " << vI(8, 10) << std::endl;
 		}
 		else
 		{
@@ -4483,18 +4482,18 @@ void PDBFileParser::ParseSecondaryStructure()
 			
 			if (sense != 0 and mRec->mVlen > 34)
 			{
-				string r1AsymID, r2AsymID;
+				std::string r1AsymID, r2AsymID;
 				int r1Seq, r2Seq;
 				std::error_code ec;
 				
-				tie(r1AsymID, r1Seq, ignore) = MapResidue(vC(65), vI(66, 69), vC(70), ec);
+				tie(r1AsymID, r1Seq, std::ignore) = MapResidue(vC(65), vI(66, 69), vC(70), ec);
 				if (not ec)
-					tie(r2AsymID, r2Seq, ignore) = MapResidue(vC(50), vI(51, 54), vC(55), ec);
+					tie(r2AsymID, r2Seq, std::ignore) = MapResidue(vC(50), vI(51, 54), vC(55), ec);
 				
 				if (ec)
 				{
 					if (cif::VERBOSE)
-						cerr << "skipping unmatched pdbx_struct_sheet_hbond record" << endl;
+						std::cerr << "skipping unmatched pdbx_struct_sheet_hbond record" << std::endl;
 				}
 				else
 					getCategory("pdbx_struct_sheet_hbond")->emplace({
@@ -4531,7 +4530,7 @@ void PDBFileParser::ParseSecondaryStructure()
 	}
 }
 
-static bool IsMetal(const string& resName, const string& atomID)
+static bool IsMetal(const std::string& resName, const std::string& atomID)
 {
 	bool result = false;
 
@@ -4581,30 +4580,30 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			//	67 - 72        SymOP          sym2             Symmetry operator for residue 2.
 			//	74 – 78        Real(5.2)      Length           Disulfide bond distance
 	
-			string p1Asym, p2Asym;
+			std::string p1Asym, p2Asym;
 			int p1Seq, p2Seq;
 			std::error_code ec;
 			
-			tie(p1Asym, p1Seq, ignore) = MapResidue(vC(16), vI(18, 21), vC(22), ec);
+			tie(p1Asym, p1Seq, std::ignore) = MapResidue(vC(16), vI(18, 21), vC(22), ec);
 			if (not ec)
-				tie(p2Asym, p2Seq, ignore) = MapResidue(vC(30), vI(32, 35), vC(36), ec);
+				tie(p2Asym, p2Seq, std::ignore) = MapResidue(vC(30), vI(32, 35), vC(36), ec);
 			
 			if (ec)
 			{
 				if (cif::VERBOSE)
-					cerr << "Dropping SSBOND " << vI(8, 10) << endl;
+					std::cerr << "Dropping SSBOND " << vI(8, 10) << std::endl;
 				continue;
 			}
 
-			vector<char> alt1 = altLocsForAtom(vC(16), vI(18, 21), vC(22), "SG");
-			vector<char> alt2 = altLocsForAtom(vC(30), vI(32, 35), vC(36), "SG");
+			std::vector<char> alt1 = altLocsForAtom(vC(16), vI(18, 21), vC(22), "SG");
+			std::vector<char> alt2 = altLocsForAtom(vC(30), vI(32, 35), vC(36), "SG");
 			
 			if (alt1.empty())
 				alt1.push_back(0);
 			if (alt2.empty())
 				alt2.push_back(0);
 
-			string sym1, sym2;
+			std::string sym1, sym2;
 			try {
 				sym1 = pdb2cifSymmetry(vS(60, 65));
 				sym2 = pdb2cifSymmetry(vS(67, 72));
@@ -4612,7 +4611,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			catch (const std::exception& ex)
 			{
 				if (cif::VERBOSE)
-					cerr << "Dropping SSBOND " << vI(8, 10) << " due to invalid symmetry operation" << endl;
+					std::cerr << "Dropping SSBOND " << vI(8, 10) << " due to invalid symmetry operation" << std::endl;
 				continue;
 			}
 			
@@ -4621,20 +4620,20 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				for (auto a2: alt2)
 				{
 					getCategory("struct_conn")->emplace({
-						{ "id", "disulf" + to_string(++ssBondNr) },
+						{ "id", "disulf" + std::to_string(++ssBondNr) },
 						{ "conn_type_id", "disulf" },
 			
 						{ "ptnr1_label_asym_id", p1Asym },
-						{ "pdbx_ptnr1_label_alt_id", a1 ? string{ a1 } : string() },
+						{ "pdbx_ptnr1_label_alt_id", a1 ? std::string{ a1 } : std::string() },
 						{ "ptnr1_label_comp_id", vS(12, 14) },
-						{ "ptnr1_label_seq_id", p1Seq ? to_string(p1Seq) : "." },
+						{ "ptnr1_label_seq_id", p1Seq ? std::to_string(p1Seq) : "." },
 						{ "ptnr1_label_atom_id", "SG" },
 						{ "ptnr1_symmetry", sym1 },
 			
 						{ "ptnr2_label_asym_id", p2Asym },
-						{ "pdbx_ptnr2_label_alt_id", a2 ? string{ a2 } : string() },
+						{ "pdbx_ptnr2_label_alt_id", a2 ? std::string{ a2 } : std::string() },
 						{ "ptnr2_label_comp_id", vS(26, 28) },
-						{ "ptnr2_label_seq_id", p2Seq ? to_string(p2Seq) : "." },
+						{ "ptnr2_label_seq_id", p2Seq ? std::to_string(p2Seq) : "." },
 						{ "ptnr2_label_atom_id", "SG" },
 			
 						{ "ptnr1_auth_asym_id", vS(16, 16) },
@@ -4657,18 +4656,18 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 		if (mRec->is("LINK  ") or mRec->is("LINKR "))
 		{
 			if (cif::VERBOSE and mRec->is("LINKR "))
-				cerr << "Accepting non-standard LINKR record, but ignoring extra information" << endl;
+				std::cerr << "Accepting non-standard LINKR record, but ignoring extra information" << std::endl;
 			
 											//	 1 -  6         Record name    "LINK  "
-			string name1 = vS(13, 16);		//	13 - 16         Atom           name1           Atom name.
+			std::string name1 = vS(13, 16);		//	13 - 16         Atom           name1           Atom name.
 											//	17              Character      altLoc1         Alternate location indicator.
-			string resName1 = vS(18,20);	//	18 - 20         Residue name   resName1        Residue  name.
+			std::string resName1 = vS(18,20);	//	18 - 20         Residue name   resName1        Residue  name.
 											//	22              Character      chainID1        Chain identifier.
 											//	23 - 26         Integer        resSeq1         Residue sequence number.
 											//	27              AChar          iCode1          Insertion code.
-			string name2 = vS(43, 46);		//	43 - 46         Atom           name2           Atom name.
+			std::string name2 = vS(43, 46);		//	43 - 46         Atom           name2           Atom name.
 											//	47              Character      altLoc2         Alternate location indicator.
-			string resName2 = vS(48, 50);	//	48 - 50         Residue name   resName2        Residue name.
+			std::string resName2 = vS(48, 50);	//	48 - 50         Residue name   resName2        Residue name.
 											//	52              Character      chainID2        Chain identifier.
 											//	53 - 56         Integer        resSeq2         Residue sequence number.
 											//	57              AChar          iCode2          Insertion code.
@@ -4676,7 +4675,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 											//	67 - 72         SymOP          sym2            Symmetry operator atom 2.
 											//	74 – 78         Real(5.2)      Length          Link distance
 	
-			string type = "covale";
+			std::string type = "covale";
 			if (IsMetal(resName1, name1) or IsMetal(resName2, name2))
 				type = "metalc";
 			
@@ -4698,7 +4697,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			
 			++linkNr;
 	
-			string p1Asym, p2Asym;
+			std::string p1Asym, p2Asym;
 			int p1Seq, p2Seq;
 			bool isResseq1, isResseq2;
 			std::error_code ec;
@@ -4710,11 +4709,11 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			if (ec)
 			{
 				if (cif::VERBOSE)
-					cerr << "Dropping LINK record at line " << mRec->mLineNr << endl;
+					std::cerr << "Dropping LINK record at line " << mRec->mLineNr << std::endl;
 				continue;
 			}
 			
-			string distance, ccp4LinkID;
+			std::string distance, ccp4LinkID;
 			
 			if (mRec->is("LINK  "))
 			{
@@ -4723,17 +4722,17 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{
 					stod(distance);
 				}
-				catch (const invalid_argument&)
+				catch (const std::invalid_argument&)
 				{
 					if (cif::VERBOSE)
-						cerr << "Distance value '" << distance << "' is not a valid float in LINK record" << endl;
+						std::cerr << "Distance value '" << distance << "' is not a valid float in LINK record" << std::endl;
 					swap(ccp4LinkID, distance); // assume this is a ccp4_link_id... oh really?
 				}
 			}
 			else	// LINKR
 				ccp4LinkID = vS(74, 78);	// the link ID 
 
-			string sym1, sym2;
+			std::string sym1, sym2;
 			try {
 				sym1 = pdb2cifSymmetry(vS(60, 65));
 				sym2 = pdb2cifSymmetry(vS(67, 72));
@@ -4741,19 +4740,19 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			catch (const std::exception& ex)
 			{
 				if (cif::VERBOSE)
-					cerr << "Dropping LINK record at line " << mRec->mLineNr << " due to invalid symmetry operation" << endl;
+					std::cerr << "Dropping LINK record at line " << mRec->mLineNr << " due to invalid symmetry operation" << std::endl;
 				continue;
 			}
 
 			getCategory("struct_conn")->emplace({
-				{ "id", type + to_string(linkNr) },
+				{ "id", type + std::to_string(linkNr) },
 				{ "conn_type_id", type },
 				
 				{ "ccp4_link_id", ccp4LinkID },
 	
 				{ "ptnr1_label_asym_id", p1Asym },
 				{ "ptnr1_label_comp_id", vS(18, 20) },
-				{ "ptnr1_label_seq_id", (isResseq1 and p1Seq) ? to_string(p1Seq) : "." },
+				{ "ptnr1_label_seq_id", (isResseq1 and p1Seq) ? std::to_string(p1Seq) : "." },
 				{ "ptnr1_label_atom_id", vS(13, 16) },
 				{ "pdbx_ptnr1_label_alt_id", vS(17, 17) },
 				{ "pdbx_ptnr1_PDB_ins_code", vS(27, 27) },
@@ -4762,7 +4761,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 	
 				{ "ptnr2_label_asym_id", p2Asym },
 				{ "ptnr2_label_comp_id", vS(48, 50) },
-				{ "ptnr2_label_seq_id", (isResseq2 and p2Seq) ? to_string(p2Seq) : "." },
+				{ "ptnr2_label_seq_id", (isResseq2 and p2Seq) ? std::to_string(p2Seq) : "." },
 				{ "ptnr2_label_atom_id", vS(43, 46) },
 				{ "pdbx_ptnr2_label_alt_id", vS(47, 47) },
 				{ "pdbx_ptnr2_PDB_ins_code", vS(57, 57) },
@@ -4789,37 +4788,37 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 		{
 											//	 1 -  6       Record name   "CISPEP"
 			int serNum = vI(8, 10);			//	 8 - 10       Integer       serNum        Record serial number.
-			string pep1 = vS(12, 14);		//	12 - 14       LString(3)    pep1          Residue name.
+			std::string pep1 = vS(12, 14);		//	12 - 14       LString(3)    pep1          Residue name.
 			char chainID1 = vC(16); 		//	16            Character     chainID1      Chain identifier.
 			int seqNum1 = vI(18, 21);		//	18 - 21       Integer       seqNum1       Residue sequence number.
 			char iCode1 = vC(22);			//	22            AChar         icode1        Insertion code.
-			string pep2 = vS(26, 28);		//	26 - 28       LString(3)    pep2          Residue name.
+			std::string pep2 = vS(26, 28);		//	26 - 28       LString(3)    pep2          Residue name.
 			char chainID2 = vC(30); 		//	30            Character     chainID2      Chain identifier.
 			int seqNum2 = vI(32, 35);		//	32 - 35       Integer       seqNum2       Residue sequence number.
 			char iCode2 = vC(36);			//	36            AChar         icode2        Insertion code.
 			int modNum = vI(44, 46);		//	44 - 46       Integer       modNum        Identifies the specific model.
-			string measure = vF(54, 59);	//	54 - 59       Real(6.2)     measure       Angle measurement in degrees.
+			std::string measure = vF(54, 59);	//	54 - 59       Real(6.2)     measure       Angle measurement in degrees.
 			
 			if (modNum == 0)
 				modNum = 1;
 	
-			string lAsym1, lAsym2;
+			std::string lAsym1, lAsym2;
 			int lResSeq1, lResSeq2;
 			std::error_code ec;
 	
-			tie(lAsym1, lResSeq1, ignore) = MapResidue(chainID1, seqNum1, iCode1, ec);
+			tie(lAsym1, lResSeq1, std::ignore) = MapResidue(chainID1, seqNum1, iCode1, ec);
 			if (not ec)
-				tie(lAsym2, lResSeq2, ignore) = MapResidue(chainID2, seqNum2, iCode2, ec);
+				tie(lAsym2, lResSeq2, std::ignore) = MapResidue(chainID2, seqNum2, iCode2, ec);
 			
 			if (ec)
 			{
 				if (cif::VERBOSE)
-					cerr << "Dropping CISPEP record at line " << mRec->mLineNr << endl;
+					std::cerr << "Dropping CISPEP record at line " << mRec->mLineNr << std::endl;
 				continue;
 			}
 			
-			string iCode1str = iCode1 == ' ' ? string() : string{ iCode1 };
-			string iCode2str = iCode2 == ' ' ? string() : string{ iCode2 };
+			std::string iCode1str = iCode1 == ' ' ? std::string() : std::string{ iCode1 };
+			std::string iCode2str = iCode2 == ' ' ? std::string() : std::string{ iCode2 };
 			
 			getCategory("struct_mon_prot_cis")->emplace({
 				{ "pdbx_id", serNum },
@@ -4830,14 +4829,14 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{ "pdbx_PDB_ins_code", iCode1str },
 				{ "auth_comp_id", pep1 },
 				{ "auth_seq_id", seqNum1 },
-				{ "auth_asym_id", string{chainID1} },
+				{ "auth_asym_id", std::string{chainID1} },
 				{ "pdbx_label_comp_id_2", pep2 },
 				{ "pdbx_label_seq_id_2", lResSeq2 },
 				{ "pdbx_label_asym_id_2", lAsym2 },
 				{ "pdbx_PDB_ins_code_2", iCode2str },
 				{ "pdbx_auth_comp_id_2", pep2 },
 				{ "pdbx_auth_seq_id_2", seqNum2 },
-				{ "pdbx_auth_asym_id_2", string{chainID2} },
+				{ "pdbx_auth_asym_id_2", std::string{chainID2} },
 				{ "pdbx_PDB_model_num", modNum },
 				{ "pdbx_omega_angle", measure }
 			});
@@ -4856,7 +4855,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 	while (mRec->is("SITE  "))
 	{									//	 1 -  6        Record name   "SITE  "
 										//	 8 - 10        Integer       seqNum        Sequence number.
-		string siteID = vS(12, 14);	//	12 - 14        LString(3)    siteID        Site name.
+		std::string siteID = vS(12, 14);	//	12 - 14        LString(3)    siteID        Site name.
 		int numRes = vI(16, 17);		//	16 - 17        Integer       numRes        Number of residues that compose the site.
 
 		int o = 19;
@@ -4865,7 +4864,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 
 		for (int i = 0; i < numRes; ++i)
 		{
-			string resName = vS(o, o + 2);	//	19 - 21        Residue name  resName1      Residue name for first residue that 
+			std::string resName = vS(o, o + 2);	//	19 - 21        Residue name  resName1      Residue name for first residue that 
 											//	                                           creates the site.
 			char chainID = vC(o + 4);		//	23             Character     chainID1      Chain identifier for first residue of site.
 			int seq = vI(o + 5, o + 8);	//	24 - 27        Integer       seq1          Residue sequence number for first residue
@@ -4873,7 +4872,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 			char iCode = vC(o + 9);		//	28             AChar         iCode1        Insertion code for first residue of the site.
 
 			int labelSeq;
-			string asym;
+			std::string asym;
 			bool isResseq;
 			std::error_code ec;
 			
@@ -4882,7 +4881,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 			if (ec)
 			{
 				if (cif::VERBOSE)
-					cerr << "skipping struct_site_gen record" << endl;
+					std::cerr << "skipping struct_site_gen record" << std::endl;
 			}
 			else
 				cat->emplace({
@@ -4891,10 +4890,10 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 					{ "pdbx_num_res", numRes },
 					{ "label_comp_id", resName },
 					{ "label_asym_id", asym },
-					{ "label_seq_id", (labelSeq > 0 and isResseq) ? to_string(labelSeq) : string(".") },
-					{ "pdbx_auth_ins_code", iCode == ' ' ? "" : string { iCode } },
+					{ "label_seq_id", (labelSeq > 0 and isResseq) ? std::to_string(labelSeq) : std::string(".") },
+					{ "pdbx_auth_ins_code", iCode == ' ' ? "" : std::string { iCode } },
 					{ "auth_comp_id", resName },
-					{ "auth_asym_id", string { chainID } },
+					{ "auth_asym_id", std::string { chainID } },
 					{ "auth_seq_id", seq },
 					{ "label_atom_id", "." },
 					{ "label_alt_id", "." },
@@ -4923,7 +4922,7 @@ void PDBFileParser::ParseCrystallographic()
 		{ "Z_PDB", vF(67, 70) }                //	67 - 70       Integer       z              Z value.           
 	});
 	
-	string spaceGroup, intTablesNr;
+	std::string spaceGroup, intTablesNr;
 	try
 	{
 		spaceGroup = vS(56, 66);
@@ -4944,11 +4943,11 @@ void PDBFileParser::ParseCrystallographic()
 
 void PDBFileParser::ParseCoordinateTransformation()
 {
-	string m[3][3], v[3];
+	std::string m[3][3], v[3];
 	
 	if (ba::starts_with(mRec->mName, "ORIGX"))
 	{
-		for (string n: { "1", "2", "3" })
+		for (std::string n: { "1", "2", "3" })
 		{
 			int x = stoi(n) - 1;
 
@@ -4980,7 +4979,7 @@ void PDBFileParser::ParseCoordinateTransformation()
 
 	if (ba::starts_with(mRec->mName, "SCALE"))
 	{
-		for (string n: { "1", "2", "3" })
+		for (std::string n: { "1", "2", "3" })
 		{
 			int x = stoi(n) - 1;
 
@@ -5014,7 +5013,7 @@ void PDBFileParser::ParseCoordinateTransformation()
 	{
 		int serial, igiven;
 		
-		for (string n: { "1", "2", "3" })
+		for (std::string n: { "1", "2", "3" })
 		{
 			int x = stoi(n) - 1;
 
@@ -5040,9 +5039,9 @@ void PDBFileParser::ParseCoordinateTransformation()
 			{ "matrix[3][1]", m[2][0] },
 			{ "matrix[3][2]", m[2][1] },
 			{ "matrix[3][3]", m[2][2] },
-			{ "vector[1]", v[0] },
-			{ "vector[2]", v[1] },
-			{ "vector[3]", v[2] },
+			{ "std::vector[1]", v[0] },
+			{ "std::vector[2]", v[1] },
+			{ "std::vector[3]", v[2] },
 			{ "code", igiven ? "given" : "" }
 		});
 	}
@@ -5053,16 +5052,16 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 	// oh oh, we have to sort our atom_site records by ascending asym_id
 	// This routine used to be so trivial...
 	
-	typedef tuple<string,int,bool,PDBRecord*,PDBRecord*> atomRec;
+	typedef std::tuple<std::string,int,bool,PDBRecord*,PDBRecord*> atomRec;
 	
-	vector<atomRec> atoms;
+	std::vector<atomRec> atoms;
 	while (mRec->is("ATOM  ") or mRec->is("HETATM"))		//	 1 -  6        Record name   "ATOM  "
 	{
 		char chainID = vC(22);				//	22             Character     chainID      Chain identifier.
 		int resSeq = vI(23, 26);			//	23 - 26        Integer       resSeq       Residue sequence number.
 		char iCode = vC(27);
 		
-		string asymID;
+		std::string asymID;
 		int seqID;
 		bool isResseq;
 		
@@ -5094,16 +5093,16 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 	{
 		int d;
 		
-		string chainA = get<0>(a);
-		string chainB = get<0>(b);
+		std::string chainA = std::get<0>(a);
+		std::string chainB = std::get<0>(b);
 		
 		if (chainA.length() != chainB.length())
 			d = chainA.length() - chainB.length();
 		else
-			d = get<0>(a).compare(get<0>(b));
+			d = std::get<0>(a).compare(std::get<0>(b));
 
 		if (d == 0)
-			d = get<1>(a) - get<1>(b);
+			d = std::get<1>(a) - std::get<1>(b);
 		return d < 0;
 	};
 	
@@ -5112,7 +5111,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 	// now reiterate the atoms to reorder alternates
 	for (size_t i = 0; i + 1 < atoms.size(); ++i)
 	{
-		char altLoc = get<3>(atoms[i])->vC(17);
+		char altLoc = std::get<3>(atoms[i])->vC(17);
 		
 		if (altLoc == ' ' or altLoc == 0)
 			continue;
@@ -5120,11 +5119,11 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		auto b = atoms.begin() + i;
 		auto e = b;
 		
-		map<string,int> atomIndex;	// index number of first occurrence of a atom name
+		std::map<std::string,int> atomIndex;	// index number of first occurrence of a atom name
 
 		while (e != atoms.end() and rLess(*b, *e) == false)
 		{
-			string name = get<3>(*e)->vS(13, 16);
+			std::string name = std::get<3>(*e)->vS(13, 16);
 			
 			if (atomIndex.count(name) == 0)
 				atomIndex[name] = atomIndex.size() + 1;
@@ -5134,12 +5133,12 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		
 		auto aLess = [&](atomRec& a, atomRec& b) -> bool
 		{
-			string na = get<3>(a)->vS(13, 16);
-			string nb = get<3>(b)->vS(13, 16);
+			std::string na = std::get<3>(a)->vS(13, 16);
+			std::string nb = std::get<3>(b)->vS(13, 16);
 			
 			int d = atomIndex[na] - atomIndex[nb];
 			if (d == 0)
-				d = get<3>(a)->vC(17) - get<3>(b)->vC(17);
+				d = std::get<3>(a)->vC(17) - std::get<3>(b)->vC(17);
 			assert(d != 0);
 			return d < 0;
 		};
@@ -5152,7 +5151,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 //	while (mRec->is("ATOM  ") or mRec->is("HETATM"))		//	 1 -  6        Record name   "ATOM  "
 	for (auto& a: atoms)
 	{
-		string asymID;
+		std::string asymID;
 		int seqID;
 		bool isResseq;
 		PDBRecord* atom;
@@ -5163,23 +5162,23 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		
 		++mAtomID;
 
-		string groupPDB = mRec->is("ATOM  ") ? "ATOM" : "HETATM";
+		std::string groupPDB = mRec->is("ATOM  ") ? "ATOM" : "HETATM";
 //		int serial = vI(7, 11);			//	 7 - 11        Integer       serial       Atom  serial number.
-		string name = vS(13, 16);		//	13 - 16        Atom          name         Atom name.
+		std::string name = vS(13, 16);		//	13 - 16        Atom          name         Atom name.
 		char altLoc = vC(17);			//	17             Character     altLoc       Alternate location indicator.
-		string resName = vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
+		std::string resName = vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
 		char chainID = vC(22);			//	22             Character     chainID      Chain identifier.
 		int resSeq = vI(23, 26);		//	23 - 26        Integer       resSeq       Residue sequence number.
 		char iCode = vC(27);			//	27             AChar         iCode        Code for insertion of residues.
-		string x = vF(31, 38);			//	31 - 38        Real(8.3)     x            Orthogonal coordinates for X in Angstroms.
-		string y = vF(39, 46);			//	39 - 46        Real(8.3)     y            Orthogonal coordinates for Y in Angstroms.
-		string z = vF(47, 54);			//	47 - 54        Real(8.3)     z            Orthogonal coordinates for Z in Angstroms.
-		string occupancy = vF(55, 60);	//	55 - 60        Real(6.2)     occupancy    Occupancy.
-		string tempFactor = vF(61, 66);	//	61 - 66        Real(6.2)     tempFactor   Temperature  factor.
-		string element = vS(77, 78);	//	77 - 78        LString(2)    element      Element symbol, right-justified.
-		string charge = vS(79, 80);		//	79 - 80        LString(2)    charge       Charge  on the atom.
+		std::string x = vF(31, 38);			//	31 - 38        Real(8.3)     x            Orthogonal coordinates for X in Angstroms.
+		std::string y = vF(39, 46);			//	39 - 46        Real(8.3)     y            Orthogonal coordinates for Y in Angstroms.
+		std::string z = vF(47, 54);			//	47 - 54        Real(8.3)     z            Orthogonal coordinates for Z in Angstroms.
+		std::string occupancy = vF(55, 60);	//	55 - 60        Real(6.2)     occupancy    Occupancy.
+		std::string tempFactor = vF(61, 66);	//	61 - 66        Real(6.2)     tempFactor   Temperature  factor.
+		std::string element = vS(77, 78);	//	77 - 78        LString(2)    element      Element symbol, right-justified.
+		std::string charge = vS(79, 80);		//	79 - 80        LString(2)    charge       Charge  on the atom.
 
-		string entityID = mAsymID2EntityID[asymID];
+		std::string entityID = mAsymID2EntityID[asymID];
 		
 		charge = pdb2cifCharge(charge);
 
@@ -5189,7 +5188,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			if (groupPDB == "HETATM")
 			{
 				if (cif::VERBOSE)
-					cerr << "Changing atom from HETATM to ATOM at line " << mRec->mLineNr << endl;
+					std::cerr << "Changing atom from HETATM to ATOM at line " << mRec->mLineNr << std::endl;
 				groupPDB = "ATOM";
 			}
 		}
@@ -5198,7 +5197,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			if (groupPDB == "ATOM")
 			{
 				if (cif::VERBOSE)
-					cerr << "Changing atom from ATOM to HETATM at line " << mRec->mLineNr << endl;
+					std::cerr << "Changing atom from ATOM to HETATM at line " << mRec->mLineNr << std::endl;
 				groupPDB = "HETATM";
 			}
 		}
@@ -5208,12 +5207,12 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			{ "id", mAtomID },
 			{ "type_symbol", element },
 			{ "label_atom_id", name },
-			{ "label_alt_id", altLoc != ' ' ? string { altLoc } : "." },
+			{ "label_alt_id", altLoc != ' ' ? std::string { altLoc } : "." },
 			{ "label_comp_id", resName },
 			{ "label_asym_id", asymID },
 			{ "label_entity_id", entityID },
-			{ "label_seq_id", (isResseq and seqID > 0) ? to_string(seqID) : "." },
-			{ "pdbx_PDB_ins_code", iCode == ' ' ? "" : string { iCode } },
+			{ "label_seq_id", (isResseq and seqID > 0) ? std::to_string(seqID) : "." },
+			{ "pdbx_PDB_ins_code", iCode == ' ' ? "" : std::string { iCode } },
 			{ "Cartn_x", x },
 			{ "Cartn_y", y },
 			{ "Cartn_z", z },
@@ -5222,14 +5221,14 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			{ "pdbx_formal_charge", charge },
 			{ "auth_seq_id", resSeq },
 			{ "auth_comp_id", resName },
-			{ "auth_asym_id", string { chainID } },
+			{ "auth_asym_id", std::string { chainID } },
 			{ "auth_atom_id", name },
 			{ "pdbx_PDB_model_num", modelNr }
 		});
 		
 		InsertAtomType(element);
 		
-		string check = vS(7, 11) + vS(77, 80);
+		std::string check = vS(7, 11) + vS(77, 80);
 		
 		if (anisou != nullptr)
 		{
@@ -5242,18 +5241,18 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			int u23 = vI(64, 70);				//	64 - 70       Integer       u[1][2]        U(2,3)
 			
 			if (vS(7, 11) + vS(77, 80) != check)
-				throw runtime_error("ANISOU record should follow corresponding ATOM record");
+				throw std::runtime_error("ANISOU record should follow corresponding ATOM record");
 			
-			auto f = [](float f) -> string { return (boost::format("%6.4f") % f).str(); };
+			auto f = [](float f) -> std::string { return (boost::format("%6.4f") % f).str(); };
 			
 			getCategory("atom_site_anisotrop")->emplace({
 				{ "id", mAtomID },
 				{ "type_symbol", element }, 
 				{ "pdbx_label_atom_id", name },
-				{ "pdbx_label_alt_id", altLoc != ' ' ? string { altLoc } : "." },
+				{ "pdbx_label_alt_id", altLoc != ' ' ? std::string { altLoc } : "." },
 				{ "pdbx_label_comp_id", resName },
 				{ "pdbx_label_asym_id", asymID },
-				{ "pdbx_label_seq_id", (isResseq and seqID > 0) ? to_string(seqID) : "." },
+				{ "pdbx_label_seq_id", (isResseq and seqID > 0) ? std::to_string(seqID) : "." },
 				{ "U[1][1]", f(u11 / 10000.f) },
 				{ "U[2][2]", f(u22 / 10000.f) },
 				{ "U[3][3]", f(u33 / 10000.f) },
@@ -5262,7 +5261,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 				{ "U[2][3]", f(u23 / 10000.f) },
 				{ "pdbx_auth_seq_id", resSeq },
 				{ "pdbx_auth_comp_id", resName },
-				{ "pdbx_auth_asym_id", string { chainID } },
+				{ "pdbx_auth_asym_id", std::string { chainID } },
 				{ "pdbx_auth_atom_id", name }
 			});
 		}
@@ -5287,7 +5286,7 @@ void PDBFileParser::ParseBookkeeping()
 	Match("END   ", false);
 }
 
-void PDBFileParser::Parse(istream& is, cif::File& result)
+void PDBFileParser::Parse(std::istream& is, cif::File& result)
 {
 	try
 	{
@@ -5340,7 +5339,7 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 		}
 		
 		if (not hasAtoms)
-			throw runtime_error("Either the PDB file has no atom records, or the field " + string(mRec->mName) + " is not at the correct location");
+			throw std::runtime_error("Either the PDB file has no atom records, or the field " + std::string(mRec->mName) + " is not at the correct location");
 	
 		for (auto e: mAtomTypes)
 			getCategory("atom_type")->emplace({
@@ -5373,9 +5372,9 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 				}
 			}
 		}
-		catch (const exception& ex)
+		catch (const std::exception& ex)
 		{
-			cerr << "Error parsing REMARK 3" << endl;
+			std::cerr << "Error parsing REMARK 3" << std::endl;
 			throw;
 		}
 //		
@@ -5386,7 +5385,7 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 //			
 //			try
 //			{
-//				string asymID;
+//				std::string asymID;
 //				int resNum;
 //				
 //				cif::tie(asymID, resNum) = r.get("beg_auth_asym_id", "beg_auth_seq_id");
@@ -5399,18 +5398,18 @@ void PDBFileParser::Parse(istream& is, cif::File& result)
 //				r["end_label_asym_id"] = asymID;
 //				r["end_label_seq_id"] = resNum;
 //			}
-//			catch (const exception& ex)
+//			catch (const std::exception& ex)
 //			{
 //				continue;
 //			}
 //		}
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << "Error parsing PDB";
+		std::cerr << "Error parsing PDB";
 		if (mRec != nullptr)
-			cerr << " at line " << mRec->mLineNr;
-		cerr << endl;
+			std::cerr << " at line " << mRec->mLineNr;
+		std::cerr << std::endl;
 		throw;
 	}
 }
@@ -5431,11 +5430,11 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	
 	int dimX = mSeqres.size();
 	if (dimX == 0)
-		throw runtime_error(string("SEQRES for chain ") + mDbref.chainID + " is empty");
+		throw std::runtime_error(std::string("SEQRES for chain ") + mDbref.chainID + " is empty");
 
 	int dimY = mResiduesSeen.size();
 	if (dimY == 0)
-		throw runtime_error(string("Number of residues in ATOM records for chain ") + mDbref.chainID + " is zero");
+		throw std::runtime_error(std::string("Number of residues in ATOM records for chain ") + mDbref.chainID + " is zero");
 
 	matrix<float> B(dimX, dimY), Ix(dimX, dimY), Iy(dimX, dimY);
 	matrix<int8_t> tb(dimX, dimY);
@@ -5515,7 +5514,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 		}
 	}
 	
-	const int kFlagSeqNr = numeric_limits<int>::min();
+	const int kFlagSeqNr = std::numeric_limits<int>::min();
 	
 	// reset positions of seqres
 	for (auto& sr: rx)
@@ -5531,10 +5530,10 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	// C++ is getting closer to Pascal :-)
 	auto printAlignment = [=]()
 	{
-		cerr << string(cif::get_terminal_width(), '-') << endl
-			 << "Alignment for chain " << mDbref.chainID << endl
-			 << endl;
-		std::vector<pair<string,string>> alignment;
+		std::cerr << std::string(cif::get_terminal_width(), '-') << std::endl
+			 << "Alignment for chain " << mDbref.chainID << std::endl
+			 << std::endl;
+		std::vector<std::pair<std::string,std::string>> alignment;
 
 		int x = highX;
 		int y = highY;
@@ -5575,9 +5574,9 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 			
 		reverse(alignment.begin(), alignment.end());
 		for (auto a: alignment)
-			cerr << "  " << a.first << " -- " << a.second << endl;
+			std::cerr << "  " << a.first << " -- " << a.second << std::endl;
 		
-		cerr << endl;
+		std::cerr << std::endl;
 	};
 	
 	if (cif::VERBOSE > 1)
@@ -5591,30 +5590,30 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 			{
 				case -1:
 //					if (cif::VERBOSE)
-//						cerr << "A residue found in the ATOM records "
+//						std::cerr << "A residue found in the ATOM records "
 //							 << "(" << ry[y].mMonID << " @ " << mDbref.chainID << ":" << ry[y].mSeqNum
-//							 	<<  ((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : string{ ry[y].mIcode }) << ")"
-//							 << " was not found in the SEQRES records" << endl;
+//							 	<<  ((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : std::string{ ry[y].mIcode }) << ")"
+//							 << " was not found in the SEQRES records" << std::endl;
 
-					throw runtime_error("A residue found in the ATOM records (" + ry[y].mMonID + 
-						" @ " + string{mDbref.chainID} + ":" + to_string(ry[y].mSeqNum) +
-						((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : string{ ry[y].mIcode })+
+					throw std::runtime_error("A residue found in the ATOM records (" + ry[y].mMonID + 
+						" @ " + std::string{mDbref.chainID} + ":" + std::to_string(ry[y].mSeqNum) +
+						((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : std::string{ ry[y].mIcode })+
 						") was not found in the SEQRES records");
 					--y;
 					break;
 				
 				case 1:
 					if (cif::VERBOSE > 3)
-						cerr << "Missing residue in ATOM records: " << rx[x].mMonID << " at " << rx[x].mSeqNum << endl;
+						std::cerr << "Missing residue in ATOM records: " << rx[x].mMonID << " at " << rx[x].mSeqNum << std::endl;
 	
 					--x;
 					break;
 				
 				case 0:
 					if (cif::VERBOSE > 3 and rx[x].mMonID != ry[y].mMonID)
-						cerr << "Warning, unaligned residues at " << x << "/" << y << "(" << rx[x].mMonID << '/' << ry[y].mMonID << ')' << endl;
+						std::cerr << "Warning, unaligned residues at " << x << "/" << y << "(" << rx[x].mMonID << '/' << ry[y].mMonID << ')' << std::endl;
 					else if (cif::VERBOSE > 4)
-						cerr << rx[x].mMonID << " -> " << ry[y].mMonID << " (" << ry[y].mSeqNum << ')' << endl;
+						std::cerr << rx[x].mMonID << " -> " << ry[y].mMonID << " (" << ry[y].mSeqNum << ')' << std::endl;
 	
 					rx[x].mSeqNum = ry[y].mSeqNum;
 					rx[x].mIcode = ry[y].mIcode;
@@ -5624,7 +5623,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 			}
 		}
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
 		if (cif::VERBOSE == 1)
 			printAlignment();
@@ -5633,7 +5632,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	}
 
 	// assign numbers to the residues that don't have them yet
-	stack<int> unnumbered;
+	std::stack<int> unnumbered;
 	for (x = 0; x < dimX; ++x)
 	{
 		if (rx[x].mSeqNum == kFlagSeqNr)
@@ -5649,7 +5648,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	{
 		x = unnumbered.top();
 		if (x >= dimX - 1)
-			throw runtime_error("Could not assign sequence numbers");
+			throw std::runtime_error("Could not assign sequence numbers");
 		rx[x].mSeqNum = rx[x + 1].mSeqNum - 1;
 		unnumbered.pop();
 	}
@@ -5669,7 +5668,7 @@ bool PDBFileParser::PDBChain::SameSequence(const PDBChain& rhs) const
 
 // --------------------------------------------------------------------
 
-void ReadPDBFile(istream& pdbFile, cif::File& cifFile)
+void ReadPDBFile(std::istream& pdbFile, cif::File& cifFile)
 {
 	PDBFileParser p;
 
@@ -5678,6 +5677,6 @@ void ReadPDBFile(istream& pdbFile, cif::File& cifFile)
 	p.Parse(pdbFile, cifFile);
 	
 	if (not cifFile.isValid())
-//		throw runtime_error("Resulting mmCIF file is invalid");
-		cerr << "Resulting mmCIF file is not valid!" << endl;
+//		throw std::runtime_error("Resulting mmCIF file is invalid");
+		std::cerr << "Resulting mmCIF file is not valid!" << std::endl;
 }
