@@ -44,13 +44,13 @@
 #define HAVE_BOOST /**/
 
 /* define if the Boost::IOStreams library is available */
-#define HAVE_BOOST_IOSTREAMS /**/
+/* #undef HAVE_BOOST_IOSTREAMS */
 
 /* define if the Boost::Regex library is available */
 #define HAVE_BOOST_REGEX /**/
 
 /* define if the Boost::Thread library is available */
-#define HAVE_BOOST_THREAD /**/
+/* #undef HAVE_BOOST_THREAD */
 
 /* define if the compiler supports basic C++17 syntax */
 #define HAVE_CXX17 1
