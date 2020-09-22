@@ -6,8 +6,8 @@ This is the README file for libcif++.
 Requirements
 ------------
 
-The code for this library was written in C++14. You therefore need a
-recent compiler to build it. For the development gcc 7.4 and clang 6.0
+The code for this library was written in C++17. You therefore need a
+recent compiler to build it. For the development gcc 9.3 and clang 9.0
 have been used.
 
 Other requirements are:

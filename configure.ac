@@ -9,6 +9,7 @@ AX_CHECK_COMPILE_FLAG([-fstandalone-debug], , , [-Werror])
 AC_CONFIG_SRCDIR([src/AtomShape.cpp])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([config/m4])
+AC_CONFIG_HEADERS([include/cif++/Config.hpp])
 
 AC_PREFIX_DEFAULT(/usr/local)
 
@@ -24,6 +25,25 @@ AC_SUBST(LIBTOOL_DEPS)
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 
 AC_PATH_PROG([PKG_CONFIG], [pkg-config])
+
+AC_CHECK_FUNCS([floor pow rint sqrt strchr strerror])
+AC_CHECK_HEADERS([sys/ioctl.h])
+AC_CHECK_HEADERS([termios.h])
+AC_CHECK_HEADER_STDBOOL
+AC_CHECK_TYPES([ptrdiff_t])
+AC_C_INLINE
+AC_FUNC_ERROR_AT_LINE
+AC_FUNC_MALLOC
+AC_FUNC_STRTOD
+AC_PROG_MAKE_SET
+AC_TYPE_INT32_T
+AC_TYPE_INT64_T
+AC_TYPE_INT8_T
+AC_TYPE_SIZE_T
+AC_TYPE_UINT16_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
+AC_TYPE_UINT8_T
 
 AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
 

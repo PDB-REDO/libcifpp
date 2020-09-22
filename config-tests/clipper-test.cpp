@@ -1,5 +1,3 @@
-// test to see if the clipper version is up-to-date enough
-
 #include <clipper/core/atomsf.h>
 
 int main()

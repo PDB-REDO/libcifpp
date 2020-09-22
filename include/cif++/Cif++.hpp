@@ -1,16 +1,40 @@
-// cif parsing library
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ * 
+ * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #pragma once
 
 #include "cif++/Config.hpp"
 
+#include <string>
+#include <cstdint>
+
 #include <regex>
 #include <iostream>
 #include <set>
 #include <list>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/any.hpp>
 
 #include "cif++/CifUtils.hpp"
 
@@ -118,8 +142,14 @@ class Item
 {
   public:
 	Item() {}
-	template<typename T>
-	Item(const string& name, const T& value);
+
+	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	Item(const string& name, const T& value)
+		: mName(name), mValue(std::to_string(value)) {}
+
+	Item(const string& name, const std::string& value)
+		: mName(name), mValue(value) {}
+
 	Item(const Item& rhs) : mName(rhs.mName), mValue(rhs.mValue) {}
 	Item(Item&& rhs) : mName(std::move(rhs.mName)), mValue(std::move(rhs.mValue)) {}
 
@@ -166,20 +196,6 @@ class Item
 	string	mName;
   	string	mValue;
 };
-
-template<typename T>
-inline
-Item::Item(const string& name, const T& value)
-	: mName(name), mValue(boost::lexical_cast<string>(value))
-{	
-}
-
-template<>
-inline
-Item::Item(const string& name, const string& value)
-	: mName(name), mValue(value)
-{
-}
 
 // --------------------------------------------------------------------
 // class datablock acts as an STL container for Category objects
@@ -255,12 +271,14 @@ namespace detail
 		template<typename T, typename = void>
 		struct item_value_as;
 
-		template<typename T>
+		template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
 		ItemReference& operator=(const T& value)
 		{
-			this->operator=(boost::lexical_cast<string>(value));
+			this->operator=(std::to_string(value));
 			return *this;
 		}
+
+		ItemReference& operator=(const std::string& value);
 
 		template<typename... Ts>
 		void os(const Ts& ... v)
@@ -272,11 +290,6 @@ namespace detail
 
 		void swap(ItemReference& b);
 		
-//		operator string() const	{ return c_str(); }
-		
-		// template<typename T, typename = void>
-		// T as() const;
-
 		template<typename T>
 		T as() const
 		{
@@ -289,7 +302,7 @@ namespace detail
 			int result = 0;
 			try
 			{
-				double v = boost::lexical_cast<T>(c_str());
+				double v = std::stod(c_str());
 				if (v < value)
 					result = -1;
 				else if (v > value)
@@ -342,13 +355,37 @@ namespace detail
 	};
 
 	template<typename T>
-	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T>>>
+	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_floating_point_v<T>>>
 	{
 		static T convert(const ItemReference& ref)
 		{
 			T result = {};
 			if (not ref.empty())
-				result = boost::lexical_cast<T>(ref.c_str());
+				result = static_cast<T>(std::stod(ref.c_str()));
+			return result;
+		}
+	};
+
+	template<typename T>
+	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_unsigned_v<T>>>
+	{
+		static T convert(const ItemReference& ref)
+		{
+			T result = {};
+			if (not ref.empty())
+				result = static_cast<T>(std::stoul(ref.c_str()));
+			return result;
+		}
+	};
+
+	template<typename T>
+	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
+	{
+		static T convert(const ItemReference& ref)
+		{
+			T result = {};
+			if (not ref.empty())
+				result = static_cast<T>(std::stol(ref.c_str()));
 			return result;
 		}
 	};
@@ -402,9 +439,6 @@ namespace detail
 		os << rhs.c_str();
 		return os;
 	}
-
-	template<>
-	ItemReference& ItemReference::operator=(const string& value);
 
 	// some helper classes to help create tuple result types
 	template<typename... C>
@@ -749,13 +783,19 @@ struct KeyIsConditionImpl : public ConditionImpl
 	
 	virtual std::string str() const
 	{
-		return mItemTag + " == " + boost::lexical_cast<std::string>(mValue);
+		return mItemTag + " == " + std::to_string(mValue);
 	}
 	
 	string mItemTag;
 	size_t mItemIx;
 	valueType mValue;
 };
+
+template<>
+std::string KeyIsConditionImpl<std::string>::str() const
+{
+	return mItemTag + " == " + mValue;
+}
 
 template<typename T>
 struct KeyIsNotConditionImpl : public ConditionImpl
@@ -774,13 +814,19 @@ struct KeyIsNotConditionImpl : public ConditionImpl
 	
 	virtual std::string str() const
 	{
-		return mItemTag + " != " + boost::lexical_cast<std::string>(mValue);
+		return mItemTag + " != " + std::to_string(mValue);
 	}
 	
 	string mItemTag;
 	size_t mItemIx;
 	valueType mValue;
 };
+
+template<>
+std::string KeyIsNotConditionImpl<std::string>::str() const
+{
+	return mItemTag + " != " + mValue;
+}
 
 template<typename COMP>
 struct KeyCompareConditionImpl : public ConditionImpl
@@ -797,7 +843,7 @@ struct KeyCompareConditionImpl : public ConditionImpl
 	
 	virtual std::string str() const
 	{
-		return mItemTag + " compare " /*+ boost::lexical_cast<std::string>(mValue)*/;
+		return mItemTag + " compare";
 	}
 	
 	string mItemTag;
@@ -839,7 +885,7 @@ struct anyIsConditionImpl : public ConditionImpl
 
 	virtual std::string str() const
 	{
-		return "any == " + boost::lexical_cast<std::string>(mValue);
+		return "any == " + std::to_string(mValue);
 	}
 	
 	valueType mValue;
