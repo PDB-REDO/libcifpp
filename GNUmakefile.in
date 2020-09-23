@@ -114,7 +114,7 @@ LIBCIF_SRC		= AtomType.cpp \
 SOURCES			= $(addprefix src/,$(LIBCIF_SRC))
 OBJECTS			= $(addprefix $(OBJDIR)/, $(notdir $(SOURCES:%.cpp=%.lo)))
 
-ifneq "$CCP4DIR" ""
+ifneq "$(CCP4DIR)" ""
 
 # Special rules to generate symmetry operation number table
 tools/symop-map-generator: tools/symop-map-generator.cpp
