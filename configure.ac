@@ -1,3 +1,5 @@
+AC_PREREQ([2.69])
+
 AC_INIT([libcif++], 1.0, [m.hekkelman@nki.nl])
 
 dnl Switch to a C++ compiler, and check if it works.
