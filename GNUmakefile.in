@@ -40,6 +40,8 @@ includedir			= @includedir@
 LIB_NAME			= @PACKAGE_NAME@
 LIB_TARGET			= $(LIB_NAME).la
 
+ifeq "$(CHECK_CONFIG)" "1"
+
 GNUmakefile: config.status GNUmakefile.in
 	$(SHELL) ./config.status
 
@@ -52,6 +54,8 @@ configure: configure.ac
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
+
+endif
 
 # libtool stuff
 
