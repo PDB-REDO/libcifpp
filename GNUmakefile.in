@@ -38,6 +38,7 @@ libdir				= @libdir@
 includedir			= @includedir@
 datarootdir			= @datarootdir@
 datadir				= @datadir@
+pkgconfigdir		= $(libdir)/pkgconfig
 
 LIB_NAME			= @PACKAGE_NAME@
 LIB_TARGET			= $(LIB_NAME).la
