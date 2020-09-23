@@ -47,4 +47,5 @@ AX_CHECK_LIBRARY([LIBZ], [zlib.h], [z], [],
 AX_CHECK_LIBRARY([LIBBZ2], [bzlib.h], [bz2], [],
                  [AC_MSG_ERROR([libbz2 not found - compressed files not supported])])
 
-AC_OUTPUT([GNUmakefile])
+AC_OUTPUT([GNUmakefile
+		   libcif++.pc])

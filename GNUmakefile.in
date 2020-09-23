@@ -36,12 +36,16 @@ prefix				= @prefix@
 exec_prefix			= @exec_prefix@
 libdir				= @libdir@
 includedir			= @includedir@
+datarootdir			= @datarootdir@
+datadir				= @datadir@
 
 LIB_NAME			= @PACKAGE_NAME@
 LIB_TARGET			= $(LIB_NAME).la
 
 CCP4DIR				= @CCP4@
 CLIBD				?= $(CCP4DIR)/lib/data
+
+DATADIR				= $(datadir)/libcifpp
 
 ifeq "$(CHECK_CONFIG)" "1"
 
@@ -144,10 +148,10 @@ rsrc/lib-version.txt: $(REVISION_FILE) | rsrc
 $(LIB_TARGET): $(OBJECTS)
 	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
 
-libs: $(LIB_TARGET)
+lib: $(LIB_TARGET)
 .PHONY: libs
 
-all: libs rsrc/lib-version.txt
+all: lib rsrc/lib-version.txt
 .PHONY: all
 
 -include $(OBJECTS:%.lo=%.d)
@@ -196,6 +200,39 @@ $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
 
 .PHONY: test
 test: $(TESTS:%=%-test)
+
+HEADERS = \
+	AtomType.hpp \
+	CifParser.hpp \
+	Compound.hpp \
+	PDB2CifRemark3.hpp \
+	Structure.hpp \
+	Cif2PDB.hpp \
+	CifUtils.hpp \
+	Config.hpp \
+	Point.hpp \
+	Symmetry.hpp \
+	Cif++.hpp \
+	CifValidator.hpp \
+	PDB2Cif.hpp \
+	Secondary.hpp \
+	TlsParser.hpp
+
+.PHONY: install-lib
+install-lib: lib
+	install -d $(libdir)
+	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
+	for d in mmcif_ddl.dic  mmcif_pdbx.dic; do \
+		install -D -m644 rsrc/dictionaries/$$d $(DATADIR)/dictionaries/$$d; \
+	done
+
+.PHONY: install-dev
+install-dev:
+	for f in $(HEADERS); do install -D include/cif++/$$f $(includedir)/cif++/$$f; done
+	install -m 644 -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
+
+.PHONY: install
+install: install-lib install-dev
 
 dist-clean: clean
 
