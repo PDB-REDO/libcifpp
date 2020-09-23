@@ -35,6 +35,8 @@
 #include <thread>
 #include <filesystem>
 #include <fstream>
+#include <map>
+#include <chrono>
 
 #if defined(_MSC_VER)
 #define TERM_WIDTH 80
@@ -44,8 +46,6 @@
 #endif
 
 #include <boost/algorithm/string.hpp>
-#include <boost/timer/timer.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "cif++/CifUtils.hpp"
 
@@ -467,8 +467,7 @@ struct ProgressImpl
 {
 					ProgressImpl(int64_t inMax, const std::string& inAction)
 						: mMax(inMax), mConsumed(0), mAction(inAction), mMessage(inAction)
-						, mThread(std::bind(&ProgressImpl::Run, this))
-						, mStart(boost::posix_time::second_clock::local_time()) {}
+						, mThread(std::bind(&ProgressImpl::Run, this)) {}
 
 	void			Run();
 	void			Stop()
@@ -481,23 +480,20 @@ struct ProgressImpl
 	void			PrintProgress();
 	void			PrintDone();
 
-	int64_t			mMax;
-	std::atomic<int64_t>	mConsumed;
-	int64_t			mLastConsumed = 0;
-	int				mSpinnerIndex = 0;
+	int64_t				mMax;
+	std::atomic<int64_t>mConsumed;
+	int64_t				mLastConsumed = 0;
+	int					mSpinnerIndex = 0;
 	std::string			mAction, mMessage;
-	std::mutex		mMutex;
-	std::thread		mThread;
-	boost::timer::cpu_timer mTimer;
-	boost::posix_time::ptime mStart;
-	bool			mStop = false;
+	std::mutex			mMutex;
+	std::thread			mThread;
+	std::chrono::time_point<std::chrono::system_clock>
+						mStart = std::chrono::system_clock::now();
+	bool				mStop = false;
 };
 
 void ProgressImpl::Run()
 {
-	using namespace boost::posix_time;
-	// using namespace boost::local_time;
-
 	bool printedAny = false;
 	
 	try
@@ -511,7 +507,9 @@ void ProgressImpl::Run()
 			if (mStop or mConsumed == mMax)
 				break;
 
-			if (second_clock::local_time() - mStart < seconds(5))
+			auto elapsed = std::chrono::system_clock::now() - mStart;
+
+			if (elapsed < std::chrono::seconds(5))
 				continue;
 
 			PrintProgress();
@@ -612,9 +610,49 @@ void ProgressImpl::PrintProgress()
 	std::cout.flush();
 }
 
+namespace
+{
+
+std::ostream& operator<<(std::ostream& os, const std::chrono::duration<double>& t)
+{
+	uint64_t s = static_cast<uint64_t>(std::trunc(t.count()));
+	if (s > 24 * 60 * 60)
+	{
+		uint32_t days = s / (24 * 60 * 60);
+		os << days << "d ";
+		s %= 24 * 60 * 60;
+	}
+	
+	if (s > 60 * 60)
+	{
+		uint32_t hours = s / (60 * 60);
+		os << hours << "h ";
+		s %= 60 * 60;
+	}
+	
+	if (s > 60)
+	{
+		uint32_t minutes = s / 60;
+		os << minutes << "m ";
+		s %= 60;
+	}
+	
+	double ss = s + 1e-6 * (t.count() - s);
+	
+	os << std::fixed << std::setprecision(1) << ss << 's';
+
+	return os;
+}
+
+}
+
 void ProgressImpl::PrintDone()
 {
-	std::string msg = mAction + " done in " + mTimer.format(0, "%ts cpu / %ws wall");
+	std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - mStart;
+
+	std::ostringstream msgstr;
+	msgstr << mAction << " done in " << elapsed << " cpu / %ws wall";
+	auto msg = msgstr.str();
 
 	uint32_t width = get_terminal_width();
 
