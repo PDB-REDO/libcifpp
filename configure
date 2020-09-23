@@ -3920,6 +3920,59 @@ ac_config_headers="$ac_config_headers include/cif++/Config.hpp"
 
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking compiler standards compliance" >&5
+$as_echo_n "checking compiler standards compliance... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <algorithm>
+
+
+
+template<typename COMP>
+
+class foo
+
+{
+
+public:
+
+foo(int a, COMP&& b)
+
+: m_a(a), m_b(std::move(b)) {}
+
+
+
+int m_a;
+
+COMP m_b;
+
+};
+
+
+
+void bar(const int& b)
+
+{
+
+int c = 1;
+
+auto f = new foo(c, [tag = c, b](const int& x)
+
+{ x < b; });
+
+}
+
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+else
+  as_fn_error $? "Your c++ compiler is not capable of compiling libcifpp, please upgrade" "$LINENO" 5
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"ok\"" >&5
+$as_echo "\"ok\"" >&6; }
+
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
 # incompatible versions:

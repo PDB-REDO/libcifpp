@@ -18,6 +18,12 @@ AC_PREFIX_DEFAULT(/usr/local)
 AC_DEFUN([read_test], [AC_LANG_SOURCE(
 	esyscmd(tools/m4esc.sh config-tests/$1))])
 
+AC_MSG_CHECKING([compiler standards compliance])
+AC_COMPILE_IFELSE(
+	[read_test(cpp-17-test.cpp)], [],
+	[AC_MSG_ERROR([Your c++ compiler is not capable of compiling libcifpp, please upgrade])])
+AC_MSG_RESULT(ok)
+
 AC_PROG_INSTALL
 AC_ENABLE_STATIC
 AC_DISABLE_SHARED
