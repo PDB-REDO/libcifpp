@@ -252,10 +252,10 @@ class rsrc_loader
 
 	static void init(std::initializer_list<rsrc_loader_info> loaders =
 	{
+		{ rsrc_loader_type::file, "." },
 #if USE_RSRC
-		{ rsrc_loader_type::mrsrc, "", { gResourceIndex, gResourceData, gResourceName } },
+		{ rsrc_loader_type::mrsrc, "", { gResourceIndex, gResourceData, gResourceName } }
 #endif
-		{ rsrc_loader_type::file, "." }
 	})
 	{
 		assert(not s_instance);

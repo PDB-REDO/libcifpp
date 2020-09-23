@@ -33,20 +33,9 @@ AC_CHECK_HEADER_STDBOOL
 AC_CHECK_TYPES([ptrdiff_t])
 AC_PROG_MAKE_SET
 
-AC_ARG_VAR([USE_RSRC], [Use resources to store internal data, requires mrc])
-AC_ARG_VAR([MRC], [Specify a location for the mrc executable])
-
-dnl We really like to use mrc
-if test "x$MRC" = "x"; then
-	AC_PATH_PROG([MRC], [mrc])
-fi
-if test "x$MRC" = "x"; then
-	AC_MSG_WARN([mrc not found, building without support for resources.])
-else
-	USE_RSRC=1
-fi
-
-AX_BOOST_BASE([1.71])
+AX_BOOST_BASE([1.71], [], [
+	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
+])
 AX_BOOST_REGEX
 
 AX_CHECK_LIBRARY([LIBZ], [zlib.h], [z], [],

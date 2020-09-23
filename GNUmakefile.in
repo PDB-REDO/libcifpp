@@ -30,8 +30,7 @@ firstTarget: all
 CXX					= @CXX@
 CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@ @LIBBZ2_CPPFLAGS@
 LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@ @LIBBZ2_LDFLAGS@
-LIBS				= @BOOST_IOSTREAMS_LIB@ \
-					  @LIBS@
+LIBS				= @LIBS@
 
 prefix				= @prefix@
 exec_prefix			= @exec_prefix@

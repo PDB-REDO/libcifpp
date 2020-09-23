@@ -33,6 +33,8 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <filesystem>
+#include <fstream>
 
 #if defined(_MSC_VER)
 #define TERM_WIDTH 80
@@ -48,6 +50,7 @@
 #include "cif++/CifUtils.hpp"
 
 namespace ba = boost::algorithm;
+namespace fs = std::filesystem;
 
 namespace cif
 {
@@ -732,6 +735,58 @@ rsrc mrsrc_rsrc_loader_impl::load(const std::string& path) const
 	return { m_data + node->m_data, node->m_size };
 }
 
+struct mrsrc_file_loader_impl : public rsrc_loader_impl
+{
+	mrsrc_file_loader_impl(const rsrc_loader_info& info);
+
+	virtual rsrc load(const std::string& path) const;
+
+	fs::path m_rsrc_dir;
+	mutable std::mutex m_mutex;
+	mutable std::map<fs::path,std::string> m_cache;
+};
+
+mrsrc_file_loader_impl::mrsrc_file_loader_impl(const rsrc_loader_info& info)
+	: m_rsrc_dir(info.info)
+{
+	if (not fs::is_directory(m_rsrc_dir))
+	{
+		std::cerr << "The directory " << info.info << " does not exist" << std::endl
+				  << "Loading dictionaries will most likely fail" << std::endl;
+	}
+}
+
+rsrc mrsrc_file_loader_impl::load(const std::string& path) const
+{
+	std::unique_lock lock(m_mutex);
+	
+	fs::path p = m_rsrc_dir / path;
+
+	if (fs::exists(p))
+	{
+		auto i = m_cache.find(p);
+
+		if (i == m_cache.end())
+		{
+			std::ostringstream s;
+			std::ifstream f(p);
+			if (not f.is_open())
+				throw std::runtime_error("Could not open " + p.string());
+
+			std::string line;
+			while (std::getline(f, line))
+				s << line << std::endl;
+			
+			std::string data = s.str();
+			std::tie(i, std::ignore) = m_cache.emplace(p, data);
+		}
+
+		return { i->second.c_str(), i->second.length() };
+	}
+
+	return {};
+}
+
 rsrc_loader::rsrc_loader(const std::initializer_list<rsrc_loader_info>& loaders)
 {
 	for (auto& l: loaders)
@@ -741,6 +796,7 @@ rsrc_loader::rsrc_loader(const std::initializer_list<rsrc_loader_info>& loaders)
 			switch (l.type)
 			{
 				case rsrc_loader_type::file:
+					m_loaders.push_back(new mrsrc_file_loader_impl(l));
 					break;
 
 				case rsrc_loader_type::mrsrc:
