@@ -644,6 +644,7 @@ BOOST_LDFLAGS
 BOOST_CPPFLAGS
 SET_MAKE
 PKG_CONFIG
+CCP4
 DEBUG
 LIBTOOL_DEPS
 CXXCPP
@@ -763,6 +764,7 @@ LT_SYS_LIBRARY_PATH
 CPP
 CXXCPP
 DEBUG
+CCP4
 LIBZ_CPPFLAGS
 LIBZ_LDFLAGS
 LIBBZ2_CPPFLAGS
@@ -1437,6 +1439,7 @@ Some influential environment variables:
   CPP         C preprocessor
   CXXCPP      C++ preprocessor
   DEBUG       Build a debug version of the library
+  CCP4        The location where CCP4 is installed
   LIBZ_CPPFLAGS
               C preprocessor flags for LIBZ headers
   LIBZ_LDFLAGS
@@ -16008,6 +16011,8 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 # Only expand once:
+
+
 
 
 

@@ -26,6 +26,8 @@ AC_SUBST(LIBTOOL_DEPS)
 
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 
+AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
+
 AC_PATH_PROG([PKG_CONFIG], [pkg-config])
 
 AC_CHECK_FUNCS([floor pow rint sqrt strchr strerror])

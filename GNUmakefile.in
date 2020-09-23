@@ -40,6 +40,9 @@ includedir			= @includedir@
 LIB_NAME			= @PACKAGE_NAME@
 LIB_TARGET			= $(LIB_NAME).la
 
+CCP4DIR				= @CCP4@
+CLIBD				?= $(CCP4DIR)/lib/data
+
 ifeq "$(CHECK_CONFIG)" "1"
 
 GNUmakefile: config.status GNUmakefile.in
@@ -111,6 +114,8 @@ LIBCIF_SRC		= AtomType.cpp \
 SOURCES			= $(addprefix src/,$(LIBCIF_SRC))
 OBJECTS			= $(addprefix $(OBJDIR)/, $(notdir $(SOURCES:%.cpp=%.lo)))
 
+ifneq "$CCP4DIR" ""
+
 # Special rules to generate symmetry operation number table
 tools/symop-map-generator: tools/symop-map-generator.cpp
 
@@ -118,6 +123,8 @@ src/SymOpTable_data.cpp: tools/symop-map-generator $(CLIBD)/symop.lib
 	tools/symop-map-generator > $@
 
 $(OBJDIR)/Symmetry.lo: src/SymOpTable_data.cpp
+
+endif
 
 # version info
 REVISION = $(shell git log --pretty=format:%h --max-count=1)
