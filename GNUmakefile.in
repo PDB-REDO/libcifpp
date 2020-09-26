@@ -223,14 +223,17 @@ HEADERS = \
 install-lib: lib
 	install -d $(libdir)
 	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
+	install -d $(DATADIR)/dictionaries
 	for d in mmcif_ddl.dic  mmcif_pdbx.dic; do \
-		install -D -m644 rsrc/dictionaries/$$d $(DATADIR)/dictionaries/$$d; \
+		install -m644 rsrc/dictionaries/$$d $(DATADIR)/dictionaries/$$d; \
 	done
 
 .PHONY: install-dev
 install-dev:
-	for f in $(HEADERS); do install -D include/cif++/$$f $(includedir)/cif++/$$f; done
-	install -m 644 -D $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
+	install -d $(includedir)/cif++
+	for f in $(HEADERS); do install include/cif++/$$f $(includedir)/cif++/$$f; done
+	install -d $(pkgconfigdir)
+	install -m 644 $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
 
 .PHONY: install
 install: install-lib install-dev

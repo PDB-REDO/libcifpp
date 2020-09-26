@@ -630,7 +630,7 @@ RowComparator::RowComparator(Category* cat, KeyIter b, KeyIter e)
 		
 		using namespace std::placeholders;
 		
-		mComp.emplace_back(ix, bind(&ValidateType::compare, tv, _1, _2));
+		mComp.emplace_back(ix, std::bind(&ValidateType::compare, tv, _1, _2));
 	}
 }
 
