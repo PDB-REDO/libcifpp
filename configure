@@ -3919,7 +3919,6 @@ ac_config_headers="$ac_config_headers include/cif++/Config.hpp"
 
 
 
-
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
 # incompatible versions:

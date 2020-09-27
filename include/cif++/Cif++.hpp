@@ -32,6 +32,7 @@
 
 #include <regex>
 #include <iostream>
+#include <sstream>
 #include <set>
 #include <list>
 
@@ -873,9 +874,9 @@ std::string KeyIsNotConditionImpl<std::string>::str() const
 	return mItemTag + " != " + mValue;
 }
 
-template<typename COMP>
 struct KeyCompareConditionImpl : public ConditionImpl
 {
+	template<typename COMP>
 	KeyCompareConditionImpl(const std::string& ItemTag, COMP&& comp)
 		: mItemTag(ItemTag), mComp(std::move(comp)) {}
 	
@@ -893,7 +894,7 @@ struct KeyCompareConditionImpl : public ConditionImpl
 	
 	std::string mItemTag;
 	size_t mItemIx;
-	COMP mComp;
+	std::function<bool(const Category&, const Row&)> mComp;
 };
 
 struct KeyMatchesConditionImpl : public ConditionImpl
@@ -1792,8 +1793,7 @@ void KeyIsNotConditionImpl<T>::prepare(const Category& c)
 	mItemIx = c.getColumnIndex(mItemTag);
 }
 
-template<typename T>
-void KeyCompareConditionImpl<T>::prepare(const Category& c)
+inline void KeyCompareConditionImpl::prepare(const Category& c)
 {
 	mItemIx = c.getColumnIndex(mItemTag);
 }

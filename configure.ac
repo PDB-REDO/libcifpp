@@ -15,8 +15,14 @@ AC_CONFIG_HEADERS([include/cif++/Config.hpp])
 
 AC_PREFIX_DEFAULT(/usr/local)
 
-AC_DEFUN([read_test], [AC_LANG_SOURCE(
-	esyscmd(tools/m4esc.sh config-tests/$1))])
+dnl AC_DEFUN([read_test], [AC_LANG_SOURCE(
+dnl 	esyscmd(tools/m4esc.sh config-tests/$1))])
+dnl 
+dnl AC_MSG_CHECKING([compiler standards compliance])
+dnl AC_COMPILE_IFELSE(
+dnl 	[read_test(cpp-17-test.cpp)], [],
+dnl 	[AC_MSG_ERROR([Your c++ compiler is not capable of compiling libcifpp, please upgrade])])
+dnl AC_MSG_RESULT(ok)
 
 AC_PROG_INSTALL
 AC_ENABLE_STATIC

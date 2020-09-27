@@ -29,6 +29,7 @@
 #include <map>
 #include <set>
 #include <system_error>
+#include <stack>
 
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/algorithm/string.hpp>
