@@ -1,0 +1,14 @@
+obj.dbg/
+obj/
+.libs/
+.vscode/
+autom4te.cache/
+GNUmakefile
+include/cif++/Config.hpp
+tools/symop-map-generator
+test/unit-test
+libcif++.pc
+libcif++.la
+config.status
+config.log
+libtool
