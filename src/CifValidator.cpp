@@ -27,7 +27,7 @@
 #include <boost/algorithm/string.hpp>
 
 //// since gcc's regex is crashing....
-#include <boost/regex.hpp>
+// #include <boost/regex.hpp>
 // #include <regex>
 
 #include "cif++/Cif++.hpp"
