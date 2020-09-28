@@ -1676,8 +1676,6 @@ auto Category::erase(iterator pos) -> iterator
 	// a std::set of keys from one category is mapped to another.
 	// If all values in a child are the same as the specified parent ones
 	// the child is removed as well, recursively of course.
-	// --------------------------------------------------------------------
-	// update: the category is gone, so use the stored relations instead
 
 	if (mValidator != nullptr)
 	{
@@ -1956,7 +1954,7 @@ void Category::validateLinks() const
 		
 		if (missing)
 		{
-			std::cerr << "Links for " << linkValidator->mParentCategory << "->" << linkValidator->mChildCategory << " are incomplete" << std::endl
+			std::cerr << "Links for " << linkValidator->mLinkGroupLabel << " are incomplete" << std::endl
 				 << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parent->mName << std::endl;
 		}
 	}
