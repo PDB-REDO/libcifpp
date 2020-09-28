@@ -4,7 +4,7 @@ Uploaders: Maarten L. Hekkelman <maarten@hekkelman.com>,
            Andreas Tille <tille@debian.org>
 Section: libs
 Priority: optional
-Build-Depends: debhelper-compat (= 13),
+Build-Depends: debhelper-compat (= 12),
                autoconf-archive,
                libboost-dev,
                libboost-iostreams-dev,
