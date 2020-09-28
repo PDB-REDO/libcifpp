@@ -2,6 +2,7 @@ obj.dbg/
 obj/
 .libs/
 .vscode/
+.pc/
 autom4te.cache/
 GNUmakefile
 include/cif++/Config.hpp
