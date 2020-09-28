@@ -1,0 +1,44 @@
+Source: libcifpp
+Maintainer: Debian Med Packaging Team <debian-med-packaging@lists.alioth.debian.org>
+Uploaders: Maarten L. Hekkelman <maarten@hekkelman.com>,
+           Andreas Tille <tille@debian.org>
+Section: libs
+Priority: optional
+Build-Depends: debhelper-compat (= 13),
+               autoconf-archive,
+               libboost-dev,
+               libboost-iostreams-dev,
+               libboost-system-dev,
+			   zlib1g-dev,
+			   libbz2-dev
+Standards-Version: 4.5.0
+Vcs-Browser: https://salsa.debian.org/med-team/libcifpp
+Vcs-Git: https://salsa.debian.org/med-team/libcifpp.git
+Homepage: https://github.com/PDB-REDO/libcifpp
+Rules-Requires-Root: no
+
+Package: libcifpp-dev
+Architecture: any
+Section: libdevel
+Depends: ${misc:Depends},
+         libcifpp0.1 (= ${binary:Version}),
+         libboost-dev,
+         libboost-iostreams-dev,
+         pkg-config
+Suggests: libcifpp-doc
+Description: Development files for libcifpp
+ Libcifpp is a C++ library used to create and manipulate
+ mmCIF and PDB files containing macro molecular structure information.
+ .
+ This specific package contains all files needed to develop new
+ software using libcifpp.
+
+Package: libcifpp0.1
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Description: Library files for libcifpp
+ Libcifpp is a C++ library used to create and manipulate
+ mmCIF and PDB files containing macro molecular structure information.
+ .
+ This package contains the library file only.
