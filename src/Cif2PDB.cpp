@@ -2492,19 +2492,19 @@ void WriteRemark350(std::ostream& pdbFile, Datablock& db)
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[1][1]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[1][2]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[1][3]")
-					<< SEP(" ", -14, 5) <<	Ff(r, "std::vector[1]")
+					<< SEP(" ", -14, 5) <<	Ff(r, "vector[1]")
 					<< std::endl
 					<< RM("  BIOMT2 ", -3) <<	Fs(r, "id")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[2][1]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[2][2]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[2][3]")
-					<< SEP(" ", -14, 5) <<	Ff(r, "std::vector[2]")
+					<< SEP(" ", -14, 5) <<	Ff(r, "vector[2]")
 					<< std::endl
 					<< RM("  BIOMT3 ", -3) <<	Fs(r, "id")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[3][1]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[3][2]")
 					<< SEP(" ", -9, 6) <<		Ff(r, "matrix[3][3]")
-					<< SEP(" ", -14, 5) <<	Ff(r, "std::vector[3]")
+					<< SEP(" ", -14, 5) <<	Ff(r, "vector[3]")
 					<< std::endl;
 		}
 	}
@@ -3502,9 +3502,9 @@ int WriteCoordinateTransformation(std::ostream& pdbFile, Datablock& db)
 	{
 		std::string given = r["code"] == "given" ? "1" : "";
 		
-		pdbFile << (kMTRIX % 1 % nr % r["matrix[1][1]"].as<float>() % r["matrix[1][2]"].as<float>() % r["matrix[1][3]"].as<float>() % r["std::vector[1]"].as<float>() % given) << std::endl;
-		pdbFile << (kMTRIX % 2 % nr % r["matrix[2][1]"].as<float>() % r["matrix[2][2]"].as<float>() % r["matrix[2][3]"].as<float>() % r["std::vector[2]"].as<float>() % given) << std::endl;
-		pdbFile << (kMTRIX % 3 % nr % r["matrix[3][1]"].as<float>() % r["matrix[3][2]"].as<float>() % r["matrix[3][3]"].as<float>() % r["std::vector[3]"].as<float>() % given) << std::endl;
+		pdbFile << (kMTRIX % 1 % nr % r["matrix[1][1]"].as<float>() % r["matrix[1][2]"].as<float>() % r["matrix[1][3]"].as<float>() % r["vector[1]"].as<float>() % given) << std::endl;
+		pdbFile << (kMTRIX % 2 % nr % r["matrix[2][1]"].as<float>() % r["matrix[2][2]"].as<float>() % r["matrix[2][3]"].as<float>() % r["vector[2]"].as<float>() % given) << std::endl;
+		pdbFile << (kMTRIX % 3 % nr % r["matrix[3][1]"].as<float>() % r["matrix[3][2]"].as<float>() % r["matrix[3][3]"].as<float>() % r["vector[3]"].as<float>() % given) << std::endl;
 		
 		++nr;
 		result += 3;

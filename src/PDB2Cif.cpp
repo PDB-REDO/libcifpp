@@ -3077,15 +3077,15 @@ void PDBFileParser::ParseRemark350()
 							{ "matrix[1][1]", (fmt % mat[0]).str() },
 							{ "matrix[1][2]", (fmt % mat[1]).str() },
 							{ "matrix[1][3]", (fmt % mat[2]).str() }, 
-							{ "std::vector[1]", (fmt % vec[0]).str() },
+							{ "vector[1]", (fmt % vec[0]).str() },
 							{ "matrix[2][1]", (fmt % mat[3]).str() },
 							{ "matrix[2][2]", (fmt % mat[4]).str() },
 							{ "matrix[2][3]", (fmt % mat[5]).str() },
-							{ "std::vector[2]", (fmt % vec[1]).str() },
+							{ "vector[2]", (fmt % vec[1]).str() },
 							{ "matrix[3][1]", (fmt % mat[6]).str() },
 							{ "matrix[3][2]", (fmt % mat[7]).str() },
 							{ "matrix[3][3]", (fmt % mat[8]).str() },
-							{ "std::vector[3]", (fmt % vec[2]).str() }
+							{ "vector[3]", (fmt % vec[2]).str() }
 						});
 
 						mat.clear();
@@ -5039,9 +5039,9 @@ void PDBFileParser::ParseCoordinateTransformation()
 			{ "matrix[3][1]", m[2][0] },
 			{ "matrix[3][2]", m[2][1] },
 			{ "matrix[3][3]", m[2][2] },
-			{ "std::vector[1]", v[0] },
-			{ "std::vector[2]", v[1] },
-			{ "std::vector[3]", v[2] },
+			{ "vector[1]", v[0] },
+			{ "vector[2]", v[1] },
+			{ "vector[3]", v[2] },
 			{ "code", igiven ? "given" : "" }
 		});
 	}
