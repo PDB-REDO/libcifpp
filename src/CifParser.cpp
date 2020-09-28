@@ -888,10 +888,43 @@ void DictParser::linkItems()
 {
 	if (not mDataBlock)
 		error("no datablock");
+
+	auto& dict = *mDataBlock;
 	
-	std::map<std::tuple<std::string,std::string,int>,size_t> linkIndex;
+	std::map<std::tuple<std::string,std::string>,size_t> linkIndex;
+	std::map<std::tuple<std::string,std::string>,int> linkGroupIds;
 	std::vector<std::tuple<std::vector<std::string>,std::vector<std::string>>> linkKeys;
 	
+	for (auto gl: dict["pdbx_item_linked_group_list"])
+	{
+		std::string child, parent;
+		int link_group_id;
+		cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
+		
+		auto civ = mValidator.getValidatorForItem(child);
+		if (civ == nullptr)
+			error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
+		
+		auto piv = mValidator.getValidatorForItem(parent);
+		if (piv == nullptr)
+			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
+		
+		auto key = std::make_tuple(piv->mCategory->mName, civ->mCategory->mName);
+		if (not linkIndex.count(key))
+		{
+			linkIndex[key] = linkKeys.size();
+			linkKeys.push_back({});
+
+			linkGroupIds[key] = link_group_id;
+		}
+		
+		size_t ix = linkIndex.at(key);
+		
+		std::get<0>(linkKeys.at(ix)).push_back(piv->mTag);
+		std::get<1>(linkKeys.at(ix)).push_back(civ->mTag);
+	}
+
+	// for links recorded in categories but not in pdbx_item_linked_group_list
 	for (auto li: mImpl->mLinkedItems)
 	{
 		std::string child, parent;
@@ -904,8 +937,8 @@ void DictParser::linkItems()
 		auto piv = mValidator.getValidatorForItem(parent);
 		if (piv == nullptr)
 			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
-		
-		auto key = std::make_tuple(piv->mCategory->mName, civ->mCategory->mName, 0);
+
+		auto key = std::make_tuple(piv->mCategory->mName, civ->mCategory->mName);
 		if (not linkIndex.count(key))
 		{
 			linkIndex[key] = linkKeys.size();
@@ -918,13 +951,25 @@ void DictParser::linkItems()
 		std::get<1>(linkKeys.at(ix)).push_back(civ->mTag);
 	}
 	
+	auto& linkedGroup = dict["pdbx_item_linked_group"];
+
 	// now store the links in the validator
 	for (auto& kv: linkIndex)
 	{
-		ValidateLink link;
-		std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupID) = kv.first;
+		ValidateLink link = {};
+		std::tie(link.mParentCategory, link.mChildCategory) = kv.first;
+
+		if (linkGroupIds.count(kv.first))
+			link.mLinkGroupID = linkGroupIds[kv.first];
 		
 		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
+
+		// look up the label
+		for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
+		{
+			link.mLinkGroupLabel = r["label"].as<std::string>();
+			break;
+		}
 
 		mValidator.addLinkValidator(std::move(link));
 	}
