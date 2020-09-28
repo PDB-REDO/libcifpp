@@ -889,8 +889,6 @@ void DictParser::linkItems()
 	if (not mDataBlock)
 		error("no datablock");
 	
-	auto& dict = *mDataBlock;
-
 	std::map<std::tuple<std::string,std::string,int>,size_t> linkIndex;
 	std::vector<std::tuple<std::vector<std::string>,std::vector<std::string>>> linkKeys;
 	
