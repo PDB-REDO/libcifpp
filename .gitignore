@@ -13,3 +13,5 @@ libcif++.la
 config.status
 config.log
 libtool
+version-info*.txt
+rsrc/lib-version.txt

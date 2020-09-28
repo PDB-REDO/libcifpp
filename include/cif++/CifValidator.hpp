@@ -143,7 +143,6 @@ struct ValidateLink
 	std::vector<std::string>	mParentKeys;
 	std::string					mChildCategory;
 	std::vector<std::string>	mChildKeys;
-	std::string					mLinkGroupLabel;
 };
 
 // --------------------------------------------------------------------

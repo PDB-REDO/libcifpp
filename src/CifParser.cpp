@@ -894,11 +894,10 @@ void DictParser::linkItems()
 	std::map<std::tuple<std::string,std::string,int>,size_t> linkIndex;
 	std::vector<std::tuple<std::vector<std::string>,std::vector<std::string>>> linkKeys;
 	
-	for (auto gl: dict["pdbx_item_linked_group_list"])
+	for (auto li: mImpl->mLinkedItems)
 	{
 		std::string child, parent;
-		int link_group_id;
-		cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
+		std::tie(child, parent) = li;
 		
 		auto civ = mValidator.getValidatorForItem(child);
 		if (civ == nullptr)
@@ -908,7 +907,7 @@ void DictParser::linkItems()
 		if (piv == nullptr)
 			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 		
-		auto key = make_tuple(piv->mCategory->mName, civ->mCategory->mName, link_group_id);
+		auto key = std::make_tuple(piv->mCategory->mName, civ->mCategory->mName, 0);
 		if (not linkIndex.count(key))
 		{
 			linkIndex[key] = linkKeys.size();
@@ -920,35 +919,7 @@ void DictParser::linkItems()
 		std::get<0>(linkKeys.at(ix)).push_back(piv->mTag);
 		std::get<1>(linkKeys.at(ix)).push_back(civ->mTag);
 	}
-
-//	for (auto li: mImpl->mLinkedItems)
-//	{
-//		std::string child, parent;
-//		std::tie(child, parent) = li;
-//		
-//		auto civ = mValidator.getValidatorForItem(child);
-//		if (civ == nullptr)
-//			error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
-//		
-//		auto piv = mValidator.getValidatorForItem(parent);
-//		if (piv == nullptr)
-//			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
-//		
-//		auto key = make_tuple(piv->mCategory->mName, civ->mCategory->mName, piv->mTag);
-//		if (not linkIndex.count(key))
-//		{
-//			linkIndex[key] = linkKeys.size();
-//			linkKeys.push_back({});
-//		}
-//		
-//		size_t ix = linkIndex.at(key);
-//		auto& keys = linkKeys.at(ix);
-//		
-//		keys.insert(civ->mTag);
-//	}
 	
-	auto& linkedGroup = dict["pdbx_item_linked_group"];
-
 	// now store the links in the validator
 	for (auto& kv: linkIndex)
 	{
@@ -956,13 +927,6 @@ void DictParser::linkItems()
 		std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupID) = kv.first;
 		
 		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
-
-		// look up the label
-		for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
-		{
-			link.mLinkGroupLabel = r["label"].as<std::string>();
-			break;
-		}
 
 		mValidator.addLinkValidator(std::move(link));
 	}
