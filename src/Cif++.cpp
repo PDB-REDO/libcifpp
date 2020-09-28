@@ -238,6 +238,9 @@ ItemReference& ItemReference::operator=(const std::string& value)
 	if (mConst)
 		throw std::logic_error("Attempt to write to a constant row");
 
+	if (mRow.mData == nullptr)
+		throw std::logic_error("Attempt to write to an uninitialized row");
+
 	mRow.assign(mName, value, false);
 	return *this;
 }
@@ -1473,7 +1476,8 @@ template<class Iter>
 std::tuple<Row,bool> Category::emplace(Iter b, Iter e)
 {
 	// First, make sure all mandatory fields are supplied
-	std::tuple<Row,bool> result = std::make_tuple(Row(), true);
+	Row result;
+	bool isNew = true;
 
 	if (mCatValidator != nullptr and b != e)
 	{
@@ -1516,14 +1520,23 @@ std::tuple<Row,bool> Category::emplace(Iter b, Iter e)
 			{
 				if (VERBOSE > 1)
 					std::cerr << "Not inserting new record in " << mName << " (duplicate Key)" << std::endl;
-				result = std::make_tuple(Row(test), false);
+				result = test;
+				isNew = false;
 			}
 		}
 	}
-	
-	if (std::get<1>(result))
+
+	if (isNew)
 	{
 		auto nr = new ItemRow{nullptr, this, nullptr};
+
+		Row r(nr);
+
+		for (auto v = b; v != e; ++v)
+			r.assign(*v, true);
+		
+		// if (isOrphan(r))
+		// 	throw std::runtime_error("Cannot insert row in category " + mName + " since it would be an orphan");
 
 		if (mHead == nullptr)
 		{
@@ -1538,18 +1551,13 @@ std::tuple<Row,bool> Category::emplace(Iter b, Iter e)
 			mTail = nr;
 		}
 
-		Row r(nr);
-
-		for (auto v = b; v != e; ++v)
-			r.assign(*v, true);
-		
-		std::get<0>(result) = r;
+		result = r;
 
 		if (mIndex != nullptr)
 			mIndex->insert(nr);
 	}
 	
-	return result;
+	return { result, isNew };
 }
 
 std::tuple<Row,bool> Category::emplace(Row r)

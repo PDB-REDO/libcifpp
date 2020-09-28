@@ -27,6 +27,8 @@
 #define BOOST_TEST_MODULE LibCifPP_Test
 #include <boost/test/included/unit_test.hpp>
 
+#include <stdexcept>
+
 // #include "cif++/DistanceMap.hpp"
 #include "cif++/Cif++.hpp"
 
@@ -202,7 +204,7 @@ save__cat_2.id
     _item.mandatory_code      yes
     _item_aliases.dictionary  cif_core.dic
     _item_aliases.version     2.0.1
-    _item_type.code           code
+    _item_type.code           int
     save_
 
 save__cat_2.parent_id
@@ -278,5 +280,18 @@ _cat_2.desc
 
     BOOST_CHECK(cat1.size() == 2);
     BOOST_CHECK(cat2.size() == 1);
+
+    // BOOST_CHECK_THROW(cat2.emplace({
+    //     { "id", 4 },
+    //     { "parent_id", 4 },
+    //     { "desc", "moet fout gaan" }
+    // }), std::exception);
+
+    BOOST_CHECK_THROW(cat2.emplace({
+        { "id", "vijf" },   // <- invalid value
+        { "parent_id", 2 },
+        { "desc", "moet fout gaan" }
+    }), std::exception);
+
 
 }

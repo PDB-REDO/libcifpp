@@ -2608,8 +2608,7 @@ void PDBFileParser::ParseRemarks()
 		}
 		catch (const std::exception& ex)
 		{
-			std::cerr << "Error parsing REMARK " << remarkNr << std::endl;
-			throw;
+			std::throw_with_nested(std::runtime_error("Error parsing REMARK " + std::to_string(remarkNr)));
 		}
 	}
 
