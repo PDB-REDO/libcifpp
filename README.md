@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/PDB-REDO/libcifpp.svg?branch=trunk)](https://travis-ci.org/PDB-REDO/libcifpp)
+
 libcif++
 ========
 
