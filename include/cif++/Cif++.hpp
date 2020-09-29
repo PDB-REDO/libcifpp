@@ -1707,6 +1707,8 @@ class File
 	iterator begin() const;
 	iterator end() const;
 	
+	bool empty() const								{ return mHead == nullptr; }
+
 	const Validator& getValidator() const;
 	void getTagOrder(std::vector<std::string>& tags) const;
 	

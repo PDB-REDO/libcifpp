@@ -1037,6 +1037,8 @@ const std::map<std::string,char> kBaseMap{
 class CompoundFactoryImpl
 {
   public:
+	CompoundFactoryImpl() {}
+
 	CompoundFactoryImpl(const std::string& file, CompoundFactoryImpl* next);
 
 	~CompoundFactoryImpl()
@@ -1096,24 +1098,25 @@ class CompoundFactoryImpl
 	std::shared_timed_mutex		mMutex;
 
 	std::string					mPath;
-	std::vector<Compound*>			mCompounds;
-	std::vector<const Link*>			mLinks;
-	/*unordered_*/std::set<std::string>	mKnownPeptides;
-	std::set<std::string>					mKnownBases;
-	std::set<std::string>					mMissing;
+	std::vector<Compound*>		mCompounds;
+	std::vector<const Link*>	mLinks;
+	std::set<std::string>		mKnownPeptides;
+	std::set<std::string>		mKnownBases;
+	std::set<std::string>		mMissing;
 	cif::File					mFile;
-	cif::Category&				mChemComp;
-	CompoundFactoryImpl*		mNext;
+	CompoundFactoryImpl*		mNext = nullptr;
 };
 
 // --------------------------------------------------------------------
 
 CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactoryImpl* next)
-	: mPath(file), mFile(file), mChemComp(mFile.firstDatablock()["chem_comp"]), mNext(next)
+	: mPath(file), mFile(file), mNext(next)
 {
 	const std::regex peptideRx("(?:[lmp]-)?peptide", std::regex::icase);
 
-	for (auto& chemComp: mChemComp)
+	auto& cat = mFile.firstDatablock()["chem_comp"];
+
+	for (auto& chemComp: cat)
 	{
 		std::string group, threeLetterCode;
 		
@@ -1125,82 +1128,6 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactor
 			mKnownBases.insert(threeLetterCode);
 	}
 }
-
-//struct CompoundFactoryImpl
-//{
-//	CompoundFactoryImpl();
-//
-//	Compound* get(std::string id);
-//	Compound* create(std::string id);
-//	
-//	void pushDictionary(const boost::filesystem::path& dictFile);
-//
-//	// cif::File cf acts as owner of datablock
-//	cif::Datablock& getDatablock(const std::string& name, cif::File& cf);
-//	
-//	deque<cif::File> mDictionaries;
-//	fs::path mClibdMon;
-//	std::vector<Compound*> mCompounds;
-//	boost::shared_mutex mMutex;
-//};
-//
-//CompoundFactoryImpl::CompoundFactoryImpl()
-//{
-//	const char* clibdMon = getenv("CLIBD_MON");
-//	if (clibdMon == nullptr)
-//		throw std::runtime_error("Cannot locate peptide list, please source the CCP4 environment");
-//	mClibdMon = clibdMon;
-//}
-//
-//void CompoundFactoryImpl::pushDictionary(const boost::filesystem::path& dictFile)
-//{
-//	boost::upgrade_lock<boost::shared_mutex> lock(mMutex);
-//
-//	mDictionaries.emplace_back(dictFile);
-//}
-//
-//cif::Datablock& CompoundFactoryImpl::getDatablock(const std::string& name, cif::File& cf)
-//{
-//	cif::Datablock* result = nullptr;
-//	
-//	// first check all loaded dictionaries
-//	
-//	for (auto d: mDictionaries)
-//	{
-//		result = d.get(name);
-//		
-//		if (result != nullptr)
-//			break;
-//	}	
-//	
-//	if (not result)
-//	{
-//		fs::path resFile = mClibdMon / ba::to_lower_copy(name.substr(0, 1)) / (name + ".cif");
-//	
-//		if (not fs::exists(resFile) and	(name == "COM" or name == "CON" or "PRN")) 		// seriously...
-//			mClibdMon / ba::to_lower_copy(name.substr(0, 1)) / (name + '_' + name + ".cif");
-//	
-//		fs::ifstream file(resFile);
-//		if (file.is_open())
-//		{
-//			try
-//			{
-//				cf.load(file);
-//			}
-//			catch (...)
-//			{
-//				throw_with_nested(std::runtime_error("Error while loading " + resFile));
-//			}
-//			
-//			result = cf.get(name);
-//		}
-//	}
-//
-//	if (result == nullptr)
-//		throw std::runtime_error("Failed to load datablock " + name);	
-//
-//	return *result;
-//}
 
 Compound* CompoundFactoryImpl::get(std::string id)
 {
@@ -1230,11 +1157,13 @@ Compound* CompoundFactoryImpl::create(std::string id)
 	ba::to_upper(id);
 
 	Compound* result = get(id);
-	if (result == nullptr and mMissing.count(id) == 0)
+	if (result == nullptr and mMissing.count(id) == 0 and not mFile.empty())
 	{
 		std::unique_lock lock(mMutex);
 
-		auto rs = mChemComp.find(cif::Key("three_letter_code") == id);
+		auto& cat = mFile.firstDatablock()["chem_comp"];
+
+		auto rs = cat.find(cif::Key("three_letter_code") == id);
 	
 		if (not rs.empty())
 		{
@@ -1334,12 +1263,20 @@ CompoundFactory::CompoundFactory()
 	: mImpl(nullptr)
 {
 	const char* clibdMon = getenv("CLIBD_MON");
-	if (clibdMon == nullptr)
-		throw std::runtime_error("Cannot locate peptide list, please source the CCP4 environment");
-	
-	fs::path db = fs::path(clibdMon) / "list" / "mon_lib_list.cif";
+	if (clibdMon != nullptr)
+	{
+		fs::path db = fs::path(clibdMon) / "list" / "mon_lib_list.cif";
+		if (fs::exists(db))
+			pushDictionary(db.string());
+	}
 
-	pushDictionary(db.string());
+	if (mImpl == nullptr)
+	{
+		if (cif::VERBOSE)
+			std::cerr << "Could not load the mon_lib_list.cif file from CCP4, please make sure you have installed CCP4 and sourced the environment." << std::endl;
+
+		mImpl = new CompoundFactoryImpl();
+	}
 }
 
 CompoundFactory::~CompoundFactory()
