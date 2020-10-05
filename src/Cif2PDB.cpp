@@ -3028,7 +3028,7 @@ int WriteHeterogen(std::ostream& pdbFile, Datablock& db)
 		if (syn.empty())
 			continue;
 		
-		WriteOneContinuedLine(pdbFile, "HETSYN", 2, id + ' ' + syn, 11);
+		WriteOneContinuedLine(pdbFile, "HETSYN", 4, id + ' ' + syn, 11);
 	}
 	
 	// FORMUL
