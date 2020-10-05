@@ -15,6 +15,32 @@ AC_CONFIG_HEADERS([include/cif++/Config.hpp])
 
 AC_PREFIX_DEFAULT(/usr/local)
 
+AC_CHECK_HEADER([filesystem], [], [AC_MSG_ERROR([The file <filesystem> is missing, perhaps you should install a more recent libstdc++ implementation.])])
+
+dnl check if we need stdc++fs as library
+AC_MSG_CHECKING([if linking to stdc++fs is required])
+AC_TRY_LINK(
+	[#include <filesystem>],
+	[(void)std::filesystem::current_path();],
+	[
+		AC_MSG_RESULT(no)
+	],
+	[
+		LIBS="$LIBS -lstdc++fs"
+
+		AC_TRY_LINK(
+			[#include <filesystem>],
+			[(void)std::filesystem::current_path();],
+			[
+				AC_MSG_RESULT(yes)
+			],
+			[
+				AC_MSG_ERROR([Could not link filesystem])
+			]
+		)
+	]
+)
+
 dnl AC_DEFUN([read_test], [AC_LANG_SOURCE(
 dnl 	esyscmd(tools/m4esc.sh config-tests/$1))])
 dnl 
