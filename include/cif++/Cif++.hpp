@@ -293,108 +293,10 @@ namespace detail
 			return item_value_as<T>::convert(*this);
 		}
 
-		template<typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
-		int compare(const T& value) const
+		template<typename T>
+		int compare(const T& value, bool icase) const
 		{
-			int result = 0;
-			try
-			{
-				double v = std::stod(c_str());
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				if (VERBOSE)
-					std::cerr << "conversion error in compare for '" << c_str() << '\'' << std::endl;
-				result = 1;
-			}
-			
-			return result;
-		}
-
-		template<typename T, std::enable_if_t<std::is_same_v<T, char>, int> = 0>
-		int compare(const T& value) const
-		{
-			return cif::icompare(std::string{value}, c_str());
-		}
-
-		template<typename T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T> and not std::is_same_v<T, char>, int> = 0>
-		int compare(const T& value) const
-		{
-			int result = 0;
-			try
-			{
-				auto v = std::stol(c_str());
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				if (VERBOSE)
-					std::cerr << "conversion error in compare for '" << c_str() << '\'' << std::endl;
-				result = 1;
-			}
-			
-			return result;
-		}
-		
-		template<typename T, std::enable_if_t<std::is_integral_v<T> and std::is_unsigned_v<T>, int> = 0>
-		int compare(const T& value) const
-		{
-			int result = 0;
-			try
-			{
-				auto v = std::stoul(c_str());
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				if (VERBOSE)
-					std::cerr << "conversion error in compare for '" << c_str() << '\'' << std::endl;
-				result = 1;
-			}
-			
-			return result;
-		}
-
-		template<typename T, std::enable_if_t<std::is_same_v<T, std::string>, int> = 0>
-		int compare(const T& rhs) const
-		{
-			return -rhs.compare(c_str());
-		}
-
-		template<typename T, std::enable_if_t<std::is_same_v<T, std::string>, int> = 0>
-		int icompare(const T& rhs) const
-		{
-			return cif::icompare(c_str(), rhs);
-		}
-
-		// int compare(const char* rhs) const
-		// {
-		// 	return std::strcmp(c_str(), rhs);
-		// }
-
-		// int icompare(const char* rhs) const
-		// {
-		// 	return cif::icompare(c_str(), rhs);
-		// }
-
-		int compare(const ItemReference& rhs) const
-		{
-			return std::strcmp(c_str(), rhs.c_str());
-		}
-
-		int icompare(const ItemReference& rhs) const
-		{
-			return cif::icompare(c_str(), rhs.c_str());
+			return item_value_as<T>::compare(*this, value, icase);
 		}
 
 		// empty means either null or unknown
@@ -415,8 +317,6 @@ namespace detail
 		
 		bool operator!=(const std::string& s) const		{ return s != c_str(); }
 		bool operator==(const std::string& s) const		{ return s == c_str(); }
-
-		friend std::ostream& operator<<(std::ostream& os, ItemReference& item);
 
 	private:
 		friend class ::cif::Row;
@@ -443,6 +343,27 @@ namespace detail
 				result = static_cast<T>(std::stod(ref.c_str()));
 			return result;
 		}
+
+		static int compare(const ItemReference& ref, double value, bool icase)
+		{
+			int result = 0;
+			try
+			{
+				double v = std::stod(ref.c_str());
+				if (v < value)
+					result = -1;
+				else if (v > value)
+					result = 1;
+			}
+			catch (...)
+			{
+				if (VERBOSE)
+					std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+				result = 1;
+			}
+			
+			return result;
+		}
 	};
 
 	template<typename T>
@@ -453,6 +374,27 @@ namespace detail
 			T result = {};
 			if (not ref.empty())
 				result = static_cast<T>(std::stoul(ref.c_str()));
+			return result;
+		}
+
+		static int compare(const ItemReference& ref, unsigned long value, bool icase)
+		{
+			int result = 0;
+			try
+			{
+				auto v = std::stoul(ref.c_str());
+				if (v < value)
+					result = -1;
+				else if (v > value)
+					result = 1;
+			}
+			catch (...)
+			{
+				if (VERBOSE)
+					std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+				result = 1;
+			}
+			
 			return result;
 		}
 	};
@@ -467,6 +409,27 @@ namespace detail
 				result = static_cast<T>(std::stol(ref.c_str()));
 			return result;
 		}
+
+		static int compare(const ItemReference& ref, long value, bool icase)
+		{
+			int result = 0;
+			try
+			{
+				auto v = std::stol(ref.c_str());
+				if (v < value)
+					result = -1;
+				else if (v > value)
+					result = 1;
+			}
+			catch (...)
+			{
+				if (VERBOSE)
+					std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+				result = 1;
+			}
+			
+			return result;
+		}
 	};
 
 	template<typename T>
@@ -479,6 +442,33 @@ namespace detail
 				result = ref.as<T>();
 			return result;
 		}
+
+		static int compare(const ItemReference& ref, std::optional<T> value, bool icase)
+		{
+			if (ref.empty() and not value)
+				return 0;
+			
+			if (ref.empty())
+				return -1;
+			else if (not value)
+				return 1;
+			else
+				return ref.compare(*value, icase);
+		}
+	};
+
+	template<size_t N>
+	struct ItemReference::item_value_as<char[N]>
+	{
+		// static const char* convert(const ItemReference& ref)
+		// {
+		// 	return ref.c_str();
+		// }
+
+		static int compare(const ItemReference& ref, const char (&value)[N], bool icase)
+		{
+			return icase ? cif::icompare(ref.c_str(), value) : std::strcmp(ref.c_str(), value);
+		}
 	};
 
 	template<>
@@ -488,6 +478,11 @@ namespace detail
 		{
 			return ref.c_str();
 		}
+
+		static int compare(const ItemReference& ref, const char* value, bool icase)
+		{
+			return icase ? cif::icompare(ref.c_str(), value) : std::strcmp(ref.c_str(), value);
+		}
 	};
 
 	template<>
@@ -496,6 +491,11 @@ namespace detail
 		static std::string convert(const ItemReference& ref)
 		{
 			return ref.c_str();
+		}
+
+		static int compare(const ItemReference& ref, const std::string& value, bool icase)
+		{
+			return icase ? cif::icompare(ref.c_str(), value) : std::strcmp(ref.c_str(), value.c_str());
 		}
 	};
 
@@ -1016,30 +1016,17 @@ template<typename T>
 Condition operator==(const Key& key, const T& v)
 {
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return r[tag].compare(v) == 0; }));
+		{ return r[tag].template compare<T>(v, icase) == 0; }));
 }
 
-inline Condition operator==(const Key& key, const char* v)
-{
-	std::string value(v ? v : "");
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, value](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].icompare(value) : r[tag].compare(value)) == 0; }));
-}
-
-inline Condition operator==(const Key& key, const std::string& v)
-{
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].icompare(v) : r[tag].compare(v)) == 0; }));
-}
-
-inline Condition operator==(const Key& key, const detail::ItemReference& v)
-{
-	if (v.empty())
-		return Condition(new detail::KeyIsEmptyConditionImpl(key.mItemTag));
-	else
-		return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-			{ return icase ? r[tag].icompare(v) : r[tag].compare(v); }));
-}
+// inline Condition operator==(const Key& key, const detail::ItemReference& v)
+// {
+// 	if (v.empty())
+// 		return Condition(new detail::KeyIsEmptyConditionImpl(key.mItemTag));
+// 	else
+// 		return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
+// 			{ return r[tag].template compare<(v, icase) == 0; }));
+// }
 
 inline Condition operator==(const Key& key, const Empty&)
 {
@@ -1062,84 +1049,28 @@ template<typename T>
 Condition operator>(const Key& key, const T& v)
 {
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return r[tag].compare(v) > 0; }));
+		{ return r[tag].template compare<T>(v, icase) > 0; }));
 }
 
 template<typename T>
 Condition operator>=(const Key& key, const T& v)
 {
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
-		{ return r[tag].compare(v) >= 0; }));
+	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
+		{ return r[tag].template compare<T>(v, icase) >= 0; }));
 }
 
 template<typename T>
 Condition operator<(const Key& key, const T& v)
 {
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
-		{ return r[tag].compare(v) < 0; }));
+	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
+		{ return r[tag].template compare<T>(v, icase) < 0; }));
 }
 
 template<typename T>
 Condition operator<=(const Key& key, const T& v)
 {
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
-		{ return r[tag].compare(v) <= 0; }));
-}
-
-template<typename T>
-Condition operator>(const Key& key, const char* v)
-{
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].template icompare<std::string>(v) : r[tag].template compare<std::string>(v)) > 0; }));
-}
-
-template<typename T>
-Condition operator>=(const Key& key, const char* v)
-{
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].template icompare<std::string>(v) : r[tag].template compare<std::string>(v)) >= 0; }));
-}
-
-template<typename T>
-Condition operator<(const Key& key, const char* v)
-{
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].template icompare<std::string>(v) : r[tag].template compare<std::string>(v)) < 0; }));
-}
-
-template<typename T>
-Condition operator<=(const Key& key, const char* v)
-{
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].template icompare<std::string>(v) : r[tag].template compare<std::string>(v)) <= 0; }));
-}
-
-template<typename T>
-Condition operator>(const Key& key, const std::string& v)
-{
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].icompare(v) : r[tag].compare(v)) > 0; }));
-}
-
-template<typename T>
-Condition operator>=(const Key& key, const std::string& v)
-{
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].icompare(v) : r[tag].compare(v)) >= 0; }));
-}
-
-template<typename T>
-Condition operator<(const Key& key, const std::string& v)
-{
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].icompare(v) : r[tag].compare(v)) < 0; }));
-}
-
-template<typename T>
-Condition operator<=(const Key& key, const std::string& v)
-{
-	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
-		{ return (icase ? r[tag].icompare(v) : r[tag].compare(v)) <= 0; }));
+		{ return r[tag].template compare<T>(v, icase) <= 0; }));
 }
 
 template<>
