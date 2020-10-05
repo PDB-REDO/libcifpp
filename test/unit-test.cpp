@@ -292,6 +292,115 @@ _cat_2.desc
         { "parent_id", 2 },
         { "desc", "moet fout gaan" }
     }), std::exception);
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(d2)
+{
+    const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+    _item_type_list.detail
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+;              code item types/single words ...
+;
+               ucode     char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+;              code item types/single words, case insensitive
+;
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+;              text item types / multi-line text ...
+;
+               int       numb
+               '[+-]?[0-9]+'
+;              int item types are the subset of numbers that are the negative
+               or positive integers.
+;
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_1.c
+    _item.name                '_cat_1.c'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           ucode
+    save_
+)";
+
+    struct membuf : public std::streambuf
+    {
+        membuf(char* text, size_t length)
+        {
+            this->setg(text, text, text + length);
+        }
+    } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
+
+    std::istream is_dict(&buffer);
+
+    cif::File f;
+    f.loadDictionary(is_dict);
+
+    // --------------------------------------------------------------------
+
+    const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.c
+aap  Aap
+noot Noot
+mies Mies
+)";   
+
+    struct data_membuf : public std::streambuf
+    {
+        data_membuf(char* text, size_t length)
+        {
+            this->setg(text, text, text + length);
+        }
+    } data_buffer(const_cast<char*>(data), sizeof(data) - 1);
+
+    std::istream is_data(&data_buffer);
+    f.load(is_data);
+
+    auto& cat1 = f.firstDatablock()["cat_1"];
+
+    BOOST_CHECK(cat1.size() == 3);
+
+    cat1.erase(cif::Key("id") == "AAP");
+
+    BOOST_CHECK(cat1.size() == 3);
+
+    cat1.erase(cif::Key("id") == "noot");
+
+    BOOST_CHECK(cat1.size() == 2);
 
 
 }

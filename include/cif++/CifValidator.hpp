@@ -28,9 +28,6 @@
 
 #include "cif++/Cif++.hpp"
 
-//// the std regex of gcc is crashing....
-// #include <boost/regex.hpp>
-
 #include <regex>
 #include <set>
 

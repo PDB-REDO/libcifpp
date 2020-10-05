@@ -246,7 +246,7 @@ class Datablock
   private:
 
 	std::list<Category>	mCategories;
-	std::string				mName;
+	std::string			mName;
 	Validator*			mValidator;
 	Datablock*			mNext;
 };
@@ -264,7 +264,7 @@ namespace detail
 	{
 	  public:
 
-		// some conversion helper classes
+		// conversion helper class
 		template<typename T, typename = void>
 		struct item_value_as;
 
@@ -318,7 +318,7 @@ namespace detail
 		template<typename T, std::enable_if_t<std::is_same_v<T, char>, int> = 0>
 		int compare(const T& value) const
 		{
-			return icompare(std::string{value}, c_str());
+			return cif::icompare(std::string{value}, c_str());
 		}
 
 		template<typename T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T> and not std::is_same_v<T, char>, int> = 0>
@@ -368,9 +368,19 @@ namespace detail
 		template<typename T, std::enable_if_t<std::is_same_v<std::remove_cv_t<T>, std::string>, int> = 0>
 		int compare(const T& value) const
 		{
-			return icompare(c_str(), value.c_str());
+			return cif::icompare(c_str(), value.c_str());
 		}
-		
+
+		int compare(const ItemReference& rhs) const
+		{
+			return std::strcmp(c_str(), rhs.c_str());
+		}
+
+		int icompare(const std::string& value) const
+		{
+			return cif::icompare(c_str(), value.c_str());
+		}
+
 		// empty means either null or unknown
 		bool empty() const;
 		explicit operator bool() const		{ return not empty(); }
@@ -703,13 +713,11 @@ struct ConditionImpl
 	
 	virtual void prepare(const Category& c) {}
 	virtual bool test(const Category& c, const Row& r) const = 0;
-	virtual std::string str() const = 0;
 };
 
 struct AllConditionImpl : public ConditionImpl
 {
 	virtual bool test(const Category& c, const Row& r) const { return true; }
-	virtual std::string str() const { return "ALL"; }
 };
 
 struct orConditionImpl;
@@ -761,11 +769,6 @@ class Condition
 		return mImpl ? mImpl->test(c, r) : false;
 	}
 	
-	std::string str() const
-	{
-		return mImpl ? mImpl->str() : "";
-	}
-
 	bool empty() const		{ return mImpl == nullptr; }
 
 	friend Condition operator||(Condition&& a, Condition&& b);
@@ -801,78 +804,9 @@ struct KeyIsEmptyConditionImpl : public ConditionImpl
 		return r[mItemIx].empty();
 	}
 	
-	virtual std::string str() const
-	{
-		return mItemTag + " == <empty>";
-	}
-	
 	std::string mItemTag;
 	size_t mItemIx;
 };
-
-template<typename T>
-struct KeyIsConditionImpl : public ConditionImpl
-{
-	typedef T valueType;
-	
-	KeyIsConditionImpl(const std::string& ItemTag, const valueType& value)
-		: mItemTag(ItemTag), mValue(value) {}
-	
-	virtual void prepare(const Category& c);
-	
-	virtual bool test(const Category& c, const Row& r) const
-	{
-		return r[mItemIx].template compare<valueType>(mValue) == 0;
-	}
-	
-	virtual std::string str() const
-	{
-		return mItemTag + " == " + std::to_string(mValue);
-	}
-	
-	std::string mItemTag;
-	size_t mItemIx;
-	valueType mValue;
-};
-
-template<>
-inline
-std::string KeyIsConditionImpl<std::string>::str() const
-{
-	return mItemTag + " == " + mValue;
-}
-
-template<typename T>
-struct KeyIsNotConditionImpl : public ConditionImpl
-{
-	typedef T valueType;
-	
-	KeyIsNotConditionImpl(const std::string& ItemTag, const valueType& value)
-		: mItemTag(ItemTag), mValue(value) {}
-	
-	virtual void prepare(const Category& c);
-	
-	virtual bool test(const Category& c, const Row& r) const
-	{
-		return r[mItemIx].template compare<valueType>(mValue) != 0;
-	}
-	
-	virtual std::string str() const
-	{
-		return mItemTag + " != " + std::to_string(mValue);
-	}
-	
-	std::string mItemTag;
-	size_t mItemIx;
-	valueType mValue;
-};
-
-template<>
-inline
-std::string KeyIsNotConditionImpl<std::string>::str() const
-{
-	return mItemTag + " != " + mValue;
-}
 
 struct KeyCompareConditionImpl : public ConditionImpl
 {
@@ -885,11 +819,6 @@ struct KeyCompareConditionImpl : public ConditionImpl
 	virtual bool test(const Category& c, const Row& r) const
 	{
 		return mComp(c, r);
-	}
-	
-	virtual std::string str() const
-	{
-		return mItemTag + " compare";
 	}
 	
 	std::string mItemTag;
@@ -909,11 +838,6 @@ struct KeyMatchesConditionImpl : public ConditionImpl
 		return std::regex_match(r[mItemIx].as<std::string>(), mRx);
 	}
 	
-	virtual std::string str() const
-	{
-		return mItemTag + " ~= " + "<rx>";
-	}
-	
 	std::string mItemTag;
 	size_t mItemIx;
 	std::regex mRx;
@@ -929,11 +853,6 @@ struct anyIsConditionImpl : public ConditionImpl
 	
 	virtual bool test(const Category& c, const Row& r) const;
 
-	virtual std::string str() const
-	{
-		return "any == " + std::to_string(mValue);
-	}
-	
 	valueType mValue;
 };
 
@@ -944,11 +863,6 @@ struct anyMatchesConditionImpl : public ConditionImpl
 	
 	virtual bool test(const Category& c, const Row& r) const;
 
-	virtual std::string str() const
-	{
-		return "any ~= <rx>";
-	}
-	
 	std::regex mRx;
 };
 
@@ -960,11 +874,6 @@ struct allConditionImpl : public ConditionImpl
     {
         return true;
     }
-
-	virtual std::string str() const
-	{
-		return "ALL";
-	}
 };
 
 struct andConditionImpl : public ConditionImpl
@@ -993,11 +902,6 @@ struct andConditionImpl : public ConditionImpl
 		return mA->test(c, r) and mB->test(c, r);
 	}
 
-	virtual std::string str() const
-	{
-		return "(" + mA->str() + ") and (" + mB->str() + ")";
-	}
-		
 	ConditionImpl* mA;
 	ConditionImpl* mB;
 };
@@ -1028,11 +932,6 @@ struct orConditionImpl : public ConditionImpl
 		return mA->test(c, r) or mB->test(c, r);
 	}
 		
-	virtual std::string str() const
-	{
-		return "(" + mA->str() + ") or (" + mB->str() + ")";
-	}
-	
 	ConditionImpl* mA;
 	ConditionImpl* mB;
 };
@@ -1060,11 +959,6 @@ struct notConditionImpl : public ConditionImpl
 		return not mA->test(c, r);
 	}
 		
-	virtual std::string str() const
-	{
-		return "NOT (" + mA->str() + ")";
-	}
-	
 	ConditionImpl* mA;
 };
 
@@ -1088,13 +982,6 @@ inline Condition operator||(Condition&& a, Condition&& b)
 	return Condition(std::move(b));
 }
 
-inline
-std::ostream& operator<<(std::ostream& os, const Condition& rhs)
-{
-	os << rhs.str();
-	return os;
-}
-
 struct Empty {};
 
 struct Key
@@ -1111,13 +998,15 @@ struct Key
 template<typename T>
 Condition operator==(const Key& key, const T& v)
 {
-	return Condition(new detail::KeyIsConditionImpl<T>(key.mItemTag, v));
+	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
+		{ return r[tag].compare(v) > 0; }));
 }
 
 inline Condition operator==(const Key& key, const char* v)
 {
 	std::string value(v ? v : "");
-	return Condition(new detail::KeyIsConditionImpl<std::string>(key.mItemTag, value));
+	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, value](const Category& c, const Row& r)
+		{ return r[tag].compare(value) == 0; }));
 }
 
 inline Condition operator==(const Key& key, const detail::ItemReference& v)
@@ -1125,7 +1014,8 @@ inline Condition operator==(const Key& key, const detail::ItemReference& v)
 	if (v.empty())
 		return Condition(new detail::KeyIsEmptyConditionImpl(key.mItemTag));
 	else
-		return Condition(new detail::KeyIsConditionImpl<std::string>(key.mItemTag, v.c_str()));
+		return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
+			{ return r[tag].compare(v); }));
 }
 
 inline Condition operator==(const Key& key, const Empty&)
@@ -1136,41 +1026,41 @@ inline Condition operator==(const Key& key, const Empty&)
 template<typename T>
 Condition operator!=(const Key& key, const T& v)
 {
-	return Condition(new detail::KeyIsNotConditionImpl<T>(key.mItemTag, v));
+	return Condition(new detail::notConditionImpl(operator==(key, v)));
 }
 
 inline Condition operator!=(const Key& key, const char* v)
 {
 	std::string value(v ? v : "");
-	return Condition(new detail::KeyIsNotConditionImpl<std::string>(key.mItemTag, value));
+	return Condition(new detail::notConditionImpl(operator==(key, value)));
 }
 
 template<typename T>
 Condition operator>(const Key& key, const T& v)
 {
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
-		{ return r[tag].as<T>() > v; }));
+		{ return r[tag].compare(v) > 0; }));
 }
 
 template<typename T>
 Condition operator>=(const Key& key, const T& v)
 {
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
-		{ return r[tag].as<T>() >= v; }));
+		{ return r[tag].compare(v) >= 0; }));
 }
 
 template<typename T>
 Condition operator<(const Key& key, const T& v)
 {
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
-		{ return r[tag].as<T>() < v; }));
+		{ return r[tag].compare(v) < 0; }));
 }
 
 template<typename T>
 Condition operator<=(const Key& key, const T& v)
 {
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r)
-		{ return r[tag].as<T>() <= v; }));
+		{ return r[tag].compare(v) <= 0; }));
 }
 
 template<>
@@ -1782,18 +1672,6 @@ inline void swap(cif::detail::ItemReference& a, cif::detail::ItemReference& b)
 
 namespace detail
 {
-
-template<typename T>
-void KeyIsConditionImpl<T>::prepare(const Category& c)
-{
-	mItemIx = c.getColumnIndex(mItemTag);
-}
-
-template<typename T>
-void KeyIsNotConditionImpl<T>::prepare(const Category& c)
-{
-	mItemIx = c.getColumnIndex(mItemTag);
-}
 
 inline void KeyCompareConditionImpl::prepare(const Category& c)
 {

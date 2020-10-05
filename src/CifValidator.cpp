@@ -26,10 +26,6 @@
 
 #include <boost/algorithm/string.hpp>
 
-//// since gcc's regex is crashing....
-// #include <boost/regex.hpp>
-// #include <regex>
-
 #include "cif++/Cif++.hpp"
 #include "cif++/CifParser.hpp"
 #include "cif++/CifValidator.hpp"

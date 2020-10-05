@@ -568,7 +568,16 @@ void Datablock::write(std::ostream& os, const std::vector<std::string>& order)
 
 namespace detail
 {
-	
+
+// void ConditionImpl::prepare(const Category& c)
+// {
+// 	auto cv = c.getCatValidator();
+// 	if (cv)
+// 	{
+// 		auto iv = cv->getValidatorForItem(mItemTag);
+// 	}
+// }
+
 void KeyIsEmptyConditionImpl::prepare(const Category& c)
 {
 	mItemIx = c.getColumnIndex(mItemTag);
@@ -1766,11 +1775,11 @@ bool Category::hasParent(Row r, const Category& parentCat, const ValidateLink& l
 	{
 		result = parentCat.exists(std::move(cond));
 
-		if (VERBOSE > 3 or (result == false and VERBOSE > 2))
-			std::cerr << "result = " << std::boolalpha << result << " for: '" << cond << "' in parent category " << link.mParentCategory << " for child cat " << mName << std::endl;
+		// if (VERBOSE > 3 or (result == false and VERBOSE > 2))
+		// 	std::cerr << "result = " << std::boolalpha << result << " for: '" << cond << "' in parent category " << link.mParentCategory << " for child cat " << mName << std::endl;
 	}
-	else if (VERBOSE > 3 and cond.empty())
-		std::cerr << "Condition is empty due to missing data in parent category " << link.mParentCategory << " for child cat " << mName << std::endl;
+	// else if (VERBOSE > 3 and cond.empty())
+	// 	std::cerr << "Condition is empty due to missing data in parent category " << link.mParentCategory << " for child cat " << mName << std::endl;
 
 	return result;
 }
@@ -1795,8 +1804,8 @@ bool Category::isOrphan(Row r)
 			cond = std::move(cond) && (Key(link->mParentKeys[ix]) == value);
 		}
 
-		if (VERBOSE > 2)
-			std::cerr << "Check condition '" << cond << "' in parent category " << link->mParentCategory << " for child cat " << mName << std::endl;
+		// if (VERBOSE > 2)
+		// 	std::cerr << "Check condition '" << cond << "' in parent category " << link->mParentCategory << " for child cat " << mName << std::endl;
 
 		if (parentCat->exists(std::move(cond)))
 		{
@@ -2702,9 +2711,9 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 				if (cond[ab].empty())
 					continue;
 
-				if (VERBOSE > 1)
-					std::cerr << "Fixing link from " << cat->mName << " to " << childCat->mName << " with " << std::endl
-						 << cond[ab] << std::endl;
+				// if (VERBOSE > 1)
+				// 	std::cerr << "Fixing link from " << cat->mName << " to " << childCat->mName << " with " << std::endl
+				// 		 << cond[ab] << std::endl;
 				
 				rs.push_back(childCat->find(std::move(cond[ab])));
 			}
