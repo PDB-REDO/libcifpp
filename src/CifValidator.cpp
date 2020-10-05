@@ -53,11 +53,11 @@ DDL_PrimitiveType mapToPrimitiveType(const std::string& s)
 {
 	DDL_PrimitiveType result;
 	if (iequals(s, "char"))
-		result = ptChar;
+		result = DDL_PrimitiveType::Char;
 	else if (iequals(s, "uchar"))
-		result = ptUChar;
+		result = DDL_PrimitiveType::UChar;
 	else if (iequals(s, "numb"))
-		result = ptNumb;
+		result = DDL_PrimitiveType::Numb;
 	else
 		throw ValidationError("Not a known primitive type");
 	return result;
@@ -79,7 +79,7 @@ int ValidateType::compare(const char* a, const char* b) const
 		{
 			switch (mPrimitiveType)
 			{
-				case ptNumb:
+				case DDL_PrimitiveType::Numb:
 				{
 					double da = strtod(a, nullptr);
 					double db = strtod(b, nullptr);
@@ -95,8 +95,8 @@ int ValidateType::compare(const char* a, const char* b) const
 					break;
 				}
 				
-				case ptUChar:
-				case ptChar:
+				case DDL_PrimitiveType::UChar:
+				case DDL_PrimitiveType::Char:
 				{
 					// CIF is guaranteed to have ascii only, therefore this primitive code will do
 					// also, we're collapsing spaces
@@ -119,7 +119,7 @@ int ValidateType::compare(const char* a, const char* b) const
 						char ca = *ai;
 						char cb = *bi;
 
-						if (mPrimitiveType == ptUChar)
+						if (mPrimitiveType == DDL_PrimitiveType::UChar)
 						{
 							ca = toupper(ca);
 							cb = toupper(cb);
@@ -238,7 +238,7 @@ const ValidateType* Validator::getValidatorForType(std::string typeCode) const
 {
 	const ValidateType* result = nullptr;
 	
-	auto i = mTypeValidators.find(ValidateType{ typeCode, ptChar, std::regex() });
+	auto i = mTypeValidators.find(ValidateType{ typeCode, DDL_PrimitiveType::Char, std::regex() });
 	if (i != mTypeValidators.end())
 		result = &*i;
 	else if (VERBOSE > 4)

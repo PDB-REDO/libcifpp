@@ -50,9 +50,9 @@ class ValidationError : public std::exception
 
 // --------------------------------------------------------------------
 
-enum DDL_PrimitiveType
+enum class DDL_PrimitiveType
 {
-	ptChar, ptUChar, ptNumb
+	Char, UChar, Numb
 };
 
 DDL_PrimitiveType mapToPrimitiveType(const std::string& s);

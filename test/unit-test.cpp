@@ -318,7 +318,7 @@ data_test_dict.dic
                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
 ;              code item types/single words ...
 ;
-               ucode     char
+               ucode     uchar
                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
 ;              code item types/single words, case insensitive
 ;

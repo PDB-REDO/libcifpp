@@ -569,14 +569,21 @@ void Datablock::write(std::ostream& os, const std::vector<std::string>& order)
 namespace detail
 {
 
-// void ConditionImpl::prepare(const Category& c)
-// {
-// 	auto cv = c.getCatValidator();
-// 	if (cv)
-// 	{
-// 		auto iv = cv->getValidatorForItem(mItemTag);
-// 	}
-// }
+void KeyCompareConditionImpl::prepare(const Category& c)
+{
+	mItemIx = c.getColumnIndex(mItemTag);
+
+	auto cv = c.getCatValidator();
+	if (cv)
+	{
+		auto iv = cv->getValidatorForItem(mItemTag);
+		if (iv != nullptr and iv->mType != nullptr)
+		{
+			auto type = iv->mType;
+			mCaseInsensitive = type->mPrimitiveType == DDL_PrimitiveType::UChar;
+		}
+	}
+}
 
 void KeyIsEmptyConditionImpl::prepare(const Category& c)
 {
