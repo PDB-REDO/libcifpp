@@ -3462,14 +3462,14 @@ void WriteCrystallographic(std::ostream& pdbFile, Datablock& db)
 	boost::format kCRYST1("CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11.11s%4.4d");
 	
 	pdbFile << (kCRYST1
-		% r["length_a"]
-		% r["length_b"]
-		% r["length_c"]
-		% r["angle_alpha"]
-		% r["angle_beta"]
-		% r["angle_gamma"]
+		% r["length_a"].as<double>()
+		% r["length_b"].as<double>()
+		% r["length_c"].as<double>()
+		% r["angle_alpha"].as<double>()
+		% r["angle_beta"].as<double>()
+		% r["angle_gamma"].as<double>()
 		% symmetry
-		% r["Z_PDB"]) << std::endl;
+		% r["Z_PDB"].as<double>()) << std::endl;
 }
 
 int WriteCoordinateTransformation(std::ostream& pdbFile, Datablock& db)

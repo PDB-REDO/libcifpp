@@ -460,11 +460,6 @@ namespace detail
 	template<size_t N>
 	struct ItemReference::item_value_as<char[N]>
 	{
-		// static const char* convert(const ItemReference& ref)
-		// {
-		// 	return ref.c_str();
-		// }
-
 		static int compare(const ItemReference& ref, const char (&value)[N], bool icase)
 		{
 			return icase ? cif::icompare(ref.c_str(), value) : std::strcmp(ref.c_str(), value);
@@ -498,12 +493,6 @@ namespace detail
 			return icase ? cif::icompare(ref.c_str(), value) : std::strcmp(ref.c_str(), value.c_str());
 		}
 	};
-
-	inline std::ostream& operator<<(std::ostream& os, const ItemReference& rhs)
-	{
-		os << rhs.c_str();
-		return os;
-	}
 
 	// some helper classes to help create tuple result types
 	template<typename... C>
