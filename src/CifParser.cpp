@@ -935,7 +935,7 @@ void DictParser::linkItems()
 				error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 
 			auto key = std::make_tuple(piv->mCategory->mName, civ->mCategory->mName);
-			if (linkIndex.count(key))
+			if (not linkIndex.count(key))
 			{
 				linkIndex[key] = linkKeys.size();
 				linkKeys.push_back({});
