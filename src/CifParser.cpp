@@ -973,29 +973,29 @@ void DictParser::linkItems()
 			size_t ix = linkIndex.at(key);
 			addLink(ix, piv->mTag, civ->mTag);
 		}
+	}
 
-		auto& linkedGroup = dict["pdbx_item_linked_group"];
+	auto& linkedGroup = dict["pdbx_item_linked_group"];
 
-		// now store the links in the validator
-		for (auto& kv: linkIndex)
+	// now store the links in the validator
+	for (auto& kv: linkIndex)
+	{
+		ValidateLink link = {};
+		std::tie(link.mParentCategory, link.mChildCategory) = kv.first;
+
+		if (linkGroupIds.count(kv.first))
+			link.mLinkGroupID = linkGroupIds[kv.first];
+		
+		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
+
+		// look up the label
+		for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
 		{
-			ValidateLink link = {};
-			std::tie(link.mParentCategory, link.mChildCategory) = kv.first;
-
-			if (linkGroupIds.count(kv.first))
-				link.mLinkGroupID = linkGroupIds[kv.first];
-			
-			std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
-
-			// look up the label
-			for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
-			{
-				link.mLinkGroupLabel = r["label"].as<std::string>();
-				break;
-			}
-
-			mValidator.addLinkValidator(std::move(link));
+			link.mLinkGroupLabel = r["label"].as<std::string>();
+			break;
 		}
+
+		mValidator.addLinkValidator(std::move(link));
 	}
 
 	// now make sure the itemType is specified for all itemValidators
