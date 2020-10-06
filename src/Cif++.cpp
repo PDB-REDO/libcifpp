@@ -2519,7 +2519,7 @@ void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 				std::string pk = linked->mParentKeys[ix];
 				std::string ck = linked->mChildKeys[ix];
 
-				// TODO add code to *NOT* test mandatory fiels for Empty
+				// TODO add code to *NOT* test mandatory fields for Empty
 
 				if (pk == iv->mTag)
 				{
@@ -2529,16 +2529,19 @@ void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 				else
 				{
 					const char* value = (*this)[pk].c_str();
-					cond = std::move(cond) && ((Key(ck) == value) or Key(ck) == Empty());
+					if (*value == 0)
+						cond = std::move(cond) && Key(ck) == Empty();
+					else
+						cond = std::move(cond) && ((Key(ck) == value) or Key(ck) == Empty());
 				}
 				
 			}
 
-			// if (cif::VERBOSE > 2)
-			// {
-			// 	std::std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::std::endl
-			// 			  << cond << std::std::endl;
-			// }
+			if (cif::VERBOSE >= 2)
+			{
+				std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::endl
+						  << cond << std::endl;
+			}
 
 			auto rows = childCat->find(std::move(cond));
 			for (auto& cr: rows)
