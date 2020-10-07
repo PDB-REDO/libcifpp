@@ -24,9 +24,9 @@ before_install:
 
 script:
   - ./configure
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake             ; else make             ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake test        ; else make test        ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then sudo gmake install; else sudo make install; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake NO_REVISION=1             ; else make NO_REVISION=1             ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake test NO_REVISION=1        ; else make test NO_REVISION=1        ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then sudo gmake NO_REVISION=1 install; else sudo make install NO_REVISION=1; fi
 
 jobs:
   allow_failures:

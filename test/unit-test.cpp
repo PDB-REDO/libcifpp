@@ -834,8 +834,6 @@ _cat_2.parent_id3
 
     BOOST_CHECK(cat2.find(cif::Key("parent_id") == 4).size() == 3);
     BOOST_CHECK(cat2.find(cif::Key("parent_id") == 40).size() == 0);
-
-    f.write(std::cout, {});
 }
 
 // --------------------------------------------------------------------
@@ -992,8 +990,6 @@ _cat_2.parent_id3
         r["id"] = 10;
         break;
     }
-
-    f.write(std::cout, {});
 
     BOOST_CHECK(cat1.size() == 3);
     BOOST_CHECK(cat2.size() == 7);
