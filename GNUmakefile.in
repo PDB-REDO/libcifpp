@@ -49,10 +49,10 @@ CLIBD				?= $(CCP4DIR)/lib/data
 
 DATADIR				= $(datadir)/libcifpp
 
-ifeq "$(CHECK_CONFIG)" "1"
-
 GNUmakefile: config.status GNUmakefile.in
 	$(SHELL) ./config.status
+
+ifeq "$(CHECK_CONFIG)" "1"
 
 config.status: configure
 	$(SHELL) ./config.status --recheck
@@ -60,11 +60,11 @@ config.status: configure
 configure: configure.ac
 	autoconf
 
+endif
+
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
-
-endif
 
 # libtool stuff
 
