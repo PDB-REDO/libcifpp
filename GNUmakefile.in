@@ -132,6 +132,23 @@ $(OBJDIR)/Symmetry.lo: src/SymOpTable_data.cpp
 
 endif
 
+REVISION = $(shell git log --pretty=format:%h --max-count=1)
+REVISION_FILE = version-info-$(REVISION).txt
+
+$(REVISION_FILE):
+	rm -f version-info-*.txt
+	git describe --match=build --dirty > $@
+	@ git log --pretty=medium --date=iso8601 -1 >> $@
+
+src/revision.hpp: $(REVISION_FILE)
+	@ echo 'const char kRevision[] = R"(' > $@
+	@ cat $? >> $@
+	@ echo ')";' >> $@
+
+$(OBJDIR)/CifUtils.o: src/revision.hpp
+
+$(OBJDIR)/CifUtils.lo: src/revision.hpp
+
 $(LIB_TARGET): $(OBJECTS)
 	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
 

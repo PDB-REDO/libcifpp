@@ -37,6 +37,7 @@
 #include <fstream>
 #include <map>
 #include <chrono>
+#include <regex>
 
 #if defined(_MSC_VER)
 #define TERM_WIDTH 80
@@ -56,6 +57,40 @@ namespace cif
 {
 
 extern int VERBOSE;
+
+// --------------------------------------------------------------------
+
+std::string get_version_nr()
+{
+	const std::regex
+		rxVersionNr(R"(build-(\d+)-g[0-9a-f]{7}(-dirty)?)");
+
+#include "revision.hpp"
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char* data, size_t length)       { this->setg(data, data, data + length); }
+	} buffer(const_cast<char*>(kRevision), sizeof(kRevision));
+
+	std::istream is(&buffer);
+
+	std::string line, result;
+
+	while (getline(is, line))
+	{
+		std::smatch m;
+
+		if (std::regex_match(line, m, rxVersionNr))
+		{
+			result = m[1];
+			if (m[2].matched)
+				result += '*';
+			break;
+		}
+	}
+
+	return result;
+}
 
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines

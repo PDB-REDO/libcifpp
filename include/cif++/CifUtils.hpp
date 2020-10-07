@@ -54,6 +54,12 @@ extern const char gResourceName[];
 namespace cif
 {
 
+// the git 'build' number
+std::string get_version_nr();
+// std::string get_version_date();
+
+// --------------------------------------------------------------------
+
 // some basic utilities: Since we're using ASCII input only, we define for optimisation
 // our own case conversion routines.
 

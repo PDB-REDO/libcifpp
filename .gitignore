@@ -15,3 +15,4 @@ config.log
 libtool
 rsrc/lib-version.txt
 version-info*.txt
+src/revision.hpp
