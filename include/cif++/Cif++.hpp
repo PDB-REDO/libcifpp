@@ -347,19 +347,27 @@ namespace detail
 		static int compare(const ItemReference& ref, double value, bool icase)
 		{
 			int result = 0;
-			try
-			{
-				double v = std::stod(ref.c_str());
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				if (VERBOSE)
-					std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+
+			const char* s = ref.c_str();
+
+			if (s == nullptr or *s == 0)
 				result = 1;
+			else
+			{
+				try
+				{
+					auto v = std::strtod(s, nullptr);
+					if (v < value)
+						result = -1;
+					else if (v > value)
+						result = 1;
+				}
+				catch (...)
+				{
+					if (VERBOSE)
+						std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+					result = 1;
+				}
 			}
 			
 			return result;
@@ -380,19 +388,27 @@ namespace detail
 		static int compare(const ItemReference& ref, unsigned long value, bool icase)
 		{
 			int result = 0;
-			try
-			{
-				auto v = std::stoul(ref.c_str());
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				if (VERBOSE)
-					std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+
+			const char* s = ref.c_str();
+
+			if (s == nullptr or *s == 0)
 				result = 1;
+			else
+			{
+				try
+				{
+					auto v = std::strtoul(s, nullptr, 10);
+					if (v < value)
+						result = -1;
+					else if (v > value)
+						result = 1;
+				}
+				catch (...)
+				{
+					if (VERBOSE)
+						std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+					result = 1;
+				}
 			}
 			
 			return result;
@@ -413,19 +429,27 @@ namespace detail
 		static int compare(const ItemReference& ref, long value, bool icase)
 		{
 			int result = 0;
-			try
-			{
-				auto v = std::stol(ref.c_str());
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				if (VERBOSE)
-					std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+
+			const char* s = ref.c_str();
+
+			if (s == nullptr or *s == 0)
 				result = 1;
+			else
+			{
+				try
+				{
+					auto v = std::strtol(s, nullptr, 10);
+					if (v < value)
+						result = -1;
+					else if (v > value)
+						result = 1;
+				}
+				catch (...)
+				{
+					if (VERBOSE)
+						std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+					result = 1;
+				}
 			}
 			
 			return result;

@@ -2524,7 +2524,7 @@ void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 				if (pk == iv->mTag)
 				{
 					childTag = ck;
-					cond = std::move(cond) && ((Key(ck) == oldStrValue) or Key(ck) == Empty());
+					cond = std::move(cond) && Key(ck) == oldStrValue;
 				}
 				else
 				{
@@ -2534,7 +2534,6 @@ void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 					else
 						cond = std::move(cond) && ((Key(ck) == value) or Key(ck) == Empty());
 				}
-				
 			}
 
 			if (cif::VERBOSE >= 2)

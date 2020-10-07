@@ -890,9 +890,14 @@ void DictParser::linkItems()
 		error("no datablock");
 
 	auto& dict = *mDataBlock;
-	
-	std::map<std::tuple<std::string,std::string>,size_t> linkIndex;
-	std::map<std::tuple<std::string,std::string>,int> linkGroupIds;
+
+	// links are identified by a parent category, a child category and a group ID
+
+	using key_type = std::tuple<std::string,std::string,int>;
+
+	std::map<key_type,size_t> linkIndex;
+
+	// Each link group consists of a set of keys
 	std::vector<std::tuple<std::vector<std::string>,std::vector<std::string>>> linkKeys;
 
 	auto addLink = [&](size_t ix, const std::string& pk, const std::string& ck)
@@ -918,6 +923,32 @@ void DictParser::linkItems()
 
 	auto& linkedGroupList = dict["pdbx_item_linked_group_list"];
 
+	for (auto gl: linkedGroupList)
+	{
+		std::string child, parent;
+		int link_group_id;
+		cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
+		
+		auto civ = mValidator.getValidatorForItem(child);
+		if (civ == nullptr)
+			error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
+		
+		auto piv = mValidator.getValidatorForItem(parent);
+		if (piv == nullptr)
+			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
+		
+		key_type key{ piv->mCategory->mName, civ->mCategory->mName, link_group_id };
+		if (not linkIndex.count(key))
+		{
+			linkIndex[key] = linkKeys.size();
+			linkKeys.push_back({});
+		}
+		
+		size_t ix = linkIndex.at(key);
+		addLink(ix, piv->mTag, civ->mTag);
+	}
+
+	// Only process inline linked items if the linked group list is absent
 	if (linkedGroupList.empty())
 	{
 		// for links recorded in categories but not in pdbx_item_linked_group_list
@@ -934,40 +965,11 @@ void DictParser::linkItems()
 			if (piv == nullptr)
 				error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 
-			auto key = std::make_tuple(piv->mCategory->mName, civ->mCategory->mName);
+			key_type key{ piv->mCategory->mName, civ->mCategory->mName, 0 };
 			if (not linkIndex.count(key))
 			{
 				linkIndex[key] = linkKeys.size();
 				linkKeys.push_back({});
-			}
-			
-			size_t ix = linkIndex.at(key);
-			addLink(ix, piv->mTag, civ->mTag);
-		}
-	}
-	else
-	{
-		for (auto gl: linkedGroupList)
-		{
-			std::string child, parent;
-			int link_group_id;
-			cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
-			
-			auto civ = mValidator.getValidatorForItem(child);
-			if (civ == nullptr)
-				error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
-			
-			auto piv = mValidator.getValidatorForItem(parent);
-			if (piv == nullptr)
-				error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
-			
-			auto key = std::make_tuple(piv->mCategory->mName, civ->mCategory->mName);
-			if (not linkIndex.count(key))
-			{
-				linkIndex[key] = linkKeys.size();
-				linkKeys.push_back({});
-
-				linkGroupIds[key] = link_group_id;
 			}
 			
 			size_t ix = linkIndex.at(key);
@@ -981,15 +983,12 @@ void DictParser::linkItems()
 	for (auto& kv: linkIndex)
 	{
 		ValidateLink link = {};
-		std::tie(link.mParentCategory, link.mChildCategory) = kv.first;
+		std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupID) = kv.first;
 
-		if (linkGroupIds.count(kv.first))
-			link.mLinkGroupID = linkGroupIds[kv.first];
-		
 		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
 
 		// look up the label
-		for (auto r:  linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
+		for (auto r: linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
 		{
 			link.mLinkGroupLabel = r["label"].as<std::string>();
 			break;
