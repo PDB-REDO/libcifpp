@@ -38,6 +38,7 @@
 #include <map>
 #include <chrono>
 #include <regex>
+#include <iomanip>
 
 #if defined(_MSC_VER)
 #define TERM_WIDTH 80
