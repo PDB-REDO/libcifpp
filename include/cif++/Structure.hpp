@@ -66,6 +66,9 @@ class Atom
 	Atom(struct AtomImpl* impl);
 	Atom(const Atom& rhs);
 
+	// a special constructor to create symmetry copies
+	Atom(const Atom& rhs, const Point& symmmetry_location);
+
 	~Atom();
 
 	explicit operator bool() const			{ return mImpl_ != nullptr;	}
@@ -81,6 +84,10 @@ class Atom
 	Point location() const;
 	void location(Point p);
 	
+	// for direct access to underlying data, be careful!
+	const cif::Row getRow() const;
+	const cif::Row getRowAniso() const;
+
 	// Atom symmetryCopy(const Point& d, const clipper::RTop_orth& rt);
 	// bool isSymmetryCopy() const;
 	// std::string symmetry() const;

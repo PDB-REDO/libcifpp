@@ -28,6 +28,10 @@
 
 #include <functional>
 
+#if HAVE_LIBCLIPPER
+#include <clipper/core/coords.h>
+#endif
+
 #include "cif++/Config.hpp"
 
 #include <boost/math/quaternion.hpp>
@@ -58,21 +62,24 @@ struct PointF
 	
 	PointF()							: mX(0), mY(0), mZ(0) {}
 	PointF(FType x, FType y, FType z)	: mX(x), mY(y), mZ(z) {}
-	// PointF(const clipper::Coord_orth& pt): mX(pt[0]), mY(pt[1]), mZ(pt[2]) {}
-	
+
 	template<typename PF>
 	PointF(const PointF<PF>& pt)
 		: mX(static_cast<F>(pt.mX))
 		, mY(static_cast<F>(pt.mY))
 		, mZ(static_cast<F>(pt.mZ)) {}
-	
-	// PointF& operator=(const clipper::Coord_orth& rhs)
-	// {
-	// 	mX = rhs[0];
-	// 	mY = rhs[1];
-	// 	mZ = rhs[2];
-	// 	return *this;
-	// }
+
+#if HAVE_LIBCLIPPER	
+	PointF(const clipper::Coord_orth& pt): mX(pt[0]), mY(pt[1]), mZ(pt[2]) {}
+
+	PointF& operator=(const clipper::Coord_orth& rhs)
+	{
+		mX = rhs[0];
+		mY = rhs[1];
+		mZ = rhs[2];
+		return *this;
+	}
+#endif
 
 	template<typename PF>
 	PointF& operator=(const PointF<PF>& rhs)
@@ -169,11 +176,13 @@ struct PointF
 		mZ = p.R_component_4();
 	}
 	
-	// operator clipper::Coord_orth() const
-	// {
-	// 	return clipper::Coord_orth(mX, mY, mZ);
-	// }
-	
+#if HAVE_LIBCLIPPER
+	operator clipper::Coord_orth() const
+	{
+		return clipper::Coord_orth(mX, mY, mZ);
+	}
+#endif
+
 	operator std::tuple<const FType&, const FType&, const FType&>() const
 	{
 		return std::make_tuple(std::ref(mX), std::ref(mY), std::ref(mZ));
@@ -379,8 +388,7 @@ class SphericalDots
 
 	SphericalDots()
 	{
-		using namespace std;
-		
+				
 		const double
 			kGoldenRatio = (1 + std::sqrt(5.0)) / 2;
 		

@@ -216,6 +216,16 @@ struct AtomImpl
 	// 	mLocation -= d;
 	// }
 
+	AtomImpl(const AtomImpl& impl, const Point& loc)
+		: mFile(impl.mFile), mID(impl.mID), mType(impl.mType), mAtomID(impl.mAtomID)
+		, mCompID(impl.mCompID), mAsymID(impl.mAsymID), mSeqID(impl.mSeqID)
+		, mAltID(impl.mAltID), mLocation(loc), mRefcount(1)
+		, mRow(impl.mRow), mCompound(impl.mCompound), mRadius(impl.mRadius)
+		, mCachedProperties(impl.mCachedProperties)
+		, mSymmetryCopy(true)
+	{
+	}
+
 	void prefetch()
 	{
 		// Prefetch some data
@@ -237,53 +247,6 @@ struct AtomImpl
 		mCompound = Compound::create(compID);
 	}
 	
-	// clipper::Atom toClipper() const
-	// {
-	// 	clipper::Atom result;
-	// 	result.set_coord_orth(mLocation);
-		
-	// 	if (mRow["occupancy"].empty())
-	// 		result.set_occupancy(1.0);
-	// 	else
-	// 		result.set_occupancy(mRow["occupancy"].as<float>());
-		
-	// 	std::string element = mRow["type_symbol"].as<std::string>();
-	// 	if (not mRow["pdbx_formal_charge"].empty())
-	// 	{
-	// 		int charge = mRow["pdbx_formal_charge"].as<int>();
-	// 		if (abs(charge) > 1)
-	// 			element += std::to_string(charge);
-	// 		if (charge < 0)
-	// 			element += '-';
-	// 		else
-	// 			element += '+';
-	// 	}
-	// 	result.set_element(element);
-		
-	// 	if (not mRow["U_iso_or_equiv"].empty())
-	// 		result.set_u_iso(mRow["U_iso_or_equiv"].as<float>());
-	// 	else if (not mRow["B_iso_or_equiv"].empty())
-	// 		result.set_u_iso(mRow["B_iso_or_equiv"].as<float>() / (8 * kPI * kPI));
-	// 	else
-	// 		throw std::runtime_error("Missing B_iso or U_iso");	
-		
-	// 	auto& db = *mFile.impl().mDb;
-	// 	auto& cat = db["atom_site_anisotrop"];
-	// 	auto r = cat[cif::Key("id") == mID];
-	// 	if (r.empty())
-	// 		result.set_u_aniso_orth(clipper::U_aniso_orth(nan("0"), 0, 0, 0, 0, 0));
-	// 	else
-	// 	{
-	// 		float u11, u12, u13, u22, u23, u33;
-	// 		cif::tie(u11, u12, u13, u22, u23, u33) =
-	// 			r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
-			
-	// 		result.set_u_aniso_orth(clipper::U_aniso_orth(u11, u22, u33, u12, u13, u23));
-	// 	}
-		
-	// 	return result;
-	// }
-
 	void reference()
 	{
 		++mRefcount;
@@ -396,14 +359,14 @@ struct AtomImpl
 	}
 
 	const File&			mFile;
-	std::string				mID;
+	std::string			mID;
 	AtomType			mType;
 
-	std::string				mAtomID;
-	std::string				mCompID;
-	std::string				mAsymID;
+	std::string			mAtomID;
+	std::string			mCompID;
+	std::string			mAsymID;
 	int					mSeqID;
-	std::string				mAltID;
+	std::string			mAltID;
 	
 	Point				mLocation;
 	int					mRefcount;
@@ -455,6 +418,11 @@ Atom Atom::clone() const
 	return Atom(mImpl_ ? new AtomImpl(*mImpl_) : nullptr);
 }
 
+Atom::Atom(const Atom& rhs, const Point& loc)
+	: mImpl_(new AtomImpl(*rhs.mImpl_, loc))
+{
+}
+
 Atom::Atom(const Atom& rhs)
 	: mImpl_(rhs.mImpl_)
 {
@@ -480,6 +448,18 @@ Atom& Atom::operator=(const Atom& rhs)
 	}
 
 	return *this;
+}
+
+const cif::Row Atom::getRow() const
+{
+	return mImpl_->mRow;
+}
+
+const cif::Row Atom::getRowAniso() const
+{
+	auto& db = *mImpl_->mFile.impl().mDb;
+	auto& cat = db["atom_site_anisotrop"];
+	return cat[cif::Key("id") == mImpl_->mID];
 }
 
 template<>
@@ -1583,57 +1563,6 @@ File::~File()
 void File::load(const std::string& p)
 {
 	mImpl->load(p);
-	
-//	// all data is now in mFile, construct atoms and others
-//	
-//	auto& db = mFile.firstDatablock();
-//	
-//	// the entities
-//	
-//	struct entity
-//	{
-//		std::string				id;
-//		std::string				type;
-//	};
-//	std::vector<entity> entities;
-//	
-//	for (auto& _e: db["entity"])
-//	{
-//		std::string type = _e["type"];
-//		ba::to_lower(type);
-//		entities.push_back({ _e["id"], type });
-//	}
-//
-//	auto& atomSites = db["atom_site"];
-//	for (auto& atomSite: atomSites)
-//	{
-//		AtomPtr ap(new Atom(this, atom_site));
-//
-//		std::string entity_id = atom_site["entity_id"];
-//		
-//		auto e = find_if(entities.begin(), entities.end(), [=](entity& e) -> bool { return e.id == entity_id; });
-//		if (e == entities.end())
-//			throw std::runtime_error("Entity " + entity_id + " is not defined");
-//
-//		std::string comp_id, asym_id, seq_id;
-//		cif::tie(comp_id, seq_id) = atom_site.get("label_comp_id", "label_asym_id", "label_seq_id");
-//
-//		auto r = find_if(m_residues.begin(), m_residues.end(), [=](residue_ptr& res) -> bool
-//		{
-////			return res.entities
-//			return false;
-//		});
-//		
-//		if (e->type == "water")
-//			;
-//		else if (e->type == "polymer")
-//			;
-//		else	
-//			;
-//		
-//		m_atoms.push_back(ap);
-//	}
-	
 }
 
 void File::save(const std::string& file)
