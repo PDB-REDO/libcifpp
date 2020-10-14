@@ -244,6 +244,15 @@ class Residue
 
 	bool hasAlternateAtoms() const;
 
+	/// \brief Return the list of unique alt ID's present in this residue
+	std::set<std::string> getAlternateIDs() const;
+
+	/// \brief Return the list of unique atom ID's
+	std::set<std::string> getAtomIDs() const;
+
+	/// \brief Return the list of atoms having ID \a atomID
+	AtomView getAtomsByID(const std::string& atomID) const;
+
 	// some routines for 3d work
 	std::tuple<Point,float> centerAndRadius() const;
 
@@ -436,6 +445,8 @@ class Structure
 	// 	const std::string& compID, int seqID, const std::string& altID = "",
 	// 	const std::string& pdbxAuthInsCode = "");
 	
+	const Residue& getResidue(const std::string& asymID, const std::string& compID, int seqID) const;
+
 	// map between auth and label locations
 	
 	std::tuple<std::string,int,std::string> MapAuthToLabel(const std::string& asymID,
@@ -536,7 +547,7 @@ class Structure
 	void updateAtomIndex();
 	
 	File&					mFile;
-	uint32_t					mModelNr;
+	uint32_t				mModelNr;
 	AtomView				mAtoms;
 	std::vector<size_t>		mAtomIndex;
 	std::list<Polymer>		mPolymers;

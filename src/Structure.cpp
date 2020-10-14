@@ -879,6 +879,20 @@ AtomView Residue::unique_atoms() const
 	return result;
 }
 
+std::set<std::string> Residue::getAlternateIDs() const
+{
+	std::set<std::string> result;
+
+	for (auto a: mAtoms)
+	{
+		auto alt = a.labelAltID();
+		if (not alt.empty())
+			result.insert(alt);
+	}
+
+	return result;
+}
+
 Atom Residue::atomByID(const std::string& atomID) const
 {
 	Atom result;
@@ -964,6 +978,26 @@ std::tuple<Point,float> Residue::centerAndRadius() const
 bool Residue::hasAlternateAtoms() const
 {
 	return std::find_if(mAtoms.begin(), mAtoms.end(), [](const Atom& atom) { return atom.isAlternate(); }) != mAtoms.end();
+}
+
+std::set<std::string> Residue::getAtomIDs() const
+{
+	std::set<std::string> ids;
+	for (auto a: mAtoms)
+		ids.insert(a.labelAtomID());
+	
+	return ids;
+}
+
+AtomView Residue::getAtomsByID(const std::string& atomID) const
+{
+	AtomView atoms;
+	for (auto a: mAtoms)
+	{
+		if (a.labelAtomID() == atomID)
+			atoms.push_back(a);
+	}
+	return atoms;
 }
 
 std::ostream& operator<<(std::ostream& os, const Residue& res)
@@ -1745,6 +1779,23 @@ Atom Structure::getAtomByLabel(const std::string& atomID, const std::string& asy
 	}
 
 	throw std::out_of_range("Could not find atom with specified label");
+}
+
+const Residue& Structure::getResidue(const std::string& asymID, const std::string& compID, int seqID) const
+{
+	for (auto& poly: mPolymers)
+	{
+		if (poly.asymID() != asymID)
+			continue;
+		
+		for (auto& res: poly)
+		{
+			if (res.seqID() == seqID and res.compoundID() == compID)
+				return res;
+		}
+	}
+
+	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
 }
 
 File& Structure::getFile() const
