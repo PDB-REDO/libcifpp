@@ -53,7 +53,7 @@ int GetSpacegroupNumber(std::string spacegroup)
 
 	int result = 0;
 
-	const size_t N = sizeof(kSpaceGroups) / sizeof(Spacegroup);
+	const size_t N = kNrOfSpaceGroups;
 	int32_t L = 0, R = static_cast<int32_t>(N - 1);
 	while (L <= R)
 	{
@@ -75,8 +75,9 @@ int GetSpacegroupNumber(std::string spacegroup)
 	// not found, see if we can find a match based on xHM name
 	if (result == 0)
 	{
-		for (auto& sp: kSpaceGroups)
+		for (size_t i = 0; i < kNrOfSpaceGroups; ++i)
 		{
+			auto& sp = kSpaceGroups[i];
 			if (sp.xHM == spacegroup)
 			{
 				result = sp.nr;

@@ -67,7 +67,7 @@ class Atom
 	Atom(const Atom& rhs);
 
 	// a special constructor to create symmetry copies
-	Atom(const Atom& rhs, const Point& symmmetry_location);
+	Atom(const Atom& rhs, const Point& symmmetry_location, const std::string& symmetry_operation);
 
 	~Atom();
 
@@ -89,8 +89,8 @@ class Atom
 	const cif::Row getRowAniso() const;
 
 	// Atom symmetryCopy(const Point& d, const clipper::RTop_orth& rt);
-	// bool isSymmetryCopy() const;
-	// std::string symmetry() const;
+	bool isSymmetryCopy() const;
+	std::string symmetry() const;
 	// const clipper::RTop_orth& symop() const;
 	
 	const Compound& comp() const;

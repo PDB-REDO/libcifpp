@@ -1229,6 +1229,9 @@ void PDBFileParser::PreParseInput(std::istream& is)
 	{
 		std::cerr << "Dropped unsupported records: " << ba::join(dropped, ", ") << std::endl;
 	}
+
+	if (mData == nullptr)
+		throw std::runtime_error("Empty file?");
 	
 	mRec = mData;
 }
@@ -1247,6 +1250,7 @@ void PDBFileParser::GetNextRecord()
 
 void PDBFileParser::Match(const std::string& expected, bool throwIfMissing)
 {
+	assert(mRec);
 	if (mRec->mName != expected)
 	{
 		if (throwIfMissing)

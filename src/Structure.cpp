@@ -216,13 +216,13 @@ struct AtomImpl
 	// 	mLocation -= d;
 	// }
 
-	AtomImpl(const AtomImpl& impl, const Point& loc)
+	AtomImpl(const AtomImpl& impl, const Point& loc, const std::string& sym_op)
 		: mFile(impl.mFile), mID(impl.mID), mType(impl.mType), mAtomID(impl.mAtomID)
 		, mCompID(impl.mCompID), mAsymID(impl.mAsymID), mSeqID(impl.mSeqID)
 		, mAltID(impl.mAltID), mLocation(loc), mRefcount(1)
 		, mRow(impl.mRow), mCompound(impl.mCompound), mRadius(impl.mRadius)
 		, mCachedProperties(impl.mCachedProperties)
-		, mSymmetryCopy(true)
+		, mSymmetryCopy(true), mSymmetryOperator(sym_op)
 	{
 	}
 
@@ -378,6 +378,7 @@ struct AtomImpl
 	bool				mSymmetryCopy = false;
 	bool				mClone = false;
 
+	std::string			mSymmetryOperator;
 	// clipper::RTop_orth	mRTop;
 	// Point				mD;
 	// int32_t				mRTix;
@@ -418,8 +419,8 @@ Atom Atom::clone() const
 	return Atom(mImpl_ ? new AtomImpl(*mImpl_) : nullptr);
 }
 
-Atom::Atom(const Atom& rhs, const Point& loc)
-	: mImpl_(new AtomImpl(*rhs.mImpl_, loc))
+Atom::Atom(const Atom& rhs, const Point& loc, const std::string& sym_op)
+	: mImpl_(new AtomImpl(*rhs.mImpl_, loc, sym_op))
 {
 }
 
@@ -628,6 +629,16 @@ void Atom::location(Point p)
 // {
 // 	return clipper::Symop(impl()->mRTop).format() + "\n" + impl()->mRTop.format();
 // }
+
+bool Atom::isSymmetryCopy() const
+{
+	return mImpl_->mSymmetryCopy;
+}
+
+std::string Atom::symmetry() const
+{
+	return mImpl_->mSymmetryOperator;
+}
 
 // const clipper::RTop_orth& Atom::symop() const
 // {

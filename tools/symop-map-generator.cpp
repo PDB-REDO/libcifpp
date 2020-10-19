@@ -350,13 +350,9 @@ int main()
 // and $CLIBD/syminfo.lib using symop-map-generator,
 // part of the PDB-REDO suite of programs.
 
-struct Spacegroup
-{
-	const char* name;
-	const char* xHM;
-	const char* Hall;
-	int nr;
-} kSpaceGroups[] =
+#include "cif++/Symmetry.hpp"
+
+const Spacegroup kSpaceGroups[] =
 {
 )";
 
@@ -390,35 +386,9 @@ struct Spacegroup
 cout << R"(
 };
 
-union SymopData
-{
-	struct
-	{
-		int rot_0_0:2;
-		int rot_0_1:2;
-		int rot_0_2:2;
-		int rot_1_0:2;
-		int rot_1_1:2;
-		int rot_1_2:2;
-		int rot_2_0:2;
-		int rot_2_1:2;
-		int rot_2_2:2;
-		unsigned int trn_0_0:3;
-		unsigned int trn_0_1:3;
-		unsigned int trn_1_0:3;
-		unsigned int trn_1_1:3;
-		unsigned int trn_2_0:3;
-		unsigned int trn_2_1:3;
-	};
-	uint64_t iv:36;
-};
+const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(Spacegroup);
 
-struct SymopDataBlock
-{
-	uint16_t spacegroupNr;
-	uint8_t rotationalNr;
-	SymopData rt;
-} kSymopNrTable[] = {
+const SymopDataBlock kSymopNrTable[] = {
 )" << endl;
 
 		int spacegroupNr = 0;
@@ -432,13 +402,17 @@ struct SymopDataBlock
 			spacegroupNr = sp;
 
 			cout << "    { " << setw(3) << sp
-					<< ", " << setw(3) << o << ", { { ";
+					<< ", " << setw(3) << o << ", { ";
 			for (auto i: get<2>(sd))
 				cout << setw(2) << i << ',';
-			cout << " } } }," << endl;
+			cout << " } }," << endl;
 		}
 
-		cout << "};" << endl;
+		cout << R"(};
+
+const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
+
+)" << endl;
 	}
 	catch (const exception& ex)
 	{
