@@ -50,21 +50,21 @@ extern const std::size_t kNrOfSpaceGroups;
 struct SymopData
 {
 	constexpr SymopData(const std::array<int,15>& data)
-		: m_packed((static_cast<uint64_t>(data[ 0]) & 0x03) << 34 bitor
-				   (static_cast<uint64_t>(data[ 1]) & 0x03) << 32 bitor
-				   (static_cast<uint64_t>(data[ 2]) & 0x03) << 30 bitor
-				   (static_cast<uint64_t>(data[ 3]) & 0x03) << 28 bitor
-				   (static_cast<uint64_t>(data[ 4]) & 0x03) << 26 bitor
-				   (static_cast<uint64_t>(data[ 5]) & 0x03) << 24 bitor
-				   (static_cast<uint64_t>(data[ 6]) & 0x03) << 22 bitor
-				   (static_cast<uint64_t>(data[ 7]) & 0x03) << 20 bitor
-				   (static_cast<uint64_t>(data[ 8]) & 0x03) << 18 bitor
-				   (static_cast<uint64_t>(data[ 9]) & 0x07) << 15 bitor
-				   (static_cast<uint64_t>(data[10]) & 0x07) << 12 bitor
-				   (static_cast<uint64_t>(data[11]) & 0x07) <<  9 bitor
-				   (static_cast<uint64_t>(data[12]) & 0x07) <<  6 bitor
-				   (static_cast<uint64_t>(data[13]) & 0x07) <<  3 bitor
-				   (static_cast<uint64_t>(data[14]) & 0x07) <<  0)
+		: m_packed((data[ 0] & 0x03ULL) << 34 bitor
+				   (data[ 1] & 0x03ULL) << 32 bitor
+				   (data[ 2] & 0x03ULL) << 30 bitor
+				   (data[ 3] & 0x03ULL) << 28 bitor
+				   (data[ 4] & 0x03ULL) << 26 bitor
+				   (data[ 5] & 0x03ULL) << 24 bitor
+				   (data[ 6] & 0x03ULL) << 22 bitor
+				   (data[ 7] & 0x03ULL) << 20 bitor
+				   (data[ 8] & 0x03ULL) << 18 bitor
+				   (data[ 9] & 0x07ULL) << 15 bitor
+				   (data[10] & 0x07ULL) << 12 bitor
+				   (data[11] & 0x07ULL) <<  9 bitor
+				   (data[12] & 0x07ULL) <<  6 bitor
+				   (data[13] & 0x07ULL) <<  3 bitor
+				   (data[14] & 0x07ULL) <<  0)
 	{
 	}
 

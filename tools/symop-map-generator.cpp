@@ -225,6 +225,8 @@ int main()
 
 		SymInfoBlock cur = {};
 
+		std::vector<array<int,15>> symops, cenops;
+
 		while (getline(file, line))
 		{
 			switch (state)
@@ -264,13 +266,32 @@ int main()
 					else if (line.compare(0, 6, "symop ") == 0)
 					{
 						SymopParser p;
-						data.emplace_back(cur.nr, symopnr, p.parse(line.substr(6)));
-						++symopnr;
+						symops.emplace_back(p.parse(line.substr(6)));
+					}
+					else if (line.compare(0, 6, "cenop ") == 0)
+					{
+						SymopParser p;
+						cenops.emplace_back(p.parse(line.substr(6)));
 					}
 					else if (line == "end_spacegroup")
 					{
+						for (auto& cenop: cenops)
+						{
+							for (auto symop: symops)
+							{
+								for (size_t i = 9; i < 15; ++i)
+									symop[i] += cenop[i];
+
+								data.emplace_back(cur.nr, symopnr, symop);
+								++symopnr;
+							}
+						}
+
 						symInfo.emplace(cur.nr, cur);
 						state = State::skip;
+
+						symops.clear();
+						cenops.clear();
 					}
 					break;
 				}
