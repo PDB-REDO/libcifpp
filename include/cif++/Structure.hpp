@@ -104,8 +104,13 @@ class Atom
 	template<typename T>
 	T property(const std::string& name) const;
 	
-	template<typename T>
-	void property(const std::string& name, const T& value);
+	void property(const std::string& name, const std::string& value);
+
+	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	void property(const std::string& name, const T& value)
+	{
+		property(name, std::to_string(value));
+	}
 	
 	// specifications
 	std::string labelAtomID() const;

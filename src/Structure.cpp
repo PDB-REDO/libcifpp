@@ -343,6 +343,11 @@ struct AtomImpl
 			return i->second;
 	}
 
+	void property(const std::string& name, const std::string& value)
+	{
+		mRow[name] = value;
+	}	
+
 	int compare(const AtomImpl& b) const
 	{
 		int d = mAsymID.compare(b.mAsymID);
@@ -378,7 +383,7 @@ struct AtomImpl
 	bool				mSymmetryCopy = false;
 	bool				mClone = false;
 
-	std::string			mSymmetryOperator;
+	std::string			mSymmetryOperator = "1_555";
 	// clipper::RTop_orth	mRTop;
 	// Point				mD;
 	// int32_t				mRTix;
@@ -480,6 +485,11 @@ template<>
 float Atom::property<float>(const std::string& name) const
 {
 	return stof(impl()->property(name));
+}
+
+void Atom::property(const std::string& name, const std::string& value)
+{
+	impl()->property(name, value);
 }
 
 const std::string& Atom::id() const

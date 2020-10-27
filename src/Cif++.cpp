@@ -1858,6 +1858,42 @@ bool Category::hasChildren(Row r) const
 	return result;
 }
 
+RowSet Category::getChildren(Row r, const char* childCat)
+{
+	return getChildren(r, mDb[childCat]);
+}
+
+RowSet Category::getChildren(Row r, Category& childCat)
+{
+	assert(mValidator != nullptr);
+	assert(mCatValidator != nullptr);
+
+	RowSet result(childCat);
+
+	for (auto& link: mValidator->getLinksForParent(mName))
+	{
+		if (link->mChildCategory != childCat.mName)
+			continue;
+		
+		Condition cond;
+		
+		for (size_t ix = 0; ix < link->mParentKeys.size(); ++ix)
+		{
+			const char* value = r[link->mParentKeys[ix]].c_str();
+			
+			cond = std::move(cond) && (Key(link->mChildKeys[ix]) == value);
+		}
+
+		auto children = childCat.find(std::move(cond));
+		result.insert(result.end(), children.begin(), children.end());
+	}
+
+	// remove duplicates
+	result.make_unique();
+
+	return result;
+}
+
 bool Category::isValid()
 {
 	bool result = true;

@@ -967,8 +967,10 @@ _cat_2.parent_id3
  5 2 ? 2
  6 ? 2 2
  7 3 3 3
-    )";   
+    )";
 
+    // --------------------------------------------------------------------
+    
     struct data_membuf : public std::streambuf
     {
         data_membuf(char* text, size_t length)
@@ -982,6 +984,22 @@ _cat_2.parent_id3
 
     auto& cat1 = f.firstDatablock()["cat_1"];
     auto& cat2 = f.firstDatablock()["cat_2"];
+
+    // --------------------------------------------------------------------
+    // check iterate children
+
+    auto PR2set = cat1.find(cif::Key("id") == 2);
+    BOOST_ASSERT(PR2set.size() == 1);
+    auto PR2 = PR2set.front();
+    BOOST_CHECK(PR2["id"].as<int>() == 2);
+
+    auto CR2set = cat1.getChildren(PR2, "cat_2");
+    BOOST_ASSERT(CR2set.size() == 3);
+
+    std::vector<int> CRids;
+    std::transform(CR2set.begin(), CR2set.end(), std::back_inserter(CRids), [](cif::Row r) { return r["id"].as<int>(); });
+    std::sort(CRids.begin(), CRids.end());
+    BOOST_CHECK(CRids == std::vector<int>({ 4, 5, 6}));
 
     // check a rename in parent and child
 

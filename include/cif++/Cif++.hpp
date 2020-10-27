@@ -1486,6 +1486,12 @@ class RowSet
 		return iterator(mItems.insert(pos.current(), item), mItems.end());
 	}
 
+	void make_unique()
+	{
+		std::sort(mItems.begin(), mItems.end());
+		mItems.erase(std::unique(mItems.begin(), mItems.end()), mItems.end());
+	}
+
   private:
 	Category*			mCat;
 	std::vector<ItemRow*>	mItems;
@@ -1589,6 +1595,9 @@ class Category
 	bool hasParent(Row r, const Category& parentCat, const ValidateLink& link) const;
 
 	bool hasChildren(Row r) const;
+
+	RowSet getChildren(Row r, Category& childCat);
+	RowSet getChildren(Row r, const char* childCat);
 
 	bool isValid();
 	void validateLinks() const;
