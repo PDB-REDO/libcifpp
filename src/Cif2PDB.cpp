@@ -3595,7 +3595,7 @@ std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, Datablock& d
 		
 		std::string sCharge;
 		if (charge != 0)
-			sCharge = (charge > 0 ? '+' : '-') + std::to_string(charge);
+			sCharge = std::to_string(charge) + (charge > 0 ? '+' : '-');
 
 		pdbFile << (kATOM
 			% group
