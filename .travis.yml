@@ -19,8 +19,10 @@ addons:
       - libboost-all-dev
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update            ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install boost make; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update      ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install make; fi
+
+  # - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install boost make; fi
 
 script:
   - ./configure
