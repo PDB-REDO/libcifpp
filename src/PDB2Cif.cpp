@@ -448,23 +448,24 @@ class PDBFileParser
 
 	struct HET
 	{
-		std::string		hetID;
-		char			chainID;
-		int				seqNum;
-		char			iCode;
-		int				numHetAtoms;
-		std::string		text;
-		std::string		asymID;
-		std::set<int>	atoms;
+		std::string				hetID;
+		char					chainID;
+		int						seqNum;
+		char					iCode;
+		int						numHetAtoms;
+		std::string				text;
+		std::string				asymID;
+		std::vector<PDBRecord*>	atoms;
+		bool					processedSugar = false;
 	};
 	
 	struct UNOBS
 	{
-		int				modelNr;
-		std::string		res;
-		char			chain;
-		int				seq;
-		char			iCode;
+		int							modelNr;
+		std::string					res;
+		char						chain;
+		int							seq;
+		char						iCode;
 		std::vector<std::string>	atoms;
 	};
 	
@@ -487,12 +488,12 @@ class PDBFileParser
 
 	struct PDBCompound
 	{
-		int							mMolID;
-		std::string					mTitle;
-		std::set<char>				mChains;
-		std::map<std::string,std::string>		mInfo;
-		std::map<std::string,std::string>		mSource;
-		int							mCount = 0;
+		int									mMolID;
+		std::string							mTitle;
+		std::set<char>						mChains;
+		std::map<std::string,std::string>	mInfo;
+		std::map<std::string,std::string>	mSource;
+		int									mCount = 0;
 	};
 	
 	struct PDBSeqRes
@@ -867,28 +868,28 @@ class PDBFileParser
 
 	// ----------------------------------------------------------------
 	
-	PDBRecord*	mData;
-	PDBRecord*	mRec;
+	PDBRecord*		mData;
+	PDBRecord*		mRec;
 	cif::Datablock*	mDatablock = nullptr;
 
 	std::string		mStructureID;
 	std::string		mModelTypeDetails;
 	std::string		mOriginalDate;
 	std::string		mExpMethod = "X-RAY DIFFRACTION";
-	int			mCitationAuthorNr = 1, mCitationEditorNr = 1;
-	int			mNextMolID = 1, mNextEntityNr = 1;
-	int			mNextSoftwareOrd = 1;
+	int				mCitationAuthorNr = 1, mCitationEditorNr = 1;
+	int				mNextMolID = 1, mNextEntityNr = 1;
+	int				mNextSoftwareOrd = 1;
 
 	struct SEQADV
 	{
 		std::string	resName;
-		char	chainID;
-		int		seqNum;
-		char	iCode;
+		char		chainID;
+		int			seqNum;
+		char		iCode;
 		std::string	database;
 		std::string	dbAccession;
 		std::string	dbRes;
-		int		dbSeq;
+		int			dbSeq;
 		std::string	conflict;
 	};
 
@@ -897,26 +898,26 @@ class PDBFileParser
 	std::list<PDBCompound>					mCompounds;
 	std::list<PDBChain>						mChains;
 	std::vector<HET> 						mHets;
-	std::map<std::string,std::string>					mHetnams;
-	std::map<std::string,std::string>					mHetsyns;
-	std::map<std::string,std::string>					mFormuls;
+	std::map<std::string,std::string>		mHetnams;
+	std::map<std::string,std::string>		mHetsyns;
+	std::map<std::string,std::string>		mFormuls;
 	std::string								mWaterHetID;
-	std::vector<std::string>						mChemComp, mAtomTypes;
+	std::vector<std::string>				mChemComp, mAtomTypes;
 	
-	std::map<std::string,std::string>					mRemark200;
+	std::map<std::string,std::string>		mRemark200;
 	std::string								mRefinementSoftware;
-	int									mAtomID = 0;
-	int									mPdbxDifOrdinal = 0;
+	int										mAtomID = 0;
+	int										mPdbxDifOrdinal = 0;
 
 	std::vector<UNOBS>						mUnobs;
 
 	// various maps between numbering schemes
 	std::map<std::tuple<char,int,char>,std::tuple<std::string,int,bool>>	mChainSeq2AsymSeq;
 
-	std::map<int,std::string>							mMolID2EntityID;
-	std::map<std::string,std::string>						mHet2EntityID;
-	std::map<std::string,std::string>						mAsymID2EntityID;
-	std::map<std::string,std::string>						mMod2parent;
+	std::map<int,std::string>				mMolID2EntityID;
+	std::map<std::string,std::string>		mHet2EntityID;
+	std::map<std::string,std::string>		mAsymID2EntityID;
+	std::map<std::string,std::string>		mMod2parent;
 };
 
 // --------------------------------------------------------------------
@@ -930,7 +931,7 @@ std::vector<char> PDBFileParser::altLocsForAtom(char inChainID, int inResSeq, ch
 	{
 		if (r->is("ATOM  ") or r->is("HETATM"))		//	 1 -  6        Record name   "ATOM  "
 		{											//	 ...
-			std::string name			= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
+			std::string name	= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
 			char altLoc			= r->vC(17);		//	17             Character     altLoc       Alternate location indicator.
 			char chainID		= r->vC(22);		//	22             Character     chainID      Chain identifier.
 			int resSeq			= r->vI(23, 26);	//	23 - 26        Integer       resSeq       Residue sequence number.
@@ -1275,7 +1276,7 @@ void PDBFileParser::ParseTitle()
 	
 	// HEADER
 	//	 1 -  6       Record name    "HEADER"
-	//	11 - 50       std::String(40)     classification    Classifies the molecule(s).
+	//	11 - 50       String(40)     classification    Classifies the molecule(s).
 	//	51 - 59       Date           depDate           Deposition date. This is the date the
 	//	                                               coordinates  were received at the PDB.
 	//	63 - 66       IDcode         idCode            This identifier is unique within the PDB.
@@ -1339,7 +1340,7 @@ void PDBFileParser::ParseTitle()
 	std::string title;
 	if (mRec->is("TITLE "))	//	 1 -  6       Record name    "TITLE "
 	{							//	 9 - 10       Continuation   continuation  Allows concatenation of multiple records.
-		title = vS(11);		//	11 - 80       std::String         title         Title of the  experiment.
+		title = vS(11);		//	11 - 80       String         title         Title of the  experiment.
 		GetNextRecord();
 	}
 	
@@ -1359,7 +1360,7 @@ void PDBFileParser::ParseTitle()
 	{
 		getCategory("database_PDB_caveat")->emplace({
 			{ "id", caveatID++ },
-			{ "text", std::string{mRec->vS(20) } }    		//	20 - 79       std::String        comment        Free text giving the reason for the  CAVEAT.
+			{ "text", std::string{mRec->vS(20) } }    		//	20 - 79       String        comment        Free text giving the reason for the  CAVEAT.
 		});
 		
 		GetNextRecord();
@@ -1586,15 +1587,15 @@ void PDBFileParser::ParseTitle()
 													//	 1 -  6       Record name    "REVDAT"                                             
 		int revNum = vI(8, 10);						//	 8 - 10       Integer        modNum        Modification number.                   
 													//	11 - 12       Continuation   continuation  Allows concatenation of multiple records.
-		std::string date = pdb2cifDate(vS(14, 22));		//	14 - 22       Date           modDate       Date of modification (or release  for   
+		std::string date = pdb2cifDate(vS(14, 22));	//	14 - 22       Date           modDate       Date of modification (or release  for   
 													//	                                           new entries)  in DD-MMM-YY format. This is
 													//	                                           not repeated on continued lines.
-		std::string modID = vS(24, 27);					//	24 - 27       IDCode         modID         ID code of this datablock. This is not repeated on 
+		std::string modID = vS(24, 27);				//	24 - 27       IDCode         modID         ID code of this datablock. This is not repeated on 
 													//	                                           continuation lines.    
 		int modType = vI(32, 32);					//	32            Integer        modType       An integer identifying the type of    
 													//	                                           modification. For all  revisions, the
 													//	                                           modification type is listed as 1 
-		std::string value = vS(40);						//	40 - 45       LString(6)     record        Modification detail. 
+		std::string value = vS(40);					//	40 - 45       LString(6)     record        Modification detail. 
 													//	47 - 52       LString(6)     record        Modification detail. 
 													//	54 - 59       LString(6)     record        Modification detail. 
 													//	61 - 66       LString(6)     record        Modification detail.
@@ -3140,25 +3141,25 @@ void PDBFileParser::ParsePrimaryStructure()
 		if (mRec->is("DBREF "))						//	 1 -  6       Record name   "DBREF "                                                    
 		{
 			cur.PDBIDCode				= vS(8, 11);	//	 8 - 11       IDcode        idCode             ID code of this datablock.                   
-			cur.chainID					= vC(13);      //	13            Character     chainID            Chain  identifier.                       
-			cur.seqBegin				= vI(15, 18);  //	15 - 18       Integer       seqBegin           Initial sequence number of the           
+			cur.chainID					= vC(13);		//	13            Character     chainID            Chain  identifier.                       
+			cur.seqBegin				= vI(15, 18);	//	15 - 18       Integer       seqBegin           Initial sequence number of the           
                                                         //	                                               PDB sequence segment.                    
-			cur.insertBegin				= vC(19);      //	19            AChar         insertBegin        Initial  insertion code of the           
+			cur.insertBegin				= vC(19);		//	19            AChar         insertBegin        Initial  insertion code of the           
                                                         //	                                               PDB  sequence segment.                   
-			cur.seqEnd					= vI(21, 24);  //	21 - 24       Integer       seqEnd             Ending sequence number of the            
+			cur.seqEnd					= vI(21, 24);	//	21 - 24       Integer       seqEnd             Ending sequence number of the            
                                                         //	                                               PDB  sequence segment.                   
-			cur.insertEnd				= vC(25);      //	25            AChar         insertEnd          Ending insertion code of the             
+			cur.insertEnd				= vC(25);		//	25            AChar         insertEnd          Ending insertion code of the             
                                                         //	                                               PDB  sequence segment.                   
-			cur.database				= vS(27, 32);  //	27 - 32       LString       database           Sequence database name.                  
-			cur.dbAccession				= vS(34, 41);  //	34 - 41       LString       dbAccession        Sequence database accession code.        
-			cur.dbIdCode				= vS(43, 54);  //	43 - 54       LString       dbIdCode           Sequence  database identification code.  
-			cur.dbSeqBegin				= vI(56, 60);  //	56 - 60       Integer       dbseqBegin         Initial sequence number of the           
+			cur.database				= vS(27, 32);	//	27 - 32       LString       database           Sequence database name.                  
+			cur.dbAccession				= vS(34, 41);	//	34 - 41       LString       dbAccession        Sequence database accession code.        
+			cur.dbIdCode				= vS(43, 54);	//	43 - 54       LString       dbIdCode           Sequence  database identification code.  
+			cur.dbSeqBegin				= vI(56, 60);	//	56 - 60       Integer       dbseqBegin         Initial sequence number of the           
                                                         //	                                               database seqment.                        
-			cur.dbinsBeg				= vC(61);      //	61            AChar         idbnsBeg           Insertion code of initial residue of the 
+			cur.dbinsBeg				= vC(61);		//	61            AChar         idbnsBeg           Insertion code of initial residue of the 
                                                         //	                                               segment, if PDB is the reference.        
-			cur.dbSeqEnd				= vI(63, 67);  //	63 - 67       Integer       dbseqEnd           Ending sequence number of the            
+			cur.dbSeqEnd				= vI(63, 67);	//	63 - 67       Integer       dbseqEnd           Ending sequence number of the            
                                                         //	                                               database segment.                        
-			cur.dbinsEnd				= vC(68);      //	68            AChar         dbinsEnd           Insertion code of the ending residue of  
+			cur.dbinsEnd				= vC(68);   	//	68            AChar         dbinsEnd           Insertion code of the ending residue of  
 			                                            //	                                               the segment, if PDB is the reference.    
 			auto& chain = GetChainForID(cur.chainID);
 			chain.mDbref = cur;
@@ -3219,17 +3220,17 @@ void PDBFileParser::ParsePrimaryStructure()
 		GetNextRecord();
 	}
 	
-	while (mRec->is("SEQRES"))			//	 1 -  6        Record name    "SEQRES"
-	{									//	 8 - 10        Integer        serNum       Serial number of the SEQRES record for  the
-										//	                                           current  chain. Starts at 1 and increments
-										//	                                           by one  each line. Reset to 1 for each chain.
-		char chainID = vC(12);		//	12             Character      chainID      Chain identifier. This may be any single
-										//	                                           legal  character, including a blank which is
-										//	                                           is  used if there is only one chain.
-		int numRes = vI(14, 17);		//	14 - 17        Integer        numRes       Number of residues in the chain.
-										//	                                           This  value is repeated on every record.
+	while (mRec->is("SEQRES"))				//	 1 -  6        Record name    "SEQRES"
+	{										//	 8 - 10        Integer        serNum       Serial number of the SEQRES record for  the
+											//	                                           current  chain. Starts at 1 and increments
+											//	                                           by one  each line. Reset to 1 for each chain.
+		char chainID = vC(12);				//	12             Character      chainID      Chain identifier. This may be any single
+											//	                                           legal  character, including a blank which is
+											//	                                           is  used if there is only one chain.
+		int numRes = vI(14, 17);			//	14 - 17        Integer        numRes       Number of residues in the chain.
+											//	                                           This  value is repeated on every record.
 		std::string monomers = vS(20, 70);	//	20 - 22        Residue name   resName      Residue name.
-										//	 ...
+											//	 ...
 
 		auto& chain = GetChainForID(chainID, numRes);
 		
@@ -3248,14 +3249,14 @@ void PDBFileParser::ParsePrimaryStructure()
 	}
 
 	// First pass over MODRES, only store relevant information required in ConstructEntities
-	while (mRec->is("MODRES"))				//	 1 -  6        Record name   "MODRES"                                            												
-	{							 			//	 8 - 11        IDcode        idCode      ID code of this datablock.                  
+	while (mRec->is("MODRES"))					//	 1 -  6        Record name   "MODRES"                                            												
+	{							 				//	 8 - 11        IDcode        idCode      ID code of this datablock.                  
 		std::string resName		= vS(13, 15);	//	13 - 15        Residue name  resName     Residue name used in this datablock.        
-//		char chainID		= vC(17);		//	17             Character     chainID     Chain identifier.                       
-//		int seqNum			= vI(19, 22);	//	19 - 22        Integer       seqNum      Sequence number.                        
-//		char iCode			= vC(23);		//	23             AChar         iCode       Insertion code.                         
+//		char chainID		= vC(17);			//	17             Character     chainID     Chain identifier.                       
+//		int seqNum			= vI(19, 22);		//	19 - 22        Integer       seqNum      Sequence number.                        
+//		char iCode			= vC(23);			//	23             AChar         iCode       Insertion code.                         
 		std::string stdRes		= vS(25, 27);	//	25 - 27        Residue name  stdRes      Standard residue name.                  
-//		std::string comment		= vS(30, 70);	//	30 - 70        std::String        comment     Description of the residue modification.
+//		std::string comment		= vS(30, 70);	//	30 - 70        String        comment     Description of the residue modification.
 
 		mMod2parent[resName] = stdRes;
 
@@ -3267,13 +3268,13 @@ void PDBFileParser::ParseHeterogen()
 {
 	while (mRec->is("HET   "))
 	{									//	 1 -  6       Record name   "HET   "                                                         
-		std::string hetID = vS(8, 10);      //	 8 - 10       LString(3)    hetID          Het identifier, right-justified.                  
+		std::string hetID = vS(8, 10);  //	 8 - 10       LString(3)    hetID          Het identifier, right-justified.                  
 		char chainID = vC(13);			//	13            Character     ChainID        Chain  identifier.                                
 		int seqNum = vI(14, 17);		//	14 - 17       Integer       seqNum         Sequence  number.                                 
 		char iCode = vC(18);			//	18            AChar         iCode          Insertion  code.                                  
 		int numHetAtoms = vI(21, 25);	//	21 - 25       Integer       numHetAtoms    Number of HETATM records for the group            
 										//	                                           present in the datablock.                             
-		std::string text = vS(31, 70);		//	31 - 70       std::String        text           Text describing Het group.                        
+		std::string text = vS(31, 70);	//	31 - 70       String        text           Text describing Het group.                        
 
 		mHets.push_back({ hetID, chainID, seqNum, iCode, numHetAtoms, text });
 		
@@ -3282,10 +3283,10 @@ void PDBFileParser::ParseHeterogen()
 	
 	for (;;)
 	{
-		if (mRec->is("HETNAM"))		//	 1 -  6       Record name   "HETNAM"                                                 
-		{								//	 9 - 10       Continuation  continuation    Allows concatenation of multiple records.
+		if (mRec->is("HETNAM"))				//	 1 -  6       Record name   "HETNAM"                                                 
+		{									//	 9 - 10       Continuation  continuation    Allows concatenation of multiple records.
 			std::string hetID = vS(12, 14);	//	12 - 14       LString(3)    hetID           Het identifier, right-justified.         
-	        std::string text = vS(16);		//	16 - 70       std::String        text            Chemical name.                           
+	        std::string text = vS(16);		//	16 - 70       String        text            Chemical name.                           
 	
 			mHetnams[hetID] = text;
 			InsertChemComp(hetID);
@@ -3294,8 +3295,8 @@ void PDBFileParser::ParseHeterogen()
 			continue;
 		}
 	
-		if (mRec->is("HETSYN"))		 //	 1 -  6       Record name   "HETSYN"                                                           
-		{                                //	 9 - 10       Continuation  continuation   Allows concatenation of multiple records.           
+		if (mRec->is("HETSYN"))				 //	 1 -  6       Record name   "HETSYN"                                                           
+		{                               	 //	 9 - 10       Continuation  continuation   Allows concatenation of multiple records.           
 	         std::string hetID = vS(12, 14); //	12 - 14       LString(3)    hetID          Het identifier, right-justified.                    
 	         std::string syn = vS(16);		 //	16 - 70       SList         hetSynonyms    List of synonyms.                                   
 	
@@ -3310,10 +3311,10 @@ void PDBFileParser::ParseHeterogen()
 	
 	while (mRec->is("FORMUL"))			//	 1 -  6        Record name   "FORMUL"                          
 	{                                   //	 9 - 10        Integer       compNum       Component  number.  
-        std::string hetID = vS(13, 15);     //	13 - 15        LString(3)    hetID         Het identifier.     
+        std::string hetID = vS(13, 15);	//	13 - 15        LString(3)    hetID         Het identifier.     
                                         //	17 - 18        Integer       continuation  Continuation number.
 		char waterMark = vC(19);		//	19             Character     asterisk      "*" for water.      
-		std::string formula = vS(20);		//	20 - 70        std::String        text          Chemical formula.   
+		std::string formula = vS(20);	//	20 - 70        String        text          Chemical formula.   
 		
 		mFormuls[hetID] = formula;
 		
@@ -3347,9 +3348,9 @@ void PDBFileParser::ConstructEntities()
 
 		if (r->is("ATOM  ") or r->is("HETATM"))		//	 1 -  6        Record name   "ATOM  "
 		{											//	 ...
-			std::string name			= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
+			std::string name	= r->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
 			char altLoc			= r->vC(17);		//	17             Character     altLoc       Alternate location indicator.
-			std::string resName		= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
+			std::string resName	= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
 			char chainID		= r->vC(22);		//	22             Character     chainID      Chain identifier.
 			int resSeq			= r->vI(23, 26);	//	23 - 26        Integer       resSeq       Residue sequence number.
 			char iCode			= r->vC(27);		//	27             AChar         iCode        Code for insertion of residues.
@@ -3488,7 +3489,7 @@ void PDBFileParser::ConstructEntities()
 			int serial = r->vI(7, 11);				//	 7 - 11        Integer       serial       Atom  serial number.
 													//	 ...
 			char altLoc = vC(17);					//	17             Character     altLoc       Alternate location indicator.
-			std::string resName		= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
+			std::string resName	= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
 			char chainID		= r->vC(22);		//	22             Character     chainID      Chain identifier.
 			int resSeq			= r->vI(23, 26);	//	23 - 26        Integer       resSeq       Residue sequence number.
 			char iCode			= r->vC(27);		//	27             AChar         iCode        Code for insertion of residues.
@@ -3553,7 +3554,7 @@ void PDBFileParser::ConstructEntities()
 					h = prev(mHets.end());
 				}
 
-				h->atoms.insert(serial);
+				h->atoms.push_back(r);
 			}
 
 			continue;
@@ -3988,6 +3989,46 @@ void PDBFileParser::ConstructEntities()
 		});
 	}
 	
+	// build sugar trees first
+
+	for (;;)
+	{
+		// find a first NAG/NDG
+		auto si = std::find_if(mHets.begin(), mHets.end(), [](const HET& h) { return (h.hetID == "NAG" or h.hetID == "NDG") and not h.processedSugar; });
+		if (si != mHets.end())
+		{
+			si->processedSugar = true;
+
+			// take the location of the C1 atom(s?)
+
+			std::vector<std::tuple<std::string,float,float,float>> ci;
+
+			for (auto a: si->atoms)
+			{
+				std::string name = a->vS(13, 16);		//	13 - 16        Atom          name         Atom name.
+
+				if (name != "ND2")
+					continue;
+
+				ci.emplace_back(
+					std::string{ a->vC(17) },	//	17             Character     altLoc       Alternate location indicator.
+					std::stof(a->vF(31, 38)),	//	31 - 38        Real(8.3)     x            Orthogonal coordinates for X in Angstroms.
+					std::stof(a->vF(39, 46)),	//	39 - 46        Real(8.3)     y            Orthogonal coordinates for Y in Angstroms.
+					std::stof(a->vF(47, 54))	//	47 - 54        Real(8.3)     z            Orthogonal coordinates for Z in Angstroms.
+				);
+			}
+
+			// find a free ASN near by
+
+			
+
+		}
+
+
+	}
+
+	// done with the sugar, resume operation as before
+
 	std::map<char,std::string> waterChains;
 	std::map<std::tuple<std::string,std::string>,int> ndbSeqNum;	// for nonpoly scheme
 	
@@ -4149,12 +4190,12 @@ void PDBFileParser::ConstructEntities()
 	for (auto rec = FindRecord("MODRES"); rec != nullptr and rec->is("MODRES");
 			rec = rec->mNext)					//	 1 -  6        Record name   "MODRES"                                            												
 	{								 			//	 8 - 11        IDcode        idCode      ID code of this datablock.                  
-		std::string resName		= rec->vS(13, 15);	//	13 - 15        Residue name  resName     Residue name used in this datablock.        
+		std::string resName	= rec->vS(13, 15);	//	13 - 15        Residue name  resName     Residue name used in this datablock.        
 		char chainID		= rec->vC(17);		//	17             Character     chainID     Chain identifier.                       
 		int seqNum			= rec->vI(19, 22);	//	19 - 22        Integer       seqNum      Sequence number.                        
 		char iCode			= rec->vC(23);		//	23             AChar         iCode       Insertion code.                         
-		std::string stdRes		= rec->vS(25, 27);	//	25 - 27        Residue name  stdRes      Standard residue name.                  
-		std::string comment		= rec->vS(30, 70);	//	30 - 70        std::String        comment     Description of the residue modification.
+		std::string stdRes	= rec->vS(25, 27);	//	25 - 27        Residue name  stdRes      Standard residue name.                  
+		std::string comment	= rec->vS(30, 70);	//	30 - 70        String        comment     Description of the residue modification.
 
 		std::string asymID;
 		int seq;
@@ -4324,7 +4365,7 @@ void PDBFileParser::ParseSecondaryStructure()
 		//	34 - 37        Integer        endSeqNum     Sequence number of the terminal residue.
 		//	38             AChar          endICode      Insertion code of the terminal residue.
 		//	39 - 40        Integer        helixClass    Helix class (see below).
-		//	41 - 70        std::String         comment       Comment about this helix.
+		//	41 - 70        String         comment       Comment about this helix.
 		//	72 - 76        Integer        length        Length of this helix.
 
 		std::string begAsymID, endAsymID;
@@ -4661,22 +4702,22 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			if (cif::VERBOSE and mRec->is("LINKR "))
 				std::cerr << "Accepting non-standard LINKR record, but ignoring extra information" << std::endl;
 			
-											//	 1 -  6         Record name    "LINK  "
+												//	 1 -  6         Record name    "LINK  "
 			std::string name1 = vS(13, 16);		//	13 - 16         Atom           name1           Atom name.
-											//	17              Character      altLoc1         Alternate location indicator.
+												//	17              Character      altLoc1         Alternate location indicator.
 			std::string resName1 = vS(18,20);	//	18 - 20         Residue name   resName1        Residue  name.
-											//	22              Character      chainID1        Chain identifier.
-											//	23 - 26         Integer        resSeq1         Residue sequence number.
-											//	27              AChar          iCode1          Insertion code.
+												//	22              Character      chainID1        Chain identifier.
+												//	23 - 26         Integer        resSeq1         Residue sequence number.
+												//	27              AChar          iCode1          Insertion code.
 			std::string name2 = vS(43, 46);		//	43 - 46         Atom           name2           Atom name.
-											//	47              Character      altLoc2         Alternate location indicator.
+												//	47              Character      altLoc2         Alternate location indicator.
 			std::string resName2 = vS(48, 50);	//	48 - 50         Residue name   resName2        Residue name.
-											//	52              Character      chainID2        Chain identifier.
-											//	53 - 56         Integer        resSeq2         Residue sequence number.
-											//	57              AChar          iCode2          Insertion code.
-											//	60 - 65         SymOP          sym1            Symmetry operator atom 1.
-											//	67 - 72         SymOP          sym2            Symmetry operator atom 2.
-											//	74 – 78         Real(5.2)      Length          Link distance
+												//	52              Character      chainID2        Chain identifier.
+												//	53 - 56         Integer        resSeq2         Residue sequence number.
+												//	57              AChar          iCode2          Insertion code.
+												//	60 - 65         SymOP          sym1            Symmetry operator atom 1.
+												//	67 - 72         SymOP          sym2            Symmetry operator atom 2.
+												//	74 – 78         Real(5.2)      Length          Link distance
 	
 			std::string type = "covale";
 			if (IsMetal(resName1, name1) or IsMetal(resName2, name2))
@@ -4789,17 +4830,17 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 		
 		if (mRec->is("CISPEP"))
 		{
-											//	 1 -  6       Record name   "CISPEP"
-			int serNum = vI(8, 10);			//	 8 - 10       Integer       serNum        Record serial number.
+												//	 1 -  6       Record name   "CISPEP"
+			int serNum = vI(8, 10);				//	 8 - 10       Integer       serNum        Record serial number.
 			std::string pep1 = vS(12, 14);		//	12 - 14       LString(3)    pep1          Residue name.
-			char chainID1 = vC(16); 		//	16            Character     chainID1      Chain identifier.
-			int seqNum1 = vI(18, 21);		//	18 - 21       Integer       seqNum1       Residue sequence number.
-			char iCode1 = vC(22);			//	22            AChar         icode1        Insertion code.
+			char chainID1 = vC(16); 			//	16            Character     chainID1      Chain identifier.
+			int seqNum1 = vI(18, 21);			//	18 - 21       Integer       seqNum1       Residue sequence number.
+			char iCode1 = vC(22);				//	22            AChar         icode1        Insertion code.
 			std::string pep2 = vS(26, 28);		//	26 - 28       LString(3)    pep2          Residue name.
-			char chainID2 = vC(30); 		//	30            Character     chainID2      Chain identifier.
-			int seqNum2 = vI(32, 35);		//	32 - 35       Integer       seqNum2       Residue sequence number.
-			char iCode2 = vC(36);			//	36            AChar         icode2        Insertion code.
-			int modNum = vI(44, 46);		//	44 - 46       Integer       modNum        Identifies the specific model.
+			char chainID2 = vC(30); 			//	30            Character     chainID2      Chain identifier.
+			int seqNum2 = vI(32, 35);			//	32 - 35       Integer       seqNum2       Residue sequence number.
+			char iCode2 = vC(36);				//	36            AChar         icode2        Insertion code.
+			int modNum = vI(44, 46);			//	44 - 46       Integer       modNum        Identifies the specific model.
 			std::string measure = vF(54, 59);	//	54 - 59       Real(6.2)     measure       Angle measurement in degrees.
 			
 			if (modNum == 0)
@@ -4858,7 +4899,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 	while (mRec->is("SITE  "))
 	{									//	 1 -  6        Record name   "SITE  "
 										//	 8 - 10        Integer       seqNum        Sequence number.
-		std::string siteID = vS(12, 14);	//	12 - 14        LString(3)    siteID        Site name.
+		std::string siteID = vS(12, 14);//	12 - 14        LString(3)    siteID        Site name.
 		int numRes = vI(16, 17);		//	16 - 17        Integer       numRes        Number of residues that compose the site.
 
 		int o = 19;
@@ -4868,11 +4909,11 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 		for (int i = 0; i < numRes; ++i)
 		{
 			std::string resName = vS(o, o + 2);	//	19 - 21        Residue name  resName1      Residue name for first residue that 
-											//	                                           creates the site.
-			char chainID = vC(o + 4);		//	23             Character     chainID1      Chain identifier for first residue of site.
-			int seq = vI(o + 5, o + 8);	//	24 - 27        Integer       seq1          Residue sequence number for first residue
-											//	                                           of the  site.
-			char iCode = vC(o + 9);		//	28             AChar         iCode1        Insertion code for first residue of the site.
+												//	                                           creates the site.
+			char chainID = vC(o + 4);			//	23             Character     chainID1      Chain identifier for first residue of site.
+			int seq = vI(o + 5, o + 8);			//	24 - 27        Integer       seq1          Residue sequence number for first residue
+												//	                                           of the  site.
+			char iCode = vC(o + 9);				//	28             AChar         iCode1        Insertion code for first residue of the site.
 
 			int labelSeq;
 			std::string asym;
@@ -4915,14 +4956,14 @@ void PDBFileParser::ParseCrystallographic()
 
 	getCategory("cell")->emplace({		
 		{ "entry_id", mStructureID },			//	 1 -  6       Record name   "CRYST1"                          
-		{ "length_a", vF(7, 15) },             //	 7 - 15       Real(9.3)     a              a (Angstroms).     
-		{ "length_b", vF(16, 24) },            //	16 - 24       Real(9.3)     b              b (Angstroms).     
-		{ "length_c", vF(25, 33) },            //	25 - 33       Real(9.3)     c              c (Angstroms).     
-		{ "angle_alpha", vF(34, 40) },         //	34 - 40       Real(7.2)     alpha          alpha (degrees).   
-		{ "angle_beta", vF(41, 47) },          //	41 - 47       Real(7.2)     beta           beta (degrees).    
-		{ "angle_gamma", vF(48, 54) },         //	48 - 54       Real(7.2)     gamma          gamma (degrees).   
+		{ "length_a", vF(7, 15) },				//	 7 - 15       Real(9.3)     a              a (Angstroms).     
+		{ "length_b", vF(16, 24) },				//	16 - 24       Real(9.3)     b              b (Angstroms).     
+		{ "length_c", vF(25, 33) },				//	25 - 33       Real(9.3)     c              c (Angstroms).     
+		{ "angle_alpha", vF(34, 40) },			//	34 - 40       Real(7.2)     alpha          alpha (degrees).   
+		{ "angle_beta", vF(41, 47) },			//	41 - 47       Real(7.2)     beta           beta (degrees).    
+		{ "angle_gamma", vF(48, 54) },			//	48 - 54       Real(7.2)     gamma          gamma (degrees).   
 		/* goes into symmetry */				//	56 - 66       LString       sGroup         Space  group.      
-		{ "Z_PDB", vF(67, 70) }                //	67 - 70       Integer       z              Z value.           
+		{ "Z_PDB", vF(67, 70) }					//	67 - 70       Integer       z              Z value.           
 	});
 	
 	std::string spaceGroup, intTablesNr;
@@ -5027,9 +5068,9 @@ void PDBFileParser::ParseCoordinateTransformation()
 			m[x][2] = vF(31, 40);  		//	31 - 40        Real(10.6)    m[n][3]       Mn3
 			v[x] = vF(46, 55);     		//	46 - 55        Real(10.5)    v[n]          Vn
 			igiven = vC(60) == '1';		//	60             Integer       iGiven        1 if coordinates for the  representations
-											//	                                           which  are approximately related by the 
-			GetNextRecord();				//	                                           transformations  of the molecule are
-		}									//	                                           contained in the datablock. Otherwise, blank.
+										//	                                           which  are approximately related by the 
+			GetNextRecord();			//	                                           transformations  of the molecule are
+		}								//	                                           contained in the datablock. Otherwise, blank.
 
 		getCategory("struct_ncs_oper")->emplace({
 			{ "id", serial },
@@ -5058,10 +5099,10 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 	typedef std::tuple<std::string,int,bool,PDBRecord*,PDBRecord*> atomRec;
 	
 	std::vector<atomRec> atoms;
-	while (mRec->is("ATOM  ") or mRec->is("HETATM"))		//	 1 -  6        Record name   "ATOM  "
+	while (mRec->is("ATOM  ") or mRec->is("HETATM"))	//	 1 -  6        Record name   "ATOM  "
 	{
-		char chainID = vC(22);				//	22             Character     chainID      Chain identifier.
-		int resSeq = vI(23, 26);			//	23 - 26        Integer       resSeq       Residue sequence number.
+		char chainID = vC(22);							//	22             Character     chainID      Chain identifier.
+		int resSeq = vI(23, 26);						//	23 - 26        Integer       resSeq       Residue sequence number.
 		char iCode = vC(27);
 		
 		std::string asymID;
@@ -5166,20 +5207,20 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		++mAtomID;
 
 		std::string groupPDB = mRec->is("ATOM  ") ? "ATOM" : "HETATM";
-//		int serial = vI(7, 11);			//	 7 - 11        Integer       serial       Atom  serial number.
+//		int serial = vI(7, 11);				//	 7 - 11        Integer       serial       Atom  serial number.
 		std::string name = vS(13, 16);		//	13 - 16        Atom          name         Atom name.
-		char altLoc = vC(17);			//	17             Character     altLoc       Alternate location indicator.
+		char altLoc = vC(17);				//	17             Character     altLoc       Alternate location indicator.
 		std::string resName = vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
-		char chainID = vC(22);			//	22             Character     chainID      Chain identifier.
-		int resSeq = vI(23, 26);		//	23 - 26        Integer       resSeq       Residue sequence number.
-		char iCode = vC(27);			//	27             AChar         iCode        Code for insertion of residues.
+		char chainID = vC(22);				//	22             Character     chainID      Chain identifier.
+		int resSeq = vI(23, 26);			//	23 - 26        Integer       resSeq       Residue sequence number.
+		char iCode = vC(27);				//	27             AChar         iCode        Code for insertion of residues.
 		std::string x = vF(31, 38);			//	31 - 38        Real(8.3)     x            Orthogonal coordinates for X in Angstroms.
 		std::string y = vF(39, 46);			//	39 - 46        Real(8.3)     y            Orthogonal coordinates for Y in Angstroms.
 		std::string z = vF(47, 54);			//	47 - 54        Real(8.3)     z            Orthogonal coordinates for Z in Angstroms.
 		std::string occupancy = vF(55, 60);	//	55 - 60        Real(6.2)     occupancy    Occupancy.
-		std::string tempFactor = vF(61, 66);	//	61 - 66        Real(6.2)     tempFactor   Temperature  factor.
+		std::string tempFactor = vF(61, 66);//	61 - 66        Real(6.2)     tempFactor   Temperature  factor.
 		std::string element = vS(77, 78);	//	77 - 78        LString(2)    element      Element symbol, right-justified.
-		std::string charge = vS(79, 80);		//	79 - 80        LString(2)    charge       Charge  on the atom.
+		std::string charge = vS(79, 80);	//	79 - 80        LString(2)    charge       Charge  on the atom.
 
 		std::string entityID = mAsymID2EntityID[asymID];
 		
