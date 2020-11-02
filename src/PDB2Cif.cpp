@@ -4268,7 +4268,7 @@ void PDBFileParser::ConstructEntities()
 				{ "polymer_flag",	isPolymer ? "Y" : "N" },
 				{ "occupancy_flag",	1 },
 				{ "PDB_model_num",	unobs.modelNr ? unobs.modelNr : 1 },
-				{ "auth_asym_id",	unobs.chain },
+				{ "auth_asym_id",	std::string{ unobs.chain } },
 				{ "auth_comp_id",	unobs.res },
 				{ "auth_seq_id",	unobs.seq },
 				{ "PDB_ins_code",	unobs.iCode == ' ' ? "" : std::string{ unobs.iCode } },
@@ -4286,7 +4286,7 @@ void PDBFileParser::ConstructEntities()
 					{ "polymer_flag",	isPolymer ? "Y" : "N" },
 					{ "occupancy_flag",	1 },
 					{ "PDB_model_num",	unobs.modelNr ? unobs.modelNr : 1 },
-					{ "auth_asym_id",	unobs.chain },
+					{ "auth_asym_id",	std::string { unobs.chain } },
 					{ "auth_comp_id",	unobs.res },
 					{ "auth_seq_id",	unobs.seq },
 					{ "PDB_ins_code",	unobs.iCode == ' ' ? "" : std::string{ unobs.iCode } },
@@ -4296,7 +4296,6 @@ void PDBFileParser::ConstructEntities()
 					{ "label_seq_id",	seqNr > 0 ? std::to_string(seqNr) : "" },
 					{ "label_atom_id",	atom }
 				});
-				
 			}
 		}
 	}

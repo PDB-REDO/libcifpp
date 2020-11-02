@@ -242,6 +242,10 @@ class Residue
 	bool isEntity() const;
 	
 	bool isWater() const					{ return mCompoundID == "HOH"; }
+
+	bool isSugar() const;
+	bool isPyranose() const;
+	bool isFuranose() const;
 	
 	const Structure& structure() const		{ return *mStructure; }
 

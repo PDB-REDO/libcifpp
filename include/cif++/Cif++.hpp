@@ -287,7 +287,7 @@ namespace detail
 
 		void swap(ItemReference& b);
 		
-		template<typename T>
+		template<typename T = std::string>
 		T as() const
 		{
 			return item_value_as<T>::convert(*this);
@@ -1332,6 +1332,9 @@ class conditional_iterator_proxy
 	iterator end() const;
 
 	bool empty() const;
+
+	explicit operator bool() const	{ return not empty(); }
+
 	size_t size() const				{ return std::distance(begin(), end()); }
 
 	RowType front()					{ return *begin(); }

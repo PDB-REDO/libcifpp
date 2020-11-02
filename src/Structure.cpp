@@ -946,6 +946,21 @@ bool Residue::isEntity() const
 	return a1.size() == a2.size();
 }
 
+bool Residue::isSugar() const
+{
+	return compound().isSugar();
+}
+
+bool Residue::isPyranose() const
+{
+	return cif::iequals(compound().group(), "pyranose");
+}
+
+bool Residue::isFuranose() const
+{
+	return cif::iequals(compound().group(), "furanose");
+}
+
 std::string Residue::authID() const
 {
 	std::string result;
@@ -1857,21 +1872,19 @@ std::tuple<char,int,char> Structure::MapLabelToAuth(
 						
 	if (not found)
 	{
-		for (auto r: db["pdbx_nonpoly_scheme"].find(
-							cif::Key("asym_id") == asymID and
-							cif::Key("seq_id") == seqID))
+		auto r = db["pdbx_nonpoly_scheme"].find(cif::Key("asym_id") == asymID);
+		if (r.size() == 1)
 		{
 			std::string pdb_strand_id, pdb_ins_code;
 			int pdb_seq_num;
 			
 			cif::tie(pdb_strand_id, pdb_seq_num, pdb_ins_code) =
-				r.get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
+				r.front().get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
 	
 			result = std::make_tuple(pdb_strand_id.front(), pdb_seq_num,
 				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
 	
 			found = true;
-			break;
 		}
 	}
 
