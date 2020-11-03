@@ -452,11 +452,28 @@ class PDBFileParser
 		char					chainID;
 		int						seqNum;
 		char					iCode;
-		int						numHetAtoms;
+		int						numHetAtoms = 0;
 		std::string				text;
+		bool					sugar = false;
 		std::string				asymID;
 		std::vector<PDBRecord*>	atoms;
-		bool					processedSugar = false;
+		bool					processed = false;
+		bool					branch = false;
+		PDBRecord*				asn = nullptr;
+
+		HET(const std::string& hetID, char chainID, int seqNum, char iCode, int numHetAtoms = 0, const std::string& text = {})
+			: hetID(hetID), chainID(chainID), seqNum(seqNum), iCode(iCode), numHetAtoms(numHetAtoms), text(text)
+		{
+			// just in case we don't have a CCP4 available
+			if (hetID == "MAN" or hetID == "BMA" or hetID == "NAG" or hetID == "NDG" or hetID == "FUC" or hetID == "FUL")
+				sugar = true;
+			else
+			{
+				auto compound = CompoundFactory::instance().create(hetID);
+				sugar = compound ? compound->isSugar() : false;
+			}
+		}
+
 	};
 	
 	struct UNOBS
@@ -468,7 +485,113 @@ class PDBFileParser
 		char						iCode;
 		std::vector<std::string>	atoms;
 	};
-	
+
+	struct ATOM_REF
+	{
+		std::string		name;
+		std::string		resName;
+		int				resSeq;
+		char			chainID;
+		char			iCode;
+		char			altLoc;
+
+		bool operator==(const ATOM_REF& rhs) const
+		{
+			return name == rhs.name and
+				resName == rhs.resName and
+				resSeq == rhs.resSeq and
+				(altLoc == rhs.altLoc or altLoc == ' ' or rhs.altLoc == ' ') and
+				chainID == rhs.chainID and
+				iCode == rhs.iCode;
+		}
+
+		bool operator!=(const ATOM_REF& rhs) const
+		{
+			return not operator==(rhs);
+		}
+
+		bool operator<(const ATOM_REF& rhs) const
+		{
+			int d = chainID - rhs.chainID;
+			if (d == 0)	d = resSeq - rhs.resSeq;
+			if (d == 0)	d = iCode - rhs.iCode;
+			// if (d == 0) d = resName.compare(rhs.resName);
+			if (d == 0) d = name.compare(rhs.name);
+			if (d == 0 and altLoc != ' ' and rhs.altLoc != ' ')
+				d = altLoc - rhs.altLoc;
+			return d < 0;
+		}
+
+		friend std::ostream& operator<<(std::ostream& os, const ATOM_REF& a)
+		{
+			os << a.name << ' ' << a.resName << ' ' << a.chainID << ' ' << a.resSeq << (a.iCode == ' ' ? "" : std::string{ a.iCode }) << (a.altLoc != ' ' ? std::string { ' ', a.altLoc } : "");
+			return os;
+		}
+	};
+
+	struct LINK
+	{
+		ATOM_REF		a, b;
+		std::string		symOpA, symOpB;
+		float			distance;
+	};
+
+	struct SUGAR
+	{
+		ATOM_REF		c1;
+		int				leaving_o;
+		ATOM_REF		next;
+	};
+
+	class SUGAR_TREE : public std::vector<SUGAR>
+	{
+	  public:
+		std::string entityName() const
+		{
+			return empty() ? "" : entityName(begin());
+		}
+
+	  private:
+
+		std::string entityName(const_iterator sugar) const
+		{
+			std::string result;
+
+			for (auto i = begin(); i != end(); ++i)
+			{
+				if (i->next != sugar->c1)
+					continue;
+				
+				auto n = entityName(i) + "-(1-" + std::to_string(i->leaving_o) + ")";
+
+				if (result.empty())
+					result = n;
+				else
+					result += "-[" + n + ']';
+			}
+
+			if (not result.empty() and result.back() != ']')
+				result += '-';
+
+				 if (sugar->c1.resName == "MAN") result += "alpha-D-mannopyranose";
+			else if (sugar->c1.resName == "BMA") result += "beta-D-mannopyranose";
+			else if (sugar->c1.resName == "NAG") result += "2-acetamido-2-deoxy-beta-D-glucopyranose";
+			else if (sugar->c1.resName == "NDG") result += "2-acetamido-2-deoxy-alpha-D-glucopyranose";
+			else if (sugar->c1.resName == "FUC") result += "alpha-L-fucopyranose";
+			else if (sugar->c1.resName == "FUL") result += "beta-L-fucopyranose";
+			else
+			{
+				auto compound = CompoundFactory::instance().create(sugar->c1.resName);
+				if (compound)
+					result += compound->name();
+				else
+					result += sugar->c1.resName;
+			}
+
+			return result;
+		}
+	};
+
 	// ----------------------------------------------------------------
 
 	/*
@@ -702,6 +825,7 @@ class PDBFileParser
 	void ParsePrimaryStructure();
 	void ParseHeterogen();
 	void ConstructEntities();
+	void ConstructSugarTrees(int& asymNr);
 	void ParseSecondaryStructure();
 	void ParseConnectivtyAnnotation();
 	void ParseMiscellaneousFeatures();
@@ -866,6 +990,26 @@ class PDBFileParser
 	std::vector<char> altLocsForAtom(char chainID, int seqNum, char iCode, std::string atomName);
 	void MapChainID2AsymIDS(char chainID, std::vector<std::string>& asymIds);
 
+	std::tuple<ATOM_REF,bool> FindLink(const std::string& name1, const std::string& resName1, int resSeq1, char altLoc1, char chainID1, char iCode1,
+		const std::string& name2, const std::string& resName2 = "")
+	{
+		return FindLink(ATOM_REF{ name1, resName1, resSeq1, altLoc1, chainID1, iCode1 }, name2, resName2);
+	}
+
+	std::tuple<ATOM_REF,bool> FindLink(const ATOM_REF& atom, const std::string& name2, const std::string& resName2 = "") const
+	{
+		auto i = std::find_if(mLinks.begin(), mLinks.end(), [&](const LINK& link)
+		{
+			return (link.a == atom and link.b.name == name2 and (resName2.empty() or link.b.resName == resName2)) or
+					(link.b == atom and link.a.name == name2 and (resName2.empty() or link.a.resName == resName2));
+		});
+	
+		if (i != mLinks.end())
+			return { i->a == atom ? i->b : i->a, true };
+
+		return {{}, false};
+	}
+
 	// ----------------------------------------------------------------
 	
 	PDBRecord*		mData;
@@ -910,12 +1054,14 @@ class PDBFileParser
 	int										mPdbxDifOrdinal = 0;
 
 	std::vector<UNOBS>						mUnobs;
+	std::vector<LINK>						mLinks;
 
 	// various maps between numbering schemes
 	std::map<std::tuple<char,int,char>,std::tuple<std::string,int,bool>>	mChainSeq2AsymSeq;
 
 	std::map<int,std::string>				mMolID2EntityID;
 	std::map<std::string,std::string>		mHet2EntityID;
+	std::map<std::string,std::string>		mBranch2EntityID;
 	std::map<std::string,std::string>		mAsymID2EntityID;
 	std::map<std::string,std::string>		mMod2parent;
 };
@@ -1210,7 +1356,7 @@ void PDBFileParser::PreParseInput(std::istream& is)
 				}
 			}
 		}
-		
+
 		PDBRecord* cur = new(value.length()) PDBRecord(curLineNr, type, value);
 		
 		if (last == nullptr)
@@ -1221,6 +1367,32 @@ void PDBFileParser::PreParseInput(std::istream& is)
 		last = cur;
 
 		ba::trim(type);
+
+		if (type == "LINK" or type == "LINKR")
+		{
+			LINK link = {};
+
+			link.a.name = cur->vS(13, 16);		//	13 - 16         Atom           name1           Atom name.
+			link.a.altLoc = cur->vC(17);		//	17              Character      altLoc1         Alternate location indicator.
+			link.a.resName = cur->vS(18,20);	//	18 - 20         Residue name   resName1        Residue  name.
+			link.a.chainID = cur->vC(22);		//	22              Character      chainID1        Chain identifier.
+			link.a.resSeq = cur->vI(23, 26);	//	23 - 26         Integer        resSeq1         Residue sequence number.
+			link.a.iCode = cur->vC(27);			//	27              AChar          iCode1          Insertion code.
+			link.b.name = cur->vS(43, 46);		//	43 - 46         Atom           name2           Atom name.
+			link.b.altLoc = cur->vC(47);		//	47              Character      altLoc2         Alternate location indicator.
+			link.b.resName = cur->vS(48, 50);	//	48 - 50         Residue name   resName2        Residue name.
+			link.b.chainID = cur->vC(52);		//	52              Character      chainID2        Chain identifier.
+			link.b.resSeq = cur->vI(53, 56);	//	53 - 56         Integer        resSeq2         Residue sequence number.
+			link.b.iCode = cur->vC(57);			//	57              AChar          iCode2          Insertion code.
+			link.symOpA = cur->vS(60, 65);		//	60 - 65         SymOP          sym1            Symmetry operator atom 1.
+			link.symOpB = cur->vS(67, 72);		//	67 - 72         SymOP          sym2            Symmetry operator atom 2.
+
+			if (type == "LINK")					//	 1 -  6         Record name    "LINK  "
+				link.distance = std::stof(cur->vF(74, 78));
+												//	74 – 78         Real(5.2)      Length          Link distance
+			
+			mLinks.push_back(link);
+		}
 
 		if (type == "END")
 			break;
@@ -3276,7 +3448,7 @@ void PDBFileParser::ParseHeterogen()
 										//	                                           present in the datablock.                             
 		std::string text = vS(31, 70);	//	31 - 70       String        text           Text describing Het group.                        
 
-		mHets.push_back({ hetID, chainID, seqNum, iCode, numHetAtoms, text });
+		mHets.emplace_back(hetID, chainID, seqNum, iCode, numHetAtoms, text);
 		
 		GetNextRecord();
 	}
@@ -3486,7 +3658,7 @@ void PDBFileParser::ConstructEntities()
 
 		if (r->is("ATOM  ") or r->is("HETATM"))
 		{											//	 1 -  6        Record name   "ATOM  "
-			int serial = r->vI(7, 11);				//	 7 - 11        Integer       serial       Atom  serial number.
+			// int serial = r->vI(7, 11);			//	 7 - 11        Integer       serial       Atom  serial number.
 													//	 ...
 			char altLoc = vC(17);					//	17             Character     altLoc       Alternate location indicator.
 			std::string resName	= r->vS(18, 20);	//	18 - 20        Residue name  resName      Residue name.
@@ -3990,42 +4162,7 @@ void PDBFileParser::ConstructEntities()
 	}
 	
 	// build sugar trees first
-
-	for (;;)
-	{
-		// find a first NAG/NDG
-		auto si = std::find_if(mHets.begin(), mHets.end(), [](const HET& h) { return (h.hetID == "NAG" or h.hetID == "NDG") and not h.processedSugar; });
-		if (si != mHets.end())
-		{
-			si->processedSugar = true;
-
-			// take the location of the C1 atom(s?)
-
-			std::vector<std::tuple<std::string,float,float,float>> ci;
-
-			for (auto a: si->atoms)
-			{
-				std::string name = a->vS(13, 16);		//	13 - 16        Atom          name         Atom name.
-
-				if (name != "ND2")
-					continue;
-
-				ci.emplace_back(
-					std::string{ a->vC(17) },	//	17             Character     altLoc       Alternate location indicator.
-					std::stof(a->vF(31, 38)),	//	31 - 38        Real(8.3)     x            Orthogonal coordinates for X in Angstroms.
-					std::stof(a->vF(39, 46)),	//	39 - 46        Real(8.3)     y            Orthogonal coordinates for Y in Angstroms.
-					std::stof(a->vF(47, 54))	//	47 - 54        Real(8.3)     z            Orthogonal coordinates for Z in Angstroms.
-				);
-			}
-
-			// find a free ASN near by
-
-			
-
-		}
-
-
-	}
+	ConstructSugarTrees(asymNr);
 
 	// done with the sugar, resume operation as before
 
@@ -4340,6 +4477,191 @@ void PDBFileParser::ConstructEntities()
 			}
 		}
 	}
+}
+
+void PDBFileParser::ConstructSugarTrees(int& asymNr)
+{
+	for (;;)
+	{
+		// find a first NAG/NDG
+		auto si = std::find_if(mHets.begin(), mHets.end(), [](const HET& h) { return (h.hetID == "NAG" or h.hetID == "NDG") and not (h.processed or h.branch); });
+		if (si != mHets.end())
+		{
+			si->processed = true;
+
+			// take the location of the C1 atom(s?)
+			std::set<char> ci;
+
+			for (auto a: si->atoms)
+			{
+				std::string name = a->vS(13, 16);	//	13 - 16        Atom          name         Atom name.
+
+				if (name != "C1")
+					continue;
+
+				ci.insert(a->vC(17));				//	17             Character     altLoc       Alternate location indicator.
+			}
+
+			if (ci.empty())
+				continue;
+
+			for (auto alt: ci)
+			{
+				ATOM_REF c1{ "C1", si->hetID, si->seqNum, si->chainID, si->iCode, alt };
+
+				const auto& [asn, linked] = FindLink(c1, "ND2", "ASN");
+				if (not linked)
+					continue;
+
+				std::stack<ATOM_REF> c1s;
+				c1s.push(c1);
+
+				SUGAR_TREE sugarTree;
+				sugarTree.push_back({ c1 });
+				
+				// naive implementation
+				while (not c1s.empty())
+				{
+					c1 = c1s.top();
+					c1s.pop();
+
+					for (auto o: { "O1", "O2", "O3", "O4", "O5", "O6" })
+					{
+						ATOM_REF leaving = c1;
+						leaving.name = o;
+
+						const auto&  [nc1, linked] = FindLink(leaving, "C1");
+						if (linked)
+						{
+							sugarTree.push_back({ nc1, o[1] - '0', c1 });
+							c1s.push(nc1);
+						}
+					}
+				}
+
+				if (sugarTree.size() < 2)	// not really a tree
+					continue;
+
+				auto branchName = sugarTree.entityName();
+				auto entityID = mBranch2EntityID[branchName];
+
+				// See if we've already added it to the entities
+				if (entityID.empty())
+				{
+					entityID = std::to_string(mNextEntityNr++);
+					mBranch2EntityID[branchName] = entityID;
+					
+					getCategory("entity")->emplace({
+						{ "id", entityID },
+						{ "type", "branched" },
+						{ "src_method", "man" },
+						{ "pdbx_description", branchName }
+					});
+
+					getCategory("pdbx_entity_branch")->emplace({
+						{ "entity_id", entityID },
+						{ "type", "oligosaccharide" }
+					});
+
+					int num = 0;
+					std::map<ATOM_REF,int> branch_list;
+
+					for (auto& s: sugarTree)
+					{
+						getCategory("pdbx_entity_branch_list")->emplace({
+							{ "entity_id", entityID },
+							{ "comp_id", s.c1.resName },
+							{ "num", ++num },
+							{ "hetero", ci.size() == 1 ? "n" : "y" }
+						});
+
+						branch_list[s.c1] = num;
+					}
+
+					auto& branch_link = *getCategory("pdbx_entity_branch_link");
+
+					for (auto& s: sugarTree)
+					{
+						if (s.leaving_o == 0)
+							continue;
+
+						branch_link.emplace({
+							{ "link_id", branch_link.size() + 1 },
+							{ "entity_id", entityID },
+							{ "entity_branch_list_num_1", branch_list[s.c1] },
+							{ "comp_id_1", s.c1.resName },
+							{ "atom_id_1", s.c1.name },
+							{ "leaving_atom_id_1", "O1" },
+							{ "entity_branch_list_num_2", branch_list[s.next] },
+							{ "comp_id_2", s.next.resName },
+							{ "atom_id_2", "O" + std::to_string(s.leaving_o) },
+							{ "leaving_atom_id_2", "HO" + std::to_string(s.leaving_o) },
+							{ "value_order", "sing" } /// ??
+						});
+					}
+				}
+
+				// create an asym for this sugar tree
+
+				std::string asymID = cifIdForInt(asymNr++);
+
+				getCategory("struct_asym")->emplace({
+					{ "id", asymID },
+					{ "pdbx_blank_PDB_chainid_flag", si->chainID == ' ' ? "Y" : "N" },
+					{ "pdbx_modified", "N" },
+					{ "entity_id", entityID }
+				});
+
+				std::string iCode{si->iCode};
+				ba::trim(iCode);
+				if (iCode.empty())
+					iCode = { '.' };
+
+				int num = 0;
+				for (auto s: sugarTree)
+				{
+					getCategory("pdbx_branch_scheme")->emplace({
+						{ "asym_id", asymID },
+						{ "entity_id", entityID },
+						{ "mon_id", s.c1.resName },
+						{ "num", ++num },
+						{ "pdb_asym_id", asymID },
+						{ "pdb_mon_id", s.c1.resName },
+						{ "pdb_seq_num", num },
+						{ "auth_asym_id", std::string { s.c1.chainID } },
+						{ "auth_mon_id", s.next.resName },
+						{ "auth_seq_num", s.c1.resSeq },
+						{ "hetero", ci.size() == 1 ? "n" : "y" }
+					});
+
+					auto k = std::make_tuple(s.c1.chainID, s.c1.resSeq, s.c1.iCode);
+					assert (mChainSeq2AsymSeq.count(k) == 0);
+
+					mChainSeq2AsymSeq[k] = std::make_tuple(asymID, num, false);
+
+					// mark all hets as part of tree
+
+					for (auto& h: mHets)
+					{
+						if (h.hetID == s.c1.resName and h.chainID == s.c1.chainID and h.seqNum == s.c1.resSeq and h.iCode == s.c1.iCode)
+						{
+							h.branch = true;
+							break;	// should be only one of course... right?
+						}
+					}
+				}
+
+				break;
+			}
+
+			continue;
+		}
+
+		break;
+	}
+
+	// remove the branched HET's
+	mHets.erase(std::remove_if(mHets.begin(), mHets.end(), [](auto& h) { return h.branch; }), mHets.end());
 }
 
 void PDBFileParser::ParseSecondaryStructure()
@@ -4792,7 +5114,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{ "id", type + std::to_string(linkNr) },
 				{ "conn_type_id", type },
 				
-				{ "ccp4_link_id", ccp4LinkID },
+				// { "ccp4_link_id", ccp4LinkID },
 	
 				{ "ptnr1_label_asym_id", p1Asym },
 				{ "ptnr1_label_comp_id", vS(18, 20) },
@@ -4817,8 +5139,8 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				{ "ptnr2_auth_comp_id", vS(48, 50) },
 				{ "ptnr2_auth_seq_id", vI(53, 56) },
 
-				{ "ptnr1_auth_atom_id", vS(13, 16) },
-				{ "ptnr2_auth_atom_id", vS(43, 46) },
+				// { "ptnr1_auth_atom_id", vS(13, 16) },
+				// { "ptnr2_auth_atom_id", vS(43, 46) },
 
 				{ "ptnr2_symmetry", sym2 },
 				

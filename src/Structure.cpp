@@ -1869,7 +1869,7 @@ std::tuple<char,int,char> Structure::MapLabelToAuth(
 		found = true;
 		break;
 	}
-						
+
 	if (not found)
 	{
 		auto r = db["pdbx_nonpoly_scheme"].find(cif::Key("asym_id") == asymID);
