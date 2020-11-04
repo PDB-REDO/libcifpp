@@ -1074,3 +1074,97 @@ _cat_2.parent_id3
     BOOST_CHECK(cat1.size() == 0);
     BOOST_CHECK(cat2.size() == 0);
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(c1)
+{
+    cif::VERBOSE = 1;
+
+    auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+4 .
+5 ?
+    )"_cf;
+
+    auto& db = f.firstDatablock();
+
+    for (auto r: db["test"].find(cif::Key("id") == 1))
+    {
+        const auto& [id, name] = r.get<int, std::string>({"id", "name"});
+        BOOST_CHECK(id == 1);
+        BOOST_CHECK(name == "aap");
+    }
+
+    for (auto r: db["test"].find(cif::Key("id") == 4))
+    {
+        const auto& [id, name] = r.get<int, std::string>({"id", "name"});
+        BOOST_CHECK(id == 4);
+        BOOST_CHECK(name.empty());
+    }
+
+    for (auto r: db["test"].find(cif::Key("id") == 5))
+    {
+        const auto& [id, name] = r.get<int, std::string>({"id", "name"});
+        BOOST_CHECK(id == 5);
+        BOOST_CHECK(name.empty());
+    }
+
+    // optional
+
+    for (auto r: db["test"])
+    {
+        const auto& [id, name] = r.get<int, std::optional<std::string>>({"id", "name"});
+        switch (id)
+        {
+            case 1: BOOST_CHECK(name == "aap"); break;
+            case 2: BOOST_CHECK(name == "noot"); break;
+            case 3: BOOST_CHECK(name == "mies"); break;
+            case 4:
+            case 5: BOOST_CHECK(not name); break;
+            default: 
+                    BOOST_CHECK(false);
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(c2)
+{
+    cif::VERBOSE = 1;
+
+    auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+4 .
+5 ?
+    )"_cf;
+
+    auto& db = f.firstDatablock();
+
+    // query tests
+
+    for (const auto& [id, name]: db["test"].find<int, std::optional<std::string>>(cif::All(), { "id", "name" }))
+    {
+        switch (id)
+        {
+            case 1: BOOST_CHECK(name == "aap"); break;
+            case 2: BOOST_CHECK(name == "noot"); break;
+            case 3: BOOST_CHECK(name == "mies"); break;
+            case 4:
+            case 5: BOOST_CHECK(not name); break;
+            default: 
+                    BOOST_CHECK(false);
+        }
+    }
+}

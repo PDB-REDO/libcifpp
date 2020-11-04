@@ -574,7 +574,7 @@ namespace detail
 }
 
 template<typename... Ts>
-auto tie(Ts&... v) -> detail::tieWrap<Ts&...>
+auto tie(Ts&... v)
 {
 	return detail::tieWrap<Ts&...>(std::forward<Ts&>(v)...);
 }
@@ -682,16 +682,21 @@ class Row
 		return detail::ItemReference(itemTag.c_str(), column, *this);
 	}
 
-	template<typename... C>
-	auto get(C... columns) const -> detail::getRowResult<C...>
+	template<typename... Ts, size_t N>
+	std::tuple<Ts...> get(char const * const (&columns)[N])
 	{
-		std::array<size_t,sizeof...(C)> cix;
-		
-		auto c = cix.begin();
-		for (auto col: { columns... })
-			*c++ = ColumnForItemTag(col);
-		
-		return detail::getRowResult<C...>(*this, std::move(cix));
+		static_assert(sizeof...(Ts) == N, "Number of columns should be equal to number of types to return");
+
+		std::array<size_t, N> cix;
+		for (size_t i = 0; i < N; ++i)
+			cix[i] = ColumnForItemTag(columns[i]);
+		return detail::getRowResult<Ts...>(*this, std::move(cix));
+	}
+
+	template<typename... C>
+	auto get(C... columns) const
+	{
+		return detail::getRowResult<C...>(*this, { ColumnForItemTag(columns)... });
 	}
 	
 	void assign(const std::vector<Item>& values);
@@ -751,9 +756,9 @@ struct AllConditionImpl : public ConditionImpl
 	virtual void str(std::ostream& os) const { os << "*"; }
 };
 
-struct orConditionImpl;
-struct andConditionImpl;
-struct notConditionImpl;
+struct OrConditionImpl;
+struct AndConditionImpl;
+struct NotConditionImpl;
 
 }
 
@@ -805,9 +810,9 @@ class Condition
 	friend Condition operator||(Condition&& a, Condition&& b);
 	friend Condition operator&&(Condition&& a, Condition&& b);
 
-	friend struct detail::orConditionImpl;
-	friend struct detail::andConditionImpl;
-	friend struct detail::notConditionImpl;
+	friend struct detail::OrConditionImpl;
+	friend struct detail::AndConditionImpl;
+	friend struct detail::NotConditionImpl;
 
 	void swap(Condition& rhs)
 	{
@@ -901,11 +906,11 @@ struct KeyMatchesConditionImpl : public ConditionImpl
 };
 
 template<typename T>
-struct anyIsConditionImpl : public ConditionImpl
+struct AnyIsConditionImpl : public ConditionImpl
 {
 	typedef T valueType;
 	
-	anyIsConditionImpl(const valueType& value)
+	AnyIsConditionImpl(const valueType& value)
 		: mValue(value) {}
 	
 	virtual bool test(const Category& c, const Row& r) const;
@@ -917,9 +922,9 @@ struct anyIsConditionImpl : public ConditionImpl
 	valueType mValue;
 };
 
-struct anyMatchesConditionImpl : public ConditionImpl
+struct AnyMatchesConditionImpl : public ConditionImpl
 {
-	anyMatchesConditionImpl(const std::regex& rx)
+	AnyMatchesConditionImpl(const std::regex& rx)
 		: mRx(rx) {}
 	
 	virtual bool test(const Category& c, const Row& r) const;
@@ -931,31 +936,16 @@ struct anyMatchesConditionImpl : public ConditionImpl
 	std::regex mRx;
 };
 
-struct allConditionImpl : public ConditionImpl
+struct AndConditionImpl : public ConditionImpl
 {
-	allConditionImpl() {}
-	
-	virtual bool test(const Category& c, const Row& r) const
-    {
-        return true;
-    }
-
-	virtual void str(std::ostream& os) const
-	{
-		os << "*";
-	}
-};
-
-struct andConditionImpl : public ConditionImpl
-{
-	andConditionImpl(Condition&& a, Condition&& b)
+	AndConditionImpl(Condition&& a, Condition&& b)
 		: mA(nullptr), mB(nullptr)
 	{
 		std::swap(mA, a.mImpl);
 		std::swap(mB, b.mImpl);
 	}
 	
-	~andConditionImpl()
+	~AndConditionImpl()
 	{
 		delete mA;
 		delete mB;
@@ -985,16 +975,16 @@ struct andConditionImpl : public ConditionImpl
 	ConditionImpl* mB;
 };
 
-struct orConditionImpl : public ConditionImpl
+struct OrConditionImpl : public ConditionImpl
 {
-	orConditionImpl(Condition&& a, Condition&& b)
+	OrConditionImpl(Condition&& a, Condition&& b)
 		: mA(nullptr), mB(nullptr)
 	{
 		std::swap(mA, a.mImpl);
 		std::swap(mB, b.mImpl);
 	}
 	
-	~orConditionImpl()
+	~OrConditionImpl()
 	{
 		delete mA;
 		delete mB;
@@ -1024,15 +1014,15 @@ struct orConditionImpl : public ConditionImpl
 	ConditionImpl* mB;
 };
 
-struct notConditionImpl : public ConditionImpl
+struct NotConditionImpl : public ConditionImpl
 {
-	notConditionImpl(Condition&& a)
+	NotConditionImpl(Condition&& a)
 		: mA(nullptr)
 	{
 		std::swap(mA, a.mImpl);
 	}
 	
-	~notConditionImpl()
+	~NotConditionImpl()
 	{
 		delete mA;
 	}
@@ -1062,7 +1052,7 @@ struct notConditionImpl : public ConditionImpl
 inline Condition operator&&(Condition&& a, Condition&& b)
 {
 	if (a.mImpl and b.mImpl)
-		return Condition(new detail::andConditionImpl(std::move(a), std::move(b)));
+		return Condition(new detail::AndConditionImpl(std::move(a), std::move(b)));
 	if (a.mImpl)
 		return Condition(std::move(a));
 	return Condition(std::move(b));
@@ -1071,7 +1061,7 @@ inline Condition operator&&(Condition&& a, Condition&& b)
 inline Condition operator||(Condition&& a, Condition&& b)
 {
 	if (a.mImpl and b.mImpl)
-		return Condition(new detail::orConditionImpl(std::move(a), std::move(b)));
+		return Condition(new detail::OrConditionImpl(std::move(a), std::move(b)));
 	if (a.mImpl)
 		return Condition(std::move(a));
 	return Condition(std::move(b));
@@ -1117,13 +1107,13 @@ inline Condition operator==(const Key& key, const Empty&)
 template<typename T>
 Condition operator!=(const Key& key, const T& v)
 {
-	return Condition(new detail::notConditionImpl(operator==(key, v)));
+	return Condition(new detail::NotConditionImpl(operator==(key, v)));
 }
 
 inline Condition operator!=(const Key& key, const char* v)
 {
 	std::string value(v ? v : "");
-	return Condition(new detail::notConditionImpl(operator==(key, value)));
+	return Condition(new detail::NotConditionImpl(operator==(key, value)));
 }
 
 template<typename T>
@@ -1185,7 +1175,7 @@ struct any
 	template<typename T>
 	Condition operator==(const T& v) const
 	{
-		return Condition(new detail::anyIsConditionImpl<T>(v));
+		return Condition(new detail::AnyIsConditionImpl<T>(v));
 	}
 };
 
@@ -1193,17 +1183,17 @@ template<>
 inline
 Condition any::operator==(const std::regex& rx) const
 {
-	return Condition(new detail::anyMatchesConditionImpl(rx));
+	return Condition(new detail::AnyMatchesConditionImpl(rx));
 }
 
 inline Condition All()
 {
-    return Condition(new detail::allConditionImpl());
+    return Condition(new detail::AllConditionImpl());
 }
 
 inline Condition Not(Condition&& cond)
 {
-    return Condition(new detail::notConditionImpl(std::move(cond)));
+    return Condition(new detail::NotConditionImpl(std::move(cond)));
 }
 
 // -----------------------------------------------------------------------
@@ -1262,30 +1252,139 @@ class iterator_impl
 // --------------------------------------------------------------------
 // Iterator proxy to iterate over a subset of rows selected by a Condition
 
-template<typename RowType>
+// template<typename RowType, typename...>
+// class conditional_iterator_proxy;
+
+
+// template<typename RowType>
+// class conditional_iterator_proxy<RowType>
+// {
+//   public:
+
+// 	using base_iterator = iterator_impl<RowType>;
+
+// 	class conditional_iterator_impl
+// 	{
+// 	  public:
+// 		using iterator_category = std::forward_iterator_tag;
+// 		using value_type = RowType;
+// 		using difference_type = std::ptrdiff_t;
+// 		using pointer = RowType*;
+// 		using reference = RowType&;
+
+// 		conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond);
+// 		conditional_iterator_impl(const conditional_iterator_impl& i) = default;
+// 		conditional_iterator_impl& operator=(const conditional_iterator_impl& i) = default;
+
+// 		virtual ~conditional_iterator_impl() = default;
+
+// 		reference operator*()							{ return *mBegin; }
+// 		pointer operator->()							{ return &*mBegin; }
+		
+// 		conditional_iterator_impl& operator++()
+// 		{
+// 			while (mBegin != mEnd)
+// 			{
+// 				if (++mBegin == mEnd)
+// 					break;
+				
+// 				if ((*mCondition)(*mCat, *mBegin))
+// 					break;
+// 			}
+
+// 			return *this;
+// 		}
+
+// 		conditional_iterator_impl operator++(int)
+// 		{
+// 			conditional_iterator_impl result(*this);
+// 			this->operator++();
+// 			return result;
+// 		} 
+
+// 		bool operator==(const conditional_iterator_impl& rhs) const	{ return mBegin == rhs.mBegin; } 
+// 		bool operator!=(const conditional_iterator_impl& rhs) const	{ return mBegin != rhs.mBegin; } 
+
+// 	  private:
+// 	  	Category* mCat;
+// 		base_iterator mBegin, mEnd;
+// 		const Condition* mCondition;
+// 	};
+
+// 	using iterator = conditional_iterator_impl;
+// 	using reference = typename iterator::reference;
+
+// 	conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond);
+
+// 	conditional_iterator_proxy(conditional_iterator_proxy&& p);
+// 	conditional_iterator_proxy& operator=(conditional_iterator_proxy&& p);
+
+// 	conditional_iterator_proxy(const conditional_iterator_proxy&) = delete;
+// 	conditional_iterator_proxy& operator=(const conditional_iterator_proxy&) = delete;
+
+// 	iterator begin() const;
+// 	iterator end() const;
+
+// 	bool empty() const;
+
+// 	explicit operator bool() const	{ return not empty(); }
+
+// 	size_t size() const				{ return std::distance(begin(), end()); }
+
+// 	RowType front()					{ return *begin(); }
+
+// 	Category& category() const		{ return *mCat;}
+
+// 	void swap(conditional_iterator_proxy& rhs);
+
+//   private:
+// 	Category* mCat;
+// 	Condition mCondition;
+// 	base_iterator mCBegin, mCEnd;
+// };
+
+// --------------------------------------------------------------------
+// special case, returns tuples instead of a row
+
+template<typename RowType, typename... Ts>
 class conditional_iterator_proxy
 {
   public:
 
 	using base_iterator = iterator_impl<RowType>;
+	static constexpr const size_t N = sizeof...(Ts);
 
 	class conditional_iterator_impl
 	{
 	  public:
 		using iterator_category = std::forward_iterator_tag;
-		using value_type = RowType;
+		using value_type = std::conditional_t<N == 0, RowType, std::tuple<Ts...>>;
 		using difference_type = std::ptrdiff_t;
-		using pointer = RowType*;
-		using reference = RowType&;
+		using pointer = value_type*;
+		using reference = value_type&;
 
-		conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond);
+		// conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond);
+		conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond, std::array<size_t,N> columns);
 		conditional_iterator_impl(const conditional_iterator_impl& i) = default;
 		conditional_iterator_impl& operator=(const conditional_iterator_impl& i) = default;
 
 		virtual ~conditional_iterator_impl() = default;
 
-		reference operator*()							{ return *mBegin; }
-		pointer operator->()							{ return &*mBegin; }
+		reference operator*()
+		{
+			if constexpr (N == 0)
+				return *mBegin;
+			else
+				return mCurrent;
+		}
+
+		pointer operator->()
+		{
+			if constexpr (N == 0)
+				return &*mBegin;
+			else
+				return &mCurrent;
+		}
 		
 		conditional_iterator_impl& operator++()
 		{
@@ -1295,7 +1394,11 @@ class conditional_iterator_proxy
 					break;
 				
 				if ((*mCondition)(*mCat, *mBegin))
+				{
+					if constexpr (N != 0)
+						mCurrent = get(*mBegin, std::make_index_sequence<N>());
 					break;
+				}
 			}
 
 			return *this;
@@ -1312,15 +1415,25 @@ class conditional_iterator_proxy
 		bool operator!=(const conditional_iterator_impl& rhs) const	{ return mBegin != rhs.mBegin; } 
 
 	  private:
+
+		template<std::size_t... Is>
+		std::tuple<Ts...> get(Row row, std::index_sequence<Is...>) const
+		{
+			return std::tuple<Ts...>{row[mCix[Is]].template as<Ts>()...};
+		}
+
 	  	Category* mCat;
 		base_iterator mBegin, mEnd;
 		const Condition* mCondition;
+		value_type mCurrent;
+		std::array<size_t,N> mCix;
 	};
 
 	using iterator = conditional_iterator_impl;
 	using reference = typename iterator::reference;
 
 	conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond);
+	conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond, char const* const columns[N]);
 
 	conditional_iterator_proxy(conditional_iterator_proxy&& p);
 	conditional_iterator_proxy& operator=(conditional_iterator_proxy&& p);
@@ -1347,6 +1460,7 @@ class conditional_iterator_proxy
 	Category* mCat;
 	Condition mCondition;
 	base_iterator mCBegin, mCEnd;
+	std::array<size_t,N> mCix;
 };
 
 // --------------------------------------------------------------------
@@ -1551,6 +1665,18 @@ class Category
 		return { *this, pos, std::forward<Condition>(cond) };
 	}
 
+	template<typename... Ts, size_t N>
+	conditional_iterator_proxy<Row, Ts...> find(Condition&& cond, char const* const (&columns)[N])
+	{
+		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
+		return { *this, begin(), std::forward<Condition>(cond), columns };
+	}
+
+	// conditional_iterator_proxy<Row> find(const_iterator pos, Condition&& cond)
+	// {
+	// 	return { *this, pos, std::forward<Condition>(cond) };
+	// }
+
 	bool exists(Condition&& cond) const;
 	
 	RowSet orderBy(const std::string& Item)
@@ -1733,7 +1859,7 @@ namespace detail
 
 template<typename T>
 inline
-bool anyIsConditionImpl<T>::test(const Category& c, const Row& r) const
+bool AnyIsConditionImpl<T>::test(const Category& c, const Row& r) const
 {
 	bool result = false;
 	for (auto& f: c.fields())
@@ -1752,7 +1878,7 @@ bool anyIsConditionImpl<T>::test(const Category& c, const Row& r) const
 	return result;
 }
 
-inline bool anyMatchesConditionImpl::test(const Category& c, const Row& r) const
+inline bool AnyMatchesConditionImpl::test(const Category& c, const Row& r) const
 {
 	bool result = false;
 	for (auto& f: c.fields())
@@ -1787,26 +1913,32 @@ inline void swap(cif::detail::ItemReference& a, cif::detail::ItemReference& b)
 
 // --------------------------------------------------------------------
 
-template<typename RowType>
-conditional_iterator_proxy<RowType>::conditional_iterator_impl::conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond)
-	: mCat(&cat), mBegin(pos), mEnd(cat.end()), mCondition(&cond)
+template<typename RowType, typename... Ts>
+conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_impl::conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond, std::array<size_t,N> cix)
+	: mCat(&cat), mBegin(pos), mEnd(cat.end()), mCondition(&cond), mCix(cix)
 {
 	// skip until the first row matching cond
 
 	while (mBegin != mEnd and not (*mCondition)(*mCat, *mBegin))
 		++mBegin;
+
+	if constexpr (N != 0)
+	{
+		if (mBegin != mEnd)
+			mCurrent = get(*mBegin, std::make_index_sequence<N>());
+	}
 }
 
-template<typename RowType>
-conditional_iterator_proxy<RowType>::conditional_iterator_proxy(conditional_iterator_proxy&& p)
-	: mCat(nullptr), mCBegin(p.mCBegin), mCEnd(p.mCEnd)
+template<typename RowType, typename... Ts>
+conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(conditional_iterator_proxy&& p)
+	: mCat(nullptr), mCBegin(p.mCBegin), mCEnd(p.mCEnd), mCix(p.mCix)
 {
 	std::swap(mCat, p.mCat);
 	mCondition.swap(p.mCondition);
 }
 
-template<typename RowType>
-conditional_iterator_proxy<RowType>::conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond)
+template<typename RowType, typename... Ts>
+conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond)
 	: mCat(&cat), mCondition(std::move(cond))
 	, mCBegin(pos)
 	, mCEnd(cat.end())
@@ -1817,38 +1949,47 @@ conditional_iterator_proxy<RowType>::conditional_iterator_proxy(Category& cat, b
 		++mCBegin;
 }
 
-template<typename RowType>
-conditional_iterator_proxy<RowType>& conditional_iterator_proxy<RowType>::operator=(conditional_iterator_proxy&& p)
+template<typename RowType, typename... Ts>
+conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond, const char* const columns[N])
+	: conditional_iterator_proxy(cat, pos, std::forward<Condition>(cond))
+{
+	for (size_t i = 0; i < N; ++i)
+		mCix[i] = mCat->getColumnIndex(columns[i]);
+}
+
+template<typename RowType, typename... Ts>
+conditional_iterator_proxy<RowType, Ts...>& conditional_iterator_proxy<RowType, Ts...>::operator=(conditional_iterator_proxy&& p)
 {
 	swap(p);
 	return *this;
 }
 
-template<typename RowType>
-typename conditional_iterator_proxy<RowType>::iterator conditional_iterator_proxy<RowType>::begin() const
+template<typename RowType, typename... Ts>
+typename conditional_iterator_proxy<RowType, Ts...>::iterator conditional_iterator_proxy<RowType, Ts...>::begin() const
 {
-	return iterator(*mCat, mCBegin, mCondition);
+	return iterator(*mCat, mCBegin, mCondition, mCix);
 }
 
-template<typename RowType>
-typename conditional_iterator_proxy<RowType>::iterator conditional_iterator_proxy<RowType>::end() const
+template<typename RowType, typename... Ts>
+typename conditional_iterator_proxy<RowType, Ts...>::iterator conditional_iterator_proxy<RowType, Ts...>::end() const
 {
-	return iterator(*mCat, mCEnd, mCondition);
+	return iterator(*mCat, mCEnd, mCondition, mCix);
 }
 
-template<typename RowType>
-bool conditional_iterator_proxy<RowType>::empty() const
+template<typename RowType, typename... Ts>
+bool conditional_iterator_proxy<RowType, Ts...>::empty() const
 {
 	return mCBegin == mCEnd;
 }
 
-template<typename RowType>
-void conditional_iterator_proxy<RowType>::swap(conditional_iterator_proxy& rhs)
+template<typename RowType, typename... Ts>
+void conditional_iterator_proxy<RowType, Ts...>::swap(conditional_iterator_proxy& rhs)
 {
 	std::swap(mCat, rhs.mCat);
 	mCondition.swap(rhs.mCondition);
 	std::swap(mCBegin, rhs.mCBegin);
 	std::swap(mCEnd, rhs.mCEnd);
+	std::swap(mCix, rhs.mCix);
 }
 
 }

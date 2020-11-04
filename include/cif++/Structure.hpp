@@ -443,16 +443,13 @@ class Structure
 	std::list<Polymer>& polymers()							{ return mPolymers; }
 
 	const std::vector<Residue>& nonPolymers() const			{ return mNonPolymers; }
+	const std::vector<Residue>& branchResidues() const		{ return mBranchResidues; }
 
 	Atom getAtomByID(std::string id) const;
 	// Atom getAtomByLocation(Point pt, float maxDistance) const;
 	
 	Atom getAtomByLabel(const std::string& atomID, const std::string& asymID,
 		const std::string& compID, int seqID, const std::string& altID = "");
-	
-	// Atom getAtomByAuth(const std::string& atomID, const std::string& asymID,
-	// 	const std::string& compID, int seqID, const std::string& altID = "",
-	// 	const std::string& pdbxAuthInsCode = "");
 	
 	const Residue& getResidue(const std::string& asymID, const std::string& compID, int seqID) const;
 
@@ -487,65 +484,65 @@ class Structure
 	/// Will asssign new atom_id's to all atoms. Be carefull
 	void sortAtoms();
 	
-	// iterator for all residues
+	// // iterator for all residues
 	
-	class residue_iterator : public std::iterator<std::forward_iterator_tag, const Residue>
-	{
-	  public:
-		typedef std::iterator<std::forward_iterator_tag, const Residue>	baseType;
-		typedef typename baseType::pointer								pointer;
-		typedef typename baseType::reference							reference;
+	// class residue_iterator : public std::iterator<std::forward_iterator_tag, const Residue>
+	// {
+	//   public:
+	// 	typedef std::iterator<std::forward_iterator_tag, const Residue>	baseType;
+	// 	typedef typename baseType::pointer								pointer;
+	// 	typedef typename baseType::reference							reference;
 		
-		typedef std::list<Polymer>::const_iterator						poly_iterator;
+	// 	typedef std::list<Polymer>::const_iterator						poly_iterator;
 		
-		residue_iterator(const Structure* s, poly_iterator polyIter, size_t polyResIndex, size_t nonPolyIndex);
+	// 	residue_iterator(const Structure* s, poly_iterator polyIter, size_t polyResIndex, size_t nonPolyIndex);
 		
-		reference operator*();
-		pointer operator->();
+	// 	reference operator*();
+	// 	pointer operator->();
 		
-		residue_iterator& operator++();
-		residue_iterator operator++(int);
+	// 	residue_iterator& operator++();
+	// 	residue_iterator operator++(int);
 		
-		bool operator==(const residue_iterator& rhs) const;
-		bool operator!=(const residue_iterator& rhs) const;
+	// 	bool operator==(const residue_iterator& rhs) const;
+	// 	bool operator!=(const residue_iterator& rhs) const;
 		
-	  private:
-		const Structure&	mStructure;
-		poly_iterator		mPolyIter;
-		size_t				mPolyResIndex;
-		size_t				mNonPolyIndex;
-	};
+	//   private:
+	// 	const Structure&	mStructure;
+	// 	poly_iterator		mPolyIter;
+	// 	size_t				mPolyResIndex;
+	// 	size_t				mNonPolyIndex;
+	// };
 	
-	class residue_view
-	{
-	  public:
-		residue_view(const Structure* s) : mStructure(s) {}
-		residue_view(const residue_view& rhs) : mStructure(rhs.mStructure) {}
-		residue_view& operator=(residue_view& rhs)
-		{
-			mStructure = rhs.mStructure;
-			return *this;
-		}
+	// class residue_view
+	// {
+	//   public:
+	// 	residue_view(const Structure* s) : mStructure(s) {}
+	// 	residue_view(const residue_view& rhs) : mStructure(rhs.mStructure) {}
+	// 	residue_view& operator=(residue_view& rhs)
+	// 	{
+	// 		mStructure = rhs.mStructure;
+	// 		return *this;
+	// 	}
 		
-		residue_iterator begin() const		{ return residue_iterator(mStructure, mStructure->mPolymers.begin(), 0, 0); }
-		residue_iterator end() const		{ return residue_iterator(mStructure, mStructure->mPolymers.end(), 0, mStructure->mNonPolymers.size()); }
-		size_t size() const
-		{
-			size_t ps = std::accumulate(mStructure->mPolymers.begin(), mStructure->mPolymers.end(), 0UL, [](size_t s, auto& p) { return s + p.size(); });
-			return ps + mStructure->mNonPolymers.size();
-		}
+	// 	residue_iterator begin() const		{ return residue_iterator(mStructure, mStructure->mPolymers.begin(), 0, 0); }
+	// 	residue_iterator end() const		{ return residue_iterator(mStructure, mStructure->mPolymers.end(), 0, mStructure->mNonPolymers.size()); }
+	// 	size_t size() const
+	// 	{
+	// 		size_t ps = std::accumulate(mStructure->mPolymers.begin(), mStructure->mPolymers.end(), 0UL, [](size_t s, auto& p) { return s + p.size(); });
+	// 		return ps + mStructure->mNonPolymers.size();
+	// 	}
 
-	  private:
-		const Structure* mStructure;
-	};
+	//   private:
+	// 	const Structure* mStructure;
+	// };
 	
-	residue_view residues() const			{ return residue_view(this); }
+	// residue_view residues() const			{ return residue_view(this); }
 	
   private:
 	friend Polymer;
 	friend Residue;
-	friend residue_view;
-	friend residue_iterator;
+	// friend residue_view;
+	// friend residue_iterator;
 
 	cif::Category& category(const char* name) const;
 	cif::Datablock& datablock() const;
@@ -560,7 +557,7 @@ class Structure
 	AtomView				mAtoms;
 	std::vector<size_t>		mAtomIndex;
 	std::list<Polymer>		mPolymers;
-	std::vector<Residue>	mNonPolymers;
+	std::vector<Residue>	mNonPolymers, mBranchResidues;
 };
 
 }
