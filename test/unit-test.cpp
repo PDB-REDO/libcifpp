@@ -1154,6 +1154,41 @@ _test.name
 
     // query tests
 
+    for (const auto& [id, name]: db["test"].rows<int, std::optional<std::string>>({ "id", "name" }))
+    {
+        switch (id)
+        {
+            case 1: BOOST_CHECK(name == "aap"); break;
+            case 2: BOOST_CHECK(name == "noot"); break;
+            case 3: BOOST_CHECK(name == "mies"); break;
+            case 4:
+            case 5: BOOST_CHECK(not name); break;
+            default: 
+                    BOOST_CHECK(false);
+        }
+    }
+}
+
+
+BOOST_AUTO_TEST_CASE(c3)
+{
+    cif::VERBOSE = 1;
+
+    auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+4 .
+5 ?
+    )"_cf;
+
+    auto& db = f.firstDatablock();
+
+    // query tests
     for (const auto& [id, name]: db["test"].find<int, std::optional<std::string>>(cif::All(), { "id", "name" }))
     {
         switch (id)

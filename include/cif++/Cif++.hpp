@@ -1199,39 +1199,96 @@ inline Condition Not(Condition&& cond)
 // -----------------------------------------------------------------------
 // iterators
 
-template<typename RowType>
+template<typename RowType, typename... Ts>
 class iterator_impl
 {
   public:
+	template<typename, typename...> friend class iterator_impl;
+
+	static constexpr size_t N = sizeof...(Ts);
+
 	using iterator_category = std::forward_iterator_tag;
-	using value_type = RowType;
+	using value_type = std::conditional_t<N == 0, RowType, std::tuple<Ts...>>;
 	using difference_type = std::ptrdiff_t;
-	using pointer = RowType*;
-	using reference = RowType&;
+	using pointer = value_type*;
+	using reference = value_type&;
 
 	friend class Category;
 
-	iterator_impl(ItemRow* data) : mCurrent(data) {}
-	iterator_impl(const iterator_impl& i) : mCurrent(i.mCurrent) {}
+	// default constructor, equal to end()
+	iterator_impl() {}
 
-	template<typename IteratorType>
-	iterator_impl(IteratorType& i)
-		: mCurrent(*i) {}
+	iterator_impl(const iterator_impl& rhs)
+		: mCurrent(rhs.mCurrent), mValue(rhs.mValue), mCix(rhs.mCix)
+	{
+	}
+
+	iterator_impl(ItemRow* data)
+		: mCurrent(data)
+	{
+		static_assert(N == 0, "Only valid if this is a row iterator, not a row<xxx> iterator");
+	}
+
+	iterator_impl(ItemRow* data, const std::array<size_t,N>& cix)
+		: mCurrent(data), mCix(cix) {}
+
+	template<typename IRowType>
+	iterator_impl(iterator_impl<IRowType, Ts...>& rhs)
+		: mCurrent(rhs.mCurrent), mCix(rhs.mCix)
+	{
+		if constexpr (N > 0)
+			mValue = get(mCurrent, std::make_index_sequence<N>());
+	}
+
+	template<typename IRowType>
+	iterator_impl(const iterator_impl<IRowType>& rhs, const std::array<size_t,N>& cix)
+		: mCurrent(rhs.mCurrent), mCix(cix)
+	{
+		if constexpr (N > 0)
+			mValue = get(mCurrent, std::make_index_sequence<N>());
+	}
 
 	iterator_impl& operator=(const iterator_impl& i)
 	{
 		mCurrent = i.mCurrent;
+		if constexpr (N != 0)
+		{
+			mCix = i.mCix;
+			mValue = i.mValue;
+		}
 		return *this;
 	}
 
 	virtual ~iterator_impl() = default;
 
-	reference operator*()							{ return mCurrent; }
-	pointer operator->()							{ return &mCurrent; }
+	reference operator*()
+	{
+		if constexpr (N == 0)
+			return mCurrent;
+		else
+			return mValue;
+	}
+
+	pointer operator->()
+	{
+		if constexpr (N == 0)
+			return &mCurrent;
+		else
+			return &mValue;
+	}
+
+	RowType row() const
+	{
+		return mCurrent;
+	}
 	
 	iterator_impl& operator++()
 	{
 		mCurrent.next();
+
+		if constexpr (N != 0)
+			mValue = get(mCurrent, std::make_index_sequence<N>());
+
 		return *this;
 	}
 
@@ -1246,125 +1303,92 @@ class iterator_impl
 	bool operator!=(const iterator_impl& rhs) const	{ return mCurrent != rhs.mCurrent; } 
 
   private:
+
+	template<std::size_t... Is>
+	std::tuple<Ts...> get(Row row, std::index_sequence<Is...>) const
+	{
+		if (row)
+			return std::tuple<Ts...>{row[mCix[Is]].template as<Ts>()...};
+		return {};
+	}
+
 	Row mCurrent;
+	value_type mValue;
+	std::array<size_t, N> mCix;
 };
 
 // --------------------------------------------------------------------
-// Iterator proxy to iterate over a subset of rows selected by a Condition
+// iterator proxy
 
-// template<typename RowType, typename...>
-// class conditional_iterator_proxy;
+template<typename RowType, typename... Ts>
+class iterator_proxy
+{
+  public:
+	static constexpr const size_t N = sizeof...(Ts);
 
+	using iterator = iterator_impl<RowType, Ts...>;
+	using row_iterator = iterator_impl<RowType>;
 
-// template<typename RowType>
-// class conditional_iterator_proxy<RowType>
-// {
-//   public:
+	iterator_proxy(Category& cat, row_iterator pos, char const* const columns[N]);
 
-// 	using base_iterator = iterator_impl<RowType>;
+	iterator_proxy(iterator_proxy&& p);
+	iterator_proxy& operator=(iterator_proxy&& p);
 
-// 	class conditional_iterator_impl
-// 	{
-// 	  public:
-// 		using iterator_category = std::forward_iterator_tag;
-// 		using value_type = RowType;
-// 		using difference_type = std::ptrdiff_t;
-// 		using pointer = RowType*;
-// 		using reference = RowType&;
+	iterator_proxy(const iterator_proxy&) = delete;
+	iterator_proxy& operator=(const iterator_proxy&) = delete;
 
-// 		conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond);
-// 		conditional_iterator_impl(const conditional_iterator_impl& i) = default;
-// 		conditional_iterator_impl& operator=(const conditional_iterator_impl& i) = default;
+	iterator begin() const			{ return iterator(mCBegin, mCix); }
+	iterator end() const			{ return iterator(mCEnd, mCix); }
 
-// 		virtual ~conditional_iterator_impl() = default;
+	bool empty() const				{ return mCBegin == mCEnd; }
 
-// 		reference operator*()							{ return *mBegin; }
-// 		pointer operator->()							{ return &*mBegin; }
-		
-// 		conditional_iterator_impl& operator++()
-// 		{
-// 			while (mBegin != mEnd)
-// 			{
-// 				if (++mBegin == mEnd)
-// 					break;
-				
-// 				if ((*mCondition)(*mCat, *mBegin))
-// 					break;
-// 			}
+	explicit operator bool() const	{ return not empty(); }
 
-// 			return *this;
-// 		}
+	size_t size() const				{ return std::distance(begin(), end()); }
 
-// 		conditional_iterator_impl operator++(int)
-// 		{
-// 			conditional_iterator_impl result(*this);
-// 			this->operator++();
-// 			return result;
-// 		} 
+	RowType front()					{ return *begin(); }
 
-// 		bool operator==(const conditional_iterator_impl& rhs) const	{ return mBegin == rhs.mBegin; } 
-// 		bool operator!=(const conditional_iterator_impl& rhs) const	{ return mBegin != rhs.mBegin; } 
+	Category& category() const		{ return *mCat;}
 
-// 	  private:
-// 	  	Category* mCat;
-// 		base_iterator mBegin, mEnd;
-// 		const Condition* mCondition;
-// 	};
+	void swap(iterator_proxy& rhs)
+	{
+		std::swap(mCat, rhs.mCat);
+		std::swap(mCBegin, rhs.mCBegin);
+		std::swap(mCEnd, rhs.mCEnd);
+		std::swap(mCix, rhs.mCix);
+	}
 
-// 	using iterator = conditional_iterator_impl;
-// 	using reference = typename iterator::reference;
-
-// 	conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond);
-
-// 	conditional_iterator_proxy(conditional_iterator_proxy&& p);
-// 	conditional_iterator_proxy& operator=(conditional_iterator_proxy&& p);
-
-// 	conditional_iterator_proxy(const conditional_iterator_proxy&) = delete;
-// 	conditional_iterator_proxy& operator=(const conditional_iterator_proxy&) = delete;
-
-// 	iterator begin() const;
-// 	iterator end() const;
-
-// 	bool empty() const;
-
-// 	explicit operator bool() const	{ return not empty(); }
-
-// 	size_t size() const				{ return std::distance(begin(), end()); }
-
-// 	RowType front()					{ return *begin(); }
-
-// 	Category& category() const		{ return *mCat;}
-
-// 	void swap(conditional_iterator_proxy& rhs);
-
-//   private:
-// 	Category* mCat;
-// 	Condition mCondition;
-// 	base_iterator mCBegin, mCEnd;
-// };
+  private:
+	Category* mCat;
+	row_iterator mCBegin, mCEnd;
+	std::array<size_t,N> mCix;
+};
 
 // --------------------------------------------------------------------
-// special case, returns tuples instead of a row
+// conditional iterator proxy
 
 template<typename RowType, typename... Ts>
 class conditional_iterator_proxy
 {
   public:
-
-	using base_iterator = iterator_impl<RowType>;
 	static constexpr const size_t N = sizeof...(Ts);
+
+	using base_iterator = iterator_impl<RowType, Ts...>;
+	using value_type = typename base_iterator::value_type;
+
+	using row_type = std::remove_cv_t<RowType>;
+	using row_iterator = iterator_impl<row_type>;
 
 	class conditional_iterator_impl
 	{
 	  public:
 		using iterator_category = std::forward_iterator_tag;
-		using value_type = std::conditional_t<N == 0, RowType, std::tuple<Ts...>>;
+		using value_type = conditional_iterator_proxy::value_type;
 		using difference_type = std::ptrdiff_t;
 		using pointer = value_type*;
 		using reference = value_type&;
 
-		// conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond);
-		conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond, std::array<size_t,N> columns);
+		conditional_iterator_impl(Category& cat, row_iterator pos, const Condition& cond, const std::array<size_t,N>& cix);
 		conditional_iterator_impl(const conditional_iterator_impl& i) = default;
 		conditional_iterator_impl& operator=(const conditional_iterator_impl& i) = default;
 
@@ -1372,18 +1396,12 @@ class conditional_iterator_proxy
 
 		reference operator*()
 		{
-			if constexpr (N == 0)
-				return *mBegin;
-			else
-				return mCurrent;
+			return *mBegin;
 		}
 
 		pointer operator->()
 		{
-			if constexpr (N == 0)
-				return &*mBegin;
-			else
-				return &mCurrent;
+			return &*mBegin;
 		}
 		
 		conditional_iterator_impl& operator++()
@@ -1393,12 +1411,8 @@ class conditional_iterator_proxy
 				if (++mBegin == mEnd)
 					break;
 				
-				if ((*mCondition)(*mCat, *mBegin))
-				{
-					if constexpr (N != 0)
-						mCurrent = get(*mBegin, std::make_index_sequence<N>());
+				if ((*mCondition)(*mCat, mBegin.row()))
 					break;
-				}
 			}
 
 			return *this;
@@ -1416,24 +1430,16 @@ class conditional_iterator_proxy
 
 	  private:
 
-		template<std::size_t... Is>
-		std::tuple<Ts...> get(Row row, std::index_sequence<Is...>) const
-		{
-			return std::tuple<Ts...>{row[mCix[Is]].template as<Ts>()...};
-		}
-
 	  	Category* mCat;
 		base_iterator mBegin, mEnd;
 		const Condition* mCondition;
-		value_type mCurrent;
-		std::array<size_t,N> mCix;
 	};
 
 	using iterator = conditional_iterator_impl;
 	using reference = typename iterator::reference;
 
-	conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond);
-	conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond, char const* const columns[N]);
+	// conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond);
+	conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond, char const* const columns[N]);
 
 	conditional_iterator_proxy(conditional_iterator_proxy&& p);
 	conditional_iterator_proxy& operator=(conditional_iterator_proxy&& p);
@@ -1459,7 +1465,7 @@ class conditional_iterator_proxy
   private:
 	Category* mCat;
 	Condition mCondition;
-	base_iterator mCBegin, mCEnd;
+	row_iterator mCBegin, mCEnd;
 	std::array<size_t,N> mCix;
 };
 
@@ -1639,8 +1645,8 @@ class Category
 	iterator begin();
 	iterator end();
 
-	const_iterator cbegin();
-	const_iterator cend();
+	const_iterator cbegin() const;
+	const_iterator cend() const;
 
 	const_iterator begin() const;
 	const_iterator end() const;
@@ -1655,14 +1661,21 @@ class Category
 	
 	Row operator[](Condition&& cond);
 
+	template<typename... Ts, size_t N>
+	iterator_proxy<Row, Ts...> rows(char const* const (&columns)[N])
+	{
+		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
+		return iterator_proxy<Row, Ts...>(*this, begin(), columns );
+	}
+
 	conditional_iterator_proxy<Row> find(Condition&& cond)
 	{
-		return { *this, begin(), std::forward<Condition>(cond) };
+		return find(cbegin(), std::forward<Condition>(cond));
 	}
 
 	conditional_iterator_proxy<Row> find(const_iterator pos, Condition&& cond)
 	{
-		return { *this, pos, std::forward<Condition>(cond) };
+		return { *this, pos, std::forward<Condition>(cond), {} };
 	}
 
 	template<typename... Ts, size_t N>
@@ -1672,10 +1685,12 @@ class Category
 		return { *this, begin(), std::forward<Condition>(cond), columns };
 	}
 
-	// conditional_iterator_proxy<Row> find(const_iterator pos, Condition&& cond)
-	// {
-	// 	return { *this, pos, std::forward<Condition>(cond) };
-	// }
+	template<typename... Ts, size_t N>
+	conditional_iterator_proxy<Row, Ts...> find(const_iterator pos, Condition&& cond, char const* const (&columns)[N])
+	{
+		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
+		return { *this, pos, std::forward<Condition>(cond), columns };
+	}
 
 	bool exists(Condition&& cond) const;
 	
@@ -1914,19 +1929,22 @@ inline void swap(cif::detail::ItemReference& a, cif::detail::ItemReference& b)
 // --------------------------------------------------------------------
 
 template<typename RowType, typename... Ts>
-conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_impl::conditional_iterator_impl(Category& cat, base_iterator pos, const Condition& cond, std::array<size_t,N> cix)
-	: mCat(&cat), mBegin(pos), mEnd(cat.end()), mCondition(&cond), mCix(cix)
+iterator_proxy<RowType, Ts...>::iterator_proxy(Category& cat, row_iterator pos, char const* const columns[N])
+	: mCat(&cat)
+	, mCBegin(pos)
+	, mCEnd(cat.end())
 {
-	// skip until the first row matching cond
+	for (size_t i = 0; i < N; ++i)
+		mCix[i] = mCat->getColumnIndex(columns[i]);
+}
 
-	while (mBegin != mEnd and not (*mCondition)(*mCat, *mBegin))
-		++mBegin;
+// --------------------------------------------------------------------
 
-	if constexpr (N != 0)
-	{
-		if (mBegin != mEnd)
-			mCurrent = get(*mBegin, std::make_index_sequence<N>());
-	}
+template<typename RowType, typename... Ts>
+conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_impl::conditional_iterator_impl(
+		Category& cat, row_iterator pos, const Condition& cond, const std::array<size_t,N>& cix)
+	: mCat(&cat), mBegin(pos, cix), mEnd(cat.end(), cix), mCondition(&cond)
+{
 }
 
 template<typename RowType, typename... Ts>
@@ -1934,25 +1952,22 @@ conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(condition
 	: mCat(nullptr), mCBegin(p.mCBegin), mCEnd(p.mCEnd), mCix(p.mCix)
 {
 	std::swap(mCat, p.mCat);
+	std::swap(mCix, p.mCix);
 	mCondition.swap(p.mCondition);
 }
 
 template<typename RowType, typename... Ts>
-conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond)
-	: mCat(&cat), mCondition(std::move(cond))
+conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond, const char* const columns[N])
+	:  mCat(&cat)
+	, mCondition(std::move(cond))
 	, mCBegin(pos)
 	, mCEnd(cat.end())
 {
 	mCondition.prepare(cat);
 
-	while (mCBegin != mCEnd and not mCondition(*mCat, *mCBegin))
+	while (mCBegin != mCEnd and not mCondition(*mCat, mCBegin.row()))
 		++mCBegin;
-}
 
-template<typename RowType, typename... Ts>
-conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category& cat, base_iterator pos, Condition&& cond, const char* const columns[N])
-	: conditional_iterator_proxy(cat, pos, std::forward<Condition>(cond))
-{
 	for (size_t i = 0; i < N; ++i)
 		mCix[i] = mCat->getColumnIndex(columns[i]);
 }

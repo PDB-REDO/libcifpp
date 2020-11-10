@@ -16,3 +16,4 @@ libtool
 rsrc/lib-version.txt
 version-info*.txt
 src/revision.hpp
+test/pdb2cif-test

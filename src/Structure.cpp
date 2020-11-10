@@ -716,21 +716,29 @@ std::ostream& operator<<(std::ostream& os, const Atom& atom)
 // --------------------------------------------------------------------
 // residue
 
+// First constructor used to be for waters only, but now accepts sugars as well.
+
 Residue::Residue(const Structure& structure, const std::string& compoundID,
 	const std::string& asymID, const std::string& authSeqID)
 	: mStructure(&structure), mCompoundID(compoundID)
 	, mAsymID(asymID), mAuthSeqID(authSeqID)
 {
-	assert(mCompoundID == "HOH");
-	
 	for (auto& a: mStructure->atoms())
 	{
 		if (a.labelAsymID() != mAsymID or
 			a.labelCompID() != mCompoundID)
 				continue;
 
-		if (not mAuthSeqID.empty() and a.authSeqID() != mAuthSeqID)		// water!
-			continue;
+		if (compoundID == "HOH")
+		{
+			if (not mAuthSeqID.empty() and a.authSeqID() != mAuthSeqID)
+				continue;
+		}
+		else
+		{
+			if (mSeqID > 0 and a.labelSeqID() != mSeqID)
+				continue;
+		}
 		
 		mAtoms.push_back(a);
 	}
@@ -1840,6 +1848,25 @@ const Residue& Structure::getResidue(const std::string& asymID, const std::strin
 			if (res.seqID() == seqID and res.compoundID() == compID)
 				return res;
 		}
+	}
+
+	if (seqID == 0)
+	{
+		for (auto& res: mNonPolymers)
+		{
+			if (res.asymID() != asymID or res.compoundID() != compID)
+				continue;
+
+			return res;
+		}
+	}
+
+	for (auto& res: mBranchResidues)
+	{
+		if (res.asymID() != asymID or res.compoundID() != compID or res.seqID() != seqID)
+			continue;
+		
+		return res;
 	}
 
 	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));

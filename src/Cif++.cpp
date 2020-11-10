@@ -1741,7 +1741,17 @@ Category::iterator Category::begin()
 
 Category::iterator Category::end()
 {
-	return iterator(nullptr);
+	return iterator();
+}
+
+Category::const_iterator Category::cbegin() const
+{
+	return const_iterator(mHead);
+}
+
+Category::const_iterator Category::cend() const
+{
+	return const_iterator();
 }
 
 Category::const_iterator Category::begin() const
@@ -1751,7 +1761,7 @@ Category::const_iterator Category::begin() const
 
 Category::const_iterator Category::end() const
 {
-	return const_iterator(nullptr);
+	return const_iterator();
 }
 
 bool Category::hasParent(Row r, const Category& parentCat, const ValidateLink& link) const

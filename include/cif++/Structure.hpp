@@ -484,59 +484,8 @@ class Structure
 	/// Will asssign new atom_id's to all atoms. Be carefull
 	void sortAtoms();
 	
-	// // iterator for all residues
-	
-	// class residue_iterator : public std::iterator<std::forward_iterator_tag, const Residue>
-	// {
-	//   public:
-	// 	typedef std::iterator<std::forward_iterator_tag, const Residue>	baseType;
-	// 	typedef typename baseType::pointer								pointer;
-	// 	typedef typename baseType::reference							reference;
-		
-	// 	typedef std::list<Polymer>::const_iterator						poly_iterator;
-		
-	// 	residue_iterator(const Structure* s, poly_iterator polyIter, size_t polyResIndex, size_t nonPolyIndex);
-		
-	// 	reference operator*();
-	// 	pointer operator->();
-		
-	// 	residue_iterator& operator++();
-	// 	residue_iterator operator++(int);
-		
-	// 	bool operator==(const residue_iterator& rhs) const;
-	// 	bool operator!=(const residue_iterator& rhs) const;
-		
-	//   private:
-	// 	const Structure&	mStructure;
-	// 	poly_iterator		mPolyIter;
-	// 	size_t				mPolyResIndex;
-	// 	size_t				mNonPolyIndex;
-	// };
-	
-	// class residue_view
-	// {
-	//   public:
-	// 	residue_view(const Structure* s) : mStructure(s) {}
-	// 	residue_view(const residue_view& rhs) : mStructure(rhs.mStructure) {}
-	// 	residue_view& operator=(residue_view& rhs)
-	// 	{
-	// 		mStructure = rhs.mStructure;
-	// 		return *this;
-	// 	}
-		
-	// 	residue_iterator begin() const		{ return residue_iterator(mStructure, mStructure->mPolymers.begin(), 0, 0); }
-	// 	residue_iterator end() const		{ return residue_iterator(mStructure, mStructure->mPolymers.end(), 0, mStructure->mNonPolymers.size()); }
-	// 	size_t size() const
-	// 	{
-	// 		size_t ps = std::accumulate(mStructure->mPolymers.begin(), mStructure->mPolymers.end(), 0UL, [](size_t s, auto& p) { return s + p.size(); });
-	// 		return ps + mStructure->mNonPolymers.size();
-	// 	}
-
-	//   private:
-	// 	const Structure* mStructure;
-	// };
-	
-	// residue_view residues() const			{ return residue_view(this); }
+	const std::vector<Residue>& getNonPolymers() const					{ return mNonPolymers; }
+	const std::vector<Residue>& getBranchResidues() const				{ return mBranchResidues; }
 	
   private:
 	friend Polymer;
