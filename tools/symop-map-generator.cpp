@@ -24,13 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
-cd ~/projects/pdb-redo/libcif++/tools/
-clang++ -I ~/my-clipper/include -L ~/my-clipper/lib -o symop-map-generator symop-map-generator.cpp -lclipper-core
-./symop-map-generator
-
-*/
-
 #include <cassert>
 
 #include <iostream>

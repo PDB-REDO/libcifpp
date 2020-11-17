@@ -8,8 +8,8 @@ GNUmakefile
 include/cif++/Config.hpp
 tools/symop-map-generator
 test/unit-test
-libcif++.pc
-libcif++.la
+libcifpp.pc
+libcifpp.la
 config.status
 config.log
 libtool

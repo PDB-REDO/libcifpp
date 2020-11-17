@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 
-AC_INIT([libcif++], 1.0, [m.hekkelman@nki.nl])
+AC_INIT([libcifpp], 1.0, [m.hekkelman@nki.nl])
 
 dnl Switch to a C++ compiler, and check if it works.
 AC_LANG(C++)
@@ -92,4 +92,4 @@ AX_CHECK_LIBRARY([LIBBZ2], [bzlib.h], [bz2], [],
                  [AC_MSG_ERROR([libbz2 not found - compressed files not supported])])
 
 AC_OUTPUT([GNUmakefile
-		   libcif++.pc])
+		   libcifpp.pc])

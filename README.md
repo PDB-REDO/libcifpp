@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/PDB-REDO/libcifpp.svg?branch=trunk)](https://travis-ci.org/PDB-REDO/libcifpp)
 
-libcif++
+libcifpp
 ========
 
 This library contains code to work with mmCIF and PDB files.
