@@ -1302,6 +1302,18 @@ class iterator_impl
 	bool operator==(const iterator_impl& rhs) const	{ return mCurrent == rhs.mCurrent; } 
 	bool operator!=(const iterator_impl& rhs) const	{ return mCurrent != rhs.mCurrent; } 
 
+	template<typename IRowType, typename... ITs>
+	bool operator==(const iterator_impl<IRowType, ITs...>& rhs) const
+	{
+		return mCurrent == rhs.mCurrent;
+	}
+
+	template<typename IRowType, typename... ITs>
+	bool operator!=(const iterator_impl<IRowType, ITs...>& rhs) const
+	{
+		return mCurrent != rhs.mCurrent;
+	}
+
   private:
 
 	template<std::size_t... Is>
@@ -1426,7 +1438,13 @@ class conditional_iterator_proxy
 		} 
 
 		bool operator==(const conditional_iterator_impl& rhs) const	{ return mBegin == rhs.mBegin; } 
-		bool operator!=(const conditional_iterator_impl& rhs) const	{ return mBegin != rhs.mBegin; } 
+		bool operator!=(const conditional_iterator_impl& rhs) const	{ return mBegin != rhs.mBegin; }
+
+		template<typename IRowType, typename... ITs>
+		bool operator==(const iterator_impl<IRowType, ITs...>& rhs) const	{ return mBegin == rhs; }
+
+		template<typename IRowType, typename... ITs>
+		bool operator!=(const iterator_impl<IRowType, ITs...>& rhs) const	{ return mBegin != rhs; }
 
 	  private:
 
@@ -1682,7 +1700,7 @@ class Category
 	conditional_iterator_proxy<Row, Ts...> find(Condition&& cond, char const* const (&columns)[N])
 	{
 		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
-		return { *this, begin(), std::forward<Condition>(cond), columns };
+		return find<Ts...>(cbegin(), std::forward<Condition>(cond), std::forward<char const* const[N]>(columns));
 	}
 
 	template<typename... Ts, size_t N>
@@ -1690,6 +1708,39 @@ class Category
 	{
 		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
 		return { *this, pos, std::forward<Condition>(cond), columns };
+	}
+
+	// --------------------------------------------------------------------
+	// if you only expect a single row
+
+	Row find1(Condition&& cond)
+	{
+		return find1(cbegin(), std::forward<Condition>(cond));
+	}
+
+	Row find1(const_iterator pos, Condition&& cond);
+
+	template<typename... Ts, size_t N>
+	std::tuple<Ts...> find1(Condition&& cond, char const* const (&columns)[N])
+	{
+		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
+		return find1<Ts...>(cbegin(), std::forward<Condition>(cond), std::forward<char const* const[N]>(columns));
+	}
+
+	template<typename... Ts, size_t N>
+	std::tuple<Ts...> find1(const_iterator pos, Condition&& cond, char const* const (&columns)[N])
+	{
+		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
+
+		auto h = find<Ts...>(pos, std::forward<Condition>(cond), std::forward<char const* const[N]>(columns));
+
+		if (h.empty())
+			throw std::runtime_error("No hits found");
+		
+		if (h.size() != 1)
+			throw std::runtime_error("Hit not unique");
+
+		return *h.begin();
 	}
 
 	bool exists(Condition&& cond) const;

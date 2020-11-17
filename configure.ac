@@ -51,10 +51,22 @@ dnl 	[AC_MSG_ERROR([Your c++ compiler is not capable of compiling libcifpp, plea
 dnl AC_MSG_RESULT(ok)
 
 AC_PROG_INSTALL
-AC_ENABLE_STATIC
-AC_DISABLE_SHARED
-AC_PROG_LIBTOOL
+
+dnl Shared libraries are not convenient
+dnl LT_INIT([disable-shared])
+LT_INIT
 AC_SUBST(LIBTOOL_DEPS)
+
+dnl versioning
+LIBCIF_CURRENT=1
+LIBCIF_REVISION=0
+LIBCIF_AGE=0
+
+LIBCIF_LT_CURRENT="${LIBCIF_CURRENT}"
+LIBCIF_LT_VERSION="${LIBCIF_CURRENT}:${LIBCIF_REVISION}:${LIBCIF_AGE}"
+
+AC_SUBST(LIBCIF_LT_CURRENT)
+AC_SUBST(LIBCIF_LT_VERSION)
 
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 

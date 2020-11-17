@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -e
+
+# create cache directory if it doesn't exist
+if ! [ -d /var/cache/libcifpp ]; then
+	install -d -m755 /var/cache/libcifpp
+fi
+
+# fetch the dictionary
+
+dict=/var/cache/libcifpp/mmcif_pdbx_v50.cif
+source=http://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz
+
+wget -O${dict}.gz ${source}
+
+# be careful not to nuke an existing dictionary file
+# extract to a temporary file first
+
+gunzip -c ${dict}.gz > ${dict}-tmp
+
+# then move the extracted file to the final location
+
+mv ${dict}-tmp ${dict}
+
+# and clean up afterwards
+
+rm ${dict}.gz
