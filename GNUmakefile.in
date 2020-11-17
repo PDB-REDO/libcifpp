@@ -64,8 +64,8 @@ LIB_NAME			= @PACKAGE_NAME@
 LIB_VERSION			= @LIBCIF_LT_VERSION@
 LIB_CURRENT			= @LIBCIF_LT_CURRENT@
 LIB_TARGET			= $(LIB_NAME).la
-VERSION             = @PACKAGE_VERSION@
-DIST_NAME           = @PACKAGE_NAME@-$(subst :,.,$(LIB_VERSION))
+VERSION             = @LIBCIF_SEMANTIC_VERSION@
+DIST_NAME           = @PACKAGE_NAME@-$(subst :,.,$(VERSION))
 
 # libtool stuff
 
@@ -133,6 +133,37 @@ $(OBJDIR)/Symmetry.lo: src/SymOpTable_data.cpp
 
 endif
 
+# We have development releases and official releases, for each we
+# maintain different versioning schemes.
+
+ifneq "x@UPDATE_REVISION@" "x"
+
+REVISION = $(shell git log --pretty=format:%h --max-count=1)
+REVISION_FILE = version-info-$(REVISION).txt
+
+$(REVISION_FILE):
+	rm -f version-info-*.txt
+	@ echo libcifpp-version: $(VERSION) > $@
+	@ git describe --match=build --dirty >> $@
+	@ git log --pretty=medium --date=iso8601 -1 >> $@
+
+src/revision.hpp: $(REVISION_FILE)
+	@ echo 'const char kRevision[] = R"(' > $@
+	@ cat $? >> $@
+	@ echo ')";' >> $@
+
+else
+
+src/revision.hpp:
+	@ echo 'const char kRevision[] = R"(' > $@
+	@ echo libcifpp-version: $(VERSION) >> $@
+	@ echo ')";' >> $@
+
+endif
+
+$(OBJDIR)/CifUtils.o: src/revision.hpp
+
+$(OBJDIR)/CifUtils.lo: src/revision.hpp
 $(LIB_TARGET): $(OBJECTS)
 	$(CXXLINK) -rpath $(libdir) $(OBJECTS) $(LIBS)
 

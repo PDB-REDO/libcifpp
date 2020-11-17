@@ -57,7 +57,7 @@ dnl LT_INIT([disable-shared])
 LT_INIT
 AC_SUBST(LIBTOOL_DEPS)
 
-dnl versioning
+dnl versioning, first for libtool
 LIBCIF_CURRENT=1
 LIBCIF_REVISION=0
 LIBCIF_AGE=0
@@ -68,7 +68,13 @@ LIBCIF_LT_VERSION="${LIBCIF_CURRENT}:${LIBCIF_REVISION}:${LIBCIF_AGE}"
 AC_SUBST(LIBCIF_LT_CURRENT)
 AC_SUBST(LIBCIF_LT_VERSION)
 
+dnl and now for the semantic version
+LIBCIF_SEMANTIC_VERSION=1.0.0
+AC_SUBST(LIBCIF_SEMANTIC_VERSION)
+
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
+
+AC_ARG_VAR([UPDATE_REVISION], [Update the revision.hpp file])
 
 AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
 

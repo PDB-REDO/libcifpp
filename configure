@@ -646,7 +646,9 @@ BOOST_CPPFLAGS
 SET_MAKE
 PKG_CONFIG
 CCP4
+UPDATE_REVISION
 DEBUG
+LIBCIF_SEMANTIC_VERSION
 LIBCIF_LT_VERSION
 LIBCIF_LT_CURRENT
 LIBTOOL_DEPS
@@ -766,6 +768,7 @@ CC
 CFLAGS
 LT_SYS_LIBRARY_PATH
 DEBUG
+UPDATE_REVISION
 CCP4
 LIBZ_CPPFLAGS
 LIBZ_LDFLAGS
@@ -1446,6 +1449,8 @@ Some influential environment variables:
   LT_SYS_LIBRARY_PATH
               User-defined run-time library search path.
   DEBUG       Build a debug version of the library
+  UPDATE_REVISION
+              Update the revision.hpp file
   CCP4        The location where CCP4 is installed
   LIBZ_CPPFLAGS
               C preprocessor flags for LIBZ headers
@@ -16077,6 +16082,11 @@ LIBCIF_AGE=0
 
 LIBCIF_LT_CURRENT="${LIBCIF_CURRENT}"
 LIBCIF_LT_VERSION="${LIBCIF_CURRENT}:${LIBCIF_REVISION}:${LIBCIF_AGE}"
+
+
+
+
+LIBCIF_SEMANTIC_VERSION=1.0.0
 
 
 

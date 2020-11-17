@@ -64,7 +64,8 @@ extern int VERBOSE;
 std::string get_version_nr()
 {
 	const std::regex
-		rxVersionNr(R"(build-(\d+)-g[0-9a-f]{7}(-dirty)?)");
+		rxVersionNr1(R"(build-(\d+)-g[0-9a-f]{7}(-dirty)?)"),
+		rxVersionNr2(R"(libcifpp-version: (\d+\.\d+\.\d+))");
 
 #include "revision.hpp"
 
@@ -81,13 +82,17 @@ std::string get_version_nr()
 	{
 		std::smatch m;
 
-		if (std::regex_match(line, m, rxVersionNr))
+		if (std::regex_match(line, m, rxVersionNr1))
 		{
 			result = m[1];
 			if (m[2].matched)
 				result += '*';
 			break;
 		}
+
+		// always the first, replace with more specific if followed by the other info
+		if (std::regex_match(line, m, rxVersionNr2))
+			result = m[1];
 	}
 
 	return result;
