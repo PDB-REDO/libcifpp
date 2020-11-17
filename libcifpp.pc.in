@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: libcifpp
 Description: C++ library for the manipulation of mmCIF files.
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lcif++
+Libs: -L${libdir} -lcifpp
 Cflags: -I${includedir}

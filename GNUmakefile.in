@@ -47,6 +47,8 @@ CLIBD				= $(CCP4DIR:%=%/lib/data)
 
 CACHE_DIR			= /var/cache/libcifpp
 
+DEFINES				+= CACHE_DIR='"$(CACHE_DIR)"'
+
 GNUmakefile: config.status GNUmakefile.in
 	$(SHELL) ./config.status
 
@@ -237,31 +239,21 @@ HEADERS = \
 	Secondary.hpp \
 	TlsParser.hpp
 
-.PHONY: install-lib
-install-lib: lib
+.PHONY: install
+install: lib
 	install -d $(libdir)
 	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
-	rm -f $(libdir)/$(LIB_NAME).so $(libdir)/$(LIB_NAME).a $(libdir)/$(LIB_NAME).la
-	install -d $(CACHE_DIR)/dictionaries
-	for d in mmcif_ddl.dic  mmcif_pdbx.dic; do \
-		install -m644 rsrc/dictionaries/$$d $(CACHE_DIR)/dictionaries/$$d; \
+	install -d $(CACHE_DIR)
+	for d in isomers.txt dictionaries/mmcif_ddl.dic dictionaries/mmcif_pdbx_v50.dic; do \
+		install -m644 rsrc/$$d $(CACHE_DIR)/; \
 	done
 	if [ -d /etc/cron.weekly ]; then \
 		install -m755 tools/update-dictionaries-script /etc/cron.weekly/libcifpp; \
 	fi
-
-.PHONY: install-dev
-install-dev:
-	install -d $(libdir)
-	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
-	rm -f $(libdir)/$(LIB_NAME).so.$(subst :,.,$(LIB_VERSION)) $(libdir)/$(LIB_NAME).so.$(LIB_CURRENT)
 	install -d $(includedir)/cif++
 	for f in $(HEADERS); do install include/cif++/$$f $(includedir)/cif++/$$f; done
 	install -d $(pkgconfigdir)
 	install -m 644 $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
-
-.PHONY: install
-install: install-lib install-dev
 
 dist-clean: clean
 

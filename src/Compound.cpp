@@ -33,6 +33,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <filesystem>
+#include <fstream>
 
 #include "cif++/Cif++.hpp"
 #include "cif++/Point.hpp"
@@ -103,36 +104,24 @@ class IsomerDB
 
 IsomerDB::IsomerDB()
 {
-	auto isomers = cif::rsrc_loader::load("isomers.txt");
-	if (not isomers)
-		throw std::runtime_error("Missing isomers.txt resource");
-	
-	struct membuf : public std::streambuf
+	fs::path isomersFile = fs::path(CACHE_DIR) / "isomers.txt";
+
+	if (not fs::exists(isomersFile))
+		std::cerr << "Could not locate isomers.txt in " CACHE_DIR << std::endl;
+	else
 	{
-		membuf(char* data, size_t length)		{ this->setg(data, data, data + length); }
-	} buffer(const_cast<char*>(isomers.data()), isomers.size());
-	
-	std::istream is(&buffer);
-// #else
-// 	cerr << "resource support was not compiled in, falling back to a local file" << endl;
-// 	fs::path isomersFile = "isomers.txt";
-// 	if (not fs::exists(isomersFile))
-// 		isomersFile = fs::path(cif::get_executable_path()).parent_path() / "isomers.txt";
+		std::ifstream is(isomersFile);
 
-// 	fs::ifstream is(isomersFile);
-// 	if (not is.is_open())
-// 		throw std::runtime_error("Could not open the file isomers.txt");
-// #endif
+		std::string line;
 
-	std::string line;
+		while (std::getline(is, line))
+		{
+			IsomerSet compounds;
+			ba::split(compounds.compounds, line, ba::is_any_of(":"));
 
-	while (std::getline(is, line))
-	{
-		IsomerSet compounds;
-		ba::split(compounds.compounds, line, ba::is_any_of(":"));
-
-		if (not compounds.compounds.empty())
-			mData.isomers.emplace_back(std::move(compounds));
+			if (not compounds.compounds.empty())
+				mData.isomers.emplace_back(std::move(compounds));
+		}
 	}
 }
 

@@ -1686,7 +1686,7 @@ auto Category::erase(iterator pos) -> iterator
 	}
 
 	// links are created based on the _pdbx_item_linked_group_list entries
-	// in mmcif_pdbx.dic dictionary.
+	// in mmcif_pdbx_v50.dic dictionary.
 	//
 	// For each link group in _pdbx_item_linked_group_list 
 	// a std::set of keys from one category is mapped to another.
@@ -3107,34 +3107,19 @@ void File::loadDictionary(const char* dict)
 			}
 		}
 		catch (...) {}
-		
-		fs::path dictFile = std::string("dictionaries/") + dict + ".dic";
 
-		try
-		{
-			if (fs::exists(dictFile))
-			{
-				std::ifstream is(dictFile);
-				loadDictionary(is);
-				break;
-			}
-		}
-		catch (...) {}
+		fs::path datadir = CACHE_DIR;
 		
-		auto dictData = rsrc_loader::load(dictFile.string());
+		if (not fs::is_directory(datadir))
+			throw std::runtime_error("Could not find dictionary " + name.string() + " and " CACHE_DIR " also does not exist");
 
-		if (dictData)
+		name = datadir / name;
+		if (not fs::exists(name) and name.extension().string() != ".dic")
+			name = datadir / (name.string() + ".dic");
+		
+		if (fs::exists(name))
 		{
-			struct membuf : public std::streambuf
-			{
-				membuf(char* dict, size_t length)
-				{
-					this->setg(dict, dict, dict + length);
-				}
-			} buffer(const_cast<char*>(dictData.data()), dictData.size());
-			
-			std::istream is(&buffer);
-			
+			std::ifstream is(name);
 			loadDictionary(is);
 			break;
 		}

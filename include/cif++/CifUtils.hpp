@@ -36,21 +36,6 @@
 
 #include <unistd.h>
 
-struct rsrc_imp
-{
-	unsigned int	m_next;
-	unsigned int	m_child;
-	unsigned int	m_name;
-	unsigned int	m_size;
-	unsigned int	m_data;
-};
-
-#if USE_RSRC
-extern const rsrc_imp gResourceIndex[];
-extern const char gResourceData[];
-extern const char gResourceName[];
-#endif
-
 namespace cif
 {
 
@@ -203,91 +188,6 @@ class Progress
 	Progress&	operator=(const Progress&);
 
 	struct ProgressImpl*	mImpl;
-};
-
-// --------------------------------------------------------------------
-// The new default is to load 'resource' files from the file system
-// since not everyone likes mrc. But if you do want to use mrc to load
-// resources, specify the compile time flag USE_RSRC.
-
-/// \brief Simple class containing the data for a resource
-class rsrc
-{
-  public:
-	rsrc()
-		: m_data(nullptr), m_size(0) {}
-	rsrc(const char* data, size_t size)
-		: m_data(data), m_size(size) {}
-	rsrc(const rsrc& rhs)
-		: m_data(rhs.m_data), m_size(rhs.m_size) {}
-
-	rsrc& operator=(const rsrc& rhs)
-	{
-		m_data = rhs.m_data;
-		m_size = rhs.m_size;
-		return *this;
-	}
-
-	explicit operator bool()
-	{
-		return m_data != nullptr and m_size > 0;
-	}
-
-	const char* data() const			{ return m_data; }
-	size_t size() const					{ return m_size; }
-
-  private:
-	const char* m_data;
-	size_t m_size;
-};
-
-/// \brief loader types
-enum class rsrc_loader_type { mrsrc, file };
-
-/// \brief loader info
-struct rsrc_loader_info
-{
-	rsrc_loader_type type;
-	std::string info;
-	const void* ptrs[3];
-};
-
-class rsrc_loader
-{
-  public:
-
-	static void init(std::initializer_list<rsrc_loader_info> loaders =
-	{
-		{ rsrc_loader_type::file, "." },
-#if USE_RSRC
-		{ rsrc_loader_type::mrsrc, "", { gResourceIndex, gResourceData, gResourceName } }
-#endif
-	})
-	{
-		assert(not s_instance);
-		s_instance.reset(new rsrc_loader(loaders));
-	}
-
-	static rsrc load(const std::string& name)
-	{
-		assert(s_instance);
-		if (not s_instance)
-			init();
-
-		return s_instance->do_load(name);
-	}
-
-	~rsrc_loader();
-
-  private:
-
-	rsrc_loader(const std::initializer_list<rsrc_loader_info>& loaders);
-
-	rsrc do_load(const std::string& name);
-
-	static std::unique_ptr<rsrc_loader> s_instance;
-	
-	std::list<struct rsrc_loader_impl*> m_loaders;
 };
 
 }
