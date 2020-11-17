@@ -35,6 +35,7 @@
 #include <sstream>
 #include <set>
 #include <list>
+#include <array>
 
 #include "cif++/CifUtils.hpp"
 
