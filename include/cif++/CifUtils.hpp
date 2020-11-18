@@ -33,6 +33,8 @@
 #include <cassert>
 #include <memory>
 #include <list>
+#include <iostream>
+#include <filesystem>
 
 #include <unistd.h>
 
@@ -189,6 +191,11 @@ class Progress
 
 	struct ProgressImpl*	mImpl;
 };
+
+// --------------------------------------------------------------------
+// Resources
+
+std::unique_ptr<std::istream> loadResource(std::filesystem::path name);
 
 }
 

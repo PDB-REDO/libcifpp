@@ -3093,39 +3093,16 @@ void File::loadDictionary()
 
 void File::loadDictionary(const char* dict)
 {
-	for (;;)
-	{
-		fs::path name(dict);
-		
-		try
-		{
-			if (fs::exists(name))
-			{
-				std::ifstream is(name);
-				loadDictionary(is);
-				break;
-			}
-		}
-		catch (...) {}
+	fs::path dict_name(dict);
 
-		fs::path datadir = CACHE_DIR;
-		
-		if (not fs::is_directory(datadir))
-			throw std::runtime_error("Could not find dictionary " + name.string() + " and " CACHE_DIR " also does not exist");
+	auto data = loadResource(dict);
+	if (not data and dict_name.extension().string() != ".dic")
+		data = loadResource(dict_name.parent_path() / (dict_name.filename().string() + ".dic"));
 
-		name = datadir / name;
-		if (not fs::exists(name) and name.extension().string() != ".dic")
-			name = datadir / (name.string() + ".dic");
-		
-		if (fs::exists(name))
-		{
-			std::ifstream is(name);
-			loadDictionary(is);
-			break;
-		}
-		
-		throw std::runtime_error("Dictionary not found or defined (" + name.string() + ")");
-	}
+	if (not data)
+		throw std::runtime_error("Dictionary not found or defined (" + dict_name.string() + ")");
+	
+	loadDictionary(*data);
 }
 
 void File::loadDictionary(std::istream& is)
