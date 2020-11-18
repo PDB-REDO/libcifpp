@@ -74,7 +74,16 @@ AC_SUBST(LIBCIF_SEMANTIC_VERSION)
 
 AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 
-AC_ARG_VAR([UPDATE_REVISION], [Update the revision.hpp file])
+dnl revision numbering is something used internally at the NKI
+AC_ARG_ENABLE(
+	revision,
+	[AS_HELP_STRING([--disable-revision], [Create a build number as revision])])
+
+AS_IF([test "x$enable_resources" != "xyes" ], [
+	UPDATE_REVISION=1
+])
+
+AC_SUBST([UPDATE_REVISION], [$UPDATE_REVISION])
 
 AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
 
