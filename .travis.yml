@@ -19,16 +19,13 @@ addons:
       - libboost-all-dev
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update      ; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install make; fi
 
-  # - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install boost make; fi
-
 script:
-  - ./configure
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake --disable-shared             ; else make             ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake test --disable-shared        ; else make test        ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then sudo gmake --disable-shared install; else sudo make install; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./configure --disable-shared ; else ./configure      ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake                        ; else make             ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake test                   ; else make test        ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then sudo gmake install           ; else sudo make install; fi
 
 jobs:
   allow_failures:
