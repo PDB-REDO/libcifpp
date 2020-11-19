@@ -191,6 +191,7 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 .PHONY: clean
 clean:
 	rm -rf .libs $(OBJDIR)/* $(LIB_TARGET)
+	rm -f $(TESTS:%=%-test)
 
 .PHONY: distclean
 distclean: clean
