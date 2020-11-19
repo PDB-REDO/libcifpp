@@ -138,7 +138,7 @@ endif
 # We have development releases and official releases, for each we
 # maintain different versioning schemes.
 
-ifneq "x@UPDATE_REVISION@" "x"
+ifeq "x@UPDATE_REVISION@" "x"
 
 REVISION = $(shell git log --pretty=format:%h --max-count=1)
 REVISION_FILE = version-info-$(REVISION).txt
