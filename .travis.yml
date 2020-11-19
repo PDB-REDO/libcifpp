@@ -26,9 +26,9 @@ before_install:
 
 script:
   - ./configure
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake NO_REVISION=1             ; else make NO_REVISION=1             ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake test NO_REVISION=1        ; else make test NO_REVISION=1        ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then sudo gmake NO_REVISION=1 install; else sudo make install NO_REVISION=1; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake --disable-shared             ; else make             ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake test --disable-shared        ; else make test        ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then sudo gmake --disable-shared install; else sudo make install; fi
 
 jobs:
   allow_failures:
