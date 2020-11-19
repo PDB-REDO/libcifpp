@@ -77,7 +77,7 @@ AC_ARG_VAR([DEBUG], [Build a debug version of the library])
 dnl revision numbering is something used internally at the NKI
 AC_ARG_ENABLE(
 	revision,
-	[AS_HELP_STRING([--disable-revision], [Create a build number as revision])])
+	[AS_HELP_STRING([--enable-revision], [Create a build number as revision])])
 
 AS_IF([test "x$enable_revision" != "xyes" ], [
 	UPDATE_REVISION=1
