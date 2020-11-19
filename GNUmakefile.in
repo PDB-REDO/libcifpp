@@ -252,9 +252,6 @@ install: lib
 	for d in isomers.txt dictionaries/mmcif_ddl.dic dictionaries/mmcif_pdbx_v50.dic; do \
 		install -m644 rsrc/$$d $(CACHE_DIR)/; \
 	done
-	if [ -d /etc/cron.weekly ]; then \
-		install -m755 tools/update-dictionaries-script /etc/cron.weekly/libcifpp; \
-	fi
 	install -d $(includedir)/cif++
 	for f in $(HEADERS); do install include/cif++/$$f $(includedir)/cif++/$$f; done
 	install -d $(pkgconfigdir)
