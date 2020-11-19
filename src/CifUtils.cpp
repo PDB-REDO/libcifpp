@@ -749,6 +749,8 @@ void Progress::message(const std::string& inMessage)
 
 }
 
+#if USE_RSRC
+
 // --------------------------------------------------------------------
 //
 // Try to find a named resource. Can be either a local file with this name,
@@ -1155,6 +1157,8 @@ namespace mrsrc
 	using istream = basic_istream<char, std::char_traits<char>>;
 }
 
+#endif
+
 // --------------------------------------------------------------------
 
 namespace cif
@@ -1177,12 +1181,14 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 			result.reset(file.release());
 	}
 
+#if USE_RSRC
 	if (not result)
 	{
 		mrsrc::rsrc rsrc(name);
 		if (rsrc)
 			result.reset(new mrsrc::istream(rsrc));
 	}
+#endif
 
 	return result;
 }

@@ -83,6 +83,13 @@ AS_IF([test "x$enable_revision" != "xyes" ], [
 	UPDATE_REVISION=1
 ])
 
+dnl disable resources on macOS
+AS_CASE([$host],
+	[*-apple-*], [USE_RSRC=0],
+	[USE_RSRC=1]
+)
+AC_SUBST([USE_RSRC])
+
 AC_SUBST([UPDATE_REVISION], [$UPDATE_REVISION])
 
 AC_ARG_VAR([CCP4], [The location where CCP4 is installed])

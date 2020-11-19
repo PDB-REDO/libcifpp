@@ -85,6 +85,9 @@ CXXFLAGS            += -Wall -Wno-multichar -I include
 # Use the DEBUG flag to build debug versions of the code
 DEBUG               = @DEBUG@
 
+USE_RSRC			= @USE_RSRC@
+DEFINES				+= USE_RSRC=$(USE_RSRC)
+
 ifeq "$(DEBUG)" "1"
 DEFINES				+= DEBUG
 CXXFLAGS            += -g -O0
@@ -191,7 +194,7 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 .PHONY: clean
 clean:
 	rm -rf .libs $(OBJDIR)/* $(LIB_TARGET)
-	rm -f $(TESTS:%=%-test)
+	rm -f $(TESTS:%=test/%-test)
 
 .PHONY: distclean
 distclean: clean
@@ -209,7 +212,7 @@ $(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
 test/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	$(LIBTOOL) --silent --tag=CXX --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -lcifpp $(LIBS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -lcifpp $(LIBS)
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test

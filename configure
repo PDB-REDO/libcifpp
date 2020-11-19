@@ -647,6 +647,7 @@ SET_MAKE
 PKG_CONFIG
 CCP4
 UPDATE_REVISION
+USE_RSRC
 DEBUG
 LIBCIF_SEMANTIC_VERSION
 LIBCIF_LT_VERSION
@@ -16101,6 +16102,15 @@ if test "x$enable_revision" != "xyes" ; then :
 	UPDATE_REVISION=1
 
 fi
+
+case $host in #(
+  *-apple-*) :
+    USE_RSRC=0 ;; #(
+  *) :
+    USE_RSRC=1
+ ;;
+esac
+
 
 UPDATE_REVISION=$UPDATE_REVISION
 
