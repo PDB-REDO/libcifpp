@@ -109,10 +109,5 @@ AX_BOOST_BASE([1.71], [], [
 AX_BOOST_IOSTREAMS
 AX_BOOST_DATE_TIME
 
-AX_CHECK_LIBRARY([LIBZ], [zlib.h], [z], [],
-                 [AC_MSG_ERROR([libz not found - compressed files not supported])])
-AX_CHECK_LIBRARY([LIBBZ2], [bzlib.h], [bz2], [],
-                 [AC_MSG_ERROR([libbz2 not found - compressed files not supported])])
-
 AC_OUTPUT([GNUmakefile
 		   libcifpp.pc])
