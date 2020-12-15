@@ -252,9 +252,9 @@ install: lib
 	for d in isomers.txt dictionaries/mmcif_ddl.dic dictionaries/mmcif_pdbx_v50.dic; do \
 		install -m644 rsrc/$$d $(datadir)/libcifpp; \
 	done
-	gzip $(datadir)/libcifpp/*
+	gzip -f $(datadir)/libcifpp/*
 	install -d $(CRON_DIR)
-	install -m755 tools/libcifpp-update-mmcif-pdbx-dictionary $(CRON_DIR)/libcifpp
+	install -m755 tools/update-dictionary-script $(CRON_DIR)/libcifpp
 	install -d $(includedir)/cif++
 	for f in $(HEADERS); do install include/cif++/$$f $(includedir)/cif++/$$f; done
 	install -d $(pkgconfigdir)
