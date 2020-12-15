@@ -254,7 +254,7 @@ install: lib
 	done
 	gzip $(datadir)/libcifpp/*
 	install -d $(CRON_DIR)
-	install -m755 tools/update-dictionaries-script $(CRON_DIR)/libcifpp
+	install -m755 tools/libcifpp-update-mmcif-pdbx-dictionary $(CRON_DIR)/libcifpp
 	install -d $(includedir)/cif++
 	for f in $(HEADERS); do install include/cif++/$$f $(includedir)/cif++/$$f; done
 	install -d $(pkgconfigdir)
