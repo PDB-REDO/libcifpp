@@ -16081,7 +16081,7 @@ if test "${enable_revision+set}" = set; then :
 fi
 
 
-if test "x$enable_revision" != "xyes" ; then :
+if test "x$enable_revision" = "xyes" ; then :
 
 	UPDATE_REVISION=1
 

@@ -79,7 +79,7 @@ AC_ARG_ENABLE(
 	revision,
 	[AS_HELP_STRING([--enable-revision], [Create a build number as revision])])
 
-AS_IF([test "x$enable_revision" != "xyes" ], [
+AS_IF([test "x$enable_revision" = "xyes" ], [
 	UPDATE_REVISION=1
 ])
 
