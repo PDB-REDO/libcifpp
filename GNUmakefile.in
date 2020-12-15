@@ -28,24 +28,27 @@
 firstTarget: all
 
 CXX					= @CXX@
-CXXFLAGS			= @CXXFLAGS@ @BOOST_CPPFLAGS@
+CXXFLAGS			= @CPPFLAGS@ @CXXFLAGS@ @BOOST_CPPFLAGS@
 LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
 LIBS				= @LIBS@ \
+					  -latomic \
 					  @BOOST_IOSTREAMS_LIB@ \
 					  @BOOST_DATE_TIME_LIB@
 
-prefix				= @prefix@
+prefix				= $(DESTDIR)@prefix@
 exec_prefix			= @exec_prefix@
 libdir				= @libdir@
 includedir			= @includedir@
 datarootdir			= @datarootdir@
 datadir				= @datadir@
+docdir				= @docdir@
 pkgconfigdir		= $(libdir)/pkgconfig
 
 CCP4DIR				= @CCP4@
 CLIBD				= $(CCP4DIR:%=%/lib/data)
 
-CACHE_DIR			= /var/cache/libcifpp
+CACHE_DIR			= $(DESTDIR)/var/cache/libcifpp
+CRON_DIR			= $(DESTDIR)/etc/cron.weekly
 
 DEFINES				+= CACHE_DIR='"$(CACHE_DIR)"'
 
@@ -84,9 +87,6 @@ CXXFLAGS            += -Wall -Wno-multichar -I include
 
 # Use the DEBUG flag to build debug versions of the code
 DEBUG               = @DEBUG@
-
-USE_RSRC			= @USE_RSRC@
-DEFINES				+= USE_RSRC=$(USE_RSRC)
 
 ifeq "$(DEBUG)" "1"
 DEFINES				+= DEBUG
@@ -141,7 +141,7 @@ endif
 # We have development releases and official releases, for each we
 # maintain different versioning schemes.
 
-ifeq "x@UPDATE_REVISION@" "x"
+ifneq "x@UPDATE_REVISION@" "x"
 
 REVISION = $(shell git log --pretty=format:%h --max-count=1)
 REVISION_FILE = version-info-$(REVISION).txt
@@ -248,10 +248,13 @@ HEADERS = \
 install: lib
 	install -d $(libdir)
 	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
-	install -d $(CACHE_DIR)
+	install -d $(datadir)/libcifpp
 	for d in isomers.txt dictionaries/mmcif_ddl.dic dictionaries/mmcif_pdbx_v50.dic; do \
-		install -m644 rsrc/$$d $(CACHE_DIR)/; \
+		install -m644 rsrc/$$d $(datadir)/libcifpp; \
 	done
+	gzip $(datadir)/libcifpp/*
+	install -d $(CRON_DIR)
+	install -m755 tools/update-dictionaries-script $(CRON_DIR)/libcifpp
 	install -d $(includedir)/cif++
 	for f in $(HEADERS); do install include/cif++/$$f $(includedir)/cif++/$$f; done
 	install -d $(pkgconfigdir)
