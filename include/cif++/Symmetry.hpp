@@ -77,7 +77,7 @@ struct SymopData
 
 	friend struct SymopDataBlock;
 
-	const uint64_t kPackMask = (~0UL >> (64-36));
+	const uint64_t kPackMask = (~0ULL >> (64-36));
 
 	SymopData(uint64_t v)
 		: m_packed(v bitand kPackMask) {}
