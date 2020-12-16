@@ -109,5 +109,7 @@ AX_BOOST_BASE([1.71], [], [
 AX_BOOST_IOSTREAMS
 AX_BOOST_DATE_TIME
 
+AC_CHECK_LIB([atomic], [atomic_flag_clear])
+
 AC_OUTPUT([GNUmakefile
 		   libcifpp.pc])
