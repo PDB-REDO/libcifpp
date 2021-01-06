@@ -24,7 +24,7 @@ fi
 # fetch the dictionary
 
 dict=/var/cache/libcifpp/mmcif_pdbx_v50.dic
-source=http://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz
+source=https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz
 
 wget -O${dict}.gz ${source}
 
