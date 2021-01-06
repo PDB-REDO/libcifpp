@@ -624,7 +624,10 @@ void WriteTitle(std::ostream& pdbFile, Datablock& db)
 				pdbFile << (boost::format(" %-6.6s") % (i < types.size() ? types[i] : std::string())).str();
 			pdbFile << std::endl;
 			
-			types.erase(types.begin(), types.begin() + std::min(types.size(), 4UL));
+			if (types.size() > 4)
+				types.erase(types.begin(), types.begin() + 4);
+			else
+				types.clear();
 		}
 		while (types.empty() == false);
 	}

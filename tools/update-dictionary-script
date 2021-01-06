@@ -7,9 +7,18 @@ if [ "$EUID" -ne 0 ]
 	exit
 fi
 
-# create cache directory if it doesn't exist
+if [ -f /etc/libcifpp.conf ] ; then
+	. /etc/libcifpp.conf
+fi
+
+# check to see if we're supposed to run at all
+if [ "$update" != "true" ] ; then
+	exit
+fi
+
+# if cache directory doesn't exist, exit. 
 if ! [ -d /var/cache/libcifpp ]; then
-	install -d -m755 /var/cache/libcifpp
+	exit
 fi
 
 # fetch the dictionary

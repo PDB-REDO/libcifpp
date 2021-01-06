@@ -94,7 +94,7 @@ AC_SUBST([UPDATE_REVISION], [$UPDATE_REVISION])
 
 AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
 
-AC_PATH_PROG([PKG_CONFIG], [pkg-config])
+PKG_PROG_PKG_CONFIG
 
 AC_CHECK_FUNCS([floor pow rint sqrt strchr strerror])
 AC_CHECK_HEADERS([sys/ioctl.h])
