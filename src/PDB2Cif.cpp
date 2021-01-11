@@ -1176,6 +1176,9 @@ void PDBFileParser::PreParseInput(std::istream& is)
 			
 			if (type != "END")	// special case
 				dropped.insert(type);
+
+			lookahead.clear();
+
 			continue;
 		}
 		
