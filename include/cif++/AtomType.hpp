@@ -32,8 +32,6 @@
 #include <string>
 #include <stdexcept>
 
-#include "cif++/Config.hpp"
-
 namespace mmcif
 {
 

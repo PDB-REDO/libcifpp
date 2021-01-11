@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "cif++/Config.hpp"
+#include "Config.hpp"
 
 #include <map>
 #include <set>

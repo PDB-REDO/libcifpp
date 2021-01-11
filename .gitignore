@@ -5,7 +5,7 @@ obj/
 .pc/
 autom4te.cache/
 GNUmakefile
-include/cif++/Config.hpp
+include/src/Config.hpp
 tools/symop-map-generator
 test/unit-test
 libcifpp.pc

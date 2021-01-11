@@ -26,7 +26,7 @@
 
 // Calculate DSSP-like secondary structure information
 
-#include "cif++/Config.hpp"
+#include "Config.hpp"
 
 #include <numeric>
 #include <iomanip>

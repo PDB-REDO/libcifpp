@@ -11,7 +11,7 @@ AX_CHECK_COMPILE_FLAG([-fstandalone-debug], [ CXXFLAGS="$CXXFLAGS -fstandalone-d
 AC_CONFIG_SRCDIR([src/Cif++.cpp])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([config/m4])
-AC_CONFIG_HEADERS([include/cif++/Config.hpp])
+AC_CONFIG_HEADERS([src/Config.hpp])
 
 AC_PREFIX_DEFAULT(/usr/local)
 
@@ -52,9 +52,9 @@ dnl AC_MSG_RESULT(ok)
 
 AC_PROG_INSTALL
 
-dnl Shared libraries are not convenient
-dnl LT_INIT([disable-shared])
-LT_INIT
+dnl Shared libraries are not convenient, esp. on MacOS... sigh
+dnl LT_INIT
+LT_INIT([disable-shared])
 AC_SUBST(LIBTOOL_DEPS)
 
 dnl versioning, first for libtool

@@ -26,8 +26,6 @@
 
 #pragma once
 
-#include "cif++/Config.hpp"
-
 #include <string>
 
 #include <regex>

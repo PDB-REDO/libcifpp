@@ -32,8 +32,6 @@
 #include <clipper/core/coords.h>
 #endif
 
-#include "cif++/Config.hpp"
-
 #include <boost/math/quaternion.hpp>
 
 namespace mmcif
