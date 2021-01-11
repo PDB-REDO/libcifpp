@@ -3096,13 +3096,46 @@ void File::loadDictionary(const char* dict)
 	fs::path dict_name(dict);
 
 	auto data = loadResource(dict);
+
 	if (not data and dict_name.extension().string() != ".dic")
 		data = loadResource(dict_name.parent_path() / (dict_name.filename().string() + ".dic"));
 
-	if (not data)
-		throw std::runtime_error("Dictionary not found or defined (" + dict_name.string() + ")");
-	
-	loadDictionary(*data);
+	if (data)
+		loadDictionary(*data);
+	else 
+	{
+		// might be a compressed dictionary on disk
+		fs::path p = dict;
+		p = p.parent_path() / (p.filename().string() + ".gz");
+
+		if (not fs::exists(p))
+		{
+			for (const char* dir: { CACHE_DIR, DATA_DIR })
+			{
+				auto p2 = fs::path(dir) / p;
+				if (fs::exists(p2))
+				{
+					swap(p, p2);
+					break;
+				}
+			}
+		}
+
+		if (fs::exists(p))
+		{
+			std::ifstream file(p, std::ios::binary);
+			if (not file.is_open())
+				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
+
+			io::filtering_stream<io::input> in;
+			in.push(io::gzip_decompressor());
+			in.push(file);
+
+			loadDictionary(in);
+		}
+		else
+			throw std::runtime_error("Dictionary not found or defined (" + dict_name.string() + ")");
+	}
 }
 
 void File::loadDictionary(std::istream& is)

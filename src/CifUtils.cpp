@@ -1187,7 +1187,7 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 
 	if (fs::exists(p))
 	{
-		std::unique_ptr<std::ifstream> file(new std::ifstream(p));
+		std::unique_ptr<std::ifstream> file(new std::ifstream(p, std::ios::binary));
 		if (file->is_open())
 			result.reset(file.release());
 	}
