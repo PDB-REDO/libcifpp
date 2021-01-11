@@ -52,7 +52,8 @@ dnl AC_MSG_RESULT(ok)
 
 AC_PROG_INSTALL
 
-LT_INIT
+dnl disable shared libraries, they break the build on MacOS... sigh
+LT_INIT([disable-shared])
 
 AC_SUBST(LIBTOOL_DEPS)
 
