@@ -1,4 +1,4 @@
-/* include/cif++/Config.hpp.in.  Generated from configure.ac by autoheader.  */
+/* src/Config.hpp.in.  Generated from configure.ac by autoheader.  */
 
 /* define if the Boost library is available */
 #undef HAVE_BOOST
