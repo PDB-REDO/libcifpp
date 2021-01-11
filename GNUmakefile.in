@@ -47,9 +47,10 @@ CCP4DIR				= @CCP4@
 CLIBD				= $(CCP4DIR:%=%/lib/data)
 
 CACHE_DIR			= $(DESTDIR)/var/cache/libcifpp
+DATA_DIR			= $(datadir)/libcifpp
 CRON_DIR			= $(DESTDIR)/etc/cron.weekly
 
-DEFINES				+= CACHE_DIR='"$(CACHE_DIR)"'
+DEFINES				+= CACHE_DIR='"$(CACHE_DIR)"' DATA_DIR='"$(DATA_DIR)"'
 
 GNUmakefile: config.status GNUmakefile.in
 	$(SHELL) ./config.status

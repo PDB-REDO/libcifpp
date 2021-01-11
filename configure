@@ -8427,6 +8427,8 @@ func_stripname_cnf ()
   esac
 } # func_stripname_cnf
 
+case $host in #(
+  *-apple-*) :
 
 
 
@@ -16066,6 +16068,11 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 # Only expand once:
 
+ ;; #(
+  *) :
+
+ ;;
+esac
 
 
 

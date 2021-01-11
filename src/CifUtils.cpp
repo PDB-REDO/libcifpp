@@ -1171,9 +1171,20 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 	std::unique_ptr<std::istream> result;
 
 	fs::path p = name;
+
 	if (not fs::exists(p))
-		p = fs::path(CACHE_DIR) / p;
-	
+	{
+		for (const char* dir: { CACHE_DIR, DATA_DIR })
+		{
+			auto p2 = fs::path(dir) / p;
+			if (fs::exists(p2))
+			{
+				swap(p, p2);
+				break;
+			}
+		}
+	}
+
 	if (fs::exists(p))
 	{
 		std::unique_ptr<std::ifstream> file(new std::ifstream(p));
