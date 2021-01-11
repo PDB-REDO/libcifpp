@@ -390,6 +390,7 @@ class File : public std::enable_shared_from_this<File>
   public:
 	File();
 	File(const std::string& path);
+	File(const char* data, size_t length);	// good luck trying to find out what it is...
 	~File();
 
 	File(const File&) = delete;

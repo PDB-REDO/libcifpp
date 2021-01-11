@@ -60,9 +60,47 @@ struct FileImpl
 	cif::File			mData;
 	cif::Datablock*		mDb = nullptr;
 	
+	void load_data(const char* data, size_t length);
+
 	void load(const std::string& p);
 	void save(const std::string& p);
 };
+
+void FileImpl::load_data(const char* data, size_t length)
+{
+	try
+	{
+		// First try mmCIF
+        struct membuf : public std::streambuf
+        {
+            membuf(char* data, size_t length)       { this->setg(data, data, data + length); }
+        } buffer(const_cast<char*>(data), length);
+
+        std::istream is(&buffer);
+		mData.load(is);
+	}
+	catch (const cif::CifParserError& e)
+	{
+		// First try mmCIF
+        struct membuf : public std::streambuf
+        {
+            membuf(char* data, size_t length)       { this->setg(data, data, data + length); }
+        } buffer(const_cast<char*>(data), length);
+
+        std::istream is(&buffer);
+
+		ReadPDBFile(is, mData);
+	}
+	
+	// Yes, we've parsed the data. Now locate the datablock.
+	mDb = &mData.firstDatablock();
+	
+	// And validate, otherwise lots of functionality won't work
+//	if (mData.getValidator() == nullptr)
+	mData.loadDictionary("mmcif_pdbx_v50");
+	if (not mData.isValid())
+		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << std::endl;
+}
 
 void FileImpl::load(const std::string& p)
 {
@@ -1626,6 +1664,12 @@ int Polymer::Distance(const Monomer& a, const Monomer& b) const
 File::File()
 	: mImpl(new FileImpl)
 {
+}
+
+File::File(const char* data, size_t length)
+	: mImpl(new FileImpl)
+{
+	mImpl->load_data(data, length);
 }
 
 File::File(const std::string& File)
