@@ -52,11 +52,7 @@ dnl AC_MSG_RESULT(ok)
 
 AC_PROG_INSTALL
 
-dnl disable shared libraries on MacOS... sigh
-AS_CASE([$host],
-	[*-apple-*], [LT_INIT([disable-shared])],
-	[LT_INIT]
-)
+LT_INIT
 
 AC_SUBST(LIBTOOL_DEPS)
 
