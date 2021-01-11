@@ -235,7 +235,6 @@ HEADERS = \
 	Structure.hpp \
 	Cif2PDB.hpp \
 	CifUtils.hpp \
-	Config.hpp \
 	Point.hpp \
 	Symmetry.hpp \
 	Cif++.hpp \
