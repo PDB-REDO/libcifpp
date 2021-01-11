@@ -249,10 +249,12 @@ install: lib
 	install -d $(libdir)
 	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
 	install -d $(datadir)/libcifpp
-	for d in isomers.txt dictionaries/mmcif_ddl.dic dictionaries/mmcif_pdbx_v50.dic; do \
-		install -m644 rsrc/$$d $(datadir)/libcifpp; \
+	install -m644 rsrc/isomers.txt $(datadir)/libcifpp;
+	gzip -f $(datadir)/libcifpp/isomers.txt
+	for d in mmcif_ddl.dic mmcif_pdbx_v50.dic; do \
+		install -m644 rsrc/dictionaries/$$d $(datadir)/libcifpp; \
+		gzip -f $(datadir)/libcifpp/$$d; \
 	done
-	gzip -f $(datadir)/libcifpp/*
 	install -d $(CRON_DIR)
 	install -m755 tools/update-dictionary-script $(CRON_DIR)/libcifpp
 	install -d $(includedir)/cif++
