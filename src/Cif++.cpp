@@ -3106,7 +3106,10 @@ void File::loadDictionary(const char* dict)
 	{
 		// might be a compressed dictionary on disk
 		fs::path p = dict;
-		p = p.parent_path() / (p.filename().string() + ".gz");
+		if (p.extension() == ".dic")
+			p = p.parent_path() / (p.filename().string() + ".gz");
+		else
+			p = p.parent_path() / (p.filename().string() + ".dic.gz");
 
 		if (not fs::exists(p))
 		{
