@@ -11,7 +11,7 @@ osx_image:
 
 compiler:
   - gcc
-  # - clang
+  - clang
 
 addons:
   apt:
