@@ -13,6 +13,8 @@ AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([config/m4])
 AC_CONFIG_HEADERS([src/Config.hpp])
 
+AX_PTHREAD
+
 AC_PREFIX_DEFAULT(/usr/local)
 
 AC_CHECK_HEADER([filesystem], [], [AC_MSG_ERROR([The file <filesystem> is missing, perhaps you should install a more recent libstdc++ implementation.])])
