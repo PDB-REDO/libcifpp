@@ -51,6 +51,7 @@ DATA_DIR			= $(datadir)/libcifpp
 CRON_DIR			= $(DESTDIR)/etc/cron.weekly
 
 DEFINES				+= CACHE_DIR='"$(CACHE_DIR)"' DATA_DIR='"$(DATA_DIR)"'
+DEFINES				+= USE_RSRC=@USE_RSRC@
 
 GNUmakefile: config.status GNUmakefile.in
 	$(SHELL) ./config.status
