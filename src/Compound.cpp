@@ -1247,6 +1247,13 @@ const Link* CompoundFactoryImpl::createLink(std::string id)
 // --------------------------------------------------------------------
 
 CompoundFactory* CompoundFactory::sInstance;
+thread_local std::unique_ptr<CompoundFactory> CompoundFactory::tlInstance;
+bool CompoundFactory::sUseThreadLocalInstance;
+
+void CompoundFactory::init(bool useThreadLocalInstanceOnly)
+{
+	sUseThreadLocalInstance = useThreadLocalInstanceOnly;
+}
 
 CompoundFactory::CompoundFactory()
 	: mImpl(nullptr)
@@ -1275,9 +1282,29 @@ CompoundFactory::~CompoundFactory()
 
 CompoundFactory& CompoundFactory::instance()
 {
-	if (sInstance == nullptr)
-		sInstance = new CompoundFactory();
-	return *sInstance;
+	if (sUseThreadLocalInstance)
+	{
+		if (not tlInstance)
+			tlInstance.reset(new CompoundFactory());
+		return *tlInstance;
+	}
+	else
+	{
+		if (sInstance == nullptr)
+			sInstance = new CompoundFactory();
+		return *sInstance;
+	}
+}
+
+void CompoundFactory::clear()
+{
+	if (sUseThreadLocalInstance)
+		tlInstance.reset(nullptr);
+	else
+	{
+		delete sInstance;
+		sInstance = nullptr;
+	}
 }
 
 void CompoundFactory::pushDictionary(const std::string& inDictFile)
@@ -1340,6 +1367,6 @@ bool CompoundFactory::isKnownBase(const std::string& resName) const
 std::string CompoundFactory::unalias(const std::string& resName) const
 {
 	return mImpl->unalias(resName);
-}
+ }
 
 }

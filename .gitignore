@@ -5,7 +5,6 @@ obj/
 .pc/
 autom4te.cache/
 GNUmakefile
-include/src/Config.hpp
 tools/symop-map-generator
 test/unit-test
 libcifpp.pc
@@ -14,3 +13,8 @@ config.status
 config.log
 libtool
 test/pdb2cif-test
+src/revision.hpp
+src/Config.hpp.in~
+src/Config.hpp
+aclocal.m4
+version-info-*.txt

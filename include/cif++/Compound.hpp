@@ -310,7 +310,9 @@ class CompoundFactory
 {
   public:
 	
+	static void init(bool useThreadLocalInstanceOnly);
 	static CompoundFactory& instance();
+	static void clear();
 
 	void pushDictionary(const std::string& inDictFile);
 	void popDictionary();
@@ -326,15 +328,18 @@ class CompoundFactory
 	const Link* getLink(std::string id);
 	const Link* createLink(std::string id);
 
+	~CompoundFactory();
+
   private:
 
 	CompoundFactory();
-	~CompoundFactory();
 	
 	CompoundFactory(const CompoundFactory&) = delete;
 	CompoundFactory& operator=(const CompoundFactory&) = delete;
 	
 	static CompoundFactory* sInstance;
+	static thread_local std::unique_ptr<CompoundFactory> tlInstance;
+	static bool sUseThreadLocalInstance;
 
 	class CompoundFactoryImpl* mImpl;
 };
