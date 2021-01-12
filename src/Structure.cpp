@@ -68,6 +68,9 @@ struct FileImpl
 
 void FileImpl::load_data(const char* data, size_t length)
 {
+	bool gzipped = length > 2 and data[0] == (char)0x1f and data[1] == (char)0x8b;
+	bool bzip2ed = length > 3 and data[0] == (char)0x42 and data[1] == (char)0x5A and data[2] == (char)0x68;
+
 	try
 	{
 		// First try mmCIF
@@ -77,7 +80,15 @@ void FileImpl::load_data(const char* data, size_t length)
         } buffer(const_cast<char*>(data), length);
 
         std::istream is(&buffer);
-		mData.load(is);
+
+		io::filtering_stream<io::input> in;
+		if (gzipped)
+			in.push(io::gzip_decompressor());
+		else if (bzip2ed)
+			in.push(io::bzip2_decompressor());
+		in.push(is);
+
+		mData.load(in);
 	}
 	catch (const cif::CifParserError& e)
 	{
@@ -89,7 +100,14 @@ void FileImpl::load_data(const char* data, size_t length)
 
         std::istream is(&buffer);
 
-		ReadPDBFile(is, mData);
+		io::filtering_stream<io::input> in;
+		if (gzipped)
+			in.push(io::gzip_decompressor());
+		else if (bzip2ed)
+			in.push(io::bzip2_decompressor());
+		in.push(is);
+
+		ReadPDBFile(in, mData);
 	}
 	
 	// Yes, we've parsed the data. Now locate the datablock.
