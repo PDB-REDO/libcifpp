@@ -1026,7 +1026,7 @@ const std::map<std::string,char> kBaseMap{
 class CompoundFactoryImpl
 {
   public:
-	CompoundFactoryImpl() {}
+	CompoundFactoryImpl();
 
 	CompoundFactoryImpl(const std::string& file, CompoundFactoryImpl* next);
 
@@ -1097,6 +1097,15 @@ class CompoundFactoryImpl
 };
 
 // --------------------------------------------------------------------
+
+CompoundFactoryImpl::CompoundFactoryImpl()
+{
+	for (const auto&[ key, value]: kAAMap)
+		mKnownPeptides.insert(key);
+
+	for (const auto&[ key, value]: kBaseMap)
+		mKnownBases.insert(key);
+}
 
 CompoundFactoryImpl::CompoundFactoryImpl(const std::string& file, CompoundFactoryImpl* next)
 	: mPath(file), mFile(file), mNext(next)
