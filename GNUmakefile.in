@@ -32,7 +32,8 @@ CXXFLAGS			= @CPPFLAGS@ @CXXFLAGS@ @BOOST_CPPFLAGS@ @PTHREAD_CFLAGS@
 LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
 LIBS				= @LIBS@ @PTHREAD_LIBS@ \
 					  @BOOST_IOSTREAMS_LIB@ \
-					  @BOOST_DATE_TIME_LIB@
+					  @BOOST_DATE_TIME_LIB@ \
+					  @BOOST_REGEX_LIB@
 
 prefix				= $(DESTDIR)@prefix@
 exec_prefix			= @exec_prefix@

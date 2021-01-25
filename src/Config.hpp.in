@@ -9,6 +9,9 @@
 /* define if the Boost::IOStreams library is available */
 #undef HAVE_BOOST_IOSTREAMS
 
+/* define if the Boost::Regex library is available */
+#undef HAVE_BOOST_REGEX
+
 /* define if the compiler supports basic C++17 syntax */
 #undef HAVE_CXX17
 

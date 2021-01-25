@@ -28,7 +28,10 @@
 
 #include "cif++/Cif++.hpp"
 
-#include <regex>
+// duh.. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86164
+// #include <regex>
+#include <boost/regex.hpp>
+
 #include <set>
 
 namespace cif
@@ -61,7 +64,8 @@ struct ValidateType
 {
 	std::string				mName;
 	DDL_PrimitiveType		mPrimitiveType;
-	std::regex				mRx;
+	// std::regex				mRx;
+	boost::regex			mRx;
 
 	bool operator<(const ValidateType& rhs) const
 	{

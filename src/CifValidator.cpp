@@ -181,7 +181,7 @@ void ValidateItem::operator()(std::string value) const
 {
 	if (not value.empty() and value != "?" and value != ".")
 	{
-		if (mType != nullptr and not std::regex_match(value, mType->mRx))
+		if (mType != nullptr and not regex_match(value, mType->mRx))
 			throw ValidationError(mCategory->mName, mTag, "Value '" + value + "' does not match type expression for type " + mType->mName);
 
 		if (not mEnums.empty())
@@ -238,7 +238,7 @@ const ValidateType* Validator::getValidatorForType(std::string typeCode) const
 {
 	const ValidateType* result = nullptr;
 	
-	auto i = mTypeValidators.find(ValidateType{ typeCode, DDL_PrimitiveType::Char, std::regex() });
+	auto i = mTypeValidators.find(ValidateType{ typeCode, DDL_PrimitiveType::Char, boost::regex() });
 	if (i != mTypeValidators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
