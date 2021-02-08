@@ -1717,7 +1717,18 @@ class Category
 		return find1(cbegin(), std::forward<Condition>(cond));
 	}
 
-	Row find1(const_iterator pos, Condition&& cond);
+	Row find1(const_iterator pos, Condition&& cond)
+	{
+		auto h = find(pos, std::forward<Condition>(cond));
+
+		if (h.empty())
+			throw std::runtime_error("No hits found");
+		
+		if (h.size() != 1)
+			throw std::runtime_error("Hit not unique");
+
+		return *h.begin();
+	}
 
 	template<typename... Ts, size_t N>
 	std::tuple<Ts...> find1(Condition&& cond, char const* const (&columns)[N])
