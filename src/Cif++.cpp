@@ -2796,12 +2796,11 @@ void Row::swap(size_t cix, ItemRow* a, ItemRow* b)
 					else
 					{
 						if (VERBOSE)
-							std::cerr << "In " << childCat->mName << " changing " << linkChildColName << ": " << r[linkChildColName].as<float>() << " => " << (i ? i->mText : "") << std::endl;
+							std::cerr << "In " << childCat->mName << " changing " << linkChildColName << ": " << r[linkChildColName].as<std::string>() << " => " << (i ? i->mText : "") << std::endl;
 						r[linkChildColName] = i ? i->mText : "";
 					}
 				}
 			}
-
 		}
 	}
 }
