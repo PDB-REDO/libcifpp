@@ -747,8 +747,8 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_shared
-enable_static
 with_pic
+enable_static
 enable_fast_install
 with_aix_soname
 with_gnu_ld
@@ -9361,6 +9361,34 @@ fi
 
 
 
+# Check whether --with-pic was given.
+if test "${with_pic+set}" = set; then :
+  withval=$with_pic; lt_p=${PACKAGE-default}
+    case $withval in
+    yes|no) pic_mode=$withval ;;
+    *)
+      pic_mode=default
+      # Look at the argument we got.  We use all the common list separators.
+      lt_save_ifs=$IFS; IFS=$IFS$PATH_SEPARATOR,
+      for lt_pkg in $withval; do
+	IFS=$lt_save_ifs
+	if test "X$lt_pkg" = "X$lt_p"; then
+	  pic_mode=yes
+	fi
+      done
+      IFS=$lt_save_ifs
+      ;;
+    esac
+else
+  pic_mode=yes
+fi
+
+
+
+
+
+
+
 
 
         enable_dlopen=no
@@ -9394,35 +9422,6 @@ else
 fi
 
 
-
-
-
-
-
-
-
-
-# Check whether --with-pic was given.
-if test "${with_pic+set}" = set; then :
-  withval=$with_pic; lt_p=${PACKAGE-default}
-    case $withval in
-    yes|no) pic_mode=$withval ;;
-    *)
-      pic_mode=default
-      # Look at the argument we got.  We use all the common list separators.
-      lt_save_ifs=$IFS; IFS=$IFS$PATH_SEPARATOR,
-      for lt_pkg in $withval; do
-	IFS=$lt_save_ifs
-	if test "X$lt_pkg" = "X$lt_p"; then
-	  pic_mode=yes
-	fi
-      done
-      IFS=$lt_save_ifs
-      ;;
-    esac
-else
-  pic_mode=default
-fi
 
 
 
@@ -19069,8 +19068,8 @@ delay_variable_subst='$delay_variable_subst'
 macro_version='`$ECHO "$macro_version" | $SED "$delay_single_quote_subst"`'
 macro_revision='`$ECHO "$macro_revision" | $SED "$delay_single_quote_subst"`'
 enable_shared='`$ECHO "$enable_shared" | $SED "$delay_single_quote_subst"`'
-enable_static='`$ECHO "$enable_static" | $SED "$delay_single_quote_subst"`'
 pic_mode='`$ECHO "$pic_mode" | $SED "$delay_single_quote_subst"`'
+enable_static='`$ECHO "$enable_static" | $SED "$delay_single_quote_subst"`'
 enable_fast_install='`$ECHO "$enable_fast_install" | $SED "$delay_single_quote_subst"`'
 shared_archive_member_spec='`$ECHO "$shared_archive_member_spec" | $SED "$delay_single_quote_subst"`'
 SHELL='`$ECHO "$SHELL" | $SED "$delay_single_quote_subst"`'
@@ -20064,11 +20063,11 @@ macro_revision=$macro_revision
 # Whether or not to build shared libraries.
 build_libtool_libs=$enable_shared
 
-# Whether or not to build static libraries.
-build_old_libs=$enable_static
-
 # What type of objects to build.
 pic_mode=$pic_mode
+
+# Whether or not to build static libraries.
+build_old_libs=$enable_static
 
 # Whether or not to optimize for fast installation.
 fast_install=$enable_fast_install
