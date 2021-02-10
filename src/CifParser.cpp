@@ -687,9 +687,9 @@ void Parser::produceItem(const std::string& category, const std::string& item, c
 struct DictParserDataImpl
 {
 	// temporary values for constructing dictionaries
-	std::vector<ValidateCategory>			mCategoryValidators;
+	std::vector<ValidateCategory>					mCategoryValidators;
 	std::map<std::string,std::vector<ValidateItem>>	mItemValidators;
-	std::set<std::tuple<std::string,std::string>>			mLinkedItems;
+	std::set<std::tuple<std::string,std::string>>	mLinkedItems;
 };
 
 DictParser::DictParser(Validator& validator, std::istream& is)
