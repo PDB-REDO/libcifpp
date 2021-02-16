@@ -1195,6 +1195,19 @@ inline Condition Not(Condition&& cond)
     return Condition(new detail::NotConditionImpl(std::move(cond)));
 }
 
+namespace literals
+{
+
+inline Key operator""_key(const char* text, size_t length)
+{
+	return Key(std::string(text, length));
+}
+
+inline constexpr Empty Null = Empty();
+
+}
+
+
 // -----------------------------------------------------------------------
 // iterators
 
