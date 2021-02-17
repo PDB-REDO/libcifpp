@@ -5778,24 +5778,6 @@ void PDBFileParser::Parse(std::istream& is, cif::File& result)
 
 		auto& atom_site = *getCategory("atom_site");
 
-		// for (const auto& [asym1, seq1, atom1, asym2, seq2, atom2]: getCategory("struct_conn")
-		// 	->find<std::string,std::string,std::string,std::string,std::string,std::string>(
-		// 		"pdbx_dist_value"_key == 0 or "pdbx_dist_value"_key == Null,
-		// 		{ "ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr1_label_atom_id",
-		// 		"ptnr2_label_asym_id", "ptnr2_label_seq_id", "ptnr2_label_atom_id" }))
-		// {
-		// 	auto a1 = atom_site.find1("label_asym_id"_key == asym1 and "label_seq_id"_key == seq1 and "label_atom_id"_key == atom1);
-		// 	auto a2 = atom_site.find1("label_asym_id"_key == asym2 and "label_seq_id"_key == seq2 and "label_atom_id"_key == atom2);
-
-		// 	const auto& [x1, y1, z1] = a1.get<float,float,float>({"cartn_x", "cartn_y", "cartn_z"});
-		// 	const auto& [x2, y2, z2] = a2.get<float,float,float>({"cartn_x", "cartn_y", "cartn_z"});
-
-		// 	float distance = mmcif::Distance(mmcif::Point{x1, y1, z1}, mmcif::Point{x2, y2, z2});
-
-		// 	std::cerr << "Distance for link: " << distance << std::endl;
-
-		// }
-
 		for (auto r: getCategory("struct_conn")->find("pdbx_dist_value"_key == 0 or "pdbx_dist_value"_key == Null))
 		{
 			const auto& [asym1, seq1, atom1, symm1, asym2, seq2, atom2, symm2] = r.get<std::string,std::string,std::string,std::string,std::string,std::string,std::string,std::string>(

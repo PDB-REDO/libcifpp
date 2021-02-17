@@ -17,13 +17,13 @@ if [ "$update" != "true" ] ; then
 fi
 
 # if cache directory doesn't exist, exit. 
-if ! [ -d /var/cache/libcifpp ]; then
+if ! [ -d @DATA_CACHE_DIR@ ]; then
 	exit
 fi
 
 # fetch the dictionary
 
-dict=/var/cache/libcifpp/mmcif_pdbx_v50.dic
+dict=@DATA_CACHE_DIR@/mmcif_pdbx_v50.dic
 source=https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz
 
 wget -O${dict}.gz ${source}

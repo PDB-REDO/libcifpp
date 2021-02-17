@@ -114,5 +114,15 @@ AX_BOOST_REGEX
 
 AC_CHECK_LIB([atomic], [atomic_flag_clear])
 
+dnl Set output variables for the various directories
+AC_ARG_VAR([DATA_LIB_DIR], [The location where to store packaged dictionary files])
+AC_SUBST([DATA_LIB_DIR])
+DATA_LIB_DIR=$datadir/libcifpp
+
+AC_ARG_VAR([DATA_CACHE_DIR], [The location where to store cached dictionary files])
+AC_SUBST([DATA_CACHE_DIR])
+DATA_CACHE_DIR=/var/cache/libcifpp
+
 AC_OUTPUT([GNUmakefile
-		   libcifpp.pc])
+		   libcifpp.pc
+		   tools/update-dictionary-script])

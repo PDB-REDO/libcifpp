@@ -635,6 +635,8 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+DATA_CACHE_DIR
+DATA_LIB_DIR
 BOOST_REGEX_LIB
 BOOST_DATE_TIME_LIB
 BOOST_IOSTREAMS_LIB
@@ -779,7 +781,9 @@ DEBUG
 CCP4
 PKG_CONFIG
 PKG_CONFIG_PATH
-PKG_CONFIG_LIBDIR'
+PKG_CONFIG_LIBDIR
+DATA_LIB_DIR
+DATA_CACHE_DIR'
 
 
 # Initialize some variables set by options.
@@ -1467,6 +1471,10 @@ Some influential environment variables:
               directories to add to pkg-config's search path
   PKG_CONFIG_LIBDIR
               path overriding pkg-config's built-in search path
+  DATA_LIB_DIR
+              The location where to store packaged dictionary files
+  DATA_CACHE_DIR
+              The location where to store cached dictionary files
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -18364,7 +18372,15 @@ _ACEOF
 fi
 
 
-ac_config_files="$ac_config_files GNUmakefile libcifpp.pc"
+
+
+DATA_LIB_DIR=$datadir/libcifpp
+
+
+
+DATA_CACHE_DIR=/var/cache/libcifpp
+
+ac_config_files="$ac_config_files GNUmakefile libcifpp.pc tools/update-dictionary-script"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -19450,6 +19466,7 @@ do
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "GNUmakefile") CONFIG_FILES="$CONFIG_FILES GNUmakefile" ;;
     "libcifpp.pc") CONFIG_FILES="$CONFIG_FILES libcifpp.pc" ;;
+    "tools/update-dictionary-script") CONFIG_FILES="$CONFIG_FILES tools/update-dictionary-script" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

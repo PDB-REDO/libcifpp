@@ -18,3 +18,4 @@ src/Config.hpp.in~
 src/Config.hpp
 aclocal.m4
 version-info-*.txt
+tools/update-dictionary-script
