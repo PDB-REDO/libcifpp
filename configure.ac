@@ -85,12 +85,34 @@ AS_IF([test "x$enable_revision" = "xyes" ], [
 	UPDATE_REVISION=1
 ])
 
-dnl disable resources on macOS
+# dnl disable resources on macOS
+USE_RSRC=0
+
 AS_CASE([$host],
-	[*-apple-*], [USE_RSRC=0],
-	[USE_RSRC=1]
+	[*-apple-*], [],
+	[
+		AC_ARG_VAR([MRC], [Specify a location for the mrc executable])
+
+		if test "x$MRC" = "x"; then
+			AC_PATH_PROG([MRC], [mrc])
+		fi
+
+		if test "x$MRC" = "x"; then
+			AC_MSG_WARN([The mrc application was not found, not using resources.])
+		else
+			AC_ARG_ENABLE(
+				resources,
+				[AS_HELP_STRING([--disable-resources], [Use mrc to store data in resources])])
+
+			AS_IF([test "x$enable_resources" != "xno" ], [
+				USE_RSRC=1
+			])
+		fi
+	]
 )
-AC_SUBST([USE_RSRC])
+
+AC_SUBST([USE_RSRC], [$USE_RSRC])
+AC_DEFINE_UNQUOTED([USE_RSRC], [$USE_RSRC], [Use mrc to store resources])
 
 AC_SUBST([UPDATE_REVISION], [$UPDATE_REVISION])
 
