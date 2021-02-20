@@ -215,7 +215,7 @@ $(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
 test/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS)
 	@ echo ">>> building $(1)-test"
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -lcifpp $(LIBS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -lcifpp -lboost_program_options $(LIBS)
 
 .PHONY: $(1)-test
 $(1)-test: test/$(1)-test
@@ -223,7 +223,7 @@ $(1)-test: test/$(1)-test
 
 endef
 
-TESTS = unit
+TESTS = unit pdb2cif
 
 $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
 
