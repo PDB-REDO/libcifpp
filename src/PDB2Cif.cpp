@@ -1124,6 +1124,9 @@ void PDBFileParser::PreParseInput(std::istream& is)
 	uint32_t lineNr = 1;
 	getline(is, lookahead);
 
+	if (lookahead.back() == '\r')
+		lookahead.pop_back();
+
 //	if (ba::starts_with(lookahead, "HEADER") == false)
 //		throw std::runtime_error("This does not look like a PDB file, should start with a HEADER line");
 
@@ -1284,7 +1287,7 @@ void PDBFileParser::PreParseInput(std::istream& is)
 						stoi(lookahead.substr(7, 3)) == compNr and
 						contNr(16, 2) == n)
 					{
-						value += lookahead.substr(19);
+						value += ba::trim_right_copy(lookahead.substr(19));;
 						getline(is, lookahead);
 						++lineNr;
 						++n;
@@ -1308,7 +1311,7 @@ void PDBFileParser::PreParseInput(std::istream& is)
 			int n = 2;
 			while (lookahead.substr(0, 6) == type and contNr(8, 2) == n)
 			{
-				value += lookahead.substr(16);
+				value += ba::trim_right_copy(lookahead.substr(16));;
 				getline(is, lookahead);
 				++lineNr;
 				++n;
