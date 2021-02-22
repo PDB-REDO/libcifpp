@@ -130,7 +130,7 @@ ifneq "$(CCP4DIR)" ""
 tools/symop-map-generator: tools/symop-map-generator.cpp
 
 src/SymOpTable_data.cpp: tools/symop-map-generator $(CLIBD)/symop.lib
-	tools/symop-map-generator > $@
+	tools/symop-map-generator $@
 
 $(OBJDIR)/Symmetry.lo: src/SymOpTable_data.cpp
 

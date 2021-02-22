@@ -176,10 +176,17 @@ class SymopParser
 	int m_trn[3][2] = {};
 };
 
-int main()
+int main(int argc, char* const argv[])
 {
 	try
 	{
+		if (argc != 2)
+			throw std::runtime_error("Usage: symom-map-generator <outputfile>");
+
+		std::ofstream out(argv[1]);
+		if (not out.is_open())
+			throw std::runtime_error("Failed to open output file");
+
 		const char* CLIBD = getenv("CLIBD");
 		
 		if (CLIBD == nullptr)
@@ -291,76 +298,13 @@ int main()
 			}
 		}
 
-		// // --------------------------------------------------------------------
-		
-		// string line;
-		// string spacegroupName;
-		// int spacegroupNr, symopnr;
-
-		// enum class State { Initial, InSpacegroup, Error } state = State::Initial;
-
-		// while (getline(file, line))
-		// {
-		// 	if (line.empty())
-		// 		throw runtime_error("Invalid symop.lib file, contains empty line");
-			
-		// 	switch (state)
-		// 	{
-		// 		case State::Error:
-		// 		case State::InSpacegroup:
-		// 			if (line[0] == ' ')
-		// 			{
-		// 				if (state == State::Error)
-		// 					continue;
-						
-		// 				try
-		// 				{
-		// 					SymopParser p;
-		// 					data.emplace_back(spacegroupNr, symopnr, spacegroupName, p.parse(line));
-		// 					++symopnr;
-		// 				}
-		// 				catch (const exception& e)
-		// 				{
-		// 					cerr << line << endl
-		// 						 << e.what() << endl;
-		// 				}
-
-		// 				continue;
-		// 			}
-		// 			// fall through
-				
-		// 		case State::Initial:
-		// 		{
-		// 			smatch m;
-		// 			if (not regex_match(line, m, kNameRx))
-		// 			{
-		// 				cerr << line << endl;
-		// 				throw runtime_error("Name line does not match regular expression");
-		// 			}
-
-		// 			spacegroupNr = stoi(m[1]);
-		// 			spacegroupName = m[7];
-		// 			symopnr = 1;
-
-		// 			if (not symInfo.count(spacegroupNr))
-		// 				throw runtime_error("Symmetry nr not found in syminfo.lib");
-					
-		// 			if (symInfo[spacegroupNr].xHM != spacegroupName)
-		// 				cerr << "Inconsistent data between symop.lib and syminfo.lib for spacegroup nr " << to_string(spacegroupNr) << endl;
-
-		// 			state = State::InSpacegroup;
-		// 			break;
-		// 		}
-		// 	}
-		// }
-
 		// --------------------------------------------------------------------
 
 		sort(data.begin(), data.end());
 
 		// --------------------------------------------------------------------
 
-		cout << R"(// This file was generated from $CLIBD/symop.lib
+		out << R"(// This file was generated from $CLIBD/symop.lib
 // and $CLIBD/syminfo.lib using symop-map-generator,
 // part of the PDB-REDO suite of programs.
 
@@ -394,10 +338,10 @@ const Spacegroup kSpaceGroups[] =
 
 			Hall = '"' + Hall + '"' + string(40 - Hall.length(), ' ');
 
-			cout << "\t{ " << old << ", " << xHM << ", " << Hall << ", " << nr << " }," << endl;
+			out << "\t{ " << old << ", " << xHM << ", " << Hall << ", " << nr << " }," << endl;
 		}
 
-cout << R"(
+out << R"(
 };
 
 const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(Spacegroup);
@@ -412,17 +356,17 @@ const SymopDataBlock kSymopNrTable[] = {
 			tie(sp, o, ignore) = sd;
 
 			if (sp > spacegroupNr)
-				cout << "    // " << symInfo[sp].xHM << endl;
+				out << "    // " << symInfo[sp].xHM << endl;
 			spacegroupNr = sp;
 
-			cout << "    { " << setw(3) << sp
+			out << "    { " << setw(3) << sp
 					<< ", " << setw(3) << o << ", { ";
 			for (auto i: get<2>(sd))
-				cout << setw(2) << i << ',';
-			cout << " } }," << endl;
+				out << setw(2) << i << ',';
+			out << " } }," << endl;
 		}
 
-		cout << R"(};
+		out << R"(};
 
 const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
 
