@@ -28,12 +28,18 @@
 firstTarget: all
 
 CXX					= @CXX@
-CXXFLAGS			= @CPPFLAGS@ @CXXFLAGS@ @BOOST_CPPFLAGS@ @PTHREAD_CFLAGS@
-LDFLAGS				= @LDFLAGS@ @LIBS@ @BOOST_LDFLAGS@
-LIBS				= @LIBS@ @PTHREAD_LIBS@ \
+CXXFLAGS			= @BOOST_CPPFLAGS@ \
+					  @CPPFLAGS@ \
+					  @CXXFLAGS@ \
+					  @PTHREAD_CFLAGS@
+LDFLAGS				= @BOOST_LDFLAGS@ \
+					  @LDFLAGS@ \
+					  @LIBS@
+LIBS				= @PTHREAD_LIBS@ \
 					  @BOOST_IOSTREAMS_LIB@ \
 					  @BOOST_DATE_TIME_LIB@ \
-					  @BOOST_REGEX_LIB@
+					  @BOOST_REGEX_LIB@ \
+					  @LIBS@
 
 prefix				= $(DESTDIR)@prefix@
 exec_prefix			= @exec_prefix@
@@ -56,16 +62,6 @@ DEFINES				+= USE_RSRC=@USE_RSRC@
 
 GNUmakefile: config.status GNUmakefile.in
 	$(SHELL) ./config.status
-
-ifeq "$(CHECK_CONFIG)" "1"
-
-config.status: configure
-	$(SHELL) ./config.status --recheck
-
-configure: configure.ac
-	autoconf
-
-endif
 
 LIB_NAME			= @PACKAGE_NAME@
 LIB_VERSION			= @LIBCIF_LT_VERSION@

@@ -1,58 +1,37 @@
 AC_PREREQ([2.69])
 
-AC_INIT([libcifpp], 1.0, [m.hekkelman@nki.nl])
+m4_define([libcifpp_version_major],[1])
+m4_define([libcifpp_version_minor],[1])
+m4_define([libcifpp_version_micro],[0])
+m4_define([libcifpp_version_extra],[])
+m4_define([libcifpp_version],[libcifpp_version_major().libcifpp_version_minor().libcifpp_version_micro()libcifpp_version_extra])
+
+AC_INIT([libcifpp], [libcifpp_version], [m.hekkelman@nki.nl])
 
 dnl Switch to a C++ compiler, and check if it works.
 AC_LANG(C++)
 AX_CXX_COMPILE_STDCXX_17([noext])
 
-AX_CHECK_COMPILE_FLAG([-fstandalone-debug], [ CXXFLAGS="$CXXFLAGS -fstandalone-debug" ], , [-Werror])
+AX_CHECK_COMPILE_FLAG([-fstandalone-debug],
+	[
+		CXXFLAGS="$CXXFLAGS -fstandalone-debug"
+	] , , [-Werror])
 
 AC_CONFIG_SRCDIR([src/Cif++.cpp])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([config/m4])
 AC_CONFIG_HEADERS([src/Config.hpp])
 
-AX_PTHREAD
-
 AC_PREFIX_DEFAULT(/usr/local)
 
-AC_CHECK_HEADER([filesystem], [], [AC_MSG_ERROR([The file <filesystem> is missing, perhaps you should install a more recent libstdc++ implementation.])])
-
-dnl check if we need stdc++fs as library
-AC_MSG_CHECKING([if linking to stdc++fs is required])
-AC_TRY_LINK(
-	[#include <filesystem>],
-	[(void)std::filesystem::current_path();],
-	[
-		AC_MSG_RESULT(no)
-	],
-	[
-		LIBS="$LIBS -lstdc++fs"
-
-		AC_TRY_LINK(
-			[#include <filesystem>],
-			[(void)std::filesystem::current_path();],
-			[
-				AC_MSG_RESULT(yes)
-			],
-			[
-				AC_MSG_ERROR([Could not link filesystem])
-			]
-		)
-	]
-)
-
-dnl AC_DEFUN([read_test], [AC_LANG_SOURCE(
-dnl 	esyscmd(tools/m4esc.sh config-tests/$1))])
-dnl 
-dnl AC_MSG_CHECKING([compiler standards compliance])
-dnl AC_COMPILE_IFELSE(
-dnl 	[read_test(cpp-17-test.cpp)], [],
-dnl 	[AC_MSG_ERROR([Your c++ compiler is not capable of compiling libcifpp, please upgrade])])
-dnl AC_MSG_RESULT(ok)
+AX_FILESYSTEM
 
 AC_PROG_INSTALL
+PKG_PROG_PKG_CONFIG
+
+AX_PTHREAD
+
+AC_ARG_VAR([DEBUG], [Build a debug version of the application])
 
 dnl disable shared libraries, they break the build on MacOS... sigh
 LT_INIT([disable-shared pic-only])
@@ -71,54 +50,25 @@ AC_SUBST(LIBCIF_LT_CURRENT)
 AC_SUBST(LIBCIF_LT_VERSION)
 
 dnl and now for the semantic version
-LIBCIF_SEMANTIC_VERSION=1.1.0
+LIBCIF_SEMANTIC_VERSION=libcifpp_version
 AC_SUBST(LIBCIF_SEMANTIC_VERSION)
 
-AC_ARG_VAR([DEBUG], [Build a debug version of the library])
+AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
+
+AX_MRC
 
 dnl revision numbering is something used internally at the NKI
 AC_ARG_ENABLE(
 	revision,
-	[AS_HELP_STRING([--enable-revision], [Create a build number as revision])])
+	[AS_HELP_STRING([--disable-revision], [Create a build number as revision])])
 
-AS_IF([test "x$enable_revision" = "xyes" ], [
+AS_IF([test "x$enable_revision" != "xno" ], [
 	UPDATE_REVISION=1
 ])
 
-# dnl disable resources on macOS
-USE_RSRC=0
-
-AS_CASE([$host],
-	[*-apple-*], [],
-	[
-		AC_ARG_VAR([MRC], [Specify a location for the mrc executable])
-
-		if test "x$MRC" = "x"; then
-			AC_PATH_PROG([MRC], [mrc])
-		fi
-
-		if test "x$MRC" = "x"; then
-			AC_MSG_WARN([The mrc application was not found, not using resources.])
-		else
-			AC_ARG_ENABLE(
-				resources,
-				[AS_HELP_STRING([--disable-resources], [Use mrc to store data in resources])])
-
-			AS_IF([test "x$enable_resources" != "xno" ], [
-				USE_RSRC=1
-			])
-		fi
-	]
-)
-
-AC_SUBST([USE_RSRC], [$USE_RSRC])
-AC_DEFINE_UNQUOTED([USE_RSRC], [$USE_RSRC], [Use mrc to store resources])
-
 AC_SUBST([UPDATE_REVISION], [$UPDATE_REVISION])
 
-AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
-
-PKG_PROG_PKG_CONFIG
+AX_FILESYSTEM
 
 AC_CHECK_FUNCS([floor pow rint sqrt strchr strerror])
 AC_CHECK_HEADERS([sys/ioctl.h])
@@ -127,9 +77,7 @@ AC_CHECK_HEADER_STDBOOL
 AC_CHECK_TYPES([ptrdiff_t])
 AC_PROG_MAKE_SET
 
-AX_BOOST_BASE([1.71], [], [
-	AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])
-])
+AX_BOOST_BASE([1.71], [], [AC_MSG_ERROR([Sorry, your boost is not found or not up-to-date.])])
 AX_BOOST_IOSTREAMS
 AX_BOOST_DATE_TIME
 AX_BOOST_REGEX
