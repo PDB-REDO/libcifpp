@@ -28,6 +28,7 @@
 
 #include <map>
 #include <numeric>
+#include <mutex>
 #include <shared_mutex>
 
 #include <boost/algorithm/string.hpp>

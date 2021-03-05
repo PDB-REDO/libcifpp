@@ -1008,7 +1008,7 @@ class PDBFileParser
 		if (i != mLinks.end())
 			return { i->a == atom ? i->b : i->a, true };
 
-		return {{}, false};
+		return {};
 	}
 
 	// ----------------------------------------------------------------
