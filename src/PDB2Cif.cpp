@@ -5787,6 +5787,8 @@ void PDBFileParser::Parse(std::istream& is, cif::File& result)
 				{ "ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr1_label_atom_id", "ptnr1_symmetry",
 				  "ptnr2_label_asym_id", "ptnr2_label_seq_id", "ptnr2_label_atom_id", "ptnr2_symmetry" });
 
+			float distance = 1.0f;
+
 			try
 			{
 				auto a1 = atom_site.find1("label_asym_id"_key == asym1 and "label_seq_id"_key == seq1 and "label_atom_id"_key == atom1);
@@ -5795,20 +5797,18 @@ void PDBFileParser::Parse(std::istream& is, cif::File& result)
 				const auto& [x1, y1, z1] = a1.get<float,float,float>({"cartn_x", "cartn_y", "cartn_z"});
 				const auto& [x2, y2, z2] = a2.get<float,float,float>({"cartn_x", "cartn_y", "cartn_z"});
 
-				float distance = 1.0f;
-
 				if (symm1 == "1_555" and symm2 == "1_555")
 					distance = mmcif::Distance(mmcif::Point{x1, y1, z1}, mmcif::Point{x2, y2, z2});
 				else if (cif::VERBOSE)
 					std::cerr << "Cannot calculate distance for link since one of the atoms is in another dimension" << std::endl;
-
-				r["pdbx_dist_value"] = distance;
 			}
 			catch (std::exception& ex)
 			{
 				if (cif::VERBOSE)
 					std::cerr << "Error finding atom: " << ex.what() << std::endl;
 			}
+
+			r["pdbx_dist_value"] = distance;
 		}
 	}
 	catch (const std::exception& ex)
