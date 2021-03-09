@@ -330,8 +330,14 @@ const TemplateLine kPHENIX_Template[] = {
 /* 60 */	{ R"(S11\s*:\s*(.+) S12\s*:\s*(.+) S13\s*:\s*(.+))", 1, "pdbx_refine_tls", { "S[1][1]", "S[1][2]", "S[1][3]" } },
 /* 61 */	{ R"(S21\s*:\s*(.+) S22\s*:\s*(.+) S23\s*:\s*(.+))", 1, "pdbx_refine_tls", { "S[2][1]", "S[2][2]", "S[2][3]" } },
 /* 62 */	{ R"(S31\s*:\s*(.+) S32\s*:\s*(.+) S33\s*:\s*(.+))", 48 - 62, "pdbx_refine_tls", { "S[3][1]", "S[3][2]", "S[3][3]" } },
-/* 63 */	{ R"(NCS DETAILS)", 1 },
-/* 64 */	{ R"(NUMBER OF NCS GROUPS\s*:\s*(.+))", 1 },
+/* 63 */	{ R"(ANOMALOUS SCATTERER GROUPS DETAILS\.)", 1 },
+/* 64 */	{ R"(NUMBER OF ANOMALOUS SCATTERER GROUPS\s*:\s*\d+)", 1 },
+/* 65 */	{ R"(ANOMALOUS SCATTERER GROUP\s*:\s*\d+)", 1 },
+/* 66 */	{ R"(SELECTION: .+)", 1 },
+/* 67 */	{ R"(fp\s*:\s*.+)", 1 },
+/* 68 */	{ R"(fdp\s*:\s*.+)", 63 - 68 }, 
+/* 69 */	{ R"(NCS DETAILS)", 1 },
+/* 70 */	{ R"(NUMBER OF NCS GROUPS\s*:\s*(.+))", 1 },
 };
 
 class PHENIX_Remark3Parser : public Remark3Parser
