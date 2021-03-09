@@ -3368,7 +3368,7 @@ void WriteConnectivity(std::ostream& pdbFile, cif::Datablock& db)
 			% sym2);
 		
 		if (not Length.empty())
-			pdbFile << boost::format("%5.2f") % stod(Length);
+			pdbFile << boost::format(" %5.2f") % stod(Length);
 			
 		pdbFile << std::endl;
 	}
