@@ -4,7 +4,10 @@
 
 #include "cif++/Symmetry.hpp"
 
-const mmcif::Spacegroup kSpaceGroups[] =
+namespace mmcif
+{
+
+const Spacegroup kSpaceGroups[] =
 {
 	{ ""                    , "P 2 1 1"                       , " P 2y (y,z,x)"                           , 10005 },
 	{ ""                    , "P 21 1 1"                      , " P 2yb (y,z,x)"                          , 10008 },
@@ -629,9 +632,9 @@ const mmcif::Spacegroup kSpaceGroups[] =
 
 };
 
-const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(mmcif::Spacegroup);
+const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(Spacegroup);
 
-const mmcif::SymopDataBlock kSymopNrTable[] = {
+const SymopDataBlock kSymopNrTable[] = {
 
     // P 1
     {   1,   1, {  1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, } },
@@ -8651,6 +8654,7 @@ const mmcif::SymopDataBlock kSymopNrTable[] = {
     { 10528, 192, {  0, 0, 1, 0,-1, 0,-1, 0, 0, 1, 2, 2, 6, 3, 4, } },
 };
 
-const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(mmcif::SymopDataBlock);
+const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
 
+} // namespace mmcif
 

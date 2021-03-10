@@ -40,6 +40,8 @@
 
 #if _MSC_VER
 constexpr inline bool isatty(int) { return false; }
+#else
+#include <unistd.h>
 #endif
 
 namespace cif

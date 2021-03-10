@@ -1353,11 +1353,6 @@ void DSSPImpl::calculateSurface()
 
 // --------------------------------------------------------------------
 
-DSSP::ResidueInfo::ResidueInfo(Res* res)
-	: mImpl(res)
-{
-}
-
 const Monomer& DSSP::ResidueInfo::residue() const
 {
 	return mImpl->mM;
@@ -1431,8 +1426,8 @@ std::tuple<DSSP::ResidueInfo,double> DSSP::ResidueInfo::donor(int i) const
 
 // --------------------------------------------------------------------
 
-DSSP::iterator::iterator(res_iter cur)
-	: mCurrent(&*cur)
+DSSP::iterator::iterator(Res* res)
+	: mCurrent(res)
 {
 }
 
@@ -1475,12 +1470,20 @@ DSSP::~DSSP()
 
 DSSP::iterator DSSP::begin() const
 {
-	return iterator(mImpl->mResidues.begin());
+	return iterator(mImpl->mResidues.empty() ? nullptr : mImpl->mResidues.data());
 }
 
 DSSP::iterator DSSP::end() const
 {
-	return iterator(mImpl->mResidues.end());
+	// careful now, MSVC is picky when it comes to dereferencing iterators that are at the end.
+	Res* res = nullptr;
+	if (not mImpl->mResidues.empty())
+	{
+		res = mImpl->mResidues.data();
+		res += mImpl->mResidues.size();
+	}
+
+	return iterator(res);
 }
 
 SecondaryStructureType DSSP::operator()(const std::string& inAsymID, int inSeqID) const

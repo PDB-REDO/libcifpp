@@ -31,10 +31,11 @@
 #include <fstream>
 #include <regex>
 #include <map>
+#include <filesystem>
 
 #include <cstdlib>
 
-using namespace std;
+namespace fs = std::filesystem;
 
 std::regex kNameRx(R"(^(\d+) +(\d+) +(\d+) +(\S+) +(\S+) +(\S+) +'([^']+)'( +'([^']+)')?(?: +!.+)?$)");
 
@@ -43,7 +44,7 @@ class SymopParser
   public:
 	SymopParser() {}
 
-	array<int,15> parse(const string& s)
+	std::array<int,15> parse(const std::string& s)
 	{
 		m_p = s.begin();
 		m_e = s.end();
@@ -56,7 +57,7 @@ class SymopParser
 		parsepart(2);
 
 		if (m_lookahead != 0 or m_p != m_e)
-			throw runtime_error("symmetry expression contains more data than expected");
+			throw std::runtime_error("symmetry expression contains more data than expected");
 
 		return {
 			m_rot[0][0], m_rot[0][1], m_rot[0][2], 
@@ -72,7 +73,7 @@ class SymopParser
 
 	enum Token : int { Eof = 0, Number = 256, XYZ };
 
-	string to_string(Token t)
+	std::string to_string(Token t)
 	{
 		switch (t)
 		{
@@ -81,7 +82,7 @@ class SymopParser
 			case XYZ:		return "'x', 'y' or 'z'";
 			default:
 				if (isprint(t))
-					return string({'\'', static_cast<char>(t), '\''});
+					return std::string({'\'', static_cast<char>(t), '\''});
 				return "invalid character " + std::to_string(static_cast<int>(t));
 		}
 	}
@@ -134,7 +135,7 @@ class SymopParser
 	void match(Token token)
 	{
 		if (m_lookahead != token)
-			throw runtime_error("Unexpected character " + to_string(m_lookahead) + " expected " + to_string(token));
+			throw std::runtime_error("Unexpected character " + to_string(m_lookahead) + " expected " + to_string(token));
 		
 		m_lookahead = next_token();
 	}
@@ -169,8 +170,8 @@ class SymopParser
 	Token m_lookahead;
 	int m_nr;
 
-	string m_s;
-	string::const_iterator m_p, m_e;
+	std::string m_s;
+	std::string::const_iterator m_p, m_e;
 
 	int m_rot[3][3] = {};
 	int m_trn[3][2] = {};
@@ -178,54 +179,59 @@ class SymopParser
 
 int main(int argc, char* const argv[])
 {
+	using namespace std::literals;
+
+	fs::path tmpFile;
+
 	try
 	{
 		if (argc != 2)
 			throw std::runtime_error("Usage: symom-map-generator <outputfile>");
 
-		std::ofstream out(argv[1]);
+		tmpFile = argv[1] + ".tmp"s;
+		std::ofstream out(tmpFile);
 		if (not out.is_open())
 			throw std::runtime_error("Failed to open output file");
 
 		const char* CLIBD = getenv("CLIBD");
 		
 		if (CLIBD == nullptr)
-			throw runtime_error("CCP4 not sourced");
+			throw std::runtime_error("CCP4 not sourced");
 
 		// --------------------------------------------------------------------
 
 		// store symop data here
-		vector<tuple<int,int,array<int,15>>> data;
+		std::vector<std::tuple<int,int,std::array<int,15>>> data;
 
 		// -----------------------------------------------------------------------
 		
 		struct SymInfoBlock
 		{
 			int nr;
-			string xHM;
-			string Hall;
-			string old[2];
+			std::string xHM;
+			std::string Hall;
+			std::string old[2];
 		};
 
-		map<int,SymInfoBlock> symInfo;
+		std::map<int,SymInfoBlock> symInfo;
 		int symopnr, mysymnr = 10000;
 
-		ifstream file(CLIBD + "/syminfo.lib"s);
+		std::ifstream file(CLIBD + "/syminfo.lib"s);
 		if (not file.is_open())
-			throw runtime_error("Could not open syminfo.lib file");
+			throw std::runtime_error("Could not open syminfo.lib file");
 
 		enum class State { skip, spacegroup } state = State::skip;
 
-		string line;
-		string Hall;
-		vector<string> old;
+		std::string line;
+		std::string Hall;
+		std::vector<std::string> old;
 
-		const regex rx(R"(^symbol +(Hall|xHM|old) +'(.+?)'(?: +'(.+?)')?$)"),
+		const std::regex rx(R"(^symbol +(Hall|xHM|old) +'(.+?)'(?: +'(.+?)')?$)"),
 			rx2(R"(symbol ccp4 (\d+))");;
 
 		SymInfoBlock cur = {};
 
-		std::vector<array<int,15>> symops, cenops;
+		std::vector<std::array<int,15>> symops, cenops;
 
 		while (getline(file, line))
 		{
@@ -243,8 +249,8 @@ int main(int argc, char* const argv[])
 				
 				case State::spacegroup:
 				{
-					smatch m;
-					if (regex_match(line, m, rx))
+					std::smatch m;
+					if (std::regex_match(line, m, rx))
 					{
 						if (m[1] == "old")
 						{
@@ -310,11 +316,14 @@ int main(int argc, char* const argv[])
 
 #include "cif++/Symmetry.hpp"
 
+namespace mmcif
+{
+
 const Spacegroup kSpaceGroups[] =
 {
 )";
 
-		vector<tuple<string,int,string,string>> spacegroups;
+		std::vector<std::tuple<std::string,int,std::string,std::string>> spacegroups;
 
 		for (auto& [nr, info]: symInfo)
 		{
@@ -327,18 +336,18 @@ const Spacegroup kSpaceGroups[] =
 
 		for (auto [old, nr, xHM, Hall]: spacegroups)
 		{
-			old = '"' + old + '"' + string(20 - old.length(), ' ');
-			xHM = '"' + xHM + '"' + string(30 - xHM.length(), ' ');
+			old = '"' + old + '"' + std::string(20 - old.length(), ' ');
+			xHM = '"' + xHM + '"' + std::string(30 - xHM.length(), ' ');
 
-			for (string::size_type p = Hall.length(); p > 0; --p)
+			for (std::string::size_type p = Hall.length(); p > 0; --p)
 			{
 				if (Hall[p - 1] == '"')
 					Hall.insert(p - 1, "\\", 1);
 			}
 
-			Hall = '"' + Hall + '"' + string(40 - Hall.length(), ' ');
+			Hall = '"' + Hall + '"' + std::string(40 - Hall.length(), ' ');
 
-			out << "\t{ " << old << ", " << xHM << ", " << Hall << ", " << nr << " }," << endl;
+			out << "\t{ " << old << ", " << xHM << ", " << Hall << ", " << nr << " }," << std::endl;
 		}
 
 out << R"(
@@ -347,36 +356,40 @@ out << R"(
 const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(Spacegroup);
 
 const SymopDataBlock kSymopNrTable[] = {
-)" << endl;
+)" << std::endl;
 
 		int spacegroupNr = 0;
 		for (auto& sd: data)
 		{
 			int sp, o;
-			tie(sp, o, ignore) = sd;
+			std::tie(sp, o, std::ignore) = sd;
 
 			if (sp > spacegroupNr)
-				out << "    // " << symInfo[sp].xHM << endl;
+				out << "    // " << symInfo[sp].xHM << std::endl;
 			spacegroupNr = sp;
 
-			out << "    { " << setw(3) << sp
-					<< ", " << setw(3) << o << ", { ";
+			out << "    { " << std::setw(3) << sp
+					<< ", " << std::setw(3) << o << ", { ";
 			for (auto& i: std::get<2>(sd))
-				out << setw(2) << i << ',';
-			out << " } }," << endl;
+				out << std::setw(2) << i << ',';
+			out << " } }," << std::endl;
 		}
 
 		out << R"(};
 
 const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
 
-)" << endl;
+} // namespace mmcif
+)" << std::endl;
+
+		out.close();
+		fs::rename(tmpFile, argv[1]);
 	}
-	catch (const exception& ex)
+	catch (const std::exception& ex)
 	{
-		cerr << endl
-			 << "Program terminated due to error:" << endl
-			 << ex.what() << endl;
+		std::cerr << std::endl
+			 << "Program terminated due to error:" << std::endl
+			 << ex.what() << std::endl;
 	}
 	
 	return 0;

@@ -1474,7 +1474,7 @@ class conditional_iterator_proxy
 
 	conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond);
 
-	template<typename = std::enable_if_t<sizeof...(Ts) != 0>>
+	template<std::size_t TN = N, std::enable_if_t<TN != 0, bool> = true>
 	conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond, char const* const columns[N]);
 
 	conditional_iterator_proxy(conditional_iterator_proxy&& p);
@@ -2053,7 +2053,7 @@ conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category&
 }
 
 template<typename RowType, typename... Ts>
-template<typename T>
+template<std::size_t TN, std::enable_if_t<TN != 0, bool>>
 conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond, const char* const columns[N])
 	: mCat(&cat)
 	, mCondition(std::move(cond))

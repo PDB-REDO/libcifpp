@@ -34,6 +34,8 @@
 #include "cif++/Symmetry.hpp"
 #include "cif++/CifUtils.hpp"
 
+#include "SymOpTable_data.cpp"
+
 namespace mmcif
 {
 
@@ -41,8 +43,6 @@ namespace mmcif
 // Unfortunately, clipper has a different numbering scheme than PDB
 // for rotation numbers. So we created a table to map those.
 // Perhaps a bit over the top, but hey....
-
-#include "SymOpTable_data.cpp"
 
 // --------------------------------------------------------------------
 

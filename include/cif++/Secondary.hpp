@@ -130,7 +130,7 @@ class DSSP
 	DSSP_Statistics GetStatistics() const;
 
 	class iterator;
-	using res_iter = typename std::vector<Res>::iterator;
+	using res_iterator = typename std::vector<Res>::iterator;
 
 	class ResidueInfo
 	{
@@ -169,7 +169,7 @@ class DSSP
 		std::tuple<ResidueInfo,double> donor(int i) const;
 
 	  private:
-		ResidueInfo(Res* res);
+		ResidueInfo(Res* res) : mImpl(res) {}
 
 		Res* mImpl;
 	};
@@ -184,7 +184,7 @@ class DSSP
 		using reference = value_type&;
 
 		iterator(const iterator& i);
-		iterator(res_iter cur);
+		iterator(Res* res);
 		iterator& operator=(const iterator& i);
 
 		reference operator*()		{ return mCurrent; }
