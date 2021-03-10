@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if __has_include("Config.hpp")
 #include "Config.hpp"
+#endif
 
 #include <map>
 #include <numeric>
@@ -105,6 +107,7 @@ class IsomerDB
 
 IsomerDB::IsomerDB()
 {
+#if defined(CACHE_DIR)
 	fs::path isomersFile = fs::path(CACHE_DIR) / "isomers.txt";
 
 	if (not fs::exists(isomersFile))
@@ -124,6 +127,7 @@ IsomerDB::IsomerDB()
 				mData.isomers.emplace_back(std::move(compounds));
 		}
 	}
+#endif
 }
 
 IsomerDB& IsomerDB::instance()
@@ -1189,7 +1193,7 @@ Compound* CompoundFactoryImpl::create(std::string id)
 					mMissing.insert(id);
 				else
 				{
-					mCompounds.push_back(new Compound(resFile, id, name, group));
+					mCompounds.push_back(new Compound(resFile.string(), id, name, group));
 					result = mCompounds.back();
 				}
 			}				

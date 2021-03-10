@@ -3110,6 +3110,7 @@ void File::loadDictionary(const char* dict)
 		else
 			p = p.parent_path() / (p.filename().string() + ".dic.gz");
 
+#if defined(CACHE_DIR) and defined(DATA_DIR)
 		if (not fs::exists(p))
 		{
 			for (const char* dir: { CACHE_DIR, DATA_DIR })
@@ -3122,6 +3123,7 @@ void File::loadDictionary(const char* dict)
 				}
 			}
 		}
+#endif
 
 		if (fs::exists(p))
 		{

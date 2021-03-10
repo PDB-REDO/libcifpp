@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if __has_include("Config.hpp")
 #include "Config.hpp"
+#endif
 
 #include <tuple>
 #include <iostream>
@@ -69,7 +71,11 @@ std::string get_version_nr()
 		rxVersionNr1(R"(build-(\d+)-g[0-9a-f]{7}(-dirty)?)"),
 		rxVersionNr2(R"(libcifpp-version: (\d+\.\d+\.\d+))");
 
+#if __has_include("revision.hpp")
 #include "revision.hpp"
+#else
+const char* kRevision = "";
+#endif
 
 	struct membuf : public std::streambuf
 	{
@@ -459,6 +465,13 @@ std::vector<std::string> wordWrap(const std::string& text, unsigned int width)
 // --------------------------------------------------------------------
 
 #ifdef _MSC_VER
+}
+#include <Windows.h>
+#include <wincon.h>
+#include <libloaderapi.h>
+namespace cif
+{
+
 uint32_t get_terminal_width()
 {
 	return TERM_WIDTH;
@@ -471,9 +484,9 @@ std::string GetExecutablePath()
 
 	DWORD n = ::GetModuleFileNameW(nullptr, buffer, sizeof(buffer) / sizeof(WCHAR));
 	if (n == 0)
-		throw runtime_error("could not get exe path");
+		throw std::runtime_error("could not get exe path");
 
-	wstring ws(buffer);
+	std::wstring ws(buffer);
 
 	return std::string(ws.begin(), ws.end());
 }
@@ -1172,6 +1185,7 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 
 	fs::path p = name;
 
+#if defined(CACHE_DIR) and defined(DATA_DIR)
 	if (not fs::exists(p))
 	{
 		for (const char* dir: { CACHE_DIR, DATA_DIR })
@@ -1184,6 +1198,7 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 			}
 		}
 	}
+#endif
 
 	if (fs::exists(p))
 	{

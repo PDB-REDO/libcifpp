@@ -34,7 +34,13 @@
 #include <iostream>
 #include <filesystem>
 
-#include <unistd.h>
+#ifndef STDOUT_FILENO
+#define STDOUT_FILENO 1
+#endif
+
+#if _MSC_VER
+constexpr inline bool isatty(int) { return false; }
+#endif
 
 namespace cif
 {
@@ -184,8 +190,8 @@ class Progress
 	void		message(const std::string& inMessage);
 
   private:
-				Progress(const Progress&);
-	Progress&	operator=(const Progress&);
+				Progress(const Progress&) = delete;
+	Progress& operator=(const Progress&) = delete;
 
 	struct ProgressImpl*	mImpl;
 };

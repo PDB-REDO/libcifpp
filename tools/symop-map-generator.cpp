@@ -361,7 +361,7 @@ const SymopDataBlock kSymopNrTable[] = {
 
 			out << "    { " << setw(3) << sp
 					<< ", " << setw(3) << o << ", { ";
-			for (auto i: get<2>(sd))
+			for (auto& i: std::get<2>(sd))
 				out << setw(2) << i << ',';
 			out << " } }," << endl;
 		}

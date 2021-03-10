@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if __has_include("Config.hpp")
 #include "Config.hpp"
+#endif
 
 #include <map>
 #include <set>
@@ -1094,26 +1096,21 @@ std::vector<char> PDBFileParser::altLocsForAtom(char inChainID, int inResSeq, ch
 
 void PDBFileParser::MapChainID2AsymIDS(char chainID, std::vector<std::string>& asymIds)
 {
-	struct l : std::binary_function<std::string,std::string,bool>
+	for (const auto& [key, value]: mChainSeq2AsymSeq)
 	{
-		bool operator()(const std::string& a, const std::string& b) const
+		if (std::get<0>(key) == chainID)
+			asymIds.push_back(std::get<0>(value));
+	}
+
+	std::sort(asymIds.begin(), asymIds.end(), [](const std::string& a, const std::string& b)
 		{
 			int d = a.length() - b.length();
 			if (d == 0)
 				d = a.compare(b);
 			return d < 0;
-		}
-	};
-	
-	std::set<std::string,l> asym(asymIds.begin(), asymIds.end());
+		});
 
-	for (auto& m: mChainSeq2AsymSeq)
-	{
-		if (std::get<0>(m.first) == chainID)
-			asym.insert(std::get<0>(m.second));
-	}
-	
-	asymIds.assign(asym.begin(), asym.end());
+	asymIds.erase(std::unique(asymIds.begin(), asymIds.end()), asymIds.end());
 }
 
 // --------------------------------------------------------------------

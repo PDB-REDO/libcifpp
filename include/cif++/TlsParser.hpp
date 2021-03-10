@@ -47,7 +47,7 @@ struct TLSResidue;
 struct TLSSelection
 {
 	virtual ~TLSSelection() {}
-	virtual void CollectResidues(cif::Datablock& db, std::vector<TLSResidue>& residues, int indentLevel = 0) const = 0;
+	virtual void CollectResidues(cif::Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel = 0) const = 0;
 	std::vector<std::tuple<std::string,int,int>> GetRanges(cif::Datablock& db, bool pdbNamespace) const;
 };
 

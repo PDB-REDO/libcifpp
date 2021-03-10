@@ -35,6 +35,7 @@
 #include <list>
 #include <array>
 #include <optional>
+#include <functional>
 
 #include "cif++/CifUtils.hpp"
 
@@ -148,7 +149,7 @@ class Item
 		: mName(name), mValue(value) {}
 
 	Item(const Item& rhs) : mName(rhs.mName), mValue(rhs.mValue) {}
-	Item(Item&& rhs) : mName(std::move(rhs.mName)), mValue(std::move(rhs.mValue)) {}
+	Item(Item&& rhs) noexcept : mName(std::move(rhs.mName)), mValue(std::move(rhs.mValue)) {}
 
 	Item& operator=(const Item& rhs)
 	{
@@ -161,7 +162,7 @@ class Item
 		return *this;
 	}
 	
-	Item& operator=(Item&& rhs)
+	Item& operator=(Item&& rhs) noexcept
 	{
 		if (this != &rhs)
 		{
@@ -612,12 +613,14 @@ class Row
 
 	void next();	///< make this row point to the next ItemRow
 
-	struct const_iterator : public std::iterator<std::forward_iterator_tag, const Item>
+	struct const_iterator
 	{
-		typedef std::iterator<std::forward_iterator_tag, Item>	baseType;
-		typedef typename baseType::pointer						pointer;
-		typedef typename baseType::reference					reference;
-		
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = const Item;
+		using difference_type = std::ptrdiff_t;
+		using pointer = value_type*;
+		using reference = value_type&;
+
 		const_iterator(ItemRow* data, ItemValue* ptr);
 		
 		reference operator*()								{ return mCurrent; }
@@ -771,7 +774,7 @@ class Condition
 
 	Condition(const Condition&) = delete;
 
-	Condition(Condition&& rhs)
+	Condition(Condition&& rhs) noexcept
 		: mImpl(nullptr)
 	{
 		std::swap(mImpl, rhs.mImpl);
@@ -779,7 +782,7 @@ class Condition
 
 	Condition& operator=(const Condition&) = delete;
 
-	Condition& operator=(Condition&& rhs)
+	Condition& operator=(Condition&& rhs) noexcept
 	{
 		std::swap(mImpl, rhs.mImpl);
 		return *this;
@@ -855,7 +858,7 @@ struct KeyIsEmptyConditionImpl : public ConditionImpl
 	}
 
 	std::string mItemTag;
-	size_t mItemIx;
+	size_t mItemIx = 0;
 };
 
 struct KeyCompareConditionImpl : public ConditionImpl
@@ -877,7 +880,7 @@ struct KeyCompareConditionImpl : public ConditionImpl
 	}
 
 	std::string mItemTag;
-	size_t mItemIx;
+	size_t mItemIx = 0;
 	bool mCaseInsensitive = false;
 	std::function<bool(const Category&, const Row&, bool)> mComp;
 	std::string mStr;
@@ -886,7 +889,7 @@ struct KeyCompareConditionImpl : public ConditionImpl
 struct KeyMatchesConditionImpl : public ConditionImpl
 {
 	KeyMatchesConditionImpl(const std::string& ItemTag, const std::regex& rx)
-		: mItemTag(ItemTag), mRx(rx) {}
+		: mItemTag(ItemTag), mItemIx(0), mRx(rx) {}
 	
 	virtual void prepare(const Category& c);
 	
@@ -1469,7 +1472,9 @@ class conditional_iterator_proxy
 	using iterator = conditional_iterator_impl;
 	using reference = typename iterator::reference;
 
-	// conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond);
+	conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond);
+
+	template<typename = std::enable_if_t<sizeof...(Ts) != 0>>
 	conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond, char const* const columns[N]);
 
 	conditional_iterator_proxy(conditional_iterator_proxy&& p);
@@ -1637,7 +1642,8 @@ class RowSet
 
 	iterator insert(iterator pos, ItemRow* item)
 	{
-		return iterator(mItems.insert(pos.current(), item), mItems.end());
+		auto p = mItems.insert(pos.current(), item);
+		return iterator(p, mItems.end());
 	}
 
 	void make_unique()
@@ -1706,7 +1712,7 @@ class Category
 
 	conditional_iterator_proxy<Row> find(const_iterator pos, Condition&& cond)
 	{
-		return { *this, pos, std::forward<Condition>(cond), {} };
+		return { *this, pos, std::forward<Condition>(cond) };
 	}
 
 	template<typename... Ts, size_t N>
@@ -1904,12 +1910,14 @@ class File
 	Datablock* get(const std::string& name) const;
 	Datablock& operator[](const std::string& name);
 
-	struct iterator : public std::iterator<std::forward_iterator_tag, Datablock>
+	struct iterator 
 	{
-		typedef std::iterator<std::forward_iterator_tag, Datablock>	baseType;
-		typedef typename baseType::pointer							pointer;
-		typedef typename baseType::reference						reference;
-		
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = Datablock;
+		using difference_type = std::ptrdiff_t;
+		using pointer = value_type*;
+		using reference = value_type&;
+
 		iterator(Datablock* db) : mCurrent(db) {}
 		
 		reference operator*()						{ return *mCurrent; }
@@ -2032,8 +2040,22 @@ conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(condition
 }
 
 template<typename RowType, typename... Ts>
+conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond)
+	: mCat(&cat)
+	, mCondition(std::move(cond))
+	, mCBegin(pos)
+	, mCEnd(cat.end())
+{
+	mCondition.prepare(cat);
+
+	while (mCBegin != mCEnd and not mCondition(*mCat, mCBegin.row()))
+		++mCBegin;
+}
+
+template<typename RowType, typename... Ts>
+template<typename T>
 conditional_iterator_proxy<RowType, Ts...>::conditional_iterator_proxy(Category& cat, row_iterator pos, Condition&& cond, const char* const columns[N])
-	:  mCat(&cat)
+	: mCat(&cat)
 	, mCondition(std::move(cond))
 	, mCBegin(pos)
 	, mCEnd(cat.end())

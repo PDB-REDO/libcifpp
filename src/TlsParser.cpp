@@ -24,7 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if __has_include("Config.hpp")
 #include "Config.hpp"
+#endif
 
 #include <boost/algorithm/string.hpp>
 
@@ -65,7 +67,7 @@ struct TLSResidue
 	}
 };
 
-void DumpSelection(const std::vector<TLSResidue>& selected, int indentLevel)
+void DumpSelection(const std::vector<TLSResidue>& selected, std::size_t indentLevel)
 {
 	std::string indent(indentLevel * 2, ' ');
 	
@@ -243,7 +245,7 @@ struct TLSSelectionNot : public TLSSelection
 	TLSSelectionNot(TLSSelectionPtr selection)
 		: selection(selection.release()) {}
 	
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		selection->CollectResidues(db, residues, indentLevel + 1);
 		
@@ -264,7 +266,7 @@ struct TLSSelectionAll : public TLSSelection
 {
 	TLSSelectionAll() {}
 	
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		for (auto& r: residues)
 			r.selected = true;
@@ -282,7 +284,7 @@ struct TLSSelectionChain : public TLSSelectionAll
 	TLSSelectionChain(const std::string& chainID)
 		: m_chain(chainID) {}
 	
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		bool allChains = m_chain == "*";
 		
@@ -304,7 +306,7 @@ struct TLSSelectionResID : public TLSSelectionAll
 	TLSSelectionResID(int seqNr, char iCode)
 		: m_seq_nr(seqNr), m_icode(iCode) {}
 	
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		for (auto& r: residues)
 			r.selected = r.seqNr == m_seq_nr and r.iCode == m_icode;
@@ -325,7 +327,7 @@ struct TLSSelectionRangeSeq : public TLSSelectionAll
 	TLSSelectionRangeSeq(int first, int last)
 		: m_first(first), m_last(last) {}
 	
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		for (auto& r: residues)
 		{
@@ -348,7 +350,7 @@ struct TLSSelectionRangeID : public TLSSelectionAll
 	TLSSelectionRangeID(int first, int last, char icodeFirst = 0, char icodeLast = 0)
 		: m_first(first), m_last(last), m_icode_first(icodeFirst), m_icode_last(icodeLast) {}
 	
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		// need to do this per chain
 		std::set<std::string> chains;
@@ -395,7 +397,7 @@ struct TLSSelectionUnion : public TLSSelection
 	TLSSelectionUnion(TLSSelectionPtr& lhs, TLSSelectionPtr&& rhs)
 		: lhs(lhs.release()), rhs(rhs.release()) {}
 	
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		auto a = residues;
 		for_each(a.begin(), a.end(), [](auto& r) { r.selected = false; });
@@ -428,7 +430,7 @@ struct TLSSelectionIntersection : public TLSSelection
 	TLSSelectionIntersection(TLSSelectionPtr& lhs, TLSSelectionPtr&& rhs)
 		: lhs(lhs.release()), rhs(rhs.release()) {}
 	
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		auto a = residues;
 		for_each(a.begin(), a.end(), [](auto& r) { r.selected = false; });
@@ -459,7 +461,7 @@ struct TLSSelectionByName : public TLSSelectionAll
 	TLSSelectionByName(const std::string& resname)
 		: m_name(resname) {}
 
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		for (auto& r: residues)
 			r.selected = r.name == m_name;
@@ -480,7 +482,7 @@ struct TLSSelectionByElement : public TLSSelectionAll
 	TLSSelectionByElement(const std::string& element)
 		: m_element(element) {}
 
-	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, int indentLevel) const
+	virtual void CollectResidues(Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel) const
 	{
 		// rationale... We want to select residues only. So we select
 		// residues that have just a single atom of type m_element.
@@ -518,7 +520,7 @@ class TLSSelectionParserImpl
 
 	std::string				m_selection;
 	std::string::iterator	m_p, m_end;
-	int					m_lookahead;
+	int						m_lookahead = 0;
 	std::string				m_token;
 };
 
