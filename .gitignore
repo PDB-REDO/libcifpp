@@ -19,3 +19,7 @@ src/Config.hpp
 aclocal.m4
 version-info-*.txt
 tools/update-dictionary-script
+msvc/.vs/
+msvc/**/Debug
+msvc/**/x64
+.vs/
