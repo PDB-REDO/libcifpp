@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 	
 	cif::File f;
 	ReadPDBFile(is, f);
-	// f.write(std::cout);
+	f.save(std::cout);
 	
 	return 0;	
 }

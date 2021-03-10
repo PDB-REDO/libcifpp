@@ -5797,7 +5797,7 @@ void PDBFileParser::Parse(std::istream& is, cif::File& result)
 				const auto& [x1, y1, z1] = a1.get<float,float,float>({"cartn_x", "cartn_y", "cartn_z"});
 				const auto& [x2, y2, z2] = a2.get<float,float,float>({"cartn_x", "cartn_y", "cartn_z"});
 
-				if (symm1 == "1_555" and symm2 == "1_555")
+				if ((symm1.empty() or symm1 == "1_555") and (symm2.empty() or symm2 == "1_555"))
 					distance = mmcif::Distance(mmcif::Point{x1, y1, z1}, mmcif::Point{x2, y2, z2});
 				else if (cif::VERBOSE)
 					std::cerr << "Cannot calculate distance for link since one of the atoms is in another dimension" << std::endl;
@@ -5805,7 +5805,7 @@ void PDBFileParser::Parse(std::istream& is, cif::File& result)
 			catch (std::exception& ex)
 			{
 				if (cif::VERBOSE)
-					std::cerr << "Error finding atom: " << ex.what() << std::endl;
+					std::cerr << "Error finding atom for LINK distance calculation: " << ex.what() << std::endl;
 			}
 
 			r["pdbx_dist_value"] = distance;
