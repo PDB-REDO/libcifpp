@@ -686,7 +686,7 @@ class Row
 	}
 
 	template<typename... Ts, size_t N>
-	std::tuple<Ts...> get(char const * const (&columns)[N])
+	std::tuple<Ts...> get(char const * const (&columns)[N]) const
 	{
 		static_assert(sizeof...(Ts) == N, "Number of columns should be equal to number of types to return");
 
@@ -1087,7 +1087,7 @@ template<typename T>
 Condition operator==(const Key& key, const T& v)
 {
 	std::ostringstream s;
-	s << "== " << v;
+	s << " == " << v;
 
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) == 0; }, s.str()));
@@ -1123,7 +1123,7 @@ template<typename T>
 Condition operator>(const Key& key, const T& v)
 {
 	std::ostringstream s;
-	s << ">" << v;
+	s << " > " << v;
 
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) > 0; }, s.str()));
@@ -1133,7 +1133,7 @@ template<typename T>
 Condition operator>=(const Key& key, const T& v)
 {
 	std::ostringstream s;
-	s << ">=" << v;
+	s << " >= " << v;
 
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) >= 0; }, s.str()));
@@ -1143,7 +1143,7 @@ template<typename T>
 Condition operator<(const Key& key, const T& v)
 {
 	std::ostringstream s;
-	s << "<" << v;
+	s << " < " << v;
 
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) < 0; }, s.str()));
@@ -1153,7 +1153,7 @@ template<typename T>
 Condition operator<=(const Key& key, const T& v)
 {
 	std::ostringstream s;
-	s << "<=" << v;
+	s << " <= " << v;
 
 	return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, v](const Category& c, const Row& r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) <= 0; }, s.str()));
@@ -1824,6 +1824,12 @@ class Category
 	RowSet getChildren(Row r, Category& childCat);
 	RowSet getChildren(Row r, const char* childCat);
 
+	RowSet getParents(Row r, Category& parentCat);
+	RowSet getParents(Row r, const char* parentCat);
+
+	RowSet getLinked(Row r, Category& cat);
+	RowSet getLinked(Row r, const char* cat);
+
 	bool isValid();
 	void validateLinks() const;
 
@@ -1904,7 +1910,13 @@ class File
 	bool isValid();
 	void validateLinks() const;
 	
-	Datablock& firstDatablock()			{ return *mHead; }
+	Datablock& firstDatablock()
+	{
+		if (mHead == nullptr)
+			throw std::runtime_error("No datablocks in file");
+		return *mHead;
+	}
+
 	void append(Datablock* e);
 	
 	Datablock* get(const std::string& name) const;

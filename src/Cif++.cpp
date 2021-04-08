@@ -1904,6 +1904,55 @@ RowSet Category::getChildren(Row r, Category& childCat)
 	return result;
 }
 
+RowSet Category::getParents(Row r, const char* parentCat)
+{
+	return getParents(r, mDb[parentCat]);
+}
+
+RowSet Category::getParents(Row r, Category& parentCat)
+{
+	assert(mValidator != nullptr);
+	assert(mCatValidator != nullptr);
+
+	RowSet result(parentCat);
+
+	for (auto& link: mValidator->getLinksForChild(mName))
+	{
+		if (link->mParentCategory != parentCat.mName)
+			continue;
+		
+		Condition cond;
+		
+		for (size_t ix = 0; ix < link->mChildKeys.size(); ++ix)
+		{
+			const char* value = r[link->mChildKeys[ix]].c_str();
+			
+			cond = std::move(cond) && (Key(link->mParentKeys[ix]) == value);
+		}
+
+		auto parents = parentCat.find(std::move(cond));
+		result.insert(result.end(), parents.begin(), parents.end());
+	}
+
+	// remove duplicates
+	result.make_unique();
+
+	return result;
+}
+
+RowSet Category::getLinked(Row r, const char* cat)
+{
+	return getLinked(r, mDb[cat]);
+}
+
+RowSet Category::getLinked(Row r, Category& cat)
+{
+	RowSet result = getChildren(r, cat);
+	if (result.empty())
+		result = getParents(r, cat);
+	return result;
+}
+
 bool Category::isValid()
 {
 	bool result = true;
@@ -2582,7 +2631,7 @@ void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 				}
 			}
 
-			if (cif::VERBOSE >= 2)
+			if (cif::VERBOSE > 2)
 			{
 				std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::endl
 						  << cond << std::endl;

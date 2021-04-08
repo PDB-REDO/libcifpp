@@ -340,6 +340,16 @@ double CosinusAngle(const PointF<F>& p1, const PointF<F>& p2, const PointF<F>& p
 	return result;
 }
 
+template<typename F>
+auto DistancePointToLine(const PointF<F> &l1, const PointF<F> &l2, const PointF<F> &p)
+{
+	auto line       = l2 - l1;
+    auto p_to_l1    = p - l1;
+    auto p_to_l2    = p - l2;
+    auto cross      = CrossProduct(p_to_l1, p_to_l2);
+    return cross.length() / line.length();
+}
+
 // --------------------------------------------------------------------
 // For e.g. simulated annealing, returns a new point that is moved in
 // a random direction with a distance randomly chosen from a normal
