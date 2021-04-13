@@ -457,7 +457,6 @@ class PDBFileParser
 		char					iCode;
 		int						numHetAtoms = 0;
 		std::string				text;
-		bool					sugar = false;
 		std::string				asymID;
 		std::vector<PDBRecord*>	atoms;
 		bool					processed = false;
@@ -467,14 +466,6 @@ class PDBFileParser
 		HET(const std::string& hetID, char chainID, int seqNum, char iCode, int numHetAtoms = 0, const std::string& text = {})
 			: hetID(hetID), chainID(chainID), seqNum(seqNum), iCode(iCode), numHetAtoms(numHetAtoms), text(text)
 		{
-			// just in case we don't have a CCP4 available
-			if (hetID == "MAN" or hetID == "BMA" or hetID == "NAG" or hetID == "NDG" or hetID == "FUC" or hetID == "FUL")
-				sugar = true;
-			else
-			{
-				auto compound = CompoundFactory::instance().create(hetID);
-				sugar = compound ? compound->isSugar() : false;
-			}
 		}
 
 	};
@@ -4374,33 +4365,38 @@ void PDBFileParser::ConstructEntities()
 			mMod2parent.count(cc) ? mMod2parent[cc] : cc
 		);
 		
-		std::string formula = mFormuls[cc];
-		if (formula.empty() and compound != nullptr)
-			formula = compound->formula();
-		else
+		std::string name;
+		std::string formula;
+		std::string type;
+		std::string nstd = ".";
+		std::string formulaWeight;
+		
+		if (compound != nullptr)
 		{
+			name = compound->name();
+			type = compound->type();
+			
+			if (iequals(type, "L-peptide linking") or iequals(type, "peptide linking"))
+				nstd = "y";
+			
+			formula = compound->formula();
+			formulaWeight = std::to_string(compound->formulaWeight());
+		}
+
+		if (name.empty())
+			name = mHetnams[cc];
+
+		if (type.empty())
+			type = "NON-POLYMER";
+
+		if (formula.empty())
+		{
+			formula = mFormuls[cc];
+
 			const std::regex rx(R"(\d+\((.+)\))");
 			std::smatch m;
 			if (std::regex_match(formula, m, rx))
 				formula = m[1].str();
-		}
-		
-		std::string name = mHetnams[cc];
-		if (name.empty() and compound != nullptr)
-			name = compound->name();
-
-		std::string type = "other";
-		std::string nstd = ".";
-		
-		if (compound != nullptr)
-		{
-			type = compound->type();
-			
-			if (type.empty())
-				type = "NON-POLYMER";
-
-			if (iequals(type, "L-peptide linking") or iequals(type, "peptide linking"))
-				nstd = "y";
 		}
 
 		if (modResSet.count(cc))
@@ -4410,6 +4406,7 @@ void PDBFileParser::ConstructEntities()
 			{ "id", cc },
 			{ "name", name },
 			{ "formula", formula },
+			{ "formula_weight", formulaWeight },
 			{ "mon_nstd_flag", nstd },
 			{ "type", type }
 		});

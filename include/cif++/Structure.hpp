@@ -141,9 +141,6 @@ class Atom
 	
 	// access data in compound for this atom
 
-	// the energy-type field
-	std::string energyType() const;
-	
 	// convenience routine
 	bool isBackBone() const
 	{
@@ -243,10 +240,6 @@ class Residue
 	
 	bool isWater() const					{ return mCompoundID == "HOH"; }
 
-	bool isSugar() const;
-	bool isPyranose() const;
-	bool isFuranose() const;
-	
 	const Structure& structure() const		{ return *mStructure; }
 
 	bool empty() const						{ return mStructure == nullptr; }

@@ -289,9 +289,10 @@ namespace detail
 		void swap(ItemReference& b);
 		
 		template<typename T = std::string>
-		T as() const
+		auto as() const
 		{
-			return item_value_as<T>::convert(*this);
+			using value_type = std::remove_cv_t<std::remove_reference_t<T>>;
+			return item_value_as<value_type>::convert(*this);
 		}
 
 		template<typename T>
@@ -337,11 +338,13 @@ namespace detail
 	template<typename T>
 	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_floating_point_v<T>>>
 	{
-		static T convert(const ItemReference& ref)
+		using value_type = std::remove_reference_t<std::remove_cv_t<T>>;
+
+		static value_type convert(const ItemReference& ref)
 		{
-			T result = {};
+			value_type result = {};
 			if (not ref.empty())
-				result = static_cast<T>(std::stod(ref.c_str()));
+				result = static_cast<value_type>(std::stod(ref.c_str()));
 			return result;
 		}
 
@@ -376,7 +379,7 @@ namespace detail
 	};
 
 	template<typename T>
-	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_unsigned_v<T>>>
+	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_unsigned_v<T> and not std::is_same_v<T, bool>>>
 	{
 		static T convert(const ItemReference& ref)
 		{
@@ -417,7 +420,7 @@ namespace detail
 	};
 
 	template<typename T>
-	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
+	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T> and not std::is_same_v<T, bool>>>
 	{
 		static T convert(const ItemReference& ref)
 		{
@@ -479,6 +482,25 @@ namespace detail
 				return 1;
 			else
 				return ref.compare(*value, icase);
+		}
+	};
+
+	template<typename T>
+	struct ItemReference::item_value_as<T, std::enable_if_t<std::is_same_v<T, bool>>>
+	{
+		static bool convert(const ItemReference& ref)
+		{
+			bool result = false;
+			if (not ref.empty())
+				result = iequals(ref.c_str(), "y");
+			return result;
+		}
+
+		static int compare(const ItemReference& ref, bool value, bool icase)
+		{
+			bool rv = convert(ref);
+			return value && rv ? 0
+				: (rv < value ? -1 : 1);
 		}
 	};
 

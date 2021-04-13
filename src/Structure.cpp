@@ -566,16 +566,6 @@ int Atom::charge() const
 	return property<int>("pdbx_formal_charge");
 }
 
-std::string Atom::energyType() const
-{
-	std::string result;
-	
-	if (impl() and impl()->mCompound)
-		result = impl()->mCompound->getAtomByID(impl()->mAtomID).typeEnergy;
-	
-	return result;
-}
-
 float Atom::uIso() const
 {
 	float result;
@@ -1011,21 +1001,6 @@ bool Residue::isEntity() const
 	auto& a2 = mAtoms;
 	
 	return a1.size() == a2.size();
-}
-
-bool Residue::isSugar() const
-{
-	return compound().isSugar();
-}
-
-bool Residue::isPyranose() const
-{
-	return cif::iequals(compound().group(), "pyranose");
-}
-
-bool Residue::isFuranose() const
-{
-	return cif::iequals(compound().group(), "furanose");
 }
 
 std::string Residue::authID() const
@@ -2101,7 +2076,7 @@ void Structure::insertCompound(const std::string& compoundID, bool isEntity)
 {
 	auto compound = Compound::create(compoundID);
 	if (compound == nullptr)
-		throw std::runtime_error("Trying to insert unknown compound " + compoundID + " (not found in CCP4 monomers lib)");
+		throw std::runtime_error("Trying to insert unknown compound " + compoundID + " (not found in CCD)");
 
 	cif::Datablock& db = *mFile.impl().mDb;
 	
@@ -2113,6 +2088,7 @@ void Structure::insertCompound(const std::string& compoundID, bool isEntity)
 			{ "id", compoundID },
 			{ "name", compound->name() },
 			{ "formula", compound->formula() },
+			{ "formula_weight", compound->formulaWeight() },
 			{ "type", compound->type() }
 		});
 	}
