@@ -82,6 +82,9 @@ AX_BOOST_IOSTREAMS
 AX_BOOST_DATE_TIME
 AX_BOOST_REGEX
 
+AX_IOSTREAMS_Z
+AX_IOSTREAMS_BZ2
+
 AC_CHECK_LIB([atomic], [atomic_flag_clear])
 
 dnl Set output variables for the various directories
