@@ -126,7 +126,7 @@ Compound::Compound(cif::Datablock &db)
 		CompoundAtom atom;
 		std::string typeSymbol;
 		cif::tie(atom.id, typeSymbol, atom.charge, atom.aromatic, atom.leavingAtom, atom.stereoConfig, atom.x, atom.y, atom.z) =
-			row.get("id", "type_symbol", "charge", "pdbx_aromatic_flag", "pdbx_leaving_atom_flag", "pdbx_stereo_config",
+			row.get("atom_id", "type_symbol", "charge", "pdbx_aromatic_flag", "pdbx_leaving_atom_flag", "pdbx_stereo_config",
 			"model_Cartn_x", "model_Cartn_y", "model_Cartn_z");
 		atom.typeSymbol = AtomTypeTraits(typeSymbol).type();
 		mAtoms.push_back(std::move(atom));

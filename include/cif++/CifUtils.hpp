@@ -202,6 +202,7 @@ class Progress
 // Resources
 
 std::unique_ptr<std::istream> loadResource(std::filesystem::path name);
+void addFileResource(const std::string &name, std::filesystem::path dataFile);
 
 }
 

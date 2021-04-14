@@ -1184,14 +1184,28 @@ namespace cif
 
 // --------------------------------------------------------------------
 
+std::map<std::string,std::filesystem::path> gLocalResources;
+
+void addFileResource(const std::string &name, std::filesystem::path dataFile)
+{
+	gLocalResources[name] = dataFile;
+}
+
 std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 {
 	std::unique_ptr<std::istream> result;
 
 	fs::path p = name;
 
+	if (gLocalResources.count(name.string()))
+	{
+		std::unique_ptr<std::ifstream> file(new std::ifstream(gLocalResources[name.string()], std::ios::binary));
+		if (file->is_open())
+			result.reset(file.release());
+	}
+
 #if defined(CACHE_DIR) and defined(DATA_DIR)
-	if (not fs::exists(p))
+	if (not result and not fs::exists(p))
 	{
 		for (const char *dir : {CACHE_DIR, DATA_DIR})
 		{
@@ -1205,7 +1219,7 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 	}
 #endif
 
-	if (fs::exists(p))
+	if (not result and fs::exists(p))
 	{
 		std::unique_ptr<std::ifstream> file(new std::ifstream(p, std::ios::binary));
 		if (file->is_open())
