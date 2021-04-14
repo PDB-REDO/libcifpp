@@ -137,6 +137,13 @@ $(OBJDIR)/Symmetry.lo: src/SymOpTable_data.cpp
 
 endif
 
+data/components.cif.gz:
+	mkdir -p data
+	wget -O $@ ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz
+
+data/components.cif: data/components.cif.gz
+	gunzip -c $^ > $@
+
 # We have development releases and official releases, for each we
 # maintain different versioning schemes.
 
@@ -209,7 +216,7 @@ define TEST_template =
 
 $(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
-test/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS)
+test/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS) data/components.cif
 	@ echo ">>> building $(1)-test"
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -lcifpp -lboost_program_options $(LIBS)
 
@@ -244,7 +251,7 @@ HEADERS = \
 	TlsParser.hpp
 
 .PHONY: install
-install: lib
+install: lib data/components.cif.gz
 	install -d $(libdir)
 	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
 	install -d $(datadir)/libcifpp
@@ -254,7 +261,16 @@ install: lib
 		install -m644 rsrc/$$d $(datadir)/libcifpp; \
 		gzip -f $(datadir)/libcifpp/$$d; \
 	done
+	install -m644 data/components.cif.gz $(datadir)/libcifpp/
+	install -d $(CACHE_DIR)
 	install -d $(CRON_DIR)
+	if [ ! -f /etc/libcifpp.conf ] ; then \
+		echo "# Uncomment the next line to enable automatic updates" > /etc/libcifpp.conf; \
+		echo "# update=true" >> /etc/libcifpp.conf; \
+		echo ""; \
+		echo "Update the /etc/libcifpp.conf file to enable automatic updates"; \
+		echo ""; \
+	fi
 	install -m755 tools/update-dictionary-script $(CRON_DIR)/libcifpp
 	install -d $(includedir)/cif++
 	for f in $(HEADERS); do install include/cif++/$$f $(includedir)/cif++/$$f; done
