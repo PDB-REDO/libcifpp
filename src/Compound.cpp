@@ -144,6 +144,51 @@ Compound::Compound(cif::Datablock &db)
 	}
 }
 
+Compound::Compound(cif::Datablock &db, const std::string &id, const std::string &name, const std::string &type)
+	: mID(id)
+	, mName(name)
+	, mType(type)
+{
+	auto &chemCompAtom = db["chem_comp_atom"];
+	for (auto row: chemCompAtom)
+	{
+		CompoundAtom atom;
+		std::string typeSymbol;
+		cif::tie(atom.id, typeSymbol, atom.charge, atom.x, atom.y, atom.z) =
+			row.get("atom_id", "type_symbol", "charge", "x", "y", "z");
+		atom.typeSymbol = AtomTypeTraits(typeSymbol).type();
+
+		mFormalCharge += atom.charge;
+		mFormulaWeight += AtomTypeTraits(atom.typeSymbol).weight();
+
+		mAtoms.push_back(std::move(atom));
+	}
+
+	auto &chemCompBond = db["chem_comp_bond"];
+	for (auto row: chemCompBond)
+	{
+		CompoundBond bond;
+		std::string type;
+		cif::tie(bond.atomID[0], bond.atomID[1], type, bond.aromatic)
+			= row.get("atom_id_1", "atom_id_2", "type", "aromatic");
+
+		using cif::iequals;
+
+			 if (iequals(type, "single"))	bond.type = BondType::sing;
+		else if (iequals(type, "double"))	bond.type = BondType::doub;
+		else if (iequals(type, "triple"))	bond.type = BondType::trip;
+		else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
+			bond.type = BondType::delo;
+		else
+		{
+			if (cif::VERBOSE)
+				std::cerr << "Unimplemented chem_comp_bond.type " << type << " in " << id << std::endl;
+			bond.type = BondType::sing;
+		}
+		mBonds.push_back(std::move(bond));
+	}
+}
+
 CompoundAtom Compound::getAtomByID(const std::string &atomID) const
 {
 	CompoundAtom result = {};
@@ -332,7 +377,7 @@ class CompoundFactoryImpl
 			   (mNext != nullptr and mNext->isKnownBase(resName));
 	}
 
-  private:
+  protected:
 	std::shared_timed_mutex mMutex;
 
 	std::vector<Compound *> mCompounds;
@@ -357,14 +402,61 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactor
 	: mNext(next)
 {
 	cif::File cifFile(file);
-	if (not cifFile.isValid())
-		throw std::runtime_error("Invalid compound file");
 
-	for (auto &db: cifFile)
+	auto compList = cifFile.get("comp_list");
+	if (compList)	// So this is a CCP4 restraints file, special handling
 	{
-		auto compound = std::make_unique<Compound>(db);
+		auto &chemComp = (*compList)["chem_comp"];
 
-		mCompounds.push_back(compound.release());
+		for (const auto &[id, name, group]: chemComp.rows<std::string,std::string,std::string>({"id", "name", "group"}))
+		{
+			std::string type;
+			
+			// known groups are (counted from ccp4 monomer dictionary)
+
+			//	D-pyranose
+			//	DNA
+			//	L-PEPTIDE LINKING
+			//	L-SACCHARIDE
+			//	L-peptide
+			//	L-pyranose
+			//	M-peptide
+			//	NON-POLYMER
+			//	P-peptide
+			//	RNA
+			//	furanose
+			//	non-polymer
+			//	non_polymer
+			//	peptide
+			//	pyranose
+			//	saccharide
+			
+			if (cif::iequals(id, "gly"))
+				type = "peptide linking";
+			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide"))
+				type = "L-peptide linking";
+			else if (cif::iequals(group, "DNA"))
+				type = "DNA linking";
+			else if (cif::iequals(group, "RNA"))
+				type = "RNA linking";
+			else
+				type = "non-polymer";
+			
+			auto &db = cifFile["comp_" + id];
+
+			mCompounds.push_back(new Compound(db, id, name, type));
+		}
+	}
+	else
+	{
+		// A CCD components file, validate it first
+		cifFile.loadDictionary();
+
+		if (not cifFile.isValid())
+			throw std::runtime_error("Invalid compound file");
+
+		for (auto &db: cifFile)
+			mCompounds.push_back(new Compound(db));
 	}
 }
 
@@ -466,6 +558,9 @@ Compound *CCDCompoundFactoryImpl::create(std::string id)
 
 	Compound *result = get(id);
 
+	if (result)
+		return result;
+
 	auto ccd = cif::loadResource("components.cif");
 	if (not ccd)
 		throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-dictionary-script to fetch the data.");
@@ -474,7 +569,7 @@ Compound *CCDCompoundFactoryImpl::create(std::string id)
 
 	if (mIndex.empty())
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 1)
 		{
 			std::cout << "Creating component index " << "...";
 			std::cout.flush();
@@ -483,14 +578,14 @@ Compound *CCDCompoundFactoryImpl::create(std::string id)
 		cif::Parser parser(*ccd, file, false);
 		mIndex = parser.indexDatablocks();
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 1)
 			std::cout << " done" << std::endl;
 		
 		// reload the resource, perhaps this should be improved...
 		ccd = cif::loadResource("components.cif");
 	}
 
-	if (cif::VERBOSE)
+	if (cif::VERBOSE > 1)
 	{
 		std::cout << "Loading component " << id << "...";
 		std::cout.flush();
@@ -499,13 +594,22 @@ Compound *CCDCompoundFactoryImpl::create(std::string id)
 	cif::Parser parser(*ccd, file, false);
 	parser.parseSingleDatablock(id, mIndex);
 
-	if (cif::VERBOSE)
+	if (cif::VERBOSE > 1)
 		std::cout << " done" << std::endl;
 
-	auto &db = file.firstDatablock();
-	if (db.getName() == id)
-		result = new Compound(db);
-	else if (cif::VERBOSE)
+	if (not file.empty())
+	{
+		auto &db = file.firstDatablock();
+		if (db.getName() == id)
+		{
+			result = new Compound(db);
+
+			std::shared_lock lock(mMutex);
+			mCompounds.push_back(result);
+		}
+	}
+
+	if (result == nullptr and cif::VERBOSE > 1)
 		std::cerr << "Could not locate compound " << id << " in the CCD components file" << std::endl;
 
 	return result;

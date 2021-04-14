@@ -1,0 +1,152 @@
+#
+data_comp_list
+loop_
+_chem_comp.id
+_chem_comp.three_letter_code
+_chem_comp.name
+_chem_comp.group
+_chem_comp.number_atoms_all
+_chem_comp.number_atoms_nh
+_chem_comp.desc_level
+UN_     UN_     UN_NINE     L-peptide     13     6     .     
+#
+data_comp_UN_
+#
+loop_
+_chem_comp_atom.comp_id
+_chem_comp_atom.atom_id
+_chem_comp_atom.type_symbol
+_chem_comp_atom.type_energy
+_chem_comp_atom.charge
+_chem_comp_atom.x
+_chem_comp_atom.y
+_chem_comp_atom.z
+UN_     N       N       NT3     1       0.227       -1.259      0.452       
+UN_     H       H       H       0       0.069       -1.019      1.421       
+UN_     H2      H       H       0       1.104       -1.640      0.356       
+UN_     H3      H       H       0       -0.424      -1.909      0.174       
+UN_     CA      C       CH1     0       0.103       -0.030      -0.392      
+UN_     HA      H       H       0       0.160       -0.299      -1.339      
+UN_     CB      C       CH3     0       -1.244      0.625       -0.159      
+UN_     HB3     H       H       0       -1.857      -0.018      0.234       
+UN_     HB2     H       H       0       -1.605      0.932       -1.008      
+UN_     HB1     H       H       0       -1.150      1.385       0.442       
+UN_     C       C       C       0       1.270       0.922       -0.094      
+UN_     O       O       O       0       2.008       1.323       -0.994      
+UN_     OXT     O       OC      -1      1.498       1.305       1.054       
+
+loop_
+_chem_comp_tree.comp_id
+_chem_comp_tree.atom_id
+_chem_comp_tree.atom_back
+_chem_comp_tree.atom_forward
+_chem_comp_tree.connect_type
+ UN_      N      n/a    CA     START
+ UN_      H      N      .      .
+ UN_      H2     N      .      .
+ UN_      H3     N      .      .
+ UN_      CA     N      C      .
+ UN_      HA     CA     .      .
+ UN_      CB     CA     HB3    .
+ UN_      HB1    CB     .      .
+ UN_      HB2    CB     .      .
+ UN_      HB3    CB     .      .
+ UN_      C      CA     .      END
+ UN_      O      C      .      .
+ UN_      OXT      C      .      .
+loop_
+_chem_comp_bond.comp_id
+_chem_comp_bond.atom_id_1
+_chem_comp_bond.atom_id_2
+_chem_comp_bond.type
+_chem_comp_bond.aromatic
+_chem_comp_bond.value_dist
+_chem_comp_bond.value_dist_esd
+UN_          CB          CA      SINGLE       n     1.509   0.014
+UN_          CA           C      SINGLE       n     1.533   0.011
+UN_           C           O      DOUBLE       n     1.247   0.019
+UN_           C         OXT      SINGLE       n     1.247   0.019
+UN_          CA           N      SINGLE       n     1.482   0.010
+UN_          CB         HB3      SINGLE       n     0.972   0.015
+UN_          CB         HB2      SINGLE       n     0.972   0.015
+UN_          CB         HB1      SINGLE       n     0.972   0.015
+UN_          CA          HA      SINGLE       n     0.986   0.020
+UN_           N           H      SINGLE       n     0.911   0.020
+UN_           N          H2      SINGLE       n     0.911   0.020
+UN_           N          H3      SINGLE       n     0.911   0.020
+loop_
+_chem_comp_angle.comp_id
+_chem_comp_angle.atom_id_1
+_chem_comp_angle.atom_id_2
+_chem_comp_angle.atom_id_3
+_chem_comp_angle.value_angle
+_chem_comp_angle.value_angle_esd
+UN_          CA          CB         HB3     109.546    1.50
+UN_          CA          CB         HB2     109.546    1.50
+UN_          CA          CB         HB1     109.546    1.50
+UN_         HB3          CB         HB2     109.386    1.50
+UN_         HB3          CB         HB1     109.386    1.50
+UN_         HB2          CB         HB1     109.386    1.50
+UN_          CB          CA           C     111.490    1.50
+UN_          CB          CA           N     109.912    1.50
+UN_          CB          CA          HA     108.878    1.50
+UN_           C          CA           N     109.627    1.50
+UN_           C          CA          HA     108.541    1.50
+UN_           N          CA          HA     108.529    1.50
+UN_          CA           C           O     117.159    1.57
+UN_          CA           C         OXT     117.159    1.57
+UN_           O           C         OXT     125.683    1.50
+UN_          CA           N           H     109.643    1.50
+UN_          CA           N          H2     109.643    1.50
+UN_          CA           N          H3     109.643    1.50
+UN_           H           N          H2     109.028    2.41
+UN_           H           N          H3     109.028    2.41
+UN_          H2           N          H3     109.028    2.41
+loop_
+_chem_comp_tor.comp_id
+_chem_comp_tor.id
+_chem_comp_tor.atom_id_1
+_chem_comp_tor.atom_id_2
+_chem_comp_tor.atom_id_3
+_chem_comp_tor.atom_id_4
+_chem_comp_tor.value_angle
+_chem_comp_tor.value_angle_esd
+_chem_comp_tor.period
+ UN_      hh1      N      CA     CB     HB3       60.000   15.000   3
+UN_             sp2_sp3_1           O           C          CA          CB       0.000   10.00     6
+UN_            sp3_sp3_10          CB          CA           N           H     180.000   10.00     3
+loop_
+_chem_comp_chir.comp_id
+_chem_comp_chir.id
+_chem_comp_chir.atom_id_centre
+_chem_comp_chir.atom_id_1
+_chem_comp_chir.atom_id_2
+_chem_comp_chir.atom_id_3
+_chem_comp_chir.volume_sign
+UN_    chir_1    CA    N    C    CB    positive
+loop_
+_chem_comp_plane_atom.comp_id
+_chem_comp_plane_atom.plane_id
+_chem_comp_plane_atom.atom_id
+_chem_comp_plane_atom.dist_esd
+UN_    plan-1           C   0.020
+UN_    plan-1          CA   0.020
+UN_    plan-1           O   0.020
+UN_    plan-1         OXT   0.020
+loop_
+_pdbx_chem_comp_descriptor.comp_id
+_pdbx_chem_comp_descriptor.type
+_pdbx_chem_comp_descriptor.program
+_pdbx_chem_comp_descriptor.program_version
+_pdbx_chem_comp_descriptor.descriptor
+UN_ SMILES           ACDLabs              10.04 "O=C(O)C(N)C"
+UN_ SMILES_CANONICAL CACTVS               3.341 "C[C@H](N)C(O)=O"
+UN_ SMILES           CACTVS               3.341 "C[CH](N)C(O)=O"
+UN_ SMILES_CANONICAL "OpenEye OEToolkits" 1.5.0 "C[C@@H](C(=O)O)N"
+UN_ SMILES           "OpenEye OEToolkits" 1.5.0 "CC(C(=O)O)N"
+UN_ InChI            InChI                1.03  "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m0/s1"
+UN_ InChIKey         InChI                1.03  QNAYBMKLOCPYGJ-REOHCLBHSA-N
+UN_ ?                acedrg               195         "dictionary generator"                  
+UN_ ?                acedrg_database      11          "data source"                           
+UN_ ?                rdkit                2017.03.2   "Chemoinformatics tool"
+UN_ ?                refmac5              5.8.0189    "optimization tool"                     

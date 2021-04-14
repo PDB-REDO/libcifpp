@@ -69,10 +69,10 @@ struct CompoundAtom
 {
 	std::string id;
 	AtomType typeSymbol;
-	int charge;
-	bool aromatic;
-	bool leavingAtom;
-	bool stereoConfig;
+	int charge = 0;
+	bool aromatic = false;
+	bool leavingAtom = false;
+	bool stereoConfig = false;
 	float x, y, z;
 };
 
@@ -83,7 +83,7 @@ struct CompoundBond
 {
 	std::string atomID[2];
 	BondType type;
-	bool aromatic, stereoConfig;
+	bool aromatic = false, stereoConfig = false;
 };
 
 /// --------------------------------------------------------------------
@@ -97,8 +97,6 @@ struct CompoundBond
 class Compound
 {
   public:
-	Compound(cif::Datablock &db);
-
 	/// \brief factory method, create a Compound based on the three letter code
 	/// (for amino acids) or the one-letter code (for bases) or the
 	/// code as it is known in the CCD.
@@ -131,12 +129,18 @@ class Compound
 
   private:
 
+	friend class CompoundFactoryImpl;
+	friend class CCDCompoundFactoryImpl;
+
+	Compound(cif::Datablock &db);
+	Compound(cif::Datablock &db, const std::string &id, const std::string &name, const std::string &type);
+
 	std::string mID;
 	std::string mName;
 	std::string mType;
 	std::string mFormula;
-	float mFormulaWeight;
-	int mFormalCharge;
+	float mFormulaWeight = 0;
+	int mFormalCharge = 0;
 	std::vector<CompoundAtom> mAtoms;
 	std::vector<CompoundBond> mBonds;
 };

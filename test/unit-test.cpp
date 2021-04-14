@@ -31,6 +31,7 @@
 
 // #include "cif++/DistanceMap.hpp"
 #include "cif++/Cif++.hpp"
+#include "cif++/BondMap.hpp"
 
 // --------------------------------------------------------------------
 
@@ -1207,4 +1208,157 @@ _test.name
 
     BOOST_CHECK(id == 1);
     BOOST_CHECK(name == "aap");
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(bondmap_1)
+{
+    cif::VERBOSE = 2;
+
+	// sections taken from CCD compounds.cif
+	auto components = R"(
+data_ASN
+loop_
+_chem_comp_bond.comp_id
+_chem_comp_bond.atom_id_1
+_chem_comp_bond.atom_id_2
+_chem_comp_bond.value_order
+_chem_comp_bond.pdbx_aromatic_flag
+_chem_comp_bond.pdbx_stereo_config
+_chem_comp_bond.pdbx_ordinal
+ASN N   CA   SING N N 1
+ASN N   H    SING N N 2
+ASN N   H2   SING N N 3
+ASN CA  C    SING N N 4
+ASN CA  CB   SING N N 5
+ASN CA  HA   SING N N 6
+ASN C   O    DOUB N N 7
+ASN C   OXT  SING N N 8
+ASN CB  CG   SING N N 9
+ASN CB  HB2  SING N N 10
+ASN CB  HB3  SING N N 11
+ASN CG  OD1  DOUB N N 12
+ASN CG  ND2  SING N N 13
+ASN ND2 HD21 SING N N 14
+ASN ND2 HD22 SING N N 15
+ASN OXT HXT  SING N N 16
+data_PHE
+loop_
+_chem_comp_bond.comp_id
+_chem_comp_bond.atom_id_1
+_chem_comp_bond.atom_id_2
+_chem_comp_bond.value_order
+_chem_comp_bond.pdbx_aromatic_flag
+_chem_comp_bond.pdbx_stereo_config
+_chem_comp_bond.pdbx_ordinal
+PHE N   CA  SING N N 1
+PHE N   H   SING N N 2
+PHE N   H2  SING N N 3
+PHE CA  C   SING N N 4
+PHE CA  CB  SING N N 5
+PHE CA  HA  SING N N 6
+PHE C   O   DOUB N N 7
+PHE C   OXT SING N N 8
+PHE CB  CG  SING N N 9
+PHE CB  HB2 SING N N 10
+PHE CB  HB3 SING N N 11
+PHE CG  CD1 DOUB Y N 12
+PHE CG  CD2 SING Y N 13
+PHE CD1 CE1 SING Y N 14
+PHE CD1 HD1 SING N N 15
+PHE CD2 CE2 DOUB Y N 16
+PHE CD2 HD2 SING N N 17
+PHE CE1 CZ  DOUB Y N 18
+PHE CE1 HE1 SING N N 19
+PHE CE2 CZ  SING Y N 20
+PHE CE2 HE2 SING N N 21
+PHE CZ  HZ  SING N N 22
+PHE OXT HXT SING N N 23
+data_PRO
+loop_
+_chem_comp_bond.comp_id
+_chem_comp_bond.atom_id_1
+_chem_comp_bond.atom_id_2
+_chem_comp_bond.value_order
+_chem_comp_bond.pdbx_aromatic_flag
+_chem_comp_bond.pdbx_stereo_config
+_chem_comp_bond.pdbx_ordinal
+PRO N   CA  SING N N 1
+PRO N   CD  SING N N 2
+PRO N   H   SING N N 3
+PRO CA  C   SING N N 4
+PRO CA  CB  SING N N 5
+PRO CA  HA  SING N N 6
+PRO C   O   DOUB N N 7
+PRO C   OXT SING N N 8
+PRO CB  CG  SING N N 9
+PRO CB  HB2 SING N N 10
+PRO CB  HB3 SING N N 11
+PRO CG  CD  SING N N 12
+PRO CG  HG2 SING N N 13
+PRO CG  HG3 SING N N 14
+PRO CD  HD2 SING N N 15
+PRO CD  HD3 SING N N 16
+PRO OXT HXT SING N N 17
+)"_cf;
+
+	const std::filesystem::path example("../examples/1cbs.cif.gz");
+	mmcif::File file(example);
+	mmcif::Structure structure(file);
+
+	mmcif::BondMap bm(structure);
+
+	// Test the bonds of the first three residues, that's PRO A 1, ASN A 2, PHE A 3	
+
+	for (const auto& [compound, seqnr]: std::initializer_list<std::tuple<std::string,int>>{ { "PRO", 1 }, { "ASN", 2 }, { "PHE", 3 } })
+	{
+		auto& res = structure.getResidue("A", compound, seqnr);
+		auto atoms = res.atoms();
+
+		auto dc = components.get(compound);
+		BOOST_ASSERT(dc != nullptr);
+
+		auto cc = dc->get("chem_comp_bond");
+		BOOST_ASSERT(cc != nullptr);
+
+		std::set<std::tuple<std::string,std::string>> bonded;
+
+		for (const auto& [atom_id_1, atom_id_2]: cc->rows<std::string,std::string>({ "atom_id_1", "atom_id_2" }))
+		{
+			if (atom_id_1 > atom_id_2)
+				bonded.insert({ atom_id_2, atom_id_1 });
+			else
+				bonded.insert({ atom_id_1, atom_id_2 });
+		}
+
+		for (size_t i = 0; i + 1 < atoms.size(); ++i)
+		{
+			auto label_i = atoms[i].labelAtomID();
+
+			for (size_t j = i + 1; j < atoms.size(); ++j)
+			{
+				auto label_j = atoms[j].labelAtomID();
+
+				bool bonded_1 = bm(atoms[i], atoms[j]);
+				bool bonded_1_i = bm(atoms[j], atoms[i]);
+
+				bool bonded_t = label_i > label_j
+					? bonded.count({ label_j, label_i })
+					: bonded.count({ label_i, label_j });
+
+				BOOST_CHECK(bonded_1 == bonded_t);
+				BOOST_CHECK(bonded_1_i == bonded_t);
+			}
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE(bondmap_2)
+{
+	BOOST_CHECK_THROW(mmcif::BondMap::atomIDsForCompound("UN_"), mmcif::BondMapException);
+
+	mmcif::CompoundFactory::instance().pushDictionary("./UN_.cif");
+
+	BOOST_CHECK(mmcif::BondMap::atomIDsForCompound("UN_").empty() == false);
 }

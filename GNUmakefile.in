@@ -110,6 +110,7 @@ $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 OBJECTS		= $(OBJDIR)/AtomType.lo \
+			  $(OBJDIR)/BondMap.lo \
 			  $(OBJDIR)/Cif2PDB.lo \
 			  $(OBJDIR)/Cif++.lo \
 			  $(OBJDIR)/CifParser.lo \
@@ -227,6 +228,7 @@ test: $(TESTS:%=%-test)
 
 HEADERS = \
 	AtomType.hpp \
+	BondMap.hpp \
 	CifParser.hpp \
 	Compound.hpp \
 	PDB2CifRemark3.hpp \
