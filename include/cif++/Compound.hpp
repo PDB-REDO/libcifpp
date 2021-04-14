@@ -98,28 +98,12 @@ class Compound
 {
   public:
 	Compound(cif::Datablock &db);
-	~Compound();
 
 	/// \brief factory method, create a Compound based on the three letter code
 	/// (for amino acids) or the one-letter code (for bases) or the
 	/// code as it is known in the CCD.
 
 	static const Compound *create(const std::string &id);
-
-	// /// this second factory method can create a Compound even if it is not
-	// /// recorded in the library. It will take the values from the CCP4 lib
-	// /// unless the value passed to this function is not empty.
-	// static const Compound* create(const std::string& id, const std::string& name,
-	// 	const std::string& type, const std::string& formula);
-
-	/// \brief Create compounds based on the data in the file \a components
-	///
-	/// It is often required to add information about unknown components.
-	/// This file parses either a CCP4 or a CCD formatted components file
-	///
-	/// \param components	The mmCIF file containing the components
-	/// \result				An array containing the ID's of the added components
-	static std::vector<std::string> addExtraComponents(const std::filesystem::path &components);
 
 	// accessors
 

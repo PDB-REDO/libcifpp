@@ -3067,6 +3067,21 @@ void File::load(std::istream& is)
 	}
 }
 
+void File::load(std::istream& is, const std::string& datablock)
+{
+	Validator* saved = mValidator;
+	setValidator(nullptr);
+
+	Parser p(is, *this);
+	p.parseFile(datablock);
+	
+	if (saved != nullptr)
+	{
+		setValidator(saved);
+		(void)isValid();
+	}
+}
+
 void File::save(std::ostream& os)
 {
 	Datablock* e = mHead;

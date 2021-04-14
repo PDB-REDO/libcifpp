@@ -1474,7 +1474,8 @@ Some influential environment variables:
   DEBUG       Build a debug version of the application
   LT_SYS_LIBRARY_PATH
               User-defined run-time library search path.
-  CCP4        The location where CCP4 is installed
+  CCP4        The location where CCP4 is installed. This is only required if
+              you want to rebuild the symmetry operations table.
   MRC         Specify a location for the mrc executable
   DATA_LIB_DIR
               The location where to store packaged dictionary files

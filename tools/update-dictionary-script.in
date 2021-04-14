@@ -21,22 +21,27 @@ if ! [ -d @DATA_CACHE_DIR@ ]; then
 	exit
 fi
 
-# fetch the dictionary
+fetch_dictionary () {
+	dict=$1
+	source=$2
 
-dict=@DATA_CACHE_DIR@/mmcif_pdbx_v50.dic
-source=https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz
+	wget -O${dict}.gz ${source}
 
-wget -O${dict}.gz ${source}
+	# be careful not to nuke an existing dictionary file
+	# extract to a temporary file first
 
-# be careful not to nuke an existing dictionary file
-# extract to a temporary file first
+	gunzip -c ${dict}.gz > ${dict}-tmp
 
-gunzip -c ${dict}.gz > ${dict}-tmp
+	# then move the extracted file to the final location
 
-# then move the extracted file to the final location
+	mv ${dict}-tmp ${dict}
 
-mv ${dict}-tmp ${dict}
+	# and clean up afterwards
 
-# and clean up afterwards
+	rm ${dict}.gz
+}
 
-rm ${dict}.gz
+# fetch the dictionaries
+
+fetch_dictionary "@DATA_CACHE_DIR@/mmcif_pdbx_v50.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
+fetch_dictionary "@DATA_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"

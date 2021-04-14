@@ -84,13 +84,15 @@ const char* SacParser::kValueName[] = {
 
 // --------------------------------------------------------------------
 
-SacParser::SacParser(std::istream& is)
+SacParser::SacParser(std::istream& is, bool init)
 	: mData(is)
 {
 	mValidate = true;
 	mLineNr = 1;
 	mBol = true;
-	mLookahead = getNextToken();
+
+	if (init)
+		mLookahead = getNextToken();
 }
 
 void SacParser::error(const std::string& msg)
@@ -519,6 +521,90 @@ SacParser::CIFToken SacParser::getNextToken()
 	}
 	
 	return result;
+}
+
+bool SacParser::parseFile(const std::string& datablock)
+{
+	// first locate the start, as fast as we can
+	auto &sb = *mData.rdbuf();
+
+	enum {
+		start, comment, string, string_quote, qstring, data
+	} state = start;
+
+	int quote = 0;
+	bool bol = true;
+	std::string dblk = "data_" + datablock;
+	std::string::size_type si = 0;
+	bool found = false;
+
+	while (sb.in_avail() > 0 and not found)
+	{
+		int ch = sb.sbumpc();
+		switch (state)
+		{
+			case start:
+				switch (ch)
+				{
+					case '#':	state = comment;	break;
+					case 'd':
+					case 'D':
+						state = data;
+						si = 1;
+						break;
+					case '\'':
+					case '"':
+						state = string;
+						quote = ch;
+						break;
+					case ';':
+						if (bol)
+							state = qstring;
+						break;
+				}
+				break;
+			
+			case comment:
+				if (ch == '\n')
+					state = start;
+				break;
+
+			case string:
+				if (ch == quote)
+					state = string_quote;
+				break;
+			
+			case string_quote:
+				if (std::isspace(ch))
+					state = start;
+				else
+					state = string;
+				break;
+			
+			case qstring:
+				if (ch == ';' and bol)
+					state = start;
+				break;
+			
+			case data:
+				if (isspace(ch) and dblk[si] == 0)
+					found = true;
+				else if (dblk[si++] != ch)
+					state = start;
+				break;
+		}
+
+		bol = (ch == '\n');
+	}
+
+	if (found)
+	{
+		produceDatablock(datablock);
+		mLookahead = getNextToken();
+		parseDataBlock();
+	}
+
+	return found;
 }
 
 void SacParser::parseFile()

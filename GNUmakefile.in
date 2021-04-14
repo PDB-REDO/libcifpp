@@ -218,7 +218,7 @@ $(1)-test: test/$(1)-test
 
 endef
 
-TESTS = unit # pdb2cif
+TESTS = unit pdb2cif
 
 $(foreach part,$(TESTS),$(eval $(call TEST_template,$(part))))
 

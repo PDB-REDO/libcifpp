@@ -53,7 +53,7 @@ dnl and now for the semantic version
 LIBCIF_SEMANTIC_VERSION=libcifpp_version
 AC_SUBST(LIBCIF_SEMANTIC_VERSION)
 
-AC_ARG_VAR([CCP4], [The location where CCP4 is installed])
+AC_ARG_VAR([CCP4], [The location where CCP4 is installed. CCP4 is only required if you want to rebuild the symmetry operations table.])
 
 AX_MRC
 
@@ -88,11 +88,11 @@ AX_IOSTREAMS_BZ2
 AC_CHECK_LIB([atomic], [atomic_flag_clear])
 
 dnl Set output variables for the various directories
-AC_ARG_VAR([DATA_LIB_DIR], [The location where to store packaged dictionary files])
+AC_ARG_VAR([DATA_LIB_DIR], [The location where to store packaged dictionary and CCD files])
 AC_SUBST([DATA_LIB_DIR])
 DATA_LIB_DIR=$datadir/libcifpp
 
-AC_ARG_VAR([DATA_CACHE_DIR], [The location where to store cached dictionary files])
+AC_ARG_VAR([DATA_CACHE_DIR], [The location where to store cached dictionary and CCD files])
 AC_SUBST([DATA_CACHE_DIR])
 DATA_CACHE_DIR=/var/cache/libcifpp
 

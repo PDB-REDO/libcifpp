@@ -1922,6 +1922,9 @@ class File
 	void load(std::istream& is);
 	void save(std::ostream& os);
 
+	/// \brief Load only the data block \a datablock from the mmCIF file
+	void load(std::istream& is, const std::string& datablock);
+
 	void save(std::ostream& os, const std::vector<std::string>& order)	{ write(os, order); }
 	void write(std::ostream& os, const std::vector<std::string>& order);
 

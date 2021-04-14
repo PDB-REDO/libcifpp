@@ -106,7 +106,6 @@ struct CompoundBondLess
 	}
 };
 
-
 // --------------------------------------------------------------------
 // Compound
 
@@ -304,13 +303,13 @@ class CompoundFactoryImpl
 
 	CompoundFactoryImpl(const std::string &file, CompoundFactoryImpl *next);
 
-	~CompoundFactoryImpl()
+	virtual ~CompoundFactoryImpl()
 	{
 		delete mNext;
 	}
 
 	Compound *get(std::string id);
-	Compound *create(std::string id);
+	virtual Compound *create(std::string id);
 
 	CompoundFactoryImpl *pop()
 	{
@@ -335,7 +334,6 @@ class CompoundFactoryImpl
   private:
 	std::shared_timed_mutex mMutex;
 
-	std::string mPath;
 	std::vector<Compound *> mCompounds;
 	std::set<std::string> mKnownPeptides;
 	std::set<std::string> mKnownBases;
@@ -355,8 +353,7 @@ CompoundFactoryImpl::CompoundFactoryImpl()
 }
 
 CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactoryImpl *next)
-	: mPath(file)
-	, mNext(next)
+	: mNext(next)
 {
 	cif::File cifFile(file);
 	if (not cifFile.isValid())
@@ -450,6 +447,48 @@ Compound *CompoundFactoryImpl::create(std::string id)
 }
 
 // --------------------------------------------------------------------
+// Version for the default compounds, based on the cached components.cif file from CCD
+
+class CCDCompoundFactoryImpl : public CompoundFactoryImpl
+{
+  public:
+	CCDCompoundFactoryImpl() {}
+
+	Compound *create(std::string id) override;
+};
+
+Compound *CCDCompoundFactoryImpl::create(std::string id)
+{
+	ba::to_upper(id);
+
+	Compound *result = get(id);
+
+	auto ccd = cif::loadResource("components.cif");
+	if (not ccd)
+		throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-dictionary-script to fetch the data.");
+
+	if (cif::VERBOSE)
+	{
+		std::cout << "Loading component " << id << "...";
+		std::cout.flush();
+	}
+
+	cif::File file;
+	file.load(*ccd, id);
+
+	if (cif::VERBOSE)
+		std::cout << " done" << std::endl;
+
+	auto &db = file.firstDatablock();
+	if (db.getName() == id)
+		result = new Compound(db);
+	else if (cif::VERBOSE)
+		std::cerr << "Could not locate compound " << id << " in the CCD components file" << std::endl;
+
+	return result;
+}
+
+// --------------------------------------------------------------------
 
 CompoundFactory *CompoundFactory::sInstance;
 thread_local std::unique_ptr<CompoundFactory> CompoundFactory::tlInstance;
@@ -461,7 +500,7 @@ void CompoundFactory::init(bool useThreadLocalInstanceOnly)
 }
 
 CompoundFactory::CompoundFactory()
-	: mImpl(nullptr)
+	: mImpl(new CCDCompoundFactoryImpl)
 {
 }
 
@@ -543,13 +582,5 @@ bool CompoundFactory::isKnownBase(const std::string &resName) const
 {
 	return mImpl->isKnownBase(resName);
 }
-
-// --------------------------------------------------------------------
-
-std::vector<std::string> Compound::addExtraComponents(const std::filesystem::path &components)
-{
-
-}
-
 
 } // namespace mmcif

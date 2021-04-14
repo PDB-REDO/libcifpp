@@ -101,7 +101,7 @@ std::tuple<std::string,std::string> splitTagName(const std::string& tag);
 class SacParser
 {
   public:
-	SacParser(std::istream& is);
+	SacParser(std::istream& is, bool init = true);
 	virtual ~SacParser() {}
 
 	enum CIFToken
@@ -141,6 +141,8 @@ class SacParser
 	
 	CIFToken getNextToken();
 	void match(CIFToken token);
+
+	bool parseFile(const std::string& datablock);
 
 	void parseFile();
 	void parseGlobal();
