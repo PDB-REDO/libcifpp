@@ -55,6 +55,9 @@ BOOST_AUTO_TEST_CASE(ut1)
 {
     cif::VERBOSE = 1;
 
+	// do this now, avoids the need for installing
+	cif::addFileResource("mmcif_pdbx_v50.dic", "../rsrc/mmcif_pdbx_v50.dic");
+
     // using namespace mmcif;
 
     auto f = R"(data_TEST
