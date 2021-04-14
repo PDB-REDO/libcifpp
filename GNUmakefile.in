@@ -210,13 +210,18 @@ distclean: clean
 
 # Test rules
 
+examples/pdb1cbs.ent: examples/pdb1cbs.ent.gz
+	gunzip -c $? > $@
+
+pdb2cif_PARAMS = ../examples/pdb1cbs.ent
+
 define TEST_template =
 
 -include $$(OBJDIR)/$(1)-test.d
 
 $(1)_OBJECTS = $$(OBJDIR)/$(1)-test.o
 
-test/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS) data/components.cif
+test/$(1)-test: $(LIB_TARGET) $$($(1)_OBJECTS) data/components.cif examples/pdb1cbs.ent
 	@ echo ">>> building $(1)-test"
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $$@ $$($(1)_OBJECTS) -L.libs -lcifpp -lboost_program_options $(LIBS)
 
