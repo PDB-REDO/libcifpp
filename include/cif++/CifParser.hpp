@@ -96,6 +96,10 @@ inline bool isUnquotedString(const char* s)
 std::tuple<std::string,std::string> splitTagName(const std::string& tag);
 
 // --------------------------------------------------------------------
+
+using DatablockIndex = std::map<std::string,std::size_t>;
+
+// --------------------------------------------------------------------
 // sac Parser, analogous to SAX Parser (simple api for xml)
 
 class SacParser
@@ -142,7 +146,10 @@ class SacParser
 	CIFToken getNextToken();
 	void match(CIFToken token);
 
-	bool parseFile(const std::string& datablock);
+	bool parseSingleDatablock(const std::string& datablock);
+
+	DatablockIndex indexDatablocks();
+	bool parseSingleDatablock(const std::string& datablock, const DatablockIndex &index);
 
 	void parseFile();
 	void parseGlobal();
@@ -199,7 +206,7 @@ class SacParser
 class Parser : public SacParser
 {
   public:
-	Parser(std::istream& is, File& f);
+	Parser(std::istream& is, File& f, bool init = true);
 
 	virtual void produceDatablock(const std::string& name);
 	virtual void produceCategory(const std::string& name);

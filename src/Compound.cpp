@@ -42,6 +42,7 @@
 #include "cif++/CifUtils.hpp"
 #include "cif++/Compound.hpp"
 #include "cif++/Point.hpp"
+#include "cif++/CifParser.hpp"
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
@@ -455,6 +456,8 @@ class CCDCompoundFactoryImpl : public CompoundFactoryImpl
 	CCDCompoundFactoryImpl() {}
 
 	Compound *create(std::string id) override;
+
+	cif::DatablockIndex mIndex;
 };
 
 Compound *CCDCompoundFactoryImpl::create(std::string id)
@@ -467,14 +470,34 @@ Compound *CCDCompoundFactoryImpl::create(std::string id)
 	if (not ccd)
 		throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-dictionary-script to fetch the data.");
 
+	cif::File file;
+
+	if (mIndex.empty())
+	{
+		if (cif::VERBOSE)
+		{
+			std::cout << "Creating component index " << "...";
+			std::cout.flush();
+		}
+
+		cif::Parser parser(*ccd, file, false);
+		mIndex = parser.indexDatablocks();
+
+		if (cif::VERBOSE)
+			std::cout << " done" << std::endl;
+		
+		// reload the resource, perhaps this should be improved...
+		ccd = cif::loadResource("components.cif");
+	}
+
 	if (cif::VERBOSE)
 	{
 		std::cout << "Loading component " << id << "...";
 		std::cout.flush();
 	}
 
-	cif::File file;
-	file.load(*ccd, id);
+	cif::Parser parser(*ccd, file, false);
+	parser.parseSingleDatablock(id, mIndex);
 
 	if (cif::VERBOSE)
 		std::cout << " done" << std::endl;

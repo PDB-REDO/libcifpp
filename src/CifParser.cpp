@@ -523,7 +523,104 @@ SacParser::CIFToken SacParser::getNextToken()
 	return result;
 }
 
-bool SacParser::parseFile(const std::string& datablock)
+DatablockIndex SacParser::indexDatablocks()
+{
+	DatablockIndex index;
+
+	// first locate the start, as fast as we can
+	auto &sb = *mData.rdbuf();
+
+	enum {
+		start, comment, string, string_quote, qstring, data, data_name
+	} state = start;
+
+	int quote = 0;
+	bool bol = true;
+	const char dblk[] = "data_";
+	std::string::size_type si = 0;
+	std::string datablock;
+	bool found = false;
+
+	while (sb.in_avail() > 0 and not found)
+	{
+		int ch = sb.sbumpc();
+		switch (state)
+		{
+			case start:
+				switch (ch)
+				{
+					case '#':	state = comment;	break;
+					case 'd':
+					case 'D':
+						state = data;
+						si = 1;
+						break;
+					case '\'':
+					case '"':
+						state = string;
+						quote = ch;
+						break;
+					case ';':
+						if (bol)
+							state = qstring;
+						break;
+				}
+				break;
+			
+			case comment:
+				if (ch == '\n')
+					state = start;
+				break;
+
+			case string:
+				if (ch == quote)
+					state = string_quote;
+				break;
+			
+			case string_quote:
+				if (std::isspace(ch))
+					state = start;
+				else
+					state = string;
+				break;
+			
+			case qstring:
+				if (ch == ';' and bol)
+					state = start;
+				break;
+			
+			case data:
+				if (dblk[si] == 0 and isNonBlank(ch))
+				{
+					datablock = { static_cast<char>(ch) };
+					state = data_name;
+				}
+				else if (dblk[si++] != ch)
+					state = start;
+				break;
+			
+			case data_name:
+				if (isNonBlank(ch))
+					datablock.insert(datablock.end(), ch);
+				else if (isspace(ch))
+				{
+					if (not datablock.empty())
+						index[datablock] = mData.tellg();
+					
+					state = start;
+				}
+				else
+					state = start;
+				break;
+		}
+
+		bol = (ch == '\n');
+	}
+
+	return index;
+}
+
+bool SacParser::parseSingleDatablock(const std::string& datablock)
 {
 	// first locate the start, as fast as we can
 	auto &sb = *mData.rdbuf();
@@ -605,6 +702,25 @@ bool SacParser::parseFile(const std::string& datablock)
 	}
 
 	return found;
+}
+
+bool SacParser::parseSingleDatablock(const std::string& datablock, const DatablockIndex &index)
+{
+	bool result = false;
+
+	auto i = index.find(datablock);
+	if (i != index.end())
+	{
+		mData.seekg(i->second);
+
+		produceDatablock(datablock);
+		mLookahead = getNextToken();
+		parseDataBlock();
+
+		result = true;
+	}
+
+	return result;
 }
 
 void SacParser::parseFile()
@@ -728,8 +844,8 @@ void SacParser::parseSaveFrame()
 
 // --------------------------------------------------------------------
 
-Parser::Parser(std::istream& is, File& f)
-	: SacParser(is), mFile(f), mDataBlock(nullptr)
+Parser::Parser(std::istream& is, File& f, bool init)
+	: SacParser(is, init), mFile(f), mDataBlock(nullptr)
 {
 }
 

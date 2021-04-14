@@ -3073,7 +3073,7 @@ void File::load(std::istream& is, const std::string& datablock)
 	setValidator(nullptr);
 
 	Parser p(is, *this);
-	p.parseFile(datablock);
+	p.parseSingleDatablock(datablock);
 	
 	if (saved != nullptr)
 	{
