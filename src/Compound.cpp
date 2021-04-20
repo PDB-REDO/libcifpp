@@ -450,7 +450,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactor
 	else
 	{
 		// A CCD components file, validate it first
-		cifFile.loadDictionary();
+		cifFile.loadDictionary("mmcif_pdbx_v50");
 
 		if (not cifFile.isValid())
 			throw std::runtime_error("Invalid compound file");
