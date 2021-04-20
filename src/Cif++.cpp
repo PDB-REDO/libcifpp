@@ -2648,13 +2648,49 @@ void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 				}
 			}
 
-			if (cif::VERBOSE > 2)
+			auto rows = childCat->find(std::move(cond));
+			if (rows.empty())
+				continue;
+
+			// if (cif::VERBOSE > 2)
+			// {
+			// 	std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::endl
+			// 			  << cond << std::endl;
+			// }
+
+			// Now, suppose there are already rows in child that conform to the new value,
+			// we then skip this renam
+
+			Condition cond_n;
+			
+			for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
 			{
-				std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::endl
-						  << cond << std::endl;
+				std::string pk = linked->mParentKeys[ix];
+				std::string ck = linked->mChildKeys[ix];
+
+				// TODO add code to *NOT* test mandatory fields for Empty
+
+				if (pk == iv->mTag)
+					cond_n = std::move(cond_n) && Key(ck) == value;
+				else
+				{
+					const char* value = (*this)[pk].c_str();
+					if (*value == 0)
+						cond_n = std::move(cond_n) && Key(ck) == Empty();
+					else
+						cond_n = std::move(cond_n) && ((Key(ck) == value) or Key(ck) == Empty());
+				}
 			}
 
-			auto rows = childCat->find(std::move(cond));
+			auto rows_n = childCat->find(std::move(cond_n));
+			if (not rows_n.empty())
+			{
+				if (cif::VERBOSE)
+					std::cerr << "Will not rename in child category since there are already rows that link to the parent" << std::endl;
+				
+				continue;
+			}
+
 			for (auto& cr: rows)
 				cr.assign(childTag, value, false);
 		}

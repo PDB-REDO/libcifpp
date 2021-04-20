@@ -1214,6 +1214,291 @@ _test.name
 }
 
 // --------------------------------------------------------------------
+// rename test
+
+BOOST_AUTO_TEST_CASE(r1)
+{
+	/*
+		Rationale:
+
+		The pdbx_mmcif dictionary contains inconsistent child-parent relations. E.g. atom_site is parent
+		of pdbx_nonpoly_scheme which itself is a parent of pdbx_entity_nonpoly. If I want to rename a residue
+		I cannot update pdbx_nonpoly_scheme since changing a parent changes children, but not vice versa.
+
+		But if I change the comp_id in atom_site, the pdbx_nonpoly_scheme is update, that's good, and then
+		pdbx_entity_nonpoly is updated and that's bad.
+		
+		The idea is now that if we update a parent and a child that must change as well, we first check
+		if there are more parents of this child that will not change. In that case we have to split the
+		child into two, one with the new value and one with the old. We then of course have to split all
+		children of this split row that are direct children.
+	*/
+
+    const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+
+               int       numb
+               '[+-]?[0-9]+'
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_linked.child_name   '_cat_2.parent_id'
+    _item_linked.parent_name  '_cat_1.id'
+    _item_type.code           code
+    save_
+
+save__cat_1.name
+    _item.name                '_cat_1.name'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_1.desc
+    _item.name                '_cat_1.desc'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           text
+    save_
+
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
+
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.name
+    _item.name                '_cat_2.name'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_2.num
+    _item.name                '_cat_2.num'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.desc
+    _item.name                '_cat_2.desc'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           text
+    save_
+
+save_cat_3
+    _category.description     'A third simple test category'
+    _category.id              cat_3
+    _category.mandatory_code  no
+    _category_key.name        '_cat_3.id'
+    save_
+
+save__cat_3.id
+    _item.name                '_cat_3.id'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_3.name
+    _item.name                '_cat_3.name'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_3.num
+    _item.name                '_cat_3.num'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+loop_
+_pdbx_item_linked_group_list.child_category_id
+_pdbx_item_linked_group_list.link_group_id
+_pdbx_item_linked_group_list.child_name
+_pdbx_item_linked_group_list.parent_name
+_pdbx_item_linked_group_list.parent_category_id
+cat_1 1 '_cat_1.name' '_cat_2.name' cat_2
+cat_2 1 '_cat_2.name' '_cat_3.name' cat_3
+cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
+
+    )";
+
+    struct membuf : public std::streambuf
+    {
+        membuf(char* text, size_t length)
+        {
+            this->setg(text, text, text + length);
+        }
+    } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
+
+    std::istream is_dict(&buffer);
+
+    cif::File f;
+    f.loadDictionary(is_dict);
+
+    // --------------------------------------------------------------------
+
+    const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.name
+_cat_1.desc
+1 aap  Aap
+2 noot Noot
+3 mies Mies
+
+loop_
+_cat_2.id
+_cat_2.name
+_cat_2.num
+_cat_2.desc
+1 aap  1 'Een dier'
+2 aap  2 'Een andere aap'
+3 noot 1 'walnoot bijvoorbeeld'
+4 n2   1  hazelnoot
+
+loop_
+_cat_3.id
+_cat_3.name
+_cat_3.num
+1 aap 1
+2 aap 2
+    )";   
+
+	using namespace cif::literals;
+
+    struct data_membuf : public std::streambuf
+    {
+        data_membuf(char* text, size_t length)
+        {
+            this->setg(text, text, text + length);
+        }
+    } data_buffer(const_cast<char*>(data), sizeof(data) - 1);
+
+    std::istream is_data(&data_buffer);
+    f.load(is_data);
+
+    auto& cat1 = f.firstDatablock()["cat_1"];
+    auto& cat2 = f.firstDatablock()["cat_2"];
+	auto& cat3 = f.firstDatablock()["cat_3"];
+
+	cat3.update_value("name"_key == "aap" and "num"_key == 1, "name", "aapje");
+
+	BOOST_CHECK(cat3.size() == 2);
+	
+	int id, num;
+	std::string name;
+	cif::tie(id, name, num) = cat3.front().get("id", "name", "num");
+	BOOST_CHECK(id == 1);
+	BOOST_CHECK(num == 1);
+	BOOST_CHECK(name == "aapje");
+
+	cif::tie(id, name, num) = cat3.back().get("id", "name", "num");
+	BOOST_CHECK(id == 2);
+	BOOST_CHECK(num == 2);
+	BOOST_CHECK(name == "aap");
+	
+
+
+    // // check a rename in parent and child
+
+    // for (auto r: cat1.find(cif::Key("id") == 1))
+    // {
+    //     r["id"] = 10;
+    //     break;
+    // }
+
+    // BOOST_CHECK(cat1.size() == 3);
+    // BOOST_CHECK(cat2.size() == 4);
+
+    // BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
+    // BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+
+    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 0);
+    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 2);
+
+    // // check a rename in parent and child, this time only one child should be renamed
+
+    // for (auto r: cat1.find(cif::Key("id") == 2))
+    // {
+    //     r["id"] = 20;
+    //     break;
+    // }
+
+    // BOOST_CHECK(cat1.size() == 3);
+    // BOOST_CHECK(cat2.size() == 4);
+
+    // BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
+    // BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
+
+    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 1);
+    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 1);
+
+    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "noot").size() == 0);
+    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "n2").size() == 1);
+    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "noot").size() == 1);
+    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "n2").size() == 0);
+
+
+
+    // // // --------------------------------------------------------------------
+    
+    // // cat1.erase(cif::Key("id") == 10);
+
+    // // BOOST_CHECK(cat1.size() == 2);
+    // // BOOST_CHECK(cat2.size() == 2);
+
+    // // cat1.erase(cif::Key("id") == 20);
+
+    // // BOOST_CHECK(cat1.size() == 1);
+    // // BOOST_CHECK(cat2.size() == 1);
+
+
+
+}
+
+// --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(bondmap_1)
 {

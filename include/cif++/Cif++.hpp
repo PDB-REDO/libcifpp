@@ -725,6 +725,7 @@ class Row
 	}
 	
 	void assign(const std::vector<Item>& values);
+	void assign(const std::string& name, const std::string& value, bool updateLinked);
 
 	bool operator==(const Row& rhs) const
 	{
@@ -747,7 +748,6 @@ class Row
 
   private:
 
-	void assign(const std::string& name, const std::string& value, bool updateLinked);
 	void assign(size_t column, const std::string& value, bool updateLinked);
 	void assign(const Item& i, bool updateLinked);
 	
@@ -1397,6 +1397,7 @@ class iterator_proxy
 	size_t size() const				{ return std::distance(begin(), end()); }
 
 	RowType front()					{ return *begin(); }
+	RowType back()					{ return *(std::prev(end())); }
 
 	Category& category() const		{ return *mCat;}
 
@@ -1880,6 +1881,19 @@ class Category
 
 	void reorderByIndex();
 	void sort(std::function<int(const Row&, const Row&)> comparator);
+
+	// --------------------------------------------------------------------
+	/// Rename a single column in the rows that match \a cond to value \a value
+	/// making sure the linked categories are updated according to the link.
+	/// That means, child categories are updated if the links are absolute
+	/// and unique. If they are not, the child category rows are split.
+
+	void update_value(Condition &&cond, const std::string &tag, const std::string &value)
+	{
+		update_value(RowSet{ *this, std::move(cond) }, tag, value);
+	}
+
+	void update_value(RowSet &&rows, const std::string &tag, const std::string &value);
 
 	// --------------------------------------------------------------------
 	// generate a new, unique ID. Pass it an ID generating function based on
