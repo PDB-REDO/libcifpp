@@ -1881,6 +1881,12 @@ class Category
 	void reorderByIndex();
 	void sort(std::function<int(const Row&, const Row&)> comparator);
 
+	// --------------------------------------------------------------------
+	// generate a new, unique ID. Pass it an ID generating function based on
+	// a sequence number. This function will be called until the result is
+	// unique in the context of this category
+	std::string getUniqueID(std::function<std::string(int)> generator = cif::cifIdForNumber);
+
   private:
 
 	void write(std::ostream& os);

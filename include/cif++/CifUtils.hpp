@@ -92,6 +92,11 @@ inline char tolower(char ch)
 std::tuple<std::string,std::string> splitTagName(const std::string& tag);
 
 // --------------------------------------------------------------------
+// generate a cif name, mainly used to generate asym_id's
+
+std::string cifIdForNumber(int number);
+
+// --------------------------------------------------------------------
 //	custom wordwrapping routine
 
 std::vector<std::string> wordWrap(const std::string& text, unsigned int width);

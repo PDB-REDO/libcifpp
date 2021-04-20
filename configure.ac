@@ -38,7 +38,7 @@ LT_INIT([disable-shared pic-only])
 
 AC_SUBST(LIBTOOL_DEPS)
 
-dnl versioning, first for libtool
+dnl versioning, for libtool
 LIBCIF_CURRENT=1
 LIBCIF_REVISION=1
 LIBCIF_AGE=1

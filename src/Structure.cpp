@@ -2237,13 +2237,51 @@ void Structure::moveAtom(Atom& a, Point p)
 void Structure::changeResidue(const Residue& res, const std::string& newCompound,
 		const std::vector<std::tuple<std::string,std::string>>& remappedAtoms)
 {
+	using namespace cif::literals;
+
+	const auto compound = Compound::create(newCompound);
+	if (not compound)
+		throw std::runtime_error("Unknown compound " + newCompound);
+
 	cif::Datablock& db = *mFile.impl().mDb;
 
+	std::string asymID = res.asymID();
 	std::string entityID;
+	std::tie(entityID) = db["struct_asym"].find1<std::string>("id"_key == asymID, { "entity_id" });
 
 	// First make sure the compound is already known or insert it.
 	// And if the residue is an entity, we must make sure it exists
 	insertCompound(newCompound, res.isEntity());
+
+	// Next, if it is a non-polymer, update the entityID
+
+	if (db["pdbx_entity_nonpoly"].exists("entity_id"_key == entityID and "comp_id"_key == res.compoundID()))
+	{
+		try
+		{
+			std::tie(entityID) = db["entity"].find1<std::string>("type"_key == "non-polymer" and "pdbx_description"_key == compound->name(), { "id" });
+		}
+		catch (const std::exception& ex)
+		{
+			entityID = db["entity"].getUniqueID([](int i) { return std::to_string(i); });
+			db["entity"].emplace({
+				{ "id", entityID },
+				{ "type", "non-polymer" },
+				{ "src_method", "man" },
+				{ "pdbx_description", compound->name() },
+				{ "formula_weight", compound->formulaWeight() }
+			});
+		}
+
+		if (not db["pdbx_entity_nonpoly"].exists("entity_id"_key == entityID and "comp_id"_key == newCompound))
+		{
+			db["pdbx_entity_nonpoly"].emplace({
+				{ "entity_id", entityID },
+				{ "name", compound->name() },
+				{ "comp_id", newCompound }
+			});
+		}
+	}
 	
 	auto& atomSites = db["atom_site"];
 	auto atoms = res.atoms();

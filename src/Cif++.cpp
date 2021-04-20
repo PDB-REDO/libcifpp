@@ -1385,6 +1385,23 @@ void Category::sort(std::function<int(const Row&, const Row&)> comparator)
 	assert(size() == rows.size());
 }
 
+std::string Category::getUniqueID(std::function<std::string(int)> generator)
+{
+	using namespace cif::literals;
+
+	int nr = size() + 1;
+
+	for (;;)
+	{
+		std::string result = generator(nr++);
+
+		if (exists("id"_key == result))
+			continue;
+
+		return result;
+	}
+}
+
 size_t Category::size() const
 {
 	size_t result = 0;

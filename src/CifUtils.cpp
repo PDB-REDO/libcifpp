@@ -215,6 +215,37 @@ std::tuple<std::string, std::string> splitTagName(const std::string &tag)
 }
 
 // --------------------------------------------------------------------
+
+std::string cifIdForNumber(int number)
+{
+	std::string result;
+	
+	if (number >= 26 * 26 * 26)
+		result = 'L' + std::to_string(number);
+	else
+	{
+		if (number >= 26 * 26)
+		{
+			int v = number / (26 * 26);
+			result += 'A' - 1 + v;
+			number %= (26 * 26);
+		}
+		
+		if (number >= 26)
+		{
+			int v = number / 26;
+			result += 'A' - 1 + v;
+			number %= 26;
+		}
+		
+		result += 'A' + number;
+	}
+	
+	assert(not result.empty());
+	return result;
+}
+
+// --------------------------------------------------------------------
 // Simplified line breaking code taken from a decent text editor.
 // In this case, simplified means it only supports ASCII.
 

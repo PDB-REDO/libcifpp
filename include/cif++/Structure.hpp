@@ -445,7 +445,8 @@ class Structure
 	Atom getAtomByLabel(const std::string& atomID, const std::string& asymID,
 		const std::string& compID, int seqID, const std::string& altID = "");
 	
-	const Residue& getResidue(const std::string& asymID, const std::string& compID, int seqID) const;
+	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
+	const Residue& getResidue(const std::string& asymID, const std::string& compID, int seqID = 0) const;
 
 	// map between auth and label locations
 	

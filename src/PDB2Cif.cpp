@@ -566,21 +566,19 @@ class PDBFileParser
 
 			if (not result.empty() and result.back() != ']')
 				result += '-';
+			
 
-				 if (sugar->c1.resName == "MAN") result += "alpha-D-mannopyranose";
+			auto compound = CompoundFactory::instance().create(sugar->c1.resName);
+			if (compound)
+				result += compound->name();
+			else if (sugar->c1.resName == "MAN") result += "alpha-D-mannopyranose";
 			else if (sugar->c1.resName == "BMA") result += "beta-D-mannopyranose";
 			else if (sugar->c1.resName == "NAG") result += "2-acetamido-2-deoxy-beta-D-glucopyranose";
 			else if (sugar->c1.resName == "NDG") result += "2-acetamido-2-deoxy-alpha-D-glucopyranose";
 			else if (sugar->c1.resName == "FUC") result += "alpha-L-fucopyranose";
 			else if (sugar->c1.resName == "FUL") result += "beta-L-fucopyranose";
 			else
-			{
-				auto compound = CompoundFactory::instance().create(sugar->c1.resName);
-				if (compound)
-					result += compound->name();
-				else
-					result += sugar->c1.resName;
-			}
+				result += sugar->c1.resName;
 
 			return result;
 		}
@@ -950,35 +948,6 @@ class PDBFileParser
 		}
 
 		return c;
-	}
-	
-	std::string cifIdForInt(int nr) const
-	{
-		std::string result;
-		
-		if (nr >= 26 * 26 * 26)
-			result = 'L' + std::to_string(nr);
-		else
-		{
-			if (nr >= 26 * 26)
-			{
-				int v = nr / (26 * 26);
-				result += 'A' - 1 + v;
-				nr %= (26 * 26);
-			}
-			
-			if (nr >= 26)
-			{
-				int v = nr / 26;
-				result += 'A' - 1 + v;
-				nr %= 26;
-			}
-			
-			result += 'A' + nr;
-		}
-		
-		assert(not result.empty());
-		return result;
 	}
 	
 	std::vector<char> altLocsForAtom(char chainID, int seqNum, char iCode, std::string atomName);
@@ -1484,7 +1453,7 @@ void PDBFileParser::ParseTitle()
 		//	37 - 40       ...
 
 
-		std::string old		= vS(22, 25);
+		std::string old			= vS(22, 25);
 		std::string date		= pdb2cifDate(vS(12, 20));
 		cat = getCategory("pdbx_database_PDB_obs");
 		
@@ -1506,7 +1475,7 @@ void PDBFileParser::ParseTitle()
 	Match("TITLE ", false);
 	std::string title;
 	if (mRec->is("TITLE "))	//	 1 -  6       Record name    "TITLE "
-	{							//	 9 - 10       Continuation   continuation  Allows concatenation of multiple records.
+	{						//	 9 - 10       Continuation   continuation  Allows concatenation of multiple records.
 		title = vS(11);		//	11 - 80       String         title         Title of the  experiment.
 		GetNextRecord();
 	}
@@ -3770,7 +3739,7 @@ void PDBFileParser::ConstructEntities()
 	int asymNr = 0;
 	for (auto& chain: mChains)
 	{
-		std::string asymID = cifIdForInt(asymNr++);
+		std::string asymID = cif::cifIdForNumber(asymNr++);
 		std::string entityID = mMolID2EntityID[chain.mMolID];
 		
 		mAsymID2EntityID[asymID] = entityID;
@@ -4182,7 +4151,7 @@ void PDBFileParser::ConstructEntities()
 		if (ih != chain.mSeqres.end())
 			continue;
 		
-		heti.asymID = cifIdForInt(asymNr++);
+		heti.asymID = cif::cifIdForNumber(asymNr++);
 	}
 
 	std::set<std::string> writtenAsyms;
@@ -4261,7 +4230,7 @@ void PDBFileParser::ConstructEntities()
 			{
 				if (waterChains.count(het.chainID) == 0)
 				{
-					asymID = cifIdForInt(asymNr++);
+					asymID = cif::cifIdForNumber(asymNr++);
 					waterChains[het.chainID] = asymID;
 				}
 				else
@@ -4604,7 +4573,7 @@ void PDBFileParser::ConstructSugarTrees(int& asymNr)
 
 				// create an asym for this sugar tree
 
-				std::string asymID = cifIdForInt(asymNr++);
+				std::string asymID = cif::cifIdForNumber(asymNr++);
 
 				getCategory("struct_asym")->emplace({
 					{ "id", asymID },
