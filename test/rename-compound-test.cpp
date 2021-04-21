@@ -24,6 +24,8 @@ int main(int argc, char* argv[])
 	auto &res = structure.getResidue("B", "REA");
 	structure.changeResidue(res, "RXA", {});
 
+	structure.cleanupEmptyCategories();
+
 	f.file().save(std::cout);
 	
 	return 0;	

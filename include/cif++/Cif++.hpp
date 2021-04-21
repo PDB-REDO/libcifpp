@@ -1876,6 +1876,7 @@ class Category
 	bool hasParent(Row r, const Category& parentCat, const ValidateLink& link) const;
 
 	bool hasChildren(Row r) const;
+	bool hasParents(Row r) const;
 
 	RowSet getChildren(Row r, Category& childCat);
 	RowSet getChildren(Row r, const char* childCat);

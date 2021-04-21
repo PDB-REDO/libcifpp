@@ -65,6 +65,7 @@ std::string to_string(BondType bondType)
 		case BondType::delo:	return "delo";
 		case BondType::pi:		return "pi";
 	}
+	throw std::invalid_argument("Invalid bondType");
 }
 
 BondType from_string(const std::string& bondType)

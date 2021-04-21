@@ -2291,6 +2291,7 @@ void Structure::changeResidue(const Residue& res, const std::string& newCompound
 		for (auto &nps : pdbxNonPolyScheme.find("asym_id"_key == asymID))
 		{
 			nps.assign("mon_id", newCompound, true);
+			nps.assign("auth_mon_id", newCompound, true);
 			nps.assign("entity_id", entityID, true);
 		}
 
@@ -2338,7 +2339,69 @@ void Structure::changeResidue(const Residue& res, const std::string& newCompound
 	}
 	
 	for (auto a: atoms)
+	{
 		atomSites.update_value(cif::Key("id") == a.id(), "label_comp_id", newCompound);
+		atomSites.update_value(cif::Key("id") == a.id(), "auth_comp_id", newCompound);
+	}
+}
+
+void Structure::cleanupEmptyCategories()
+{
+	using namespace cif::literals;
+
+	cif::Datablock& db = *mFile.impl().mDb;
+
+	auto &atomSite = db["atom_site"];
+
+	// Remove chem_comp's for which there are no atoms at all
+	auto &chem_comp = db["chem_comp"];
+	cif::RowSet obsoleteChemComps(chem_comp);
+
+	for (auto chemComp : chem_comp)
+	{
+		std::string compID = chemComp["id"].as<std::string>();
+		if (atomSite.exists("label_comp_id"_key == compID or "auth_comp_id"_key == compID))
+			continue;
+		
+		obsoleteChemComps.push_back(chemComp);
+	}
+
+	for (auto chemComp : obsoleteChemComps)
+		chem_comp.erase(chemComp);
+
+	// similarly, remove entities not referenced by any atom
+
+	auto &entities = db["entity"];
+	cif::RowSet obsoleteEntities(entities);
+
+	for (auto entity : entities)
+	{
+		std::string entityID = entity["id"].as<std::string>();
+		if (atomSite.exists("label_entity_id"_key == entityID))
+			continue;
+		
+		obsoleteEntities.push_back(entity);
+	}
+
+	for (auto entity : obsoleteEntities)
+		entities.erase(entity);
+
+	// the rest?
+
+	for (const char *cat : { "pdbx_entity_nonpoly" })
+	{
+		auto &category = db[cat];
+
+		cif::RowSet empty(category);
+		for (auto row : category)
+		{
+			if (not category.hasChildren(row) and not category.hasParents(row))
+				empty.push_back(row);
+		}
+
+		for (auto row : empty)
+			category.erase(row);
+	}
 }
 
 }

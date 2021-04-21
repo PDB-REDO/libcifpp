@@ -484,6 +484,8 @@ class Structure
 	const std::vector<Residue>& getNonPolymers() const					{ return mNonPolymers; }
 	const std::vector<Residue>& getBranchResidues() const				{ return mBranchResidues; }
 	
+	void cleanupEmptyCategories();
+
   private:
 	friend Polymer;
 	friend Residue;

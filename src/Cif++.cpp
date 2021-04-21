@@ -1915,6 +1915,37 @@ bool Category::hasChildren(Row r) const
 	return result;
 }
 
+bool Category::hasParents(Row r) const
+{
+	assert(mValidator != nullptr);
+	assert(mCatValidator != nullptr);
+
+	bool result = false;
+
+	for (auto& link: mValidator->getLinksForChild(mName))
+	{
+		auto parentCat = mDb.get(link->mParentCategory);
+		if (parentCat == nullptr)
+			continue;
+		
+		Condition cond;
+		
+		for (size_t ix = 0; ix < link->mChildKeys.size(); ++ix)
+		{
+			const char* value = r[link->mChildKeys[ix]].c_str();
+			
+			cond = std::move(cond) && (Key(link->mParentKeys[ix]) == value);
+		}
+
+		result = not parentCat->find(std::move(cond)).empty();
+
+		if (result)
+			break;
+	}
+
+	return result;
+}
+
 RowSet Category::getChildren(Row r, const char* childCat)
 {
 	return getChildren(r, mDb[childCat]);
