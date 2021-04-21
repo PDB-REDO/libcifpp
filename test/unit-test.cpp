@@ -1309,7 +1309,7 @@ PRO OXT HXT SING N N 17
 )"_cf;
 
 	const std::filesystem::path example("../examples/1cbs.cif.gz");
-	mmcif::File file(example);
+	mmcif::File file(example.string());
 	mmcif::Structure structure(file);
 
 	mmcif::BondMap bm(structure);

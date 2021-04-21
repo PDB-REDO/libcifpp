@@ -29,6 +29,7 @@
 #include "cif++/Cif++.hpp"
 
 #include <stack>
+#include <map>
 
 namespace cif
 {
