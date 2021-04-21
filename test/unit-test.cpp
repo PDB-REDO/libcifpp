@@ -1271,7 +1271,7 @@ save__cat_1.id
     _item.mandatory_code      yes
     _item_linked.child_name   '_cat_2.parent_id'
     _item_linked.parent_name  '_cat_1.id'
-    _item_type.code           code
+    _item_type.code           int
     save_
 
 save__cat_1.name
@@ -1396,7 +1396,6 @@ _cat_2.desc
 1 aap  1 'Een dier'
 2 aap  2 'Een andere aap'
 3 noot 1 'walnoot bijvoorbeeld'
-4 n2   1  hazelnoot
 
 loop_
 _cat_3.id
@@ -1439,63 +1438,73 @@ _cat_3.num
 	BOOST_CHECK(num == 2);
 	BOOST_CHECK(name == "aap");
 	
+	int i = 0;	
+	for (const auto &[id, name, num, desc]: cat2.rows<int,std::string,int,std::string>({"id", "name", "num", "desc"}))
+	{
+		switch (++i)
+		{
+			case 1:
+				BOOST_CHECK(id == 1);
+				BOOST_CHECK(num == 1);
+				BOOST_CHECK(name == "aapje");
+				BOOST_CHECK(desc == "Een dier");
+				break;
 
+			case 2:
+				BOOST_CHECK(id == 2);
+				BOOST_CHECK(num == 2);
+				BOOST_CHECK(name == "aap");
+				BOOST_CHECK(desc == "Een andere aap");
+				break;
 
-    // // check a rename in parent and child
+			case 3:
+				BOOST_CHECK(id == 3);
+				BOOST_CHECK(num == 1);
+				BOOST_CHECK(name == "noot");
+				BOOST_CHECK(desc == "walnoot bijvoorbeeld");
+				break;
+			
+			default:
+				BOOST_FAIL("Unexpected record");
+		}
+	}
 
-    // for (auto r: cat1.find(cif::Key("id") == 1))
-    // {
-    //     r["id"] = 10;
-    //     break;
-    // }
+	BOOST_CHECK(cat1.size() == 4);
+	i = 0;
+	for (const auto &[id, name, desc]: cat1.rows<int,std::string,std::string>({"id", "name", "desc"}))
+	{
+		switch (++i)
+		{
+			case 1:
+				BOOST_CHECK(id == 1);
+				BOOST_CHECK(name == "aapje");
+				BOOST_CHECK(desc == "Aap");
+				break;
 
-    // BOOST_CHECK(cat1.size() == 3);
-    // BOOST_CHECK(cat2.size() == 4);
+			case 2:
+				BOOST_CHECK(id == 2);
+				BOOST_CHECK(name == "noot");
+				BOOST_CHECK(desc == "Noot");
+				break;
 
-    // BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
-    // BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+			case 3:
+				BOOST_CHECK(id == 3);
+				BOOST_CHECK(name == "mies");
+				BOOST_CHECK(desc == "Mies");
+				break;
+			
+			case 4:
+				BOOST_CHECK(id == 4);
+				BOOST_CHECK(name == "aap");
+				BOOST_CHECK(desc == "Aap");
+				break;
+			
+			default:
+				BOOST_FAIL("Unexpected record");
+		}
+	}
 
-    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 0);
-    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 2);
-
-    // // check a rename in parent and child, this time only one child should be renamed
-
-    // for (auto r: cat1.find(cif::Key("id") == 2))
-    // {
-    //     r["id"] = 20;
-    //     break;
-    // }
-
-    // BOOST_CHECK(cat1.size() == 3);
-    // BOOST_CHECK(cat2.size() == 4);
-
-    // BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
-    // BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
-
-    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 1);
-    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 1);
-
-    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "noot").size() == 0);
-    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "n2").size() == 1);
-    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "noot").size() == 1);
-    // BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "n2").size() == 0);
-
-
-
-    // // // --------------------------------------------------------------------
-    
-    // // cat1.erase(cif::Key("id") == 10);
-
-    // // BOOST_CHECK(cat1.size() == 2);
-    // // BOOST_CHECK(cat2.size() == 2);
-
-    // // cat1.erase(cif::Key("id") == 20);
-
-    // // BOOST_CHECK(cat1.size() == 1);
-    // // BOOST_CHECK(cat2.size() == 1);
-
-
-
+	f.save(std::cout);
 }
 
 // --------------------------------------------------------------------

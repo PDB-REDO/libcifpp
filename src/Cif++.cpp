@@ -1745,6 +1745,36 @@ auto Category::erase(iterator pos) -> iterator
 	return result;
 }
 
+Row Category::copyRow(const Row &row)
+{
+	// copy the values
+	std::vector<Item> items;
+	std::copy(row.begin(), row.end(), std::back_inserter(items));
+
+	if (mCatValidator and mCatValidator->mKeys.size() == 1)
+	{
+		auto key = mCatValidator->mKeys.front();
+		auto kv = mCatValidator->getValidatorForItem(key);
+
+		for (auto &item : items)
+		{
+			if (item.name() != key)
+				continue;
+
+			if (kv->mType->mPrimitiveType == DDL_PrimitiveType::Numb)
+				item.value(getUniqueID(""));
+			else
+				item.value(getUniqueID(mName + "_id_"));
+			break;
+		}
+	}
+
+	auto &&[ result, inserted ] = emplace(items.begin(), items.end());
+	// assert(inserted);
+
+	return result;
+}
+
 void Category::getTagOrder(std::vector<std::string>& tags) const
 {
 	for (auto& c: mColumns)
@@ -2396,6 +2426,127 @@ void Category::write(std::ostream& os, const std::vector<std::string>& columns)
 	}
 
 	write(os, order, true);
+}
+
+// --------------------------------------------------------------------
+
+void Category::update_value(RowSet &&rows, const std::string &tag, const std::string &value)
+{
+	if (rows.empty())
+		return;
+
+	auto colIx = getColumnIndex(tag);
+	if (colIx >= mColumns.size())
+		throw std::runtime_error("Invalid column " + value + " for " + mName);
+
+	auto& col = mColumns[colIx];
+
+	// check the value
+	if (col.mValidator)
+		(*col.mValidator)(value);
+
+	// first some sanity checks, what was the old value and is it the same for all rows?
+	std::string oldValue = rows.front()[tag].c_str();
+	for (auto &row: rows)
+	{
+		if (oldValue != row[tag].c_str())
+			throw std::runtime_error("Inconsistent old values in update_value");
+	}
+
+	if (oldValue == value)	// no need to do anything
+		return;
+
+	// update rows, but do not cascade
+	for (auto &row: rows)
+		row.assign(colIx, value, true);
+
+	// see if we need to update any child categories that depend on this value
+	auto& validator = getValidator();
+	auto& db = mDb;
+
+	for (auto parent: rows)
+	{
+		for (auto linked: validator.getLinksForParent(mName))
+		{
+			auto childCat = db.get(linked->mChildCategory);
+			if (childCat == nullptr)
+				continue;
+
+			if (std::find(linked->mParentKeys.begin(), linked->mParentKeys.end(), tag) == linked->mParentKeys.end())
+				continue;
+
+			Condition cond;
+			std::string childTag;
+			
+			for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+			{
+				std::string pk = linked->mParentKeys[ix];
+				std::string ck = linked->mChildKeys[ix];
+
+				// TODO add code to *NOT* test mandatory fields for Empty
+
+				if (pk == tag)
+				{
+					childTag = ck;
+					cond = std::move(cond) && Key(ck) == oldValue;
+				}
+				else
+					cond = std::move(cond) && Key(ck) == parent[pk].c_str();
+			}
+
+			auto children = RowSet{ *childCat, std::move(cond) };
+			if (children.empty())
+				continue;
+
+			// now be careful. If we search back from child to parent and still find a valid parent row
+			// we cannot simply rename the child but will have to create a new child. Unless that new
+			// child already exists of course.
+
+			for (auto child: children)
+			{
+				Condition cond;
+				
+				for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+				{
+					std::string pk = linked->mParentKeys[ix];
+					std::string ck = linked->mChildKeys[ix];
+
+					// TODO add code to *NOT* test mandatory fields for Empty
+
+					cond = std::move(cond) && Key(pk) == child[ck].c_str();
+				}
+
+				auto parents = find(std::move(cond));
+				if (parents.empty())
+					continue;
+
+				// oops, we need to split this child, unless a row already exists for the new value
+				Condition check;
+				
+				for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+				{
+					std::string pk = linked->mParentKeys[ix];
+					std::string ck = linked->mChildKeys[ix];
+
+					// TODO add code to *NOT* test mandatory fields for Empty
+
+					if (pk == tag)
+						check = std::move(check) && Key(ck) == value;
+					else
+						check = std::move(check) && Key(ck) == parent[pk].c_str();
+				}
+
+				if (childCat->exists(std::move(check)))	// phew..., narrow escape
+					continue;
+
+				// create the actual copy
+				childCat->copyRow(child);
+			}
+
+			// finally, update the children
+			childCat->update_value(std::move(children), childTag, value);
+		}	
+	}
 }
 
 // --------------------------------------------------------------------

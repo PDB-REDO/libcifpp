@@ -1115,6 +1115,20 @@ Condition operator==(const Key& key, const T& v)
 		{ return r[tag].template compare<T>(v, icase) == 0; }, s.str()));
 }
 
+inline Condition operator==(const Key& key, const char *value)
+{
+	if (value != nullptr and *value != 0)
+	{
+		std::ostringstream s;
+		s << " == " << value;
+
+		return Condition(new detail::KeyCompareConditionImpl(key.mItemTag, [tag = key.mItemTag, value](const Category& c, const Row& r, bool icase)
+			{ return r[tag].compare(value, icase) == 0; }, s.str()));
+	}
+	else
+		return Condition(new detail::KeyIsEmptyConditionImpl(key.mItemTag));
+}
+
 // inline Condition operator==(const Key& key, const detail::ItemReference& v)
 // {
 // 	if (v.empty())
@@ -1530,30 +1544,31 @@ class conditional_iterator_proxy
 
 // --------------------------------------------------------------------
 // class RowSet is used to return find results. Use it to re-order the results
-// or to group them 
+// or to group them
 
 class RowSet
 {
-	typedef std::vector<Row>	base_type;
+	typedef std::vector<Row> base_type;
 
   public:
-
 	using size_type = std::size_t;
-    using difference_type = std::ptrdiff_t;
+	using difference_type = std::ptrdiff_t;
 
-	RowSet(Category& cat);
-	RowSet(Category& cat, Condition&& cond);
-	RowSet(const RowSet& rhs);
-	RowSet(RowSet&& rhs);
+	RowSet(Category &cat);
+	RowSet(Category &cat, Condition &&cond);
+	RowSet(const RowSet &rhs);
+	RowSet(RowSet &&rhs);
 	virtual ~RowSet();
 
-	RowSet& operator=(const RowSet& rhs);
-	RowSet& operator=(RowSet&& rhs);
+	RowSet &operator=(const RowSet &rhs);
+	RowSet &operator=(RowSet &&rhs);
 
-	RowSet& orderBy(const std::string& Item)
-		{ return orderBy({ Item }); }
-	
-	RowSet& orderBy(std::initializer_list<std::string> Items);
+	RowSet &orderBy(const std::string &Item)
+	{
+		return orderBy({Item});
+	}
+
+	RowSet &orderBy(std::initializer_list<std::string> Items);
 
 	class iterator
 	{
@@ -1561,22 +1576,26 @@ class RowSet
 		using iterator_category = std::forward_iterator_tag;
 		using value_type = Row;
 		using difference_type = std::ptrdiff_t;
-		using pointer = value_type*;
-		using reference = value_type&;
+		using pointer = value_type *;
+		using reference = value_type &;
 
 		iterator() {}
 
-		iterator(const iterator& i)
+		iterator(const iterator &i)
 			: mPos(i.mPos)
 			, mEnd(i.mEnd)
-			, mCurrentRow(i.mCurrentRow) {}
+			, mCurrentRow(i.mCurrentRow)
+		{
+		}
 
-		iterator(const std::vector<ItemRow*>::iterator& p, const std::vector<ItemRow*>::iterator& e)
+		iterator(const std::vector<ItemRow *>::iterator &p, const std::vector<ItemRow *>::iterator &e)
 			: mPos(p)
 			, mEnd(e)
-			, mCurrentRow(p == e ? nullptr : *p) {}
+			, mCurrentRow(p == e ? nullptr : *p)
+		{
+		}
 
-		iterator& operator=(const iterator& i)
+		iterator &operator=(const iterator &i)
 		{
 			mPos = i.mPos;
 			mEnd = i.mEnd;
@@ -1584,10 +1603,10 @@ class RowSet
 			return *this;
 		}
 
-		reference operator*()		{ return mCurrentRow; }
-		pointer operator->()		{ return &mCurrentRow; }
+		reference operator*() { return mCurrentRow; }
+		pointer operator->() { return &mCurrentRow; }
 
-		iterator& operator++()
+		iterator &operator++()
 		{
 			++mPos;
 			if (mPos != mEnd)
@@ -1604,9 +1623,10 @@ class RowSet
 			return t;
 		}
 
-		iterator& operator+=(difference_type i)
+		iterator &operator+=(difference_type i)
 		{
-			while (i-- > 0) operator++();
+			while (i-- > 0)
+				operator++();
 			return *this;
 		}
 
@@ -1617,39 +1637,38 @@ class RowSet
 			return result;
 		}
 
-		friend iterator operator+(difference_type i, const iterator& iter)
+		friend iterator operator+(difference_type i, const iterator &iter)
 		{
 			auto result = iter;
 			result += i;
 			return result;
 		}
 
-		friend difference_type operator-(const iterator& a, const iterator& b)
+		friend difference_type operator-(const iterator &a, const iterator &b)
 		{
 			return std::distance(a.mPos, b.mPos);
 		}
 
-		bool operator==(const iterator& i) const		{ return mPos == i.mPos; }
-		bool operator!=(const iterator& i) const		{ return mPos != i.mPos; }
+		bool operator==(const iterator &i) const { return mPos == i.mPos; }
+		bool operator!=(const iterator &i) const { return mPos != i.mPos; }
 
 	  private:
-
 		friend class RowSet;
 
-		std::vector<ItemRow*>::iterator current() const	{ return mPos; }
+		std::vector<ItemRow *>::iterator current() const { return mPos; }
 
-		std::vector<ItemRow*>::iterator mPos, mEnd;
+		std::vector<ItemRow *>::iterator mPos, mEnd;
 		Row mCurrentRow;
 	};
 
-	iterator begin()		{ return iterator(mItems.begin(), mItems.end()); }
-	iterator end()			{ return iterator(mItems.end(), mItems.end()); }
+	iterator begin() { return iterator(mItems.begin(), mItems.end()); }
+	iterator end() { return iterator(mItems.end(), mItems.end()); }
 
-	Row front() const		{ return Row(mItems.front()); }
-	size_t size() const		{ return mItems.size(); }
-	bool empty() const		{ return mItems.empty(); }
+	Row front() const { return Row(mItems.front()); }
+	size_t size() const { return mItems.size(); }
+	bool empty() const { return mItems.empty(); }
 
-	template<typename InputIterator>
+	template <typename InputIterator>
 	iterator insert(iterator pos, InputIterator b, InputIterator e)
 	{
 		difference_type offset = pos - begin();
@@ -1658,15 +1677,25 @@ class RowSet
 		return begin() + offset;
 	}
 
-	iterator insert(iterator pos, Row& row)
+	iterator insert(iterator pos, Row &row)
 	{
 		return insert(pos, row.mData);
 	}
 
-	iterator insert(iterator pos, ItemRow* item)
+	iterator insert(iterator pos, ItemRow *item)
 	{
 		auto p = mItems.insert(pos.current(), item);
 		return iterator(p, mItems.end());
+	}
+
+	iterator push_back(ItemRow *item)
+	{
+		return insert(end(), item);
+	}
+
+	iterator push_back(Row &row)
+	{
+		return insert(end(), row.mData);
 	}
 
 	void make_unique()
@@ -1676,8 +1705,8 @@ class RowSet
 	}
 
   private:
-	Category*			mCat;
-	std::vector<ItemRow*>	mItems;
+	Category *mCat;
+	std::vector<ItemRow *> mItems;
 
 	// Condition*	mCond;
 };
@@ -1819,6 +1848,10 @@ class Category
 	void erase(Row r);
 	iterator erase(iterator ri);
 
+	/// \brief Create a copy of Row \a r and return the copy. If this row has
+	/// a single key field, this will be updated with a new unique value.
+	Row copyRow(const Row &r);
+
 	// erase without cascade, should only be used when speed is needed
 
 	size_t erase_nocascade(Condition&& cond)
@@ -1900,6 +1933,10 @@ class Category
 	// a sequence number. This function will be called until the result is
 	// unique in the context of this category
 	std::string getUniqueID(std::function<std::string(int)> generator = cif::cifIdForNumber);
+	std::string getUniqueID(const std::string &prefix)
+	{
+		return getUniqueID([prefix](int nr) { return prefix + std::to_string(nr); });
+	}
 
   private:
 
