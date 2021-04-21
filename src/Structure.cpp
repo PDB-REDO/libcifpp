@@ -2289,7 +2289,10 @@ void Structure::changeResidue(const Residue& res, const std::string& newCompound
 
 		auto &pdbxNonPolyScheme = db["pdbx_nonpoly_scheme"];
 		for (auto &nps : pdbxNonPolyScheme.find("asym_id"_key == asymID))
+		{
+			nps.assign("mon_id", newCompound, true);
 			nps.assign("entity_id", entityID, true);
+		}
 
 		// create rest
 		auto& chemComp = db["chem_comp"];

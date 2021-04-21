@@ -2541,13 +2541,22 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 						check = std::move(check) && Key(ck) == parent[pk].c_str();
 				}
 
+std::cerr << check << std::endl;
+
 				if (childCat->exists(std::move(check)))	// phew..., narrow escape
 					continue;
 
-				// create the actual copy
-				auto copy = childCat->copyRow(child);
-				if (copy != child)	
-					process.push_back(child);
+				// create the actual copy, if we can...
+				if (childCat->mCatValidator != nullptr and childCat->mCatValidator->mKeys.size() == 1)
+				{
+					auto copy = childCat->copyRow(child);
+					if (copy != child)	
+						process.push_back(child);
+				}
+
+				// cannot update this... 
+				if (cif::VERBOSE)
+					std::cerr << "Cannot update child " << childCat->mName << "." << childTag << " with value " << value << std::endl;
 			}
 
 			// finally, update the children
