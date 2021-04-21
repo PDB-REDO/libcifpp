@@ -116,6 +116,7 @@ class Atom
 	std::string labelAtomID() const;
 	std::string labelCompID() const;
 	std::string labelAsymID() const;
+	std::string labelEntityID() const;
 	int labelSeqID() const;
 	std::string labelAltID() const;
 	bool isAlternate() const;
@@ -224,6 +225,7 @@ class Residue
 	const std::string&	compoundID() const	{ return mCompoundID; }
 	const std::string&	asymID() const		{ return mAsymID; }
 	int					seqID() const		{ return mSeqID; }
+	std::string			entityID() const;
 	
 	std::string			authAsymID() const;
 	std::string			authSeqID() const;

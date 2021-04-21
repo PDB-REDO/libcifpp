@@ -23,3 +23,5 @@ msvc/.vs/
 msvc/**/Debug
 msvc/**/x64
 .vs/
+data/
+test/rename-compound-test

@@ -605,6 +605,11 @@ std::string Atom::labelAsymID() const
 	return impl()->mAsymID;
 }
 
+std::string Atom::labelEntityID() const
+{
+	return property<std::string>("label_entity_id");
+}
+
 std::string Atom::labelAltID() const
 {
 	return impl()->mAltID;
@@ -839,6 +844,11 @@ Residue& Residue::operator=(Residue&& rhs)
 Residue::~Residue()
 {
 //std::cerr << "~Residue" << std::endl;	
+}
+
+std::string Residue::entityID() const
+{
+	return mAtoms.empty() ? "" : mAtoms.front().labelEntityID();
 }
 
 std::string Residue::authInsCode() const
@@ -2096,7 +2106,7 @@ void Structure::insertCompound(const std::string& compoundID, bool isEntity)
 	if (isEntity)
 	{
 		auto& pdbxEntityNonpoly = db["pdbx_entity_nonpoly"];
-		if (pdbxEntityNonpoly.find(cif::Key("comp_id") == compoundID).empty())
+		if (not pdbxEntityNonpoly.exists(cif::Key("comp_id") == compoundID))
 		{
 			auto& entity = db["entity"];
 			std::string entityID = std::to_string(entity.size() + 1);
@@ -2239,19 +2249,66 @@ void Structure::changeResidue(const Residue& res, const std::string& newCompound
 {
 	using namespace cif::literals;
 
+	cif::Datablock& db = *mFile.impl().mDb;
+	std::string asymID = res.asymID();
+
 	const auto compound = Compound::create(newCompound);
 	if (not compound)
 		throw std::runtime_error("Unknown compound " + newCompound);
 
-	cif::Datablock& db = *mFile.impl().mDb;
+	// First make sure the compound is already known or insert it.
+	// And if the residue is an entity, we must make sure it exists
 
-	std::string asymID = res.asymID();
 	std::string entityID;
-	std::tie(entityID) = db["struct_asym"].find1<std::string>("id"_key == asymID, { "entity_id" });
+	if (res.isEntity())
+	{
+		// create a copy of the entity first
+		auto &entity = db["entity"];
 
-	// // First make sure the compound is already known or insert it.
-	// // And if the residue is an entity, we must make sure it exists
-	// insertCompound(newCompound, res.isEntity());
+		try
+		{
+			std::tie(entityID) = entity.find1<std::string>("type"_key == "non-polymer" and "pdbx_description"_key == compound->name(), { "id" });
+		}
+		catch (const std::exception& ex)
+		{
+			entityID = entity.getUniqueID("");
+			entity.emplace({
+				{ "id", entityID },
+				{ "type", "non-polymer" },
+				{ "pdbx_description", compound->name() },
+				{ "formula_weight", compound->formulaWeight() }
+			});
+		}
+
+		auto &pdbxEntityNonpoly = db["pdbx_entity_nonpoly"];
+		pdbxEntityNonpoly.emplace({
+			{ "entity_id", entityID  },
+			{ "name", compound->name() },
+			{ "comp_id", newCompound }
+		});
+
+		auto &pdbxNonPolyScheme = db["pdbx_nonpoly_scheme"];
+		for (auto &nps : pdbxNonPolyScheme.find("asym_id"_key == asymID))
+			nps.assign("entity_id", entityID, true);
+
+		// create rest
+		auto& chemComp = db["chem_comp"];
+		if (not chemComp.exists(cif::Key("id") == newCompound))
+		{
+			chemComp.emplace({
+				{ "id", newCompound },
+				{ "name", compound->name() },
+				{ "formula", compound->formula() },
+				{ "formula_weight", compound->formulaWeight() },
+				{ "type", compound->type() }
+			});
+		}
+
+		// update the struct_asym for the new entity
+		db["struct_asym"].update_value("id"_key == asymID, "entity_id", entityID);
+	}
+	else
+		insertCompound(newCompound, false);
 
 	auto& atomSites = db["atom_site"];
 	auto atoms = res.atoms();
@@ -2278,17 +2335,7 @@ void Structure::changeResidue(const Residue& res, const std::string& newCompound
 	}
 	
 	for (auto a: atoms)
-	{
-		auto r = atomSites.find(cif::Key("id") == a.id());
-		assert(r.size() == 1);
-
-		if (r.size() != 1)
-			continue;
-
-		r.front().assign("label_comp_id", newCompound, false);
-		if (not entityID.empty())
-			r.front().assign("label_entity_id", entityID, false);
-	}
+		atomSites.update_value(cif::Key("id") == a.id(), "label_comp_id", newCompound);
 }
 
 }

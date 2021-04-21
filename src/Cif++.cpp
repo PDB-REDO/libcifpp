@@ -2502,6 +2502,8 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 			// we cannot simply rename the child but will have to create a new child. Unless that new
 			// child already exists of course.
 
+			RowSet process(*childCat);
+
 			for (auto child: children)
 			{
 				Condition cond;
@@ -2518,7 +2520,10 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 
 				auto parents = find(std::move(cond));
 				if (parents.empty())
+				{
+					process.push_back(child);
 					continue;
+				}
 
 				// oops, we need to split this child, unless a row already exists for the new value
 				Condition check;
@@ -2540,11 +2545,14 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 					continue;
 
 				// create the actual copy
-				childCat->copyRow(child);
+				auto copy = childCat->copyRow(child);
+				if (copy != child)	
+					process.push_back(child);
 			}
 
 			// finally, update the children
-			childCat->update_value(std::move(children), childTag, value);
+			if (not process.empty())
+				childCat->update_value(std::move(process), childTag, value);
 		}	
 	}
 }
