@@ -130,6 +130,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\AtomType.cpp" />
+    <ClCompile Include="..\src\BondMap.cpp" />
     <ClCompile Include="..\src\Cif++.cpp" />
     <ClCompile Include="..\src\Cif2PDB.cpp" />
     <ClCompile Include="..\src\CifParser.cpp" />
