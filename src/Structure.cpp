@@ -2402,6 +2402,30 @@ void Structure::cleanupEmptyCategories()
 		for (auto row : empty)
 			category.erase(row);
 	}
+
+	// count molecules
+	for (auto entity: entities)
+	{
+		std::string type, id;
+		cif::tie(type, id) = entity.get("type", "id");
+
+		std::optional<int> count;
+		if (type == "polymer")
+			count = db["entity_poly"].find("entity_id"_key == id).size();
+		else if (type == "non-polymer" or type == "water")
+			count = db["pdbx_nonpoly_scheme"].find("entity_id"_key == id).size();
+		else if (type == "branched")
+		{
+			// is this correct?
+			std::set<std::string> asym_ids;
+			for (const auto &[asym_id] : db["pdbx_branch_scheme"].find<std::string>("entity_id"_key == id, { "asym_id" }))
+				asym_ids.insert(asym_id);
+			count = asym_ids.size();
+		}
+
+		entity["pdbx_number_of_molecules"] = count;
+	}
+
 }
 
 }

@@ -276,6 +276,16 @@ namespace detail
 			return *this;
 		}
 
+		template<typename T>
+		ItemReference& operator=(const std::optional<T>& value)
+		{
+			if (value)
+				this->operator=(*value);
+			else
+				this->operator=("?");
+			return *this;
+		}
+
 		ItemReference& operator=(const std::string& value);
 
 		template<typename... Ts>
