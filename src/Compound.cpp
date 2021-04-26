@@ -39,10 +39,10 @@
 #include <fstream>
 
 #include "cif++/Cif++.hpp"
+#include "cif++/CifParser.hpp"
 #include "cif++/CifUtils.hpp"
 #include "cif++/Compound.hpp"
 #include "cif++/Point.hpp"
-#include "cif++/CifParser.hpp"
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
@@ -56,28 +56,36 @@ std::string to_string(BondType bondType)
 {
 	switch (bondType)
 	{
-		case BondType::sing:	return "sing";
-		case BondType::doub:	return "doub";
-		case BondType::trip:	return "trip";
-		case BondType::quad:	return "quad";
-		case BondType::arom:	return "arom";
-		case BondType::poly:	return "poly";
-		case BondType::delo:	return "delo";
-		case BondType::pi:		return "pi";
+		case BondType::sing: return "sing";
+		case BondType::doub: return "doub";
+		case BondType::trip: return "trip";
+		case BondType::quad: return "quad";
+		case BondType::arom: return "arom";
+		case BondType::poly: return "poly";
+		case BondType::delo: return "delo";
+		case BondType::pi: return "pi";
 	}
 	throw std::invalid_argument("Invalid bondType");
 }
 
-BondType from_string(const std::string& bondType)
+BondType from_string(const std::string &bondType)
 {
-	if (cif::iequals(bondType, "sing"))	return BondType::sing;
-	if (cif::iequals(bondType, "doub"))	return BondType::doub;
-	if (cif::iequals(bondType, "trip"))	return BondType::trip;
-	if (cif::iequals(bondType, "quad"))	return BondType::quad;
-	if (cif::iequals(bondType, "arom"))	return BondType::arom;
-	if (cif::iequals(bondType, "poly"))	return BondType::poly;
-	if (cif::iequals(bondType, "delo"))	return BondType::delo;
-	if (cif::iequals(bondType, "pi"))	return BondType::pi;
+	if (cif::iequals(bondType, "sing"))
+		return BondType::sing;
+	if (cif::iequals(bondType, "doub"))
+		return BondType::doub;
+	if (cif::iequals(bondType, "trip"))
+		return BondType::trip;
+	if (cif::iequals(bondType, "quad"))
+		return BondType::quad;
+	if (cif::iequals(bondType, "arom"))
+		return BondType::arom;
+	if (cif::iequals(bondType, "poly"))
+		return BondType::poly;
+	if (cif::iequals(bondType, "delo"))
+		return BondType::delo;
+	if (cif::iequals(bondType, "pi"))
+		return BondType::pi;
 	throw std::invalid_argument("Invalid bondType: " + bondType);
 }
 
@@ -122,24 +130,23 @@ Compound::Compound(cif::Datablock &db)
 		chemComp.front().get("id", "name", "type", "formula", "formula_weight", "pdbx_formal_charge");
 
 	auto &chemCompAtom = db["chem_comp_atom"];
-	for (auto row: chemCompAtom)
+	for (auto row : chemCompAtom)
 	{
 		CompoundAtom atom;
 		std::string typeSymbol;
 		cif::tie(atom.id, typeSymbol, atom.charge, atom.aromatic, atom.leavingAtom, atom.stereoConfig, atom.x, atom.y, atom.z) =
 			row.get("atom_id", "type_symbol", "charge", "pdbx_aromatic_flag", "pdbx_leaving_atom_flag", "pdbx_stereo_config",
-			"model_Cartn_x", "model_Cartn_y", "model_Cartn_z");
+				"model_Cartn_x", "model_Cartn_y", "model_Cartn_z");
 		atom.typeSymbol = AtomTypeTraits(typeSymbol).type();
 		mAtoms.push_back(std::move(atom));
 	}
 
 	auto &chemCompBond = db["chem_comp_bond"];
-	for (auto row: chemCompBond)
+	for (auto row : chemCompBond)
 	{
 		CompoundBond bond;
 		std::string valueOrder;
-		cif::tie(bond.atomID[0], bond.atomID[1], valueOrder, bond.aromatic, bond.stereoConfig)
-			= row.get("atom_id_1", "atom_id_2", "value_order", "pdbx_aromatic_flag", "pdbx_stereo_config");
+		cif::tie(bond.atomID[0], bond.atomID[1], valueOrder, bond.aromatic, bond.stereoConfig) = row.get("atom_id_1", "atom_id_2", "value_order", "pdbx_aromatic_flag", "pdbx_stereo_config");
 		bond.type = from_string(valueOrder);
 		mBonds.push_back(std::move(bond));
 	}
@@ -151,7 +158,7 @@ Compound::Compound(cif::Datablock &db, const std::string &id, const std::string 
 	, mType(type)
 {
 	auto &chemCompAtom = db["chem_comp_atom"];
-	for (auto row: chemCompAtom)
+	for (auto row : chemCompAtom)
 	{
 		CompoundAtom atom;
 		std::string typeSymbol;
@@ -166,18 +173,20 @@ Compound::Compound(cif::Datablock &db, const std::string &id, const std::string 
 	}
 
 	auto &chemCompBond = db["chem_comp_bond"];
-	for (auto row: chemCompBond)
+	for (auto row : chemCompBond)
 	{
 		CompoundBond bond;
 		std::string type;
-		cif::tie(bond.atomID[0], bond.atomID[1], type, bond.aromatic)
-			= row.get("atom_id_1", "atom_id_2", "type", "aromatic");
+		cif::tie(bond.atomID[0], bond.atomID[1], type, bond.aromatic) = row.get("atom_id_1", "atom_id_2", "type", "aromatic");
 
 		using cif::iequals;
 
-			 if (iequals(type, "single"))	bond.type = BondType::sing;
-		else if (iequals(type, "double"))	bond.type = BondType::doub;
-		else if (iequals(type, "triple"))	bond.type = BondType::trip;
+		if (iequals(type, "single"))
+			bond.type = BondType::sing;
+		else if (iequals(type, "double"))
+			bond.type = BondType::doub;
+		else if (iequals(type, "triple"))
+			bond.type = BondType::trip;
 		else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
 			bond.type = BondType::delo;
 		else
@@ -208,14 +217,6 @@ CompoundAtom Compound::getAtomByID(const std::string &atomID) const
 	return result;
 }
 
-const Compound *Compound::create(const std::string &id)
-{
-	auto result = CompoundFactory::instance().get(id);
-	if (result == nullptr)
-		result = CompoundFactory::instance().create(id);
-	return result;
-}
-
 bool Compound::atomsBonded(const std::string &atomId_1, const std::string &atomId_2) const
 {
 	auto i = find_if(mBonds.begin(), mBonds.end(),
@@ -225,83 +226,6 @@ bool Compound::atomsBonded(const std::string &atomId_1, const std::string &atomI
 
 	return i != mBonds.end();
 }
-
-// float Compound::atomBondValue(const std::string &atomId_1, const std::string &atomId_2) const
-// {
-// 	auto i = find_if(mBonds.begin(), mBonds.end(),
-// 		[&](const CompoundBond &b) {
-// 			return (b.atomID[0] == atomId_1 and b.atomID[1] == atomId_2) or (b.atomID[0] == atomId_2 and b.atomID[1] == atomId_1);
-// 		});
-
-// 	return i != mBonds.end() ? i->distance : 0;
-// }
-
-
-// float Compound::bondAngle(const std::string &atomId_1, const std::string &atomId_2, const std::string &atomId_3) const
-// {
-// 	float result = nanf("1");
-
-// 	for (auto &a : mAngles)
-// 	{
-// 		if (not(a.atomID[1] == atomId_2 and
-// 				((a.atomID[0] == atomId_1 and a.atomID[2] == atomId_3) or
-// 					(a.atomID[2] == atomId_1 and a.atomID[0] == atomId_3))))
-// 			continue;
-
-// 		result = a.angle;
-// 		break;
-// 	}
-
-// 	return result;
-// }
-
-//static float calcC(float a, float b, float alpha)
-//{
-//	float f = b * sin(alpha * kPI / 180);
-//	float d = sqrt(b * b - f * f);
-//	float e = a - d;
-//	float c = sqrt(f * f + e * e);
-//
-//	return c;
-//}
-
-// float Compound::chiralVolume(const std::string &centreID) const
-// {
-// 	float result = 0;
-
-// 	for (auto &cv : mChiralCentres)
-// 	{
-// 		if (cv.id != centreID)
-// 			continue;
-
-// 		// calculate the expected chiral volume
-
-// 		// the edges
-
-// 		float a = atomBondValue(cv.atomIDCentre, cv.atomID[0]);
-// 		float b = atomBondValue(cv.atomIDCentre, cv.atomID[1]);
-// 		float c = atomBondValue(cv.atomIDCentre, cv.atomID[2]);
-
-// 		// the angles for the top of the tetrahedron
-
-// 		float alpha = bondAngle(cv.atomID[0], cv.atomIDCentre, cv.atomID[1]);
-// 		float beta = bondAngle(cv.atomID[1], cv.atomIDCentre, cv.atomID[2]);
-// 		float gamma = bondAngle(cv.atomID[2], cv.atomIDCentre, cv.atomID[0]);
-
-// 		float cosa = cos(alpha * kPI / 180);
-// 		float cosb = cos(beta * kPI / 180);
-// 		float cosc = cos(gamma * kPI / 180);
-
-// 		result = (a * b * c * sqrt(1 + 2 * cosa * cosb * cosc - (cosa * cosa) - (cosb * cosb) - (cosc * cosc))) / 6;
-
-// 		if (cv.volumeSign == negativ)
-// 			result = -result;
-
-// 		break;
-// 	}
-
-// 	return result;
-// }
 
 // --------------------------------------------------------------------
 // a factory class to generate compounds
@@ -346,7 +270,7 @@ const std::map<std::string, char> kBaseMap{
 class CompoundFactoryImpl
 {
   public:
-	CompoundFactoryImpl();
+	CompoundFactoryImpl(CompoundFactoryImpl *next);
 
 	CompoundFactoryImpl(const std::string &file, CompoundFactoryImpl *next);
 
@@ -355,8 +279,42 @@ class CompoundFactoryImpl
 		delete mNext;
 	}
 
-	Compound *get(std::string id);
-	virtual Compound *create(std::string id);
+	Compound *get(std::string id)
+	{
+		std::shared_lock lock(mMutex);
+
+		ba::to_upper(id);
+
+		Compound *result = nullptr;
+
+		// walk the list, see if any of us has the compound already
+		for (auto impl = this; impl != nullptr; impl = impl->mNext)
+		{
+			for (auto cmp : impl->mCompounds)
+			{
+				if (cmp->id() == id)
+				{
+					result = cmp;
+					break;
+				}
+			}
+		}
+
+		if (result == nullptr and mMissing.count(id) == 0)
+		{
+			for (auto impl = this; impl != nullptr; impl = impl->mNext)
+			{
+				result = impl->create(id);
+				if (result != nullptr)
+					break;
+			}
+
+			if (result == nullptr)
+				mMissing.insert(id);
+		}
+
+		return result;
+	}
 
 	CompoundFactoryImpl *pop()
 	{
@@ -379,6 +337,13 @@ class CompoundFactoryImpl
 	}
 
   protected:
+
+	virtual Compound *create(const std::string &id)
+	{
+		// For the base class we assume every compound is preloaded
+		return nullptr;
+	}
+
 	std::shared_timed_mutex mMutex;
 
 	std::vector<Compound *> mCompounds;
@@ -390,7 +355,8 @@ class CompoundFactoryImpl
 
 // --------------------------------------------------------------------
 
-CompoundFactoryImpl::CompoundFactoryImpl()
+CompoundFactoryImpl::CompoundFactoryImpl(CompoundFactoryImpl *next)
+	: mNext(next)
 {
 	for (const auto &[key, value] : kAAMap)
 		mKnownPeptides.insert(key);
@@ -405,14 +371,14 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactor
 	cif::File cifFile(file);
 
 	auto compList = cifFile.get("comp_list");
-	if (compList)	// So this is a CCP4 restraints file, special handling
+	if (compList) // So this is a CCP4 restraints file, special handling
 	{
 		auto &chemComp = (*compList)["chem_comp"];
 
-		for (const auto &[id, name, group]: chemComp.rows<std::string,std::string,std::string>({"id", "name", "group"}))
+		for (const auto &[id, name, group] : chemComp.rows<std::string, std::string, std::string>({"id", "name", "group"}))
 		{
 			std::string type;
-			
+
 			// known groups are (counted from ccp4 monomer dictionary)
 
 			//	D-pyranose
@@ -431,7 +397,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactor
 			//	peptide
 			//	pyranose
 			//	saccharide
-			
+
 			if (cif::iequals(id, "gly"))
 				type = "peptide linking";
 			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide"))
@@ -442,7 +408,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactor
 				type = "RNA linking";
 			else
 				type = "non-polymer";
-			
+
 			auto &db = cifFile["comp_" + id];
 
 			mCompounds.push_back(new Compound(db, id, name, type));
@@ -456,88 +422,9 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactor
 		if (not cifFile.isValid())
 			throw std::runtime_error("Invalid compound file");
 
-		for (auto &db: cifFile)
+		for (auto &db : cifFile)
 			mCompounds.push_back(new Compound(db));
 	}
-}
-
-Compound *CompoundFactoryImpl::get(std::string id)
-{
-	std::shared_lock lock(mMutex);
-
-	ba::to_upper(id);
-
-	Compound *result = nullptr;
-
-	for (auto cmp : mCompounds)
-	{
-		if (cmp->id() == id)
-		{
-			result = cmp;
-			break;
-		}
-	}
-
-	if (result == nullptr and mNext != nullptr)
-		result = mNext->get(id);
-
-	return result;
-}
-
-Compound *CompoundFactoryImpl::create(std::string id)
-{
-	ba::to_upper(id);
-
-	Compound *result = get(id);
-	// if (result == nullptr and mMissing.count(id) == 0 and not mFile.empty())
-	// {
-	// 	std::unique_lock lock(mMutex);
-
-	// 	auto &cat = mFile.firstDatablock()["chem_comp"];
-
-	// 	auto rs = cat.find(cif::Key("three_letter_code") == id);
-
-	// 	if (not rs.empty())
-	// 	{
-	// 		auto row = rs.front();
-
-	// 		std::string name, group;
-	// 		uint32_t numberAtomsAll, numberAtomsNh;
-	// 		cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
-	// 			row.get("name", "group", "number_atoms_all", "number_atoms_nh");
-
-	// 		ba::trim(name);
-	// 		ba::trim(group);
-
-	// 		if (mFile.get("comp_" + id) == nullptr)
-	// 		{
-	// 			auto clibd_mon = fs::path(getenv("CLIBD_MON"));
-
-	// 			fs::path resFile = clibd_mon / ba::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
-
-	// 			if (not fs::exists(resFile) and (id == "COM" or id == "CON" or "PRN")) // seriously...
-	// 				resFile = clibd_mon / ba::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");
-
-	// 			if (not fs::exists(resFile))
-	// 				mMissing.insert(id);
-	// 			else
-	// 			{
-	// 				mCompounds.push_back(new Compound(resFile.string(), id, name, group));
-	// 				result = mCompounds.back();
-	// 			}
-	// 		}
-	// 		else
-	// 		{
-	// 			mCompounds.push_back(new Compound(mPath, id, name, group));
-	// 			result = mCompounds.back();
-	// 		}
-	// 	}
-
-	// 	if (result == nullptr and mNext != nullptr)
-	// 		result = mNext->create(id);
-	// }
-
-	return result;
 }
 
 // --------------------------------------------------------------------
@@ -546,21 +433,19 @@ Compound *CompoundFactoryImpl::create(std::string id)
 class CCDCompoundFactoryImpl : public CompoundFactoryImpl
 {
   public:
-	CCDCompoundFactoryImpl() {}
+	CCDCompoundFactoryImpl(CompoundFactoryImpl *next)
+		: CompoundFactoryImpl(next)
+	{
+	}
 
-	Compound *create(std::string id) override;
+	Compound *create(const std::string &id) override;
 
 	cif::DatablockIndex mIndex;
 };
 
-Compound *CCDCompoundFactoryImpl::create(std::string id)
+Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 {
-	ba::to_upper(id);
-
-	Compound *result = get(id);
-
-	if (result)
-		return result;
+	Compound *result = nullptr;
 
 	auto ccd = cif::loadResource("components.cif");
 	if (not ccd)
@@ -572,7 +457,8 @@ Compound *CCDCompoundFactoryImpl::create(std::string id)
 	{
 		if (cif::VERBOSE > 1)
 		{
-			std::cout << "Creating component index " << "...";
+			std::cout << "Creating component index "
+					  << "...";
 			std::cout.flush();
 		}
 
@@ -581,7 +467,7 @@ Compound *CCDCompoundFactoryImpl::create(std::string id)
 
 		if (cif::VERBOSE > 1)
 			std::cout << " done" << std::endl;
-		
+
 		// reload the resource, perhaps this should be improved...
 		ccd = cif::loadResource("components.cif");
 	}
@@ -610,8 +496,110 @@ Compound *CCDCompoundFactoryImpl::create(std::string id)
 		}
 	}
 
-	if (result == nullptr and cif::VERBOSE > 1)
+	if (result == nullptr and cif::VERBOSE)
 		std::cerr << "Could not locate compound " << id << " in the CCD components file" << std::endl;
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+// Version for the default compounds, based on the data found in CCP4's monomers lib
+
+class CCP4CompoundFactoryImpl : public CompoundFactoryImpl
+{
+  public:
+	CCP4CompoundFactoryImpl(const fs::path &clibd_mon, CompoundFactoryImpl *next = nullptr);
+
+	Compound *create(const std::string &id) override;
+
+  private:
+	cif::File mFile;
+	fs::path mCLIBD_MON;
+};
+
+CCP4CompoundFactoryImpl::CCP4CompoundFactoryImpl(const fs::path &clibd_mon, CompoundFactoryImpl *next)
+	: CompoundFactoryImpl(next)
+	, mFile(clibd_mon / "list" / "mon_lib_list.cif")
+	, mCLIBD_MON(clibd_mon)
+{
+	const std::regex peptideRx("(?:[lmp]-)?peptide", std::regex::icase);
+
+	auto &chemComps = mFile["comp_list"]["chem_comp"];
+
+	for (const auto &[group, threeLetterCode] : chemComps.rows<std::string, std::string>("group", "three_letter_code"))
+	{
+		if (std::regex_match(group, peptideRx))
+			mKnownPeptides.insert(threeLetterCode);
+		else if (ba::iequals(group, "DNA") or ba::iequals(group, "RNA"))
+			mKnownBases.insert(threeLetterCode);
+	}
+}
+
+Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
+{
+	Compound *result = nullptr;
+
+	auto &cat = mFile["comp_list"]["chem_comp"];
+
+	auto rs = cat.find(cif::Key("three_letter_code") == id);
+
+	if (rs.size() == 1)
+	{
+		auto row = rs.front();
+
+		std::string name, group;
+		uint32_t numberAtomsAll, numberAtomsNh;
+		cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
+			row.get("name", "group", "number_atoms_all", "number_atoms_nh");
+
+		fs::path resFile = mCLIBD_MON / ba::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
+
+		if (not fs::exists(resFile) and (id == "COM" or id == "CON" or "PRN")) // seriously...
+			resFile = mCLIBD_MON / ba::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");
+
+		if (fs::exists(resFile))
+		{
+			cif::File cf(resFile);
+
+			// locate the datablock
+			auto &db = cf["comp_" + id];
+
+			std::string type;
+
+			// known groups are (counted from ccp4 monomer dictionary)
+
+			//	D-pyranose
+			//	DNA
+			//	L-PEPTIDE LINKING
+			//	L-SACCHARIDE
+			//	L-peptide
+			//	L-pyranose
+			//	M-peptide
+			//	NON-POLYMER
+			//	P-peptide
+			//	RNA
+			//	furanose
+			//	non-polymer
+			//	non_polymer
+			//	peptide
+			//	pyranose
+			//	saccharide
+
+			if (cif::iequals(id, "gly"))
+				type = "peptide linking";
+			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide"))
+				type = "L-peptide linking";
+			else if (cif::iequals(group, "DNA"))
+				type = "DNA linking";
+			else if (cif::iequals(group, "RNA"))
+				type = "RNA linking";
+			else
+				type = "non-polymer";
+
+			mCompounds.push_back(new Compound(db, id, name, type));
+			result = mCompounds.back();
+		}
+	}
 
 	return result;
 }
@@ -628,8 +616,13 @@ void CompoundFactory::init(bool useThreadLocalInstanceOnly)
 }
 
 CompoundFactory::CompoundFactory()
-	: mImpl(new CCDCompoundFactoryImpl)
+	: mImpl(nullptr)
 {
+	const char *clibd_mon = getenv("CLIBD_MON");
+	if (clibd_mon != nullptr and fs::is_directory(clibd_mon))
+		mImpl = new CCP4CompoundFactoryImpl(clibd_mon);
+
+	mImpl = new CCDCompoundFactoryImpl(mImpl);
 }
 
 CompoundFactory::~CompoundFactory()
@@ -690,15 +683,9 @@ void CompoundFactory::popDictionary()
 		mImpl = mImpl->pop();
 }
 
-// id is the three letter code
-const Compound *CompoundFactory::get(std::string id)
-{
-	return mImpl->get(id);
-}
-
 const Compound *CompoundFactory::create(std::string id)
 {
-	return mImpl->create(id);
+	return mImpl->get(id);
 }
 
 bool CompoundFactory::isKnownPeptide(const std::string &resName) const

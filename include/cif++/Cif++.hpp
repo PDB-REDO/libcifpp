@@ -1404,6 +1404,7 @@ class iterator_proxy
 	using row_iterator = iterator_impl<RowType>;
 
 	iterator_proxy(Category& cat, row_iterator pos, char const* const columns[N]);
+	iterator_proxy(Category& cat, row_iterator pos, std::initializer_list<char const*> columns);
 
 	iterator_proxy(iterator_proxy&& p);
 	iterator_proxy& operator=(iterator_proxy&& p);
@@ -1767,6 +1768,13 @@ class Category
 		return iterator_proxy<Row, Ts...>(*this, begin(), columns );
 	}
 
+	template<typename... Ts, typename... Ns>
+	iterator_proxy<Row, Ts...> rows(Ns... names)
+	{
+		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
+		return iterator_proxy<Row, Ts...>(*this, begin(), { names... });
+	}
+
 	conditional_iterator_proxy<Row> find(Condition&& cond)
 	{
 		return find(cbegin(), std::forward<Condition>(cond));
@@ -2124,6 +2132,19 @@ iterator_proxy<RowType, Ts...>::iterator_proxy(Category& cat, row_iterator pos, 
 {
 	for (size_t i = 0; i < N; ++i)
 		mCix[i] = mCat->getColumnIndex(columns[i]);
+}
+
+template<typename RowType, typename... Ts>
+iterator_proxy<RowType, Ts...>::iterator_proxy(Category& cat, row_iterator pos, std::initializer_list<char const*> columns)
+	: mCat(&cat)
+	, mCBegin(pos)
+	, mCEnd(cat.end())
+{
+	// static_assert(columns.size() == N, "The list of column names should be exactly the same as the list of requested columns");
+
+	std::size_t i = 0;
+	for (auto column: columns)
+		mCix[i++] = mCat->getColumnIndex(column);
 }
 
 // --------------------------------------------------------------------

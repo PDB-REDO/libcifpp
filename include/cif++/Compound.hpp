@@ -97,11 +97,6 @@ struct CompoundBond
 class Compound
 {
   public:
-	/// \brief factory method, create a Compound based on the three letter code
-	/// (for amino acids) or the one-letter code (for bases) or the
-	/// code as it is known in the CCD.
-
-	static const Compound *create(const std::string &id);
 
 	// accessors
 
@@ -131,6 +126,7 @@ class Compound
 
 	friend class CompoundFactoryImpl;
 	friend class CCDCompoundFactoryImpl;
+	friend class CCP4CompoundFactoryImpl;
 
 	Compound(cif::Datablock &db);
 	Compound(cif::Datablock &db, const std::string &id, const std::string &name, const std::string &type);
@@ -153,6 +149,14 @@ extern const std::map<std::string, char> kAAMap, kBaseMap;
 class CompoundFactory
 {
   public:
+
+	/// \brief Initialise a singleton instance.
+	///
+	/// If you have a multithreaded application and want to have different
+	/// compounds in each thread (e.g. a web service processing user requests
+	/// with different sets of compounds) you can set the \a useThreadLocalInstanceOnly
+	/// flag to true.
+
 	static void init(bool useThreadLocalInstanceOnly);
 	static CompoundFactory &instance();
 	static void clear();
@@ -163,7 +167,12 @@ class CompoundFactory
 	bool isKnownPeptide(const std::string &res_name) const;
 	bool isKnownBase(const std::string &res_name) const;
 
-	const Compound *get(std::string id);
+	/// \brief Create the Compound object for \a id
+	///
+	/// This will create the Compound instance for \a id if it doesn't exist already.
+	/// The result is owned by this factory and should not be deleted by the user.
+	/// \param id	The Compound ID, a three letter code usually
+	/// \result		The compound, or nullptr if it could not be created (missing info)
 	const Compound *create(std::string id);
 
 	~CompoundFactory();

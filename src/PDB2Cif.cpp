@@ -2575,7 +2575,7 @@ void PDBFileParser::ParseRemarks()
 						int seq = vI(22, 25);
 						char iCode = vC(26);
 						
-						auto compound = mmcif::Compound::create(res);
+						auto compound = mmcif::CompoundFactory::instance().create(res);
 						if (compound == nullptr)
 							continue;
 						
@@ -4037,7 +4037,7 @@ void PDBFileParser::ConstructEntities()
 					letter = '(' + res.mMonID + ')';
 					
 					// sja...
-					auto compound = mmcif::Compound::create(stdRes.empty() ? res.mMonID : stdRes);
+					auto compound = mmcif::CompoundFactory::instance().create(stdRes.empty() ? res.mMonID : stdRes);
 					if (compound != nullptr and
 						not iequals(compound->type(), "L-peptide linking") and
 						not iequals(compound->type(), "RNA linking"))
@@ -4193,7 +4193,7 @@ void PDBFileParser::ConstructEntities()
 			{
 				if (mHetnams[hetID].empty())
 				{
-					auto compound = mmcif::Compound::create(hetID);
+					auto compound = mmcif::CompoundFactory::instance().create(hetID);
 					if (compound != nullptr)
 						mHetnams[hetID] = compound->name();
 				}
@@ -4330,7 +4330,7 @@ void PDBFileParser::ConstructEntities()
 
 	for (auto cc: mChemComp)
 	{
-		auto compound = mmcif::Compound::create(
+		auto compound = mmcif::CompoundFactory::instance().create(
 			mMod2parent.count(cc) ? mMod2parent[cc] : cc
 		);
 		
@@ -4872,7 +4872,7 @@ static bool IsMetal(const std::string& resName, const std::string& atomID)
 
 	try
 	{
-		auto compound = mmcif::Compound::create(resName);
+		auto compound = mmcif::CompoundFactory::instance().create(resName);
 		if (compound != nullptr)
 		{
 			auto at = mmcif::AtomTypeTraits(compound->getAtomByID(atomID).typeSymbol);

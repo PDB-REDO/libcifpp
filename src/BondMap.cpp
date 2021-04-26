@@ -328,7 +328,7 @@ bool CompoundBondMap::bonded(const std::string &compoundID, const std::string& a
 	}
 
 	// not found in our cache, calculate
-	auto compound = CompoundFactory::instance().create(compoundID);
+	auto compound = mmcif::CompoundFactory::instance().create(compoundID);
 	if (not compound)
 		throw BondMapException("Missing compound bond info for " + compoundID);
 
@@ -621,7 +621,7 @@ std::vector<std::string> BondMap::atomIDsForCompound(const std::string& compound
 {
 	std::vector<std::string> result;
 
-	auto* compound = mmcif::Compound::create(compoundID);
+	auto* compound = mmcif::CompoundFactory::instance().create(compoundID);
 
 	if (compound == nullptr)
 		throw BondMapException("Missing bond information for compound " + compoundID);
