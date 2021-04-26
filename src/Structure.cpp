@@ -303,7 +303,7 @@ struct AtomImpl
 		std::string compID;
 		cif::tie(compID) = mRow.get("label_comp_id");
 		
-		mCompound = Compound::create(compID);
+		mCompound = CompoundFactory::instance().get(compID);
 	}
 	
 	void reference()
