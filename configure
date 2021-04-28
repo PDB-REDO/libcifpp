@@ -643,6 +643,7 @@ BOOST_IOSTREAMS_LIB
 BOOST_LDFLAGS
 BOOST_CPPFLAGS
 SET_MAKE
+SKIP_DOWNLOAD_CCD
 UPDATE_REVISION
 USE_RSRC
 MRC
@@ -759,6 +760,7 @@ with_sysroot
 enable_libtool_lock
 enable_resources
 enable_revision
+enable_download_ccd
 with_boost
 with_boost_libdir
 with_boost_iostreams
@@ -1418,6 +1420,8 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-resources     Do not use mrc to store data in resources
   --disable-revision      Create a build number as revision
+  --disable-download-ccd  Do not try to download a CCD components.cif file
+                          during build
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -17202,6 +17206,21 @@ if test "x$enable_revision" != "xno" ; then :
 fi
 
 UPDATE_REVISION=$UPDATE_REVISION
+
+
+# Check whether --enable-download-ccd was given.
+if test "${enable_download_ccd+set}" = set; then :
+  enableval=$enable_download_ccd;
+fi
+
+
+if test "x$enable_download_ccd" = "xno" ; then :
+
+	SKIP_DOWNLOAD_CCD=1
+
+fi
+
+SKIP_DOWNLOAD_CCD=$SKIP_DOWNLOAD_CCD
 
 
 

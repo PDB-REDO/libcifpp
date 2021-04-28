@@ -70,6 +70,12 @@ LIB_TARGET			= $(LIB_NAME).la
 VERSION             = @LIBCIF_SEMANTIC_VERSION@
 DIST_NAME           = @PACKAGE_NAME@-$(subst :,.,$(VERSION))
 
+SKIP_DOWNLOAD_CCD	= @SKIP_DOWNLOAD_CCD@
+
+ifneq "$(SKIP_DOWNLOAD_CCD)" "1"
+COMPONENTS_CIF		= components.cif
+endif
+
 # libtool stuff
 
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
@@ -137,12 +143,14 @@ $(OBJDIR)/Symmetry.lo: src/SymOpTable_data.cpp
 
 endif
 
+ifneq "$(COMPONENTS_CIF)" ""
 data/components.cif.gz:
 	mkdir -p data
 	wget -O $@ ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz
 
 data/components.cif: data/components.cif.gz
 	gunzip -c $^ > $@
+endif
 
 # We have development releases and official releases, for each we
 # maintain different versioning schemes.
@@ -255,8 +263,22 @@ HEADERS = \
 	Secondary.hpp \
 	TlsParser.hpp
 
-.PHONY: install
-install: lib data/components.cif.gz
+.PHONY: install-data
+
+ifneq "$(COMPONENTS_CIF)" ""
+
+install-data: data/components.cif.gz
+	install -d $(datadir)/libcifpp
+	install -m644 data/components.cif.gz $(datadir)/libcifpp/
+
+else
+
+install-data:
+
+endif
+
+.PHONY: install-lib
+install: install-lib
 	install -d $(libdir)
 	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
 	install -d $(datadir)/libcifpp
@@ -266,7 +288,6 @@ install: lib data/components.cif.gz
 		install -m644 rsrc/$$d $(datadir)/libcifpp; \
 		gzip -f $(datadir)/libcifpp/$$d; \
 	done
-	install -m644 data/components.cif.gz $(datadir)/libcifpp/
 	install -d $(CACHE_DIR)
 	install -d $(CRON_DIR)
 	if [ ! -f /etc/libcifpp.conf ] ; then \
@@ -281,6 +302,9 @@ install: lib data/components.cif.gz
 	for f in $(HEADERS); do install include/cif++/$$f $(includedir)/cif++/$$f; done
 	install -d $(pkgconfigdir)
 	install -m 644 $(LIB_NAME).pc $(pkgconfigdir)/$(LIB_NAME).pc
+
+.PHONY: install
+install: install-lib install-data
 
 dist-clean: clean
 

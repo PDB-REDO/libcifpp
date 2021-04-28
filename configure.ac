@@ -68,6 +68,17 @@ AS_IF([test "x$enable_revision" != "xno" ], [
 
 AC_SUBST([UPDATE_REVISION], [$UPDATE_REVISION])
 
+dnl Do not download CCD components file during make (for travis, won't work)
+AC_ARG_ENABLE(
+	download-ccd,
+	[AS_HELP_STRING([--disable-download-ccd], [Do not try to download a CCD components.cif file during build])])
+
+AS_IF([test "x$enable_download_ccd" != "xno" ], [
+	SKIP_DOWNLOAD_CCD=1
+])
+
+AC_SUBST([SKIP_DOWNLOAD_CCD], [$SKIP_DOWNLOAD_CCD])
+
 AX_FILESYSTEM
 
 AC_CHECK_FUNCS([floor pow rint sqrt strchr strerror])

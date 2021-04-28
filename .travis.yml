@@ -22,7 +22,7 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install make; fi
 
 script:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./configure --disable-shared --disable-revision ; else ./configure --disable-revision     ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./configure --disable-shared --disable-revision --disable-download-ccd ; else ./configure --disable-revision --disable-download-ccd ; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake                        ; else make             ; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then gmake test                   ; else make test        ; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then sudo gmake install           ; else sudo make install; fi
