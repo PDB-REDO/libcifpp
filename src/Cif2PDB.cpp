@@ -3922,8 +3922,7 @@ std::string GetPDBSOURCELine(cif::File& cifFile, std::string::size_type truncate
 			{ "pdbx_host_org_vector_type",		"EXPRESSION_SYSTEM_VECTOR_TYPE" },
 			{ "pdbx_host_org_vector",			"EXPRESSION_SYSTEM_VECTOR" },
 			{ "pdbx_host_org_gene",				"EXPRESSION_SYSTEM_GENE" },
-			{ "plasmid_name",					"EXPRESSION_SYSTEM_PLASMID" },
-			{ "details",						"OTHER_DETAILS" }
+			{ "plasmid_name",					"EXPRESSION_SYSTEM_PLASMID" }
 		};
 
 		for (auto gr: gen.find(cif::Key("entity_id") == entityID))

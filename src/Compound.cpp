@@ -621,8 +621,14 @@ CompoundFactory::CompoundFactory()
 	const char *clibd_mon = getenv("CLIBD_MON");
 	if (clibd_mon != nullptr and fs::is_directory(clibd_mon))
 		mImpl = new CCP4CompoundFactoryImpl(clibd_mon);
+	else if (cif::VERBOSE)
+		std::cerr << "CCP4 monomers library not found, CLIBD_MON is not defined" << std::endl;
 
-	mImpl = new CCDCompoundFactoryImpl(mImpl);
+	auto ccd = cif::loadResource("components.cif");
+	if (ccd)
+		mImpl = new CCDCompoundFactoryImpl(mImpl);
+	else if (cif::VERBOSE)
+		std::cerr << "CCD components.cif file was not found" << std::endl;
 }
 
 CompoundFactory::~CompoundFactory()
@@ -685,17 +691,25 @@ void CompoundFactory::popDictionary()
 
 const Compound *CompoundFactory::create(std::string id)
 {
-	return mImpl->get(id);
+	static bool warned = false;
+
+	if (mImpl == nullptr and warned == false)
+	{
+		std::cerr << "Warning: no compound information library was found, resulting data may be incorrect or incomplete" << std::endl;
+		warned = true;
+	}
+
+	return mImpl ? mImpl->get(id) : nullptr;
 }
 
 bool CompoundFactory::isKnownPeptide(const std::string &resName) const
 {
-	return mImpl->isKnownPeptide(resName);
+	return mImpl ? mImpl->isKnownPeptide(resName) : kAAMap.count(resName) > 0;
 }
 
 bool CompoundFactory::isKnownBase(const std::string &resName) const
 {
-	return mImpl->isKnownBase(resName);
+	return mImpl ? mImpl->isKnownBase(resName) : kBaseMap.count(resName) > 0;
 }
 
 } // namespace mmcif

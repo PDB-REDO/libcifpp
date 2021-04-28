@@ -512,11 +512,7 @@ double Res::CalculateSurface(const std::vector<Res>& inResidues)
 
 void CalculateAccessibilities(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 {
-	if (cif::VERBOSE)
-		std::cerr << "Calculate accessibilities" << std::endl;
-
 	stats.accessibleSurface = 0;
-
 	for (auto& residue: inResidues)
 		stats.accessibleSurface += residue.CalculateSurface(inResidues);
 }
@@ -1186,9 +1182,6 @@ DSSPImpl::DSSPImpl(const Structure& s, int min_poly_proline_stretch_length)
 	, mPolymers(mStructure.polymers())
 	, m_min_poly_proline_stretch_length(min_poly_proline_stretch_length)
 {
-	if (cif::VERBOSE)
-		std::cerr << "Calculating DSSP ";
-
 	size_t nRes = accumulate(mPolymers.begin(), mPolymers.end(),
 		0.0, [](double s, auto& p) { return s + p.size(); });
 
@@ -1266,19 +1259,10 @@ void DSSPImpl::calculateSecondaryStructure()
 		mSSBonds.emplace_back(&*r1, &*r2);
 	}
 
-	if (cif::VERBOSE) std::cerr << ".";
 	CalculateHBondEnergies(mResidues);
-
-	if (cif::VERBOSE) std::cerr << ".";
 	CalculateBetaSheets(mResidues, mStats);
-
-	if (cif::VERBOSE) std::cerr << ".";
 	CalculateAlphaHelices(mResidues, mStats);
-
-	if (cif::VERBOSE) std::cerr << ".";
 	CalculatePPHelices(mResidues, mStats, m_min_poly_proline_stretch_length);
-
-	if (cif::VERBOSE) std::cerr << std::endl;
 
 	if (cif::VERBOSE > 1)
 	{
