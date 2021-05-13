@@ -527,9 +527,6 @@ DatablockIndex SacParser::indexDatablocks()
 {
 	DatablockIndex index;
 
-	// first locate the start, as fast as we can
-	auto &sb = *mData.rdbuf();
-
 	enum {
 		start, comment, string, string_quote, qstring, data, data_name
 	} state = start;
@@ -539,11 +536,9 @@ DatablockIndex SacParser::indexDatablocks()
 	const char dblk[] = "data_";
 	std::string::size_type si = 0;
 	std::string datablock;
-	bool found = false;
 
-	while (sb.in_avail() > 0 and not found)
+	for (char ch; mData.get(ch); )
 	{
-		int ch = sb.sbumpc();
 		switch (state)
 		{
 			case start:
@@ -592,7 +587,7 @@ DatablockIndex SacParser::indexDatablocks()
 			case data:
 				if (dblk[si] == 0 and isNonBlank(ch))
 				{
-					datablock = { static_cast<char>(ch) };
+					datablock = { ch };
 					state = data_name;
 				}
 				else if (dblk[si++] != ch)
@@ -601,7 +596,7 @@ DatablockIndex SacParser::indexDatablocks()
 			
 			case data_name:
 				if (isNonBlank(ch))
-					datablock.insert(datablock.end(), ch);
+					datablock.push_back(ch);
 				else if (isspace(ch))
 				{
 					if (not datablock.empty())
@@ -622,9 +617,6 @@ DatablockIndex SacParser::indexDatablocks()
 
 bool SacParser::parseSingleDatablock(const std::string& datablock)
 {
-	// first locate the start, as fast as we can
-	auto &sb = *mData.rdbuf();
-
 	enum {
 		start, comment, string, string_quote, qstring, data
 	} state = start;
@@ -635,9 +627,8 @@ bool SacParser::parseSingleDatablock(const std::string& datablock)
 	std::string::size_type si = 0;
 	bool found = false;
 
-	while (sb.in_avail() > 0 and not found)
+	for (char ch; mData.get(ch) and not found;)
 	{
-		int ch = sb.sbumpc();
 		switch (state)
 		{
 			case start:
