@@ -539,11 +539,9 @@ DatablockIndex SacParser::indexDatablocks()
 	const char dblk[] = "data_";
 	std::string::size_type si = 0;
 	std::string datablock;
-	bool found = false;
 
-	while (sb.in_avail() > 0 and not found)
+	for (auto ch = sb.sbumpc(); ch != std::streambuf::traits_type::eof(); ch = sb.sbumpc())
 	{
-		int ch = sb.sbumpc();
 		switch (state)
 		{
 			case start:
@@ -635,9 +633,8 @@ bool SacParser::parseSingleDatablock(const std::string& datablock)
 	std::string::size_type si = 0;
 	bool found = false;
 
-	while (sb.in_avail() > 0 and not found)
+	for (auto ch = sb.sbumpc(); not found and ch != std::streambuf::traits_type::eof(); ch = sb.sbumpc())
 	{
-		int ch = sb.sbumpc();
 		switch (state)
 		{
 			case start:
