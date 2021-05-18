@@ -182,8 +182,8 @@ struct Res
 		, mChainBreak(brk)
 	{
 		// update the box containing all atoms
-		mBox[0].mX = mBox[0].mY = mBox[0].mZ =  std::numeric_limits<double>::max();
-		mBox[1].mX = mBox[1].mY = mBox[1].mZ = -std::numeric_limits<double>::max();
+		mBox[0].mX = mBox[0].mY = mBox[0].mZ =  std::numeric_limits<float>::max();
+		mBox[1].mX = mBox[1].mY = mBox[1].mZ = -std::numeric_limits<float>::max();
 
 		mH = mmcif::Point{ std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
 

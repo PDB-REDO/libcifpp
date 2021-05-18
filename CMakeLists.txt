@@ -44,7 +44,7 @@ endif(NOT SHARE_INSTALL_DIR)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
 # set (BOOST_ROOT ${PROJECT_SOURCE_DIR}/../boost_1_75_0)
-set (Boost_COMPILER "-vc")
+# set (Boost_COMPILER "-vc")
 # set (Boost_USE_STATIC_RUNTIME ON)  
 
 find_package(Boost 1.73.0 REQUIRED COMPONENTS system iostreams)

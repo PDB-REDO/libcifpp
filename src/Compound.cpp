@@ -519,7 +519,7 @@ class CCP4CompoundFactoryImpl : public CompoundFactoryImpl
 
 CCP4CompoundFactoryImpl::CCP4CompoundFactoryImpl(const fs::path &clibd_mon, CompoundFactoryImpl *next)
 	: CompoundFactoryImpl(next)
-	, mFile(clibd_mon / "list" / "mon_lib_list.cif")
+	, mFile((clibd_mon / "list" / "mon_lib_list.cif").string())
 	, mCLIBD_MON(clibd_mon)
 {
 	const std::regex peptideRx("(?:[lmp]-)?peptide", std::regex::icase);
@@ -559,7 +559,7 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 
 		if (fs::exists(resFile))
 		{
-			cif::File cf(resFile);
+			cif::File cf(resFile.string());
 
 			// locate the datablock
 			auto &db = cf["comp_" + id];
