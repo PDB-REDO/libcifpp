@@ -47,7 +47,7 @@ set (Boost_DETAILED_FAILURE_MSG ON)
 # set (Boost_COMPILER "-vc")
 # set (Boost_USE_STATIC_RUNTIME ON)  
 
-find_package(Boost 1.73.0 REQUIRED COMPONENTS system iostreams)
+find_package(Boost 1.73.0 REQUIRED COMPONENTS system iostreams regex date_time)
 
 set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
@@ -93,9 +93,10 @@ set(project_headers
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/src
-    )
+)
 
 add_library(${PROJECT_NAME} ${project_sources} ${project_headers})
+add_executable(unit-test ${PROJECT_SOURCE_DIR}/test/unit-test.cpp)
 
 configure_file(libcifpp.pc.in ${CMAKE_BINARY_DIR}/libcifpp.pc IMMEDIATE @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/libcifpp.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
@@ -105,11 +106,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
 # install(FILES ${CMAKE_BINARY_DIR}/Config.hpp DESTINATION ${INCLUDE_INSTALL_DIR}/${PROJECT_NAME})
 
 if(Boost_FOUND)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+    include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+    link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 endif()
 
 install(DIRECTORY include/cif++ DESTINATION ${INCLUDE_INSTALL_DIR})
+
+install(FILES
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic
+	DESTINATION ${SHARE_INSTALL_DIR}/libcifpp/
+)
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION ${LIB_INSTALL_DIR}
@@ -117,8 +124,17 @@ install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${BIN_INSTALL_DIR}
 )
 
+target_compile_definitions(${PROJECT_NAME}
+	PUBLIC "" CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
+
+target_compile_definitions(unit-test
+	PUBLIC "" CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
+
+target_link_libraries(unit-test ${PROJECT_NAME} ${Boost_LIBRARIES})
+
 if(MSVC)
-    # Disable a MSVC warning type.
-    target_compile_options(cifpp PRIVATE /permissive-)
+    # make msvc standards compliant...
+    target_compile_options(${PROJECT_NAME} PRIVATE /permissive-)
+    target_compile_options(unit-test PRIVATE /permissive-)
 endif()
 
