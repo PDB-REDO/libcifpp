@@ -161,6 +161,7 @@ class CompoundFactory
 	static CompoundFactory &instance();
 	static void clear();
 
+	void setDefaultDictionary(const std::string &inDictFile);
 	void pushDictionary(const std::string &inDictFile);
 	void popDictionary();
 

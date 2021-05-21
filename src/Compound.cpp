@@ -433,6 +433,12 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactor
 class CCDCompoundFactoryImpl : public CompoundFactoryImpl
 {
   public:
+	CCDCompoundFactoryImpl(CompoundFactoryImpl *next, const fs::path& file)
+		: CompoundFactoryImpl(next)
+		, mCompoundsFile(file)
+	{
+	}
+
 	CCDCompoundFactoryImpl(CompoundFactoryImpl *next)
 		: CompoundFactoryImpl(next)
 	{
@@ -441,15 +447,23 @@ class CCDCompoundFactoryImpl : public CompoundFactoryImpl
 	Compound *create(const std::string &id) override;
 
 	cif::DatablockIndex mIndex;
+	fs::path mCompoundsFile;
 };
 
 Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 {
 	Compound *result = nullptr;
 
-	auto ccd = cif::loadResource("components.cif");
-	if (not ccd)
-		throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-dictionary-script to fetch the data.");
+	std::unique_ptr<std::istream> ccd;
+
+	if (mCompoundsFile.empty())
+	{
+		ccd = cif::loadResource("components.cif");
+		if (not ccd)
+			throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-dictionary-script to fetch the data.");
+	}
+	else
+		ccd.reset(new std::ifstream(mCompoundsFile));
 
 	cif::File file;
 
@@ -469,7 +483,14 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 			std::cout << " done" << std::endl;
 
 		// reload the resource, perhaps this should be improved...
-		ccd = cif::loadResource("components.cif");
+		if (mCompoundsFile.empty())
+		{
+			ccd = cif::loadResource("components.cif");
+			if (not ccd)
+				throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-dictionary-script to fetch the data.");
+		}
+		else
+			ccd.reset(new std::ifstream(mCompoundsFile));
 	}
 
 	if (cif::VERBOSE > 1)
@@ -660,6 +681,22 @@ void CompoundFactory::clear()
 	{
 		delete sInstance;
 		sInstance = nullptr;
+	}
+}
+
+void CompoundFactory::setDefaultDictionary(const std::string &inDictFile)
+{
+	if (not fs::exists(inDictFile))
+		throw std::runtime_error("file not found: " + inDictFile);
+
+	try
+	{
+		mImpl = new CCDCompoundFactoryImpl(mImpl, inDictFile);
+	}
+	catch (const std::exception &ex)
+	{
+		std::cerr << "Error loading dictionary " << inDictFile << std::endl;
+		throw;
 	}
 }
 
