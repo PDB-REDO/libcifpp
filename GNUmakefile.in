@@ -282,8 +282,6 @@ install: install-lib
 	install -d $(libdir)
 	$(LIBTOOL) --mode=install install $(LIB_TARGET) $(libdir)
 	install -d $(datadir)/libcifpp
-	install -m644 rsrc/isomers.txt $(datadir)/libcifpp;
-	gzip -f $(datadir)/libcifpp/isomers.txt
 	for d in mmcif_ddl.dic mmcif_pdbx_v50.dic; do \
 		install -m644 rsrc/$$d $(datadir)/libcifpp; \
 		gzip -f $(datadir)/libcifpp/$$d; \
