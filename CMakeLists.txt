@@ -102,7 +102,7 @@ configure_file(libcifpp.pc.in ${CMAKE_BINARY_DIR}/libcifpp.pc IMMEDIATE @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/libcifpp.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
 
 configure_file(${PROJECT_SOURCE_DIR}/src/Config.hpp.in Config.hpp)
-target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
+include_directories(PUBLIC "${PROJECT_BINARY_DIR}")
 # install(FILES ${CMAKE_BINARY_DIR}/Config.hpp DESTINATION ${INCLUDE_INSTALL_DIR}/${PROJECT_NAME})
 
 if(Boost_FOUND)
@@ -130,7 +130,7 @@ target_compile_definitions(${PROJECT_NAME}
 target_compile_definitions(unit-test
 	PUBLIC "" CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
 
-target_link_libraries(unit-test ${PROJECT_NAME} ${Boost_LIBRARIES})
+target_link_libraries(unit-test ${PROJECT_NAME} ${Boost_LIBRARIES} z bz2 Threads::Threads)
 
 if(MSVC)
     # make msvc standards compliant...
