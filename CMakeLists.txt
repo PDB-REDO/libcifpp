@@ -98,31 +98,12 @@ include_directories(
 add_library(${PROJECT_NAME} ${project_sources} ${project_headers})
 add_executable(unit-test ${PROJECT_SOURCE_DIR}/test/unit-test.cpp)
 
-configure_file(libcifpp.pc.in ${CMAKE_BINARY_DIR}/libcifpp.pc IMMEDIATE @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/libcifpp.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
-
 configure_file(${PROJECT_SOURCE_DIR}/src/Config.hpp.in Config.hpp)
-include_directories(PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${Boost_INCLUDE_DIRS}>)
 # install(FILES ${CMAKE_BINARY_DIR}/Config.hpp DESTINATION ${INCLUDE_INSTALL_DIR}/${PROJECT_NAME})
 
-if(Boost_FOUND)
-    include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
-    link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
-endif()
-
-install(DIRECTORY include/cif++ DESTINATION ${INCLUDE_INSTALL_DIR})
-
-install(FILES
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic
-	DESTINATION ${SHARE_INSTALL_DIR}/libcifpp/
-)
-
-install(TARGETS ${PROJECT_NAME}
-    LIBRARY DESTINATION ${LIB_INSTALL_DIR}
-    ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
-    RUNTIME DESTINATION ${BIN_INSTALL_DIR}
-)
+include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 target_compile_definitions(${PROJECT_NAME}
 	PUBLIC "" CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
@@ -138,3 +119,74 @@ if(MSVC)
     target_compile_options(unit-test PRIVATE /permissive-)
 endif()
 
+include(GenerateExportHeader)
+
+generate_export_header(cifpp)
+set_property(TARGET cifpp PROPERTY VERSION ${PROJECT_VERSION})
+set_property(TARGET cifpp PROPERTY SOVERSION 1)
+set_property(TARGET cifpp PROPERTY INTERFACE_cifpp_MAJOR_VERSION 1)
+set_property(TARGET cifpp APPEND PROPERTY
+  COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
+)
+
+install(TARGETS cifpp EXPORT cifppTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+
+install(
+	DIRECTORY include/cif++
+	DESTINATION include
+	COMPONENT Devel
+)
+
+install(
+	FILES "${CMAKE_CURRENT_BINARY_DIR}/cifpp_export.h"
+	DESTINATION include
+	COMPONENT Devel
+)
+
+install(FILES
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic
+	DESTINATION share/libcifpp/
+)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+export(EXPORT cifppTargets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppTargets.cmake"
+  NAMESPACE CifPP::
+)
+
+configure_file(cmake/cifppConfig.cmake
+  "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
+  COPYONLY
+)
+
+set(ConfigPackageLocation lib/cmake/cifpp)
+install(EXPORT cifppTargets
+  FILE
+    cifppTargets.cmake
+  NAMESPACE
+    CifPP::
+  DESTINATION
+    ${ConfigPackageLocation}
+)
+
+install(
+  FILES
+    cmake/cifppConfig.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+  DESTINATION
+    ${ConfigPackageLocation}
+  COMPONENT
+    Devel
+)
