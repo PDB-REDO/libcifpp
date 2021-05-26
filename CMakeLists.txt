@@ -6,33 +6,6 @@ project(cifpp VERSION 1.1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Set bindir, if not use -DBIN_INSTALL_DIR
-if(NOT BIN_INSTALL_DIR)
-  if(CMAKE_INSTALL_BINDIR)
-    set(BIN_INSTALL_DIR ${CMAKE_INSTALL_BINDIR})
-  else(CMAKE_INSTALL_BINDIR)
-    set(BIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/bin")
-  endif(CMAKE_INSTALL_BINDIR)
-endif(NOT BIN_INSTALL_DIR)
-
-# Set libdir, if not use -DLIB_INSTALL_DIR
-if(NOT LIB_INSTALL_DIR)
-  if(CMAKE_INSTALL_LIBDIR)
-    set(LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
-  else(CMAKE_INSTALL_LIBDIR)
-    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
-  endif(CMAKE_INSTALL_LIBDIR)
-endif(NOT LIB_INSTALL_DIR)
-
-# Set includedir, if not use -DINCLUDE_INSTALL_DIR
-if(NOT INCLUDE_INSTALL_DIR)
-  if(CMAKE_INSTALL_INCLUDEDIR)
-    set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-  else(CMAKE_INSTALL_INCLUDEDIR)
-    set(INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include")
-  endif(CMAKE_INSTALL_INCLUDEDIR)
-endif(NOT INCLUDE_INSTALL_DIR)
-
 # Set sharedir, if not use -DSHARE_INSTALL_DIR
 if(NOT SHARE_INSTALL_DIR)
   if(CMAKE_INSTALL_DATADIR)
@@ -52,6 +25,9 @@ find_package(Boost 1.73.0 REQUIRED COMPONENTS system iostreams regex date_time)
 set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
+
+find_package(ZLIB)
+find_package(BZip2)
 
 set(project_sources 
 	${PROJECT_SOURCE_DIR}/src/AtomType.cpp
@@ -95,12 +71,23 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
 )
 
+# download the components.cif file from CCD
+if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
+	file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
+endif()
+
+# unfortunately, extract_archive does not recognize .gz files on Windows?
+if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data/components.cif)
+	file(
+		DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${PROJECT_SOURCE_DIR}/data/components.cif
+		SHOW_PROGRESS)
+endif()
+
 add_library(${PROJECT_NAME} ${project_sources} ${project_headers})
 add_executable(unit-test ${PROJECT_SOURCE_DIR}/test/unit-test.cpp)
 
 configure_file(${PROJECT_SOURCE_DIR}/src/Config.hpp.in Config.hpp)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${Boost_INCLUDE_DIRS}>)
-# install(FILES ${CMAKE_BINARY_DIR}/Config.hpp DESTINATION ${INCLUDE_INSTALL_DIR}/${PROJECT_NAME})
 
 include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
 link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
@@ -111,7 +98,15 @@ target_compile_definitions(${PROJECT_NAME}
 target_compile_definitions(unit-test
 	PUBLIC "" CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
 
-target_link_libraries(unit-test ${PROJECT_NAME} ${Boost_LIBRARIES} z bz2 Threads::Threads)
+target_link_libraries(unit-test ${PROJECT_NAME} ${Boost_LIBRARIES} Threads::Threads)
+
+if(${ZLIB_FOUND})
+	target_link_libraries(unit-test ZLIB::ZLIB)
+endif()
+
+if(${BZip2_FOUND})
+	target_link_libraries(unit-test BZip2::BZip2)
+endif()
 
 if(MSVC)
     # make msvc standards compliant...
@@ -151,6 +146,7 @@ install(
 install(FILES
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic
+	${PROJECT_SOURCE_DIR}/data/components.cif
 	DESTINATION share/libcifpp/
 )
 
