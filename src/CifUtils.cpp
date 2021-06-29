@@ -39,6 +39,7 @@
 #include <map>
 #include <mutex>
 #include <regex>
+#include <sstream>
 #include <thread>
 #include <tuple>
 

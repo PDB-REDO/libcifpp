@@ -106,7 +106,7 @@ namespace cif
 {
 
 // flag for verbose output
-extern int VERBOSE;
+extern CIFPP_DLL_IMPORT(int) VERBOSE;
 
 // mmCIF mapping
 // A CIF data file in this case contains entries (data blocks) which can contain

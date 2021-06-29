@@ -30,6 +30,8 @@
 #include <cstdint>
 #include <array>
 
+#include "CifUtils.hpp"
+
 namespace mmcif
 {
 
@@ -43,8 +45,8 @@ struct Spacegroup
 	int nr;
 };
 
-extern const Spacegroup kSpaceGroups[];
-extern const std::size_t kNrOfSpaceGroups;
+extern CIFPP_DLL_IMPORT(const Spacegroup) kSpaceGroups[];
+extern CIFPP_DLL_IMPORT(const std::size_t) kNrOfSpaceGroups;
 
 // --------------------------------------------------------------------
 
@@ -105,8 +107,8 @@ struct SymopDataBlock
 
 static_assert(sizeof(SymopDataBlock) == sizeof(uint64_t), "Size of SymopData is wrong");
 
-extern const SymopDataBlock kSymopNrTable[];
-extern const std::size_t kSymopNrTableSize;
+extern CIFPP_DLL_IMPORT(const SymopDataBlock) kSymopNrTable[];
+extern CIFPP_DLL_IMPORT(const std::size_t) kSymopNrTableSize;
 
 // --------------------------------------------------------------------
 
