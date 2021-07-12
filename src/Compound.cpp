@@ -298,6 +298,9 @@ class CompoundFactoryImpl
 					break;
 				}
 			}
+
+			if (result)
+				break;
 		}
 
 		if (result == nullptr and mMissing.count(id) == 0)
