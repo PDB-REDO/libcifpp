@@ -267,17 +267,14 @@ const std::map<std::string, char> kBaseMap{
 
 // --------------------------------------------------------------------
 
-class CompoundFactoryImpl
+class CompoundFactoryImpl : public std::enable_shared_from_this<CompoundFactoryImpl>
 {
   public:
-	CompoundFactoryImpl(CompoundFactoryImpl *next);
+	CompoundFactoryImpl(std::shared_ptr<CompoundFactoryImpl> next);
 
-	CompoundFactoryImpl(const std::string &file, CompoundFactoryImpl *next);
+	CompoundFactoryImpl(const std::string &file, std::shared_ptr<CompoundFactoryImpl> next);
 
-	virtual ~CompoundFactoryImpl()
-	{
-		delete mNext;
-	}
+	virtual ~CompoundFactoryImpl() = default;
 
 	Compound *get(std::string id)
 	{
@@ -288,7 +285,7 @@ class CompoundFactoryImpl
 		Compound *result = nullptr;
 
 		// walk the list, see if any of us has the compound already
-		for (auto impl = this; impl != nullptr; impl = impl->mNext)
+		for (auto impl = shared_from_this(); impl; impl = impl->mNext)
 		{
 			for (auto cmp : impl->mCompounds)
 			{
@@ -305,7 +302,7 @@ class CompoundFactoryImpl
 
 		if (result == nullptr and mMissing.count(id) == 0)
 		{
-			for (auto impl = this; impl != nullptr; impl = impl->mNext)
+			for (auto impl = shared_from_this(); impl; impl = impl->mNext)
 			{
 				result = impl->create(id);
 				if (result != nullptr)
@@ -319,24 +316,21 @@ class CompoundFactoryImpl
 		return result;
 	}
 
-	CompoundFactoryImpl *pop()
+	std::shared_ptr<CompoundFactoryImpl> next() const
 	{
-		auto result = mNext;
-		mNext = nullptr;
-		delete this;
-		return result;
+		return mNext;
 	}
 
 	bool isKnownPeptide(const std::string &resName)
 	{
 		return mKnownPeptides.count(resName) or
-			   (mNext != nullptr and mNext->isKnownPeptide(resName));
+			   (mNext and mNext->isKnownPeptide(resName));
 	}
 
 	bool isKnownBase(const std::string &resName)
 	{
 		return mKnownBases.count(resName) or
-			   (mNext != nullptr and mNext->isKnownBase(resName));
+			   (mNext and mNext->isKnownBase(resName));
 	}
 
   protected:
@@ -353,12 +347,12 @@ class CompoundFactoryImpl
 	std::set<std::string> mKnownPeptides;
 	std::set<std::string> mKnownBases;
 	std::set<std::string> mMissing;
-	CompoundFactoryImpl *mNext = nullptr;
+	std::shared_ptr<CompoundFactoryImpl> mNext;
 };
 
 // --------------------------------------------------------------------
 
-CompoundFactoryImpl::CompoundFactoryImpl(CompoundFactoryImpl *next)
+CompoundFactoryImpl::CompoundFactoryImpl(std::shared_ptr<CompoundFactoryImpl> next)
 	: mNext(next)
 {
 	for (const auto &[key, value] : kAAMap)
@@ -368,7 +362,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(CompoundFactoryImpl *next)
 		mKnownBases.insert(key);
 }
 
-CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactoryImpl *next)
+CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, std::shared_ptr<CompoundFactoryImpl> next)
 	: mNext(next)
 {
 	cif::File cifFile(file);
@@ -436,13 +430,13 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, CompoundFactor
 class CCDCompoundFactoryImpl : public CompoundFactoryImpl
 {
   public:
-	CCDCompoundFactoryImpl(CompoundFactoryImpl *next, const fs::path& file)
+	CCDCompoundFactoryImpl(std::shared_ptr<CompoundFactoryImpl> next, const fs::path& file)
 		: CompoundFactoryImpl(next)
 		, mCompoundsFile(file)
 	{
 	}
 
-	CCDCompoundFactoryImpl(CompoundFactoryImpl *next)
+	CCDCompoundFactoryImpl(std::shared_ptr<CompoundFactoryImpl> next)
 		: CompoundFactoryImpl(next)
 	{
 	}
@@ -532,7 +526,7 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 class CCP4CompoundFactoryImpl : public CompoundFactoryImpl
 {
   public:
-	CCP4CompoundFactoryImpl(const fs::path &clibd_mon, CompoundFactoryImpl *next = nullptr);
+	CCP4CompoundFactoryImpl(const fs::path &clibd_mon, std::shared_ptr<CompoundFactoryImpl> next = nullptr);
 
 	Compound *create(const std::string &id) override;
 
@@ -541,7 +535,7 @@ class CCP4CompoundFactoryImpl : public CompoundFactoryImpl
 	fs::path mCLIBD_MON;
 };
 
-CCP4CompoundFactoryImpl::CCP4CompoundFactoryImpl(const fs::path &clibd_mon, CompoundFactoryImpl *next)
+CCP4CompoundFactoryImpl::CCP4CompoundFactoryImpl(const fs::path &clibd_mon, std::shared_ptr<CompoundFactoryImpl> next)
 	: CompoundFactoryImpl(next)
 	, mFile((clibd_mon / "list" / "mon_lib_list.cif").string())
 	, mCLIBD_MON(clibd_mon)
@@ -630,7 +624,7 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 
 // --------------------------------------------------------------------
 
-CompoundFactory *CompoundFactory::sInstance;
+std::unique_ptr<CompoundFactory> CompoundFactory::sInstance;
 thread_local std::unique_ptr<CompoundFactory> CompoundFactory::tlInstance;
 bool CompoundFactory::sUseThreadLocalInstance;
 
@@ -644,20 +638,19 @@ CompoundFactory::CompoundFactory()
 {
 	const char *clibd_mon = getenv("CLIBD_MON");
 	if (clibd_mon != nullptr and fs::is_directory(clibd_mon))
-		mImpl = new CCP4CompoundFactoryImpl(clibd_mon);
+		mImpl.reset(new CCP4CompoundFactoryImpl(clibd_mon));
 	else if (cif::VERBOSE)
 		std::cerr << "CCP4 monomers library not found, CLIBD_MON is not defined" << std::endl;
 
 	auto ccd = cif::loadResource("components.cif");
 	if (ccd)
-		mImpl = new CCDCompoundFactoryImpl(mImpl);
+		mImpl.reset(new CCDCompoundFactoryImpl(mImpl));
 	else if (cif::VERBOSE)
 		std::cerr << "CCD components.cif file was not found" << std::endl;
 }
 
 CompoundFactory::~CompoundFactory()
 {
-	delete mImpl;
 }
 
 CompoundFactory &CompoundFactory::instance()
@@ -670,8 +663,8 @@ CompoundFactory &CompoundFactory::instance()
 	}
 	else
 	{
-		if (sInstance == nullptr)
-			sInstance = new CompoundFactory();
+		if (not sInstance)
+			sInstance.reset(new CompoundFactory());
 		return *sInstance;
 	}
 }
@@ -681,10 +674,7 @@ void CompoundFactory::clear()
 	if (sUseThreadLocalInstance)
 		tlInstance.reset(nullptr);
 	else
-	{
-		delete sInstance;
-		sInstance = nullptr;
-	}
+		sInstance.reset();
 }
 
 void CompoundFactory::setDefaultDictionary(const std::string &inDictFile)
@@ -694,7 +684,7 @@ void CompoundFactory::setDefaultDictionary(const std::string &inDictFile)
 
 	try
 	{
-		mImpl = new CCDCompoundFactoryImpl(mImpl, inDictFile);
+		mImpl.reset(new CCDCompoundFactoryImpl(mImpl, inDictFile));
 	}
 	catch (const std::exception &ex)
 	{
@@ -714,7 +704,7 @@ void CompoundFactory::pushDictionary(const std::string &inDictFile)
 
 	try
 	{
-		mImpl = new CompoundFactoryImpl(inDictFile, mImpl);
+		mImpl.reset(new CompoundFactoryImpl(inDictFile, mImpl));
 	}
 	catch (const std::exception &ex)
 	{
@@ -725,15 +715,15 @@ void CompoundFactory::pushDictionary(const std::string &inDictFile)
 
 void CompoundFactory::popDictionary()
 {
-	if (mImpl != nullptr)
-		mImpl = mImpl->pop();
+	if (mImpl)
+		mImpl = mImpl->next();
 }
 
 const Compound *CompoundFactory::create(std::string id)
 {
 	static bool warned = false;
 
-	if (mImpl == nullptr and warned == false)
+	if (mImpl and warned == false)
 	{
 		std::cerr << "Warning: no compound information library was found, resulting data may be incorrect or incomplete" << std::endl;
 		warned = true;
