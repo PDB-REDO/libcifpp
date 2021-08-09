@@ -1389,13 +1389,17 @@ std::string Category::getUniqueID(std::function<std::string(int)> generator)
 {
 	using namespace cif::literals;
 
+	std::string key = "id";
+	if (mCatValidator != nullptr and mCatValidator->mKeys.size() == 1)
+		key = mCatValidator->mKeys.front();
+
 	int nr = size() + 1;
 
 	for (;;)
 	{
 		std::string result = generator(nr++);
 
-		if (exists("id"_key == result))
+		if (exists(Key(key) == result))
 			continue;
 
 		return result;
@@ -2579,8 +2583,11 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 				if (childCat->mCatValidator != nullptr and childCat->mCatValidator->mKeys.size() == 1)
 				{
 					auto copy = childCat->copyRow(child);
-					if (copy != child)	
+					if (copy != child)
+					{
 						process.push_back(child);
+						continue;
+					}
 				}
 
 				// cannot update this... 

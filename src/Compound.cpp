@@ -721,13 +721,13 @@ void CompoundFactory::popDictionary()
 
 const Compound *CompoundFactory::create(std::string id)
 {
-	static bool warned = false;
+	// static bool warned = false;
 
-	if (mImpl and warned == false)
-	{
-		std::cerr << "Warning: no compound information library was found, resulting data may be incorrect or incomplete" << std::endl;
-		warned = true;
-	}
+	// if (mImpl and warned == false)
+	// {
+	// 	std::cerr << "Warning: no compound information library was found, resulting data may be incorrect or incomplete" << std::endl;
+	// 	warned = true;
+	// }
 
 	return mImpl ? mImpl->get(id) : nullptr;
 }
