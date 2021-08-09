@@ -44,6 +44,7 @@ namespace mmcif
 
 class Compound;
 struct CompoundAtom;
+class CompoundFactoryImpl;
 
 /// \brief The bond type as defined in the CCD, possible values taken from the mmcif_pdbx_v50 file
 enum class BondType
@@ -184,11 +185,11 @@ class CompoundFactory
 	CompoundFactory(const CompoundFactory &) = delete;
 	CompoundFactory &operator=(const CompoundFactory &) = delete;
 
-	static CompoundFactory *sInstance;
+	static std::unique_ptr<CompoundFactory> sInstance;
 	static thread_local std::unique_ptr<CompoundFactory> tlInstance;
 	static bool sUseThreadLocalInstance;
 
-	class CompoundFactoryImpl *mImpl;
+	std::shared_ptr<CompoundFactoryImpl> mImpl;
 };
 
 } // namespace mmcif
