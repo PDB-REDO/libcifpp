@@ -2572,8 +2572,6 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 						check = std::move(check) && Key(ck) == parent[pk].c_str();
 				}
 
-std::cerr << check << std::endl;
-
 				if (childCat->exists(std::move(check)))	// phew..., narrow escape
 					continue;
 

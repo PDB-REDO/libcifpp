@@ -196,12 +196,18 @@ class Residue
 {
   public:
 	// constructors should be private, but that's not possible for now (needed in emplace)
+
 	// constructor for waters
 	Residue(const Structure& structure, const std::string& compoundID,
 		const std::string& asymID, const std::string& authSeqID);
 
+	// constructor for a residue without a sequence number
 	Residue(const Structure& structure, const std::string& compoundID,
-		const std::string& asymID, int seqID = 0);
+		const std::string& asymID);
+
+	// constructor for a residue with a sequence number
+	Residue(const Structure& structure, const std::string& compoundID,
+		const std::string& asymID, int seqID, const std::string& authSeqID);
 
 	Residue(const Residue& rhs) = delete;
 	Residue& operator=(const Residue& rhs) = delete;
@@ -271,7 +277,10 @@ class Residue
 	const Structure* mStructure = nullptr;
 	std::string	mCompoundID, mAsymID;
 	int mSeqID = 0;
-	std::string mAuthSeqID;
+
+	// Watch out, this is used only to label waters... The rest of the code relies on
+	// MapLabelToAuth to get this info. Perhaps we should rename this member field.
+	std::string mAuthSeqID;	
 	AtomView mAtoms;
 };
 
@@ -288,8 +297,7 @@ class Monomer : public Residue
 	Monomer(Monomer&& rhs);
 	Monomer& operator=(Monomer&& rhs);
 
-//	Monomer(const Polymer& polymer, uint32_t index);
-	Monomer(const Polymer& polymer, uint32_t index, int seqID,
+	Monomer(const Polymer& polymer, uint32_t index, int seqID, const std::string& authSeqID,
 		const std::string& compoundID);
 
 	bool is_first_in_chain() const;

@@ -76,6 +76,27 @@ struct SymopData
 		return m_packed == rhs.m_packed;
 	}
 
+	std::array<int,15> data() const
+	{
+		return {
+			static_cast<int>(m_packed >> 34) bitand 0x03,
+			static_cast<int>(m_packed >> 32) bitand 0x03,
+			static_cast<int>(m_packed >> 30) bitand 0x03,
+			static_cast<int>(m_packed >> 28) bitand 0x03,
+			static_cast<int>(m_packed >> 26) bitand 0x03,
+			static_cast<int>(m_packed >> 24) bitand 0x03,
+			static_cast<int>(m_packed >> 22) bitand 0x03,
+			static_cast<int>(m_packed >> 20) bitand 0x03,
+			static_cast<int>(m_packed >> 18) bitand 0x03,
+			static_cast<int>(m_packed >> 15) bitand 0x07,
+			static_cast<int>(m_packed >> 12) bitand 0x07,
+			static_cast<int>(m_packed >>  9) bitand 0x07,
+			static_cast<int>(m_packed >>  6) bitand 0x07,
+			static_cast<int>(m_packed >>  3) bitand 0x07,
+			static_cast<int>(m_packed >>  0) bitand 0x07,
+		};
+	}
+
   private:
 
 	friend struct SymopDataBlock;

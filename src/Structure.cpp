@@ -827,12 +827,18 @@ Residue::Residue(const Structure &structure, const std::string &compoundID,
 	assert(not mAtoms.empty());
 }
 
+Residue::Residue(const Structure& structure, const std::string& compoundID, const std::string& asymID)
+	: Residue(structure, compoundID, asymID, 0, {})
+{
+}
+
 Residue::Residue(const Structure &structure, const std::string &compoundID,
-	const std::string &asymID, int seqID)
+	const std::string &asymID, int seqID, const std::string& authSeqID)
 	: mStructure(&structure)
 	, mCompoundID(compoundID)
 	, mAsymID(asymID)
 	, mSeqID(seqID)
+	, mAuthSeqID(authSeqID)
 {
 	assert(mCompoundID != "HOH");
 
@@ -1140,8 +1146,8 @@ std::ostream &operator<<(std::ostream &os, const Residue &res)
 //{
 //}
 
-Monomer::Monomer(const Polymer &polymer, uint32_t index, int seqID, const std::string &compoundID)
-	: Residue(*polymer.structure(), compoundID, polymer.asymID(), seqID)
+Monomer::Monomer(const Polymer &polymer, uint32_t index, int seqID, const std::string& authSeqID, const std::string &compoundID)
+	: Residue(*polymer.structure(), compoundID, polymer.asymID(), seqID, authSeqID)
 	, mPolymer(&polymer)
 	, mIndex(index)
 {
@@ -1640,8 +1646,8 @@ Polymer::Polymer(const Structure &s, const std::string &entityID, const std::str
 	for (auto r : mPolySeq)
 	{
 		int seqID;
-		std::string compoundID;
-		cif::tie(seqID, compoundID) = r.get("seq_id", "mon_id");
+		std::string compoundID, authSeqID;
+		cif::tie(seqID, authSeqID, compoundID) = r.get("seq_id", "auth_seq_num", "mon_id");
 
 		uint32_t index = size();
 
@@ -1649,11 +1655,11 @@ Polymer::Polymer(const Structure &s, const std::string &entityID, const std::str
 		if (not ix.count(seqID))
 		{
 			ix[seqID] = index;
-			emplace_back(*this, index, seqID, compoundID);
+			emplace_back(*this, index, seqID, authSeqID, compoundID);
 		}
 		else if (cif::VERBOSE)
 		{
-			Monomer m{*this, index, seqID, compoundID};
+			Monomer m{*this, index, seqID, authSeqID, compoundID};
 			std::cerr << "Dropping alternate residue " << m << std::endl;
 		}
 	}
@@ -1992,14 +1998,24 @@ std::tuple<char, int, char> Structure::MapLabelToAuth(
 			 cif::Key("asym_id") == asymID and
 			 cif::Key("seq_id") == seqID))
 	{
-		std::string auth_asym_id, pdb_ins_code;
-		int pdb_seq_num;
+		std::string auth_asym_id, pdb_ins_code, pdb_seq_num, auth_seq_num;
 
-		cif::tie(auth_asym_id, pdb_seq_num, pdb_ins_code) =
-			r.get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
+		cif::tie(auth_asym_id, auth_seq_num, pdb_seq_num, pdb_ins_code) =
+			r.get("pdb_strand_id", "auth_seq_num", "pdb_seq_num", "pdb_ins_code");
 
-		result = std::make_tuple(auth_asym_id.front(), pdb_seq_num,
-			pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
+		if (auth_seq_num.empty())
+			auth_seq_num = pdb_seq_num;
+
+		try
+		{
+			result = std::make_tuple(auth_asym_id.front(), std::stoi(auth_seq_num),
+				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
+		}
+		catch (const std::exception& ex)
+		{
+			result = std::make_tuple(auth_asym_id.front(), 0,
+				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
+		}
 
 		found = true;
 		break;
