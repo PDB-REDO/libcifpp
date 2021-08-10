@@ -151,6 +151,15 @@ install(FILES
 )
 
 include(CMakePackageConfigHelpers)
+
+set(INCLUDE_INSTALL_DIR include )
+set(LIBRARY_INSTALL_DIR lib )
+
+configure_package_config_file(cmake/cifppConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
+  INSTALL_DESTINATION lib/cmake/cifpp
+  PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR SHARE_INSTALL_DIR)
+
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
   VERSION ${PROJECT_VERSION}
@@ -159,12 +168,7 @@ write_basic_package_version_file(
 
 export(EXPORT cifppTargets
   FILE "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppTargets.cmake"
-  NAMESPACE CifPP::
-)
-
-configure_file(cmake/cifppConfig.cmake
-  "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
-  COPYONLY
+  NAMESPACE cifpp::
 )
 
 set(ConfigPackageLocation lib/cmake/cifpp)
@@ -172,15 +176,15 @@ install(EXPORT cifppTargets
   FILE
     cifppTargets.cmake
   NAMESPACE
-    CifPP::
+    cifpp::
   DESTINATION
     ${ConfigPackageLocation}
 )
 
 install(
   FILES
-    cmake/cifppConfig.cmake
-    "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
   DESTINATION
     ${ConfigPackageLocation}
   COMPONENT
