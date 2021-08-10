@@ -403,7 +403,8 @@ struct AtomImpl
 
 	bool isWater() const
 	{
-		return mCompound != nullptr and mCompound->isWater();
+		// mCompound may still be null here, and besides, this check is not that exciting anyway
+		return mCompID == "HOH" or mCompID == "H2O" or mCompID == "WAT";
 	}
 
 	float radius() const
