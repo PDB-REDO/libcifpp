@@ -820,9 +820,25 @@ struct rsrc_imp
 };
 } // namespace mrsrc
 
+#if _MSC_VER
+
+extern "C" const mrsrc::rsrc_imp* gResourceIndexDefault = nullptr;
+extern "C" const char* gResourceDataDefault = nullptr;
+extern "C" const char* gResourceNameDefault = nullptr;
+
+extern "C" const mrsrc::rsrc_imp* gResourceIndex;
+extern "C" const char* gResourceData;
+extern "C" const char* gResourceName;
+
+#pragma comment(linker, "/alternatename:gResourceIndex=gResourceIndexDefault")
+#pragma comment(linker, "/alternatename:gResourceData=gResourceDataDefault")
+#pragma comment(linker, "/alternatename:gResourceName=gResourceNameDefault")
+
+#else
 extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
 extern const __attribute__((weak)) char gResourceData[];
 extern const __attribute__((weak)) char gResourceName[];
+#endif
 
 namespace mrsrc
 {

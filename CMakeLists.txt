@@ -6,6 +6,30 @@ project(cifpp VERSION 1.1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    # make msvc standards compliant...
+    add_compile_options(/permissive-)
+
+	# On Windows, do not install in the system location
+	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+		message(WARNING "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
+		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
+	endif()
+
+	# Find out the processor type for the target
+	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+		set(COFF_TYPE "x64")
+	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
+		set(COFF_TYPE "x86")
+	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
+		set(COFF_TYPE "arm64")
+	else()
+		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
+	endif()	
+
+	set(COFF_SPEC "--coff=${COFF_TYPE}")
+endif()
+
 # Set sharedir, if not use -DSHARE_INSTALL_DIR
 if(NOT SHARE_INSTALL_DIR)
   if(CMAKE_INSTALL_DATADIR)
@@ -16,10 +40,6 @@ if(NOT SHARE_INSTALL_DIR)
 endif(NOT SHARE_INSTALL_DIR)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-# set (BOOST_ROOT ${PROJECT_SOURCE_DIR}/../boost_1_75_0)
-# set (Boost_COMPILER "-vc")
-# set (Boost_USE_STATIC_RUNTIME ON)  
-
 find_package(Boost 1.73.0 REQUIRED COMPONENTS system iostreams regex date_time)
 
 set(CMAKE_THREAD_PREFER_PTHREAD)
@@ -28,6 +48,19 @@ find_package(Threads)
 
 find_package(ZLIB)
 find_package(BZip2)
+
+find_program(MRC mrc HINTS "${CMAKE_INSTALL_PREFIX}/../mrc")
+
+if(MRC)
+	option(USE_RSRC "Use mrc to create resources" ON)
+else()
+	message(WARNING "Not using resources since mrc was not found")
+endif()
+
+if(USE_RSRC)
+	message("Using resources compiled with ${MRC}")
+	add_compile_definitions(USE_RSRC)
+endif()
 
 set(project_sources 
 	${PROJECT_SOURCE_DIR}/src/AtomType.cpp
@@ -83,22 +116,20 @@ if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data/components.cif)
 		SHOW_PROGRESS)
 endif()
 
+include_directories(${Boost_INCLUDE_DIRS})
+link_libraries(${Boost_LIBRARIES})
+add_compile_definitions(CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
+
+if(USE_RSRC STREQUAL "ON")
+	set(USE_RSRC 1)
+endif()
+configure_file(${PROJECT_SOURCE_DIR}/src/Config-cmake.hpp.in Config.hpp)
+
 add_library(${PROJECT_NAME} ${project_sources} ${project_headers})
-add_executable(unit-test ${PROJECT_SOURCE_DIR}/test/unit-test.cpp)
+add_executable(unit-test ${PROJECT_SOURCE_DIR}/test/unit-test.cpp Config.hpp)
 
-configure_file(${PROJECT_SOURCE_DIR}/src/Config.hpp.in Config.hpp)
-target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${Boost_INCLUDE_DIRS}>)
 
-include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
-link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
-
-target_compile_definitions(${PROJECT_NAME}
-	PUBLIC "" CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
-
-target_compile_definitions(unit-test
-	PUBLIC "" CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
-
-target_link_libraries(unit-test ${PROJECT_NAME} ${Boost_LIBRARIES} Threads::Threads)
+target_link_libraries(unit-test ${PROJECT_NAME} Threads::Threads)
 
 if(${ZLIB_FOUND})
 	target_link_libraries(unit-test ZLIB::ZLIB)
@@ -106,12 +137,6 @@ endif()
 
 if(${BZip2_FOUND})
 	target_link_libraries(unit-test BZip2::BZip2)
-endif()
-
-if(MSVC)
-    # make msvc standards compliant...
-    target_compile_options(${PROJECT_NAME} PRIVATE /permissive-)
-    target_compile_options(unit-test PRIVATE /permissive-)
 endif()
 
 include(GenerateExportHeader)
@@ -139,7 +164,7 @@ install(
 
 install(
 	FILES "${CMAKE_CURRENT_BINARY_DIR}/cifpp_export.h"
-	DESTINATION include
+	DESTINATION include/cif++
 	COMPONENT Devel
 )
 
@@ -155,9 +180,11 @@ include(CMakePackageConfigHelpers)
 set(INCLUDE_INSTALL_DIR include )
 set(LIBRARY_INSTALL_DIR lib )
 
+set(ConfigPackageLocation lib/cmake/cifpp)
+
 configure_package_config_file(cmake/cifppConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
-  INSTALL_DESTINATION lib/cmake/cifpp
+  INSTALL_DESTINATION ${ConfigPackageLocation}
   PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR SHARE_INSTALL_DIR)
 
 write_basic_package_version_file(
@@ -171,22 +198,17 @@ export(EXPORT cifppTargets
   NAMESPACE cifpp::
 )
 
-set(ConfigPackageLocation lib/cmake/cifpp)
 install(EXPORT cifppTargets
-  FILE
-    cifppTargets.cmake
-  NAMESPACE
-    cifpp::
-  DESTINATION
-    ${ConfigPackageLocation}
+  FILE cifppTargets.cmake
+  NAMESPACE cifpp::
+  DESTINATION ${ConfigPackageLocation}
+  COMPONENT Devel
 )
 
 install(
   FILES
 	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
 	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
-  DESTINATION
-    ${ConfigPackageLocation}
-  COMPONENT
-    Devel
+  DESTINATION ${ConfigPackageLocation}
+  COMPONENT Devel
 )

@@ -436,7 +436,7 @@ void Datablock::setValidator(Validator* v)
 void Datablock::add_software(const std::string& name, const std::string& classification, const std::string& versionNr, const std::string& versionDate)
 {
 	Category& cat = operator[]("software");
-	int ordNr = cat.size() + 1;
+	auto ordNr = cat.size() + 1;
 	// TODO: should we check this ordinal number???
 	
 	cat.emplace({

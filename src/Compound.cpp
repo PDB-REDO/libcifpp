@@ -686,7 +686,7 @@ void CompoundFactory::setDefaultDictionary(const std::string &inDictFile)
 	{
 		mImpl.reset(new CCDCompoundFactoryImpl(mImpl, inDictFile));
 	}
-	catch (const std::exception &ex)
+	catch (const std::exception &)
 	{
 		std::cerr << "Error loading dictionary " << inDictFile << std::endl;
 		throw;
@@ -706,7 +706,7 @@ void CompoundFactory::pushDictionary(const std::string &inDictFile)
 	{
 		mImpl.reset(new CompoundFactoryImpl(inDictFile, mImpl));
 	}
-	catch (const std::exception &ex)
+	catch (const std::exception &)
 	{
 		std::cerr << "Error loading dictionary " << inDictFile << std::endl;
 		throw;

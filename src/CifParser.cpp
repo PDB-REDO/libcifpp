@@ -1235,7 +1235,7 @@ void DictParser::loadDictionary()
 			}
 		}
 	}
-	catch (const std::exception& ex)
+	catch (const std::exception&)
 	{
 		std::cerr << "Error parsing dictionary" << std::endl;
 		throw;
@@ -1303,7 +1303,7 @@ bool DictParser::collectItemTypes()
 			
 			mValidator.addTypeValidator(std::move(v));
 		}
-		catch (const std::exception& ex)
+		catch (const std::exception&)
 		{
 			throw_with_nested(CifParserError(t.lineNr(), "error in regular expression"));
 		}
