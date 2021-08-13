@@ -822,13 +822,13 @@ struct rsrc_imp
 
 #if _MSC_VER
 
-extern "C" const mrsrc::rsrc_imp* gResourceIndexDefault = nullptr;
-extern "C" const char* gResourceDataDefault = nullptr;
-extern "C" const char* gResourceNameDefault = nullptr;
+extern "C" const mrsrc::rsrc_imp* gResourceIndexDefault[1] = {};
+extern "C" const char* gResourceDataDefault[1] = {};
+extern "C" const char* gResourceNameDefault[1] = {};
 
-extern "C" const mrsrc::rsrc_imp* gResourceIndex;
-extern "C" const char* gResourceData;
-extern "C" const char* gResourceName;
+extern "C" const mrsrc::rsrc_imp gResourceIndex[];
+extern "C" const char gResourceData[];
+extern "C" const char gResourceName[];
 
 #pragma comment(linker, "/alternatename:gResourceIndex=gResourceIndexDefault")
 #pragma comment(linker, "/alternatename:gResourceData=gResourceDataDefault")
