@@ -93,7 +93,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time)
+find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 find_package(ZLIB)
 find_package(BZip2)
@@ -184,15 +184,9 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
-
-# if(NOT EXISTS)
-
-# configure_file(${PROJECT_SOURCE_DIR}/src/revision.hpp.in revision.hpp @ONLY)
-
 # download the components.cif file from CCD
 set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
 
-# unfortunately, extract_archive does not recognize .gz files on Windows?
 if (NOT EXISTS ${COMPONENTS_CIF})
 
 	if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
@@ -229,20 +223,6 @@ add_compile_definitions(CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SH
 
 configure_file(${PROJECT_SOURCE_DIR}/src/Config-cmake.hpp.in Config.hpp)
 
-# Unit test
-
-add_executable(unit-test ${PROJECT_SOURCE_DIR}/test/unit-test.cpp Config.hpp)
-
-if(${ZLIB_FOUND})
-	target_link_libraries(unit-test ZLIB::ZLIB)
-endif()
-
-if(${BZip2_FOUND})
-	target_link_libraries(unit-test BZip2::BZip2)
-endif()
-
-target_link_libraries(unit-test cifpp_static Threads::Threads ${Boost_LIBRARIES})
-
 generate_export_header(cifpp)
 
 # Install rules
@@ -276,7 +256,7 @@ install(FILES
 
 set(INCLUDE_INSTALL_DIR include )
 set(LIBRARY_INSTALL_DIR lib )
-set(SHARE_INSTALL_DIR share)
+set(SHARE_INSTALL_DIR share/libcifpp)
 
 set(ConfigPackageLocation lib/cmake/cifpp)
 
@@ -310,3 +290,63 @@ install(
   DESTINATION ${ConfigPackageLocation}
   COMPONENT Devel
 )
+
+# Unit tests
+
+option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
+
+if(CIFPP_BUILD_TESTS)
+
+	if(USE_RSRC)
+		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj
+			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic ${COFF_SPEC}
+		)
+		set(CIFPP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj)
+	endif()
+
+	list(APPEND CIFPP_tests
+		# pdb2cif
+		rename-compound
+		unit)
+
+	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
+		set(CIFPP_TEST "${CIFPP_TEST}-test")
+		set(CIFPP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test/${CIFPP_TEST}.cpp")
+
+		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE} ${CIFPP_TEST_RESOURCE})
+
+		target_include_directories(${CIFPP_TEST} PRIVATE
+			${CMAKE_CURRENT_SOURCE_DIR}/include
+			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+		)
+
+		target_link_libraries(${CIFPP_TEST} cifpp_static Threads::Threads ${Boost_LIBRARIES})
+
+		if(${ZLIB_FOUND})
+			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
+		endif()
+
+		if(${BZip2_FOUND})
+			target_link_libraries(${CIFPP_TEST} BZip2::BZip2)
+		endif()
+	
+		if(MSVC)
+			# Specify unwind semantics so that MSVC knowns how to handle exceptions
+			target_compile_options(${CIFPP_TEST} PRIVATE /EHsc)
+		endif()
+
+		add_custom_target("run-${CIFPP_TEST}" DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch ${CIFPP_TEST})
+
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch
+			COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${CIFPP_TEST}
+		)
+
+		add_test(NAME ${CIFPP_TEST}
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}>
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+
+	endforeach()
+endif()
+
+

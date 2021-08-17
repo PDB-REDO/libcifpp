@@ -1,6 +1,5 @@
-#if __has_include("../src/Config.hpp")
-#include "../src/Config.hpp"
-#endif
+#include "Config.hpp"
+
 #include "../include/cif++/Cif++.hpp"
 #include "../include/cif++/PDB2Cif.hpp"
 
@@ -17,7 +16,7 @@ int main(int argc, char* argv[])
 {
 	using namespace std::literals;
 
-	po::options_description desc("pdb2cif-test "s + PACKAGE_VERSION + " options");
+	po::options_description desc("pdb2cif-test options");
 	desc.add_options()
 		("input,i",		po::value<std::string>(),	"Input file")
 		("help,h",									"Display help message")

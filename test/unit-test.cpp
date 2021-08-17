@@ -1606,6 +1606,8 @@ PRO OXT HXT SING N N 17
 	mmcif::File file(example.string());
 	mmcif::Structure structure(file);
 
+	(void)file.file().isValid();
+
 	mmcif::BondMap bm(structure);
 
 	// Test the bonds of the first three residues, that's PRO A 1, ASN A 2, PHE A 3	
