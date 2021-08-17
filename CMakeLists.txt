@@ -1,16 +1,52 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 1.1.0)
+project(cifpp VERSION 1.1.0 LANGUAGES CXX)
 
+enable_testing()
+
+include(GNUInstallDirs)
+include(CheckFunctionExists)
+include(CheckIncludeFiles)
+include(CheckLibraryExists)
+include(CMakePackageConfigHelpers)
+include(Dart)
+include(GenerateExportHeader)
+
+set(PACKAGE ${PROJECT_NAME})
+set(PACKAGE_VERSION ${PROJECT_VERSION})
+add_definitions(-DVERSION=${PACKAGE_VERSION})
+
+set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(CMAKE_COMPILER_IS_GNUCC)
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
+endif()
+if(MSVC)
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+endif()
 
 set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
     add_compile_options(/permissive-)
+
+	macro(get_WIN32_WINNT version)
+		if (WIN32 AND CMAKE_SYSTEM_VERSION)
+			set(ver ${CMAKE_SYSTEM_VERSION})
+			string(REPLACE "." "" ver ${ver})
+			string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
+
+			set(${version} "0x${ver}")
+		endif()
+	endmacro()
+
+	get_WIN32_WINNT(ver)
+	add_definitions(-D_WIN32_WINNT=${ver})
 
 	# On Windows, do not install in the system location
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -32,26 +68,8 @@ if(MSVC)
 	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
-# Set sharedir, if not use -DSHARE_INSTALL_DIR
-if(NOT SHARE_INSTALL_DIR)
-  if(CMAKE_INSTALL_DATADIR)
-    set(SHARE_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}")
-  else(CMAKE_INSTALL_DATADIR)
-    set(SHARE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share")
-  endif(CMAKE_INSTALL_DATADIR)
-endif(NOT SHARE_INSTALL_DIR)
-
-set (Boost_DETAILED_FAILURE_MSG ON)
-find_package(Boost 1.73.0 REQUIRED COMPONENTS system iostreams regex date_time)
-
-set(CMAKE_THREAD_PREFER_PTHREAD)
-set(THREADS_PREFER_PTHREAD_FLAG)
-find_package(Threads)
-
-find_package(ZLIB)
-find_package(BZip2)
-
-find_program(MRC mrc HINTS "${CMAKE_INSTALL_PREFIX}/../mrc")
+# Optionally use mrc to create resources
+find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
 
 if(MRC)
 	option(USE_RSRC "Use mrc to create resources" ON)
@@ -59,10 +77,45 @@ else()
 	message(WARNING "Not using resources since mrc was not found")
 endif()
 
-if(USE_RSRC)
+if(USE_RSRC STREQUAL "ON")
+	set(USE_RSRC 1)
+
 	message("Using resources compiled with ${MRC}")
 	add_compile_definitions(USE_RSRC)
 endif()
+
+# Libraries
+
+set(CMAKE_THREAD_PREFER_PTHREAD)
+set(THREADS_PREFER_PTHREAD_FLAG)
+find_package(Threads)
+
+set (Boost_DETAILED_FAILURE_MSG ON)
+find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time)
+
+find_package(ZLIB)
+find_package(BZip2)
+
+# Create a revision file, containing the current git version info
+
+execute_process(COMMAND git log --pretty=format:%h --max-count=1
+	OUTPUT_VARIABLE CIFPP_GIT_VERSION)
+
+set(CIFPP_VERSION_INFO_FILE ${CMAKE_CURRENT_BINARY_DIR}/version-info-${CIFPP_GIT_VERSION}.txt)
+
+add_custom_command(OUTPUT ${CIFPP_VERSION_INFO_FILE}
+	COMMAND echo libcifpp-version: ${PROJECT_VERSION} > ${CIFPP_VERSION_INFO_FILE}
+	COMMAND git describe --match=build --dirty >> ${CIFPP_VERSION_INFO_FILE}
+	COMMAND git log --pretty=medium --date=iso8601 -1 >> ${CIFPP_VERSION_INFO_FILE}
+)
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
+	COMMAND echo "const char kRevision[] = R\\\"\\(" > ${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
+	COMMAND cat ${CIFPP_VERSION_INFO_FILE} >> ${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
+	COMMAND echo "\\)\\\"\\;" >> ${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
+	DEPENDS ${CIFPP_VERSION_INFO_FILE})
+
+# Sources
 
 set(project_sources 
 	${PROJECT_SOURCE_DIR}/src/AtomType.cpp
@@ -79,7 +132,6 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/Secondary.cpp
 	${PROJECT_SOURCE_DIR}/src/Structure.cpp
 	${PROJECT_SOURCE_DIR}/src/Symmetry.cpp
-	${PROJECT_SOURCE_DIR}/src/SymOpTable_data.cpp
 	${PROJECT_SOURCE_DIR}/src/TlsParser.cpp
 )
 
@@ -99,6 +151,7 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/Structure.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/Symmetry.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/TlsParser.hpp
+	${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
 )
 
 include_directories(
@@ -106,32 +159,70 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
 )
 
+add_library(cifpp_obj OBJECT ${project_sources} ${project_headers})
+set_target_properties(cifpp_obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+
+add_library(cifpp SHARED $<TARGET_OBJECTS:cifpp_obj>)
+set_target_properties(cifpp PROPERTIES
+	SOVERSION ${PROJECT_VERSION}
+	INTERFACE_cifpp_MAJOR_VERSION cifpp_MAJOR_VERSION
+	COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
+)
+
+add_library(cifpp_static STATIC $<TARGET_OBJECTS:cifpp_obj>)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
+endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+
+
+# if(NOT EXISTS)
+
+# configure_file(${PROJECT_SOURCE_DIR}/src/revision.hpp.in revision.hpp @ONLY)
+
 # download the components.cif file from CCD
-if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
-	file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
-endif()
+set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
 
 # unfortunately, extract_archive does not recognize .gz files on Windows?
-if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data/components.cif)
-	file(
-		DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${PROJECT_SOURCE_DIR}/data/components.cif
-		SHOW_PROGRESS)
+if (NOT EXISTS ${COMPONENTS_CIF})
+
+	if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
+		file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
+	endif()
+
+	if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
+		find_program(GUNZIP gunzip)
+
+		if(GUNZIP)
+			file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
+				SHOW_PROGRESS)
+			add_custom_command(OUTPUT ${COMPONENTS_CIF}
+				COMMAND ${GUNZIP} ${COMPONENTS_CIF}.gz
+				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/data/)
+		else()
+			file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
+				SHOW_PROGRESS)
+		endif()
+	else()
+		file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
+			SHOW_PROGRESS)
+		file(ARCHIVE_EXTRACT INPUT ${COMPONENTS_CIF}.gz
+			DESTINATION ${CMAKE_SOURCE_DIR}/data/
+			VERBOSE)
+	endif()
 endif()
+
+add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
 
 include_directories(${Boost_INCLUDE_DIRS})
 link_libraries(${Boost_LIBRARIES})
 add_compile_definitions(CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
 
-if(USE_RSRC STREQUAL "ON")
-	set(USE_RSRC 1)
-endif()
 configure_file(${PROJECT_SOURCE_DIR}/src/Config-cmake.hpp.in Config.hpp)
 
-add_library(${PROJECT_NAME} ${project_sources} ${project_headers})
+# Unit test
+
 add_executable(unit-test ${PROJECT_SOURCE_DIR}/test/unit-test.cpp Config.hpp)
-
-
-target_link_libraries(unit-test ${PROJECT_NAME} Threads::Threads)
 
 if(${ZLIB_FOUND})
 	target_link_libraries(unit-test ZLIB::ZLIB)
@@ -141,22 +232,19 @@ if(${BZip2_FOUND})
 	target_link_libraries(unit-test BZip2::BZip2)
 endif()
 
-include(GenerateExportHeader)
+target_link_libraries(unit-test cifpp_static Threads::Threads ${Boost_LIBRARIES})
 
 generate_export_header(cifpp)
-set_property(TARGET cifpp PROPERTY VERSION ${PROJECT_VERSION})
-set_property(TARGET cifpp PROPERTY SOVERSION 1)
-set_property(TARGET cifpp PROPERTY INTERFACE_cifpp_MAJOR_VERSION 1)
-set_property(TARGET cifpp APPEND PROPERTY
-  COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
-)
 
-install(TARGETS cifpp EXPORT cifppTargets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
+# Install rules
+
+install(TARGETS cifpp cifpp_static
+	EXPORT cifppTargets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
 
 install(
 	DIRECTORY include/cif++
@@ -174,13 +262,12 @@ install(FILES
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic
 	${PROJECT_SOURCE_DIR}/data/components.cif
-	DESTINATION share/libcifpp/
+	DESTINATION ${CMAKE_INSTALL_DATADIR}
 )
-
-include(CMakePackageConfigHelpers)
 
 set(INCLUDE_INSTALL_DIR include )
 set(LIBRARY_INSTALL_DIR lib )
+set(SHARE_INSTALL_DIR share)
 
 set(ConfigPackageLocation lib/cmake/cifpp)
 
