@@ -98,6 +98,9 @@ find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time p
 find_package(ZLIB)
 find_package(BZip2)
 
+include_directories(${Boost_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/include)
+link_libraries(${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
 # Create a revision file, containing the current git version info
 
 find_package(Git)
