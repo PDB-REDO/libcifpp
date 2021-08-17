@@ -1,0 +1,4 @@
+const char kRevision[] = R"(
+libzeep-version: @PROJECT_VERSION@
+@BUILD_VERSION_STRING@
+)";

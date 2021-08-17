@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.16)
 # set the project name
 project(cifpp VERSION 1.1.0 LANGUAGES CXX)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 enable_testing()
 
 include(GNUInstallDirs)
@@ -98,23 +100,31 @@ find_package(BZip2)
 
 # Create a revision file, containing the current git version info
 
-execute_process(COMMAND git log --pretty=format:%h --max-count=1
-	OUTPUT_VARIABLE CIFPP_GIT_VERSION)
+find_package(Git)
+if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    include(GetGitRevisionDescription)
 
-set(CIFPP_VERSION_INFO_FILE ${CMAKE_CURRENT_BINARY_DIR}/version-info-${CIFPP_GIT_VERSION}.txt)
+	execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD OUTPUT_VARIABLE SHORT_SHA OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-add_custom_command(OUTPUT ${CIFPP_VERSION_INFO_FILE}
-	COMMAND echo libcifpp-version: ${PROJECT_VERSION} > ${CIFPP_VERSION_INFO_FILE}
-	COMMAND git describe --match=build --dirty >> ${CIFPP_VERSION_INFO_FILE}
-	COMMAND git log --pretty=medium --date=iso8601 -1 >> ${CIFPP_VERSION_INFO_FILE}
-)
+    set(REVISION ${SHORT_SHA} CACHE STRING "git short sha" FORCE)
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
-	COMMAND echo "const char kRevision[] = R\\\"\\(" > ${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
-	COMMAND cat ${CIFPP_VERSION_INFO_FILE} >> ${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
-	COMMAND echo "\\)\\\"\\;" >> ${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
-	DEPENDS ${CIFPP_VERSION_INFO_FILE})
+    # only use the plugin to tie the configure state to the sha to force rebuilds
+    # of files that depend on version.h
 
+	include(GetGitRevisionDescription)
+    get_git_head_revision(REFSPEC COMMITHASH)
+
+	# Generate our own version string
+	git_describe_working_tree(BUILD_VERSION_STRING --match=build --dirty)
+else()
+    message(WARNING "Git not found, cannot set version info")
+
+    SET(BUILD_VERSION_STRING "unknown")
+endif()
+
+# generate version.h
+include_directories(${CMAKE_BINARY_DIR})
+configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
 # Sources
 
 set(project_sources 
@@ -151,7 +161,6 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/Structure.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/Symmetry.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/TlsParser.hpp
-	${CMAKE_CURRENT_BINARY_DIR}/revision.hpp
 )
 
 include_directories(
@@ -159,7 +168,8 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
 )
 
-add_library(cifpp_obj OBJECT ${project_sources} ${project_headers})
+add_library(cifpp_obj OBJECT ${project_sources} ${project_headers}
+	${CMAKE_CURRENT_BINARY_DIR}/revision.hpp)
 set_target_properties(cifpp_obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
 add_library(cifpp SHARED $<TARGET_OBJECTS:cifpp_obj>)
