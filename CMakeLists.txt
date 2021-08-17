@@ -168,8 +168,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
 )
 
-add_library(cifpp_obj OBJECT ${project_sources} ${project_headers}
-	${CMAKE_CURRENT_BINARY_DIR}/revision.hpp)
+add_library(cifpp_obj OBJECT ${project_sources} ${project_headers})
 set_target_properties(cifpp_obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
 add_library(cifpp SHARED $<TARGET_OBJECTS:cifpp_obj>)
