@@ -72,11 +72,7 @@ std::string get_version_nr()
 		rxVersionNr1(R"(build-(\d+)-g[0-9a-f]{7}(-dirty)?)"),
 		rxVersionNr2(R"(libcifpp-version: (\d+\.\d+\.\d+))");
 
-#if __has_include("revision.hpp")
 #include "revision.hpp"
-#else
-	const char *kRevision = "";
-#endif
 
 	struct membuf : public std::streambuf
 	{
