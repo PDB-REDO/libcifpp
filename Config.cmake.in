@@ -1,5 +1,3 @@
-# set(cifpp_VERSION @VERSION@)
-
 @PACKAGE_INIT@
 
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/cifppTargets.cmake")

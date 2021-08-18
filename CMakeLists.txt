@@ -116,7 +116,7 @@ else()
 endif()
 
 # generate version.h
-include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR} PRIVATE)
 string(TIMESTAMP BUILD_DATE_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
 configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
 
@@ -158,16 +158,12 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/TlsParser.hpp
 )
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/src
-)
-
 add_library(cifpp ${project_sources} ${project_headers})
-set_target_properties(cifpp PROPERTIES
-	SOVERSION ${PROJECT_VERSION}
-	INTERFACE_cifpp_MAJOR_VERSION cifpp_MAJOR_VERSION
-	COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
+
+target_include_directories(cifpp
+	PUBLIC
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -214,8 +210,6 @@ set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
 set(SHARE_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/libcifpp)
 
-set(ConfigPackageLocation lib/cmake/cifpp)
-
 # Fix cache dir
 add_compile_definitions(
 	# CACHE_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}"
@@ -234,13 +228,13 @@ install(TARGETS cifpp
 
 install(
 	DIRECTORY include/cif++
-	DESTINATION include
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 	COMPONENT Devel
 )
 
 install(
 	FILES "${CMAKE_CURRENT_BINARY_DIR}/cifpp_export.h"
-	DESTINATION include/cif++
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cif++
 	COMPONENT Devel
 )
 
@@ -251,10 +245,28 @@ install(FILES
 	DESTINATION ${SHARE_INSTALL_DIR}
 )
 
-configure_package_config_file(cmake/cifppConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
-  INSTALL_DESTINATION ${ConfigPackageLocation}
-  PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR SHARE_INSTALL_DIR)
+configure_package_config_file(Config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/cifppConfig.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
+	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR SHARE_INSTALL_DIR
+)
+
+install(FILES
+		"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
+	COMPONENT Devel
+)
+
+set(cifpp_MAJOR_VERSION 1)
+set_target_properties(cifpp PROPERTIES
+	VERSION ${PROJECT_VERSION}
+	SOVERSION 1
+	INTERFACE_cifpp_MAJOR_VERSION 1)
+
+set_property(TARGET cifpp APPEND PROPERTY
+  COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
+)
 
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
@@ -263,23 +275,8 @@ write_basic_package_version_file(
 )
 
 export(EXPORT cifppTargets
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppTargets.cmake"
-  NAMESPACE cifpp::
-)
-
-install(EXPORT cifppTargets
-  FILE cifppTargets.cmake
-  NAMESPACE cifpp::
-  DESTINATION ${ConfigPackageLocation}
-  COMPONENT Devel
-)
-
-install(
-  FILES
-	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
-	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
-  DESTINATION ${ConfigPackageLocation}
-  COMPONENT Devel
+	FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/cifppTargets.cmake"
+	NAMESPACE cifpp::
 )
 
 # Unit tests
@@ -339,3 +336,6 @@ if(CIFPP_BUILD_TESTS)
 
 	endforeach()
 endif()
+
+
+message("Still to do: libcifpp.pc, package, tools, create symop_Data")
