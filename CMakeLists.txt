@@ -24,11 +24,11 @@ if(CMAKE_COMPILER_IS_GNUCC)
 endif()
 if(MSVC)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 endif()
 
 # Build shared libraries by default (not my cup of tea, but hey)
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" ON)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 set(CMAKE_DEBUG_POSTFIX d)
 
@@ -226,6 +226,11 @@ install(TARGETS cifpp
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+export(EXPORT cifppTargets
+	FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/cifppTargets.cmake"
+	NAMESPACE cifpp::
+)
+
 install(
 	DIRECTORY include/cif++
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -246,7 +251,7 @@ install(FILES
 )
 
 configure_package_config_file(Config.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/cifppConfig.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR SHARE_INSTALL_DIR
 )
@@ -272,11 +277,6 @@ write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY AnyNewerVersion
-)
-
-export(EXPORT cifppTargets
-	FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/cifppTargets.cmake"
-	NAMESPACE cifpp::
 )
 
 # Unit tests
@@ -308,7 +308,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} cifpp Threads::Threads ${Boost_LIBRARIES})
+		target_link_libraries(${CIFPP_TEST} Threads::Threads ${Boost_LIBRARIES} cifpp)
 
 		if(${ZLIB_FOUND})
 			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
