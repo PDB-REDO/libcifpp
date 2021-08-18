@@ -47,6 +47,16 @@
 
 #include "cifpp_export.h"
 
+#if _MSC_VER
+#	pragma warning (disable : 4355)	// this is used in Base Initializer list
+#	pragma warning (disable : 4996)	// unsafe function or variable
+#	pragma warning (disable : 4068)	// unknown pragma
+#	pragma warning (disable : 4996)	// stl copy()
+#	pragma warning (disable : 4800)	// BOOL conversion
+#	pragma warning (disable : 4100) // unreferenced formal parameter
+#	pragma warning (disable : 4101) // unreferenced local variable
+#endif
+
 namespace cif
 {
 
@@ -85,7 +95,7 @@ typedef std::set<std::string, iless>	iset;
 
 extern const uint8_t kCharToLowerMap[256];
 
-inline char tolower(char ch)
+inline char tolower(int ch)
 {
 	return static_cast<char>(kCharToLowerMap[static_cast<uint8_t>(ch)]);
 }
@@ -102,7 +112,7 @@ std::string cifIdForNumber(int number);
 // --------------------------------------------------------------------
 //	custom wordwrapping routine
 
-std::vector<std::string> wordWrap(const std::string& text, unsigned int width);
+std::vector<std::string> wordWrap(const std::string& text, size_t width);
 
 // --------------------------------------------------------------------
 //	Code helping with terminal i/o

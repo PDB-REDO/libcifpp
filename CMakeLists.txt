@@ -15,10 +15,6 @@ include(CMakePackageConfigHelpers)
 include(Dart)
 include(GenerateExportHeader)
 
-set(PACKAGE ${PROJECT_NAME})
-set(PACKAGE_VERSION ${PROJECT_VERSION})
-add_definitions(-DVERSION=${PACKAGE_VERSION})
-
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,6 +26,9 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 endif()
+
+# Build shared libraries by default (not my cup of tea, but hey)
+option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" ON)
 
 set(CMAKE_DEBUG_POSTFIX d)
 
@@ -163,18 +162,15 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
 )
 
-add_library(cifpp SHARED ${project_sources} ${project_headers})
+add_library(cifpp ${project_sources} ${project_headers})
 set_target_properties(cifpp PROPERTIES
 	SOVERSION ${PROJECT_VERSION}
 	INTERFACE_cifpp_MAJOR_VERSION cifpp_MAJOR_VERSION
 	COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
 )
 
-add_library(cifpp_static STATIC ${project_sources} ${project_headers})
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
-    target_link_options(cifpp_static PRIVATE -undefined dynamic_lookup)
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
 # download the components.cif file from CCD
@@ -212,13 +208,23 @@ add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
 
 include_directories(${Boost_INCLUDE_DIRS})
 link_libraries(${Boost_LIBRARIES})
-add_compile_definitions(CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
+
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
+set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
+set(SHARE_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/libcifpp)
+
+set(ConfigPackageLocation lib/cmake/cifpp)
+
+# Fix cache dir
+add_compile_definitions(
+	# CACHE_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}"
+	DATA_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}" )
 
 generate_export_header(cifpp)
 
 # Install rules
 
-install(TARGETS cifpp cifpp_static
+install(TARGETS cifpp
 	EXPORT cifppTargets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -241,14 +247,8 @@ install(FILES
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic
 	${PROJECT_SOURCE_DIR}/data/components.cif
-	DESTINATION ${CMAKE_INSTALL_DATADIR}
+	DESTINATION ${SHARE_INSTALL_DIR}
 )
-
-set(INCLUDE_INSTALL_DIR include )
-set(LIBRARY_INSTALL_DIR lib )
-set(SHARE_INSTALL_DIR share/libcifpp)
-
-set(ConfigPackageLocation lib/cmake/cifpp)
 
 configure_package_config_file(cmake/cifppConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
@@ -310,7 +310,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} cifpp_static Threads::Threads ${Boost_LIBRARIES})
+		target_link_libraries(${CIFPP_TEST} $<TARGET_OBJECTS:cifpp> Threads::Threads ${Boost_LIBRARIES})
 
 		if(${ZLIB_FOUND})
 			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
@@ -329,8 +329,8 @@ if(CIFPP_BUILD_TESTS)
 
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch
-			COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${CIFPP_TEST}
-		)
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}>
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
 
 		add_test(NAME ${CIFPP_TEST}
 			COMMAND $<TARGET_FILE:${CIFPP_TEST}>
@@ -338,5 +338,3 @@ if(CIFPP_BUILD_TESTS)
 
 	endforeach()
 endif()
-
-

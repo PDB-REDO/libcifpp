@@ -154,21 +154,21 @@ struct BridgeParner
 // --------------------------------------------------------------------
 
 const float
-	// kSSBridgeDistance = 3.0,
-	kMinimalDistance = 0.5,
-	kMinimalCADistance = 9.0,
-	kMinHBondEnergy = -9.9,
-	kMaxHBondEnergy = -0.5,
-	kCouplingConstant = -27.888,	//	= -332 * 0.42 * 0.2
-	kMaxPeptideBondLength = 2.5;
+	// kSSBridgeDistance = 3.0f,
+	kMinimalDistance = 0.5f,
+	kMinimalCADistance = 9.0f,
+	kMinHBondEnergy = -9.9f,
+	kMaxHBondEnergy = -0.5f,
+	kCouplingConstant = -27.888f,	//	= -332 * 0.42 * 0.2
+	kMaxPeptideBondLength = 2.5f;
 
 const float
-	kRadiusN = 1.65,
-	kRadiusCA = 1.87,
-	kRadiusC = 1.76,
-	kRadiusO = 1.4,
-	kRadiusSideAtom = 1.8,
-	kRadiusWater = 1.4;
+	kRadiusN = 1.65f,
+	kRadiusCA = 1.87f,
+	kRadiusC = 1.76f,
+	kRadiusO = 1.4f,
+	kRadiusSideAtom = 1.8f,
+	kRadiusWater = 1.4f;
 
 struct Res
 {
@@ -233,7 +233,7 @@ struct Res
 			auto pc = mPrev->mC;
 			auto po = mPrev->mO;
 			
-			double CODistance = Distance(pc, po);
+			float CODistance = static_cast<float>(Distance(pc, po));
 			
 			mH.mX += (pc.mX - po.mX) / CODistance; 
 			mH.mY += (pc.mY - po.mY) / CODistance; 
@@ -429,16 +429,16 @@ MSurfaceDots::MSurfaceDots(int32_t N)
 {
 	auto P = 2 * N + 1;
 
-	const double kGoldenRatio = (1 + sqrt(5.0)) / 2;
+	const float kGoldenRatio = (1 + std::sqrt(5.0f)) / 2;
 
 	mWeight = (4 * kPI) / P;
 
 	for (auto i = -N; i <= N; ++i)
 	{
-		double lat = asin((2.0 * i) / P);
-		double lon = fmod(i, kGoldenRatio) * 2 * kPI / kGoldenRatio;
+		float lat = std::asin((2.0f * i) / P);
+		float lon = static_cast<float>(std::fmod(i, kGoldenRatio) * 2 * kPI / kGoldenRatio);
 
-		mPoints.emplace_back(sin(lon) * cos(lat), cos(lon) * cos(lat), sin(lat));
+		mPoints.emplace_back(std::sin(lon) * std::cos(lat), std::cos(lon) * std::cos(lat), std::sin(lat));
 	}
 }
 
@@ -768,7 +768,7 @@ void CalculateBetaSheets(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 	{
 		ladderset.insert(&bridge);
 		
-		uint32_t n = bridge.i.size();
+		size_t n = bridge.i.size();
 		if (n > kHistogramSize)
 			n = kHistogramSize;
 		
@@ -815,7 +815,7 @@ void CalculateBetaSheets(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 			++ladder;
 		}
 		
-		uint32_t nrOfLaddersPerSheet = sheetset.size();
+		size_t nrOfLaddersPerSheet = sheetset.size();
 		if (nrOfLaddersPerSheet > kHistogramSize)
 			nrOfLaddersPerSheet = kHistogramSize;
 		if (nrOfLaddersPerSheet == 1 and (*sheetset.begin())->i.size() > 1)
@@ -1179,9 +1179,9 @@ DSSPImpl::DSSPImpl(const Structure& s, int min_poly_proline_stretch_length)
 	, m_min_poly_proline_stretch_length(min_poly_proline_stretch_length)
 {
 	size_t nRes = accumulate(mPolymers.begin(), mPolymers.end(),
-		0.0, [](double s, auto& p) { return s + p.size(); });
+		0ULL, [](size_t s, auto& p) { return s + p.size(); });
 
-	mStats.nrOfChains = mPolymers.size();
+	mStats.nrOfChains = static_cast<uint32_t>(mPolymers.size());
 
 	mResidues.reserve(nRes);
 	int resNumber = 0;
@@ -1214,7 +1214,7 @@ DSSPImpl::DSSPImpl(const Structure& s, int min_poly_proline_stretch_length)
 		}
 	}
 
-	mStats.nrOfResidues = mResidues.size();
+	mStats.nrOfResidues = static_cast<uint32_t>(mResidues.size());
 
 	for (size_t i = 0; i + 1 < mResidues.size(); ++i)
 	{
@@ -1272,7 +1272,7 @@ void DSSPImpl::calculateSecondaryStructure()
 				switch (r.GetHelixFlag(helixType))
 				{
 					case Helix::Start:			helix[static_cast<int>(helixType)] = '>'; break;
-					case Helix::Middle:			helix[static_cast<int>(helixType)] = helixType == HelixType::rh_pp ? 'P' : '3' + static_cast<int>(helixType); break;
+					case Helix::Middle:			helix[static_cast<int>(helixType)] = helixType == HelixType::rh_pp ? 'P' : '3' + static_cast<char>(helixType); break;
 					case Helix::StartAndEnd:	helix[static_cast<int>(helixType)] = 'X'; break;
 					case Helix::End:			helix[static_cast<int>(helixType)] = '<'; break;
 					case Helix::None:			helix[static_cast<int>(helixType)] = ' '; break;
@@ -1289,10 +1289,10 @@ void DSSPImpl::calculateSecondaryStructure()
 	}
 
 	// finish statistics
-	mStats.nrOfSSBridges = mSSBonds.size();
+	mStats.nrOfSSBridges = static_cast<uint32_t>(mSSBonds.size());
 
 	mStats.nrOfIntraChainSSBridges = 0;
-	int ssBondNr = 0;
+	uint8_t ssBondNr = 0;
 	for (const auto& [a, b]: mSSBonds)
 	{
 		if (a == b)

@@ -289,7 +289,7 @@ class CompoundBondMap
 		auto i = mAtomIDIndex.find(id);
 		if (i == mAtomIDIndex.end())
 		{
-			result = mAtomIDIndex.size();
+			result = uint32_t(mAtomIDIndex.size());
 			mAtomIDIndex[id] = result;
 		}
 		else
@@ -354,15 +354,12 @@ BondMap::BondMap(const Structure& p)
 	auto& compoundBondInfo = CompoundBondMap::instance();
 
 	auto atoms = p.atoms();
-	dim = atoms.size();
+	dim = uint32_t(atoms.size());
 
 //	bond = std::vector<bool>(dim * (dim - 1), false);
 
 	for (auto& atom: atoms)
-	{
-		size_t ix = index.size();
-		index[atom.id()] = ix;
-	};
+		index[atom.id()] = uint32_t(index.size());
 	
 	auto bindAtoms = [this](const std::string& a, const std::string& b)
 	{

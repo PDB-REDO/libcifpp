@@ -68,7 +68,7 @@ struct ItemValue
 	uint32_t				mColumnIndex;
 	char					mText[4];
 	
-	ItemValue(const char* v, uint32_t columnIndex);
+	ItemValue(const char* v, size_t columnIndex);
 	~ItemValue();
 	
 	bool empty() const		{ return mText[0] == 0 or ((mText[0] == '.' or mText[0] == '?') and mText[1] == 0); }
@@ -77,13 +77,15 @@ struct ItemValue
 
 	void* operator new(size_t size, size_t dataSize);
 	void operator delete(void* p);
+	void operator delete(void* p, size_t dataSize);
 };
 
 // --------------------------------------------------------------------
 
-ItemValue::ItemValue(const char* value, uint32_t columnIndex)
-	: mNext(nullptr), mColumnIndex(columnIndex)
+ItemValue::ItemValue(const char* value, size_t columnIndex)
+	: mNext(nullptr), mColumnIndex(uint32_t(columnIndex))
 {
+	assert(columnIndex < std::numeric_limits<uint32_t>::max());
 	strcpy(mText, value);
 }
 
@@ -109,6 +111,11 @@ void ItemValue::operator delete(void* p)
 	free(p);
 }
 
+void ItemValue::operator delete(void* p, size_t dataSize)
+{
+	free(p);
+}
+
 // --------------------------------------------------------------------
 // itemColumn contains info about a column or field in a Category
 
@@ -124,8 +131,8 @@ struct ItemRow
 {
 	~ItemRow();
 
-	void drop(uint32_t columnIx);
-	const char* c_str(uint32_t columnIx) const;
+	void drop(size_t columnIx);
+	const char* c_str(size_t columnIx) const;
 	
 	std::string str() const
 	{
@@ -181,7 +188,7 @@ ItemRow::~ItemRow()
 	delete mValues;
 }
 
-void ItemRow::drop(uint32_t columnIx)
+void ItemRow::drop(size_t columnIx)
 {
 	if (mValues != nullptr and mValues->mColumnIndex == columnIx)
 	{
@@ -212,7 +219,7 @@ void ItemRow::drop(uint32_t columnIx)
 #endif
 }
 
-const char* ItemRow::c_str(uint32_t columnIx) const
+const char* ItemRow::c_str(size_t columnIx) const
 {
 	const char* result = kEmptyResult;
 	
@@ -1393,11 +1400,11 @@ std::string Category::getUniqueID(std::function<std::string(int)> generator)
 	if (mCatValidator != nullptr and mCatValidator->mKeys.size() == 1)
 		key = mCatValidator->mKeys.front();
 
-	int nr = size() + 1;
+	size_t nr = size() + 1;
 
 	for (;;)
 	{
-		std::string result = generator(nr++);
+		std::string result = generator(int(nr++));
 
 		if (exists(Key(key) == result))
 			continue;
@@ -1429,7 +1436,7 @@ void Category::drop(const std::string& field)
 
 	if (ci != mColumns.end())
 	{
-		uint32_t columnIx = ci - mColumns.begin();
+		size_t columnIx = ci - mColumns.begin();
 		
 		for (auto pi = mHead; pi != nullptr; pi = pi->mNext)
 			pi->drop(columnIx);
@@ -2299,7 +2306,7 @@ size_t writeValue(std::ostream& os, std::string value, size_t offset, size_t wid
 	
 }
 
-void Category::write(std::ostream& os, const std::vector<int>& order, bool includeEmptyColumns)
+void Category::write(std::ostream& os, const std::vector<size_t>& order, bool includeEmptyColumns)
 {
 	if (empty())
 		return;
@@ -2437,7 +2444,7 @@ void Category::write(std::ostream& os, const std::vector<int>& order, bool inclu
 
 void Category::write(std::ostream& os)
 {
-	std::vector<int> order(mColumns.size());
+	std::vector<size_t> order(mColumns.size());
 	iota(order.begin(), order.end(), 0);
 	write(os, order, false);
 }
@@ -2448,7 +2455,7 @@ void Category::write(std::ostream& os, const std::vector<std::string>& columns)
 	for (auto& c: columns)
 		addColumn(c);
 	
-	std::vector<int> order;
+	std::vector<size_t> order;
 	order.reserve(mColumns.size());
 
 	for (auto& c: columns)
@@ -2541,7 +2548,7 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 
 			for (auto child: children)
 			{
-				Condition cond;
+				Condition cond_c;
 				
 				for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
 				{
@@ -2550,10 +2557,10 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 
 					// TODO add code to *NOT* test mandatory fields for Empty
 
-					cond = std::move(cond) && Key(pk) == child[ck].c_str();
+					cond_c = std::move(cond_c) && Key(pk) == child[ck].c_str();
 				}
 
-				auto parents = find(std::move(cond));
+				auto parents = find(std::move(cond_c));
 				if (parents.empty())
 				{
 					process.push_back(child);
@@ -2646,7 +2653,7 @@ void Row::assign(const std::vector<Item>& values)
 {
 	auto cat = mData->mCategory;
 
-	std::map<std::string,std::tuple<int,std::string,std::string>> changed;
+	std::map<std::string,std::tuple<size_t,std::string,std::string>> changed;
 
 	for (auto& value: values)
 	{
@@ -2844,11 +2851,11 @@ void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 				}
 				else
 				{
-					const char* value = (*this)[pk].c_str();
-					if (*value == 0)
+					const char* pk_value = (*this)[pk].c_str();
+					if (*pk_value == 0)
 						cond = std::move(cond) && Key(ck) == Empty();
 					else
-						cond = std::move(cond) && ((Key(ck) == value) or Key(ck) == Empty());
+						cond = std::move(cond) && ((Key(ck) == pk_value) or Key(ck) == Empty());
 				}
 			}
 
@@ -2878,11 +2885,11 @@ void Row::assign(size_t column, const std::string& value, bool skipUpdateLinked)
 					cond_n = std::move(cond_n) && Key(ck) == value;
 				else
 				{
-					const char* value = (*this)[pk].c_str();
-					if (*value == 0)
+					const char* pk_value = (*this)[pk].c_str();
+					if (*pk_value == 0)
 						cond_n = std::move(cond_n) && Key(ck) == Empty();
 					else
-						cond_n = std::move(cond_n) && ((Key(ck) == value) or Key(ck) == Empty());
+						cond_n = std::move(cond_n) && ((Key(ck) == pk_value) or Key(ck) == Empty());
 				}
 			}
 

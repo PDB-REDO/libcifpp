@@ -232,7 +232,7 @@ std::vector<std::string> MapAsymIDs2ChainIDs(const std::vector<std::string>& asy
 }
 
 // support for wrapping text using a 'continuation marker'
-int WriteContinuedLine(std::ostream& pdbFile, std::string header, int& count, int cLen, std::string text, int lStart = 0)
+size_t WriteContinuedLine(std::ostream& pdbFile, std::string header, int& count, int cLen, std::string text, std::string::size_type lStart = 0)
 {
 	if (lStart == 0)
 	{
@@ -242,7 +242,7 @@ int WriteContinuedLine(std::ostream& pdbFile, std::string header, int& count, in
 			lStart = header.length() + cLen;
 	}
 
-	int maxLength = 80 - lStart - 1;
+	std::string::size_type maxLength = 80 - lStart - 1;
 
 	std::vector<std::string> lines = cif::wordWrap(text, maxLength);
 
@@ -268,15 +268,15 @@ int WriteContinuedLine(std::ostream& pdbFile, std::string header, int& count, in
 
 }
 
-int WriteOneContinuedLine(std::ostream& pdbFile, std::string header, int cLen, std::string line, int lStart = 0)
+size_t WriteOneContinuedLine(std::ostream& pdbFile, std::string header, int cLen, std::string line, int lStart = 0)
 {
 	int count = 0;
 	return WriteContinuedLine(pdbFile, header, count, cLen, line, lStart);
 }
 
-int WriteCitation(std::ostream& pdbFile, Datablock& db, Row r, int reference)
+size_t WriteCitation(std::ostream& pdbFile, Datablock& db, Row r, int reference)
 {
-	int result = 0;
+	size_t result = 0;
 	
 	std::string s1;
 	
@@ -2441,18 +2441,18 @@ void WriteRemark350(std::ostream& pdbFile, Datablock& db)
 
 	for (auto bm: c1)
 	{
-		std::string id, details, method, oligomer;
-		cif::tie(id, details, method, oligomer) = bm.get("id", "details", "method_details", "oligomeric_details");
+		std::string id, detail, method, oligomer;
+		cif::tie(id, detail, method, oligomer) = bm.get("id", "details", "method_details", "oligomeric_details");
 		
 		pdbFile << RM("") << std::endl
 			 	<< RM("BIOMOLECULE: ") << id << std::endl;
 		
 		ba::to_upper(oligomer);
 		
-		if (details == "author_defined_assembly" or details == "author_and_software_defined_assembly")
+		if (detail == "author_defined_assembly" or detail == "author_and_software_defined_assembly")
 			pdbFile << RM("AUTHOR DETERMINED BIOLOGICAL UNIT: ") << oligomer << std::endl;
 		
-		if (details == "software_defined_assembly" or details == "author_and_software_defined_assembly")
+		if (detail == "software_defined_assembly" or detail == "author_and_software_defined_assembly")
 			pdbFile << RM("SOFTWARE DETERMINED QUATERNARY STRUCTURE: ") << oligomer << std::endl;
 		
 		if (not method.empty())
@@ -3070,7 +3070,7 @@ int WriteHeterogen(std::ostream& pdbFile, Datablock& db)
 			}
 		}
 		
-		int nr = count_if(hets.begin(), hets.end(), [hetID](auto& h) -> bool { return h.hetID == hetID; });
+		auto nr = count_if(hets.begin(), hets.end(), [hetID](auto& h) -> bool { return h.hetID == hetID; });
 		
 		for (auto r: db["chem_comp"].find(cif::Key("id") == hetID))
 		{
@@ -3428,7 +3428,7 @@ int WriteMiscellaneousFeatures(std::ostream& pdbFile, Datablock& db)
 		std::string siteID = std::get<0>(s);
 		std::deque<std::string>& res = std::get<1>(s);
 		
-		int numRes = res.size();
+		size_t numRes = res.size();
 		
 		int nr = 1;
 		while (res.empty() == false)
@@ -3533,7 +3533,7 @@ std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, Datablock& d
 	auto ri = atom_site.begin();
 	
 	std::string id, group, name, altLoc, resName, chainID, iCode, element;
-	int resSeq, charge;
+	int resSeq = 0, charge;
 	
 	for (;;)
 	{

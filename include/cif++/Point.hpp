@@ -39,8 +39,8 @@ namespace mmcif
 
 typedef boost::math::quaternion<float>	quaternion;
 
-const long double
-	kPI = 3.141592653589793238462643383279502884L;
+const double
+	kPI = 3.141592653589793238462643383279502884;
 
 // --------------------------------------------------------------------
 

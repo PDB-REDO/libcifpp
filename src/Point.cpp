@@ -45,10 +45,10 @@ quaternion Normalize(quaternion q)
 	
 	t *= t;
 	
-	double length = sqrt(t.sum());
+	double length = std::sqrt(t.sum());
 
 	if (length > 0.001)
-		q /= length;
+		q /= static_cast<quaternion::value_type>(length);
 	else
 		q = quaternion(1, 0, 0, 0);
 
@@ -67,7 +67,7 @@ std::tuple<double,Point> QuaternionToAngleAxis(quaternion q)
 	angle = angle * 180 / kPI;
 
 	// axis:
-	double s = sqrt(1 - q.R_component_1() * q.R_component_1());
+	float s = std::sqrt(1 - q.R_component_1() * q.R_component_1());
 	if (s < 0.001)
 		s = 1;
 	
@@ -108,7 +108,7 @@ Point Centroid(std::vector<Point>& Points)
 	for (Point& pt : Points)
 		result += pt;
 	
-	result /= Points.size();
+	result /= static_cast<float>(Points.size());
 	
 	return result;
 }
@@ -158,7 +158,7 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 	std::complex<double> W = std::sqrt(a + 2.0 * y);
 	
 	// And to get the final result:
-	// result = (±W + sqrt(-(3 * alpha + 2 * y ± 2 * beta / W))) / 2;
+	// result = (±W + std::sqrt(-(3 * alpha + 2 * y ± 2 * beta / W))) / 2;
 	// We want the largest result, so:
 
 	std::valarray<double> t(4);
@@ -289,15 +289,15 @@ Point Nudge(Point p, float offset)
 	std::uniform_real_distribution<> randomAngle(0, 2 * kPI);
 	std::normal_distribution<> randomOffset(0, offset);
 
-	float theta = randomAngle(rng);
-	float phi1 = randomAngle(rng) - kPI;
-	float phi2 = randomAngle(rng) - kPI;
+	float theta = static_cast<float>(randomAngle(rng));
+	float phi1 = static_cast<float>(randomAngle(rng) - kPI);
+	float phi2 = static_cast<float>(randomAngle(rng) - kPI);
 		
 	quaternion q = boost::math::spherical(1.0f, theta, phi1, phi2);
 
 	Point r{ 0, 0, 1 };
 	r.rotate(q);
-	r *= randomOffset(rng);
+	r *= static_cast<float>(randomOffset(rng));
 	
 	return p + r;
 }

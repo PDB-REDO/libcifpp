@@ -1479,8 +1479,8 @@ bool Remark3Parser::parse(const std::string& expMethod, PDBRecord* r, cif::Datab
 			}
 			else
 			{
-				for (auto r: cat1)
-					cat2.emplace(r);
+				for (auto rs: cat1)
+					cat2.emplace(rs);
 			}
 		}
 	}

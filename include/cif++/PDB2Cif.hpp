@@ -32,22 +32,23 @@
 
 struct PDBRecord
 {
-	PDBRecord*	mNext;
-	uint32_t		mLineNr;
-	char		mName[11];
-	size_t		mVlen;
-	char		mValue[0];
+	PDBRecord *mNext;
+	uint32_t mLineNr;
+	char mName[11];
+	size_t mVlen;
+	char mValue[1];
 
-	PDBRecord(uint32_t lineNr, const std::string& name, const std::string& value);
+	PDBRecord(uint32_t lineNr, const std::string &name, const std::string &value);
 	~PDBRecord();
-	
-	void* operator new(size_t);
-	void* operator new(size_t size, size_t vLen);
-	
-	void operator delete(void* p);
 
-	bool is(const char* name) const;
-	
+	void *operator new(size_t);
+	void *operator new(size_t size, size_t vLen);
+
+	void operator delete(void *p);
+	void operator delete(void *p, size_t vLen);
+
+	bool is(const char *name) const;
+
 	char vC(size_t column);
 	std::string vS(size_t columnFirst, size_t columnLast = std::numeric_limits<size_t>::max());
 	int vI(int columnFirst, int columnLast);
@@ -56,4 +57,4 @@ struct PDBRecord
 
 // --------------------------------------------------------------------
 
-void ReadPDBFile(std::istream& pdbFile, cif::File& cifFile);
+void ReadPDBFile(std::istream &pdbFile, cif::File &cifFile);

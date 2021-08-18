@@ -599,7 +599,7 @@ DatablockIndex SacParser::indexDatablocks()
 			
 			case data_name:
 				if (isNonBlank(ch))
-					datablock.insert(datablock.end(), ch);
+					datablock.insert(datablock.end(), char(ch));
 				else if (isspace(ch))
 				{
 					if (not datablock.empty())

@@ -1961,7 +1961,7 @@ class Category
 
 	void write(std::ostream& os);
 	void write(std::ostream& os, const std::vector<std::string>& order);
-	void write(std::ostream& os, const std::vector<int>& order, bool includeEmptyColumns);
+	void write(std::ostream& os, const std::vector<size_t>& order, bool includeEmptyColumns);
 
 	size_t addColumn(const std::string& name);
 	

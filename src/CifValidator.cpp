@@ -121,8 +121,8 @@ int ValidateType::compare(const char* a, const char* b) const
 
 						if (mPrimitiveType == DDL_PrimitiveType::UChar)
 						{
-							ca = toupper(ca);
-							cb = toupper(cb);
+							ca = tolower(ca);
+							cb = tolower(cb);
 						}
 						
 						result = ca - cb;

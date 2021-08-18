@@ -172,23 +172,23 @@ Compound::Compound(cif::Datablock &db, const std::string &id, const std::string 
 	for (auto row : chemCompBond)
 	{
 		CompoundBond bond;
-		std::string type;
-		cif::tie(bond.atomID[0], bond.atomID[1], type, bond.aromatic) = row.get("atom_id_1", "atom_id_2", "type", "aromatic");
+		std::string btype;
+		cif::tie(bond.atomID[0], bond.atomID[1], btype, bond.aromatic) = row.get("atom_id_1", "atom_id_2", "type", "aromatic");
 
 		using cif::iequals;
 
-		if (iequals(type, "single"))
+		if (iequals(btype, "single"))
 			bond.type = BondType::sing;
-		else if (iequals(type, "double"))
+		else if (iequals(btype, "double"))
 			bond.type = BondType::doub;
-		else if (iequals(type, "triple"))
+		else if (iequals(btype, "triple"))
 			bond.type = BondType::trip;
-		else if (iequals(type, "deloc") or iequals(type, "aromat") or iequals(type, "aromatic"))
+		else if (iequals(btype, "deloc") or iequals(btype, "aromat") or iequals(btype, "aromatic"))
 			bond.type = BondType::delo;
 		else
 		{
 			if (cif::VERBOSE)
-				std::cerr << "Unimplemented chem_comp_bond.type " << type << " in " << id << std::endl;
+				std::cerr << "Unimplemented chem_comp_bond.type " << btype << " in " << id << std::endl;
 			bond.type = BondType::sing;
 		}
 		mBonds.push_back(std::move(bond));

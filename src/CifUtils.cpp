@@ -401,7 +401,7 @@ std::string::const_iterator nextLineBreak(std::string::const_iterator text, std:
 	return text;
 }
 
-std::vector<std::string> wrapLine(const std::string &text, unsigned int width)
+std::vector<std::string> wrapLine(const std::string &text, size_t width)
 {
 	std::vector<std::string> result;
 	std::vector<size_t> offsets = {0};
@@ -462,7 +462,7 @@ std::vector<std::string> wrapLine(const std::string &text, unsigned int width)
 	return result;
 }
 
-std::vector<std::string> wordWrap(const std::string &text, unsigned int width)
+std::vector<std::string> wordWrap(const std::string &text, size_t width)
 {
 	std::vector<std::string> paragraphs;
 	ba::split(paragraphs, text, ba::is_any_of("\n"));
@@ -490,6 +490,9 @@ std::vector<std::string> wordWrap(const std::string &text, unsigned int width)
 #include <Windows.h>
 #include <libloaderapi.h>
 #include <wincon.h>
+
+#include <codecvt>
+
 namespace cif
 {
 
@@ -498,7 +501,6 @@ uint32_t get_terminal_width()
 	return TERM_WIDTH;
 }
 
-// I don't have a windows machine to test the following code, please accept my apologies in case it fails...
 std::string GetExecutablePath()
 {
 	WCHAR buffer[4096];
@@ -509,7 +511,11 @@ std::string GetExecutablePath()
 
 	std::wstring ws(buffer);
 
-	return std::string(ws.begin(), ws.end());
+	// convert from utf16 to utf8
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv1;
+    std::string u8str = conv1.to_bytes(ws);
+
+	return u8str;
 }
 
 #else
