@@ -24,9 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if __has_include("Config.hpp")
-#include "Config.hpp"
-#endif
 #include "cif++/Cif++.hpp"
 
 #include <map>

@@ -145,7 +145,7 @@ class Compound
 // --------------------------------------------------------------------
 // Factory class for Compound and Link objects
 
-extern CIFPP_DLL_IMPORT(const) std::map<std::string, char> kAAMap, kBaseMap;
+CIFPP_EXPORT extern const std::map<std::string, char> kAAMap, kBaseMap;
 
 class CompoundFactory
 {

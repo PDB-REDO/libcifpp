@@ -24,10 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if __has_include("Config.hpp")
-#include "Config.hpp"
-#endif
-
 #include <map>
 #include <mutex>
 #include <numeric>
@@ -230,7 +226,7 @@ bool Compound::atomsBonded(const std::string &atomId_1, const std::string &atomI
 // --------------------------------------------------------------------
 // a factory class to generate compounds
 
-const std::map<std::string, char> kAAMap{
+CIFPP_EXPORT const std::map<std::string, char> kAAMap{
 	{"ALA", 'A'},
 	{"ARG", 'R'},
 	{"ASN", 'N'},
@@ -254,7 +250,7 @@ const std::map<std::string, char> kAAMap{
 	{"GLX", 'Z'},
 	{"ASX", 'B'}};
 
-const std::map<std::string, char> kBaseMap{
+CIFPP_EXPORT const std::map<std::string, char> kBaseMap{
 	{"A", 'A'},
 	{"C", 'C'},
 	{"G", 'G'},

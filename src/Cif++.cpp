@@ -54,7 +54,7 @@ namespace fs = std::filesystem;
 namespace cif
 {
 
-int VERBOSE = 0;
+CIFPP_EXPORT int VERBOSE = 0;
 
 static const char* kEmptyResult = "";
 	

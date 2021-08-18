@@ -1,5 +1,3 @@
-#include "Config.hpp"
-
 #include "../include/cif++/Cif++.hpp"
 #include "../include/cif++/PDB2Cif.hpp"
 

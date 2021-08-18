@@ -45,15 +45,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef _MSC_VER
-#ifdef CIFPP_BUILD_DLL
-#define CIFPP_DLL_IMPORT(type) __declspec(dllexport) type
-#else
-#define CIFPP_DLL_IMPORT(type) __declspec(dllimport) type
-#endif
-#else
-#define CIFPP_DLL_IMPORT(type) type
-#endif
+#include "cifpp_export.h"
 
 namespace cif
 {

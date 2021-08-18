@@ -45,8 +45,8 @@ struct Spacegroup
 	int nr;
 };
 
-extern CIFPP_DLL_IMPORT(const Spacegroup) kSpaceGroups[];
-extern CIFPP_DLL_IMPORT(const std::size_t) kNrOfSpaceGroups;
+CIFPP_EXPORT extern const Spacegroup kSpaceGroups[];
+CIFPP_EXPORT extern const std::size_t kNrOfSpaceGroups;
 
 // --------------------------------------------------------------------
 
@@ -128,8 +128,8 @@ struct SymopDataBlock
 
 static_assert(sizeof(SymopDataBlock) == sizeof(uint64_t), "Size of SymopData is wrong");
 
-extern CIFPP_DLL_IMPORT(const SymopDataBlock) kSymopNrTable[];
-extern CIFPP_DLL_IMPORT(const std::size_t) kSymopNrTableSize;
+CIFPP_EXPORT extern const SymopDataBlock kSymopNrTable[];
+CIFPP_EXPORT extern const std::size_t kSymopNrTableSize;
 
 // --------------------------------------------------------------------
 

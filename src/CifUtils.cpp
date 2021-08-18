@@ -24,10 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if __has_include("Config.hpp")
-#include "Config.hpp"
-#endif
-
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -224,18 +220,18 @@ std::string cifIdForNumber(int number)
 		if (number >= 26 * 26)
 		{
 			int v = number / (26 * 26);
-			result += 'A' - 1 + v;
+			result += char('A' - 1 + v);
 			number %= (26 * 26);
 		}
 		
 		if (number >= 26)
 		{
 			int v = number / 26;
-			result += 'A' - 1 + v;
+			result += char('A' - 1 + v);
 			number %= 26;
 		}
 		
-		result += 'A' + number;
+		result += char('A' + number);
 	}
 	
 	assert(not result.empty());
@@ -705,21 +701,21 @@ namespace
 		uint64_t s = static_cast<uint64_t>(std::trunc(t.count()));
 		if (s > 24 * 60 * 60)
 		{
-			uint32_t days = s / (24 * 60 * 60);
+			auto days = s / (24 * 60 * 60);
 			os << days << "d ";
 			s %= 24 * 60 * 60;
 		}
 
 		if (s > 60 * 60)
 		{
-			uint32_t hours = s / (60 * 60);
+			auto hours = s / (60 * 60);
 			os << hours << "h ";
 			s %= 60 * 60;
 		}
 
 		if (s > 60)
 		{
-			uint32_t minutes = s / 60;
+			auto minutes = s / 60;
 			os << minutes << "m ";
 			s %= 60;
 		}
@@ -792,8 +788,6 @@ void Progress::message(const std::string &inMessage)
 }
 
 } // namespace cif
-
-#if USE_RSRC
 
 // --------------------------------------------------------------------
 //
@@ -1219,8 +1213,6 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 using istream = basic_istream<char, std::char_traits<char>>;
 } // namespace mrsrc
 
-#endif
-
 // --------------------------------------------------------------------
 
 namespace cif
@@ -1248,18 +1240,21 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 			result.reset(file.release());
 	}
 
-#if defined(CACHE_DIR) and defined(DATA_DIR)
+#if defined(CACHE_DIR)
 	if (not result and not fs::exists(p))
 	{
-		for (const char *dir : {CACHE_DIR, DATA_DIR})
-		{
-			auto p2 = fs::path(dir) / p;
-			if (fs::exists(p2))
-			{
-				swap(p, p2);
-				break;
-			}
-		}
+		auto p2 = fs::path(CACHE_DIR) / p;
+		if (fs::exists(p2))
+			swap(p, p2);
+	}
+#endif
+
+#if defined(DATA_DIR)
+	if (not result and not fs::exists(p))
+	{
+		auto p2 = fs::path(DATA_DIR) / p;
+		if (fs::exists(p2))
+			swap(p, p2);
 	}
 #endif
 
@@ -1270,14 +1265,12 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 			result.reset(file.release());
 	}
 
-#if USE_RSRC
-	if (not result)
+	if (not result and gResourceData)
 	{
 		mrsrc::rsrc rsrc(name);
 		if (rsrc)
 			result.reset(new mrsrc::istream(rsrc));
 	}
-#endif
 
 	return result;
 }

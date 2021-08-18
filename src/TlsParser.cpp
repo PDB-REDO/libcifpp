@@ -24,10 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if __has_include("Config.hpp")
-#include "Config.hpp"
-#endif
-
 #include <boost/algorithm/string.hpp>
 
 #include "cif++/TlsParser.hpp"

@@ -26,10 +26,6 @@
 
 // Calculate DSSP-like secondary structure information
 
-#if __has_include("Config.hpp")
-#include "Config.hpp"
-#endif
-
 #include <numeric>
 #include <iomanip>
 #include <thread>

@@ -98,22 +98,13 @@ find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time p
 find_package(ZLIB)
 find_package(BZip2)
 
-include_directories(${Boost_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/include)
+include_directories(${Boost_INCLUDE_DIR})
 link_libraries(${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 # Create a revision file, containing the current git version info
 
 find_package(Git)
 if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
-    include(GetGitRevisionDescription)
-
-	execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD OUTPUT_VARIABLE SHORT_SHA OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    set(REVISION ${SHORT_SHA} CACHE STRING "git short sha" FORCE)
-
-    # only use the plugin to tie the configure state to the sha to force rebuilds
-    # of files that depend on version.h
-
 	include(GetGitRevisionDescription)
     get_git_head_revision(REFSPEC COMMITHASH)
 
@@ -128,6 +119,7 @@ endif()
 # generate version.h
 include_directories(${CMAKE_BINARY_DIR})
 configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
+
 # Sources
 
 set(project_sources 
@@ -171,20 +163,18 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
 )
 
-add_library(cifpp_obj OBJECT ${project_sources} ${project_headers})
-set_target_properties(cifpp_obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
-
-add_library(cifpp SHARED $<TARGET_OBJECTS:cifpp_obj>)
+add_library(cifpp SHARED ${project_sources} ${project_headers})
 set_target_properties(cifpp PROPERTIES
 	SOVERSION ${PROJECT_VERSION}
 	INTERFACE_cifpp_MAJOR_VERSION cifpp_MAJOR_VERSION
 	COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
 )
 
-add_library(cifpp_static STATIC $<TARGET_OBJECTS:cifpp_obj>)
+add_library(cifpp_static STATIC ${project_sources} ${project_headers})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
+    target_link_options(cifpp_static PRIVATE -undefined dynamic_lookup)
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
 # download the components.cif file from CCD
@@ -224,8 +214,6 @@ include_directories(${Boost_INCLUDE_DIRS})
 link_libraries(${Boost_LIBRARIES})
 add_compile_definitions(CACHE_DIR="${SHARE_INSTALL_DIR}/libcifpp" DATA_DIR="${SHARE_INSTALL_DIR}/libcifpp" )
 
-configure_file(${PROJECT_SOURCE_DIR}/src/Config-cmake.hpp.in Config.hpp)
-
 generate_export_header(cifpp)
 
 # Install rules
@@ -236,7 +224,6 @@ install(TARGETS cifpp cifpp_static
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
 
 install(
 	DIRECTORY include/cif++

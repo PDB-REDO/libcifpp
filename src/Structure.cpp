@@ -36,10 +36,6 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 
-#if __has_include("Config.hpp")
-#include "Config.hpp"
-#endif
-
 #include "cif++/Cif2PDB.hpp"
 #include "cif++/CifParser.hpp"
 #include "cif++/PDB2Cif.hpp"
