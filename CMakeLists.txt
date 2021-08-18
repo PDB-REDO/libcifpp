@@ -117,6 +117,7 @@ endif()
 
 # generate version.h
 include_directories(${CMAKE_BINARY_DIR})
+string(TIMESTAMP BUILD_DATE_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
 configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
 
 # Sources
