@@ -310,7 +310,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} $<TARGET_OBJECTS:cifpp> Threads::Threads ${Boost_LIBRARIES})
+		target_link_libraries(${CIFPP_TEST} cifpp Threads::Threads ${Boost_LIBRARIES})
 
 		if(${ZLIB_FOUND})
 			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
