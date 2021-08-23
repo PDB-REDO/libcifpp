@@ -45,7 +45,7 @@
 #include <unistd.h>
 #endif
 
-#include "cifpp_export.h"
+#include "cif++/Cif++Export.hpp"
 
 #if _MSC_VER
 #	pragma warning (disable : 4355)	// this is used in Base Initializer list
@@ -221,7 +221,6 @@ class Progress
 
 std::unique_ptr<std::istream> loadResource(std::filesystem::path name);
 void addFileResource(const std::string &name, std::filesystem::path dataFile);
+void addDataDirectory(std::filesystem::path dataDir);
 
 }
-
-

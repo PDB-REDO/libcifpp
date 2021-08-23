@@ -1227,6 +1227,14 @@ namespace cif
 // --------------------------------------------------------------------
 
 std::map<std::string,std::filesystem::path> gLocalResources;
+std::filesystem::path gDataDir;
+
+void addDataDirectory(std::filesystem::path dataDir)
+{
+	if (VERBOSE and not fs::exists(dataDir))
+		std::cerr << "The specified data directory " << dataDir << " does not exist" << std::endl;
+	gDataDir = dataDir;
+}
 
 void addFileResource(const std::string &name, std::filesystem::path dataFile)
 {
@@ -1245,6 +1253,9 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 		if (file->is_open())
 			result.reset(file.release());
 	}
+
+	if (not result and not fs::exists(p) and not gDataDir.empty())
+		p = gDataDir / name;
 
 #if defined(CACHE_DIR)
 	if (not result and not fs::exists(p))

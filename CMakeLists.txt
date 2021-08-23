@@ -30,7 +30,7 @@ endif()
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-set(CMAKE_DEBUG_POSTFIX d)
+# set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
@@ -69,8 +69,16 @@ if(MSVC)
 	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
+if(LINUX)
+	# On Linux, install in the $HOME/.local folder by default
+	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+		message(WARNING "The library and auxiliary files will be installed in $ENV{HOME}/.local")
+		set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
+	endif()
+endif()
+
 # Optionally use mrc to create resources
-find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
+find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "$ENV{HOME}/.local/bin" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
 
 if(MRC)
 	option(USE_RSRC "Use mrc to create resources" ON)
@@ -159,6 +167,7 @@ set(project_headers
 )
 
 add_library(cifpp ${project_sources} ${project_headers})
+set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
 	PUBLIC
@@ -215,7 +224,8 @@ add_compile_definitions(
 	# CACHE_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}"
 	DATA_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}" )
 
-generate_export_header(cifpp)
+generate_export_header(cifpp
+	EXPORT_FILE_NAME cif++/Cif++Export.hpp)
 
 # Install rules
 
@@ -226,9 +236,10 @@ install(TARGETS cifpp
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-export(EXPORT cifppTargets
-	FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/cifppTargets.cmake"
+install(EXPORT cifppTargets
+	FILE "cifppTargets.cmake"
 	NAMESPACE cifpp::
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 )
 
 install(
@@ -238,7 +249,7 @@ install(
 )
 
 install(
-	FILES "${CMAKE_CURRENT_BINARY_DIR}/cifpp_export.h"
+	FILES "${CMAKE_CURRENT_BINARY_DIR}/cif++/Cif++Export.hpp"
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cif++
 	COMPONENT Devel
 )
