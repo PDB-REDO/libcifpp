@@ -1426,17 +1426,19 @@ _cat_3.num
 
 	BOOST_CHECK(cat3.size() == 2);
 	
-	int id, num;
-	std::string name;
-	cif::tie(id, name, num) = cat3.front().get("id", "name", "num");
-	BOOST_CHECK(id == 1);
-	BOOST_CHECK(num == 1);
-	BOOST_CHECK(name == "aapje");
+	{
+		int id, num;
+		std::string name;
+		cif::tie(id, name, num) = cat3.front().get("id", "name", "num");
+		BOOST_CHECK(id == 1);
+		BOOST_CHECK(num == 1);
+		BOOST_CHECK(name == "aapje");
 
-	cif::tie(id, name, num) = cat3.back().get("id", "name", "num");
-	BOOST_CHECK(id == 2);
-	BOOST_CHECK(num == 2);
-	BOOST_CHECK(name == "aap");
+		cif::tie(id, name, num) = cat3.back().get("id", "name", "num");
+		BOOST_CHECK(id == 2);
+		BOOST_CHECK(num == 2);
+		BOOST_CHECK(name == "aap");
+	}
 	
 	int i = 0;	
 	for (const auto &[id, name, num, desc]: cat2.rows<int,std::string,int,std::string>({"id", "name", "num", "desc"}))

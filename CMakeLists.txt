@@ -27,7 +27,7 @@ if(MSVC)
 endif()
 
 # Build shared libraries by default (not my cup of tea, but hey)
-option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" ON)
+option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # set(CMAKE_DEBUG_POSTFIX d)
