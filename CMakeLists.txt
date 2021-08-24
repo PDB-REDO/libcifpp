@@ -69,7 +69,7 @@ if(MSVC)
 	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
-if(LINUX)
+if(UNIX AND NOT APPLE)
 	# On Linux, install in the $HOME/.local folder by default
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 		message(WARNING "The library and auxiliary files will be installed in $ENV{HOME}/.local")
@@ -349,4 +349,4 @@ if(CIFPP_BUILD_TESTS)
 endif()
 
 
-message("Still to do: libcifpp.pc, package, tools, create symop_Data")
+message("Still to do: package, tools, create symop_Data")

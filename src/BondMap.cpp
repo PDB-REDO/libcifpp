@@ -323,23 +323,26 @@ bool CompoundBondMap::bonded(const std::string &compoundID, const std::string& a
 		return bi.bonded(a1, a2);
 	}
 
-	// not found in our cache, calculate
-	auto compound = mmcif::CompoundFactory::instance().create(compoundID);
-	if (not compound)
-		throw BondMapException("Missing compound bond info for " + compoundID);
-
 	bool result = false;
 
+	// not found in our cache, calculate
 	CompoundBondInfo bondInfo{ id };
-	for (auto &atom: compound->bonds())
+
+	auto compound = mmcif::CompoundFactory::instance().create(compoundID);
+	if (not compound)
+		std::cerr << "Missing compound bond info for " << compoundID << std::endl;
+	else
 	{
-		uint32_t ca1 = getAtomID(atom.atomID[0]);
-		uint32_t ca2 = getAtomID(atom.atomID[1]);
-		if (ca1 > ca2)
-			std::swap(ca1, ca2);
-		
-		bondInfo.mBonded.insert({ca1, ca2});
-		result = result or (a1 == ca1 and a2 == ca2);
+		for (auto &atom: compound->bonds())
+		{
+			uint32_t ca1 = getAtomID(atom.atomID[0]);
+			uint32_t ca2 = getAtomID(atom.atomID[1]);
+			if (ca1 > ca2)
+				std::swap(ca1, ca2);
+			
+			bondInfo.mBonded.insert({ca1, ca2});
+			result = result or (a1 == ca1 and a2 == ca2);
+		}
 	}
 
 	mCompounds.push_back(bondInfo);
