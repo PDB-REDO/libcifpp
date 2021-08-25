@@ -779,7 +779,7 @@ void Atom::setID(int id)
 
 std::ostream &operator<<(std::ostream &os, const Atom &atom)
 {
-	os << atom.labelCompID() << ' ' << atom.labelAsymID() << ':' << atom.labelSeqID();
+	os << atom.labelCompID() << ' ' << atom.labelAsymID() << ':' << atom.labelSeqID() << ' ' << atom.labelAtomID();
 
 	if (atom.isAlternate())
 		os << '(' << atom.labelAltID() << ')';
