@@ -26,6 +26,7 @@
 
 #include <cassert>
 
+#include <array>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -33,9 +34,12 @@
 #include <map>
 #include <filesystem>
 
+#include <boost/program_options.hpp>
+
 #include <cstdlib>
 
 namespace fs = std::filesystem;
+namespace po = boost::program_options;
 
 std::regex kNameRx(R"(^(\d+) +(\d+) +(\d+) +(\S+) +(\S+) +(\S+) +'([^']+)'( +'([^']+)')?(?: +!.+)?$)");
 
@@ -185,18 +189,42 @@ int main(int argc, char* const argv[])
 
 	try
 	{
-		if (argc != 2)
-			throw std::runtime_error("Usage: symom-map-generator <outputfile>");
+		po::options_description visible_options("symop-map-generator symlib-file output-file");
+		visible_options.add_options()
+			( "help,h",							"Display help message" )
+			( "verbose,v",						"Verbose output") ;
 
-		tmpFile = argv[1] + ".tmp"s;
+		po::options_description hidden_options("hidden options");
+		hidden_options.add_options()
+			( "input,i", po::value<std::string>(), "Input file")
+			( "output,o", po::value<std::string>(), "Output file");
+
+		po::options_description cmdline_options;
+		cmdline_options.add(visible_options).add(hidden_options);
+
+		po::positional_options_description p;
+		p.add("input", 1);
+		p.add("output", 1);
+
+		po::variables_map vm;
+		po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(), vm);
+		po::notify(vm);
+		
+		if (vm.count("input") == 0 or vm.count("output") == 0 or vm.count("help"))
+		{
+			std::cerr << visible_options << std::endl;
+			exit(vm.count("help") == 0);
+		}
+
+		fs::path input(vm["input"].as<std::string>());
+		fs::path output(vm["output"].as<std::string>());
+		
+		tmpFile = output.parent_path() / (output.filename().string() + ".tmp");
+
 		std::ofstream out(tmpFile);
 		if (not out.is_open())
 			throw std::runtime_error("Failed to open output file");
 
-		const char* CLIBD = getenv("CLIBD");
-		
-		if (CLIBD == nullptr)
-			throw std::runtime_error("CCP4 not sourced");
 
 		// --------------------------------------------------------------------
 
@@ -216,15 +244,13 @@ int main(int argc, char* const argv[])
 		std::map<int,SymInfoBlock> symInfo;
 		int symopnr, mysymnr = 10000;
 
-		std::ifstream file(CLIBD + "/syminfo.lib"s);
+		std::ifstream file(input);
 		if (not file.is_open())
 			throw std::runtime_error("Could not open syminfo.lib file");
 
 		enum class State { skip, spacegroup } state = State::skip;
 
 		std::string line;
-		std::string Hall;
-		std::vector<std::string> old;
 
 		const std::regex rx(R"(^symbol +(Hall|xHM|old) +'(.+?)'(?: +'(.+?)')?$)"),
 			rx2(R"(symbol ccp4 (\d+))");;
@@ -383,7 +409,7 @@ const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
 )" << std::endl;
 
 		out.close();
-		fs::rename(tmpFile, argv[1]);
+		fs::rename(tmpFile, output);
 	}
 	catch (const std::exception& ex)
 	{

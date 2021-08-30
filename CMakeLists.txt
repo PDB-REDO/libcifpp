@@ -30,6 +30,26 @@ endif()
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+# Only try to recreate SymOpTable_data.hpp if CCP4 is known
+option(CCP4 "The location where ccp4 is installed" "")
+if(DEFINED CCP4 AND EXISTS ${CCP4})
+	set(CCP4 $ENV{CCP4})
+	set(CLIBD ${CCP4}/lib/data)
+elseif(NOT DEFINED CCP4 AND DEFINED $ENV{CCP4} AND EXISTS $ENV{CCP4})
+	set(CCP4 $ENV{CCP4})
+	set(CLIBD ${CCP4}/lib/data)
+endif()
+
+if(EXISTS "${CCP4}")
+	option(RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
+
+	if(RECREATE_SYMOP_DATA AND NOT EXISTS "${CLIBD}/syminfo.lib")
+		message(FATAL_ERROR "Symop data table recreation requested, but file syminfo.lib was not found in ${CLIBD}")
+	endif()
+else()
+	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
+endif()
+
 # set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
@@ -128,6 +148,27 @@ include_directories(${CMAKE_BINARY_DIR} PRIVATE)
 string(TIMESTAMP BUILD_DATE_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
 configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
 
+# SymOp data table
+if(RECREATE_SYMOP_DATA)
+	# The tool to create the table
+
+	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
+
+	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES})
+
+	set($ENV{CLIBD} ${CLIBD})
+	
+	add_custom_command(
+		OUTPUT ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
+		COMMAND $<TARGET_FILE:symop-map-generator> ${CLIBD}/syminfo.lib ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
+		)
+	
+	add_custom_target(
+		OUTPUT ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
+		DEPENDS symop-map-generator "$ENV{CLIBD}/syminfo.lib"
+	)
+endif()
+
 # Sources
 
 set(project_sources 
@@ -166,7 +207,7 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/TlsParser.hpp
 )
 
-add_library(cifpp ${project_sources} ${project_headers})
+add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/SymOpTable_data.hpp)
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
@@ -352,11 +393,11 @@ if(CIFPP_BUILD_TESTS)
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch
 			COMMAND $<TARGET_FILE:${CIFPP_TEST}>
-			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
 
 		add_test(NAME ${CIFPP_TEST}
 			COMMAND $<TARGET_FILE:${CIFPP_TEST}>
-			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
 
 	endforeach()
 endif()

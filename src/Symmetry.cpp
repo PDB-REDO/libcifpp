@@ -30,7 +30,7 @@
 #include "cif++/Symmetry.hpp"
 #include "cif++/CifUtils.hpp"
 
-#include "SymOpTable_data.cpp"
+#include "SymOpTable_data.hpp"
 
 namespace mmcif
 {

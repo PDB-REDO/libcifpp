@@ -48,13 +48,11 @@
 #include "cif++/Cif++Export.hpp"
 
 #if _MSC_VER
-#	pragma warning (disable : 4355)	// this is used in Base Initializer list
-#	pragma warning (disable : 4996)	// unsafe function or variable
+#	pragma warning (disable : 4996)	// unsafe function or variable	(strcpy e.g.)
 #	pragma warning (disable : 4068)	// unknown pragma
-#	pragma warning (disable : 4996)	// stl copy()
-#	pragma warning (disable : 4800)	// BOOL conversion
 #	pragma warning (disable : 4100) // unreferenced formal parameter
 #	pragma warning (disable : 4101) // unreferenced local variable
+#	define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING 1
 #endif
 
 namespace cif
