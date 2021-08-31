@@ -41,4 +41,7 @@ tests. And then it installs the library and auxiliary files.
 
 The default is to install everything in `$HOME/.local` on Linux and
 `%LOCALAPPDATA%` on Windows (the AppData/Local folder in your home directory).
+You can change this by specifying the prefix with the
+[CMAKE_INSTALL_PREFIX](https://cmake.org/cmake/help/v3.21/variable/CMAKE_INSTALL_PREFIX.html)
+variable.
 
