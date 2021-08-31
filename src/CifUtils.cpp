@@ -834,6 +834,11 @@ extern "C" const char gResourceName[];
 extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
 extern const __attribute__((weak)) char gResourceData[];
 extern const __attribute__((weak)) char gResourceName[];
+
+const mrsrc::rsrc_imp gResourceIndex[1] = {};
+const char gResourceData[1] = {};
+const char gResourceName[1] = {};
+
 #endif
 
 namespace mrsrc
@@ -862,7 +867,7 @@ class rsrc_data
   private:
 	rsrc_data()
 	{
-		if (gResourceIndex and gResourceIndex and gResourceName)
+		if (gResourceIndex and (gResourceIndex[0].m_child > 0 or gResourceIndex[0].m_size > 0) and gResourceIndex and gResourceName)
 		{
 			m_index = gResourceIndex;
 			m_data = gResourceData;
