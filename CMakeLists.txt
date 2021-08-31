@@ -33,9 +33,8 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Only try to recreate SymOpTable_data.hpp if CCP4 is known
 option(CCP4 "The location where ccp4 is installed" "")
 if(DEFINED CCP4 AND EXISTS ${CCP4})
-	set(CCP4 $ENV{CCP4})
 	set(CLIBD ${CCP4}/lib/data)
-elseif(NOT DEFINED CCP4 AND DEFINED $ENV{CCP4} AND EXISTS $ENV{CCP4})
+elseif(EXISTS $ENV{CCP4})
 	set(CCP4 $ENV{CCP4})
 	set(CLIBD ${CCP4}/lib/data)
 endif()
@@ -401,6 +400,3 @@ if(CIFPP_BUILD_TESTS)
 
 	endforeach()
 endif()
-
-
-message("Still to do: package, tools, create symop_Data")
