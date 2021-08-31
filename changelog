@@ -1,3 +1,7 @@
+Version 1.1.0
+- Changed from GNU configure to CMake.
+- Loading compound information from CCD file
+
 Version 1.0.1
 - Changed the way resources are looked up, local dir first,
   then /var/cache and finally compiled in resources (with mrc).
