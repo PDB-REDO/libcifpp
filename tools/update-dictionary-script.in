@@ -17,7 +17,7 @@ if [ "$update" != "true" ] ; then
 fi
 
 # if cache directory doesn't exist, exit. 
-if ! [ -d @DATA_CACHE_DIR@ ]; then
+if ! [ -d @CIFPP_CACHE_DIR@ ]; then
 	exit
 fi
 
@@ -43,5 +43,5 @@ fetch_dictionary () {
 
 # fetch the dictionaries
 
-fetch_dictionary "@DATA_CACHE_DIR@/mmcif_pdbx_v50.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
-fetch_dictionary "@DATA_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
+fetch_dictionary "@CIFPP_CACHE_DIR@/mmcif_pdbx_v50.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
+fetch_dictionary "@CIFPP_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"

@@ -1,3 +1,27 @@
+# SPDX-License-Identifier: BSD-2-Clause
+
+# Copyright (c) 2021 NKI/AVL, Netherlands Cancer Institute
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
@@ -20,13 +44,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 endif()
 if(MSVC)
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-# Build shared libraries by default (not my cup of tea, but hey)
+# Do not build shared libraries by default
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
@@ -73,19 +97,6 @@ if(MSVC)
 		message(WARNING "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
-
-	# Find out the processor type for the target
-	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-		set(COFF_TYPE "x64")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
-		set(COFF_TYPE "x86")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
-		set(COFF_TYPE "arm64")
-	else()
-		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
-	endif()	
-
-	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -96,10 +107,11 @@ if(UNIX AND NOT APPLE)
 	endif()
 endif()
 
-# Optionally use mrc to create resources
-find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "$ENV{HOME}/.local/bin" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
+# Optionally use resources, created with mrc
 
-if(MRC)
+find_package(mrc)
+
+if(MRC_FOUND)
 	option(USE_RSRC "Use mrc to create resources" ON)
 else()
 	message(WARNING "Not using resources since mrc was not found")
@@ -107,8 +119,6 @@ endif()
 
 if(USE_RSRC STREQUAL "ON")
 	set(USE_RSRC 1)
-
-	message("Using resources compiled with ${MRC}")
 	add_compile_definitions(USE_RSRC)
 endif()
 
@@ -119,7 +129,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
+find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 find_package(ZLIB)
 find_package(BZip2)
@@ -349,13 +359,6 @@ option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
 
-	if(USE_RSRC)
-		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj
-			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic ${COFF_SPEC}
-		)
-		set(CIFPP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj)
-	endif()
-
 	list(APPEND CIFPP_tests
 		# pdb2cif
 		rename-compound
@@ -365,7 +368,11 @@ if(CIFPP_BUILD_TESTS)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")
 		set(CIFPP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test/${CIFPP_TEST}.cpp")
 
-		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE} ${CIFPP_TEST_RESOURCE})
+		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
+
+		if(USE_RSRC)
+			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
+		endif()
 
 		target_include_directories(${CIFPP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -399,4 +406,20 @@ if(CIFPP_BUILD_TESTS)
 			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
 
 	endforeach()
+endif()
+
+# Optionally install the update scripts for CCD and dictionary files
+
+if(UNIX)
+	option(INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
+
+	if(INSTALL_UPDATE_SCRIPT)
+		set(CIFPP_CACHE_DIR "/var/cache/libcifpp")
+		set(CIFPP_CRON_DIR "$ENV{DESTDIR}/etc/cron.weekly")
+
+		configure_file(${CMAKE_SOURCE_DIR}/tools/update-dictionary-script.in update-dictionary-script @ONLY)
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/update-dictionary-script DESTINATION ${CIFPP_CRON_DIR})
+
+		target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
+	endif()
 endif()
