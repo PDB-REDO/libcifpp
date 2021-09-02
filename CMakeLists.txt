@@ -238,7 +238,7 @@ if (NOT EXISTS ${COMPONENTS_CIF})
 		file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 	endif()
 
-	if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
+	if(${CMAKE_VERSION} VERSION_LESS "3.19.0")
 		find_program(GUNZIP gunzip)
 
 		if(GUNZIP)
