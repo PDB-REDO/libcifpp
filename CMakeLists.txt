@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 # set the project name
 project(cifpp VERSION 1.1.0 LANGUAGES CXX)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 enable_testing()
 
@@ -45,6 +45,8 @@ if(EXISTS "${CCP4}")
 	if(RECREATE_SYMOP_DATA AND NOT EXISTS "${CLIBD}/syminfo.lib")
 		message(FATAL_ERROR "Symop data table recreation requested, but file syminfo.lib was not found in ${CLIBD}")
 	endif()
+
+	list(PREPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
 else()
 	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
@@ -74,18 +76,8 @@ if(MSVC)
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
 
-	# Find out the processor type for the target
-	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-		set(COFF_TYPE "x64")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
-		set(COFF_TYPE "x86")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
-		set(COFF_TYPE "arm64")
-	else()
-		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
-	endif()	
-
-	set(COFF_SPEC "--coff=${COFF_TYPE}")
+	# for mrc, just in case
+	list(APPEND CMAKE_PREFIX_PATH "$ENV{LOCALAPPDATA}/mrc")
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -97,9 +89,9 @@ if(UNIX AND NOT APPLE)
 endif()
 
 # Optionally use mrc to create resources
-find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "$ENV{HOME}/.local/bin" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
+find_package(Mrc)
 
-if(MRC)
+if(MRC_FOUND)
 	option(USE_RSRC "Use mrc to create resources" ON)
 else()
 	message(WARNING "Not using resources since mrc was not found")
@@ -107,8 +99,6 @@ endif()
 
 if(USE_RSRC STREQUAL "ON")
 	set(USE_RSRC 1)
-
-	message("Using resources compiled with ${MRC}")
 	add_compile_definitions(USE_RSRC)
 endif()
 
@@ -119,7 +109,8 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
+set (Boost_DEBUG ON)
+find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 find_package(ZLIB)
 find_package(BZip2)
@@ -349,13 +340,6 @@ option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
 
-	if(USE_RSRC)
-		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj
-			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic ${COFF_SPEC}
-		)
-		set(CIFPP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj)
-	endif()
-
 	list(APPEND CIFPP_tests
 		# pdb2cif
 		rename-compound
@@ -373,6 +357,10 @@ if(CIFPP_BUILD_TESTS)
 		)
 
 		target_link_libraries(${CIFPP_TEST} Threads::Threads ${Boost_LIBRARIES} cifpp)
+
+		if(USE_RSRC)
+			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
+		endif()
 
 		if(${ZLIB_FOUND})
 			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
@@ -400,3 +388,5 @@ if(CIFPP_BUILD_TESTS)
 
 	endforeach()
 endif()
+
+message("Will install in ${CMAKE_INSTALL_PREFIX}")
