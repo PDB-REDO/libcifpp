@@ -9,3 +9,4 @@ test/rename-compound-test
 tools/update-dictionary-script
 data/
 CMakeSettings.json
+msvc/

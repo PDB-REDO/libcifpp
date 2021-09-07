@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 # set the project name
 project(cifpp VERSION 1.1.0 LANGUAGES CXX)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 enable_testing()
 
@@ -86,18 +86,8 @@ if(MSVC)
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
 
-	# Find out the processor type for the target
-	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-		set(COFF_TYPE "x64")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
-		set(COFF_TYPE "x86")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
-		set(COFF_TYPE "arm64")
-	else()
-		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
-	endif()	
-
-	set(COFF_SPEC "--coff=${COFF_TYPE}")
+	# for mrc, just in case
+	list(APPEND CMAKE_PREFIX_PATH "$ENV{LOCALAPPDATA}/mrc")
 endif()
 
 if(UNIX AND NOT APPLE AND NOT BUILD_FOR_CCP4 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -130,7 +120,8 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
+set (Boost_DEBUG ON)
+find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 # find_package(ZLIB)
 # find_package(BZip2)
@@ -360,13 +351,6 @@ option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
 
-	if(USE_RSRC)
-		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj
-			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic ${COFF_SPEC}
-		)
-		set(CIFPP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj)
-	endif()
-
 	list(APPEND CIFPP_tests
 		# pdb2cif
 		rename-compound
@@ -384,6 +368,10 @@ if(CIFPP_BUILD_TESTS)
 		)
 
 		target_link_libraries(${CIFPP_TEST} Threads::Threads ${Boost_LIBRARIES} cifpp)
+
+		if(USE_RSRC)
+			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
+		endif()
 
 		if(${ZLIB_FOUND})
 			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
@@ -411,3 +399,5 @@ if(CIFPP_BUILD_TESTS)
 
 	endforeach()
 endif()
+
+message("Will install in ${CMAKE_INSTALL_PREFIX}")
