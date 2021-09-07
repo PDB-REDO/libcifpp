@@ -2119,7 +2119,15 @@ bool Category::isValid()
 				if (vi->mColumnIndex == cix)
 				{
 					seen = true;
- 					(*iv)(vi->mText);
+					try
+					{
+						(*iv)(vi->mText);
+					}
+					catch(const std::exception& e)
+					{
+						mValidator->reportError("Error validating " + mColumns[cix].mName + ": " + e.what(), false);
+						continue;
+					}
 				}
 			}
 			
