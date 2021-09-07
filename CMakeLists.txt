@@ -26,7 +26,7 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-# Build shared libraries by default (not my cup of tea, but hey)
+# Building shared libraries?
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 
 # We do not want to write an export file for all our symbols...
@@ -41,6 +41,11 @@ if(BUILD_FOR_CCP4)
 		list(APPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
 		list(APPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
+
+		# This is the only option:
+		if(WIN32)
+			set(BUILD_SHARED_LIBS ON)
+		endif()
 	endif("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
 endif()
 
@@ -82,7 +87,7 @@ if(MSVC)
 
 	# On Windows, do not install in the system location
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND NOT BUILD_FOR_CCP4)
-		message(WARNING "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
+		message(STATUS "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
 
@@ -120,7 +125,8 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-set (Boost_DEBUG ON)
+# set (Boost_DEBUG ON)
+# set (Boost_VERBOSE ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 # find_package(ZLIB)
