@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 3.16)
 # set the project name
 project(cifpp VERSION 1.1.1 LANGUAGES CXX)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 enable_testing()
 
@@ -50,19 +50,36 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-# Do not build shared libraries by default
+# Building shared libraries?
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
+
+# We do not want to write an export file for all our symbols...
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-# Only try to recreate SymOpTable_data.hpp if CCP4 is known
-option(CCP4 "The location where ccp4 is installed" "")
-if(DEFINED CCP4 AND EXISTS ${CCP4})
-	set(CLIBD ${CCP4}/lib/data)
-elseif(EXISTS "$ENV{CCP4}")
+# Optionally build a version to be installed inside CCP4
+option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
+if(BUILD_FOR_CCP4)
+	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
+		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
+	else()
+		list(APPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
+		list(APPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
+		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
+
+		# This is the only option:
+		if(WIN32)
+			set(BUILD_SHARED_LIBS ON)
+		endif()
+	endif("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
+endif()
+
+# Check if CCP4 is available
+if(EXISTS "$ENV{CCP4}")
 	set(CCP4 $ENV{CCP4})
 	set(CLIBD ${CCP4}/lib/data)
 endif()
 
+# When CCP4 is sourced in the environment, we can recreate the symmetry operations table
 if(EXISTS "${CCP4}")
 	option(RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 
@@ -73,7 +90,7 @@ else()
 	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
 
-# set(CMAKE_DEBUG_POSTFIX d)
+set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
@@ -93,33 +110,36 @@ if(MSVC)
 	add_definitions(-D_WIN32_WINNT=${ver})
 
 	# On Windows, do not install in the system location
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message(WARNING "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
+	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND NOT BUILD_FOR_CCP4)
+		message(STATUS "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
+
+	# for mrc, just in case
+	list(APPEND CMAKE_PREFIX_PATH "$ENV{LOCALAPPDATA}/mrc")
 endif()
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT BUILD_FOR_CCP4 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	# On Linux, install in the $HOME/.local folder by default
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message(WARNING "The library and auxiliary files will be installed in $ENV{HOME}/.local")
-		set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
-	endif()
+	message(STATUS "The library and auxiliary files will be installed in $ENV{HOME}/.local")
+	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
 endif()
 
 # Optionally use resources, created with mrc
 
-find_package(mrc)
+if(NOT BUILD_FOR_CCP4)
+	find_package(mrc)
 
-if(MRC_FOUND)
-	option(USE_RSRC "Use mrc to create resources" ON)
-else()
-	message(WARNING "Not using resources since mrc was not found")
-endif()
+	if(MRC_FOUND)
+		option(USE_RSRC "Use mrc to create resources" ON)
+	else()
+		message(WARNING "Not using resources since mrc was not found")
+	endif()
 
-if(USE_RSRC STREQUAL "ON")
-	set(USE_RSRC 1)
-	add_compile_definitions(USE_RSRC)
+	if(USE_RSRC STREQUAL "ON")
+		set(USE_RSRC 1)
+		add_compile_definitions(USE_RSRC)
+	endif()
 endif()
 
 # Libraries
@@ -129,10 +149,12 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
+# set (Boost_DEBUG ON)
+# set (Boost_VERBOSE ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
-find_package(ZLIB)
-find_package(BZip2)
+# find_package(ZLIB)
+# find_package(BZip2)
 
 include_directories(${Boost_INCLUDE_DIR})
 link_libraries(${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
@@ -149,7 +171,7 @@ if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 else()
     message(WARNING "Git not found, cannot set version info")
 
-    SET(BUILD_VERSION_STRING "unknown")
+    SET(BUILD_VERSION_STRING ${PROJECT_VERSION})
 endif()
 
 # generate version.h
@@ -381,6 +403,10 @@ if(CIFPP_BUILD_TESTS)
 
 		target_link_libraries(${CIFPP_TEST} Threads::Threads ${Boost_LIBRARIES} cifpp)
 
+		if(USE_RSRC)
+			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
+		endif()
+
 		if(${ZLIB_FOUND})
 			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
 		endif()
@@ -423,3 +449,5 @@ if(UNIX)
 		target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 	endif()
 endif()
+
+message("Will install in ${CMAKE_INSTALL_PREFIX}")
