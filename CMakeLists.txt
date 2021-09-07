@@ -28,17 +28,29 @@ endif()
 
 # Build shared libraries by default (not my cup of tea, but hey)
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
+
+# We do not want to write an export file for all our symbols...
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-# Only try to recreate SymOpTable_data.hpp if CCP4 is known
-option(CCP4 "The location where ccp4 is installed" "")
-if(DEFINED CCP4 AND EXISTS ${CCP4})
-	set(CLIBD ${CCP4}/lib/data)
-elseif(EXISTS $ENV{CCP4})
+# Optionally build a version to be installed inside CCP4
+option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
+if(BUILD_FOR_CCP4)
+	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
+		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
+	else()
+		list(APPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
+		list(APPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
+		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
+	endif("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
+endif()
+
+# Check if CCP4 is available
+if(EXISTS "$ENV{CCP4}")
 	set(CCP4 $ENV{CCP4})
 	set(CLIBD ${CCP4}/lib/data)
 endif()
 
+# When CCP4 is sourced in the environment, we can recreate the symmetry operations table
 if(EXISTS "${CCP4}")
 	option(RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 
@@ -49,7 +61,7 @@ else()
 	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
 
-# set(CMAKE_DEBUG_POSTFIX d)
+set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
@@ -69,7 +81,7 @@ if(MSVC)
 	add_definitions(-D_WIN32_WINNT=${ver})
 
 	# On Windows, do not install in the system location
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND NOT BUILD_FOR_CCP4)
 		message(WARNING "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
@@ -88,28 +100,27 @@ if(MSVC)
 	set(COFF_SPEC "--coff=${COFF_TYPE}")
 endif()
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT BUILD_FOR_CCP4 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	# On Linux, install in the $HOME/.local folder by default
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message(WARNING "The library and auxiliary files will be installed in $ENV{HOME}/.local")
-		set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
+	message(STATUS "The library and auxiliary files will be installed in $ENV{HOME}/.local")
+	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
+endif()
+
+# Optionally use resources, created with mrc
+
+if(NOT BUILD_FOR_CCP4)
+	find_package(mrc)
+
+	if(MRC_FOUND)
+		option(USE_RSRC "Use mrc to create resources" ON)
+	else()
+		message(WARNING "Not using resources since mrc was not found")
 	endif()
-endif()
 
-# Optionally use mrc to create resources
-find_program(MRC mrc HINTS "$ENV{LOCALAPPDATA}/mrc" "$ENV{HOME}/.local/bin" "${CMAKE_INSTALL_PREFIX}/../mrc" "/usr/local/bin")
-
-if(MRC)
-	option(USE_RSRC "Use mrc to create resources" ON)
-else()
-	message(WARNING "Not using resources since mrc was not found")
-endif()
-
-if(USE_RSRC STREQUAL "ON")
-	set(USE_RSRC 1)
-
-	message("Using resources compiled with ${MRC}")
-	add_compile_definitions(USE_RSRC)
+	if(USE_RSRC STREQUAL "ON")
+		set(USE_RSRC 1)
+		add_compile_definitions(USE_RSRC)
+	endif()
 endif()
 
 # Libraries
@@ -121,8 +132,8 @@ find_package(Threads)
 set (Boost_DETAILED_FAILURE_MSG ON)
 find_package(Boost 1.71.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
-find_package(ZLIB)
-find_package(BZip2)
+# find_package(ZLIB)
+# find_package(BZip2)
 
 include_directories(${Boost_INCLUDE_DIR})
 link_libraries(${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
@@ -139,7 +150,7 @@ if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 else()
     message(WARNING "Git not found, cannot set version info")
 
-    SET(BUILD_VERSION_STRING "unknown")
+    SET(BUILD_VERSION_STRING ${PROJECT_VERSION})
 endif()
 
 # generate version.h
