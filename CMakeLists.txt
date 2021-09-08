@@ -385,6 +385,7 @@ if(CIFPP_BUILD_TESTS)
 	list(APPEND CIFPP_tests
 		# pdb2cif
 		rename-compound
+		structure
 		unit)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)

@@ -199,15 +199,15 @@ class Residue
 
 	// constructor for waters
 	Residue(const Structure &structure, const std::string &compoundID,
-	        const std::string &asymID, const std::string &authSeqID);
+		const std::string &asymID, const std::string &authSeqID);
 
 	// constructor for a residue without a sequence number
 	Residue(const Structure &structure, const std::string &compoundID,
-	        const std::string &asymID);
+		const std::string &asymID);
 
 	// constructor for a residue with a sequence number
 	Residue(const Structure &structure, const std::string &compoundID,
-	        const std::string &asymID, int seqID, const std::string &authSeqID);
+		const std::string &asymID, int seqID, const std::string &authSeqID);
 
 	Residue(const Residue &rhs) = delete;
 	Residue &operator=(const Residue &rhs) = delete;
@@ -297,7 +297,7 @@ class Monomer : public Residue
 	Monomer &operator=(Monomer &&rhs);
 
 	Monomer(const Polymer &polymer, size_t index, int seqID, const std::string &authSeqID,
-	        const std::string &compoundID);
+		const std::string &compoundID);
 
 	bool is_first_in_chain() const;
 	bool is_last_in_chain() const;
@@ -397,6 +397,8 @@ class File : public std::enable_shared_from_this<File>
 	File(const File &) = delete;
 	File &operator=(const File &) = delete;
 
+	cif::Datablock& createDatablock(const std::string &name);
+
 	void load(const std::string &path);
 	void save(const std::string &path);
 
@@ -450,7 +452,7 @@ class Structure
 	// Atom getAtomByLocation(Point pt, float maxDistance) const;
 
 	Atom getAtomByLabel(const std::string &atomID, const std::string &asymID,
-	                    const std::string &compID, int seqID, const std::string &altID = "");
+		const std::string &compID, int seqID, const std::string &altID = "");
 
 	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
 	const Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID = 0) const;
@@ -458,7 +460,7 @@ class Structure
 	// map between auth and label locations
 
 	std::tuple<std::string, int, std::string> MapAuthToLabel(const std::string &asymID,
-	                                                         const std::string &seqID, const std::string &compID, const std::string &insCode = "");
+		const std::string &seqID, const std::string &compID, const std::string &insCode = "");
 
 	std::tuple<std::string, std::string, std::string, std::string> MapLabelToAuth(
 		const std::string &asymID, int seqID, const std::string &compID);
@@ -480,7 +482,20 @@ class Structure
 	void swapAtoms(Atom &a1, Atom &a2); // swap the labels for these atoms
 	void moveAtom(Atom &a, Point p);    // move atom to a new location
 	void changeResidue(const Residue &res, const std::string &newCompound,
-	                   const std::vector<std::tuple<std::string, std::string>> &remappedAtoms);
+		const std::vector<std::tuple<std::string, std::string>> &remappedAtoms);
+
+	/// \brief Create a new non-polymer entity, returns new ID
+	/// \param data		The data to use to fill the entity
+	/// \param mon_id	The mon_id for the new nonpoly
+	/// \param name		The name of the nonpoly
+	/// \return			The ID of the created entity
+	std::string createEntityNonPoly(std::vector<cif::Item> data, const std::string &mon_id);
+
+	/// \brief Create a new NonPolymer struct_asym with atoms constructed from \a atom_data, returns asym_id
+	/// \param entity_id	The entity ID of the new nonpoly
+	/// \param atoms		The array of atom data fields
+	/// \return				The newly create asym ID
+	std::string createNonpoly(const std::string &entity_id, const std::vector<cif::Item> &atoms);
 
 	/// To sort the atoms in order of model > asym-id > res-id > atom-id
 	/// Will asssign new atom_id's to all atoms. Be carefull

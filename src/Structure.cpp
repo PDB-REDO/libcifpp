@@ -795,7 +795,7 @@ std::ostream &operator<<(std::ostream &os, const Atom &atom)
 // First constructor used to be for waters only, but now accepts sugars as well.
 
 Residue::Residue(const Structure &structure, const std::string &compoundID,
-                 const std::string &asymID, const std::string &authSeqID)
+	const std::string &asymID, const std::string &authSeqID)
 	: mStructure(&structure)
 	, mCompoundID(compoundID)
 	, mAsymID(asymID)
@@ -804,7 +804,7 @@ Residue::Residue(const Structure &structure, const std::string &compoundID,
 	for (auto &a : mStructure->atoms())
 	{
 		if (a.labelAsymID() != mAsymID or
-		    a.labelCompID() != mCompoundID)
+			a.labelCompID() != mCompoundID)
 			continue;
 
 		if (compoundID == "HOH")
@@ -830,7 +830,7 @@ Residue::Residue(const Structure &structure, const std::string &compoundID, cons
 }
 
 Residue::Residue(const Structure &structure, const std::string &compoundID,
-                 const std::string &asymID, int seqID, const std::string &authSeqID)
+	const std::string &asymID, int seqID, const std::string &authSeqID)
 	: mStructure(&structure)
 	, mCompoundID(compoundID)
 	, mAsymID(asymID)
@@ -845,7 +845,7 @@ Residue::Residue(const Structure &structure, const std::string &compoundID,
 			continue;
 
 		if (a.labelAsymID() != mAsymID or
-		    a.labelCompID() != mCompoundID)
+			a.labelCompID() != mCompoundID)
 			continue;
 
 		mAtoms.push_back(a);
@@ -968,7 +968,7 @@ std::string Residue::unique_alt_id() const
 		throw std::runtime_error("Invalid Residue object");
 
 	auto firstAlt = std::find_if(mAtoms.begin(), mAtoms.end(), [](auto &a)
-	                             { return not a.labelAltID().empty(); });
+		{ return not a.labelAltID().empty(); });
 
 	return firstAlt != mAtoms.end() ? firstAlt->labelAltID() : "";
 }
@@ -1104,7 +1104,7 @@ std::tuple<Point, float> Residue::centerAndRadius() const
 bool Residue::hasAlternateAtoms() const
 {
 	return std::find_if(mAtoms.begin(), mAtoms.end(), [](const Atom &atom)
-	                    { return atom.isAlternate(); }) != mAtoms.end();
+			   { return atom.isAlternate(); }) != mAtoms.end();
 }
 
 std::set<std::string> Residue::getAtomIDs() const
@@ -1476,7 +1476,7 @@ float Monomer::chiralVolume() const
 		auto atom3 = atomByID("CD2");
 
 		result = DotProduct(atom1.location() - centre.location(),
-		                    CrossProduct(atom2.location() - centre.location(), atom3.location() - centre.location()));
+			CrossProduct(atom2.location() - centre.location(), atom3.location() - centre.location()));
 	}
 	else if (mCompoundID == "VAL")
 	{
@@ -1486,7 +1486,7 @@ float Monomer::chiralVolume() const
 		auto atom3 = atomByID("CG2");
 
 		result = DotProduct(atom1.location() - centre.location(),
-		                    CrossProduct(atom2.location() - centre.location(), atom3.location() - centre.location()));
+			CrossProduct(atom2.location() - centre.location(), atom3.location() - centre.location()));
 	}
 
 	return result;
@@ -1740,6 +1740,14 @@ File::~File()
 	delete mImpl;
 }
 
+cif::Datablock& File::createDatablock(const std::string &name)
+{
+	auto db = new cif::Datablock(name);
+
+	mImpl->mData.append(db);
+	mImpl->mDb = db;
+}
+
 void File::load(const std::string &p)
 {
 	mImpl->load(p);
@@ -1778,8 +1786,11 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 	: mFile(f)
 	, mModelNr(modelNr)
 {
-	auto &db = *mFile.impl().mDb;
-	auto &atomCat = db["atom_site"];
+	auto db = mFile.impl().mDb;
+	if (db == nullptr)
+		throw std::logic_error("Empty file!");
+
+	auto &atomCat = (*db)["atom_site"];
 
 	for (auto &a : atomCat)
 	{
@@ -1864,13 +1875,13 @@ void Structure::updateAtomIndex()
 	iota(mAtomIndex.begin(), mAtomIndex.end(), 0);
 
 	sort(mAtomIndex.begin(), mAtomIndex.end(), [this](size_t a, size_t b)
-	     { return mAtoms[a].id() < mAtoms[b].id(); });
+		{ return mAtoms[a].id() < mAtoms[b].id(); });
 }
 
 void Structure::sortAtoms()
 {
 	sort(mAtoms.begin(), mAtoms.end(), [](auto &a, auto &b)
-	     { return a.compare(b) < 0; });
+		{ return a.compare(b) < 0; });
 
 	int id = 1;
 	for (auto &atom : mAtoms)
@@ -1914,8 +1925,8 @@ AtomView Structure::waters() const
 Atom Structure::getAtomByID(std::string id) const
 {
 	auto i = std::lower_bound(mAtomIndex.begin(), mAtomIndex.end(),
-	                          id, [this](auto &a, auto &b)
-	                          { return mAtoms[a].id() < b; });
+		id, [this](auto &a, auto &b)
+		{ return mAtoms[a].id() < b; });
 
 	//	auto i = find_if(mAtoms.begin(), mAtoms.end(),
 	//		[&id](auto& a) { return a.id() == id; });
@@ -1931,10 +1942,10 @@ Atom Structure::getAtomByLabel(const std::string &atomID, const std::string &asy
 	for (auto &a : mAtoms)
 	{
 		if (a.labelAtomID() == atomID and
-		    a.labelAsymID() == asymID and
-		    a.labelCompID() == compID and
-		    a.labelSeqID() == seqID and
-		    a.labelAltID() == altID)
+			a.labelAsymID() == asymID and
+			a.labelCompID() == compID and
+			a.labelSeqID() == seqID and
+			a.labelAltID() == altID)
 		{
 			return a;
 		}
@@ -2013,12 +2024,12 @@ std::tuple<char, int, char> Structure::MapLabelToAuth(
 		try
 		{
 			result = std::make_tuple(auth_asym_id.front(), std::stoi(auth_seq_num),
-			                         pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
+				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
 		}
 		catch (const std::exception &ex)
 		{
 			result = std::make_tuple(auth_asym_id.front(), 0,
-			                         pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
+				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
 		}
 
 		found = true;
@@ -2037,7 +2048,7 @@ std::tuple<char, int, char> Structure::MapLabelToAuth(
 				r.front().get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
 
 			result = std::make_tuple(pdb_strand_id.front(), pdb_seq_num,
-			                         pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
+				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
 
 			found = true;
 		}
@@ -2089,7 +2100,7 @@ std::tuple<std::string, int, std::string, std::string> Structure::MapLabelToPDB(
 }
 
 std::tuple<std::string, int, std::string> Structure::MapPDBToLabel(const std::string &asymID, int seqID,
-                                                                   const std::string &compID, const std::string &iCode) const
+	const std::string &compID, const std::string &iCode) const
 {
 	auto &db = datablock();
 
@@ -2161,10 +2172,10 @@ void Structure::insertCompound(const std::string &compoundID, bool isEntity)
 	if (r.empty())
 	{
 		chemComp.emplace({{"id", compoundID},
-		                  {"name", compound->name()},
-		                  {"formula", compound->formula()},
-		                  {"formula_weight", compound->formulaWeight()},
-		                  {"type", compound->type()}});
+			{"name", compound->name()},
+			{"formula", compound->formula()},
+			{"formula_weight", compound->formulaWeight()},
+			{"type", compound->type()}});
 	}
 
 	if (isEntity)
@@ -2176,13 +2187,13 @@ void Structure::insertCompound(const std::string &compoundID, bool isEntity)
 			std::string entityID = std::to_string(entity.size() + 1);
 
 			entity.emplace({{"id", entityID},
-			                {"type", "non-polymer"},
-			                {"pdbx_description", compound->name()},
-			                {"formula_weight", compound->formulaWeight()}});
+				{"type", "non-polymer"},
+				{"pdbx_description", compound->name()},
+				{"formula_weight", compound->formulaWeight()}});
 
 			pdbxEntityNonpoly.emplace({{"entity_id", entityID},
-			                           {"name", compound->name()},
-			                           {"comp_id", compoundID}});
+				{"name", compound->name()},
+				{"comp_id", compoundID}});
 		}
 	}
 }
@@ -2305,7 +2316,7 @@ void Structure::moveAtom(Atom &a, Point p)
 }
 
 void Structure::changeResidue(const Residue &res, const std::string &newCompound,
-                              const std::vector<std::tuple<std::string, std::string>> &remappedAtoms)
+	const std::vector<std::tuple<std::string, std::string>> &remappedAtoms)
 {
 	using namespace cif::literals;
 
@@ -2333,15 +2344,15 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 		{
 			entityID = entity.getUniqueID("");
 			entity.emplace({{"id", entityID},
-			                {"type", "non-polymer"},
-			                {"pdbx_description", compound->name()},
-			                {"formula_weight", compound->formulaWeight()}});
+				{"type", "non-polymer"},
+				{"pdbx_description", compound->name()},
+				{"formula_weight", compound->formulaWeight()}});
 		}
 
 		auto &pdbxEntityNonpoly = db["pdbx_entity_nonpoly"];
 		pdbxEntityNonpoly.emplace({{"entity_id", entityID},
-		                           {"name", compound->name()},
-		                           {"comp_id", newCompound}});
+			{"name", compound->name()},
+			{"comp_id", newCompound}});
 
 		auto &pdbxNonPolyScheme = db["pdbx_nonpoly_scheme"];
 		for (auto &nps : pdbxNonPolyScheme.find("asym_id"_key == asymID))
@@ -2356,10 +2367,10 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 		if (not chemComp.exists(cif::Key("id") == newCompound))
 		{
 			chemComp.emplace({{"id", newCompound},
-			                  {"name", compound->name()},
-			                  {"formula", compound->formula()},
-			                  {"formula_weight", compound->formulaWeight()},
-			                  {"type", compound->type()}});
+				{"name", compound->name()},
+				{"formula", compound->formula()},
+				{"formula_weight", compound->formulaWeight()},
+				{"type", compound->type()}});
 		}
 
 		// update the struct_asym for the new entity
@@ -2377,7 +2388,7 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 		tie(a1, a2) = a;
 
 		auto i = find_if(atoms.begin(), atoms.end(), [&](const Atom &a)
-		                 { return a.labelAtomID() == a1; });
+			{ return a.labelAtomID() == a1; });
 		if (i == atoms.end())
 		{
 			std::cerr << "Missing atom for atom ID " << a1 << std::endl;
@@ -2398,6 +2409,31 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 		atomSites.update_value(cif::Key("id") == a.id(), "label_comp_id", newCompound);
 		atomSites.update_value(cif::Key("id") == a.id(), "auth_comp_id", newCompound);
 	}
+}
+
+std::string Structure::createEntityNonPoly(std::vector<cif::Item> data, const std::string &mon_id)
+{
+	auto &db = mFile.data();
+
+	auto &entity = db["entity"];
+	std::string entity_id = entity.getUniqueID("");
+
+	// remove any ID fields
+	data.erase(std::remove_if(data.begin(), data.end(), [](cif::Item &item) { return item.name() == "id"; }),
+			data.end());
+
+	// add our new ID
+	data.emplace_back("id", entity_id);
+	data.emplace_back("type", "non-polymer");
+
+	entity.emplace(data.begin(), data.end());
+
+	return entity_id;
+}
+
+std::string Structure::createNonpoly(const std::string &entity_id, const std::vector<cif::Item> &atoms)
+{
+	return {};
 }
 
 void Structure::cleanupEmptyCategories()
