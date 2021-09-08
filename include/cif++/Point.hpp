@@ -363,7 +363,7 @@ PointF<F> Nudge(PointF<F> p, F offset);
 
 quaternion Normalize(quaternion q);
 
-//std::tuple<double,Point> QuaternionToAngleAxis(quaternion q);
+std::tuple<double,Point> QuaternionToAngleAxis(quaternion q);
 Point Centroid(std::vector<Point>& Points);
 Point CenterPoints(std::vector<Point>& Points);
 quaternion AlignPoints(const std::vector<Point>& a, const std::vector<Point>& b);

@@ -26,13 +26,13 @@
 
 #pragma once
 
-#include <vector>
-#include <set>
 #include <cassert>
-#include <memory>
-#include <list>
-#include <iostream>
 #include <filesystem>
+#include <iostream>
+#include <list>
+#include <memory>
+#include <set>
+#include <vector>
 
 #ifndef STDOUT_FILENO
 #define STDOUT_FILENO 1
@@ -48,11 +48,11 @@
 #include "cif++/Cif++Export.hpp"
 
 #if _MSC_VER
-#	pragma warning (disable : 4996)	// unsafe function or variable	(strcpy e.g.)
-#	pragma warning (disable : 4068)	// unknown pragma
-#	pragma warning (disable : 4100) // unreferenced formal parameter
-#	pragma warning (disable : 4101) // unreferenced local variable
-#	define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING 1
+#pragma warning(disable : 4996) // unsafe function or variable	(strcpy e.g.)
+#pragma warning(disable : 4068) // unknown pragma
+#pragma warning(disable : 4100) // unreferenced formal parameter
+#pragma warning(disable : 4101) // unreferenced local variable
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING 1
 #endif
 
 namespace cif
@@ -67,26 +67,26 @@ std::string get_version_nr();
 // some basic utilities: Since we're using ASCII input only, we define for optimisation
 // our own case conversion routines.
 
-bool iequals(const std::string& a, const std::string& b);
-int icompare(const std::string& a, const std::string& b);
+bool iequals(const std::string &a, const std::string &b);
+int icompare(const std::string &a, const std::string &b);
 
-bool iequals(const char* a, const char* b);
-int icompare(const char* a, const char* b);
+bool iequals(const char *a, const char *b);
+int icompare(const char *a, const char *b);
 
-void toLower(std::string& s);
-std::string toLowerCopy(const std::string& s);
+void toLower(std::string &s);
+std::string toLowerCopy(const std::string &s);
 
 // To make life easier, we also define iless and iset using iequals
 
 struct iless
 {
-	bool operator()(const std::string& a, const std::string& b) const
+	bool operator()(const std::string &a, const std::string &b) const
 	{
 		return icompare(a, b) < 0;
 	}
 };
 
-typedef std::set<std::string, iless>	iset;
+typedef std::set<std::string, iless> iset;
 
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
@@ -100,7 +100,7 @@ inline char tolower(int ch)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string,std::string> splitTagName(const std::string& tag);
+std::tuple<std::string, std::string> splitTagName(const std::string &tag);
 
 // --------------------------------------------------------------------
 // generate a cif name, mainly used to generate asym_id's
@@ -110,7 +110,7 @@ std::string cifIdForNumber(int number);
 // --------------------------------------------------------------------
 //	custom wordwrapping routine
 
-std::vector<std::string> wordWrap(const std::string& text, size_t width);
+std::vector<std::string> wordWrap(const std::string &text, size_t width);
 
 // --------------------------------------------------------------------
 //	Code helping with terminal i/o
@@ -125,26 +125,41 @@ std::string get_executable_path();
 // --------------------------------------------------------------------
 //	some manipulators to write coloured text to terminals
 
-enum StringColour {
-	scBLACK = 0, scRED, scGREEN, scYELLOW, scBLUE, scMAGENTA, scCYAN, scWHITE, scNONE = 9 };
+enum StringColour
+{
+	scBLACK = 0,
+	scRED,
+	scGREEN,
+	scYELLOW,
+	scBLUE,
+	scMAGENTA,
+	scCYAN,
+	scWHITE,
+	scNONE = 9
+};
 
-template<typename String, typename CharT>
+template <typename String, typename CharT>
 struct ColouredString
 {
 	static_assert(std::is_reference<String>::value or std::is_pointer<String>::value, "String type must be pointer or reference");
-	
+
 	ColouredString(String s, StringColour fore, StringColour back, bool bold = true)
-		: m_s(s), m_fore(fore), m_back(back), m_bold(bold) {}
-	
-	ColouredString& operator=(const ColouredString&) = delete;
-	
+		: m_s(s)
+		, m_fore(fore)
+		, m_back(back)
+		, m_bold(bold)
+	{
+	}
+
+	ColouredString &operator=(const ColouredString &) = delete;
+
 	String m_s;
 	StringColour m_fore, m_back;
 	bool m_bold;
 };
 
-template<typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const ColouredString<const CharT*,CharT>& s)
+template <typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const ColouredString<const CharT *, CharT> &s)
 {
 	if (isatty(STDOUT_FILENO))
 	{
@@ -152,15 +167,15 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
 		ostr << "\033[" << (30 + s.m_fore) << ';' << (s.m_bold ? "1" : "22") << ';' << (40 + s.m_back) << 'm'
 			 << s.m_s
 			 << "\033[0m";
-		
+
 		return os << ostr.str();
 	}
 	else
 		return os << s.m_s;
 }
 
-template<typename CharT, typename Traits, typename String>
-std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const ColouredString<String,CharT>& s)
+template <typename CharT, typename Traits, typename String>
+std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> &os, const ColouredString<String, CharT> &s)
 {
 	if (isatty(STDOUT_FILENO))
 	{
@@ -168,27 +183,27 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
 		ostr << "\033[" << (30 + s.m_fore) << ';' << (s.m_bold ? "1" : "22") << ';' << (40 + s.m_back) << 'm'
 			 << s.m_s
 			 << "\033[0m";
-		
+
 		return os << ostr.str();
 	}
 	else
 		return os << s.m_s;
 }
 
-template<typename CharT>
-inline auto coloured(const CharT* s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+template <typename CharT>
+inline auto coloured(const CharT *s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
 {
-	return ColouredString<const CharT*, CharT>(s, fore, back, bold);
+	return ColouredString<const CharT *, CharT>(s, fore, back, bold);
 }
 
-template<typename CharT, typename Traits, typename Alloc>
-inline auto coloured(const std::basic_string<CharT, Traits, Alloc>& s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+template <typename CharT, typename Traits, typename Alloc>
+inline auto coloured(const std::basic_string<CharT, Traits, Alloc> &s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
 {
 	return ColouredString<const std::basic_string<CharT, Traits, Alloc>, CharT>(s, fore, back, bold);
 }
 
-template<typename CharT, typename Traits, typename Alloc>
-inline auto coloured(std::basic_string<CharT, Traits, Alloc>& s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+template <typename CharT, typename Traits, typename Alloc>
+inline auto coloured(std::basic_string<CharT, Traits, Alloc> &s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
 {
 	return ColouredString<std::basic_string<CharT, Traits, Alloc>, CharT>(s, fore, back, bold);
 }
@@ -199,19 +214,19 @@ inline auto coloured(std::basic_string<CharT, Traits, Alloc>& s, StringColour fo
 class Progress
 {
   public:
-				Progress(int64_t inMax, const std::string& inAction);
-	virtual		~Progress();
-	
-	void		consumed(int64_t inConsumed);	// consumed is relative
-	void		progress(int64_t inProgress);	// progress is absolute
+	Progress(int64_t inMax, const std::string &inAction);
+	virtual ~Progress();
 
-	void		message(const std::string& inMessage);
+	void consumed(int64_t inConsumed); // consumed is relative
+	void progress(int64_t inProgress); // progress is absolute
+
+	void message(const std::string &inMessage);
 
   private:
-				Progress(const Progress&) = delete;
-	Progress& operator=(const Progress&) = delete;
+	Progress(const Progress &) = delete;
+	Progress &operator=(const Progress &) = delete;
 
-	struct ProgressImpl*	mImpl;
+	struct ProgressImpl *mImpl;
 };
 
 // --------------------------------------------------------------------
@@ -221,4 +236,4 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name);
 void addFileResource(const std::string &name, std::filesystem::path dataFile);
 void addDataDirectory(std::filesystem::path dataDir);
 
-}
+} // namespace cif
