@@ -278,7 +278,7 @@ if (NOT EXISTS ${COMPONENTS_CIF})
 		file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 	endif()
 
-	if(${CMAKE_VERSION} VERSION_LESS "3.19.0")
+	# if(${CMAKE_VERSION} VERSION_LESS "3.19.0")
 		find_program(GUNZIP gunzip)
 
 		if(GUNZIP)
@@ -291,13 +291,13 @@ if (NOT EXISTS ${COMPONENTS_CIF})
 			file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
 				SHOW_PROGRESS)
 		endif()
-	else()
-		file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
-			SHOW_PROGRESS)
-		file(ARCHIVE_EXTRACT INPUT ${COMPONENTS_CIF}.gz
-			DESTINATION ${CMAKE_SOURCE_DIR}/data/
-			VERBOSE)
-	endif()
+	# else()
+	# 	file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
+	# 		SHOW_PROGRESS)
+	# 	file(ARCHIVE_EXTRACT INPUT ${COMPONENTS_CIF}.gz
+	# 		DESTINATION ${CMAKE_SOURCE_DIR}/data/
+	# 		VERBOSE)
+	# endif()
 endif()
 
 add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
