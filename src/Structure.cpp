@@ -1746,6 +1746,8 @@ cif::Datablock& File::createDatablock(const std::string &name)
 
 	mImpl->mData.append(db);
 	mImpl->mDb = db;
+
+	return *mImpl->mDb;
 }
 
 void File::load(const std::string &p)
@@ -2411,8 +2413,10 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 	}
 }
 
-std::string Structure::createEntityNonPoly(std::vector<cif::Item> data, const std::string &mon_id)
+std::string Structure::createEntityNonPoly(std::vector<cif::Item> data, const std::string &comp_id)
 {
+	using namespace cif::literals;
+
 	auto &db = mFile.data();
 
 	auto &entity = db["entity"];
@@ -2427,6 +2431,15 @@ std::string Structure::createEntityNonPoly(std::vector<cif::Item> data, const st
 	data.emplace_back("type", "non-polymer");
 
 	entity.emplace(data.begin(), data.end());
+
+	const auto &[ name ] = entity.find1<std::string>("id"_key == entity_id, { "pdbx_description" });
+
+	auto &pdbx_entity_nonpoly = db["pdbx_entity_nonpoly"];
+	pdbx_entity_nonpoly.emplace({
+		{ "entity_id", entity_id },
+		{ "name", name },
+		{ "comp_id", comp_id }
+	});
 
 	return entity_id;
 }

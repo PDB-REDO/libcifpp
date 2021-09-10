@@ -115,6 +115,19 @@ if(MSVC)
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
 
+	# Find out the processor type for the target
+	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+		set(COFF_TYPE "x64")
+	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
+		set(COFF_TYPE "x86")
+	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
+		set(COFF_TYPE "arm64")
+	else()
+		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
+	endif()	
+
+	set(COFF_SPEC "--coff=${COFF_TYPE}")
+
 	# for mrc, just in case
 	list(APPEND CMAKE_PREFIX_PATH "$ENV{LOCALAPPDATA}/mrc")
 endif()
@@ -125,19 +138,23 @@ if(UNIX AND NOT APPLE AND NOT BUILD_FOR_CCP4 AND CMAKE_INSTALL_PREFIX_INITIALIZE
 	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
 endif()
 
-# Optionally use resources, created with mrc
+# Optionally use mrc to create resources
 
-if(NOT BUILD_FOR_CCP4)
-	find_package(mrc)
+if(WIN32 AND BUILD_SHARED_LIBS)
+	message("Not using resources when building shared libraries for Windows")
+else()
+	find_program(MRC mrc)
 
-	if(MRC_FOUND)
+	if(MRC)
 		option(USE_RSRC "Use mrc to create resources" ON)
 	else()
-		message(WARNING "Not using resources since mrc was not found")
+		message("Using resources not possible since mrc was not found")
 	endif()
 
 	if(USE_RSRC STREQUAL "ON")
 		set(USE_RSRC 1)
+
+		message("Using resources compiled with ${MRC}")
 		add_compile_definitions(USE_RSRC)
 	endif()
 endif()
@@ -382,6 +399,13 @@ option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
 
+	if(USE_RSRC)
+		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj
+			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic ${COFF_SPEC}
+		)
+		set(CIFPP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj)
+	endif()
+
 	list(APPEND CIFPP_tests
 		# pdb2cif
 		rename-compound
@@ -392,11 +416,7 @@ if(CIFPP_BUILD_TESTS)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")
 		set(CIFPP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test/${CIFPP_TEST}.cpp")
 
-		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
-
-		if(USE_RSRC)
-			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
-		endif()
+		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE} ${CIFPP_TEST_RESOURCE})
 
 		target_include_directories(${CIFPP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -404,10 +424,6 @@ if(CIFPP_BUILD_TESTS)
 		)
 
 		target_link_libraries(${CIFPP_TEST} Threads::Threads ${Boost_LIBRARIES} cifpp)
-
-		if(USE_RSRC)
-			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
-		endif()
 
 		if(${ZLIB_FOUND})
 			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)

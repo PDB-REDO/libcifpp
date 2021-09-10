@@ -66,7 +66,12 @@ _entity.src_method
 _entity.pdbx_description
 _entity.formula_weight
 1 non-polymer syn 'PROTOPORPHYRIN IX CONTAINING FE' 616.487
-	)"_cf;
+loop_
+_pdbx_entity_nonpoly.entity_id
+_pdbx_entity_nonpoly.name
+_pdbx_entity_nonpoly.comp_id
+1 'PROTOPORPHYRIN IX CONTAINING FE' HEM
+)"_cf;
 
 	expected.loadDictionary("mmcif_pdbx_v50.dic");
 
@@ -82,11 +87,13 @@ _entity.formula_weight
 		{ "formula_weight", 616.487 }
 	}, "HEM" );
 
-	BOOST_TEST(expected.firstDatablock() == structure.getFile().data());
-
-	std::cout << expected.firstDatablock() << std::endl
-			  << std::endl
-			  << structure.getFile().data() << std::endl;
+	if (not (expected.firstDatablock() == structure.getFile().data()))
+	{
+		BOOST_TEST(false);
+		std::cout << expected.firstDatablock() << std::endl
+				<< std::endl
+				<< structure.getFile().data() << std::endl;
+	}
 
 //     // using namespace mmcif;
 
