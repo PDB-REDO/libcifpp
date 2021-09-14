@@ -1491,7 +1491,7 @@ std::string Category::getUniqueID(std::function<std::string(int)> generator)
 	if (mCatValidator != nullptr and mCatValidator->mKeys.size() == 1)
 		key = mCatValidator->mKeys.front();
 
-	size_t nr = size() + 1;
+	size_t nr = size();
 
 	for (;;)
 	{
@@ -2397,8 +2397,8 @@ bool operator==(const Category &a, const Category &b)
 			
 			// make it an option to compare unapplicable to empty or something
 			
-			const char* ta = ra[tag].c_str();	if (strcmp(ta, ".") == 0) ta = "";
-			const char* tb = rb[tag].c_str();	if (strcmp(tb, ".") == 0) tb = "";
+			const char* ta = ra[tag].c_str();	if (strcmp(ta, ".") == 0 or strcmp(ta, "?") == 0) ta = "";
+			const char* tb = rb[tag].c_str();	if (strcmp(tb, ".") == 0 or strcmp(tb, "?") == 0) tb = "";
 			
 			if (compare(ta, tb) != 0)
 				return false;

@@ -701,6 +701,20 @@ void Atom::location(Point p)
 	impl()->moveTo(p);
 }
 
+void Atom::translate(Point t)
+{
+	auto loc = location();
+	loc += t;
+	location(loc);
+}
+
+void Atom::rotate(Quaternion q)
+{
+	auto loc = location();
+	loc.rotate(q);
+	location(loc);
+}
+
 // Atom Atom::symmetryCopy(const Point& d, const clipper::RTop_orth& rt)
 // {
 // 	return Atom(new AtomImpl(*impl(), d, rt));
@@ -2426,14 +2440,59 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 	}
 }
 
-std::string Structure::createEntityNonPoly(const std::string &comp_id)
+std::string Structure::createNonPolyEntity(const std::string &comp_id)
 {
 	return insertCompound(comp_id, true);
 }
 
-std::string Structure::createNonpoly(const std::string &entity_id, const std::vector<cif::Item> &atoms)
+std::string Structure::createNonpoly(const std::string &entity_id, const std::vector<cif::Row> &atoms)
 {
-	return {};
+	using namespace cif::literals;
+
+	cif::Datablock &db = *mFile.impl().mDb;
+	auto &struct_asym = db["struct_asym"];
+	std::string asym_id = struct_asym.getUniqueID();
+
+	struct_asym.emplace({
+		{ "id", asym_id },
+		{ "pdbx_blank_PDB_chainid_flag", "N" },
+		{ "pdbx_modified", "N" },
+		{ "entity_id", entity_id },
+		{ "details", "?" }
+	});
+
+	std::string comp_id = db["pdbx_entity_nonpoly"].find1<std::string>("entity_id"_key == entity_id, "comp_id");
+
+	auto &atom_site = db["atom_site"];
+
+	for (auto& atom: atoms)
+	{
+		atom_site.emplace({
+			{ "group_PDB",			atom["group_PDB"].as<std::string>() },
+			{ "id",					atom_site.getUniqueID("") },
+			{ "type_symbol",		atom["type_symbol"].as<std::string>() },
+			{ "label_atom_id",		atom["label_atom_id"].as<std::string>() },
+			{ "label_alt_id",		atom["label_alt_id"].as<std::string>() },
+			{ "label_comp_id",		comp_id },
+			{ "label_asym_id",		asym_id },
+			{ "label_entity_id",	entity_id },
+			{ "label_seq_id",		"." },
+			{ "pdbx_PDB_ins_code",	"" },
+			{ "Cartn_x",			atom["Cartn_x"].as<std::string>() },
+			{ "Cartn_y",			atom["Cartn_y"].as<std::string>() },
+			{ "Cartn_z",			atom["Cartn_z"].as<std::string>() },
+			{ "occupancy",			atom["occupancy"].as<std::string>() },
+			{ "B_iso_or_equiv",		atom["B_iso_or_equiv"].as<std::string>() },
+			{ "pdbx_formal_charge",	atom["pdbx_formal_charge"].as<std::string>() },
+			{ "auth_seq_id",		"" },
+			{ "auth_comp_id",		comp_id },
+			{ "auth_asym_id",		asym_id },
+			{ "auth_atom_id",		atom["label_atom_id"].as<std::string>() },
+			{ "pdbx_PDB_model_num",	1 }
+		});
+	}
+
+	return asym_id;
 }
 
 void Structure::cleanupEmptyCategories()
@@ -2516,6 +2575,18 @@ void Structure::cleanupEmptyCategories()
 
 		entity["pdbx_number_of_molecules"] = count;
 	}
+}
+
+void Structure::translate(Point t)
+{
+	for (auto& a: mAtoms)
+		a.translate(t);
+}
+
+void Structure::rotate(Quaternion q)
+{
+	for (auto& a: mAtoms)
+		a.rotate(q);
 }
 
 } // namespace mmcif

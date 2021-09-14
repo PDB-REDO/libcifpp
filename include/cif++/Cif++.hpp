@@ -2062,7 +2062,7 @@ class Category
 	std::string getUniqueID(const std::string &prefix)
 	{
 		return getUniqueID([prefix](int nr)
-			{ return prefix + std::to_string(nr); });
+			{ return prefix + std::to_string(nr + 1); });
 	}
 
 	// --------------------------------------------------------------------

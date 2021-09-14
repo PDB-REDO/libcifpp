@@ -35,7 +35,7 @@ namespace mmcif
 
 // --------------------------------------------------------------------
 
-quaternion Normalize(quaternion q)
+Quaternion Normalize(Quaternion q)
 {
 	std::valarray<double> t(4);
 	
@@ -49,16 +49,16 @@ quaternion Normalize(quaternion q)
 	double length = std::sqrt(t.sum());
 
 	if (length > 0.001)
-		q /= static_cast<quaternion::value_type>(length);
+		q /= static_cast<Quaternion::value_type>(length);
 	else
-		q = quaternion(1, 0, 0, 0);
+		q = Quaternion(1, 0, 0, 0);
 
 	return q;
 }
 
 // --------------------------------------------------------------------
 
-std::tuple<double,Point> QuaternionToAngleAxis(quaternion q)
+std::tuple<double,Point> QuaternionToAngleAxis(Quaternion q)
 {
 	if (q.R_component_1() > 1)
 		q = Normalize(q);
@@ -172,7 +172,7 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 	return t.max();
 }
 
-quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& pb)
+Quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& pb)
 {
 	// First calculate M, a 3x3 Matrix containing the sums of products of the coordinates of A and B
 	Matrix<double> M(3, 3, 0);
@@ -274,7 +274,7 @@ quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& p
 	}
 	
 	// NOTE the negation of the y here, why? Maybe I swapped r/c above?
-	quaternion q(cf(maxR, 0), cf(maxR, 1), -cf(maxR, 2), cf(maxR, 3));
+	Quaternion q(cf(maxR, 0), cf(maxR, 1), -cf(maxR, 2), cf(maxR, 3));
 	q = Normalize(q);
 	
 	return q;
@@ -294,7 +294,7 @@ Point Nudge(Point p, float offset)
 	float phi1 = static_cast<float>(randomAngle(rng) - kPI);
 	float phi2 = static_cast<float>(randomAngle(rng) - kPI);
 		
-	quaternion q = boost::math::spherical(1.0f, theta, phi1, phi2);
+	Quaternion q = boost::math::spherical(1.0f, theta, phi1, phi2);
 
 	Point r{ 0, 0, 1 };
 	r.rotate(q);

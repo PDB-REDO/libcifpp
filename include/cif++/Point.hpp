@@ -37,7 +37,7 @@
 namespace mmcif
 {
 
-typedef boost::math::quaternion<float>	quaternion;
+typedef boost::math::quaternion<float>	Quaternion;
 
 const double
 	kPI = 3.141592653589793238462643383279502884;
@@ -361,12 +361,12 @@ PointF<F> Nudge(PointF<F> p, F offset);
 // --------------------------------------------------------------------
 // We use quaternions to do rotations in 3d space
 
-quaternion Normalize(quaternion q);
+Quaternion Normalize(Quaternion q);
 
-std::tuple<double,Point> QuaternionToAngleAxis(quaternion q);
+std::tuple<double,Point> QuaternionToAngleAxis(Quaternion q);
 Point Centroid(std::vector<Point>& Points);
 Point CenterPoints(std::vector<Point>& Points);
-quaternion AlignPoints(const std::vector<Point>& a, const std::vector<Point>& b);
+Quaternion AlignPoints(const std::vector<Point>& a, const std::vector<Point>& b);
 double RMSd(const std::vector<Point>& a, const std::vector<Point>& b);
 
 // --------------------------------------------------------------------

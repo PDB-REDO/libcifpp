@@ -84,6 +84,12 @@ class Atom
 	Point location() const;
 	void location(Point p);
 
+	/// \brief Translate the position of this atom by \a t
+	void translate(Point t);
+
+	/// \brief Rotate the position of this atom by \a q
+	void rotate(Quaternion q);
+
 	// for direct access to underlying data, be careful!
 	const cif::Row getRow() const;
 	const cif::Row getRowAniso() const;
@@ -487,17 +493,25 @@ class Structure
 	/// \brief Create a new non-polymer entity, returns new ID
 	/// \param mon_id	The mon_id for the new nonpoly, must be an existing and known compound from CCD
 	/// \return			The ID of the created entity
-	std::string createEntityNonPoly(const std::string &mon_id);
+	std::string createNonPolyEntity(const std::string &mon_id);
 
-	/// \brief Create a new NonPolymer struct_asym with atoms constructed from \a atom_data, returns asym_id
+	/// \brief Create a new NonPolymer struct_asym with atoms constructed from \a atom_data, returns asym_id.
+	/// This method assumes you are copying data from one cif file to another.
+	///
 	/// \param entity_id	The entity ID of the new nonpoly
-	/// \param atoms		The array of atom data fields
+	/// \param atoms		The array of atom_site rows containing the data.
 	/// \return				The newly create asym ID
-	std::string createNonpoly(const std::string &entity_id, const std::vector<cif::Item> &atoms);
+	std::string createNonpoly(const std::string &entity_id, const std::vector<cif::Row> &atoms);
 
-	/// To sort the atoms in order of model > asym-id > res-id > atom-id
+	/// \brief To sort the atoms in order of model > asym-id > res-id > atom-id
 	/// Will asssign new atom_id's to all atoms. Be carefull
 	void sortAtoms();
+
+	/// \brief Translate the coordinates of all atoms in the structure by \a t
+	void translate(Point t);
+
+	/// \brief Rotate the coordinates of all atoms in the structure by \a q
+	void rotate(Quaternion t);
 
 	const std::vector<Residue> &getNonPolymers() const { return mNonPolymers; }
 	const std::vector<Residue> &getBranchResidues() const { return mBranchResidues; }
