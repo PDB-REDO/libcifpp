@@ -1903,19 +1903,39 @@ class Category
 		return *h.begin();
 	}
 
-	template <typename... Ts, size_t N>
-	std::tuple<Ts...> find1(Condition &&cond, char const *const (&columns)[N])
+	template <typename T>
+	T find1(Condition &&cond, const char* column)
 	{
-		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
-		return find1<Ts...>(cbegin(), std::forward<Condition>(cond), std::forward<char const *const[N]>(columns));
+		return find1<T>(cbegin(), std::forward<Condition>(cond), column);
 	}
 
-	template <typename... Ts, size_t N>
-	std::tuple<Ts...> find1(const_iterator pos, Condition &&cond, char const *const (&columns)[N])
+	template <typename T>
+	T find1(const_iterator pos, Condition &&cond, const char* column)
 	{
-		static_assert(sizeof...(Ts) == N, "The number of column titles should be equal to the number of types to return");
+		auto h = find<T>(pos, std::forward<Condition>(cond), { column });
 
-		auto h = find<Ts...>(pos, std::forward<Condition>(cond), std::forward<char const *const[N]>(columns));
+		if (h.empty())
+			throw std::runtime_error("No hits found");
+
+		if (h.size() != 1)
+			throw std::runtime_error("Hit not unique");
+
+		return std::get<0>(*h.begin());
+	}
+
+	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
+	std::tuple<Ts...> find1(Condition &&cond, Cs... columns)
+	{
+		static_assert(sizeof...(Ts) == sizeof...(Cs), "The number of column titles should be equal to the number of types to return");
+		// static_assert(std::is_same_v<Cs, const char*>..., "The column names should be const char");
+		return find1<Ts...>(cbegin(), std::forward<Condition>(cond), std::forward<Cs>(columns)...);
+	}
+
+	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
+	std::tuple<Ts...> find1(const_iterator pos, Condition &&cond, Cs... columns)
+	{
+		static_assert(sizeof...(Ts) == sizeof...(Cs), "The number of column titles should be equal to the number of types to return");
+		auto h = find<Ts...>(pos, std::forward<Condition>(cond), { columns... });
 
 		if (h.empty())
 			throw std::runtime_error("No hits found");

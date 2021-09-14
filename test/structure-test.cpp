@@ -59,18 +59,22 @@ BOOST_AUTO_TEST_CASE(create_nonpoly_1)
 
 	auto expected = R"(
 data_TEST
-loop_
-_entity.id
-_entity.type
-_entity.src_method
-_entity.pdbx_description
-_entity.formula_weight
-1 non-polymer syn 'PROTOPORPHYRIN IX CONTAINING FE' 616.487
-loop_
-_pdbx_entity_nonpoly.entity_id
-_pdbx_entity_nonpoly.name
-_pdbx_entity_nonpoly.comp_id
-1 'PROTOPORPHYRIN IX CONTAINING FE' HEM
+#
+_chem_comp.id               HEM
+_chem_comp.type             NON-POLYMER
+_chem_comp.name             'PROTOPORPHYRIN IX CONTAINING FE'
+_chem_comp.formula          'C34 H32 Fe N4 O4'
+_chem_comp.formula_weight   616.487000
+#
+_pdbx_entity_nonpoly.entity_id   1
+_pdbx_entity_nonpoly.name        'PROTOPORPHYRIN IX CONTAINING FE'
+_pdbx_entity_nonpoly.comp_id     HEM
+#
+_entity.id                 1
+_entity.type               non-polymer
+_entity.pdbx_description   'PROTOPORPHYRIN IX CONTAINING FE'
+_entity.formula_weight     616.487000
+#
 )"_cf;
 
 	expected.loadDictionary("mmcif_pdbx_v50.dic");
@@ -81,11 +85,7 @@ _pdbx_entity_nonpoly.comp_id
 	
 	mmcif::Structure structure(file);
 
-	structure.createEntityNonPoly({
-		{ "src_method", "syn" },
-		{ "pdbx_description", "PROTOPORPHYRIN IX CONTAINING FE" },
-		{ "formula_weight", 616.487 }
-	}, "HEM" );
+	structure.createEntityNonPoly("HEM");
 
 	if (not (expected.firstDatablock() == structure.getFile().data()))
 	{
@@ -94,38 +94,4 @@ _pdbx_entity_nonpoly.comp_id
 				<< std::endl
 				<< structure.getFile().data() << std::endl;
 	}
-
-//     // using namespace mmcif;
-
-//     auto f = R"(data_TEST
-// #
-// loop_
-// _test.id
-// _test.name
-// 1 aap
-// 2 noot
-// 3 mies
-//     )"_cf;
-
-//     auto& db = f.firstDatablock();
-
-//     BOOST_CHECK(db.getName() == "TEST");
-    
-//     auto& test = db["test"];
-//     BOOST_CHECK(test.size() == 3);
-
-//     // wrong! the next lines will crash. And that's OK, don't do that
-//     // for (auto r: test)
-//     // 	test.erase(r);
-    
-//     // BOOST_CHECK(test.empty());
-
-//     // test.purge();
-
-//     auto n = test.erase(cif::Key("id") == 1, [](const cif::Row& r) {
-//         BOOST_CHECK_EQUAL(r["id"].as<int>(), 1);
-//         BOOST_CHECK_EQUAL(r["name"].as<std::string>(), "aap");
-//       });
-
-//     BOOST_CHECK_EQUAL(n, 1);
 }

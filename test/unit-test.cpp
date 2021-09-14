@@ -1207,7 +1207,7 @@ _test.name
         }
     }
 
-    const auto& [id, name] = db["test"].find1<int, std::string>(cif::Key("id") == 1, { "id", "name" });
+    const auto& [id, name] = db["test"].find1<int, std::string>(cif::Key("id") == 1, "id", "name");
 
     BOOST_CHECK(id == 1);
     BOOST_CHECK(name == "aap");

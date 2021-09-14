@@ -2161,8 +2161,10 @@ cif::Datablock &Structure::datablock() const
 	return *mFile.impl().mDb;
 }
 
-void Structure::insertCompound(const std::string &compoundID, bool isEntity)
+std::string Structure::insertCompound(const std::string &compoundID, bool isEntity)
 {
+	using namespace cif::literals;
+
 	auto compound = CompoundFactory::instance().create(compoundID);
 	if (compound == nullptr)
 		throw std::runtime_error("Trying to insert unknown compound " + compoundID + " (not found in CCD)");
@@ -2173,31 +2175,42 @@ void Structure::insertCompound(const std::string &compoundID, bool isEntity)
 	auto r = chemComp.find(cif::Key("id") == compoundID);
 	if (r.empty())
 	{
-		chemComp.emplace({{"id", compoundID},
+		chemComp.emplace({
+			{"id", compoundID},
 			{"name", compound->name()},
 			{"formula", compound->formula()},
 			{"formula_weight", compound->formulaWeight()},
 			{"type", compound->type()}});
 	}
 
+	std::string entity_id;
+
 	if (isEntity)
 	{
 		auto &pdbxEntityNonpoly = db["pdbx_entity_nonpoly"];
-		if (not pdbxEntityNonpoly.exists(cif::Key("comp_id") == compoundID))
+		try
+		{
+			entity_id = pdbxEntityNonpoly.find1<std::string>("comp_id"_key == compoundID, "entity_id");
+		}
+		catch(const std::exception& ex)
 		{
 			auto &entity = db["entity"];
-			std::string entityID = std::to_string(entity.size() + 1);
+			entity_id = std::to_string(entity.size() + 1);
 
-			entity.emplace({{"id", entityID},
+			entity.emplace({
+				{"id", entity_id},
 				{"type", "non-polymer"},
 				{"pdbx_description", compound->name()},
 				{"formula_weight", compound->formulaWeight()}});
 
-			pdbxEntityNonpoly.emplace({{"entity_id", entityID},
+			pdbxEntityNonpoly.emplace({
+				{"entity_id", entity_id},
 				{"name", compound->name()},
 				{"comp_id", compoundID}});
 		}
 	}
+
+	return entity_id;
 }
 
 // // --------------------------------------------------------------------
@@ -2340,7 +2353,7 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 
 		try
 		{
-			std::tie(entityID) = entity.find1<std::string>("type"_key == "non-polymer" and "pdbx_description"_key == compound->name(), {"id"});
+			entityID = entity.find1<std::string>("type"_key == "non-polymer" and "pdbx_description"_key == compound->name(), "id");
 		}
 		catch (const std::exception &ex)
 		{
@@ -2413,35 +2426,9 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 	}
 }
 
-std::string Structure::createEntityNonPoly(std::vector<cif::Item> data, const std::string &comp_id)
+std::string Structure::createEntityNonPoly(const std::string &comp_id)
 {
-	using namespace cif::literals;
-
-	auto &db = mFile.data();
-
-	auto &entity = db["entity"];
-	std::string entity_id = entity.getUniqueID("");
-
-	// remove any ID fields
-	data.erase(std::remove_if(data.begin(), data.end(), [](cif::Item &item) { return item.name() == "id"; }),
-			data.end());
-
-	// add our new ID
-	data.emplace_back("id", entity_id);
-	data.emplace_back("type", "non-polymer");
-
-	entity.emplace(data.begin(), data.end());
-
-	const auto &[ name ] = entity.find1<std::string>("id"_key == entity_id, { "pdbx_description" });
-
-	auto &pdbx_entity_nonpoly = db["pdbx_entity_nonpoly"];
-	pdbx_entity_nonpoly.emplace({
-		{ "entity_id", entity_id },
-		{ "name", name },
-		{ "comp_id", comp_id }
-	});
-
-	return entity_id;
+	return insertCompound(comp_id, true);
 }
 
 std::string Structure::createNonpoly(const std::string &entity_id, const std::vector<cif::Item> &atoms)

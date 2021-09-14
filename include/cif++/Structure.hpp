@@ -485,11 +485,9 @@ class Structure
 		const std::vector<std::tuple<std::string, std::string>> &remappedAtoms);
 
 	/// \brief Create a new non-polymer entity, returns new ID
-	/// \param data		The data to use to fill the entity
-	/// \param mon_id	The mon_id for the new nonpoly
-	/// \param name		The name of the nonpoly
+	/// \param mon_id	The mon_id for the new nonpoly, must be an existing and known compound from CCD
 	/// \return			The ID of the created entity
-	std::string createEntityNonPoly(std::vector<cif::Item> data, const std::string &mon_id);
+	std::string createEntityNonPoly(const std::string &mon_id);
 
 	/// \brief Create a new NonPolymer struct_asym with atoms constructed from \a atom_data, returns asym_id
 	/// \param entity_id	The entity ID of the new nonpoly
@@ -515,7 +513,7 @@ class Structure
 	cif::Category &category(const char *name) const;
 	cif::Datablock &datablock() const;
 
-	void insertCompound(const std::string &compoundID, bool isEntity);
+	std::string insertCompound(const std::string &compoundID, bool isEntity);
 
 	void loadData();
 	void updateAtomIndex();
