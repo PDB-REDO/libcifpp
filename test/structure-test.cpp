@@ -86,10 +86,13 @@ HETATM C  CHD . ? -4.342  36.262 -3.536  1.00 8.00  ?
 # that's enough to test with
 )"_cf;
 
-	auto &atom_site = atoms["HEM"]["atom_site"];
+	auto &hem_data = atoms["HEM"];
+	auto &atom_site = hem_data["atom_site"];
 
 	auto hem_atoms = atom_site.rows();
-	std::vector<cif::Row> atom_data(hem_atoms.begin(), hem_atoms.end());
+	std::vector<mmcif::Atom> atom_data;
+	for (auto &hem_atom: hem_atoms)
+		atom_data.emplace_back(hem_data, hem_atom);
 
 	structure.createNonpoly(entity_id, atom_data);
 

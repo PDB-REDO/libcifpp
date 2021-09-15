@@ -230,7 +230,7 @@ void FileImpl::save(const std::string &p)
 struct AtomImpl
 {
 	AtomImpl(const AtomImpl &i)
-		: mFile(i.mFile)
+		: mDb(i.mDb)
 		, mID(i.mID)
 		, mType(i.mType)
 		, mAtomID(i.mAtomID)
@@ -250,13 +250,12 @@ struct AtomImpl
 	{
 	}
 
-	AtomImpl(const File &f, const std::string &id)
-		: mFile(f)
+	AtomImpl(cif::Datablock &db, const std::string &id)
+		: mDb(db)
 		, mID(id)
 		, mRefcount(1)
 		, mCompound(nullptr)
 	{
-		auto &db = *mFile.impl().mDb;
 		auto &cat = db["atom_site"];
 
 		mRow = cat[cif::Key("id") == mID];
@@ -264,8 +263,18 @@ struct AtomImpl
 		prefetch();
 	}
 
-	AtomImpl(const File &f, const std::string &id, cif::Row row)
-		: mFile(f)
+	AtomImpl(cif::Datablock &db, cif::Row &row)
+		: mDb(db)
+		, mID(row["id"].as<std::string>())
+		, mRow(row)
+		, mRefcount(1)
+		, mCompound(nullptr)
+	{
+		prefetch();
+	}
+
+	AtomImpl(cif::Datablock &db, const std::string &id, cif::Row row)
+		: mDb(db)
 		, mID(id)
 		, mRefcount(1)
 		, mRow(row)
@@ -274,21 +283,8 @@ struct AtomImpl
 		prefetch();
 	}
 
-	// AtomImpl(const AtomImpl& impl, const Point& d, const clipper::RTop_orth& rt)
-	// 	: mFile(impl.mFile), mID(impl.mID), mType(impl.mType), mAtomID(impl.mAtomID)
-	// 	, mCompID(impl.mCompID), mAsymID(impl.mAsymID), mSeqID(impl.mSeqID)
-	// 	, mAltID(impl.mAltID), mLocation(impl.mLocation), mRefcount(1)
-	// 	, mRow(impl.mRow), mCompound(impl.mCompound), mRadius(impl.mRadius)
-	// 	, mCachedProperties(impl.mCachedProperties)
-	// 	, mSymmetryCopy(true), mRTop(rt), mD(d)
-	// {
-	// 	mLocation += d;
-	// 	mLocation = ((clipper::Coord_orth)mLocation).transform(rt);
-	// 	mLocation -= d;
-	// }
-
 	AtomImpl(const AtomImpl &impl, const Point &loc, const std::string &sym_op)
-		: mFile(impl.mFile)
+		: mDb(impl.mDb)
 		, mID(impl.mID)
 		, mType(impl.mType)
 		, mAtomID(impl.mAtomID)
@@ -341,16 +337,19 @@ struct AtomImpl
 
 	bool getAnisoU(float anisou[6]) const
 	{
-		auto &db = *mFile.impl().mDb;
-		auto &cat = db["atom_site_anisotrop"];
-		auto r = cat[cif::Key("id") == mID];
 		bool result = false;
 
-		if (not r.empty())
+		auto cat = mDb.get("atom_site_anisotrop");
+		if (cat)
 		{
-			result = true;
-			cif::tie(anisou[0], anisou[1], anisou[2], anisou[3], anisou[4], anisou[5]) =
-				r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
+			auto r = cat->find1(cif::Key("id") == mID);
+
+			if (not r.empty())
+			{
+				result = true;
+				cif::tie(anisou[0], anisou[1], anisou[2], anisou[3], anisou[4], anisou[5]) =
+					r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
+			}
 		}
 
 		return result;
@@ -445,7 +444,7 @@ struct AtomImpl
 		std::swap(mAtomID, b.mAtomID);
 	}
 
-	const File &mFile;
+	const cif::Datablock &mDb;
 	std::string mID;
 	AtomType mType;
 
@@ -484,6 +483,11 @@ Atom::Atom()
 
 Atom::Atom(AtomImpl *impl)
 	: mImpl_(impl)
+{
+}
+
+Atom::Atom(cif::Datablock &db, cif::Row &row)
+	: mImpl_(new AtomImpl(db, row))
 {
 }
 
@@ -545,9 +549,12 @@ const cif::Row Atom::getRow() const
 
 const cif::Row Atom::getRowAniso() const
 {
-	auto &db = *mImpl_->mFile.impl().mDb;
-	auto &cat = db["atom_site_anisotrop"];
-	return cat[cif::Key("id") == mImpl_->mID];
+	auto &db = mImpl_->mDb;
+	auto cat = db.get("atom_site_anisotrop");
+	if (not cat)
+		return {};
+	else
+		return cat->find1(cif::Key("id") == mImpl_->mID);
 }
 
 template <>
@@ -758,7 +765,7 @@ bool Atom::isWater() const
 bool Atom::operator==(const Atom &rhs) const
 {
 	return impl() == rhs.impl() or
-	       (&impl()->mFile == &rhs.impl()->mFile and impl()->mID == rhs.impl()->mID);
+	       (&impl()->mDb == &rhs.impl()->mDb and impl()->mID == rhs.impl()->mID);
 }
 
 // clipper::Atom Atom::toClipper() const
@@ -1821,7 +1828,7 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 		if ((options bitand StructureOpenOptions::SkipHydrogen) and type_symbol == "H")
 			continue;
 
-		mAtoms.emplace_back(new AtomImpl(f, id, a));
+		mAtoms.emplace_back(new AtomImpl(*db, id, a));
 	}
 
 	loadData();
@@ -2445,7 +2452,7 @@ std::string Structure::createNonPolyEntity(const std::string &comp_id)
 	return insertCompound(comp_id, true);
 }
 
-std::string Structure::createNonpoly(const std::string &entity_id, const std::vector<cif::Row> &atoms)
+std::string Structure::createNonpoly(const std::string &entity_id, const std::vector<mmcif::Atom> &atoms)
 {
 	using namespace cif::literals;
 
@@ -2468,26 +2475,26 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 	for (auto& atom: atoms)
 	{
 		atom_site.emplace({
-			{ "group_PDB",			atom["group_PDB"].as<std::string>() },
+			{ "group_PDB",			atom.property<std::string>("group_PDB") },
 			{ "id",					atom_site.getUniqueID("") },
-			{ "type_symbol",		atom["type_symbol"].as<std::string>() },
-			{ "label_atom_id",		atom["label_atom_id"].as<std::string>() },
-			{ "label_alt_id",		atom["label_alt_id"].as<std::string>() },
+			{ "type_symbol",		atom.property<std::string>("type_symbol") },
+			{ "label_atom_id",		atom.property<std::string>("label_atom_id") },
+			{ "label_alt_id",		atom.property<std::string>("label_alt_id") },
 			{ "label_comp_id",		comp_id },
 			{ "label_asym_id",		asym_id },
 			{ "label_entity_id",	entity_id },
 			{ "label_seq_id",		"." },
 			{ "pdbx_PDB_ins_code",	"" },
-			{ "Cartn_x",			atom["Cartn_x"].as<std::string>() },
-			{ "Cartn_y",			atom["Cartn_y"].as<std::string>() },
-			{ "Cartn_z",			atom["Cartn_z"].as<std::string>() },
-			{ "occupancy",			atom["occupancy"].as<std::string>() },
-			{ "B_iso_or_equiv",		atom["B_iso_or_equiv"].as<std::string>() },
-			{ "pdbx_formal_charge",	atom["pdbx_formal_charge"].as<std::string>() },
+			{ "Cartn_x",			atom.property<std::string>("Cartn_x") },
+			{ "Cartn_y",			atom.property<std::string>("Cartn_y") },
+			{ "Cartn_z",			atom.property<std::string>("Cartn_z") },
+			{ "occupancy",			atom.property<std::string>("occupancy") },
+			{ "B_iso_or_equiv",		atom.property<std::string>("B_iso_or_equiv") },
+			{ "pdbx_formal_charge",	atom.property<std::string>("pdbx_formal_charge") },
 			{ "auth_seq_id",		"" },
 			{ "auth_comp_id",		comp_id },
 			{ "auth_asym_id",		asym_id },
-			{ "auth_atom_id",		atom["label_atom_id"].as<std::string>() },
+			{ "auth_atom_id",		atom.property<std::string>("label_atom_id") },
 			{ "pdbx_PDB_model_num",	1 }
 		});
 	}
@@ -2568,7 +2575,7 @@ void Structure::cleanupEmptyCategories()
 		{
 			// is this correct?
 			std::set<std::string> asym_ids;
-			for (const auto &[asym_id] : db["pdbx_branch_scheme"].find<std::string>("entity_id"_key == id, {"asym_id"}))
+			for (const auto &[ asym_id ] : db["pdbx_branch_scheme"].find<std::string>("entity_id"_key == id, "asym_id"))
 				asym_ids.insert(asym_id);
 			count = asym_ids.size();
 		}

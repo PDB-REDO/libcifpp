@@ -61,10 +61,11 @@ class File;
 class Atom
 {
   public:
-	//	Atom(const structure& s, const std::string& id);
 	Atom();
 	Atom(struct AtomImpl *impl);
 	Atom(const Atom &rhs);
+
+	Atom(cif::Datablock &db, cif::Row &row);
 
 	// a special constructor to create symmetry copies
 	Atom(const Atom &rhs, const Point &symmmetry_location, const std::string &symmetry_operation);
@@ -495,13 +496,13 @@ class Structure
 	/// \return			The ID of the created entity
 	std::string createNonPolyEntity(const std::string &mon_id);
 
-	/// \brief Create a new NonPolymer struct_asym with atoms constructed from \a atom_data, returns asym_id.
+	/// \brief Create a new NonPolymer struct_asym with atoms constructed from \a atoms, returns asym_id.
 	/// This method assumes you are copying data from one cif file to another.
 	///
 	/// \param entity_id	The entity ID of the new nonpoly
 	/// \param atoms		The array of atom_site rows containing the data.
 	/// \return				The newly create asym ID
-	std::string createNonpoly(const std::string &entity_id, const std::vector<cif::Row> &atoms);
+	std::string createNonpoly(const std::string &entity_id, const std::vector<mmcif::Atom> &atoms);
 
 	/// \brief To sort the atoms in order of model > asym-id > res-id > atom-id
 	/// Will asssign new atom_id's to all atoms. Be carefull

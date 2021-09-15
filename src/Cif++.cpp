@@ -2821,7 +2821,7 @@ Row::~Row()
 {
 }
 
-void Row::next()
+void Row::next() const
 {
 	if (mData != nullptr)
 		mData = mData->mNext;
@@ -3263,7 +3263,7 @@ void Row::swap(size_t cix, ItemRow *a, ItemRow *b)
 				}
 			}
 
-			std::vector<conditional_iterator_proxy<Row>> rs;
+			std::vector<conditional_iterator_proxy<Category>> rs;
 
 			// first find the respective rows, then flip values, otherwise you won't find them anymore!
 			for (size_t ab = 0; ab < 2; ++ab)

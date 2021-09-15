@@ -368,7 +368,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, std::shared_pt
 	{
 		auto &chemComp = (*compList)["chem_comp"];
 
-		for (const auto &[id, name, group] : chemComp.rows<std::string, std::string, std::string>({"id", "name", "group"}))
+		for (const auto &[id, name, group] : chemComp.rows<std::string, std::string, std::string>("id", "name", "group"))
 		{
 			std::string type;
 

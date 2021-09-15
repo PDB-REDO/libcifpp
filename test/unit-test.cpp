@@ -1158,7 +1158,7 @@ _test.name
 
     // query tests
 
-    for (const auto& [id, name]: db["test"].rows<int, std::optional<std::string>>({ "id", "name" }))
+    for (const auto& [id, name]: db["test"].rows<int, std::optional<std::string>>("id", "name"))
     {
         switch (id)
         {
@@ -1193,7 +1193,7 @@ _test.name
     auto& db = f.firstDatablock();
 
     // query tests
-    for (const auto& [id, name]: db["test"].find<int, std::optional<std::string>>(cif::All(), { "id", "name" }))
+    for (const auto& [id, name]: db["test"].find<int, std::optional<std::string>>(cif::All(), "id", "name"))
     {
         switch (id)
         {
@@ -1441,7 +1441,7 @@ _cat_3.num
 	}
 	
 	int i = 0;	
-	for (const auto &[id, name, num, desc]: cat2.rows<int,std::string,int,std::string>({"id", "name", "num", "desc"}))
+	for (const auto &[id, name, num, desc]: cat2.rows<int,std::string,int,std::string>("id", "name", "num", "desc"))
 	{
 		switch (++i)
 		{
@@ -1473,7 +1473,7 @@ _cat_3.num
 
 	BOOST_CHECK(cat1.size() == 4);
 	i = 0;
-	for (const auto &[id, name, desc]: cat1.rows<int,std::string,std::string>({"id", "name", "desc"}))
+	for (const auto &[id, name, desc]: cat1.rows<int,std::string,std::string>("id", "name", "desc"))
 	{
 		switch (++i)
 		{
@@ -1627,7 +1627,7 @@ PRO OXT HXT SING N N 17
 
 		std::set<std::tuple<std::string,std::string>> bonded;
 
-		for (const auto& [atom_id_1, atom_id_2]: cc->rows<std::string,std::string>({ "atom_id_1", "atom_id_2" }))
+		for (const auto& [atom_id_1, atom_id_2]: cc->rows<std::string,std::string>("atom_id_1", "atom_id_2"))
 		{
 			if (atom_id_1 > atom_id_2)
 				bonded.insert({ atom_id_2, atom_id_1 });
