@@ -377,6 +377,12 @@ struct AtomImpl
 	
 	bool isWater() const
 	{
+		if (mCompound == nullptr)
+		{
+			try { comp(); }
+			catch (...) {}
+		}
+
 		return mCompound != nullptr and mCompound->isWater();
 	}
 
