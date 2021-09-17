@@ -46,19 +46,8 @@ fetch_dictionary () {
 fetch_dictionary "@CIFPP_CACHE_DIR@/mmcif_pdbx_v50.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
 fetch_dictionary "@CIFPP_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
 
-# update OpenStructure compounds.chemlib
+# trigger update of OpenStructure compounds.chemlib
 
-if [ -f /usr/bin/chemdict_tool ] ; then
-    tmp_dir=$(mktemp --directory)
-    chown nobody:nogroup "${tmp_dir}"
-
-    gzip -c "@CIFPP_CACHE_DIR@/components.cif" > "${tmp_dir}/components.cif.gz"
-
-    # lowering privileges in order not to run as root
-    runuser -u nobody -- /usr/bin/chemdict_tool create "${tmp_dir}/components.cif.gz" "${tmp_dir}/compounds.chemlib" pdb
-
-    mkdir --parents /var/cache/openstructure
-    mv "${tmp_dir}/compounds.chemlib" /var/cache/openstructure/compounds.chemlib
-    chown root:root /var/cache/openstructure/compounds.chemlib
-    rm -rf "${tmp_dir}"
+if [ -f /usr/share/openstructure/debian/update-compound-library ] ; then
+    /usr/share/openstructure/debian/update-compound-library
 fi
