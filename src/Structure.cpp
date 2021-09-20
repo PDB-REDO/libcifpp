@@ -2216,7 +2216,7 @@ std::string Structure::insertCompound(const std::string &compoundID, bool isEnti
 		catch(const std::exception& ex)
 		{
 			auto &entity = db["entity"];
-			entity_id = std::to_string(entity.size() + 1);
+			entity_id = entity.getUniqueID("");
 
 			entity.emplace({
 				{"id", entity_id},
@@ -2474,9 +2474,11 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 
 	for (auto& atom: atoms)
 	{
-		atom_site.emplace({
+		auto atom_id = atom_site.getUniqueID("");
+
+		auto &&[row, inserted ] = atom_site.emplace({
 			{ "group_PDB",			atom.property<std::string>("group_PDB") },
-			{ "id",					atom_site.getUniqueID("") },
+			{ "id",					atom_id },
 			{ "type_symbol",		atom.property<std::string>("type_symbol") },
 			{ "label_atom_id",		atom.property<std::string>("label_atom_id") },
 			{ "label_alt_id",		atom.property<std::string>("label_alt_id") },
@@ -2497,7 +2499,11 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 			{ "auth_atom_id",		atom.property<std::string>("label_atom_id") },
 			{ "pdbx_PDB_model_num",	1 }
 		});
+
+		mAtoms.emplace_back(new AtomImpl(db, atom_id, row));
 	}
+
+	mNonPolymers.emplace_back(*this, comp_id, asym_id);
 
 	return asym_id;
 }

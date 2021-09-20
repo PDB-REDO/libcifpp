@@ -2354,8 +2354,6 @@ conditional_iterator_proxy<CategoryType, Ts...>::conditional_iterator_proxy(Cate
 {
 	static_assert(sizeof...(Ts) == sizeof...(Ns), "Number of column names should be equal to number of requested value types");
 
-	size_t N = sizeof...(Ns);
-
 	mCondition.prepare(cat);
 
 	while (mCBegin != mCEnd and not mCondition(*mCat, mCBegin.row()))
