@@ -1053,7 +1053,7 @@ Atom Residue::atomByID(const std::string &atomID) const
 		}
 	}
 
-	if (not result and cif::VERBOSE)
+	if (not result and cif::VERBOSE > 1)
 		std::cerr << "Atom with atom_id " << atomID << " not found in residue " << mAsymID << ':' << mSeqID << std::endl;
 
 	return result;

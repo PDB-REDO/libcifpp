@@ -88,6 +88,7 @@ if(EXISTS "${CCP4}")
 		option(RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 	endif()
 else()
+	set(RECREATE_SYMOP_DATA OFF)
 	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
 
