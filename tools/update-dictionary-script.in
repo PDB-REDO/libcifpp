@@ -48,6 +48,6 @@ fetch_dictionary "@CIFPP_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb
 
 # notify subscribers
 
-if [ -d /etc/libcifpp/cache-update.d ]; then
+if [ -d /etc/libcifpp/cache-update.d ] && [ -x /bin/run-parts ]; then
 	run-parts --arg "@CIFPP_CACHE_DIR@" -- /etc/libcifpp/cache-update.d
 fi
