@@ -426,7 +426,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} Threads::Threads ${Boost_LIBRARIES} cifpp)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads ${Boost_LIBRARIES} cifpp std::filesystem)
 
 		if(${ZLIB_FOUND})
 			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
