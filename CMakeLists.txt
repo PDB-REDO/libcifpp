@@ -174,11 +174,10 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
-# find_package(ZLIB)
-# find_package(BZip2)
+find_package(ZLIB)
+find_package(BZip2)
 
 include_directories(${Boost_INCLUDE_DIR})
-link_libraries(${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 # Create a revision file, containing the current git version info
 
@@ -307,7 +306,6 @@ endif()
 add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
 
 include_directories(${Boost_INCLUDE_DIRS})
-link_libraries(${Boost_LIBRARIES})
 
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
@@ -427,7 +425,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads ${Boost_LIBRARIES} cifpp std::filesystem ZLIB::ZLIB BZip2::BZip2)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB BZip2::BZip2)
 	
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
