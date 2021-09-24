@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 1.1.1 LANGUAGES CXX)
+project(cifpp VERSION 2.0.0 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -34,6 +34,7 @@ enable_testing()
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
+include(CheckIncludeFileCXX)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
@@ -42,6 +43,12 @@ include(GenerateExportHeader)
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+check_include_file_cxx("filesystem" _CXX_FILESYSTEM_HAVE_HEADER)
+mark_as_advanced(_CXX_FILESYSTEM_HAVE_HEADER)
+if(NOT _CXX_FILESYSTEM_HAVE_HEADER)
+	message(FATAL_ERROR "The standard c++ header file <filesystem> could not be found, please use a more recent compiler")
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
@@ -168,8 +175,6 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-# set (Boost_DEBUG ON)
-# set (Boost_VERBOSE ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 # find_package(ZLIB)
@@ -366,11 +371,11 @@ install(FILES
 	COMPONENT Devel
 )
 
-set(cifpp_MAJOR_VERSION 1)
+set(cifpp_MAJOR_VERSION ${CMAKE_PROJECT_VERSION_MAJOR})
 set_target_properties(cifpp PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION 1
-	INTERFACE_cifpp_MAJOR_VERSION 1)
+	SOVERSION ${cifpp_MAJOR_VERSION}
+	INTERFACE_cifpp_MAJOR_VERSION ${cifpp_MAJOR_VERSION})
 
 set_property(TARGET cifpp APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
