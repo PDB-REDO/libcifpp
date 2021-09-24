@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 1.1.1 LANGUAGES CXX)
+project(cifpp VERSION 2.0.0 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -34,6 +34,7 @@ enable_testing()
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
+include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
@@ -42,6 +43,8 @@ include(GenerateExportHeader)
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_package(Filesystem REQUIRED)
 
 if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
@@ -81,12 +84,14 @@ endif()
 
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
 if(EXISTS "${CCP4}")
-	option(RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
-
 	if(RECREATE_SYMOP_DATA AND NOT EXISTS "${CLIBD}/syminfo.lib")
-		message(FATAL_ERROR "Symop data table recreation requested, but file syminfo.lib was not found in ${CLIBD}")
+		message(WARNING "Symop data table recreation requested, but file syminfo.lib was not found in ${CLIBD}")
+		set(RECREATE_SYMOP_DATA OFF)
+	else()
+		option(RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 	endif()
 else()
+	set(RECREATE_SYMOP_DATA OFF)
 	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
 
@@ -166,8 +171,6 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set (Boost_DETAILED_FAILURE_MSG ON)
-# set (Boost_DEBUG ON)
-# set (Boost_VERBOSE ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 # find_package(ZLIB)
@@ -364,11 +367,11 @@ install(FILES
 	COMPONENT Devel
 )
 
-set(cifpp_MAJOR_VERSION 1)
+set(cifpp_MAJOR_VERSION ${CMAKE_PROJECT_VERSION_MAJOR})
 set_target_properties(cifpp PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION 1
-	INTERFACE_cifpp_MAJOR_VERSION 1)
+	SOVERSION ${cifpp_MAJOR_VERSION}
+	INTERFACE_cifpp_MAJOR_VERSION ${cifpp_MAJOR_VERSION})
 
 set_property(TARGET cifpp APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION

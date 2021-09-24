@@ -1,5 +1,5 @@
 const char kRevision[] = R"(
-libzeep-version: @PROJECT_VERSION@
+lib@PROJECT_NAME@-version: @PROJECT_VERSION@
 @BUILD_VERSION_STRING@
 Date: @BUILD_DATE_TIME@
 )";
