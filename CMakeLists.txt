@@ -206,7 +206,7 @@ if(RECREATE_SYMOP_DATA)
 
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
-	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES})
+	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB BZip2::BZip2)
 
 	set($ENV{CLIBD} ${CLIBD})
 	
@@ -427,15 +427,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads ${Boost_LIBRARIES} cifpp std::filesystem)
-
-		if(${ZLIB_FOUND})
-			target_link_libraries(${CIFPP_TEST} ZLIB::ZLIB)
-		endif()
-
-		if(${BZip2_FOUND})
-			target_link_libraries(${CIFPP_TEST} BZip2::BZip2)
-		endif()
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads ${Boost_LIBRARIES} cifpp std::filesystem ZLIB::ZLIB BZip2::BZip2)
 	
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
