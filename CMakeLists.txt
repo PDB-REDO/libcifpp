@@ -170,7 +170,8 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-set (Boost_DETAILED_FAILURE_MSG ON)
+set(Boost_DETAILED_FAILURE_MSG ON)
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 # find_package(ZLIB)
