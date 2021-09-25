@@ -174,8 +174,8 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
-find_package(ZLIB)
-find_package(BZip2)
+find_package(ZLIB REQUIRED)
+find_package(BZip2 REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIR})
 
