@@ -1671,7 +1671,5 @@ BOOST_AUTO_TEST_CASE(reading_file_1)
 	std::istringstream is("Hello, world!");
 
 	cif::File file;
-	file.load(is);
-
-	BOOST_CHECK_THROW(file.firstDatablock(), std::runtime_error);
+	BOOST_CHECK_THROW(file.load(is), std::runtime_error);
 }
