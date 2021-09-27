@@ -175,7 +175,6 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 find_package(ZLIB REQUIRED)
-find_package(BZip2 REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIR})
 
@@ -205,7 +204,7 @@ if(RECREATE_SYMOP_DATA)
 
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
-	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB BZip2::BZip2)
+	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
 
 	set($ENV{CLIBD} ${CLIBD})
 	
@@ -268,6 +267,8 @@ target_include_directories(cifpp
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
+target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -304,8 +305,6 @@ if (NOT EXISTS ${COMPONENTS_CIF})
 endif()
 
 add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
-
-include_directories(${Boost_INCLUDE_DIRS})
 
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
@@ -425,7 +424,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB BZip2::BZip2)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
 	
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions

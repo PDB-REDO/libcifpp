@@ -32,7 +32,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 
@@ -67,7 +66,6 @@ struct FileImpl
 void FileImpl::load_data(const char *data, size_t length)
 {
 	bool gzipped = length > 2 and data[0] == static_cast<char>(0x1f) and data[1] == static_cast<char>(0x8b);
-	bool bzip2ed = length > 3 and data[0] == static_cast<char>(0x42) and data[1] == static_cast<char>(0x5A) and data[2] == static_cast<char>(0x68);
 
 	try
 	{
@@ -82,8 +80,6 @@ void FileImpl::load_data(const char *data, size_t length)
 		io::filtering_stream<io::input> in;
 		if (gzipped)
 			in.push(io::gzip_decompressor());
-		else if (bzip2ed)
-			in.push(io::bzip2_decompressor());
 		in.push(is);
 
 		mData.load(in);
@@ -101,8 +97,6 @@ void FileImpl::load_data(const char *data, size_t length)
 		io::filtering_stream<io::input> in;
 		if (gzipped)
 			in.push(io::gzip_decompressor());
-		else if (bzip2ed)
-			in.push(io::bzip2_decompressor());
 		in.push(is);
 
 		ReadPDBFile(in, mData);
@@ -129,12 +123,7 @@ void FileImpl::load(const std::string &p)
 	io::filtering_stream<io::input> in;
 	std::string ext = path.extension().string();
 
-	if (path.extension() == ".bz2")
-	{
-		in.push(io::bzip2_decompressor());
-		ext = path.stem().extension().string();
-	}
-	else if (path.extension() == ".gz")
+	if (path.extension() == ".gz")
 	{
 		in.push(io::gzip_decompressor());
 		ext = path.stem().extension().string();
@@ -171,9 +160,7 @@ void FileImpl::load(const std::string &p)
 				else
 					inFile.open(path, std::ios_base::in | std::ios::binary);
 
-				if (path.extension() == ".bz2")
-					in.push(io::bzip2_decompressor());
-				else if (path.extension() == ".gz")
+				if (path.extension() == ".gz")
 					in.push(io::gzip_decompressor());
 
 				in.push(inFile);
@@ -208,11 +195,6 @@ void FileImpl::save(const std::string &p)
 	if (path.extension() == ".gz")
 	{
 		out.push(io::gzip_compressor());
-		path = path.stem();
-	}
-	else if (path.extension() == ".bz2")
-	{
-		out.push(io::bzip2_compressor());
 		path = path.stem();
 	}
 
