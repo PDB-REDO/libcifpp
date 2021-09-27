@@ -34,10 +34,10 @@ enable_testing()
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
-include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
+include(FindFilesystem)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
@@ -171,7 +171,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set(Boost_DETAILED_FAILURE_MSG ON)
-set(Boost_USE_STATIC_LIBS ON)
+# set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
 find_package(ZLIB REQUIRED COMPONENTS zlibstatic)
@@ -203,7 +203,9 @@ if(RECREATE_SYMOP_DATA)
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
 	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
-	target_include_directories(symop-map-generator ${Boost_INCLUDE_DIR})
+	if(Boost_INCLUDE_DIR)
+		target_include_directories(symop-map-generator ${Boost_INCLUDE_DIR})
+	endif()
 
 	set($ENV{CLIBD} ${CLIBD})
 	
