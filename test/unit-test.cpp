@@ -1665,3 +1665,11 @@ BOOST_AUTO_TEST_CASE(bondmap_2)
 
 	BOOST_CHECK(mmcif::BondMap::atomIDsForCompound("UN_").empty() == false);
 }
+
+BOOST_AUTO_TEST_CASE(reading_file_1)
+{
+	std::istringstream is("Hello, world!");
+
+	cif::File file;
+	BOOST_CHECK_THROW(file.load(is), std::runtime_error);
+}

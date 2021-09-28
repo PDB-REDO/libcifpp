@@ -34,10 +34,10 @@ enable_testing()
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
-include(FindFilesystem)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
+include(FindFilesystem)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
@@ -171,13 +171,10 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set(Boost_DETAILED_FAILURE_MSG ON)
-set(Boost_USE_STATIC_LIBS ON)
+# set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
-find_package(ZLIB REQUIRED)
-find_package(BZip2 REQUIRED)
-
-include_directories(${Boost_INCLUDE_DIR})
+find_package(ZLIB REQUIRED COMPONENTS zlibstatic)
 
 # Create a revision file, containing the current git version info
 
@@ -205,7 +202,10 @@ if(RECREATE_SYMOP_DATA)
 
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
-	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB BZip2::BZip2)
+	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
+	if(Boost_INCLUDE_DIR)
+		target_include_directories(symop-map-generator ${Boost_INCLUDE_DIR})
+	endif()
 
 	set($ENV{CLIBD} ${CLIBD})
 	
@@ -266,7 +266,11 @@ target_include_directories(cifpp
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+	${Boost_INCLUDE_DIR}
+	${ZLIB_INCLUDE_DIR}
 )
+
+target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -304,8 +308,6 @@ if (NOT EXISTS ${COMPONENTS_CIF})
 endif()
 
 add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
-
-include_directories(${Boost_INCLUDE_DIRS})
 
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
@@ -389,6 +391,16 @@ set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 set(includedir  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 
+get_target_property(PRIVATE_LIBRARIES cifpp INTERFACE_LINK_LIBRARIES)
+foreach(LIB ${PRIVATE_LIBRARIES})
+  set(PRIVATE_LIBS "${PRIVATE_LIBS} -l${LIB}")
+endforeach()
+
+get_target_property(PRIVATE_INCLUDE_DIRS cifpp INTERFACE_INCLUDE_DIRECTORIES)
+foreach(INC ${PRIVATE_INCLUDE_DIRS})
+  set(PRIVATE_INC_DIRS "${PRIVATE_INC_DIRS} -I ${INC}")
+endforeach()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libcifpp.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc.in @ONLY)
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc
@@ -425,7 +437,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB BZip2::BZip2)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
 	
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions

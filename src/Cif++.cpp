@@ -37,7 +37,6 @@
 #include <filesystem>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/logic/tribool.hpp>
@@ -3464,12 +3463,7 @@ void File::load(const std::string &p)
 	io::filtering_stream<io::input> in;
 	std::string ext;
 
-	if (path.extension() == ".bz2")
-	{
-		in.push(io::bzip2_decompressor());
-		ext = path.stem().extension().string();
-	}
-	else if (path.extension() == ".gz")
+	if (path.extension() == ".gz")
 	{
 		in.push(io::gzip_decompressor());
 		ext = path.stem().extension().string();
@@ -3498,11 +3492,6 @@ void File::save(const std::string &p)
 	if (path.extension() == ".gz")
 	{
 		out.push(io::gzip_compressor());
-		path = path.stem();
-	}
-	else if (path.extension() == ".bz2")
-	{
-		out.push(io::bzip2_compressor());
 		path = path.stem();
 	}
 
