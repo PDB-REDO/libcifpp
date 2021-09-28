@@ -81,6 +81,9 @@ if(EXISTS "$ENV{CCP4}")
 	set(CCP4 $ENV{CCP4})
 	set(CLIBD ${CCP4}/lib/data)
 endif()
+if(CCP4 AND NOT CLIBD)
+	set(CLIBD ${CCP4}/lib/data)
+endif()
 
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
 if(EXISTS "${CCP4}")
@@ -192,7 +195,6 @@ else()
 endif()
 
 # generate version.h
-include_directories(${CMAKE_BINARY_DIR} PRIVATE)
 string(TIMESTAMP BUILD_DATE_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
 configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
 
@@ -204,7 +206,7 @@ if(RECREATE_SYMOP_DATA)
 
 	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
 	if(Boost_INCLUDE_DIR)
-		target_include_directories(symop-map-generator ${Boost_INCLUDE_DIR})
+		target_include_directories(symop-map-generator PUBLIC ${Boost_INCLUDE_DIR})
 	endif()
 
 	set($ENV{CLIBD} ${CLIBD})
@@ -270,6 +272,11 @@ target_include_directories(cifpp
 	${ZLIB_INCLUDE_DIR}
 )
 
+target_include_directories(cifpp
+	PRIVATE
+	${CMAKE_BINARY_DIR}
+)
+
 target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -309,17 +316,24 @@ endif()
 
 add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
 
+if(UNIX)
+	option(INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
+	if(INSTALL_UPDATE_SCRIPT)
+		set(CIFPP_CACHE_DIR "/var/cache/libcifpp")
+		if(NOT "${CIFPP_CACHE_DIR}" STREQUAL "OFF")
+			target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
+		endif()
+	endif()
+endif()
+
+generate_export_header(cifpp
+	EXPORT_FILE_NAME cif++/Cif++Export.hpp)
+
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
 set(SHARE_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/libcifpp)
 
-# Fix cache dir
-add_compile_definitions(
-	# CACHE_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}"
-	DATA_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}" )
-
-generate_export_header(cifpp
-	EXPORT_FILE_NAME cif++/Cif++Export.hpp)
+target_compile_definitions(cifpp PUBLIC DATA_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}")
 
 # Install rules
 
@@ -458,20 +472,31 @@ if(CIFPP_BUILD_TESTS)
 	endforeach()
 endif()
 
+message("Will install in ${CMAKE_INSTALL_PREFIX}")
+
 # Optionally install the update scripts for CCD and dictionary files
 
-if(UNIX)
-	option(INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
+if(INSTALL_UPDATE_SCRIPT)
+	set(CIFPP_CRON_DIR "$ENV{DESTDIR}/etc/cron.weekly")
 
-	if(INSTALL_UPDATE_SCRIPT)
-		set(CIFPP_CACHE_DIR "/var/cache/libcifpp")
-		set(CIFPP_CRON_DIR "$ENV{DESTDIR}/etc/cron.weekly")
+	configure_file(${CMAKE_SOURCE_DIR}/tools/update-dictionary-script.in update-dictionary-script @ONLY)
+	install(
+		FILES ${CMAKE_CURRENT_BINARY_DIR}/update-dictionary-script
+		DESTINATION ${CIFPP_CRON_DIR}
+		PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
+	)
 
-		configure_file(${CMAKE_SOURCE_DIR}/tools/update-dictionary-script.in update-dictionary-script @ONLY)
-		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/update-dictionary-script DESTINATION ${CIFPP_CRON_DIR})
+	install(DIRECTORY DESTINATION ${CIFPP_CACHE_DIR})
+	install(DIRECTORY DESTINATION "$ENV{DESTDIR}/etc/libcifpp/cache-update.d")
 
-		target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
-	endif()
+	# a config to, to make it complete
+	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf [[# Uncomment the next line to enable automatic updates
+# update=true
+]])
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf DESTINATION "$ENV{DESTDIR}/etc")
+
+	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
+
+	install(CODE "message(\"A configuration file has been written to $ENV{DESTDIR}/etc/libcifpp.conf, please edit this file to enable automatic updates\")")
 endif()
 
-message("Will install in ${CMAKE_INSTALL_PREFIX}")
