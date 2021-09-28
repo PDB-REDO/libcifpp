@@ -162,8 +162,8 @@ class CompoundFactory
 	static CompoundFactory &instance();
 	static void clear();
 
-	void setDefaultDictionary(const std::string &inDictFile);
-	void pushDictionary(const std::string &inDictFile);
+	void setDefaultDictionary(const std::filesystem::path &inDictFile);
+	void pushDictionary(const std::filesystem::path &inDictFile);
 	void popDictionary();
 
 	bool isKnownPeptide(const std::string &res_name) const;

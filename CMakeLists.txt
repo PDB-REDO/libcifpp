@@ -182,7 +182,9 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
 
-find_package(ZLIB REQUIRED)
+if(NOT MSVC AND Boost_USE_STATIC_LIBS)
+	find_package(ZLIB REQUIRED)
+endif()
 
 # Create a revision file, containing the current git version info
 
@@ -209,7 +211,7 @@ if(RECREATE_SYMOP_DATA)
 
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
-	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
+	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES})
 	if(Boost_INCLUDE_DIR)
 		target_include_directories(symop-map-generator PUBLIC ${Boost_INCLUDE_DIR})
 	endif()
@@ -282,7 +284,7 @@ target_include_directories(cifpp
 	${CMAKE_BINARY_DIR}
 )
 
-target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
+target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -446,7 +448,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ZLIB::ZLIB)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES})
 	
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions

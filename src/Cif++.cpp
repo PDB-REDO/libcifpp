@@ -3399,7 +3399,7 @@ File::File(std::istream &is, bool validate)
 	load(is);
 }
 
-File::File(const std::string &path, bool validate)
+File::File(const std::filesystem::path &path, bool validate)
 	: File()
 {
 	try
@@ -3452,7 +3452,7 @@ void File::append(Datablock *e)
 	}
 }
 
-void File::load(const std::string &p)
+void File::load(const std::filesystem::path &p)
 {
 	fs::path path(p);
 
@@ -3482,7 +3482,7 @@ void File::load(const std::string &p)
 	}
 }
 
-void File::save(const std::string &p)
+void File::save(const std::filesystem::path &p)
 {
 	fs::path path(p);
 

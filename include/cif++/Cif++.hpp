@@ -2141,15 +2141,15 @@ class File
 
 	File();
 	File(std::istream &is, bool validate = false);
-	File(const std::string &path, bool validate = false);
+	File(const std::filesystem::path &path, bool validate = false);
 	File(File &&rhs);
 	File(const File &rhs) = delete;
 	File &operator=(const File &rhs) = delete;
 
 	~File();
 
-	void load(const std::string &p);
-	void save(const std::string &p);
+	void load(const std::filesystem::path &p);
+	void save(const std::filesystem::path &p);
 
 	void load(std::istream &is);
 	void save(std::ostream &os);

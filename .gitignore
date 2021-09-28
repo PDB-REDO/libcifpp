@@ -10,3 +10,5 @@ tools/update-dictionary-script
 data/
 CMakeSettings.json
 msvc/
+Testing/
+

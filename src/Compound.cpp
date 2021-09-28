@@ -268,7 +268,7 @@ class CompoundFactoryImpl : public std::enable_shared_from_this<CompoundFactoryI
   public:
 	CompoundFactoryImpl(std::shared_ptr<CompoundFactoryImpl> next);
 
-	CompoundFactoryImpl(const std::string &file, std::shared_ptr<CompoundFactoryImpl> next);
+	CompoundFactoryImpl(const std::filesystem::path &file, std::shared_ptr<CompoundFactoryImpl> next);
 
 	virtual ~CompoundFactoryImpl()
 	{
@@ -362,7 +362,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(std::shared_ptr<CompoundFactoryImpl> ne
 		mKnownBases.insert(key);
 }
 
-CompoundFactoryImpl::CompoundFactoryImpl(const std::string &file, std::shared_ptr<CompoundFactoryImpl> next)
+CompoundFactoryImpl::CompoundFactoryImpl(const std::filesystem::path &file, std::shared_ptr<CompoundFactoryImpl> next)
 	: mNext(next)
 {
 	cif::File cifFile(file);
@@ -677,10 +677,10 @@ void CompoundFactory::clear()
 		sInstance.reset();
 }
 
-void CompoundFactory::setDefaultDictionary(const std::string &inDictFile)
+void CompoundFactory::setDefaultDictionary(const std::filesystem::path &inDictFile)
 {
 	if (not fs::exists(inDictFile))
-		throw std::runtime_error("file not found: " + inDictFile);
+		throw std::runtime_error("file not found: " + inDictFile.string());
 
 	try
 	{
@@ -693,10 +693,10 @@ void CompoundFactory::setDefaultDictionary(const std::string &inDictFile)
 	}
 }
 
-void CompoundFactory::pushDictionary(const std::string &inDictFile)
+void CompoundFactory::pushDictionary(const std::filesystem::path &inDictFile)
 {
 	if (not fs::exists(inDictFile))
-		throw std::runtime_error("file not found: " + inDictFile);
+		throw std::runtime_error("file not found: " + inDictFile.string());
 
 	//	ifstream file(inDictFile);
 	//	if (not file.is_open())

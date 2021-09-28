@@ -59,8 +59,8 @@ struct FileImpl
 
 	void load_data(const char *data, size_t length);
 
-	void load(const std::string &p);
-	void save(const std::string &p);
+	void load(const std::filesystem::path &path);
+	void save(const std::filesystem::path &path);
 };
 
 void FileImpl::load_data(const char *data, size_t length)
@@ -112,10 +112,8 @@ void FileImpl::load_data(const char *data, size_t length)
 		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << std::endl;
 }
 
-void FileImpl::load(const std::string &p)
+void FileImpl::load(const std::filesystem::path &path)
 {
-	fs::path path(p);
-
 	std::ifstream inFile(path, std::ios_base::in | std::ios_base::binary);
 	if (not inFile.is_open())
 		throw std::runtime_error("No such file: " + path.string());
@@ -185,18 +183,13 @@ void FileImpl::load(const std::string &p)
 		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << std::endl;
 }
 
-void FileImpl::save(const std::string &p)
+void FileImpl::save(const std::filesystem::path &path)
 {
-	fs::path path(p);
-
-	std::ofstream outFile(p, std::ios_base::out | std::ios_base::binary);
+	std::ofstream outFile(path, std::ios_base::out | std::ios_base::binary);
 	io::filtering_stream<io::output> out;
 
 	if (path.extension() == ".gz")
-	{
 		out.push(io::gzip_compressor());
-		path = path.stem();
-	}
 
 	out.push(outFile);
 
@@ -1732,7 +1725,7 @@ File::File(const char *data, size_t length)
 	mImpl->load_data(data, length);
 }
 
-File::File(const std::string &File)
+File::File(const std::filesystem::path &File)
 	: mImpl(new FileImpl)
 {
 	load(File);
@@ -1753,12 +1746,12 @@ cif::Datablock& File::createDatablock(const std::string &name)
 	return *mImpl->mDb;
 }
 
-void File::load(const std::string &p)
+void File::load(const std::filesystem::path &p)
 {
 	mImpl->load(p);
 }
 
-void File::save(const std::string &file)
+void File::save(const std::filesystem::path &file)
 {
 	mImpl->save(file);
 }

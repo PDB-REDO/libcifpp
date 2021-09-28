@@ -397,7 +397,7 @@ class File : public std::enable_shared_from_this<File>
 {
   public:
 	File();
-	File(const std::string &path);
+	File(const std::filesystem::path &path);
 	File(const char *data, size_t length); // good luck trying to find out what it is...
 	~File();
 
@@ -406,8 +406,8 @@ class File : public std::enable_shared_from_this<File>
 
 	cif::Datablock& createDatablock(const std::string &name);
 
-	void load(const std::string &path);
-	void save(const std::string &path);
+	void load(const std::filesystem::path &path);
+	void save(const std::filesystem::path &path);
 
 	Structure *model(size_t nr = 1);
 
