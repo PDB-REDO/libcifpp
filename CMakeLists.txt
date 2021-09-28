@@ -180,7 +180,7 @@ set(Boost_DETAILED_FAILURE_MSG ON)
 if(NOT BUILD_SHARED_LIBS)
 	set(Boost_USE_STATIC_LIBS ON)
 endif()
-find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options)
+find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex program_options)
 
 if(NOT MSVC AND Boost_USE_STATIC_LIBS)
 	find_package(ZLIB REQUIRED)

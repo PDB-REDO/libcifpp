@@ -27,8 +27,8 @@
 #include <map>
 #include <set>
 #include <regex>
+#include <cmath>
 
-#include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 
@@ -3638,12 +3638,12 @@ std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, Datablock& d
 				% chainID
 				% resSeq
 				% iCode
-				% lrintf(u11 * 10000)
-				% lrintf(u22 * 10000)
-				% lrintf(u33 * 10000)
-				% lrintf(u12 * 10000)
-				% lrintf(u13 * 10000)
-				% lrintf(u23 * 10000)
+				% std::lrintf(u11 * 10000)
+				% std::lrintf(u22 * 10000)
+				% std::lrintf(u33 * 10000)
+				% std::lrintf(u12 * 10000)
+				% std::lrintf(u13 * 10000)
+				% std::lrintf(u23 * 10000)
 				% element
 				% sCharge) << std::endl;
 		}

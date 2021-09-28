@@ -28,10 +28,6 @@
 #include <algorithm>
 #include <mutex>
 
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/copy.hpp>
-
 #include "cif++/Cif++.hpp"
 #include "cif++/Compound.hpp"
 #include "cif++/CifUtils.hpp"

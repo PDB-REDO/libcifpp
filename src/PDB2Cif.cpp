@@ -28,9 +28,9 @@
 #include <set>
 #include <stack>
 #include <system_error>
+#include <iomanip>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/format.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 
@@ -896,8 +896,6 @@ class PDBFileParser
 		{
 			if (regex_match(s, m, rx1))
 			{
-				using namespace boost::gregorian;
-
 				int day = stoi(m[1].str());
 				auto mi = kMonths.find(m[2].str());
 				if (mi == kMonths.end())
@@ -907,9 +905,12 @@ class PDBFileParser
 				if (year < 1950)
 					year += 100;
 
-				date dateOriginal(static_cast<uint16_t>(year), static_cast<uint16_t>(month), static_cast<uint16_t>(day));
+				std::stringstream ss;
+				ss << std::setw(4) << std::setfill('0') << year << '-'
+				   << std::setw(2) << std::setfill('0') << month << '-'
+				   << std::setw(2) << std::setfill('0') << day;
 
-				s = to_iso_extended_string(dateOriginal);
+				s = ss.str();
 			}
 			else if (regex_match(s, m, rx2))
 			{
