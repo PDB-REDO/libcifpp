@@ -27,12 +27,17 @@ int main() {
 }
 ]])
 
-# Check a simple filesystem program without any linker flags
-check_cxx_source_compiles("${code}" CXX_FILESYSTEM_NO_LINK_NEEDED)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL 8.4.0)
+	# >> https://stackoverflow.com/questions/63902528/program-crashes-when-filesystempath-is-destroyed
+	set(CXX_FILESYSTEM_NO_LINK_NEEDED 0)
+else()
+	# Check a simple filesystem program without any linker flags
+	check_cxx_source_compiles("${code}" CXX_FILESYSTEM_NO_LINK_NEEDED)
+endif()
 
-set(_found ${CXX_FILESYSTEM_NO_LINK_NEEDED})
-
-if(NOT CXX_FILESYSTEM_NO_LINK_NEEDED)
+if(CXX_FILESYSTEM_NO_LINK_NEEDED)
+	set(_found 1)
+else()
 	set(prev_libraries ${CMAKE_REQUIRED_LIBRARIES})
 	# Add the libstdc++ flag
 	set(CMAKE_REQUIRED_LIBRARIES ${prev_libraries} -lstdc++fs)
@@ -51,7 +56,7 @@ if(_found)
 	set_property(TARGET std::filesystem APPEND PROPERTY INTERFACE_COMPILE_FEATURES cxx_std_17)
 
 	if(CXX_FILESYSTEM_NO_LINK_NEEDED)
-		# Nothing to add...
+	# Nothing to add...
 	elseif(CXX_FILESYSTEM_STDCPPFS_NEEDED)
 		set_property(TARGET std::filesystem APPEND PROPERTY INTERFACE_LINK_LIBRARIES -lstdc++fs)
 	elseif(CXX_FILESYSTEM_CPPFS_NEEDED)

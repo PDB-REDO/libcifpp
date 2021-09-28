@@ -47,6 +47,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Filesystem REQUIRED)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	# https://stackoverflow.com/questions/63902528/program-crashes-when-filesystempath-is-destroyed
 	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL 8.4.0)
 		message(WARNING "Your gnu compiler is perhaps too old, please use a more recent one if you get a segmentation in the build process when running symop-map-generator")
 	endif()
