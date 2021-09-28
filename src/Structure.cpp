@@ -248,8 +248,8 @@ struct AtomImpl
 	AtomImpl(cif::Datablock &db, cif::Row &row)
 		: mDb(db)
 		, mID(row["id"].as<std::string>())
-		, mRow(row)
 		, mRefcount(1)
+		, mRow(row)
 		, mCompound(nullptr)
 	{
 		prefetch();

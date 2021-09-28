@@ -46,8 +46,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Filesystem REQUIRED)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL 8.4.0)
+		message(FATAL_ERROR "Your gnu compiler is too old, please use a more recent one")
+	endif()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-parameter -Wno-missing-field-initializers")
 endif()
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
@@ -261,7 +264,7 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/TlsParser.hpp
 )
 
-add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/SymOpTable_data.hpp)
+add_library(cifpp ${project_sources} ${project_headers} ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp)
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
