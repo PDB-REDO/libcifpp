@@ -33,6 +33,8 @@
 #include "cif++/Cif++.hpp"
 #include "cif++/BondMap.hpp"
 
+std::filesystem::path gTestDir = std::filesystem::current_path();	// filled in first test
+
 // --------------------------------------------------------------------
 
 cif::File operator""_cf(const char* text, size_t length)
@@ -51,12 +53,22 @@ cif::File operator""_cf(const char* text, size_t length)
 
 // --------------------------------------------------------------------
 
+BOOST_AUTO_TEST_CASE(init)
+{
+	// not a test, just initialize test dir
+
+	if (boost::unit_test::framework::master_test_suite().argc == 2)
+		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
+}
+
+// --------------------------------------------------------------------
+
 BOOST_AUTO_TEST_CASE(ut1)
 {
     cif::VERBOSE = 1;
 
 	// do this now, avoids the need for installing
-	cif::addFileResource("mmcif_pdbx_v50.dic", "../rsrc/mmcif_pdbx_v50.dic");
+	cif::addFileResource("mmcif_pdbx_v50.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
 
     // using namespace mmcif;
 
@@ -1515,7 +1527,7 @@ BOOST_AUTO_TEST_CASE(bondmap_1)
 {
     cif::VERBOSE = 2;
 
-	cif::addFileResource("components.cif", "../data/components.cif");
+	cif::addFileResource("components.cif", gTestDir / ".." / "data" / "components.cif");
 
 	// sections taken from CCD compounds.cif
 	auto components = R"(
@@ -1604,7 +1616,7 @@ PRO CD  HD3 SING N N 16
 PRO OXT HXT SING N N 17
 )"_cf;
 
-	const std::filesystem::path example("../examples/1cbs.cif.gz");
+	const std::filesystem::path example(gTestDir / ".."/"examples"/"1cbs.cif.gz");
 	mmcif::File file(example.string());
 	mmcif::Structure structure(file);
 
@@ -1661,7 +1673,7 @@ BOOST_AUTO_TEST_CASE(bondmap_2)
 {
 	BOOST_CHECK_THROW(mmcif::BondMap::atomIDsForCompound("UN_"), mmcif::BondMapException);
 
-	mmcif::CompoundFactory::instance().pushDictionary("./UN_.cif");
+	mmcif::CompoundFactory::instance().pushDictionary(gTestDir / "UN_.cif");
 
 	BOOST_CHECK(mmcif::BondMap::atomIDsForCompound("UN_").empty() == false);
 }

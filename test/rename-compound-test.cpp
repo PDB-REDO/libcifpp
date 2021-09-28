@@ -15,12 +15,17 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		if (std::filesystem::exists("../data/components.cif"))
-			cif::addFileResource("components.cif", "../data/components.cif");
+		std::filesystem::path testdir = std::filesystem::current_path();
 
-		mmcif::CompoundFactory::instance().pushDictionary("RXA.cif");
+		if (argc == 3)
+			testdir = argv[2];
 
-		mmcif::File f("../examples/1cbs.cif.gz");
+		if (std::filesystem::exists(testdir / ".."/"data"/"components.cif"))
+			cif::addFileResource("components.cif", testdir / ".."/"data"/"components.cif");
+
+		mmcif::CompoundFactory::instance().pushDictionary(testdir / "RXA.cif");
+
+		mmcif::File f(testdir / ".."/"examples"/"1cbs.cif.gz");
 		mmcif::Structure structure(f);
 
 		auto &res = structure.getResidue("B", "REA");

@@ -270,7 +270,11 @@ class CompoundFactoryImpl : public std::enable_shared_from_this<CompoundFactoryI
 
 	CompoundFactoryImpl(const std::string &file, std::shared_ptr<CompoundFactoryImpl> next);
 
-	virtual ~CompoundFactoryImpl() = default;
+	virtual ~CompoundFactoryImpl()
+	{
+		for (auto c: mCompounds)
+			delete c;
+	}
 
 	Compound *get(std::string id)
 	{
