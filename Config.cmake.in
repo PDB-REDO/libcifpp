@@ -2,6 +2,8 @@
 
 include(CMakeFindDependencyMacro)
 find_dependency(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex program_options)
+find_dependency(ZLIB)
+find_dependency(BZip2)
 
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/cifppTargets.cmake")
 

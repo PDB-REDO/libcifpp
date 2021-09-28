@@ -28,6 +28,7 @@
 #include <set>
 #include <regex>
 #include <cmath>
+#include <iomanip>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
