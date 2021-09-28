@@ -177,7 +177,9 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 set(Boost_DETAILED_FAILURE_MSG ON)
-# set(Boost_USE_STATIC_LIBS ON)
+if(NOT BUILD_SHARED_LIBS)
+	set(Boost_USE_STATIC_LIBS ON)
+endif()
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex date_time program_options OPTIONAL_COMPONENTS zlib)
 
 # Create a revision file, containing the current git version info
@@ -403,16 +405,6 @@ set(prefix      ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 set(includedir  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
-
-get_target_property(PRIVATE_LIBRARIES cifpp INTERFACE_LINK_LIBRARIES)
-foreach(LIB ${PRIVATE_LIBRARIES})
-  set(PRIVATE_LIBS "${PRIVATE_LIBS} -l${LIB}")
-endforeach()
-
-get_target_property(PRIVATE_INCLUDE_DIRS cifpp INTERFACE_INCLUDE_DIRECTORIES)
-foreach(INC ${PRIVATE_INCLUDE_DIRS})
-  set(PRIVATE_INC_DIRS "${PRIVATE_INC_DIRS} -I ${INC}")
-endforeach()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libcifpp.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc.in @ONLY)
