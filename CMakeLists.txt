@@ -98,7 +98,7 @@ else()
 	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
 
-set(CMAKE_DEBUG_POSTFIX d)
+# set(CMAKE_DEBUG_POSTFIX d)
 
 if(MSVC)
     # make msvc standards compliant...
