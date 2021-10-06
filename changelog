@@ -1,3 +1,6 @@
+Version 2.0.1
+- Fixed the generator for the symmetry operator table
+
 Version 2.0.0
 - New API interface for accessing query results
 - Removed bzip2 support

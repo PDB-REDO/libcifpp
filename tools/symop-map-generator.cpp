@@ -181,6 +181,50 @@ class SymopParser
 	int m_trn[3][2] = {};
 };
 
+std::array<int,15> move_symop(std::array<int,15> symop, const std::array<int,15>& cenop)
+{
+	for (int i = 9; i < 15; i += 2)
+	{
+		if (cenop[i] == 0)
+			continue;
+		
+		assert(cenop[i + 1] != 0);
+
+		if (symop[i] == 0)
+		{
+			assert(symop[i + 1] == 0);
+			symop[i] = cenop[i];
+			symop[i + 1] = cenop[i + 1];
+			continue;
+		}
+
+		if (symop[i + 1] == cenop[i + 1])
+			symop[i] += cenop[i];
+		else
+		{
+			int d = symop[i + 1] * cenop[i + 1];
+			int n = symop[i] * cenop[i + 1] + symop[i + 1] * cenop[i];
+
+			symop[i] = n;
+			symop[i + 1] = d;
+		}
+
+		for (int j = 5; j > 1; --j)
+			if (symop[i] % j == 0 and symop[i + 1] % j == 0)
+			{
+				symop[i] /= j;
+				symop[i + 1] /= j;
+			}
+		
+		symop[i] = (symop[i] + symop[i + 1]) % symop[i + 1];
+
+		if (symop[i] == 0)
+			symop[i + 1] = 0;
+	}
+
+	return symop;
+}
+
 int main(int argc, char* const argv[])
 {
 	using namespace std::literals;
@@ -224,7 +268,6 @@ int main(int argc, char* const argv[])
 		std::ofstream out(tmpFile);
 		if (not out.is_open())
 			throw std::runtime_error("Failed to open output file");
-
 
 		// --------------------------------------------------------------------
 
@@ -311,8 +354,7 @@ int main(int argc, char* const argv[])
 						{
 							for (auto symop: symops)
 							{
-								for (size_t i = 9; i < 15; ++i)
-									symop[i] += cenop[i];
+								symop = move_symop(symop, cenop);
 
 								data.emplace_back(cur.nr, symopnr, symop);
 								++symopnr;
