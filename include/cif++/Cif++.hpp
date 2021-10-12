@@ -238,9 +238,9 @@ class Datablock
 	const_iterator begin() const { return mCategories.begin(); }
 	const_iterator end() const { return mCategories.end(); }
 
-	Category &operator[](const std::string &name);
+	Category &operator[](std::string_view name);
 
-	std::tuple<iterator, bool> emplace(const std::string &name);
+	std::tuple<iterator, bool> emplace(std::string_view name);
 
 	bool isValid();
 	void validateLinks() const;
@@ -248,8 +248,8 @@ class Datablock
 	void setValidator(Validator *v);
 
 	// this one only looks up a Category, returns nullptr if it does not exist
-	const Category *get(const std::string &name) const;
-	Category *get(const std::string &name);
+	const Category *get(std::string_view name) const;
+	Category *get(std::string_view name);
 
 	void getTagOrder(std::vector<std::string> &tags) const;
 	void write(std::ostream &os, const std::vector<std::string> &order);
@@ -350,14 +350,14 @@ namespace detail
 	  private:
 		friend class ::cif::Row;
 
-		ItemReference(const char *name, size_t column, Row &row)
+		ItemReference(std::string_view name, size_t column, Row &row)
 			: mName(name)
 			, mColumn(column)
 			, mRow(row)
 		{
 		}
 
-		ItemReference(const char *name, size_t column, const Row &row)
+		ItemReference(std::string_view name, size_t column, const Row &row)
 			: mName(name)
 			, mColumn(column)
 			, mRow(const_cast<Row &>(row))
@@ -365,7 +365,7 @@ namespace detail
 		{
 		}
 
-		const char *mName;
+		std::string_view mName;
 		size_t mColumn;
 		Row &mRow;
 		bool mConst = false;
@@ -746,16 +746,16 @@ class Row
 		return detail::ItemReference(itemTag, column, *this);
 	}
 
-	const detail::ItemReference operator[](const std::string &itemTag) const
+	const detail::ItemReference operator[](std::string_view itemTag) const
 	{
-		size_t column = ColumnForItemTag(itemTag.c_str());
-		return detail::ItemReference(itemTag.c_str(), column, *this);
+		size_t column = ColumnForItemTag(itemTag);
+		return detail::ItemReference(itemTag, column, *this);
 	}
 
-	detail::ItemReference operator[](const std::string &itemTag)
+	detail::ItemReference operator[](std::string_view itemTag)
 	{
-		size_t column = ColumnForItemTag(itemTag.c_str());
-		return detail::ItemReference(itemTag.c_str(), column, *this);
+		size_t column = ColumnForItemTag(itemTag);
+		return detail::ItemReference(itemTag, column, *this);
 	}
 
 	template <typename... Ts, size_t N>
@@ -776,7 +776,7 @@ class Row
 	}
 
 	void assign(const std::vector<Item> &values);
-	void assign(const std::string &name, const std::string &value, bool updateLinked);
+	void assign(std::string_view name, const std::string &value, bool updateLinked);
 
 	bool operator==(const Row &rhs) const
 	{
@@ -803,7 +803,7 @@ class Row
 
 	static void swap(size_t column, ItemRow *a, ItemRow *b);
 
-	size_t ColumnForItemTag(const char *itemTag) const;
+	size_t ColumnForItemTag(std::string_view itemTag) const;
 
 	mutable ItemRow *mData;
 	uint32_t mLineNr = 0;
@@ -2077,8 +2077,8 @@ class Category
 	void getTagOrder(std::vector<std::string> &tags) const;
 
 	// return index for known column, or the next available column index
-	size_t getColumnIndex(const std::string &name) const;
-	bool hasColumn(const std::string &name) const;
+	size_t getColumnIndex(std::string_view name) const;
+	bool hasColumn(std::string_view name) const;
 	const std::string &getColumnName(size_t columnIndex) const;
 	std::vector<std::string> getColumnNames() const;
 
@@ -2119,7 +2119,7 @@ class Category
 	void write(std::ostream &os, const std::vector<std::string> &order);
 	void write(std::ostream &os, const std::vector<size_t> &order, bool includeEmptyColumns);
 
-	size_t addColumn(const std::string &name);
+	size_t addColumn(std::string_view name);
 
 	Datablock &mDb;
 	std::string mName;
@@ -2183,8 +2183,8 @@ class File
 
 	void append(Datablock *e);
 
-	Datablock *get(const std::string &name) const;
-	Datablock &operator[](const std::string &name);
+	Datablock *get(std::string_view name) const;
+	Datablock &operator[](std::string_view name);
 
 	struct iterator
 	{

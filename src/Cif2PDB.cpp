@@ -811,7 +811,7 @@ typedef RM<3> RM3;
 template<int N>
 std::ostream& operator<<(std::ostream& os, RM<N>&& rm)
 {
-	os << "REMARK " << std::setw(3) << std::right << N << " " << rm.mDesc << (rm.mWidth > 0 ? std::left : std::right) << std::fixed << std::setw(abs(rm.mWidth)) << std::setprecision(rm.mPrecision);
+	os << "REMARK " << std::setw(3) << std::right << N << " " << rm.mDesc << (rm.mWidth > 0 ? std::left : std::right) << std::fixed << std::setw(std::abs(rm.mWidth)) << std::setprecision(rm.mPrecision);
 	return os;
 }
 
@@ -824,7 +824,7 @@ struct SEP
 
 std::ostream& operator<<(std::ostream& os, SEP&& sep)
 {
-	os << sep.mText << (sep.mWidth > 0 ? std::left : std::right) << std::fixed << std::setw(abs(sep.mWidth)) << std::setprecision(sep.mPrecision);
+	os << sep.mText << (sep.mWidth > 0 ? std::left : std::right) << std::fixed << std::setw(std::abs(sep.mWidth)) << std::setprecision(sep.mPrecision);
 	return os;
 }
 
