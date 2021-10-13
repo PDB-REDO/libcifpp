@@ -87,14 +87,14 @@ endif()
 
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
 if(EXISTS "${CCP4}")
-	if(RECREATE_SYMOP_DATA AND NOT EXISTS "${CLIBD}/syminfo.lib")
+	if(CIFPP_RECREATE_SYMOP_DATA AND NOT EXISTS "${CLIBD}/syminfo.lib")
 		message(WARNING "Symop data table recreation requested, but file syminfo.lib was not found in ${CLIBD}")
-		set(RECREATE_SYMOP_DATA OFF)
+		set(CIFPP_RECREATE_SYMOP_DATA OFF)
 	else()
-		option(RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
+		option(CIFPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 	endif()
 else()
-	set(RECREATE_SYMOP_DATA OFF)
+	set(CIFPP_RECREATE_SYMOP_DATA OFF)
 	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
 
@@ -154,16 +154,16 @@ else()
 	find_program(MRC mrc)
 
 	if(MRC)
-		option(USE_RSRC "Use mrc to create resources" ON)
+		option(CIFPP_USE_RSRC "Use mrc to create resources" ON)
 	else()
 		message("Using resources not possible since mrc was not found")
 	endif()
 
-	if(USE_RSRC STREQUAL "ON")
-		set(USE_RSRC 1)
+	if(CIFPP_USE_RSRC STREQUAL "ON")
+		set(CIFPP_USE_RSRC 1)
 
 		message("Using resources compiled with ${MRC}")
-		add_compile_definitions(USE_RSRC)
+		add_compile_definitions(CIFPP_USE_RSRC)
 	endif()
 endif()
 
@@ -204,7 +204,7 @@ string(TIMESTAMP BUILD_DATE_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
 configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
 
 # SymOp data table
-if(RECREATE_SYMOP_DATA)
+if(CIFPP_RECREATE_SYMOP_DATA)
 	# The tool to create the table
 
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
@@ -287,8 +287,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
-option(DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
-if(DOWNLOAD_CCD)
+option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
+if(CIFPP_DOWNLOAD_CCD)
 	# download the components.cif file from CCD
 	set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
 
@@ -316,13 +316,9 @@ if(DOWNLOAD_CCD)
 endif()
 
 if(UNIX)
-	option(INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
-	if(INSTALL_UPDATE_SCRIPT)
-		set(CIFPP_CACHE_DIR "/var/cache/libcifpp")
-		if(NOT "${CIFPP_CACHE_DIR}" STREQUAL "OFF")
-			target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
-		endif()
-	endif()
+	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
+	set(CIFPP_CACHE_DIR "/var/cache/libcifpp" CACHE STRING "The cache directory to use")
+	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 endif()
 
 generate_export_header(cifpp
@@ -332,7 +328,9 @@ set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
 set(SHARE_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/libcifpp)
 
-target_compile_definitions(cifpp PUBLIC DATA_DIR="${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}")
+set(CIFPP_DATA_DIR "${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}" CACHE STRING "The directory containing the provided data files")
+
+target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
 
 # Install rules
 
@@ -416,7 +414,7 @@ option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
 
-	if(USE_RSRC)
+	if(CIFPP_USE_RSRC)
 		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj
 			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic ${COFF_SPEC}
 		)
@@ -463,7 +461,7 @@ message("Will install in ${CMAKE_INSTALL_PREFIX}")
 
 # Optionally install the update scripts for CCD and dictionary files
 
-if(INSTALL_UPDATE_SCRIPT)
+if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	set(CIFPP_CRON_DIR "$ENV{DESTDIR}/etc/cron.weekly")
 
 	configure_file(${CMAKE_SOURCE_DIR}/tools/update-libcifpp-data.in update-libcifpp-data @ONLY)
