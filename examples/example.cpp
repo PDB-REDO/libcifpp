@@ -22,9 +22,7 @@ int main()
 		<< "residues with an OXT are:" << std::endl;
 	
 	for (const auto& [asym, comp, seqnr]: db.find<std::string,std::string,int>(
-			cif::Key("label_atom_id") == "OXT",
-			{ "label_asym_id", "label_comp_id", "label_seq_id" }
-		))
+			cif::Key("label_atom_id") == "OXT", "label_asym_id", "label_comp_id", "label_seq_id"))
 	{
 		std::cout << asym << ' ' << comp << ' ' << seqnr << std::endl;
 	}
