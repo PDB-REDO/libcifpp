@@ -364,7 +364,7 @@ install(
 install(FILES
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic
-	${PROJECT_SOURCE_DIR}/data/components.cif
+	${COMPONENTS_CIF}
 	DESTINATION ${SHARE_INSTALL_DIR}
 )
 
