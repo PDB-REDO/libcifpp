@@ -457,7 +457,7 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 	{
 		ccd = cif::loadResource("components.cif");
 		if (not ccd)
-			throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-dictionary-script to fetch the data.");
+			throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data.");
 	}
 	else
 		ccd.reset(new std::ifstream(mCompoundsFile));
@@ -484,7 +484,7 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 		{
 			ccd = cif::loadResource("components.cif");
 			if (not ccd)
-				throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-dictionary-script to fetch the data.");
+				throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data.");
 		}
 		else
 			ccd.reset(new std::ifstream(mCompoundsFile));

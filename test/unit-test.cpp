@@ -24,7 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define BOOST_TEST_MODULE LibCifPP_Test
+#define BOOST_TEST_ALTERNATIVE_INIT_API
+// #define BOOST_TEST_MODULE LibCifPP_Test
 #include <boost/test/included/unit_test.hpp>
 
 #include <stdexcept>
@@ -53,23 +54,27 @@ cif::File operator""_cf(const char* text, size_t length)
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(init)
+bool init_unit_test()
 {
-	// not a test, just initialize test dir
+    cif::VERBOSE = 1;
 
+	// not a test, just initialize test dir
 	if (boost::unit_test::framework::master_test_suite().argc == 2)
 		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
+
+	// do this now, avoids the need for installing
+	cif::addFileResource("mmcif_pdbx_v50.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
+
+	// initialize CCD location
+	cif::addFileResource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
+
+	return true;
 }
 
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(ut1)
 {
-    cif::VERBOSE = 1;
-
-	// do this now, avoids the need for installing
-	cif::addFileResource("mmcif_pdbx_v50.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
-
     // using namespace mmcif;
 
     auto f = R"(data_TEST
@@ -1526,8 +1531,6 @@ _cat_3.num
 BOOST_AUTO_TEST_CASE(bondmap_1)
 {
     cif::VERBOSE = 2;
-
-	cif::addFileResource("components.cif", gTestDir / ".." / "data" / "components.cif");
 
 	// sections taken from CCD compounds.cif
 	auto components = R"(
