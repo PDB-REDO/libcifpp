@@ -1532,8 +1532,6 @@ BOOST_AUTO_TEST_CASE(bondmap_1)
 {
     cif::VERBOSE = 2;
 
-	cif::addFileResource("components.cif", gTestDir / ".." / "data" / "components.cif");
-
 	// sections taken from CCD compounds.cif
 	auto components = R"(
 data_ASN

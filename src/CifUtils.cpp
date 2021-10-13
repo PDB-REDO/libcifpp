@@ -1243,6 +1243,9 @@ void addDataDirectory(std::filesystem::path dataDir)
 
 void addFileResource(const std::string &name, std::filesystem::path dataFile)
 {
+	if (not fs::exists(dataFile))
+		throw std::runtime_error("Attempt to add a file resource for " + name + " that does not exist: " + dataFile.string());
+
 	gLocalResources[name] = dataFile;
 }
 
