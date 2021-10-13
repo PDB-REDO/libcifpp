@@ -60,8 +60,10 @@ BOOST_AUTO_TEST_CASE(init)
 		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
 
 	// initialize CCD location
-	if (std::filesystem::exists(gTestDir / ".."/"data"/"components.cif"))
-		cif::addFileResource("components.cif", gTestDir / ".."/"data"/"components.cif");
+	if (std::filesystem::exists(gTestDir / ".." / "data" / "ccd-subset.cif"))
+		cif::addFileResource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
+
+	mmcif::CompoundFactory::instance().pushDictionary(gTestDir / "HEM.cif");
 }
 
 // --------------------------------------------------------------------

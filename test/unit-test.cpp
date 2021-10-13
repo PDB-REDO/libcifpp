@@ -56,9 +56,12 @@ cif::File operator""_cf(const char* text, size_t length)
 BOOST_AUTO_TEST_CASE(init)
 {
 	// not a test, just initialize test dir
-
 	if (boost::unit_test::framework::master_test_suite().argc == 2)
 		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
+
+	// initialize CCD location
+	if (std::filesystem::exists(gTestDir / ".." / "data" / "ccd-subset.cif"))
+		cif::addFileResource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
 }
 
 // --------------------------------------------------------------------
