@@ -287,16 +287,17 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
 endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
-# download the components.cif file from CCD
-set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
+option(DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
+if(DOWNLOAD_CCD)
+	# download the components.cif file from CCD
+	set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
 
-if (NOT EXISTS ${COMPONENTS_CIF})
+	if (NOT EXISTS ${COMPONENTS_CIF})
 
-	if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
-		file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
-	endif()
+		if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
+			file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
+		endif()
 
-	# if(${CMAKE_VERSION} VERSION_LESS "3.19.0")
 		find_program(GUNZIP gunzip)
 
 		if(GUNZIP)
@@ -309,16 +310,10 @@ if (NOT EXISTS ${COMPONENTS_CIF})
 			file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
 				SHOW_PROGRESS)
 		endif()
-	# else()
-	# 	file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
-	# 		SHOW_PROGRESS)
-	# 	file(ARCHIVE_EXTRACT INPUT ${COMPONENTS_CIF}.gz
-	# 		DESTINATION ${CMAKE_SOURCE_DIR}/data/
-	# 		VERBOSE)
-	# endif()
-endif()
+	endif()
 
-add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
+	add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
+endif()
 
 if(UNIX)
 	option(INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
@@ -471,9 +466,9 @@ message("Will install in ${CMAKE_INSTALL_PREFIX}")
 if(INSTALL_UPDATE_SCRIPT)
 	set(CIFPP_CRON_DIR "$ENV{DESTDIR}/etc/cron.weekly")
 
-	configure_file(${CMAKE_SOURCE_DIR}/tools/update-dictionary-script.in update-dictionary-script @ONLY)
+	configure_file(${CMAKE_SOURCE_DIR}/tools/update-libcifpp-data.in update-libcifpp-data @ONLY)
 	install(
-		FILES ${CMAKE_CURRENT_BINARY_DIR}/update-dictionary-script
+		FILES ${CMAKE_CURRENT_BINARY_DIR}/update-libcifpp-data
 		DESTINATION ${CIFPP_CRON_DIR}
 		PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
 	)
@@ -482,13 +477,14 @@ if(INSTALL_UPDATE_SCRIPT)
 	install(DIRECTORY DESTINATION "$ENV{DESTDIR}/etc/libcifpp/cache-update.d")
 
 	# a config to, to make it complete
-	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf [[# Uncomment the next line to enable automatic updates
+	if(NOT EXISTS "$ENV{DESTDIR}/etc/libcifpp.conf")
+		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf [[# Uncomment the next line to enable automatic updates
 # update=true
 ]])
-	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf DESTINATION "$ENV{DESTDIR}/etc")
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf DESTINATION "$ENV{DESTDIR}/etc")
+		install(CODE "message(\"A configuration file has been written to $ENV{DESTDIR}/etc/libcifpp.conf, please edit this file to enable automatic updates\")")
+	endif()
 
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
-
-	install(CODE "message(\"A configuration file has been written to $ENV{DESTDIR}/etc/libcifpp.conf, please edit this file to enable automatic updates\")")
 endif()
 

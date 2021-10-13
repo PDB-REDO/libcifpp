@@ -6,7 +6,7 @@ tools/symop-map-generator
 test/unit-test
 test/pdb2cif-test
 test/rename-compound-test
-tools/update-dictionary-script
+tools/update-libcifpp-data
 data/components.cif*
 CMakeSettings.json
 msvc/
