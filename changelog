@@ -1,3 +1,10 @@
+Version 2.0.2
+- Added configuration flag to disable downloading CCD data during build
+  Note that there are now two flags for CCD data:
+  DOWNLOAD_CCD to enable downloading during build
+  INSTALL_UPDATE_SCRIPT to install an update mechanism for this file
+- Updated unit tests to work even if no CCD data is available
+
 Version 2.0.1
 - Fixed the generator for the symmetry operator table
 
