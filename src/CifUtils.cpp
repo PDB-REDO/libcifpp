@@ -131,6 +131,14 @@ bool iequals(const std::string &a, const std::string &b)
 	return result;
 }
 
+bool iequals(std::string_view a, std::string_view b)
+{
+	bool result = a.length() == b.length();
+	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end() and bi != b.end(); ++ai, ++bi)
+		result = tolower(*ai) == tolower(*bi);
+	return result;
+}
+
 bool iequals(const char *a, const char *b)
 {
 	bool result = true;
@@ -141,6 +149,25 @@ bool iequals(const char *a, const char *b)
 }
 
 int icompare(const std::string &a, const std::string &b)
+{
+	int d = 0;
+	auto ai = a.begin(), bi = b.begin();
+
+	for (; d == 0 and ai != a.end() and bi != b.end(); ++ai, ++bi)
+		d = tolower(*ai) - tolower(*bi);
+
+	if (d == 0)
+	{
+		if (ai != a.end())
+			d = 1;
+		else if (bi != b.end())
+			d = -1;
+	}
+
+	return d;
+}
+
+int icompare(std::string_view a, std::string_view b)
 {
 	int d = 0;
 	auto ai = a.begin(), bi = b.begin();
@@ -193,7 +220,7 @@ std::string toLowerCopy(const std::string &s)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string, std::string> splitTagName(const std::string &tag)
+std::tuple<std::string, std::string> splitTagName(std::string_view tag)
 {
 	if (tag.empty())
 		throw std::runtime_error("empty tag");

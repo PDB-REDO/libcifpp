@@ -67,8 +67,10 @@ std::string get_version_nr();
 // some basic utilities: Since we're using ASCII input only, we define for optimisation
 // our own case conversion routines.
 
-bool iequals(const std::string &a, const std::string &b);
-int icompare(const std::string &a, const std::string &b);
+// bool iequals(const std::string &a, const std::string &b);
+bool iequals(std::string_view a, std::string_view b);
+// int icompare(const std::string &a, const std::string &b);
+int icompare(std::string_view a, std::string_view b);
 
 bool iequals(const char *a, const char *b);
 int icompare(const char *a, const char *b);
@@ -100,7 +102,7 @@ inline char tolower(int ch)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string, std::string> splitTagName(const std::string &tag);
+std::tuple<std::string, std::string> splitTagName(std::string_view tag);
 
 // --------------------------------------------------------------------
 // generate a cif name, mainly used to generate asym_id's

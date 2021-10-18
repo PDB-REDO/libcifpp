@@ -94,10 +94,6 @@ inline bool isUnquotedString(const char* s)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string,std::string> splitTagName(const std::string& tag);
-
-// --------------------------------------------------------------------
-
 using DatablockIndex = std::map<std::string,std::size_t>;
 
 // --------------------------------------------------------------------

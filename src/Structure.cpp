@@ -1952,6 +1952,58 @@ Atom Structure::getAtomByLabel(const std::string &atomID, const std::string &asy
 	throw std::out_of_range("Could not find atom with specified label");
 }
 
+Atom Structure::getAtomByPosition(Point p) const
+{
+	double distance = std::numeric_limits<double>::max();
+	size_t index = std::numeric_limits<size_t>::max();
+
+	for (size_t i = 0; i < mAtoms.size(); ++i)
+	{
+		auto &a = mAtoms.at(i);
+
+		auto d = Distance(a.location(), p);
+		if (d < distance)
+		{
+			distance = d;
+			index = i;
+		}
+	}
+
+	if (index < mAtoms.size())
+		return mAtoms.at(index);
+
+	return {};
+}
+
+Atom Structure::getAtomByPositionAndType(Point p, std::string_view type, std::string_view res_type) const
+{
+	double distance = std::numeric_limits<double>::max();
+	size_t index = std::numeric_limits<size_t>::max();
+
+	for (size_t i = 0; i < mAtoms.size(); ++i)
+	{
+		auto &a = mAtoms.at(i);
+
+		if (a.labelCompID() != res_type)
+			continue;
+		
+		if (a.labelAtomID() != type)
+			continue;
+
+		auto d = Distance(a.location(), p);
+		if (d < distance)
+		{
+			distance = d;
+			index = i;
+		}
+	}
+
+	if (index < mAtoms.size())
+		return mAtoms.at(index);
+
+	return {};
+}
+
 const Residue &Structure::getResidue(const std::string &asymID, const std::string &compID, int seqID) const
 {
 	for (auto &poly : mPolymers)
@@ -1988,12 +2040,25 @@ const Residue &Structure::getResidue(const std::string &asymID, const std::strin
 	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
 }
 
+const Residue &Structure::getResidue(const std::string &asymID) const
+{
+	for (auto &res : mNonPolymers)
+	{
+		if (res.asymID() != asymID)
+			continue;
+
+		return res;
+	}
+
+	throw std::out_of_range("Could not find residue " + asymID);
+}
+
 File &Structure::getFile() const
 {
 	return mFile;
 }
 
-cif::Category &Structure::category(const char *name) const
+cif::Category &Structure::category(std::string_view name) const
 {
 	auto &db = datablock();
 	return db[name];
@@ -2411,8 +2476,15 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 		if (r.size() != 1)
 			continue;
 
-		if (a1 != a2)
-			r.front()["label_atom_id"] = a2;
+		if (a2.empty() or a2 == ".")
+			atomSites.erase(cif::Key("id") == i->id());
+		else if (a1 != a2)
+		{
+			auto ra = r.front();
+			ra["label_atom_id"] = a2;
+			ra["auth_atom_id"] = a2;
+			ra["type_symbol"] = AtomTypeTraits(compound->getAtomByID(a2).typeSymbol).symbol();
+		}
 	}
 
 	for (auto a : atoms)

@@ -461,8 +461,17 @@ class Structure
 	Atom getAtomByLabel(const std::string &atomID, const std::string &asymID,
 		const std::string &compID, int seqID, const std::string &altID = "");
 
+	/// \brief Return the atom closest to point \a p
+	Atom getAtomByPosition(Point p) const;
+
+	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
+	Atom getAtomByPositionAndType(Point p, std::string_view type, std::string_view res_type) const;
+
 	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
 	const Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID = 0) const;
+
+	/// \brief Get a the single residue for an asym with id \a asymID
+	const Residue &getResidue(const std::string &asymID) const;
 
 	// map between auth and label locations
 
@@ -519,14 +528,15 @@ class Structure
 
 	void cleanupEmptyCategories();
 
+	/// \brief Direct access to underlying data
+	cif::Category &category(std::string_view name) const;
+	cif::Datablock &datablock() const;
+
   private:
 	friend Polymer;
 	friend Residue;
 	// friend residue_view;
 	// friend residue_iterator;
-
-	cif::Category &category(const char *name) const;
-	cif::Datablock &datablock() const;
 
 	std::string insertCompound(const std::string &compoundID, bool isEntity);
 

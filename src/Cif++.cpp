@@ -387,7 +387,7 @@ std::string Datablock::firstItem(const std::string &tag) const
 	return result;
 }
 
-auto Datablock::emplace(const std::string &name) -> std::tuple<iterator, bool>
+auto Datablock::emplace(std::string_view name) -> std::tuple<iterator, bool>
 {
 	bool isNew = false;
 	iterator i = find_if(begin(), end(), [name](const Category &cat) -> bool
@@ -396,20 +396,20 @@ auto Datablock::emplace(const std::string &name) -> std::tuple<iterator, bool>
 	if (i == end())
 	{
 		isNew = true;
-		i = mCategories.emplace(end(), *this, name, mValidator);
+		i = mCategories.emplace(end(), *this, std::string(name), mValidator);
 	}
 
 	return std::make_tuple(i, isNew);
 }
 
-Category &Datablock::operator[](const std::string &name)
+Category &Datablock::operator[](std::string_view name)
 {
 	iterator i;
 	std::tie(i, std::ignore) = emplace(name);
 	return *i;
 }
 
-Category *Datablock::get(const std::string &name)
+Category *Datablock::get(std::string_view name)
 {
 	auto i = find_if(begin(), end(), [name](const Category &cat) -> bool
 		{ return iequals(cat.name(), name); });
@@ -417,7 +417,7 @@ Category *Datablock::get(const std::string &name)
 	return i == end() ? nullptr : &*i;
 }
 
-const Category *Datablock::get(const std::string &name) const
+const Category *Datablock::get(std::string_view name) const
 {
 	auto i = find_if(begin(), end(), [name](const Category &cat) -> bool
 		{ return iequals(cat.name(), name); });
@@ -1373,12 +1373,12 @@ void Category::setValidator(Validator *v)
 		mCatValidator = nullptr;
 }
 
-bool Category::hasColumn(const std::string &name) const
+bool Category::hasColumn(std::string_view name) const
 {
 	return getColumnIndex(name) < mColumns.size();
 }
 
-size_t Category::getColumnIndex(const std::string &name) const
+size_t Category::getColumnIndex(std::string_view name) const
 {
 	size_t result;
 
@@ -1392,7 +1392,7 @@ size_t Category::getColumnIndex(const std::string &name) const
 	{
 		auto iv = mCatValidator->getValidatorForItem(name);
 		if (iv == nullptr)
-			std::cerr << "Invalid name used '" + name + "' is not a known column in " + mName << std::endl;
+			std::cerr << "Invalid name used '" << name << "' is not a known column in " + mName << std::endl;
 	}
 
 	return result;
@@ -1411,8 +1411,10 @@ std::vector<std::string> Category::getColumnNames() const
 	return result;
 }
 
-size_t Category::addColumn(const std::string &name)
+size_t Category::addColumn(std::string_view name)
 {
+	using namespace std::literals;
+
 	size_t result = getColumnIndex(name);
 
 	if (result == mColumns.size())
@@ -1423,10 +1425,10 @@ size_t Category::addColumn(const std::string &name)
 		{
 			itemValidator = mCatValidator->getValidatorForItem(name);
 			if (itemValidator == nullptr)
-				mValidator->reportError("tag " + name + " not allowed in Category " + mName, false);
+				mValidator->reportError("tag " + std::string(name) + " not allowed in Category " + mName, false);
 		}
 
-		mColumns.push_back({name, itemValidator});
+		mColumns.push_back(ItemColumn{std::string(name), itemValidator});
 	}
 
 	return result;
@@ -2909,7 +2911,7 @@ void Row::assign(const Item &value, bool skipUpdateLinked)
 	assign(value.name(), value.value(), skipUpdateLinked);
 }
 
-void Row::assign(const std::string &name, const std::string &value, bool skipUpdateLinked)
+void Row::assign(std::string_view name, const std::string &value, bool skipUpdateLinked)
 {
 	try
 	{
@@ -3309,7 +3311,7 @@ void Row::swap(size_t cix, ItemRow *a, ItemRow *b)
 	}
 }
 
-size_t Row::ColumnForItemTag(const char *itemTag) const
+size_t Row::ColumnForItemTag(std::string_view itemTag) const
 {
 	size_t result = 0;
 	if (mData != nullptr)
@@ -3549,7 +3551,7 @@ void File::write(std::ostream &os, const std::vector<std::string> &order)
 	}
 }
 
-Datablock *File::get(const std::string &name) const
+Datablock *File::get(std::string_view name) const
 {
 	const Datablock *result = mHead;
 	while (result != nullptr and not iequals(result->mName, name))
@@ -3557,13 +3559,15 @@ Datablock *File::get(const std::string &name) const
 	return const_cast<Datablock *>(result);
 }
 
-Datablock &File::operator[](const std::string &name)
+Datablock &File::operator[](std::string_view name)
 {
+	using namespace std::literals;
+
 	Datablock *result = mHead;
 	while (result != nullptr and not iequals(result->mName, name))
 		result = result->mNext;
 	if (result == nullptr)
-		throw std::runtime_error("Datablock " + name + " does not exist");
+		throw std::runtime_error("Datablock " + std::string(name) + " does not exist");
 	return *result;
 }
 
