@@ -1790,6 +1790,33 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 
 	auto &atomCat = (*db)["atom_site"];
 
+	loadAtomsForModel(options);
+
+	// Check to see if we should actually load another model?
+	if (mAtoms.empty() and mModelNr == 1)
+	{
+		std::optional<size_t> model_nr;
+		cif::tie(model_nr) = atomCat.front().get("pdbx_PDB_model_num");
+		if (model_nr and *model_nr != mModelNr)
+		{
+			if (cif::VERBOSE)
+				std::cerr << "No atoms loaded for model 1, trying model " << *model_nr << std::endl;
+			mModelNr = *model_nr;
+			loadAtomsForModel(options);
+		}
+	}
+
+	if (mAtoms.empty())
+		throw std::runtime_error("No atoms loaded, refuse to continue");
+
+	loadData();
+}
+
+void Structure::loadAtomsForModel(StructureOpenOptions options)
+{
+	auto db = mFile.impl().mDb;
+	auto &atomCat = (*db)["atom_site"];
+
 	for (auto &a : atomCat)
 	{
 		std::string id, type_symbol;
@@ -1805,9 +1832,8 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 
 		mAtoms.emplace_back(new AtomImpl(*db, id, a));
 	}
-
-	loadData();
 }
+
 
 Structure::Structure(const Structure &s)
 	: mFile(s.mFile)
