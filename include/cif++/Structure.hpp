@@ -533,6 +533,8 @@ class Structure
 	void loadData();
 	void updateAtomIndex();
 
+	void loadAtomsForModel(StructureOpenOptions options);
+
 	File &mFile;
 	size_t mModelNr;
 	AtomView mAtoms;

@@ -1,3 +1,7 @@
+Version 2.0.3
+- Fixed reading mmCIF files where model numbers are used and
+  model number 1 is missing.
+
 Version 2.0.2
 - Added configuration flag to disable downloading CCD data during build
   Note that there are now two flags for CCD data:
