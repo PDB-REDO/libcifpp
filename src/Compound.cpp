@@ -636,17 +636,18 @@ void CompoundFactory::init(bool useThreadLocalInstanceOnly)
 CompoundFactory::CompoundFactory()
 	: mImpl(nullptr)
 {
+	auto ccd = cif::loadResource("components.cif");
+	if (ccd)
+		mImpl.reset(new CCDCompoundFactoryImpl(mImpl));
+	else if (cif::VERBOSE)
+		std::cerr << "CCD components.cif file was not found" << std::endl;
+
 	const char *clibd_mon = getenv("CLIBD_MON");
 	if (clibd_mon != nullptr and fs::is_directory(clibd_mon))
 		mImpl.reset(new CCP4CompoundFactoryImpl(clibd_mon));
 	else if (cif::VERBOSE)
 		std::cerr << "CCP4 monomers library not found, CLIBD_MON is not defined" << std::endl;
 
-	auto ccd = cif::loadResource("components.cif");
-	if (ccd)
-		mImpl.reset(new CCDCompoundFactoryImpl(mImpl));
-	else if (cif::VERBOSE)
-		std::cerr << "CCD components.cif file was not found" << std::endl;
 }
 
 CompoundFactory::~CompoundFactory()
