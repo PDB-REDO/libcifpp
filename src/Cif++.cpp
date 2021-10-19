@@ -33,6 +33,7 @@
 #include <stack>
 #include <tuple>
 #include <unordered_map>
+#include <shared_mutex>
 
 #include <filesystem>
 
@@ -351,7 +352,7 @@ namespace detail
 // --------------------------------------------------------------------
 // Datablock implementation
 
-Datablock::Datablock(const std::string &name)
+Datablock::Datablock(const std::string_view name)
 	: mName(name)
 	, mValidator(nullptr)
 	, mNext(nullptr)
@@ -363,43 +364,57 @@ Datablock::~Datablock()
 	delete mNext;
 }
 
-std::string Datablock::firstItem(const std::string &tag) const
+auto Datablock::emplace(std::string_view name) -> std::tuple<iterator, bool>
 {
-	std::string result;
+	// LRU code
 
-	std::string catName, itemName;
-	std::tie(catName, itemName) = splitTagName(tag);
+	std::shared_lock lock(mLock);
 
-	for (auto &cat : mCategories)
+	bool isNew = true;
+
+	auto i = begin();
+	while (i != end())
 	{
-		if (iequals(cat.name(), catName))
+		if (iequals(name, i->name()))
 		{
-			for (auto row : cat)
+			isNew = false;
+
+			if (i != begin())
 			{
-				result = row[itemName].as<std::string>();
-				break;
+				auto n = std::next(i);
+				mCategories.splice(begin(), mCategories, i, n);
 			}
 
 			break;
 		}
+
+		++i;
 	}
 
-	return result;
-}
+	if (isNew)
+		mCategories.emplace(begin(), *this, std::string(name), mValidator);
 
-auto Datablock::emplace(std::string_view name) -> std::tuple<iterator, bool>
-{
-	bool isNew = false;
-	iterator i = find_if(begin(), end(), [name](const Category &cat) -> bool
-		{ return iequals(cat.name(), name); });
+	return std::make_tuple(begin(), isNew);
 
-	if (i == end())
-	{
-		isNew = true;
-		i = mCategories.emplace(end(), *this, std::string(name), mValidator);
-	}
 
-	return std::make_tuple(i, isNew);
+	// bool isNew = false;
+
+	// iterator i = find_if(begin(), end(), [name](const Category &cat) -> bool
+	// 	{ return iequals(cat.name(), name); });
+
+	// if (i == end())
+	// {
+	// 	isNew = true;
+	// 	i = mCategories.emplace(begin(), *this, std::string(name), mValidator);
+	// }
+	// else if (i != begin())
+	// {
+	// 	auto n = std::next(i);
+	// 	mCategories.splice(begin(), mCategories, i, n);
+	// 	i = mCategories.begin();
+	// }
+
+	// return std::make_tuple(i, isNew);
 }
 
 Category &Datablock::operator[](std::string_view name)
@@ -411,14 +426,13 @@ Category &Datablock::operator[](std::string_view name)
 
 Category *Datablock::get(std::string_view name)
 {
-	auto i = find_if(begin(), end(), [name](const Category &cat) -> bool
-		{ return iequals(cat.name(), name); });
-
-	return i == end() ? nullptr : &*i;
+	return &operator[](name);
 }
 
 const Category *Datablock::get(std::string_view name) const
 {
+	std::shared_lock lock(mLock);
+
 	auto i = find_if(begin(), end(), [name](const Category &cat) -> bool
 		{ return iequals(cat.name(), name); });
 
@@ -427,6 +441,8 @@ const Category *Datablock::get(std::string_view name) const
 
 bool Datablock::isValid()
 {
+	std::shared_lock lock(mLock);
+
 	if (mValidator == nullptr)
 		throw std::runtime_error("Validator not specified");
 
@@ -438,20 +454,26 @@ bool Datablock::isValid()
 
 void Datablock::validateLinks() const
 {
+	std::shared_lock lock(mLock);
+
 	for (auto &cat : *this)
 		cat.validateLinks();
 }
 
 void Datablock::setValidator(Validator *v)
 {
+	std::shared_lock lock(mLock);
+
 	mValidator = v;
 
 	for (auto &cat : *this)
 		cat.setValidator(v);
 }
 
-void Datablock::add_software(const std::string &name, const std::string &classification, const std::string &versionNr, const std::string &versionDate)
+void Datablock::add_software(const std::string_view name, const std::string &classification, const std::string &versionNr, const std::string &versionDate)
 {
+	std::shared_lock lock(mLock);
+
 	Category &cat = operator[]("software");
 	auto ordNr = cat.size() + 1;
 	// TODO: should we check this ordinal number???
@@ -465,12 +487,16 @@ void Datablock::add_software(const std::string &name, const std::string &classif
 
 void Datablock::getTagOrder(std::vector<std::string> &tags) const
 {
+	std::shared_lock lock(mLock);
+
 	for (auto &cat : *this)
 		cat.getTagOrder(tags);
 }
 
 void Datablock::write(std::ostream &os)
 {
+	std::shared_lock lock(mLock);
+
 	os << "data_" << mName << std::endl
 	   << "# " << std::endl;
 
@@ -505,6 +531,8 @@ void Datablock::write(std::ostream &os)
 
 void Datablock::write(std::ostream &os, const std::vector<std::string> &order)
 {
+	std::shared_lock lock(mLock);
+
 	os << "data_" << mName << std::endl
 	   << "# " << std::endl;
 
@@ -580,6 +608,9 @@ void Datablock::write(std::ostream &os, const std::vector<std::string> &order)
 
 bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 {
+	std::shared_lock lockA(dbA.mLock);
+	std::shared_lock lockB(dbB.mLock);
+
 	std::vector<std::string> catA, catB;
 
 	for (auto &cat : dbA)
@@ -1311,7 +1342,7 @@ RowSet &RowSet::orderBy(std::initializer_list<std::string> items)
 
 // --------------------------------------------------------------------
 
-Category::Category(Datablock &db, const std::string &name, Validator *Validator)
+Category::Category(Datablock &db, const std::string_view name, Validator *Validator)
 	: mDb(db)
 	, mName(name)
 	, mValidator(Validator)

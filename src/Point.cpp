@@ -102,14 +102,14 @@ Point CenterPoints(std::vector<Point>& Points)
 	return t;
 }
 
-Point Centroid(std::vector<Point>& Points)
+Point Centroid(const std::vector<Point>& pts)
 {
 	Point result;
 	
-	for (Point& pt : Points)
+	for (auto &pt : pts)
 		result += pt;
 	
-	result /= static_cast<float>(Points.size());
+	result /= static_cast<float>(pts.size());
 	
 	return result;
 }

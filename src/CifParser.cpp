@@ -976,7 +976,8 @@ void DictParser::parseSaveFrame()
 	
 	if (isCategorySaveFrame)
 	{
-		std::string category = dict.firstItem("_category.id");
+		std::string category;
+		cif::tie(category) = dict["category"].front().get("id");
 
 		std::vector<std::string> keys;
 		for (auto k: dict["category_key"])
@@ -991,7 +992,8 @@ void DictParser::parseSaveFrame()
 	else
 	{
 		// if the type code is missing, this must be a pointer, just skip it
-		std::string typeCode = dict.firstItem("_item_type.code");
+		std::string typeCode;
+		cif::tie(typeCode) = dict["item_type"].front().get("code");
 
 		const ValidateType* tv = nullptr;
 		if (not (typeCode.empty() or typeCode == "?"))
@@ -1001,7 +1003,8 @@ void DictParser::parseSaveFrame()
 		for (auto e: dict["item_enumeration"])
 			ess.insert(e["value"].as<std::string>());
 		
-		std::string defaultValue = dict.firstItem("_item_default.value");
+		std::string defaultValue;
+		cif::tie(defaultValue) = dict["item_default"].front().get("value");
 		bool defaultIsNull = false;
 		if (defaultValue.empty())
 		{

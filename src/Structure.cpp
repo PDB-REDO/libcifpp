@@ -216,9 +216,9 @@ struct AtomImpl
 		, mLocation(i.mLocation)
 		, mRefcount(1)
 		, mRow(i.mRow)
+		, mCachedRefs(i.mCachedRefs)
 		, mCompound(i.mCompound)
 		, mRadius(i.mRadius)
-		, mCachedProperties(i.mCachedProperties)
 		, mSymmetryCopy(i.mSymmetryCopy)
 		, mClone(true)
 	// , mRTop(i.mRTop), mD(i.mD)
@@ -270,9 +270,9 @@ struct AtomImpl
 		, mLocation(loc)
 		, mRefcount(1)
 		, mRow(impl.mRow)
+		, mCachedRefs(impl.mCachedRefs)
 		, mCompound(impl.mCompound)
 		, mRadius(impl.mRadius)
-		, mCachedProperties(impl.mCachedProperties)
 		, mSymmetryCopy(true)
 		, mSymmetryOperator(sym_op)
 	{
@@ -338,9 +338,9 @@ struct AtomImpl
 
 		if (not mClone)
 		{
-			mRow["Cartn_x"] = p.getX();
-			mRow["Cartn_y"] = p.getY();
-			mRow["Cartn_z"] = p.getZ();
+			property("Cartn_x", std::to_string(p.getX()));
+			property("Cartn_y", std::to_string(p.getY()));
+			property("Cartn_z", std::to_string(p.getZ()));
 		}
 
 		//		boost::format kPosFmt("%.3f");
@@ -382,26 +382,31 @@ struct AtomImpl
 		return mRadius;
 	}
 
-	const std::string &property(const std::string &name) const
+	const std::string property(const std::string_view name) const
 	{
-		static std::string kEmptyString;
-
-		auto i = mCachedProperties.find(name);
-		if (i == mCachedProperties.end())
+		for (auto &&[tag, ref] : mCachedRefs)
 		{
-			auto v = mRow[name];
-			if (v.empty())
-				return kEmptyString;
-
-			return mCachedProperties[name] = v.as<std::string>();
+			if (tag == name)
+				return ref.as<std::string>();
 		}
-		else
-			return i->second;
+
+		mCachedRefs.emplace_back(name, mRow[name]);
+		return std::get<1>(mCachedRefs.back()).as<std::string>();
 	}
 
-	void property(const std::string &name, const std::string &value)
+	void property(const std::string_view name, const std::string &value)
 	{
-		mRow[name] = value;
+		for (auto &&[tag, ref] : mCachedRefs)
+		{
+			if (tag != name)
+				continue;
+			
+			ref = value;
+			return;
+		}
+
+		mCachedRefs.emplace_back(name, mRow[name]);
+		std::get<1>(mCachedRefs.back()) = value;
 	}
 
 	int compare(const AtomImpl &b) const
@@ -432,9 +437,11 @@ struct AtomImpl
 	Point mLocation;
 	int mRefcount;
 	cif::Row mRow;
+
+	mutable std::vector<std::tuple<std::string,cif::detail::ItemReference>> mCachedRefs;
+
 	mutable const Compound *mCompound = nullptr;
 	float mRadius = std::nanf("4");
-	mutable std::map<std::string, std::string> mCachedProperties;
 
 	bool mSymmetryCopy = false;
 	bool mClone = false;
@@ -533,25 +540,25 @@ const cif::Row Atom::getRowAniso() const
 }
 
 template <>
-std::string Atom::property<std::string>(const std::string &name) const
+std::string Atom::property<std::string>(const std::string_view name) const
 {
 	return impl()->property(name);
 }
 
 template <>
-int Atom::property<int>(const std::string &name) const
+int Atom::property<int>(const std::string_view name) const
 {
 	auto v = impl()->property(name);
 	return v.empty() ? 0 : stoi(v);
 }
 
 template <>
-float Atom::property<float>(const std::string &name) const
+float Atom::property<float>(const std::string_view name) const
 {
 	return stof(impl()->property(name));
 }
 
-void Atom::property(const std::string &name, const std::string &value)
+void Atom::property(const std::string_view name, const std::string &value)
 {
 	impl()->property(name, value);
 }
@@ -1736,7 +1743,7 @@ File::~File()
 	delete mImpl;
 }
 
-cif::Datablock& File::createDatablock(const std::string &name)
+cif::Datablock& File::createDatablock(const std::string_view name)
 {
 	auto db = new cif::Datablock(name);
 
@@ -1807,9 +1814,9 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 	}
 
 	if (mAtoms.empty())
-		throw std::runtime_error("No atoms loaded, refuse to continue");
-
-	loadData();
+		std::cerr << "Warning: no atoms loaded" << std::endl;
+	else
+		loadData();
 }
 
 void Structure::loadAtomsForModel(StructureOpenOptions options)

@@ -109,12 +109,12 @@ class Atom
 	float occupancy() const;
 
 	template <typename T>
-	T property(const std::string &name) const;
+	T property(const std::string_view name) const;
 
-	void property(const std::string &name, const std::string &value);
+	void property(const std::string_view name, const std::string &value);
 
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	void property(const std::string &name, const T &value)
+	void property(const std::string_view name, const T &value)
 	{
 		property(name, std::to_string(value));
 	}
@@ -404,7 +404,7 @@ class File : public std::enable_shared_from_this<File>
 	File(const File &) = delete;
 	File &operator=(const File &) = delete;
 
-	cif::Datablock& createDatablock(const std::string &name);
+	cif::Datablock& createDatablock(const std::string_view name);
 
 	void load(const std::filesystem::path &path);
 	void save(const std::filesystem::path &path);

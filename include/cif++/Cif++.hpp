@@ -36,6 +36,7 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <shared_mutex>
 
 #include "cif++/CifUtils.hpp"
 
@@ -142,13 +143,13 @@ class Item
 	Item() {}
 
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	Item(const std::string &name, const T &value)
+	Item(const std::string_view name, const T &value)
 		: mName(name)
 		, mValue(std::to_string(value))
 	{
 	}
 
-	Item(const std::string &name, const std::string &value)
+	Item(const std::string_view name, const std::string_view value)
 		: mName(name)
 		, mValue(value)
 	{
@@ -221,7 +222,7 @@ class Datablock
 	using iterator = CategoryList::iterator;
 	using const_iterator = CategoryList::const_iterator;
 
-	Datablock(const std::string &name);
+	Datablock(const std::string_view name);
 	~Datablock();
 
 	Datablock(const Datablock &) = delete;
@@ -229,8 +230,6 @@ class Datablock
 
 	std::string getName() const { return mName; }
 	void setName(const std::string &n) { mName = n; }
-
-	std::string firstItem(const std::string &tag) const;
 
 	iterator begin() { return mCategories.begin(); }
 	iterator end() { return mCategories.end(); }
@@ -256,7 +255,7 @@ class Datablock
 	void write(std::ostream &os);
 
 	// convenience function, add a line to the software category
-	void add_software(const std::string &name, const std::string &classification,
+	void add_software(const std::string_view name, const std::string &classification,
 		const std::string &versionNr, const std::string &versionDate);
 
 	friend bool operator==(const Datablock &lhs, const Datablock &rhs);
@@ -264,7 +263,8 @@ class Datablock
 	friend std::ostream& operator<<(std::ostream &os, const Datablock &data);
 
   private:
-	std::list<Category> mCategories;
+	CategoryList mCategories;		// LRU
+	mutable std::shared_mutex mLock;
 	std::string mName;
 	Validator *mValidator;
 	Datablock *mNext;
@@ -1816,12 +1816,12 @@ class Category
 	friend class Row;
 	friend class detail::ItemReference;
 
-	Category(Datablock &db, const std::string &name, Validator *Validator);
+	Category(Datablock &db, const std::string_view name, Validator *Validator);
 	Category(const Category &) = delete;
 	Category &operator=(const Category &) = delete;
 	~Category();
 
-	const std::string name() const { return mName; }
+	const std::string &name() const { return mName; }
 
 	using iterator = iterator_impl<Row>;
 	using const_iterator = iterator_impl<const Row>;
