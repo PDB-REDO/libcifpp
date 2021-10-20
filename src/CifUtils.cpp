@@ -123,14 +123,6 @@ const uint8_t kCharToLowerMap[256] =
 
 // --------------------------------------------------------------------
 
-bool iequals(const std::string &a, const std::string &b)
-{
-	bool result = a.length() == b.length();
-	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end() and bi != b.end(); ++ai, ++bi)
-		result = tolower(*ai) == tolower(*bi);
-	return result;
-}
-
 bool iequals(std::string_view a, std::string_view b)
 {
 	bool result = a.length() == b.length();
@@ -146,25 +138,6 @@ bool iequals(const char *a, const char *b)
 		result = tolower(*a) == tolower(*b);
 
 	return result and *a == *b;
-}
-
-int icompare(const std::string &a, const std::string &b)
-{
-	int d = 0;
-	auto ai = a.begin(), bi = b.begin();
-
-	for (; d == 0 and ai != a.end() and bi != b.end(); ++ai, ++bi)
-		d = tolower(*ai) - tolower(*bi);
-
-	if (d == 0)
-	{
-		if (ai != a.end())
-			d = 1;
-		else if (bi != b.end())
-			d = -1;
-	}
-
-	return d;
 }
 
 int icompare(std::string_view a, std::string_view b)

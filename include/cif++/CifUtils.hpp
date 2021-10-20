@@ -67,9 +67,7 @@ std::string get_version_nr();
 // some basic utilities: Since we're using ASCII input only, we define for optimisation
 // our own case conversion routines.
 
-// bool iequals(const std::string &a, const std::string &b);
 bool iequals(std::string_view a, std::string_view b);
-// int icompare(const std::string &a, const std::string &b);
 int icompare(std::string_view a, std::string_view b);
 
 bool iequals(const char *a, const char *b);

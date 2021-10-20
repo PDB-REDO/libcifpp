@@ -395,26 +395,6 @@ auto Datablock::emplace(std::string_view name) -> std::tuple<iterator, bool>
 		mCategories.emplace(begin(), *this, std::string(name), mValidator);
 
 	return std::make_tuple(begin(), isNew);
-
-
-	// bool isNew = false;
-
-	// iterator i = find_if(begin(), end(), [name](const Category &cat) -> bool
-	// 	{ return iequals(cat.name(), name); });
-
-	// if (i == end())
-	// {
-	// 	isNew = true;
-	// 	i = mCategories.emplace(begin(), *this, std::string(name), mValidator);
-	// }
-	// else if (i != begin())
-	// {
-	// 	auto n = std::next(i);
-	// 	mCategories.splice(begin(), mCategories, i, n);
-	// 	i = mCategories.begin();
-	// }
-
-	// return std::make_tuple(i, isNew);
 }
 
 Category &Datablock::operator[](std::string_view name)
