@@ -244,7 +244,7 @@ class Datablock
 	bool isValid();
 	void validateLinks() const;
 
-	void setValidator(Validator *v);
+	void setValidator(const Validator *v);
 
 	// this one only looks up a Category, returns nullptr if it does not exist
 	const Category *get(std::string_view name) const;
@@ -266,7 +266,7 @@ class Datablock
 	CategoryList mCategories;		// LRU
 	mutable std::shared_mutex mLock;
 	std::string mName;
-	Validator *mValidator;
+	const Validator *mValidator;
 	Datablock *mNext;
 };
 
@@ -1816,7 +1816,7 @@ class Category
 	friend class Row;
 	friend class detail::ItemReference;
 
-	Category(Datablock &db, const std::string_view name, Validator *Validator);
+	Category(Datablock &db, const std::string_view name, const Validator *Validator);
 	Category(const Category &) = delete;
 	Category &operator=(const Category &) = delete;
 	~Category();
@@ -2064,7 +2064,7 @@ class Category
 
 	Datablock &db() { return mDb; }
 
-	void setValidator(Validator *v);
+	void setValidator(const Validator *v);
 
 	iset fields() const;
 	iset mandatoryFields() const;
@@ -2121,14 +2121,24 @@ class Category
 
 	size_t addColumn(std::string_view name);
 
+	struct Linked
+	{
+		Category *linked;
+		const ValidateLink *v;
+	};
+
+	void updateLinks();
+
 	Datablock &mDb;
 	std::string mName;
-	Validator *mValidator;
+	const Validator *mValidator;
 	const ValidateCategory *mCatValidator = nullptr;
 	std::vector<ItemColumn> mColumns;
 	ItemRow *mHead;
 	ItemRow *mTail;
 	class CatIndex *mIndex;
+
+	std::vector<Linked> mParentLinks, mChildLinks;
 };
 
 // --------------------------------------------------------------------
@@ -2162,7 +2172,8 @@ class File
 
 	void loadDictionary();                 // load the default dictionary, that is mmcifDdl in this case
 	void loadDictionary(const char *dict); // load one of the compiled in dictionaries
-	void loadDictionary(std::istream &is); // load dictionary from input stream
+
+	void setValidator(const Validator *v);
 
 	bool isValid();
 	void validateLinks() const;
@@ -2226,10 +2237,8 @@ class File
 	void getTagOrder(std::vector<std::string> &tags) const;
 
   private:
-	void setValidator(Validator *v);
-
 	Datablock *mHead;
-	Validator *mValidator;
+	const Validator *mValidator;
 };
 
 // --------------------------------------------------------------------

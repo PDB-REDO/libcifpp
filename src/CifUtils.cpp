@@ -126,8 +126,9 @@ const uint8_t kCharToLowerMap[256] =
 bool iequals(std::string_view a, std::string_view b)
 {
 	bool result = a.length() == b.length();
-	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end() and bi != b.end(); ++ai, ++bi)
-		result = tolower(*ai) == tolower(*bi);
+	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end(); ++ai, ++bi)
+		result = kCharToLowerMap[uint8_t(*ai)] == kCharToLowerMap[uint8_t(*bi)];
+		// result = tolower(*ai) == tolower(*bi);
 	return result;
 }
 

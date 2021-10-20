@@ -24,13 +24,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <fstream>
+#include <filesystem>
+
 #include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 #include "cif++/Cif++.hpp"
 #include "cif++/CifParser.hpp"
 #include "cif++/CifValidator.hpp"
 
 namespace ba = boost::algorithm;
+namespace fs = std::filesystem;
+namespace io = boost::iostreams;
 
 extern int VERBOSE;
 
@@ -219,8 +226,11 @@ const ValidateItem *ValidateCategory::getValidatorForItem(std::string_view tag) 
 
 // --------------------------------------------------------------------
 
-Validator::Validator()
+Validator::Validator(std::string_view name, std::istream &is)
+	: mName(name)
 {
+	DictParser p(*this, is);
+	p.loadDictionary();
 }
 
 Validator::~Validator()
@@ -340,12 +350,86 @@ std::vector<const ValidateLink *> Validator::getLinksForChild(std::string_view c
 	return result;
 }
 
-void Validator::reportError(const std::string &msg, bool fatal)
+void Validator::reportError(const std::string &msg, bool fatal) const
 {
 	if (mStrict or fatal)
 		throw ValidationError(msg);
 	else if (VERBOSE)
 		std::cerr << msg << std::endl;
+}
+
+// --------------------------------------------------------------------
+
+ValidatorFactory ValidatorFactory::sInstance;
+
+ValidatorFactory::ValidatorFactory()
+{
+}
+
+const Validator &ValidatorFactory::operator[](std::string_view dictionary)
+{
+	std::lock_guard lock(mMutex);
+
+	for (auto &validator : mValidators)
+	{
+		if (iequals(validator.mName, dictionary))
+			return validator;
+	}
+
+	// not found, add it
+
+	fs::path dict_name(dictionary);
+
+	auto data = loadResource(dictionary);
+
+	if (not data and dict_name.extension().string() != ".dic")
+		data = loadResource(dict_name.parent_path() / (dict_name.filename().string() + ".dic"));
+
+	if (data)
+		mValidators.emplace_back(dictionary, *data);
+	else
+	{
+		// might be a compressed dictionary on disk
+		fs::path p = dictionary;
+		if (p.extension() == ".dic")
+			p = p.parent_path() / (p.filename().string() + ".gz");
+		else
+			p = p.parent_path() / (p.filename().string() + ".dic.gz");
+
+#if defined(CACHE_DIR) and defined(DATA_DIR)
+		if (not fs::exists(p))
+		{
+			for (const char *dir : {CACHE_DIR, DATA_DIR})
+			{
+				auto p2 = fs::path(dir) / p;
+				if (fs::exists(p2))
+				{
+					swap(p, p2);
+					break;
+				}
+			}
+		}
+#endif
+
+		if (fs::exists(p))
+		{
+			std::ifstream file(p, std::ios::binary);
+			if (not file.is_open())
+				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
+
+			io::filtering_stream<io::input> in;
+			in.push(io::gzip_decompressor());
+			in.push(file);
+
+			mValidators.emplace_back(dictionary, in);
+		}
+		else
+			throw std::runtime_error("Dictionary not found or defined (" + dict_name.string() + ")");
+	}
+
+	assert(iequals(mValidators.back().mName, dictionary));
+
+	return mValidators.back();
 }
 
 } // namespace cif
