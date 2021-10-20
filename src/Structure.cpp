@@ -317,13 +317,15 @@ struct AtomImpl
 		auto cat = mDb.get("atom_site_anisotrop");
 		if (cat)
 		{
-			auto r = cat->find1(cif::Key("id") == mID);
-
-			if (not r.empty())
+			try
 			{
-				result = true;
+				auto r = cat->find1(cif::Key("id") == mID);
 				cif::tie(anisou[0], anisou[1], anisou[2], anisou[3], anisou[4], anisou[5]) =
 					r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
+				result = true;
+			}
+			catch(const std::exception& e)
+			{
 			}
 		}
 
