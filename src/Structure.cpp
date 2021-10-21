@@ -1807,9 +1807,9 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 	}
 
 	if (mAtoms.empty())
-		throw std::runtime_error("No atoms loaded, refuse to continue");
-
-	loadData();
+		std::cerr << "Warning: no atoms loaded" << std::endl;
+	else
+		loadData();
 }
 
 void Structure::loadAtomsForModel(StructureOpenOptions options)
