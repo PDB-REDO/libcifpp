@@ -125,6 +125,9 @@ Compound::Compound(cif::Datablock &db)
 	cif::tie(mID, mName, mType, mFormula, mFormulaWeight, mFormalCharge) =
 		chemComp.front().get("id", "name", "type", "formula", "formula_weight", "pdbx_formal_charge");
 
+	// The name should not contain newline characters since that triggers validation errors later on
+	ba::replace_all(mName, "\n", "");
+
 	auto &chemCompAtom = db["chem_comp_atom"];
 	for (auto row : chemCompAtom)
 	{
