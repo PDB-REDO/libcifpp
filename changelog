@@ -1,3 +1,6 @@
+Version 2.0.4
+- Reverted a too strict test when reading cif files.
+
 Version 2.0.3
 - Fixed reading mmCIF files where model numbers are used and
   model number 1 is missing.
