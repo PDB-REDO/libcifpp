@@ -90,4 +90,66 @@ int GetSpacegroupNumber(std::string spacegroup)
 	return result;
 }
 
+// --------------------------------------------------------------------
+
+int GetSpacegroupNumber(std::string spacegroup, SpacegroupName type)
+{
+	if (spacegroup == "P 21 21 2 A")
+		spacegroup = "P 21 21 2 (a)";
+	else if (spacegroup.empty())
+		throw std::runtime_error("No spacegroup, cannot continue");
+
+	int result = 0;
+
+	if (type == SpacegroupName::full)
+	{
+		const size_t N = kNrOfSpaceGroups;
+		int32_t L = 0, R = static_cast<int32_t>(N - 1);
+		while (L <= R)
+		{
+			int32_t i = (L + R) / 2;
+
+			int d = spacegroup.compare(kSpaceGroups[i].name);
+
+			if (d > 0)
+				L = i + 1;
+			else if (d < 0)
+				R = i - 1;
+			else
+			{
+				result = kSpaceGroups[i].nr;
+				break;
+			}
+		}
+	}
+	else if (type == SpacegroupName::xHM)
+	{
+		for (auto &sg : kSpaceGroups)
+		{
+			if (sg.xHM == spacegroup)
+			{
+				result = sg.nr;
+				break;
+			}
+		}
+	}
+	else
+	{
+		for (auto &sg : kSpaceGroups)
+		{
+			if (sg.Hall == spacegroup)
+			{
+				result = sg.nr;
+				break;
+			}
+		}
+	}
+
+	// not found, see if we can find a match based on xHM name
+	if (result == 0)
+		throw std::runtime_error("Spacegroup name " + spacegroup + " was not found in table");
+	
+	return result;
+}
+
 }

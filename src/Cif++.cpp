@@ -33,6 +33,7 @@
 #include <stack>
 #include <tuple>
 #include <unordered_map>
+#include <shared_mutex>
 
 #include <filesystem>
 
@@ -351,7 +352,7 @@ namespace detail
 // --------------------------------------------------------------------
 // Datablock implementation
 
-Datablock::Datablock(const std::string &name)
+Datablock::Datablock(const std::string_view name)
 	: mName(name)
 	, mValidator(nullptr)
 	, mNext(nullptr)
@@ -363,43 +364,42 @@ Datablock::~Datablock()
 	delete mNext;
 }
 
-std::string Datablock::firstItem(const std::string &tag) const
+auto Datablock::emplace(std::string_view name) -> std::tuple<iterator, bool>
 {
-	std::string result;
+	// LRU code
 
-	std::string catName, itemName;
-	std::tie(catName, itemName) = splitTagName(tag);
+	std::shared_lock lock(mLock);
 
-	for (auto &cat : mCategories)
+	bool isNew = true;
+
+	auto i = begin();
+	while (i != end())
 	{
-		if (iequals(cat.name(), catName))
+		if (iequals(name, i->name()))
 		{
-			for (auto row : cat)
+			isNew = false;
+
+			if (i != begin())
 			{
-				result = row[itemName].as<std::string>();
-				break;
+				auto n = std::next(i);
+				mCategories.splice(begin(), mCategories, i, n);
 			}
 
 			break;
 		}
+
+		++i;
 	}
 
-	return result;
-}
-
-auto Datablock::emplace(std::string_view name) -> std::tuple<iterator, bool>
-{
-	bool isNew = false;
-	iterator i = find_if(begin(), end(), [name](const Category &cat) -> bool
-		{ return iequals(cat.name(), name); });
-
-	if (i == end())
+	if (isNew)
 	{
-		isNew = true;
-		i = mCategories.emplace(end(), *this, std::string(name), mValidator);
+		mCategories.emplace(begin(), *this, std::string(name), mValidator);
+
+		for (auto &cat : mCategories)
+			cat.updateLinks();
 	}
 
-	return std::make_tuple(i, isNew);
+	return std::make_tuple(begin(), isNew);
 }
 
 Category &Datablock::operator[](std::string_view name)
@@ -411,22 +411,34 @@ Category &Datablock::operator[](std::string_view name)
 
 Category *Datablock::get(std::string_view name)
 {
-	auto i = find_if(begin(), end(), [name](const Category &cat) -> bool
-		{ return iequals(cat.name(), name); });
+	std::shared_lock lock(mLock);
 
-	return i == end() ? nullptr : &*i;
+	for (auto &cat : mCategories)
+	{
+		if (iequals(cat.name(), name))
+			return &cat;
+	}
+
+	return nullptr;
 }
 
 const Category *Datablock::get(std::string_view name) const
 {
-	auto i = find_if(begin(), end(), [name](const Category &cat) -> bool
-		{ return iequals(cat.name(), name); });
+	std::shared_lock lock(mLock);
 
-	return i == end() ? nullptr : &*i;
+	for (auto &cat : mCategories)
+	{
+		if (iequals(cat.name(), name))
+			return &cat;
+	}
+
+	return nullptr;
 }
 
 bool Datablock::isValid()
 {
+	std::shared_lock lock(mLock);
+
 	if (mValidator == nullptr)
 		throw std::runtime_error("Validator not specified");
 
@@ -438,20 +450,26 @@ bool Datablock::isValid()
 
 void Datablock::validateLinks() const
 {
+	std::shared_lock lock(mLock);
+
 	for (auto &cat : *this)
 		cat.validateLinks();
 }
 
-void Datablock::setValidator(Validator *v)
+void Datablock::setValidator(const Validator *v)
 {
+	std::shared_lock lock(mLock);
+
 	mValidator = v;
 
 	for (auto &cat : *this)
 		cat.setValidator(v);
 }
 
-void Datablock::add_software(const std::string &name, const std::string &classification, const std::string &versionNr, const std::string &versionDate)
+void Datablock::add_software(const std::string_view name, const std::string &classification, const std::string &versionNr, const std::string &versionDate)
 {
+	std::shared_lock lock(mLock);
+
 	Category &cat = operator[]("software");
 	auto ordNr = cat.size() + 1;
 	// TODO: should we check this ordinal number???
@@ -465,12 +483,16 @@ void Datablock::add_software(const std::string &name, const std::string &classif
 
 void Datablock::getTagOrder(std::vector<std::string> &tags) const
 {
+	std::shared_lock lock(mLock);
+
 	for (auto &cat : *this)
 		cat.getTagOrder(tags);
 }
 
 void Datablock::write(std::ostream &os)
 {
+	std::shared_lock lock(mLock);
+
 	os << "data_" << mName << std::endl
 	   << "# " << std::endl;
 
@@ -505,6 +527,8 @@ void Datablock::write(std::ostream &os)
 
 void Datablock::write(std::ostream &os, const std::vector<std::string> &order)
 {
+	std::shared_lock lock(mLock);
+
 	os << "data_" << mName << std::endl
 	   << "# " << std::endl;
 
@@ -580,6 +604,9 @@ void Datablock::write(std::ostream &os, const std::vector<std::string> &order)
 
 bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 {
+	std::shared_lock lockA(dbA.mLock);
+	std::shared_lock lockB(dbB.mLock);
+
 	std::vector<std::string> catA, catB;
 
 	for (auto &cat : dbA)
@@ -1311,7 +1338,7 @@ RowSet &RowSet::orderBy(std::initializer_list<std::string> items)
 
 // --------------------------------------------------------------------
 
-Category::Category(Datablock &db, const std::string &name, Validator *Validator)
+Category::Category(Datablock &db, const std::string_view name, const Validator *Validator)
 	: mDb(db)
 	, mName(name)
 	, mValidator(Validator)
@@ -1346,7 +1373,7 @@ Category::~Category()
 	delete mIndex;
 }
 
-void Category::setValidator(Validator *v)
+void Category::setValidator(const Validator *v)
 {
 	mValidator = v;
 
@@ -1371,6 +1398,33 @@ void Category::setValidator(Validator *v)
 	}
 	else
 		mCatValidator = nullptr;
+
+	updateLinks();
+}
+
+void Category::updateLinks()
+{
+	mChildLinks.clear();
+	mParentLinks.clear();
+
+	if (mValidator != nullptr)
+	{
+		for (auto link : mValidator->getLinksForParent(mName))
+		{
+			auto childCat = mDb.get(link->mChildCategory);
+			if (childCat == nullptr)
+				continue;
+			mChildLinks.push_back({ childCat, link });
+		}
+
+		for (auto link : mValidator->getLinksForChild(mName))
+		{
+			auto parentCat = mDb.get(link->mParentCategory);
+			if (parentCat == nullptr)
+				continue;
+			mParentLinks.push_back({ parentCat, link });
+		}
+	}
 }
 
 bool Category::hasColumn(std::string_view name) const
@@ -1816,12 +1870,8 @@ auto Category::erase(iterator pos) -> iterator
 
 	if (mValidator != nullptr)
 	{
-		for (auto &link : mValidator->getLinksForParent(mName))
+		for (auto &&[childCat, link] : mChildLinks)
 		{
-			auto childCat = mDb.get(link->mChildCategory);
-			if (childCat == nullptr)
-				continue;
-
 			Condition cond;
 
 			for (size_t ix = 0; ix < link->mParentKeys.size(); ++ix)
@@ -1959,12 +2009,8 @@ bool Category::isOrphan(Row r)
 		return false;
 
 	bool isOrphan = true;
-	for (auto &link : mValidator->getLinksForChild(mName))
+	for (auto &&[parentCat, link] : mParentLinks)
 	{
-		auto parentCat = mDb.get(link->mParentCategory);
-		if (parentCat == nullptr)
-			continue;
-
 		Condition cond;
 		for (size_t ix = 0; ix < link->mChildKeys.size(); ++ix)
 		{
@@ -1995,12 +2041,8 @@ bool Category::hasChildren(Row r) const
 
 	bool result = false;
 
-	for (auto &link : mValidator->getLinksForParent(mName))
+	for (auto &&[childCat, link] : mChildLinks)
 	{
-		auto childCat = mDb.get(link->mChildCategory);
-		if (childCat == nullptr)
-			continue;
-
 		Condition cond;
 
 		for (size_t ix = 0; ix < link->mParentKeys.size(); ++ix)
@@ -2026,12 +2068,8 @@ bool Category::hasParents(Row r) const
 
 	bool result = false;
 
-	for (auto &link : mValidator->getLinksForChild(mName))
+	for (auto &&[parentCat, link] : mParentLinks)
 	{
-		auto parentCat = mDb.get(link->mParentCategory);
-		if (parentCat == nullptr)
-			continue;
-
 		Condition cond;
 
 		for (size_t ix = 0; ix < link->mChildKeys.size(); ++ix)
@@ -2240,23 +2278,17 @@ bool Category::isValid()
 
 void Category::validateLinks() const
 {
-	auto &validator = getValidator();
-
-	for (auto linkValidator : validator.getLinksForChild(mName))
+	for (auto &&[parentCat, link] : mParentLinks)
 	{
-		auto parent = mDb.get(linkValidator->mParentCategory);
-		if (parent == nullptr)
-			continue;
-
 		size_t missing = 0;
 		for (auto r : *this)
-			if (not hasParent(r, *parent, *linkValidator))
+			if (not hasParent(r, *parentCat, *link))
 				++missing;
 
 		if (missing)
 		{
-			std::cerr << "Links for " << linkValidator->mLinkGroupLabel << " are incomplete" << std::endl
-					  << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parent->mName << std::endl;
+			std::cerr << "Links for " << link->mLinkGroupLabel << " are incomplete" << std::endl
+					  << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parentCat->mName << std::endl;
 		}
 	}
 }
@@ -2697,17 +2729,10 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 		row.assign(colIx, value, true);
 
 	// see if we need to update any child categories that depend on this value
-	auto &validator = getValidator();
-	auto &db = mDb;
-
 	for (auto parent : rows)
 	{
-		for (auto linked : validator.getLinksForParent(mName))
+		for (auto &&[childCat, linked] : mChildLinks)
 		{
-			auto childCat = db.get(linked->mChildCategory);
-			if (childCat == nullptr)
-				continue;
-
 			if (std::find(linked->mParentKeys.begin(), linked->mParentKeys.end(), tag) == linked->mParentKeys.end())
 				continue;
 
@@ -2864,18 +2889,8 @@ void Row::assign(const std::vector<Item> &values)
 	// auto iv = col.mValidator;
 	if (mCascade)
 	{
-		auto &validator = cat->getValidator();
-		auto &db = cat->db();
-
-		for (auto linked : validator.getLinksForParent(cat->mName))
+		for (auto &&[childCat, linked] : cat->mChildLinks)
 		{
-			auto childCat = db.get(linked->mChildCategory);
-			if (childCat == nullptr)
-				continue;
-
-			// if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
-			// 	continue;
-
 			Condition cond;
 			std::string childTag;
 
@@ -3016,15 +3031,8 @@ void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked)
 	auto iv = col.mValidator;
 	if (not skipUpdateLinked and iv != nullptr and mCascade)
 	{
-		auto &validator = cat->getValidator();
-		auto &db = cat->db();
-
-		for (auto linked : validator.getLinksForParent(cat->mName))
+		for (auto &&[childCat, linked] : cat->mChildLinks)
 		{
-			auto childCat = db.get(linked->mChildCategory);
-			if (childCat == nullptr)
-				continue;
-
 			if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
 				continue;
 
@@ -3203,16 +3211,11 @@ void Row::swap(size_t cix, ItemRow *a, ItemRow *b)
 		auto parentColName = cat->getColumnName(cix);
 
 		// see if we need to update any child categories that depend on these values
-		auto &validator = cat->getValidator();
 		auto parentCatValidator = cat->getCatValidator();
 
-		for (auto &link : validator.getLinksForParent(cat->mName))
+		for (auto &&[childCat, link] : cat->mChildLinks)
 		{
 			if (find(link->mParentKeys.begin(), link->mParentKeys.end(), parentColName) == link->mParentKeys.end())
-				continue;
-
-			auto childCat = cat->db().get(link->mChildCategory);
-			if (childCat == nullptr or childCat->empty())
 				continue;
 
 			auto childCatValidator = childCat->getCatValidator();
@@ -3426,7 +3429,6 @@ File::File(File &&rhs)
 File::~File()
 {
 	delete mHead;
-	delete mValidator;
 }
 
 void File::append(Datablock *e)
@@ -3503,7 +3505,7 @@ void File::save(const std::filesystem::path &p)
 
 void File::load(std::istream &is)
 {
-	Validator *saved = mValidator;
+	auto saved = mValidator;
 	setValidator(nullptr);
 
 	Parser p(is, *this);
@@ -3518,7 +3520,7 @@ void File::load(std::istream &is)
 
 void File::load(std::istream &is, const std::string &datablock)
 {
-	Validator *saved = mValidator;
+	auto saved = mValidator;
 	setValidator(nullptr);
 
 	Parser p(is, *this);
@@ -3607,67 +3609,10 @@ void File::loadDictionary()
 
 void File::loadDictionary(const char *dict)
 {
-	fs::path dict_name(dict);
-
-	auto data = loadResource(dict);
-
-	if (not data and dict_name.extension().string() != ".dic")
-		data = loadResource(dict_name.parent_path() / (dict_name.filename().string() + ".dic"));
-
-	if (data)
-		loadDictionary(*data);
-	else
-	{
-		// might be a compressed dictionary on disk
-		fs::path p = dict;
-		if (p.extension() == ".dic")
-			p = p.parent_path() / (p.filename().string() + ".gz");
-		else
-			p = p.parent_path() / (p.filename().string() + ".dic.gz");
-
-#if defined(CACHE_DIR) and defined(DATA_DIR)
-		if (not fs::exists(p))
-		{
-			for (const char *dir : {CACHE_DIR, DATA_DIR})
-			{
-				auto p2 = fs::path(dir) / p;
-				if (fs::exists(p2))
-				{
-					swap(p, p2);
-					break;
-				}
-			}
-		}
-#endif
-
-		if (fs::exists(p))
-		{
-			std::ifstream file(p, std::ios::binary);
-			if (not file.is_open())
-				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
-
-			io::filtering_stream<io::input> in;
-			in.push(io::gzip_decompressor());
-			in.push(file);
-
-			loadDictionary(in);
-		}
-		else
-			throw std::runtime_error("Dictionary not found or defined (" + dict_name.string() + ")");
-	}
+	setValidator(&ValidatorFactory::instance()[dict]);
 }
 
-void File::loadDictionary(std::istream &is)
-{
-	std::unique_ptr<Validator> v(new Validator());
-
-	DictParser p(*v, is);
-	p.loadDictionary();
-
-	setValidator(v.release());
-}
-
-void File::setValidator(Validator *v)
+void File::setValidator(const Validator *v)
 {
 	mValidator = v;
 

@@ -33,6 +33,7 @@
 // #include "cif++/DistanceMap.hpp"
 #include "cif++/Cif++.hpp"
 #include "cif++/BondMap.hpp"
+#include "cif++/CifValidator.hpp"
 
 std::filesystem::path gTestDir = std::filesystem::current_path();	// filled in first test
 
@@ -259,8 +260,10 @@ save__cat_2.desc
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -387,8 +390,10 @@ save__cat_1.c
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -535,8 +540,10 @@ save__cat_2.desc
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -741,8 +748,10 @@ save__cat_2.parent_id3
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -963,8 +972,10 @@ cat_2 3 cat_2:cat_1:3
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -1389,9 +1400,10 @@ cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
     } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
 
     std::istream is_dict(&buffer);
+	cif::Validator validator("test", is_dict);
 
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 

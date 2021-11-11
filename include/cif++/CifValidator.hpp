@@ -38,6 +38,7 @@ namespace cif
 {
 
 struct ValidateCategory;
+class ValidatorFactory;
 
 // --------------------------------------------------------------------
 
@@ -154,9 +155,8 @@ struct ValidateLink
 class Validator
 {
   public:
-	friend class DictParser;
 
-	Validator();
+	Validator(std::string_view name, std::istream &is);
 	~Validator();
 
 	Validator(const Validator &rhs) = delete;
@@ -164,6 +164,9 @@ class Validator
 
 	Validator(Validator &&rhs);
 	Validator &operator=(Validator &&rhs);
+
+	friend class DictParser;
+	friend class ValidatorFactory;
 
 	void addTypeValidator(ValidateType &&v);
 	const ValidateType *getValidatorForType(std::string_view typeCode) const;
@@ -175,7 +178,7 @@ class Validator
 	std::vector<const ValidateLink *> getLinksForParent(std::string_view category) const;
 	std::vector<const ValidateLink *> getLinksForChild(std::string_view category) const;
 
-	void reportError(const std::string &msg, bool fatal);
+	void reportError(const std::string &msg, bool fatal) const;
 
 	std::string dictName() const { return mName; }
 	void dictName(const std::string &name) { mName = name; }
@@ -184,6 +187,7 @@ class Validator
 	void dictVersion(const std::string &version) { mVersion = version; }
 
   private:
+
 	// name is fully qualified here:
 	ValidateItem *getValidatorForItem(std::string_view name) const;
 
@@ -194,6 +198,29 @@ class Validator
 	std::set<ValidateType> mTypeValidators;
 	std::set<ValidateCategory> mCategoryValidators;
 	std::vector<ValidateLink> mLinkValidators;
+};
+
+// --------------------------------------------------------------------
+
+class ValidatorFactory
+{
+  public:
+
+	static ValidatorFactory &instance()
+	{
+		return sInstance;
+	}
+
+	const Validator &operator[](std::string_view dictionary);
+
+  private:
+
+	static ValidatorFactory sInstance;
+
+	ValidatorFactory();
+
+	std::mutex mMutex;
+	std::list<Validator> mValidators;
 };
 
 } // namespace cif

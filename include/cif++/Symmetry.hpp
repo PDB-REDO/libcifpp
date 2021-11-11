@@ -37,6 +37,11 @@ namespace mmcif
 
 // --------------------------------------------------------------------
 
+enum class SpacegroupName
+{
+	full, xHM, Hall
+};
+
 struct Spacegroup
 {
 	const char* name;
@@ -133,6 +138,7 @@ CIFPP_EXPORT extern const std::size_t kSymopNrTableSize;
 
 // --------------------------------------------------------------------
 
-int GetSpacegroupNumber(std::string spacegroup);	// alternative for clipper's parsing code
+int GetSpacegroupNumber(std::string spacegroup);						// alternative for clipper's parsing code, using SpacegroupName::full
+int GetSpacegroupNumber(std::string spacegroup, SpacegroupName type);	// alternative for clipper's parsing code
 
 }

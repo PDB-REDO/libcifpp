@@ -36,6 +36,7 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <shared_mutex>
 
 #include "cif++/CifUtils.hpp"
 
@@ -142,13 +143,13 @@ class Item
 	Item() {}
 
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	Item(const std::string &name, const T &value)
+	Item(const std::string_view name, const T &value)
 		: mName(name)
 		, mValue(std::to_string(value))
 	{
 	}
 
-	Item(const std::string &name, const std::string &value)
+	Item(const std::string_view name, const std::string_view value)
 		: mName(name)
 		, mValue(value)
 	{
@@ -221,7 +222,7 @@ class Datablock
 	using iterator = CategoryList::iterator;
 	using const_iterator = CategoryList::const_iterator;
 
-	Datablock(const std::string &name);
+	Datablock(const std::string_view name);
 	~Datablock();
 
 	Datablock(const Datablock &) = delete;
@@ -229,8 +230,6 @@ class Datablock
 
 	std::string getName() const { return mName; }
 	void setName(const std::string &n) { mName = n; }
-
-	std::string firstItem(const std::string &tag) const;
 
 	iterator begin() { return mCategories.begin(); }
 	iterator end() { return mCategories.end(); }
@@ -245,7 +244,7 @@ class Datablock
 	bool isValid();
 	void validateLinks() const;
 
-	void setValidator(Validator *v);
+	void setValidator(const Validator *v);
 
 	// this one only looks up a Category, returns nullptr if it does not exist
 	const Category *get(std::string_view name) const;
@@ -256,7 +255,7 @@ class Datablock
 	void write(std::ostream &os);
 
 	// convenience function, add a line to the software category
-	void add_software(const std::string &name, const std::string &classification,
+	void add_software(const std::string_view name, const std::string &classification,
 		const std::string &versionNr, const std::string &versionDate);
 
 	friend bool operator==(const Datablock &lhs, const Datablock &rhs);
@@ -264,9 +263,10 @@ class Datablock
 	friend std::ostream& operator<<(std::ostream &os, const Datablock &data);
 
   private:
-	std::list<Category> mCategories;
+	CategoryList mCategories;		// LRU
+	mutable std::shared_mutex mLock;
 	std::string mName;
-	Validator *mValidator;
+	const Validator *mValidator;
 	Datablock *mNext;
 };
 
@@ -1816,12 +1816,12 @@ class Category
 	friend class Row;
 	friend class detail::ItemReference;
 
-	Category(Datablock &db, const std::string &name, Validator *Validator);
+	Category(Datablock &db, const std::string_view name, const Validator *Validator);
 	Category(const Category &) = delete;
 	Category &operator=(const Category &) = delete;
 	~Category();
 
-	const std::string name() const { return mName; }
+	const std::string &name() const { return mName; }
 
 	using iterator = iterator_impl<Row>;
 	using const_iterator = iterator_impl<const Row>;
@@ -2064,7 +2064,7 @@ class Category
 
 	Datablock &db() { return mDb; }
 
-	void setValidator(Validator *v);
+	void setValidator(const Validator *v);
 
 	iset fields() const;
 	iset mandatoryFields() const;
@@ -2121,14 +2121,24 @@ class Category
 
 	size_t addColumn(std::string_view name);
 
+	struct Linked
+	{
+		Category *linked;
+		const ValidateLink *v;
+	};
+
+	void updateLinks();
+
 	Datablock &mDb;
 	std::string mName;
-	Validator *mValidator;
+	const Validator *mValidator;
 	const ValidateCategory *mCatValidator = nullptr;
 	std::vector<ItemColumn> mColumns;
 	ItemRow *mHead;
 	ItemRow *mTail;
 	class CatIndex *mIndex;
+
+	std::vector<Linked> mParentLinks, mChildLinks;
 };
 
 // --------------------------------------------------------------------
@@ -2162,7 +2172,8 @@ class File
 
 	void loadDictionary();                 // load the default dictionary, that is mmcifDdl in this case
 	void loadDictionary(const char *dict); // load one of the compiled in dictionaries
-	void loadDictionary(std::istream &is); // load dictionary from input stream
+
+	void setValidator(const Validator *v);
 
 	bool isValid();
 	void validateLinks() const;
@@ -2226,10 +2237,8 @@ class File
 	void getTagOrder(std::vector<std::string> &tags) const;
 
   private:
-	void setValidator(Validator *v);
-
 	Datablock *mHead;
-	Validator *mValidator;
+	const Validator *mValidator;
 };
 
 // --------------------------------------------------------------------

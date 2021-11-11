@@ -28,8 +28,8 @@
 
 #include "cif++/Cif++.hpp"
 
-#include <stack>
 #include <map>
+#include <stack>
 
 namespace cif
 {
@@ -39,7 +39,7 @@ namespace cif
 class CifParserError : public std::runtime_error
 {
   public:
-	CifParserError(uint32_t lineNr, const std::string& message);
+	CifParserError(uint32_t lineNr, const std::string &message);
 };
 
 // --------------------------------------------------------------------
@@ -48,7 +48,8 @@ extern const uint32_t kMaxLineLength;
 
 extern const uint8_t kCharTraitsTable[128];
 
-enum CharTraitsMask: uint8_t {
+enum CharTraitsMask : uint8_t
+{
 	kOrdinaryMask = 1 << 0,
 	kNonBlankMask = 1 << 1,
 	kTextLeadMask = 1 << 2,
@@ -75,13 +76,13 @@ inline bool isTextLead(int ch)
 	return ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kTextLeadMask) != 0;
 }
 
-inline bool isAnyPrint(int ch)	
+inline bool isAnyPrint(int ch)
 {
-	return ch == '\t' or 
-		(ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kAnyPrintMask) != 0);
+	return ch == '\t' or
+	       (ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kAnyPrintMask) != 0);
 }
 
-inline bool isUnquotedString(const char* s)
+inline bool isUnquotedString(const char *s)
 {
 	bool result = isOrdinary(*s++);
 	while (result and *s != 0)
@@ -94,7 +95,7 @@ inline bool isUnquotedString(const char* s)
 
 // --------------------------------------------------------------------
 
-using DatablockIndex = std::map<std::string,std::size_t>;
+using DatablockIndex = std::map<std::string, std::size_t>;
 
 // --------------------------------------------------------------------
 // sac Parser, analogous to SAX Parser (simple api for xml)
@@ -102,15 +103,15 @@ using DatablockIndex = std::map<std::string,std::size_t>;
 class SacParser
 {
   public:
-	SacParser(std::istream& is, bool init = true);
+	SacParser(std::istream &is, bool init = true);
 	virtual ~SacParser() {}
 
 	enum CIFToken
 	{
 		eCIFTokenUnknown,
-		
+
 		eCIFTokenEOF,
-	
+
 		eCIFTokenDATA,
 		eCIFTokenLOOP,
 		eCIFTokenGLOBAL,
@@ -120,7 +121,7 @@ class SacParser
 		eCIFTokenValue,
 	};
 
-	static const char* kTokenName[];
+	static const char *kTokenName[];
 
 	enum CIFValueType
 	{
@@ -133,40 +134,39 @@ class SacParser
 		eCIFValueUnknown
 	};
 
-	static const char* kValueName[];
-	
+	static const char *kValueName[];
+
 	int getNextChar();
 
 	void retract();
 	void restart();
-	
+
 	CIFToken getNextToken();
 	void match(CIFToken token);
 
-	bool parseSingleDatablock(const std::string& datablock);
+	bool parseSingleDatablock(const std::string &datablock);
 
 	DatablockIndex indexDatablocks();
-	bool parseSingleDatablock(const std::string& datablock, const DatablockIndex &index);
+	bool parseSingleDatablock(const std::string &datablock, const DatablockIndex &index);
 
 	void parseFile();
 	void parseGlobal();
 	void parseDataBlock();
 
 	virtual void parseSaveFrame();
-	
+
 	void parseDictionary();
-	
-	void error(const std::string& msg);
-	
+
+	void error(const std::string &msg);
+
 	// production methods, these are pure virtual here
-	
-	virtual void produceDatablock(const std::string& name) = 0;
-	virtual void produceCategory(const std::string& name) = 0;
+
+	virtual void produceDatablock(const std::string &name) = 0;
+	virtual void produceCategory(const std::string &name) = 0;
 	virtual void produceRow() = 0;
-	virtual void produceItem(const std::string& category, const std::string& item, const std::string& value) = 0;
+	virtual void produceItem(const std::string &category, const std::string &item, const std::string &value) = 0;
 
   protected:
-
 	enum State
 	{
 		eStateStart,
@@ -181,21 +181,21 @@ class SacParser
 		eStateTextField,
 		eStateFloat = 100,
 		eStateInt = 110,
-//		eStateNumericSuffix = 200,
+		//		eStateNumericSuffix = 200,
 		eStateValue = 300
 	};
 
-	std::istream&			mData;
+	std::istream &mData;
 
 	// Parser state
-	bool					mValidate;
-	uint32_t					mLineNr;
-	bool					mBol;
-	int						mState, mStart;
-	CIFToken				mLookahead;
-	std::string				mTokenValue;
-	CIFValueType			mTokenType;
-	std::stack<int>			mBuffer;
+	bool mValidate;
+	uint32_t mLineNr;
+	bool mBol;
+	int mState, mStart;
+	CIFToken mLookahead;
+	std::string mTokenValue;
+	CIFValueType mTokenType;
+	std::stack<int> mBuffer;
 };
 
 // --------------------------------------------------------------------
@@ -203,18 +203,18 @@ class SacParser
 class Parser : public SacParser
 {
   public:
-	Parser(std::istream& is, File& f, bool init = true);
+	Parser(std::istream &is, File &f, bool init = true);
 
-	virtual void produceDatablock(const std::string& name);
-	virtual void produceCategory(const std::string& name);
+	virtual void produceDatablock(const std::string &name);
+	virtual void produceCategory(const std::string &name);
 	virtual void produceRow();
-	virtual void produceItem(const std::string& category, const std::string& item, const std::string& value);
+	virtual void produceItem(const std::string &category, const std::string &item, const std::string &value);
 
   protected:
-	File&					mFile;
-	Datablock*				mDataBlock;
-	Datablock::iterator		mCat;
-	Row						mRow;
+	File &mFile;
+	Datablock *mDataBlock;
+	Datablock::iterator mCat;
+	Row mRow;
 };
 
 // --------------------------------------------------------------------
@@ -222,23 +222,21 @@ class Parser : public SacParser
 class DictParser : public Parser
 {
   public:
-
-	DictParser(Validator& validator, std::istream& is);
+	DictParser(Validator &validator, std::istream &is);
 	~DictParser();
-	
-	void loadDictionary();
-	
-  private:
 
+	void loadDictionary();
+
+  private:
 	virtual void parseSaveFrame();
-	
+
 	bool collectItemTypes();
 	void linkItems();
 
-	Validator&						mValidator;
-	File							mFile;
-	struct DictParserDataImpl*		mImpl;
-	bool							mCollectedItemTypes = false;
+	Validator &mValidator;
+	File mFile;
+	struct DictParserDataImpl *mImpl;
+	bool mCollectedItemTypes = false;
 };
 
-}
+} // namespace cif

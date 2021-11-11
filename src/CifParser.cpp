@@ -42,25 +42,25 @@ namespace cif
 const uint32_t kMaxLineLength = 132;
 
 const uint8_t kCharTraitsTable[128] = {
-	//	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
-		14,	15,	14,	14,	14,	15,	15,	14,	15,	15,	15,	15,	15,	15,	15,	15,	//	2
-		15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	10,	15,	15,	15,	15,	//	3
-		15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	//	4
-		15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	14,	15,	14,	15,	14,	//	5
-		15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	//	6
-		15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	15,	0,	//	7
+//	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
+	14, 15, 14, 14, 14, 15, 15, 14, 15, 15, 15, 15, 15, 15, 15, 15, //	2
+	15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 10, 15, 15, 15, 15, //	3
+	15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, //	4
+	15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 14, 15, 14, 15, 14, //	5
+	15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, //	6
+	15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 0,  //	7
 };
 
 // --------------------------------------------------------------------
 
-CifParserError::CifParserError(uint32_t lineNr, const std::string& message)
+CifParserError::CifParserError(uint32_t lineNr, const std::string &message)
 	: std::runtime_error("parse error at line " + std::to_string(lineNr) + ": " + message)
 {
 }
 
 // --------------------------------------------------------------------
 
-const char* SacParser::kTokenName[] = {
+const char *SacParser::kTokenName[] = {
 	"unknown",
 	"EOF",
 	"DATA",
@@ -69,22 +69,20 @@ const char* SacParser::kTokenName[] = {
 	"SAVE",
 	"STOP",
 	"Tag",
-	"Value"
-};
+	"Value"};
 
-const char* SacParser::kValueName[] = {
+const char *SacParser::kValueName[] = {
 	"Int",
 	"Float",
 	"Numeric",
 	"String",
 	"TextField",
 	"Inapplicable",
-	"Unknown"
-};
+	"Unknown"};
 
 // --------------------------------------------------------------------
 
-SacParser::SacParser(std::istream& is, bool init)
+SacParser::SacParser(std::istream &is, bool init)
 	: mData(is)
 {
 	mValidate = true;
@@ -95,7 +93,7 @@ SacParser::SacParser(std::istream& is, bool init)
 		mLookahead = getNextToken();
 }
 
-void SacParser::error(const std::string& msg)
+void SacParser::error(const std::string &msg)
 {
 	throw CifParserError(mLineNr, msg);
 }
@@ -114,7 +112,7 @@ int SacParser::getNextChar()
 		result = mBuffer.top();
 		mBuffer.pop();
 	}
-	
+
 	// very simple CR/LF translation into LF
 	if (result == '\r')
 	{
@@ -123,12 +121,12 @@ int SacParser::getNextChar()
 			mBuffer.push(lookahead);
 		result = '\n';
 	}
-	
+
 	mTokenValue += static_cast<char>(result);
-	
+
 	if (result == '\n')
 		++mLineNr;
-	
+
 	if (VERBOSE >= 6)
 	{
 		std::cerr << "getNextChar => ";
@@ -137,7 +135,7 @@ int SacParser::getNextChar()
 		else
 			std::cerr << char(result) << std::endl;
 	}
-	
+
 	return result;
 }
 
@@ -148,7 +146,7 @@ void SacParser::retract()
 	char ch = mTokenValue.back();
 	if (ch == '\n')
 		--mLineNr;
-	
+
 	mBuffer.push(ch);
 	mTokenValue.pop_back();
 }
@@ -157,25 +155,25 @@ void SacParser::restart()
 {
 	while (not mTokenValue.empty())
 		retract();
-	
+
 	switch (mStart)
 	{
 		case eStateStart:
 			mState = mStart = eStateFloat;
 			break;
-		
+
 		case eStateFloat:
 			mState = mStart = eStateInt;
 			break;
-		
+
 		case eStateInt:
 			mState = mStart = eStateValue;
 			break;
-		
+
 		default:
 			error("Invalid state in SacParser");
 	}
-	
+
 	mBol = false;
 }
 
@@ -183,26 +181,26 @@ void SacParser::match(SacParser::CIFToken t)
 {
 	if (mLookahead != t)
 		error(std::string("Unexpected token, expected ") + kTokenName[t] + " but found " + kTokenName[mLookahead]);
-	
+
 	mLookahead = getNextToken();
 }
 
 SacParser::CIFToken SacParser::getNextToken()
 {
 	const auto kEOF = std::char_traits<char>::eof();
-	
+
 	CIFToken result = eCIFTokenUnknown;
 	int quoteChar = 0;
 	mState = mStart = eStateStart;
 	mBol = false;
-	
+
 	mTokenValue.clear();
 	mTokenType = eCIFValueUnknown;
-	
+
 	while (result == eCIFTokenUnknown)
 	{
 		auto ch = getNextChar();
-		
+
 		switch (mState)
 		{
 			case eStateStart:
@@ -233,7 +231,7 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					restart();
 				break;
-			
+
 			case eStateWhite:
 				if (ch == kEOF)
 					result = eCIFTokenEOF;
@@ -246,7 +244,7 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					mBol = (ch == '\n');
 				break;
-			
+
 			case eStateComment:
 				if (ch == '\n')
 				{
@@ -259,7 +257,7 @@ SacParser::CIFToken SacParser::getNextToken()
 				else if (not isAnyPrint(ch))
 					error("invalid character in comment");
 				break;
-			
+
 			case eStateQuestionMark:
 				if (isNonBlank(ch))
 					mState = eStateValue;
@@ -291,10 +289,10 @@ SacParser::CIFToken SacParser::getNextToken()
 				else if (ch == kEOF)
 					error("unterminated textfield");
 				else if (not isAnyPrint(ch))
-//					error("invalid character in text field '" + string({ static_cast<char>(ch) }) + "' (" + to_string((int)ch) + ")");
-					std::cerr << "invalid character in text field '" << std::string({ static_cast<char>(ch) }) << "' (" << ch << ") line: " << mLineNr << std::endl;
+					//					error("invalid character in text field '" + string({ static_cast<char>(ch) }) + "' (" + to_string((int)ch) + ")");
+					std::cerr << "invalid character in text field '" << std::string({static_cast<char>(ch)}) << "' (" << ch << ") line: " << mLineNr << std::endl;
 				break;
-			
+
 			case eStateTextField + 1:
 				if (isTextLead(ch) or ch == ' ' or ch == '\t')
 					mState = eStateTextField;
@@ -310,7 +308,7 @@ SacParser::CIFToken SacParser::getNextToken()
 				else if (ch != '\n')
 					error("invalid character in text field");
 				break;
-			
+
 			case eStateQuotedString:
 				if (ch == kEOF)
 					error("unterminated quoted string");
@@ -319,14 +317,14 @@ SacParser::CIFToken SacParser::getNextToken()
 				else if (not isAnyPrint(ch))
 					error("invalid character in quoted string");
 				break;
-			
+
 			case eStateQuotedStringQuote:
 				if (isWhite(ch))
 				{
 					retract();
 					result = eCIFTokenValue;
 					mTokenType = eCIFValueString;
-					
+
 					assert(mTokenValue.length() >= 3);
 					mTokenValue = mTokenValue.substr(1, mTokenValue.length() - 2);
 				}
@@ -339,7 +337,7 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					error("invalid character in quoted string");
 				break;
-			
+
 			case eStateTag:
 				if (not isNonBlank(ch))
 				{
@@ -347,7 +345,7 @@ SacParser::CIFToken SacParser::getNextToken()
 					result = eCIFTokenTag;
 				}
 				break;
-			
+
 			case eStateFloat:
 				if (ch == '+' or ch == '-')
 				{
@@ -358,11 +356,11 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					restart();
 				break;
-			
+
 			case eStateFloat + 1:
-//				if (ch == '(')	// numeric???
-//					mState = eStateNumericSuffix;
-//				else
+				//				if (ch == '(')	// numeric???
+				//					mState = eStateNumericSuffix;
+				//				else
 				if (ch == '.')
 					mState = eStateFloat + 2;
 				else if (tolower(ch) == 'e')
@@ -376,12 +374,12 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					restart();
 				break;
-			
+
 			// parsed '.'
 			case eStateFloat + 2:
-//				if (ch == '(')	// numeric???
-//					mState = eStateNumericSuffix;
-//				else
+				//				if (ch == '(')	// numeric???
+				//					mState = eStateNumericSuffix;
+				//				else
 				if (tolower(ch) == 'e')
 					mState = eStateFloat + 3;
 				else if (isWhite(ch) or ch == kEOF)
@@ -393,7 +391,7 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					restart();
 				break;
-			
+
 			// parsed 'e'
 			case eStateFloat + 3:
 				if (ch == '-' or ch == '+')
@@ -410,11 +408,11 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					restart();
 				break;
-			
+
 			case eStateFloat + 5:
-//				if (ch == '(')
-//					mState = eStateNumericSuffix;
-//				else
+				//				if (ch == '(')
+				//					mState = eStateNumericSuffix;
+				//				else
 				if (isWhite(ch) or ch == kEOF)
 				{
 					retract();
@@ -424,14 +422,14 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					restart();
 				break;
-			
+
 			case eStateInt:
 				if (isdigit(ch) or ch == '+' or ch == '-')
 					mState = eStateInt + 1;
 				else
 					restart();
 				break;
-			
+
 			case eStateInt + 1:
 				if (isWhite(ch) or ch == kEOF)
 				{
@@ -442,36 +440,36 @@ SacParser::CIFToken SacParser::getNextToken()
 				else
 					restart();
 				break;
-			
-//			case eStateNumericSuffix:
-//				if (isdigit(ch))
-//					mState = eStateNumericSuffix + 1;
-//				else
-//					restart();
-//				break;
-//			
-//			case eStateNumericSuffix + 1:
-//				if (ch == ')')
-//				{
-//					result = eCIFTokenValue;
-//					mTokenType = eCIFValueNumeric;
-//				}
-//				else if (not isdigit(ch))
-//					restart();
-//				break;
-			
+
+				//			case eStateNumericSuffix:
+				//				if (isdigit(ch))
+				//					mState = eStateNumericSuffix + 1;
+				//				else
+				//					restart();
+				//				break;
+				//
+				//			case eStateNumericSuffix + 1:
+				//				if (ch == ')')
+				//				{
+				//					result = eCIFTokenValue;
+				//					mTokenType = eCIFValueNumeric;
+				//				}
+				//				else if (not isdigit(ch))
+				//					restart();
+				//				break;
+
 			case eStateValue:
 				if (isNonBlank(ch))
 					mState = eStateValue + 1;
 				else
 					error("invalid character at this position");
 				break;
-			
+
 			case eStateValue + 1:
-				if (ch == '_')		// first _, check for keywords
+				if (ch == '_') // first _, check for keywords
 				{
 					std::string s = toLowerCopy(mTokenValue);
-					
+
 					if (s == "global_")
 						result = eCIFTokenGLOBAL;
 					else if (s == "stop_")
@@ -493,16 +491,16 @@ SacParser::CIFToken SacParser::getNextToken()
 				if (not isNonBlank(ch))
 				{
 					retract();
-					
+
 					if (tolower(mTokenValue[0]) == 'd')
 						result = eCIFTokenDATA;
 					else
 						result = eCIFTokenSAVE;
-					
-					mTokenValue.erase(mTokenValue.begin(), mTokenValue.begin() + 5); 
+
+					mTokenValue.erase(mTokenValue.begin(), mTokenValue.begin() + 5);
 				}
 				break;
-			
+
 			default:
 				assert(false);
 				error("Invalid state in getNextToken");
@@ -519,7 +517,7 @@ SacParser::CIFToken SacParser::getNextToken()
 			std::cerr << " '" << mTokenValue << '\'';
 		std::cerr << std::endl;
 	}
-	
+
 	return result;
 }
 
@@ -530,8 +528,15 @@ DatablockIndex SacParser::indexDatablocks()
 	// first locate the start, as fast as we can
 	auto &sb = *mData.rdbuf();
 
-	enum {
-		start, comment, string, string_quote, qstring, data, data_name
+	enum
+	{
+		start,
+		comment,
+		string,
+		string_quote,
+		qstring,
+		data,
+		data_name
 	} state = start;
 
 	int quote = 0;
@@ -547,7 +552,7 @@ DatablockIndex SacParser::indexDatablocks()
 			case start:
 				switch (ch)
 				{
-					case '#':	state = comment;	break;
+					case '#': state = comment; break;
 					case 'd':
 					case 'D':
 						state = data;
@@ -564,7 +569,7 @@ DatablockIndex SacParser::indexDatablocks()
 						break;
 				}
 				break;
-			
+
 			case comment:
 				if (ch == '\n')
 					state = start;
@@ -574,29 +579,29 @@ DatablockIndex SacParser::indexDatablocks()
 				if (ch == quote)
 					state = string_quote;
 				break;
-			
+
 			case string_quote:
 				if (std::isspace(ch))
 					state = start;
 				else
 					state = string;
 				break;
-			
+
 			case qstring:
 				if (ch == ';' and bol)
 					state = start;
 				break;
-			
+
 			case data:
 				if (dblk[si] == 0 and isNonBlank(ch))
 				{
-					datablock = { static_cast<char>(ch) };
+					datablock = {static_cast<char>(ch)};
 					state = data_name;
 				}
 				else if (dblk[si++] != ch)
 					state = start;
 				break;
-			
+
 			case data_name:
 				if (isNonBlank(ch))
 					datablock.insert(datablock.end(), char(ch));
@@ -604,7 +609,7 @@ DatablockIndex SacParser::indexDatablocks()
 				{
 					if (not datablock.empty())
 						index[datablock] = mData.tellg();
-					
+
 					state = start;
 				}
 				else
@@ -618,13 +623,19 @@ DatablockIndex SacParser::indexDatablocks()
 	return index;
 }
 
-bool SacParser::parseSingleDatablock(const std::string& datablock)
+bool SacParser::parseSingleDatablock(const std::string &datablock)
 {
 	// first locate the start, as fast as we can
 	auto &sb = *mData.rdbuf();
 
-	enum {
-		start, comment, string, string_quote, qstring, data
+	enum
+	{
+		start,
+		comment,
+		string,
+		string_quote,
+		qstring,
+		data
 	} state = start;
 
 	int quote = 0;
@@ -640,7 +651,7 @@ bool SacParser::parseSingleDatablock(const std::string& datablock)
 			case start:
 				switch (ch)
 				{
-					case '#':	state = comment;	break;
+					case '#': state = comment; break;
 					case 'd':
 					case 'D':
 						state = data;
@@ -657,7 +668,7 @@ bool SacParser::parseSingleDatablock(const std::string& datablock)
 						break;
 				}
 				break;
-			
+
 			case comment:
 				if (ch == '\n')
 					state = start;
@@ -667,19 +678,19 @@ bool SacParser::parseSingleDatablock(const std::string& datablock)
 				if (ch == quote)
 					state = string_quote;
 				break;
-			
+
 			case string_quote:
 				if (std::isspace(ch))
 					state = start;
 				else
 					state = string;
 				break;
-			
+
 			case qstring:
 				if (ch == ';' and bol)
 					state = start;
 				break;
-			
+
 			case data:
 				if (isspace(ch) and dblk[si] == 0)
 					found = true;
@@ -701,7 +712,7 @@ bool SacParser::parseSingleDatablock(const std::string& datablock)
 	return found;
 }
 
-bool SacParser::parseSingleDatablock(const std::string& datablock, const DatablockIndex &index)
+bool SacParser::parseSingleDatablock(const std::string &datablock, const DatablockIndex &index)
 {
 	bool result = false;
 
@@ -729,14 +740,14 @@ void SacParser::parseFile()
 			case eCIFTokenGLOBAL:
 				parseGlobal();
 				break;
-			
+
 			case eCIFTokenDATA:
 				produceDatablock(mTokenValue);
 
 				match(eCIFTokenDATA);
 				parseDataBlock();
 				break;
-			
+
 			default:
 				error("This file does not seem to be an mmCIF file");
 				break;
@@ -757,24 +768,24 @@ void SacParser::parseGlobal()
 void SacParser::parseDataBlock()
 {
 	std::string cat;
-	
+
 	while (mLookahead == eCIFTokenLOOP or mLookahead == eCIFTokenTag or mLookahead == eCIFTokenSAVE)
 	{
 		switch (mLookahead)
 		{
 			case eCIFTokenLOOP:
 			{
-				cat.clear();	// should start a new category
-				
+				cat.clear(); // should start a new category
+
 				match(eCIFTokenLOOP);
-				
+
 				std::vector<std::string> tags;
-				
+
 				while (mLookahead == eCIFTokenTag)
 				{
 					std::string catName, itemName;
 					std::tie(catName, itemName) = splitTagName(mTokenValue);
-					
+
 					if (cat.empty())
 					{
 						produceCategory(catName);
@@ -782,27 +793,27 @@ void SacParser::parseDataBlock()
 					}
 					else if (not iequals(cat, catName))
 						error("inconsistent categories in loop_");
-					
+
 					tags.push_back(itemName);
 
 					match(eCIFTokenTag);
 				}
-				
+
 				while (mLookahead == eCIFTokenValue)
 				{
 					produceRow();
-					
-					for (auto tag: tags)
+
+					for (auto tag : tags)
 					{
 						produceItem(cat, tag, mTokenValue);
 						match(eCIFTokenValue);
 					}
 				}
-				
+
 				cat.clear();
 				break;
 			}
-		
+
 			case eCIFTokenTag:
 			{
 				std::string catName, itemName;
@@ -816,17 +827,17 @@ void SacParser::parseDataBlock()
 				}
 
 				match(eCIFTokenTag);
-				
+
 				produceItem(cat, itemName, mTokenValue);
 
 				match(eCIFTokenValue);
 				break;
 			}
-			
+
 			case eCIFTokenSAVE:
 				parseSaveFrame();
 				break;
-			
+
 			default:
 				assert(false);
 				break;
@@ -841,18 +852,20 @@ void SacParser::parseSaveFrame()
 
 // --------------------------------------------------------------------
 
-Parser::Parser(std::istream& is, File& f, bool init)
-	: SacParser(is, init), mFile(f), mDataBlock(nullptr)
+Parser::Parser(std::istream &is, File &f, bool init)
+	: SacParser(is, init)
+	, mFile(f)
+	, mDataBlock(nullptr)
 {
 }
 
-void Parser::produceDatablock(const std::string& name)
+void Parser::produceDatablock(const std::string &name)
 {
 	mDataBlock = new Datablock(name);
 	mFile.append(mDataBlock);
 }
 
-void Parser::produceCategory(const std::string& name)
+void Parser::produceCategory(const std::string &name)
 {
 	if (VERBOSE >= 4)
 		std::cerr << "producing category " << name << std::endl;
@@ -870,7 +883,7 @@ void Parser::produceRow()
 	mRow.lineNr(mLineNr);
 }
 
-void Parser::produceItem(const std::string& category, const std::string& item, const std::string& value)
+void Parser::produceItem(const std::string &category, const std::string &item, const std::string &value)
 {
 	if (VERBOSE >= 4)
 		std::cerr << "producing _" << category << '.' << item << " -> " << value << std::endl;
@@ -886,13 +899,15 @@ void Parser::produceItem(const std::string& category, const std::string& item, c
 struct DictParserDataImpl
 {
 	// temporary values for constructing dictionaries
-	std::vector<ValidateCategory>					mCategoryValidators;
-	std::map<std::string,std::vector<ValidateItem>>	mItemValidators;
-	std::set<std::tuple<std::string,std::string>>	mLinkedItems;
+	std::vector<ValidateCategory> mCategoryValidators;
+	std::map<std::string, std::vector<ValidateItem>> mItemValidators;
+	std::set<std::tuple<std::string, std::string>> mLinkedItems;
 };
 
-DictParser::DictParser(Validator& validator, std::istream& is)
-	: Parser(is, mFile), mValidator(validator), mImpl(new DictParserDataImpl)
+DictParser::DictParser(Validator &validator, std::istream &is)
+	: Parser(is, mFile)
+	, mValidator(validator)
+	, mImpl(new DictParserDataImpl)
 {
 }
 
@@ -910,9 +925,9 @@ void DictParser::parseSaveFrame()
 
 	if (saveFrameName.empty())
 		error("Invalid save frame, should contain more than just 'save_' here");
-	
+
 	bool isCategorySaveFrame = mTokenValue[0] != '_';
-	
+
 	Datablock dict(mTokenValue);
 	Datablock::iterator cat = dict.end();
 
@@ -921,37 +936,37 @@ void DictParser::parseSaveFrame()
 	{
 		if (mLookahead == eCIFTokenLOOP)
 		{
-			cat = dict.end();	// should start a new category
-				
+			cat = dict.end(); // should start a new category
+
 			match(eCIFTokenLOOP);
-			
+
 			std::vector<std::string> tags;
 			while (mLookahead == eCIFTokenTag)
 			{
 				std::string catName, itemName;
 				std::tie(catName, itemName) = splitTagName(mTokenValue);
-					
+
 				if (cat == dict.end())
 					std::tie(cat, std::ignore) = dict.emplace(catName);
 				else if (not iequals(cat->name(), catName))
 					error("inconsistent categories in loop_");
-				
+
 				tags.push_back(itemName);
 				match(eCIFTokenTag);
 			}
-			
+
 			while (mLookahead == eCIFTokenValue)
 			{
 				cat->emplace({});
 				auto row = cat->back();
-				
-				for (auto tag: tags)
+
+				for (auto tag : tags)
 				{
 					row[tag] = mTokenValue;
 					match(eCIFTokenValue);
 				}
 			}
-			
+
 			cat = dict.end();
 		}
 		else
@@ -963,75 +978,78 @@ void DictParser::parseSaveFrame()
 				std::tie(cat, std::ignore) = dict.emplace(catName);
 
 			match(eCIFTokenTag);
-			
+
 			if (cat->empty())
 				cat->emplace({});
 			cat->back()[itemName] = mTokenValue;
-			
+
 			match(eCIFTokenValue);
 		}
 	}
 
 	match(eCIFTokenSAVE);
-	
+
 	if (isCategorySaveFrame)
 	{
-		std::string category = dict.firstItem("_category.id");
+		std::string category;
+		cif::tie(category) = dict["category"].front().get("id");
 
 		std::vector<std::string> keys;
-		for (auto k: dict["category_key"])
+		for (auto k : dict["category_key"])
 			keys.push_back(std::get<1>(splitTagName(k["name"].as<std::string>())));
-		
+
 		iset groups;
-		for (auto g: dict["category_group"])
+		for (auto g : dict["category_group"])
 			groups.insert(g["id"].as<std::string>());
-			
+
 		mImpl->mCategoryValidators.push_back(ValidateCategory{category, keys, groups});
 	}
 	else
 	{
 		// if the type code is missing, this must be a pointer, just skip it
-		std::string typeCode = dict.firstItem("_item_type.code");
+		std::string typeCode;
+		cif::tie(typeCode) = dict["item_type"].front().get("code");
 
-		const ValidateType* tv = nullptr;
-		if (not (typeCode.empty() or typeCode == "?"))
+		const ValidateType *tv = nullptr;
+		if (not(typeCode.empty() or typeCode == "?"))
 			tv = mValidator.getValidatorForType(typeCode);
 
 		iset ess;
-		for (auto e: dict["item_enumeration"])
+		for (auto e : dict["item_enumeration"])
 			ess.insert(e["value"].as<std::string>());
-		
-		std::string defaultValue = dict.firstItem("_item_default.value");
+
+		std::string defaultValue;
+		cif::tie(defaultValue) = dict["item_default"].front().get("value");
 		bool defaultIsNull = false;
 		if (defaultValue.empty())
 		{
-			for (auto& r: dict["_item_default"])
+			for (auto &r : dict["_item_default"])
 			{
 				defaultIsNull = r["value"].is_null();
 				break;
 			}
 		}
-		
+
 		// collect the dict from our dataBlock and construct validators
-		for (auto i: dict["item"])
+		for (auto i : dict["item"])
 		{
 			std::string tagName, category, mandatory;
-			
+
 			cif::tie(tagName, category, mandatory) = i.get("name", "category_id", "mandatory_code");
-			
+
 			std::string catName, itemName;
 			std::tie(catName, itemName) = splitTagName(tagName);
-			
+
 			if (catName.empty() or itemName.empty())
 				error("Invalid tag name in _item.name " + tagName);
 
-			if (not iequals(category, catName) and not (category.empty() or category == "?"))
+			if (not iequals(category, catName) and not(category.empty() or category == "?"))
 				error("specified category id does match the implicit category name for tag '" + tagName + '\'');
 			else
 				category = catName;
-			
-			auto& ivs = mImpl->mItemValidators[category];
-			
+
+			auto &ivs = mImpl->mItemValidators[category];
+
 			auto vi = find(ivs.begin(), ivs.end(), ValidateItem{itemName});
 			if (vi == ivs.end())
 				ivs.push_back(ValidateItem{itemName, iequals(mandatory, "yes"), tv, ess, defaultValue, defaultIsNull});
@@ -1043,7 +1061,7 @@ void DictParser::parseSaveFrame()
 					if (VERBOSE > 2)
 					{
 						std::cerr << "inconsistent mandatory value for " << tagName << " in dictionary" << std::endl;
-						
+
 						if (iequals(tagName, saveFrameName))
 							std::cerr << "choosing " << mandatory << std::endl;
 						else
@@ -1060,7 +1078,7 @@ void DictParser::parseSaveFrame()
 						std::cerr << "inconsistent type for " << tagName << " in dictionary" << std::endl;
 				}
 
-//				vi->mMandatory = (iequals(mandatory, "yes"));
+				//				vi->mMandatory = (iequals(mandatory, "yes"));
 				if (vi->mType == nullptr)
 					vi->mType = tv;
 
@@ -1070,14 +1088,14 @@ void DictParser::parseSaveFrame()
 				// ...
 			}
 		}
-		
+
 		// collect the dict from our dataBlock and construct validators
-		for (auto i: dict["item_linked"])
+		for (auto i : dict["item_linked"])
 		{
 			std::string childTagName, parentTagName;
-			
+
 			cif::tie(childTagName, parentTagName) = i.get("child_name", "parent_name");
-			
+
 			mImpl->mLinkedItems.emplace(childTagName, parentTagName);
 		}
 	}
@@ -1088,20 +1106,20 @@ void DictParser::linkItems()
 	if (not mDataBlock)
 		error("no datablock");
 
-	auto& dict = *mDataBlock;
+	auto &dict = *mDataBlock;
 
 	// links are identified by a parent category, a child category and a group ID
 
-	using key_type = std::tuple<std::string,std::string,int>;
+	using key_type = std::tuple<std::string, std::string, int>;
 
-	std::map<key_type,size_t> linkIndex;
+	std::map<key_type, size_t> linkIndex;
 
 	// Each link group consists of a set of keys
-	std::vector<std::tuple<std::vector<std::string>,std::vector<std::string>>> linkKeys;
+	std::vector<std::tuple<std::vector<std::string>, std::vector<std::string>>> linkKeys;
 
-	auto addLink = [&](size_t ix, const std::string& pk, const std::string& ck)
+	auto addLink = [&](size_t ix, const std::string &pk, const std::string &ck)
 	{
-		auto&& [pkeys, ckeys] = linkKeys.at(ix);
+		auto &&[pkeys, ckeys] = linkKeys.at(ix);
 
 		bool found = false;
 		for (size_t i = 0; i < pkeys.size(); ++i)
@@ -1120,29 +1138,29 @@ void DictParser::linkItems()
 		}
 	};
 
-	auto& linkedGroupList = dict["pdbx_item_linked_group_list"];
+	auto &linkedGroupList = dict["pdbx_item_linked_group_list"];
 
-	for (auto gl: linkedGroupList)
+	for (auto gl : linkedGroupList)
 	{
 		std::string child, parent;
 		int link_group_id;
 		cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
-		
+
 		auto civ = mValidator.getValidatorForItem(child);
 		if (civ == nullptr)
 			error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
-		
+
 		auto piv = mValidator.getValidatorForItem(parent);
 		if (piv == nullptr)
 			error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
-		
-		key_type key{ piv->mCategory->mName, civ->mCategory->mName, link_group_id };
+
+		key_type key{piv->mCategory->mName, civ->mCategory->mName, link_group_id};
 		if (not linkIndex.count(key))
 		{
 			linkIndex[key] = linkKeys.size();
 			linkKeys.push_back({});
 		}
-		
+
 		size_t ix = linkIndex.at(key);
 		addLink(ix, piv->mTag, civ->mTag);
 	}
@@ -1151,35 +1169,35 @@ void DictParser::linkItems()
 	if (linkedGroupList.empty())
 	{
 		// for links recorded in categories but not in pdbx_item_linked_group_list
-		for (auto li: mImpl->mLinkedItems)
+		for (auto li : mImpl->mLinkedItems)
 		{
 			std::string child, parent;
 			std::tie(child, parent) = li;
-			
+
 			auto civ = mValidator.getValidatorForItem(child);
 			if (civ == nullptr)
 				error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
-			
+
 			auto piv = mValidator.getValidatorForItem(parent);
 			if (piv == nullptr)
 				error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 
-			key_type key{ piv->mCategory->mName, civ->mCategory->mName, 0 };
+			key_type key{piv->mCategory->mName, civ->mCategory->mName, 0};
 			if (not linkIndex.count(key))
 			{
 				linkIndex[key] = linkKeys.size();
 				linkKeys.push_back({});
 			}
-			
+
 			size_t ix = linkIndex.at(key);
 			addLink(ix, piv->mTag, civ->mTag);
 		}
 	}
 
-	auto& linkedGroup = dict["pdbx_item_linked_group"];
+	auto &linkedGroup = dict["pdbx_item_linked_group"];
 
 	// now store the links in the validator
-	for (auto& kv: linkIndex)
+	for (auto &kv : linkIndex)
 	{
 		ValidateLink link = {};
 		std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupID) = kv.first;
@@ -1187,7 +1205,7 @@ void DictParser::linkItems()
 		std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
 
 		// look up the label
-		for (auto r: linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
+		for (auto r : linkedGroup.find(cif::Key("category_id") == link.mChildCategory and cif::Key("link_group_id") == link.mLinkGroupID))
 		{
 			link.mLinkGroupLabel = r["label"].as<std::string>();
 			break;
@@ -1197,22 +1215,22 @@ void DictParser::linkItems()
 	}
 
 	// now make sure the itemType is specified for all itemValidators
-	
-	for (auto& cv: mValidator.mCategoryValidators)
+
+	for (auto &cv : mValidator.mCategoryValidators)
 	{
-		for (auto& iv: cv.mItemValidators)
+		for (auto &iv : cv.mItemValidators)
 		{
 			if (iv.mType == nullptr)
 				std::cerr << "Missing item_type for " << iv.mTag << std::endl;
 		}
-	}	
+	}
 }
 
 void DictParser::loadDictionary()
 {
 	std::unique_ptr<Datablock> dict;
-	Datablock* savedDatablock = mDataBlock;
-	
+	Datablock *savedDatablock = mDataBlock;
+
 	try
 	{
 		while (mLookahead != eCIFTokenEOF)
@@ -1222,12 +1240,12 @@ void DictParser::loadDictionary()
 				case eCIFTokenGLOBAL:
 					parseGlobal();
 					break;
-				
+
 				default:
 				{
-					dict.reset(new Datablock(mTokenValue));	// dummy datablock, for constructing the validator only
+					dict.reset(new Datablock(mTokenValue)); // dummy datablock, for constructing the validator only
 					mDataBlock = dict.get();
-					
+
 					match(eCIFTokenDATA);
 					parseDataBlock();
 					break;
@@ -1235,29 +1253,29 @@ void DictParser::loadDictionary()
 			}
 		}
 	}
-	catch (const std::exception&)
+	catch (const std::exception &)
 	{
 		std::cerr << "Error parsing dictionary" << std::endl;
 		throw;
 	}
 
 	// store all validators
-	for (auto& ic: mImpl->mCategoryValidators)
+	for (auto &ic : mImpl->mCategoryValidators)
 		mValidator.addCategoryValidator(std::move(ic));
 	mImpl->mCategoryValidators.clear();
-	
-	for (auto& iv: mImpl->mItemValidators)
+
+	for (auto &iv : mImpl->mItemValidators)
 	{
 		auto cv = mValidator.getValidatorForCategory(iv.first);
 		if (cv == nullptr)
 			error("Undefined category '" + iv.first);
 
-		for (auto& v: iv.second)
-			const_cast<ValidateCategory*>(cv)->addItemValidator(std::move(v));
+		for (auto &v : iv.second)
+			const_cast<ValidateCategory *>(cv)->addItemValidator(std::move(v));
 	}
-		
+
 	// check all item validators for having a typeValidator
-	
+
 	if (dict)
 		linkItems();
 
@@ -1280,47 +1298,45 @@ void DictParser::loadDictionary()
 bool DictParser::collectItemTypes()
 {
 	bool result = false;
-	
+
 	if (not mDataBlock)
 		error("no datablock");
-	
-	auto& dict = *mDataBlock;
-	
-	for (auto& t: dict["item_type_list"])
+
+	auto &dict = *mDataBlock;
+
+	for (auto &t : dict["item_type_list"])
 	{
 		std::string code, primitiveCode, construct;
 		cif::tie(code, primitiveCode, construct) = t.get("code", "primitive_code", "construct");
-		
+
 		ba::replace_all(construct, "\\n", "\n");
 		ba::replace_all(construct, "\\t", "\t");
 		ba::replace_all(construct, "\\\n", "");
-		
+
 		try
 		{
 			ValidateType v = {
-				code, mapToPrimitiveType(primitiveCode), boost::regex(construct, boost::regex::extended | boost::regex::optimize)
-			};
-			
+				code, mapToPrimitiveType(primitiveCode), boost::regex(construct, boost::regex::extended | boost::regex::optimize)};
+
 			mValidator.addTypeValidator(std::move(v));
 		}
-		catch (const std::exception&)
+		catch (const std::exception &)
 		{
 			throw_with_nested(CifParserError(t.lineNr(), "error in regular expression"));
 		}
 
-// Do not replace an already defined type validator, this won't work with pdbx_v40
-// as it has a name that is too strict for its own names :-)
-//		if (mFileImpl.mTypeValidators.count(v))
-//			mFileImpl.mTypeValidators.erase(v);
+		// Do not replace an already defined type validator, this won't work with pdbx_v40
+		// as it has a name that is too strict for its own names :-)
+		//		if (mFileImpl.mTypeValidators.count(v))
+		//			mFileImpl.mTypeValidators.erase(v);
 
 		if (VERBOSE >= 5)
 			std::cerr << "Added type " << code << " (" << primitiveCode << ") => " << construct << std::endl;
-		
+
 		result = true;
 	}
-	
+
 	return result;
 }
 
-
-}
+} // namespace cif

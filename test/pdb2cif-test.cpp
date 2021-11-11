@@ -18,7 +18,6 @@ int main(int argc, char* argv[])
 	desc.add_options()
 		("input,i",		po::value<std::string>(),	"Input file")
 		("help,h",									"Display help message")
-		("version",									"Print version")
 		("verbose,v",								"Verbose output")
 		("debug,d",		po::value<int>(),			"Debug level (for even more verbose output)");
 
@@ -28,12 +27,6 @@ int main(int argc, char* argv[])
 	po::variables_map vm;
 	po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
 	po::notify(vm);
-
-	if (vm.count("version"))
-	{
-		std::cout << argv[0] << " version " PACKAGE_VERSION << std::endl;
-		exit(0);
-	}
 
 	if (vm.count("help") or vm.count("input") == 0)
 	{
