@@ -173,10 +173,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-set(Boost_DETAILED_FAILURE_MSG ON)
-if(NOT BUILD_SHARED_LIBS)
-	set(Boost_USE_STATIC_LIBS ON)
-endif()
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex program_options)
 
 if(NOT MSVC AND Boost_USE_STATIC_LIBS)
@@ -186,16 +182,14 @@ endif()
 
 # Create a revision file, containing the current git version info
 
-find_package(Git)
-if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
-	include(GetGitRevisionDescription)
+include(GetGitRevisionDescription)
+option(GENERATE_CUSTOM_VERSION "Generate a custom version string" OFF)
+if(GIT-NOTFOUND OR HEAD-HASH-NOTFOUND OR NOT GENERATE_CUSTOM_VERSION)
     get_git_head_revision(REFSPEC COMMITHASH)
 
 	# Generate our own version string
 	git_describe_working_tree(BUILD_VERSION_STRING --match=build --dirty)
 else()
-    message(WARNING "Git not found, cannot set version info")
-
     SET(BUILD_VERSION_STRING ${PROJECT_VERSION})
 endif()
 
