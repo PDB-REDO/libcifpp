@@ -256,7 +256,6 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/CifUtils.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/CifValidator.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/Compound.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Matrix.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/PDB2Cif.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/PDB2CifRemark3.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/Point.hpp

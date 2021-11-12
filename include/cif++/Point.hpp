@@ -380,7 +380,7 @@ PointF<F> Nudge(PointF<F> p, F offset);
 Quaternion Normalize(Quaternion q);
 
 std::tuple<double, Point> QuaternionToAngleAxis(Quaternion q);
-Point Centroid(std::vector<Point> &Points);
+Point Centroid(const std::vector<Point> &Points);
 Point CenterPoints(std::vector<Point> &Points);
 
 /// \brief Returns how the two sets of points \a a and \b b can be aligned
