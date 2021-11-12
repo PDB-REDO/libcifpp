@@ -38,65 +38,33 @@ namespace mmcif
 // matrix is m x n, addressing i,j is 0 <= i < m and 0 <= j < n
 // element m i,j is mapped to [i * n + j] and thus storage is row major
 
-template <typename T>
-class MatrixBase
+template <typename M>
+class MatrixExpression
 {
   public:
-	using value_type = T;
+	uint32_t dim_m() const { return static_cast<const M&>(*this).dim_m(); }
+	uint32_t dim_n() const { return static_cast<const M&>(*this).dim_n(); }
 
-	virtual ~MatrixBase() {}
+	double &operator()(uint32_t i, uint32_t j)
+	{
+		return static_cast<M&>(*this).operator()(i, j);
+	}
 
-	virtual uint32_t dim_m() const = 0;
-	virtual uint32_t dim_n() const = 0;
-
-	virtual value_type &operator()(uint32_t i, uint32_t j) { throw std::runtime_error("unimplemented method"); }
-	virtual value_type operator()(uint32_t i, uint32_t j) const = 0;
-
-	MatrixBase &operator*=(const value_type &rhs);
-
-	MatrixBase &operator-=(const value_type &rhs);
+	double operator()(uint32_t i, uint32_t j) const
+	{
+		return static_cast<const M&>(*this).operator()(i, j);
+	}
 };
 
-template <typename T>
-MatrixBase<T> &MatrixBase<T>::operator*=(const T &rhs)
-{
-	for (uint32_t i = 0; i < dim_m(); ++i)
-	{
-		for (uint32_t j = 0; j < dim_n(); ++j)
-		{
-			operator()(i, j) *= rhs;
-		}
-	}
-
-	return *this;
-}
-
-template <typename T>
-MatrixBase<T> &MatrixBase<T>::operator-=(const T &rhs)
-{
-	for (uint32_t i = 0; i < dim_m(); ++i)
-	{
-		for (uint32_t j = 0; j < dim_n(); ++j)
-		{
-			operator()(i, j) -= rhs;
-		}
-	}
-
-	return *this;
-}
-
-template <typename T>
-class Matrix : public MatrixBase<T>
+class Matrix : public MatrixExpression<Matrix>
 {
   public:
-	using value_type = T;
-
-	template <typename T2>
-	Matrix(const MatrixBase<T2> &m)
+	template <typename M2>
+	Matrix(const MatrixExpression<M2> &m)
 		: m_m(m.dim_m())
 		, m_n(m.dim_n())
 	{
-		m_data = new value_type[m_m * m_n];
+		m_data = new double[m_m * m_n];
 		for (uint32_t i = 0; i < m_m; ++i)
 		{
 			for (uint32_t j = 0; j < m_n; ++j)
@@ -115,13 +83,13 @@ class Matrix : public MatrixBase<T>
 		: m_m(m.m_m)
 		, m_n(m.m_n)
 	{
-		m_data = new value_type[m_m * m_n];
+		m_data = new double[m_m * m_n];
 		std::copy(m.m_data, m.m_data + (m_m * m_n), m_data);
 	}
 
 	Matrix &operator=(const Matrix &m)
 	{
-		value_type *t = new value_type[m.m_m * m.m_n];
+		double *t = new double[m.m_m * m.m_n];
 		std::copy(m.m_data, m.m_data + (m.m_m * m.m_n), t);
 
 		delete[] m_data;
@@ -132,140 +100,96 @@ class Matrix : public MatrixBase<T>
 		return *this;
 	}
 
-	Matrix(uint32_t m, uint32_t n, T v = T())
+	Matrix(uint32_t m, uint32_t n, double v = 0)
 		: m_m(m)
 		, m_n(n)
 	{
-		m_data = new value_type[m_m * m_n];
+		m_data = new double[m_m * m_n];
 		std::fill(m_data, m_data + (m_m * m_n), v);
 	}
 
-	virtual ~Matrix()
+	~Matrix()
 	{
 		delete[] m_data;
 	}
 
-	virtual uint32_t dim_m() const { return m_m; }
-	virtual uint32_t dim_n() const { return m_n; }
+	uint32_t dim_m() const { return m_m; }
+	uint32_t dim_n() const { return m_n; }
 
-	virtual value_type operator()(uint32_t i, uint32_t j) const
+	double operator()(uint32_t i, uint32_t j) const
 	{
 		assert(i < m_m);
 		assert(j < m_n);
 		return m_data[i * m_n + j];
 	}
 
-	virtual value_type &operator()(uint32_t i, uint32_t j)
+	double &operator()(uint32_t i, uint32_t j)
 	{
 		assert(i < m_m);
 		assert(j < m_n);
 		return m_data[i * m_n + j];
-	}
-
-	template <typename U>
-	Matrix &operator/=(U v)
-	{
-		for (uint32_t i = 0; i < m_m * m_n; ++i)
-			m_data[i] /= v;
-
-		return *this;
 	}
 
   private:
-	value_type *m_data;
+	double *m_data;
 	uint32_t m_m, m_n;
 };
 
 // --------------------------------------------------------------------
 
-template <typename T>
-class SymmetricMatrix : public MatrixBase<T>
+class SymmetricMatrix : public MatrixExpression<SymmetricMatrix>
 {
   public:
-	typedef typename MatrixBase<T>::value_type value_type;
-
-	SymmetricMatrix(uint32_t n, T v = T())
-		: m_owner(true)
-		, m_n(n)
+	SymmetricMatrix(uint32_t n, double v = 0)
+		: m_n(n)
 	{
 		uint32_t N = (m_n * (m_n + 1)) / 2;
-		m_data = new value_type[N];
+		m_data = new double[N];
 		std::fill(m_data, m_data + N, v);
 	}
 
-	SymmetricMatrix(const T *data, uint32_t n)
-		: m_owner(false)
-		, m_data(const_cast<T *>(data))
-		, m_n(n)
+	~SymmetricMatrix()
 	{
+		delete[] m_data;
 	}
 
-	virtual ~SymmetricMatrix()
+	uint32_t dim_m() const { return m_n; }
+	uint32_t dim_n() const { return m_n; }
+
+	double operator()(uint32_t i, uint32_t j) const
 	{
-		if (m_owner)
-			delete[] m_data;
+		return i < j
+				? m_data[(j * (j + 1)) / 2 + i]
+				: m_data[(i * (i + 1)) / 2 + j];
 	}
 
-	virtual uint32_t dim_m() const { return m_n; }
-	virtual uint32_t dim_n() const { return m_n; }
-
-	T operator()(uint32_t i, uint32_t j) const;
-	virtual T &operator()(uint32_t i, uint32_t j);
-
-	template <typename U>
-	SymmetricMatrix &operator/=(U v)
+	double &operator()(uint32_t i, uint32_t j)
 	{
-		uint32_t N = (m_n * (m_n + 1)) / 2;
-
-		for (uint32_t i = 0; i < N; ++i)
-			m_data[i] /= v;
-
-		return *this;
+		if (i > j)
+			std::swap(i, j);
+		assert(j < m_n);
+		return m_data[(j * (j + 1)) / 2 + i];
 	}
 
   private:
-	bool m_owner;
-	value_type *m_data;
+	double *m_data;
 	uint32_t m_n;
 };
 
-template <typename T>
-inline T SymmetricMatrix<T>::operator()(uint32_t i, uint32_t j) const
-{
-	return i < j
-	           ? m_data[(j * (j + 1)) / 2 + i]
-	           : m_data[(i * (i + 1)) / 2 + j];
-}
-
-template <typename T>
-inline T &SymmetricMatrix<T>::operator()(uint32_t i, uint32_t j)
-{
-	if (i > j)
-		std::swap(i, j);
-	assert(j < m_n);
-	return m_data[(j * (j + 1)) / 2 + i];
-}
-
-template <typename T>
-class IdentityMatrix : public MatrixBase<T>
+class IdentityMatrix : public MatrixExpression<IdentityMatrix>
 {
   public:
-	typedef typename MatrixBase<T>::value_type value_type;
-
 	IdentityMatrix(uint32_t n)
 		: m_n(n)
 	{
 	}
 
-	virtual uint32_t dim_m() const { return m_n; }
-	virtual uint32_t dim_n() const { return m_n; }
+	uint32_t dim_m() const { return m_n; }
+	uint32_t dim_n() const { return m_n; }
 
-	virtual value_type operator()(uint32_t i, uint32_t j) const
+	double operator()(uint32_t i, uint32_t j) const
 	{
-		value_type result = 0;
-		if (i == j)
-			result = 1;
-		return result;
+		return i == j ? 1 : 0;
 	}
 
   private:
@@ -273,60 +197,70 @@ class IdentityMatrix : public MatrixBase<T>
 };
 
 // --------------------------------------------------------------------
-// matrix functions
+// matrix functions, implemented as expression templates
 
-template <typename T>
-Matrix<T> operator*(const MatrixBase<T> &lhs, const MatrixBase<T> &rhs)
+template<typename M1, typename M2>
+class MatrixSubtraction : public MatrixExpression<MatrixSubtraction<M1, M2>>
 {
-	Matrix<T> result(std::min(lhs.dim_m(), rhs.dim_m()), std::min(lhs.dim_n(), rhs.dim_n()));
-
-	for (uint32_t i = 0; i < result.dim_m(); ++i)
+  public:
+	MatrixSubtraction(const M1 &m1, const M2 &m2)
+		: m_m1(m1), m_m2(m2)
 	{
-		for (uint32_t j = 0; j < result.dim_n(); ++j)
-		{
-			for (uint32_t li = 0, rj = 0; li < lhs.dim_m() and rj < rhs.dim_n(); ++li, ++rj)
-				result(i, j) += lhs(li, j) * rhs(i, rj);
-		}
+		assert(m_m1.dim_m() == m_m2.dim_m());
+		assert(m_m1.dim_n() == m_m2.dim_n());
 	}
 
-	return result;
-}
+	uint32_t dim_m() const { return m_m1.dim_m(); }
+	uint32_t dim_n() const { return m_m1.dim_n(); }
 
-template <typename T>
-Matrix<T> operator*(const MatrixBase<T> &lhs, T rhs)
-{
-	Matrix<T> result(lhs);
-	result *= rhs;
-
-	return result;
-}
-
-template <typename T>
-Matrix<T> operator-(const MatrixBase<T> &lhs, const MatrixBase<T> &rhs)
-{
-	Matrix<T> result(std::min(lhs.dim_m(), rhs.dim_m()), std::min(lhs.dim_n(), rhs.dim_n()));
-
-	for (uint32_t i = 0; i < result.dim_m(); ++i)
+	double operator()(uint32_t i, uint32_t j) const
 	{
-		for (uint32_t j = 0; j < result.dim_n(); ++j)
-		{
-			result(i, j) = lhs(i, j) - rhs(i, j);
-		}
+		return m_m1(i, j) - m_m2(i, j);
 	}
 
-	return result;
-}
+  private:
+	const M1 &m_m1;
+	const M2 &m_m2;
+};
 
-template <typename T>
-Matrix<T> operator-(const MatrixBase<T> &lhs, T rhs)
+template<typename M1, typename M2>
+MatrixSubtraction<M1, M2> operator-(const MatrixExpression<M1> &m1, const MatrixExpression<M2> &m2)
 {
-	Matrix<T> result(lhs.dim_m(), lhs.dim_n());
-	result -= rhs;
-	return result;
+	return MatrixSubtraction(*static_cast<const M1*>(&m1), *static_cast<const M2*>(&m2));
 }
 
-template<class M1, typename T>
-void cofactors(const M1& m, SymmetricMatrix<T>& cf)
+template<typename M>
+class MatrixMultiplication : public MatrixExpression<MatrixMultiplication<M>>
+{
+  public:
+	MatrixMultiplication(const M &m, double v)
+		: m_m(m), m_v(v)
+	{
+	}
+
+	uint32_t dim_m() const { return m_m.dim_m(); }
+	uint32_t dim_n() const { return m_m.dim_n(); }
+
+	double operator()(uint32_t i, uint32_t j) const
+	{
+		return m_m(i, j) * m_v;
+	}
+
+  private:
+	const M &m_m;
+	double m_v;
+};
+
+template<typename M>
+MatrixMultiplication<M> operator*(const MatrixExpression<M> &m, double v)
+{
+	return MatrixMultiplication(*static_cast<const M*>(&m), v);
+}
+
+// --------------------------------------------------------------------
+
+template<class M1>
+void cofactors(const M1& m, SymmetricMatrix& cf)
 {
     const size_t ixs[4][3] =
     {
@@ -500,7 +434,7 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 Quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& pb)
 {
 	// First calculate M, a 3x3 Matrix containing the sums of products of the coordinates of A and B
-	Matrix<double> M(3, 3, 0);
+	Matrix M(3, 3, 0);
 
 	for (uint32_t i = 0; i < pa.size(); ++i)
 	{
@@ -513,7 +447,7 @@ Quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& p
 	}
 	
 	// Now calculate N, a symmetric 4x4 Matrix
-	SymmetricMatrix<double> N(4);
+	SymmetricMatrix N(4);
 	
 	N(0, 0) =  M(0, 0) + M(1, 1) + M(2, 2);
 	N(0, 1) =  M(1, 2) - M(2, 1);
@@ -563,11 +497,10 @@ Quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& p
 	double lm = LargestDepressedQuarticSolution(C, D, E);
 	
 	// calculate t = (N - λI)
-	Matrix<double> li = IdentityMatrix<double>(4) * lm;
-	Matrix<double> t = N - li;
+	Matrix t = N - IdentityMatrix(4) * lm;
 	
 	// calculate a Matrix of cofactors for t, since N is symmetric, t must be symmetric as well and so will be cf
-	SymmetricMatrix<double> cf(4);
+	SymmetricMatrix cf(4);
 	cofactors(t, cf);
 
 	int maxR = 0;
