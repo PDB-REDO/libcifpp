@@ -35,6 +35,9 @@
 #include "cif++/BondMap.hpp"
 #include "cif++/CifValidator.hpp"
 
+namespace tt = boost::test_tools;
+
+
 std::filesystem::path gTestDir = std::filesystem::current_path();	// filled in first test
 
 // --------------------------------------------------------------------
@@ -1718,8 +1721,7 @@ BOOST_AUTO_TEST_CASE(t1)
 	Quaternion q{ 0.5, 0.5, 0.5, 0.5 };
 	q = Normalize(q);
 
-	// std::cout << "q: " << q << std::endl;
-
+	const auto &&[angle0, axis0] = QuaternionToAngleAxis(q);
 
 	std::vector<Point> p1{
 		{ 16.979, 13.301, 44.555 },
@@ -1735,26 +1737,16 @@ BOOST_AUTO_TEST_CASE(t1)
 
 	Point c1 = CenterPoints(p1);
 
-	std::cout << c1 << std::endl;
-
 	for (auto &p : p2)
 		p.rotate(q);
 	
-
 	Point c2 = CenterPoints(p2);
-
-	// std::cout << c2 << std::endl;
-
-	// std::cout << "rmsd: " << RMSd(p1, p2) << std::endl;
 
 	auto q2 = AlignPoints(p1, p2);
 
-	// std::cout << "q2: " << q2 << std::endl;
-
-
 	const auto &&[angle, axis] = QuaternionToAngleAxis(q2);
 
-	// std::cout << "rotated " << angle << " " << std::endl;
+	BOOST_TEST(std::fmod(360 + angle, 360) == std::fmod(360 - angle0, 360), tt::tolerance(0.01));
 
 	for (auto &p : p1)
 		p.rotate(q2);

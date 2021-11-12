@@ -162,13 +162,6 @@ class Matrix : public MatrixBase<T>
 		return m_data[i * m_n + j];
 	}
 
-	template <typename Func>
-	void each(Func f)
-	{
-		for (uint32_t i = 0; i < m_m * m_n; ++i)
-			f(m_data[i]);
-	}
-
 	template <typename U>
 	Matrix &operator/=(U v)
 	{
@@ -219,18 +212,6 @@ class SymmetricMatrix : public MatrixBase<T>
 	T operator()(uint32_t i, uint32_t j) const;
 	virtual T &operator()(uint32_t i, uint32_t j);
 
-	// erase two rows, add one at the end (for neighbour joining)
-	void erase_2(uint32_t i, uint32_t j);
-
-	template <typename Func>
-	void each(Func f)
-	{
-		uint32_t N = (m_n * (m_n + 1)) / 2;
-
-		for (uint32_t i = 0; i < N; ++i)
-			f(m_data[i]);
-	}
-
 	template <typename U>
 	SymmetricMatrix &operator/=(U v)
 	{
@@ -263,28 +244,6 @@ inline T &SymmetricMatrix<T>::operator()(uint32_t i, uint32_t j)
 		std::swap(i, j);
 	assert(j < m_n);
 	return m_data[(j * (j + 1)) / 2 + i];
-}
-
-template <typename T>
-void SymmetricMatrix<T>::erase_2(uint32_t di, uint32_t dj)
-{
-	uint32_t s = 0, d = 0;
-	for (uint32_t i = 0; i < m_n; ++i)
-	{
-		for (uint32_t j = 0; j < i; ++j)
-		{
-			if (i != di and j != dj and i != dj and j != di)
-			{
-				if (s != d)
-					m_data[d] = m_data[s];
-				++d;
-			}
-
-			++s;
-		}
-	}
-
-	--m_n;
 }
 
 template <typename T>
