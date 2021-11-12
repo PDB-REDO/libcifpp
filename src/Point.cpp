@@ -33,10 +33,7 @@ namespace mmcif
 {
 
 // --------------------------------------------------------------------
-// uBlas compatible matrix types
-
-// matrix is m x n, addressing i,j is 0 <= i < m and 0 <= j < n
-// element m i,j is mapped to [i * n + j] and thus storage is row major
+// We're using expression templates here
 
 template <typename M>
 class MatrixExpression
@@ -56,6 +53,10 @@ class MatrixExpression
 	}
 };
 
+// --------------------------------------------------------------------
+// matrix is m x n, addressing i,j is 0 <= i < m and 0 <= j < n
+// element m i,j is mapped to [i * n + j] and thus storage is row major
+
 class Matrix : public MatrixExpression<Matrix>
 {
   public:
@@ -63,8 +64,8 @@ class Matrix : public MatrixExpression<Matrix>
 	Matrix(const MatrixExpression<M2> &m)
 		: m_m(m.dim_m())
 		, m_n(m.dim_n())
+		, m_data(m_m * m_n)
 	{
-		m_data = new double[m_m * m_n];
 		for (uint32_t i = 0; i < m_m; ++i)
 		{
 			for (uint32_t j = 0; j < m_n; ++j)
@@ -72,46 +73,19 @@ class Matrix : public MatrixExpression<Matrix>
 		}
 	}
 
-	Matrix()
-		: m_data(nullptr)
-		, m_m(0)
-		, m_n(0)
-	{
-	}
-
-	Matrix(const Matrix &m)
-		: m_m(m.m_m)
-		, m_n(m.m_n)
-	{
-		m_data = new double[m_m * m_n];
-		std::copy(m.m_data, m.m_data + (m_m * m_n), m_data);
-	}
-
-	Matrix &operator=(const Matrix &m)
-	{
-		double *t = new double[m.m_m * m.m_n];
-		std::copy(m.m_data, m.m_data + (m.m_m * m.m_n), t);
-
-		delete[] m_data;
-		m_data = t;
-		m_m = m.m_m;
-		m_n = m.m_n;
-
-		return *this;
-	}
-
-	Matrix(uint32_t m, uint32_t n, double v = 0)
+	Matrix(size_t m, size_t n, double v = 0)
 		: m_m(m)
 		, m_n(n)
+		, m_data(m_m * m_n)
 	{
-		m_data = new double[m_m * m_n];
-		std::fill(m_data, m_data + (m_m * m_n), v);
+		std::fill(m_data.begin(), m_data.end(), v);
 	}
 
-	~Matrix()
-	{
-		delete[] m_data;
-	}
+	Matrix() = default;
+	Matrix(Matrix &&m) = default;
+	Matrix(const Matrix &m) = default;
+	Matrix &operator=(Matrix &&m) = default;
+	Matrix &operator=(const Matrix &m) = default;
 
 	uint32_t dim_m() const { return m_m; }
 	uint32_t dim_n() const { return m_n; }
@@ -131,8 +105,8 @@ class Matrix : public MatrixExpression<Matrix>
 	}
 
   private:
-	double *m_data;
-	uint32_t m_m, m_n;
+	uint32_t m_m = 0, m_n = 0;
+	std::vector<double> m_data;
 };
 
 // --------------------------------------------------------------------
@@ -142,16 +116,16 @@ class SymmetricMatrix : public MatrixExpression<SymmetricMatrix>
   public:
 	SymmetricMatrix(uint32_t n, double v = 0)
 		: m_n(n)
+		, m_data((m_n * (m_n + 1)) / 2)
 	{
-		uint32_t N = (m_n * (m_n + 1)) / 2;
-		m_data = new double[N];
-		std::fill(m_data, m_data + N, v);
+		std::fill(m_data.begin(), m_data.end(), v);
 	}
 
-	~SymmetricMatrix()
-	{
-		delete[] m_data;
-	}
+	SymmetricMatrix() = default;
+	SymmetricMatrix(SymmetricMatrix &&m) = default;
+	SymmetricMatrix(const SymmetricMatrix &m) = default;
+	SymmetricMatrix &operator=(SymmetricMatrix &&m) = default;
+	SymmetricMatrix &operator=(const SymmetricMatrix &m) = default;
 
 	uint32_t dim_m() const { return m_n; }
 	uint32_t dim_n() const { return m_n; }
@@ -172,8 +146,8 @@ class SymmetricMatrix : public MatrixExpression<SymmetricMatrix>
 	}
 
   private:
-	double *m_data;
 	uint32_t m_n;
+	std::vector<double> m_data;
 };
 
 class IdentityMatrix : public MatrixExpression<IdentityMatrix>
@@ -260,8 +234,10 @@ MatrixMultiplication<M> operator*(const MatrixExpression<M> &m, double v)
 // --------------------------------------------------------------------
 
 template<class M1>
-void cofactors(const M1& m, SymmetricMatrix& cf)
+Matrix Cofactors(const M1& m)
 {
+	Matrix cf(m.dim_m(), m.dim_m());
+
     const size_t ixs[4][3] =
     {
         { 1, 2, 3 },
@@ -274,7 +250,7 @@ void cofactors(const M1& m, SymmetricMatrix& cf)
     {
         const size_t* ix = ixs[x];
 
-        for (size_t y = x; y < 4; ++y)
+        for (size_t y = 0; y < 4; ++y)
         {
             const size_t* iy = ixs[y];
 
@@ -290,6 +266,8 @@ void cofactors(const M1& m, SymmetricMatrix& cf)
 				cf(x, y) *= -1;
         }
     }
+
+	return cf;
 }
 
 // --------------------------------------------------------------------
@@ -494,14 +472,13 @@ Quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& p
 		(N(0,2) * N(1,3) - N(2,1) * N(0,3)) * (N(0,2) * N(1,3) - N(2,1) * N(0,3));
 	
 	// solve quartic
-	double lm = LargestDepressedQuarticSolution(C, D, E);
+	double lambda = LargestDepressedQuarticSolution(C, D, E);
 	
 	// calculate t = (N - λI)
-	Matrix t = N - IdentityMatrix(4) * lm;
+	Matrix t = N - IdentityMatrix(4) * lambda;
 	
 	// calculate a Matrix of cofactors for t, since N is symmetric, t must be symmetric as well and so will be cf
-	SymmetricMatrix cf(4);
-	cofactors(t, cf);
+	Matrix cf = Cofactors(t);
 
 	int maxR = 0;
 	for (int r = 1; r < 4; ++r)
