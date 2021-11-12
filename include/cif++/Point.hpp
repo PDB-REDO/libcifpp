@@ -382,7 +382,16 @@ Quaternion Normalize(Quaternion q);
 std::tuple<double, Point> QuaternionToAngleAxis(Quaternion q);
 Point Centroid(const std::vector<Point> &Points);
 Point CenterPoints(std::vector<Point> &Points);
+
+/// \brief Returns how the two sets of points \a a and \b b can be aligned
+///        
+/// \param a	The first set of points
+/// \param b    The second set of points
+/// \result     The quaternion which should be applied to the points in \a a to
+///             obtain the best superposition.
 Quaternion AlignPoints(const std::vector<Point> &a, const std::vector<Point> &b);
+
+/// \brief The RMSd for the points in \a a and \a b
 double RMSd(const std::vector<Point> &a, const std::vector<Point> &b);
 
 // --------------------------------------------------------------------
