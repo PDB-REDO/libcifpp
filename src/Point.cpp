@@ -477,13 +477,13 @@ Quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& p
 	// calculate t = (N - λI)
 	Matrix t = N - IdentityMatrix(4) * lambda;
 	
-	// calculate a Matrix of cofactors for t, since N is symmetric, t must be symmetric as well and so will be cf
+	// calculate a Matrix of cofactors for t
 	Matrix cf = Cofactors(t);
 
 	int maxR = 0;
 	for (int r = 1; r < 4; ++r)
 	{
-		if (cf(r, 0) > cf(maxR, 0))
+		if (std::abs(cf(r, 0)) > std::abs(cf(maxR, 0)))
 			maxR = r;
 	}
 	
