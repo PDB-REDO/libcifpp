@@ -2512,7 +2512,7 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 			continue;
 
 		if (a2.empty() or a2 == ".")
-			atomSites.erase(cif::Key("id") == i->id());
+			removeAtom(*i);
 		else if (a1 != a2)
 		{
 			auto ra = r.front();
