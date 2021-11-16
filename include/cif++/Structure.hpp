@@ -236,6 +236,8 @@ class Residue
 	Atom atomByID(const std::string &atomID) const;
 
 	const std::string &compoundID() const { return mCompoundID; }
+	void setCompoundID(const std::string &id) { mCompoundID = id; }
+
 	const std::string &asymID() const { return mAsymID; }
 	int seqID() const { return mSeqID; }
 	std::string entityID() const;
@@ -470,8 +472,14 @@ class Structure
 	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
 	const Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID = 0) const;
 
+	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
+	Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID = 0);
+
 	/// \brief Get a the single residue for an asym with id \a asymID
 	const Residue &getResidue(const std::string &asymID) const;
+
+	/// \brief Get a the single residue for an asym with id \a asymID
+	Residue &getResidue(const std::string &asymID);
 
 	// map between auth and label locations
 
@@ -497,7 +505,7 @@ class Structure
 	void removeAtom(Atom &a);
 	void swapAtoms(Atom &a1, Atom &a2); // swap the labels for these atoms
 	void moveAtom(Atom &a, Point p);    // move atom to a new location
-	void changeResidue(const Residue &res, const std::string &newCompound,
+	void changeResidue(Residue &res, const std::string &newCompound,
 		const std::vector<std::tuple<std::string, std::string>> &remappedAtoms);
 
 	/// \brief Create a new non-polymer entity, returns new ID

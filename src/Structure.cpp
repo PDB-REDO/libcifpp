@@ -2075,6 +2075,11 @@ const Residue &Structure::getResidue(const std::string &asymID, const std::strin
 	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
 }
 
+Residue &Structure::getResidue(const std::string &asymID, const std::string &compID, int seqID)
+{
+	return const_cast<Residue&>(const_cast<Structure const&>(*this).getResidue(asymID, compID, seqID));
+}
+
 const Residue &Structure::getResidue(const std::string &asymID) const
 {
 	for (auto &res : mNonPolymers)
@@ -2086,6 +2091,11 @@ const Residue &Structure::getResidue(const std::string &asymID) const
 	}
 
 	throw std::out_of_range("Could not find residue " + asymID);
+}
+
+Residue &Structure::getResidue(const std::string &asymID)
+{
+	return const_cast<Residue&>(const_cast<Structure const&>(*this).getResidue(asymID));
 }
 
 File &Structure::getFile() const
@@ -2426,7 +2436,7 @@ void Structure::moveAtom(Atom &a, Point p)
 	a.location(p);
 }
 
-void Structure::changeResidue(const Residue &res, const std::string &newCompound,
+void Structure::changeResidue(Residue &res, const std::string &newCompound,
 	const std::vector<std::tuple<std::string, std::string>> &remappedAtoms)
 {
 	using namespace cif::literals;
@@ -2489,6 +2499,8 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 	}
 	else
 		insertCompound(newCompound, false);
+
+	res.setCompoundID(newCompound);
 
 	auto &atomSites = db["atom_site"];
 	auto atoms = res.atoms();
