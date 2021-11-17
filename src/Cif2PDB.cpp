@@ -249,7 +249,7 @@ size_t WriteContinuedLine(std::ostream& pdbFile, std::string header, int& count,
 
 	for (auto& line: lines)
 	{
-		ba::to_upper(line);
+		// ba::to_upper(line);
 
 		pdbFile << header;
 		
