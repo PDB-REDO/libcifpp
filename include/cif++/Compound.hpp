@@ -104,6 +104,7 @@ class Compound
 	std::string id() const { return mID; }
 	std::string name() const { return mName; }
 	std::string type() const { return mType; }
+	std::string group() const { return mGroup; }
 	std::string formula() const { return mFormula; }
 	float formulaWeight() const { return mFormulaWeight; }
 	int formalCharge() const { return mFormalCharge; }
@@ -130,11 +131,12 @@ class Compound
 	friend class CCP4CompoundFactoryImpl;
 
 	Compound(cif::Datablock &db);
-	Compound(cif::Datablock &db, const std::string &id, const std::string &name, const std::string &type);
+	Compound(cif::Datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group);
 
 	std::string mID;
 	std::string mName;
 	std::string mType;
+	std::string mGroup;
 	std::string mFormula;
 	float mFormulaWeight = 0;
 	int mFormalCharge = 0;
