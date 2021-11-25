@@ -20,8 +20,11 @@ int main(int argc, char* argv[])
 		if (argc == 3)
 			testdir = argv[2];
 
-		if (std::filesystem::exists(testdir / ".."/"data"/"ccd-subset.cif"))
-			cif::addFileResource("components.cif", testdir / ".."/"data"/"ccd-subset.cif");
+		if (std::filesystem::exists(testdir / ".." / "data" / "ccd-subset.cif"))
+			cif::addFileResource("components.cif", testdir / ".." / "data" / "ccd-subset.cif");
+
+		if (std::filesystem::exists(testdir / ".." / "rsrc" / "mmcif_pdbx_v50.dic"))
+			cif::addFileResource("mmcif_pdbx_v50.dic", testdir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
 
 		mmcif::CompoundFactory::instance().pushDictionary(testdir / "REA.cif");
 		mmcif::CompoundFactory::instance().pushDictionary(testdir / "RXA.cif");
