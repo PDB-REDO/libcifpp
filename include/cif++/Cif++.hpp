@@ -1169,11 +1169,11 @@ struct Empty
 
 struct Key
 {
-	Key(const std::string &itemTag)
+	explicit Key(const std::string &itemTag)
 		: mItemTag(itemTag)
 	{
 	}
-	Key(const char *itemTag)
+	explicit Key(const char *itemTag)
 		: mItemTag(itemTag)
 	{
 	}
