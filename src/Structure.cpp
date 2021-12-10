@@ -216,9 +216,9 @@ struct AtomImpl
 		, mLocation(i.mLocation)
 		, mRefcount(1)
 		, mRow(i.mRow)
+		, mCachedRefs(i.mCachedRefs)
 		, mCompound(i.mCompound)
 		, mRadius(i.mRadius)
-		, mCachedProperties(i.mCachedProperties)
 		, mSymmetryCopy(i.mSymmetryCopy)
 		, mClone(true)
 	// , mRTop(i.mRTop), mD(i.mD)
@@ -270,9 +270,9 @@ struct AtomImpl
 		, mLocation(loc)
 		, mRefcount(1)
 		, mRow(impl.mRow)
+		, mCachedRefs(impl.mCachedRefs)
 		, mCompound(impl.mCompound)
 		, mRadius(impl.mRadius)
-		, mCachedProperties(impl.mCachedProperties)
 		, mSymmetryCopy(true)
 		, mSymmetryOperator(sym_op)
 	{
@@ -317,13 +317,15 @@ struct AtomImpl
 		auto cat = mDb.get("atom_site_anisotrop");
 		if (cat)
 		{
-			auto r = cat->find1(cif::Key("id") == mID);
-
-			if (not r.empty())
+			try
 			{
-				result = true;
+				auto r = cat->find1(cif::Key("id") == mID);
 				cif::tie(anisou[0], anisou[1], anisou[2], anisou[3], anisou[4], anisou[5]) =
 					r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
+				result = true;
+			}
+			catch(const std::exception& e)
+			{
 			}
 		}
 
@@ -338,9 +340,9 @@ struct AtomImpl
 
 		if (not mClone)
 		{
-			mRow["Cartn_x"] = p.getX();
-			mRow["Cartn_y"] = p.getY();
-			mRow["Cartn_z"] = p.getZ();
+			property("Cartn_x", std::to_string(p.getX()));
+			property("Cartn_y", std::to_string(p.getY()));
+			property("Cartn_z", std::to_string(p.getZ()));
 		}
 
 		//		boost::format kPosFmt("%.3f");
@@ -382,26 +384,31 @@ struct AtomImpl
 		return mRadius;
 	}
 
-	const std::string &property(const std::string &name) const
+	const std::string property(const std::string_view name) const
 	{
-		static std::string kEmptyString;
-
-		auto i = mCachedProperties.find(name);
-		if (i == mCachedProperties.end())
+		for (auto &&[tag, ref] : mCachedRefs)
 		{
-			auto v = mRow[name];
-			if (v.empty())
-				return kEmptyString;
-
-			return mCachedProperties[name] = v.as<std::string>();
+			if (tag == name)
+				return ref.as<std::string>();
 		}
-		else
-			return i->second;
+
+		mCachedRefs.emplace_back(name, mRow[name]);
+		return std::get<1>(mCachedRefs.back()).as<std::string>();
 	}
 
-	void property(const std::string &name, const std::string &value)
+	void property(const std::string_view name, const std::string &value)
 	{
-		mRow[name] = value;
+		for (auto &&[tag, ref] : mCachedRefs)
+		{
+			if (tag != name)
+				continue;
+			
+			ref = value;
+			return;
+		}
+
+		mCachedRefs.emplace_back(name, mRow[name]);
+		std::get<1>(mCachedRefs.back()) = value;
 	}
 
 	int compare(const AtomImpl &b) const
@@ -432,9 +439,11 @@ struct AtomImpl
 	Point mLocation;
 	int mRefcount;
 	cif::Row mRow;
+
+	mutable std::vector<std::tuple<std::string,cif::detail::ItemReference>> mCachedRefs;
+
 	mutable const Compound *mCompound = nullptr;
 	float mRadius = std::nanf("4");
-	mutable std::map<std::string, std::string> mCachedProperties;
 
 	bool mSymmetryCopy = false;
 	bool mClone = false;
@@ -533,25 +542,25 @@ const cif::Row Atom::getRowAniso() const
 }
 
 template <>
-std::string Atom::property<std::string>(const std::string &name) const
+std::string Atom::property<std::string>(const std::string_view name) const
 {
 	return impl()->property(name);
 }
 
 template <>
-int Atom::property<int>(const std::string &name) const
+int Atom::property<int>(const std::string_view name) const
 {
 	auto v = impl()->property(name);
 	return v.empty() ? 0 : stoi(v);
 }
 
 template <>
-float Atom::property<float>(const std::string &name) const
+float Atom::property<float>(const std::string_view name) const
 {
 	return stof(impl()->property(name));
 }
 
-void Atom::property(const std::string &name, const std::string &value)
+void Atom::property(const std::string_view name, const std::string &value)
 {
 	impl()->property(name, value);
 }
@@ -1736,7 +1745,7 @@ File::~File()
 	delete mImpl;
 }
 
-cif::Datablock& File::createDatablock(const std::string &name)
+cif::Datablock& File::createDatablock(const std::string_view name)
 {
 	auto db = new cif::Datablock(name);
 
@@ -1978,6 +1987,58 @@ Atom Structure::getAtomByLabel(const std::string &atomID, const std::string &asy
 	throw std::out_of_range("Could not find atom with specified label");
 }
 
+Atom Structure::getAtomByPosition(Point p) const
+{
+	double distance = std::numeric_limits<double>::max();
+	size_t index = std::numeric_limits<size_t>::max();
+
+	for (size_t i = 0; i < mAtoms.size(); ++i)
+	{
+		auto &a = mAtoms.at(i);
+
+		auto d = Distance(a.location(), p);
+		if (d < distance)
+		{
+			distance = d;
+			index = i;
+		}
+	}
+
+	if (index < mAtoms.size())
+		return mAtoms.at(index);
+
+	return {};
+}
+
+Atom Structure::getAtomByPositionAndType(Point p, std::string_view type, std::string_view res_type) const
+{
+	double distance = std::numeric_limits<double>::max();
+	size_t index = std::numeric_limits<size_t>::max();
+
+	for (size_t i = 0; i < mAtoms.size(); ++i)
+	{
+		auto &a = mAtoms.at(i);
+
+		if (a.labelCompID() != res_type)
+			continue;
+		
+		if (a.labelAtomID() != type)
+			continue;
+
+		auto d = Distance(a.location(), p);
+		if (d < distance)
+		{
+			distance = d;
+			index = i;
+		}
+	}
+
+	if (index < mAtoms.size())
+		return mAtoms.at(index);
+
+	return {};
+}
+
 const Residue &Structure::getResidue(const std::string &asymID, const std::string &compID, int seqID) const
 {
 	for (auto &poly : mPolymers)
@@ -2014,12 +2075,35 @@ const Residue &Structure::getResidue(const std::string &asymID, const std::strin
 	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
 }
 
+Residue &Structure::getResidue(const std::string &asymID, const std::string &compID, int seqID)
+{
+	return const_cast<Residue&>(const_cast<Structure const&>(*this).getResidue(asymID, compID, seqID));
+}
+
+const Residue &Structure::getResidue(const std::string &asymID) const
+{
+	for (auto &res : mNonPolymers)
+	{
+		if (res.asymID() != asymID)
+			continue;
+
+		return res;
+	}
+
+	throw std::out_of_range("Could not find residue " + asymID);
+}
+
+Residue &Structure::getResidue(const std::string &asymID)
+{
+	return const_cast<Residue&>(const_cast<Structure const&>(*this).getResidue(asymID));
+}
+
 File &Structure::getFile() const
 {
 	return mFile;
 }
 
-cif::Category &Structure::category(const char *name) const
+cif::Category &Structure::category(std::string_view name) const
 {
 	auto &db = datablock();
 	return db[name];
@@ -2352,7 +2436,7 @@ void Structure::moveAtom(Atom &a, Point p)
 	a.location(p);
 }
 
-void Structure::changeResidue(const Residue &res, const std::string &newCompound,
+void Structure::changeResidue(Residue &res, const std::string &newCompound,
 	const std::vector<std::tuple<std::string, std::string>> &remappedAtoms)
 {
 	using namespace cif::literals;
@@ -2416,6 +2500,8 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 	else
 		insertCompound(newCompound, false);
 
+	res.setCompoundID(newCompound);
+
 	auto &atomSites = db["atom_site"];
 	auto atoms = res.atoms();
 
@@ -2437,8 +2523,15 @@ void Structure::changeResidue(const Residue &res, const std::string &newCompound
 		if (r.size() != 1)
 			continue;
 
-		if (a1 != a2)
-			r.front()["label_atom_id"] = a2;
+		if (a2.empty() or a2 == ".")
+			removeAtom(*i);
+		else if (a1 != a2)
+		{
+			auto ra = r.front();
+			ra["label_atom_id"] = a2;
+			ra["auth_atom_id"] = a2;
+			ra["type_symbol"] = AtomTypeTraits(compound->getAtomByID(a2).typeSymbol).symbol();
+		}
 	}
 
 	for (auto a : atoms)

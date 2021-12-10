@@ -897,7 +897,6 @@ void CalculateBetaSheets(std::vector<Res>& inResidues, DSSP_Statistics& stats)
 }
 
 // --------------------------------------------------------------------
-// TODO: improve alpha helix calculation by better recognizing pi-helices 
 
 void CalculateAlphaHelices(std::vector<Res>& inResidues, DSSP_Statistics& stats, bool inPreferPiHelices = true)
 {

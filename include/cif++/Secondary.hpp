@@ -137,6 +137,22 @@ class DSSP
 	  public:
 		friend class iterator;
 
+		ResidueInfo()
+			: mImpl(nullptr)
+		{
+		}
+
+		ResidueInfo(const ResidueInfo &rhs)
+			: mImpl(rhs.mImpl)
+		{
+		}
+
+		ResidueInfo& operator=(const ResidueInfo &rhs)
+		{
+			mImpl = rhs.mImpl;
+			return *this;
+		}
+
 		explicit operator bool() const		{ return not empty(); }
 		bool empty() const					{ return mImpl == nullptr; }
 

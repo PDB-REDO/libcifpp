@@ -33,6 +33,10 @@
 // #include "cif++/DistanceMap.hpp"
 #include "cif++/Cif++.hpp"
 #include "cif++/BondMap.hpp"
+#include "cif++/CifValidator.hpp"
+
+namespace tt = boost::test_tools;
+
 
 std::filesystem::path gTestDir = std::filesystem::current_path();	// filled in first test
 
@@ -259,8 +263,10 @@ save__cat_2.desc
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -387,8 +393,10 @@ save__cat_1.c
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -535,8 +543,10 @@ save__cat_2.desc
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -741,8 +751,10 @@ save__cat_2.parent_id3
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -963,8 +975,10 @@ cat_2 3 cat_2:cat_1:3
 
     std::istream is_dict(&buffer);
 
+	cif::Validator validator("test", is_dict);
+
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -1389,9 +1403,10 @@ cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
     } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
 
     std::istream is_dict(&buffer);
+	cif::Validator validator("test", is_dict);
 
     cif::File f;
-    f.loadDictionary(is_dict);
+    f.setValidator(&validator);
 
     // --------------------------------------------------------------------
 
@@ -1687,4 +1702,58 @@ BOOST_AUTO_TEST_CASE(reading_file_1)
 
 	cif::File file;
 	BOOST_CHECK_THROW(file.load(is), std::runtime_error);
+}
+
+// 3d tests
+
+using namespace mmcif;
+
+BOOST_AUTO_TEST_CASE(t1)
+{
+	// std::random_device rnd;
+	// std::mt19937 gen(rnd());
+	// std::uniform_real_distribution<float> dis(0, 1);
+
+	// Quaternion q{ dis(gen), dis(gen), dis(gen), dis(gen) };
+	// q = Normalize(q);
+
+	// Quaternion q{ 0.1, 0.2, 0.3, 0.4 };
+	Quaternion q{ 0.5, 0.5, 0.5, 0.5 };
+	q = Normalize(q);
+
+	const auto &&[angle0, axis0] = QuaternionToAngleAxis(q);
+
+	std::vector<Point> p1{
+		{ 16.979, 13.301, 44.555 },
+		{ 18.150, 13.525, 43.680 },
+		{ 18.656, 14.966, 43.784 },
+		{ 17.890, 15.889, 44.078 },
+		{ 17.678, 13.270, 42.255 },
+		{ 16.248, 13.734, 42.347 },
+		{ 15.762, 13.216, 43.724 }
+	};
+
+	auto p2 = p1;
+
+	Point c1 = CenterPoints(p1);
+
+	for (auto &p : p2)
+		p.rotate(q);
+	
+	Point c2 = CenterPoints(p2);
+
+	auto q2 = AlignPoints(p1, p2);
+
+	const auto &&[angle, axis] = QuaternionToAngleAxis(q2);
+
+	BOOST_TEST(std::fmod(360 + angle, 360) == std::fmod(360 - angle0, 360), tt::tolerance(0.01));
+
+	for (auto &p : p1)
+		p.rotate(q2);
+
+	float rmsd = RMSd(p1, p2);
+
+	BOOST_TEST(rmsd < 1e-5);
+
+	// std::cout << "rmsd: " << RMSd(p1, p2) << std::endl;
 }

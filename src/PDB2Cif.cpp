@@ -1540,7 +1540,8 @@ void PDBFileParser::ParseTitle()
 	while (mRec->is("CAVEAT")) //	  1 - 6       Record name   "CAVEAT"
 	{
 		getCategory("database_PDB_caveat")->emplace({
-			{"id", caveatID++}, {"text", std::string{mRec->vS(20)}} //	20 - 79       String        comment        Free text giving the reason for the  CAVEAT.
+			{"id", caveatID++},
+			{"text", std::string{mRec->vS(20)}} //	20 - 79       String        comment        Free text giving the reason for the  CAVEAT.
 		});
 
 		GetNextRecord();
@@ -1674,7 +1675,9 @@ void PDBFileParser::ParseTitle()
 
 	if (not(keywords.empty() and pdbxKeywords.empty()))
 	{
-		getCategory("struct_keywords")->emplace({{"entry_id", mStructureID}, {"pdbx_keywords", keywords}, {"text", pdbxKeywords}});
+		getCategory("struct_keywords")->emplace({{"entry_id", mStructureID},
+		{"pdbx_keywords", keywords},
+		{"text", pdbxKeywords}});
 	}
 
 	// EXPDTA
@@ -1794,13 +1797,18 @@ void PDBFileParser::ParseTitle()
 	sort(revdats.begin(), revdats.end());
 	for (auto &revdat : revdats)
 	{
-		getCategory("database_PDB_rev")->emplace({{"num", revdat.revNum}, {"date", revdat.date}, {"date_original", revdat.dateOriginal}, {"replaces", revdat.replaces}, {"mod_type", revdat.modType}});
+		getCategory("database_PDB_rev")->emplace({{"num", revdat.revNum},
+		{"date", revdat.date},
+		{"date_original", revdat.dateOriginal},
+		{"replaces", revdat.replaces},
+		{"mod_type", revdat.modType}});
 
 		for (auto &type : revdat.types)
 		{
 			if (type.empty())
 				continue;
-			getCategory("database_PDB_rev_record")->emplace({{"rev_num", revdat.revNum}, {"type", type}});
+			getCategory("database_PDB_rev_record")->emplace({{"rev_num", revdat.revNum},
+			{"type", type}});
 		}
 	}
 	//*/
@@ -2036,7 +2044,10 @@ void PDBFileParser::ParseRemarks()
 					if (desc == "NULL")
 						desc.clear();
 
-					getCategory("exptl_crystal")->emplace({{"id", 1}, {"density_Matthews", iequals(density_Matthews, "NULL") ? "" : density_Matthews}, {"density_percent_sol", iequals(densityPercentSol, "NULL") ? "" : densityPercentSol}, {"description", desc}});
+					getCategory("exptl_crystal")->emplace({{"id", 1},
+					{"density_Matthews", iequals(density_Matthews, "NULL") ? "" : density_Matthews},
+					{"density_percent_sol", iequals(densityPercentSol, "NULL") ? "" : densityPercentSol},
+					{"description", desc}});
 
 					// now try to parse the conditions
 					const std::regex rx3(R"(TEMPERATURE +(\d+)K)"), rx4(R"(PH *(?:: *)?(\d+(?:\.\d+)?))") /*, rx5(R"(\b(\d+)C\b)")*/;
@@ -2065,7 +2076,11 @@ void PDBFileParser::ParseRemarks()
 
 					if (not(method.empty() and temp.empty() and ph.empty() and (conditions.empty() or conditions == "NULL")))
 					{
-						getCategory("exptl_crystal_grow")->emplace({{"crystal_id", 1}, {"method", method}, {"temp", temp}, {"pH", ph}, {"pdbx_details", conditions}});
+						getCategory("exptl_crystal_grow")->emplace({{"crystal_id", 1},
+						{"method", method},
+						{"temp", temp},
+						{"pH", ph},
+						{"pdbx_details", conditions}});
 					}
 
 					break;
@@ -2283,7 +2298,21 @@ void PDBFileParser::ParseRemarks()
 
 									std::string distance = vF(63, 71);
 
-									getCategory("pdbx_validate_close_contact")->emplace({{"id", std::to_string(++id)}, {"PDB_model_num", 1}, {"auth_atom_id_1", atom1}, {"auth_asym_id_1", std::string{chain1}}, {"auth_comp_id_1", res1}, {"auth_seq_id_1", seq1}, {"PDB_ins_code_1", iCode1}, {"label_alt_id_1", alt1}, {"auth_atom_id_2", atom2}, {"auth_asym_id_2", std::string{chain2}}, {"auth_comp_id_2", res2}, {"auth_seq_id_2", seq2}, {"PDB_ins_code_2", iCode2}, {"label_alt_id_2", alt2}, {"dist", distance}});
+									getCategory("pdbx_validate_close_contact")->emplace({{"id", std::to_string(++id)},
+									{"PDB_model_num", 1},
+									{"auth_atom_id_1", atom1},
+									{"auth_asym_id_1", std::string{chain1}},
+									{"auth_comp_id_1", res1},
+									{"auth_seq_id_1", seq1},
+									{"PDB_ins_code_1", iCode1},
+									{"label_alt_id_1", alt1},
+									{"auth_atom_id_2", atom2},
+									{"auth_asym_id_2", std::string{chain2}},
+									{"auth_comp_id_2", res2},
+									{"auth_seq_id_2", seq2},
+									{"PDB_ins_code_2", iCode2},
+									{"label_alt_id_2", alt2},
+									{"dist", distance}});
 								}
 								break;
 							}
@@ -2320,7 +2349,12 @@ void PDBFileParser::ParseRemarks()
 
 									std::string distance = vF(63, 71);
 
-									getCategory("pdbx_validate_symm_contact")->emplace({{"id", std::to_string(++id)}, {"PDB_model_num", 1}, {"auth_atom_id_1", atom1}, {"auth_asym_id_1", std::string{chain1}}, {"auth_comp_id_1", res1}, {"auth_seq_id_1", seq1},
+									getCategory("pdbx_validate_symm_contact")->emplace({{"id", std::to_string(++id)},
+									{"PDB_model_num", 1},
+									{"auth_atom_id_1", atom1},
+									{"auth_asym_id_1", std::string{chain1}},
+									{"auth_comp_id_1", res1},
+									{"auth_seq_id_1", seq1},
 									                                                    //									{ "PDB_ins_code_1", "" },
 									                                                    //									{ "label_alt_id_1", "" },
 									                                                    {"site_symmetry_1", "1_555"},
@@ -2371,7 +2405,21 @@ void PDBFileParser::ParseRemarks()
 									if (iCode2 == " ")
 										iCode2.clear();
 
-									getCategory("pdbx_validate_rmsd_bond")->emplace({{"id", std::to_string(++id)}, {"PDB_model_num", model ? model : 1}, {"auth_atom_id_1", atm1}, {"auth_asym_id_1", chainID1}, {"auth_comp_id_1", resNam1}, {"auth_seq_id_1", seqNum1}, {"PDB_ins_code_1", iCode1}, {"label_alt_id_1", alt1}, {"auth_atom_id_2", atm2}, {"auth_asym_id_2", chainID2}, {"auth_comp_id_2", resNam2}, {"auth_seq_id_2", seqNum2}, {"PDB_ins_code_2", iCode2}, {"label_alt_id_2", alt2}, {"bond_deviation", deviation}});
+									getCategory("pdbx_validate_rmsd_bond")->emplace({{"id", std::to_string(++id)},
+									{"PDB_model_num", model ? model : 1},
+									{"auth_atom_id_1", atm1},
+									{"auth_asym_id_1", chainID1},
+									{"auth_comp_id_1", resNam1},
+									{"auth_seq_id_1", seqNum1},
+									{"PDB_ins_code_1", iCode1},
+									{"label_alt_id_1", alt1},
+									{"auth_atom_id_2", atm2},
+									{"auth_asym_id_2", chainID2},
+									{"auth_comp_id_2", resNam2},
+									{"auth_seq_id_2", seqNum2},
+									{"PDB_ins_code_2", iCode2},
+									{"label_alt_id_2", alt2},
+									{"bond_deviation", deviation}});
 								}
 
 								break;
@@ -2403,7 +2451,24 @@ void PDBFileParser::ParseRemarks()
 									if (deviation == "*****")
 										deviation.clear();
 
-									getCategory("pdbx_validate_rmsd_angle")->emplace({{"id", std::to_string(++id)}, {"PDB_model_num", model ? model : 1}, {"auth_atom_id_1", atoms[0]}, {"auth_asym_id_1", chainID}, {"auth_comp_id_1", resNam}, {"auth_seq_id_1", seqNum}, {"PDB_ins_code_1", iCode}, {"auth_atom_id_2", atoms[1]}, {"auth_asym_id_2", chainID}, {"auth_comp_id_2", resNam}, {"auth_seq_id_2", seqNum}, {"PDB_ins_code_2", iCode}, {"auth_atom_id_3", atoms[2]}, {"auth_asym_id_3", chainID}, {"auth_comp_id_3", resNam}, {"auth_seq_id_3", seqNum}, {"PDB_ins_code_3", iCode}, {"angle_deviation", deviation}});
+									getCategory("pdbx_validate_rmsd_angle")->emplace({{"id", std::to_string(++id)},
+									{"PDB_model_num", model ? model : 1},
+									{"auth_atom_id_1", atoms[0]},
+									{"auth_asym_id_1", chainID},
+									{"auth_comp_id_1", resNam},
+									{"auth_seq_id_1", seqNum},
+									{"PDB_ins_code_1", iCode},
+									{"auth_atom_id_2", atoms[1]},
+									{"auth_asym_id_2", chainID},
+									{"auth_comp_id_2", resNam},
+									{"auth_seq_id_2", seqNum},
+									{"PDB_ins_code_2", iCode},
+									{"auth_atom_id_3", atoms[2]},
+									{"auth_asym_id_3", chainID},
+									{"auth_comp_id_3", resNam},
+									{"auth_seq_id_3", seqNum},
+									{"PDB_ins_code_3", iCode},
+									{"angle_deviation", deviation}});
 								}
 
 								break;
@@ -2432,7 +2497,14 @@ void PDBFileParser::ParseRemarks()
 									std::string psi = vF(27, 35);
 									std::string phi = vF(37, 45);
 
-									getCategory("pdbx_validate_torsion")->emplace({{"id", std::to_string(++id)}, {"PDB_model_num", model ? model : 1}, {"auth_comp_id", resNam}, {"auth_asym_id", chainID}, {"auth_seq_id", seqNum}, {"PDB_ins_code", iCode}, {"phi", phi}, {"psi", psi}});
+									getCategory("pdbx_validate_torsion")->emplace({{"id", std::to_string(++id)},
+									{"PDB_model_num", model ? model : 1},
+									{"auth_comp_id", resNam},
+									{"auth_asym_id", chainID},
+									{"auth_seq_id", seqNum},
+									{"PDB_ins_code", iCode},
+									{"phi", phi},
+									{"psi", psi}});
 								}
 								break;
 
@@ -2463,7 +2535,17 @@ void PDBFileParser::ParseRemarks()
 
 									std::string omega = vF(54, 60);
 
-									getCategory("pdbx_validate_peptide_omega")->emplace({{"id", std::to_string(++id)}, {"PDB_model_num", model ? model : 1}, {"auth_comp_id_1", resNam1}, {"auth_asym_id_1", chainID1}, {"auth_seq_id_1", seqNum1}, {"PDB_ins_code_1", iCode1}, {"auth_comp_id_2", resNam2}, {"auth_asym_id_2", chainID2}, {"auth_seq_id_2", seqNum2}, {"PDB_ins_code_2", iCode2}, {"omega", omega}});
+									getCategory("pdbx_validate_peptide_omega")->emplace({{"id", std::to_string(++id)},
+									{"PDB_model_num", model ? model : 1},
+									{"auth_comp_id_1", resNam1},
+									{"auth_asym_id_1", chainID1},
+									{"auth_seq_id_1", seqNum1},
+									{"PDB_ins_code_1", iCode1},
+									{"auth_comp_id_2", resNam2},
+									{"auth_asym_id_2", chainID2},
+									{"auth_seq_id_2", seqNum2},
+									{"PDB_ins_code_2", iCode2},
+									{"omega", omega}});
 								}
 								break;
 
@@ -2486,7 +2568,14 @@ void PDBFileParser::ParseRemarks()
 									std::string rmsd = vF(32, 36);
 									std::string type = vS(41);
 
-									getCategory("pdbx_validate_planes")->emplace({{"id", std::to_string(++id)}, {"PDB_model_num", model ? model : 1}, {"auth_comp_id", resNam}, {"auth_asym_id", chainID}, {"auth_seq_id", seqNum}, {"PDB_ins_code", iCode}, {"rmsd", rmsd}, {"type", type}});
+									getCategory("pdbx_validate_planes")->emplace({{"id", std::to_string(++id)},
+									{"PDB_model_num", model ? model : 1},
+									{"auth_comp_id", resNam},
+									{"auth_asym_id", chainID},
+									{"auth_seq_id", seqNum},
+									{"PDB_ins_code", iCode},
+									{"rmsd", rmsd},
+									{"type", type}});
 								}
 								break;
 
@@ -2566,7 +2655,13 @@ void PDBFileParser::ParseRemarks()
 							throw std::runtime_error("Invalid REMARK 800, no SITE record for id " + id);
 
 						// next record, store what we have
-						getCategory("struct_site")->emplace({{"id", id}, {"details", desc}, {"pdbx_auth_asym_id", pdbxAuthAsymID}, {"pdbx_auth_comp_id", pdbxAuthCompID}, {"pdbx_auth_seq_id", pdbxAuthSeqID}, {"pdbx_num_residues", site->vI(16, 17)}, {"pdbx_evidence_code", evidence}});
+						getCategory("struct_site")->emplace({{"id", id},
+						{"details", desc},
+						{"pdbx_auth_asym_id", pdbxAuthAsymID},
+						{"pdbx_auth_comp_id", pdbxAuthCompID},
+						{"pdbx_auth_seq_id", pdbxAuthSeqID},
+						{"pdbx_num_residues", site->vI(16, 17)},
+						{"pdbx_evidence_code", evidence}});
 					};
 
 					for (; mRec->is("REMARK 800"); GetNextRecord())
@@ -2680,7 +2775,8 @@ void PDBFileParser::ParseRemarks()
 						GetNextRecord();
 					}
 
-					getCategory("pdbx_database_remark")->emplace({{"id", remarkNr}, {"text", s.str()}});
+					getCategory("pdbx_database_remark")->emplace({{"id", remarkNr},
+					{"text", s.str()}});
 
 					break;
 				}
@@ -2694,7 +2790,10 @@ void PDBFileParser::ParseRemarks()
 
 	if (not(compoundDetails.empty() and sequenceDetails.empty() and sourceDetails.empty()))
 	{
-		getCategory("pdbx_entry_details")->emplace({{"entry_id", mStructureID}, {"compound_details", compoundDetails}, {"sequence_details", sequenceDetails}, {"source_details", sourceDetails}});
+		getCategory("pdbx_entry_details")->emplace({{"entry_id", mStructureID},
+		{"compound_details", compoundDetails},
+		{"sequence_details", sequenceDetails},
+		{"source_details", sourceDetails}});
 	}
 
 	// store remark 200 info (special case)
@@ -2774,7 +2873,10 @@ void PDBFileParser::ParseRemark200()
 		if (mRemark200[sw.b].empty())
 			continue;
 
-		getCategory("software")->emplace({{"name", mRemark200[sw.b]}, {"classification", sw.a}, {"version", "."}, {"pdbx_ordinal", mNextSoftwareOrd++}});
+		getCategory("software")->emplace({{"name", mRemark200[sw.b]},
+		{"classification", sw.a},
+		{"version", "."},
+		{"pdbx_ordinal", mNextSoftwareOrd++}});
 	}
 
 	std::string scatteringType;
@@ -2812,10 +2914,19 @@ void PDBFileParser::ParseRemark200()
 				collectionDate.clear();
 		}
 
-		getCategory("diffrn_detector")->emplace({{"diffrn_id", diffrnNr}, {"detector", rm200("DETECTOR TYPE", diffrnNr)}, {"type", rm200("DETECTOR MANUFACTURER", diffrnNr)}, {"pdbx_collection_date", collectionDate}, {"details", rm200("OPTICS", diffrnNr)}});
+		getCategory("diffrn_detector")->emplace({{"diffrn_id", diffrnNr},
+		{"detector", rm200("DETECTOR TYPE", diffrnNr)},
+		{"type", rm200("DETECTOR MANUFACTURER", diffrnNr)},
+		{"pdbx_collection_date", collectionDate},
+		{"details", rm200("OPTICS", diffrnNr)}});
 
 		if (inRM200({"MONOCHROMATIC OR LAUE (M/L)", "MONOCHROMATOR", "DIFFRACTION PROTOCOL"}) or not scatteringType.empty())
-			getCategory("diffrn_radiation")->emplace({{"diffrn_id", diffrnNr}, {"wavelength_id", 1}, {"pdbx_monochromatic_or_laue_m_l", rm200("MONOCHROMATIC OR LAUE (M/L)", diffrnNr)}, {"monochromator", rm200("MONOCHROMATOR", diffrnNr)}, {"pdbx_diffrn_protocol", rm200("DIFFRACTION PROTOCOL", diffrnNr)}, {"pdbx_scattering_type", scatteringType}});
+			getCategory("diffrn_radiation")->emplace({{"diffrn_id", diffrnNr},
+			{"wavelength_id", 1},
+			{"pdbx_monochromatic_or_laue_m_l", rm200("MONOCHROMATIC OR LAUE (M/L)", diffrnNr)},
+			{"monochromator", rm200("MONOCHROMATOR", diffrnNr)},
+			{"pdbx_diffrn_protocol", rm200("DIFFRACTION PROTOCOL", diffrnNr)},
+			{"pdbx_scattering_type", scatteringType}});
 
 		std::vector<std::string> wavelengths;
 		std::string wl = rm200("WAVELENGTH OR RANGE (A)", diffrnNr);
@@ -2856,7 +2967,9 @@ void PDBFileParser::ParseRemark200()
 		if (ba::ends_with(wl, "A"))
 			wl.erase(wl.length() - 1, 1);
 
-		getCategory("diffrn_radiation_wavelength")->emplace({{"id", wavelengthNr++}, {"wavelength", wl.empty() ? "." : wl}, {"wt", "1.0"}});
+		getCategory("diffrn_radiation_wavelength")->emplace({{"id", wavelengthNr++},
+		{"wavelength", wl.empty() ? "." : wl},
+		{"wt", "1.0"}});
 	}
 
 	if (inRM200({"METHOD USED TO DETERMINE THE STRUCTURE", "STARTING MODEL"}))
@@ -2899,7 +3012,15 @@ void PDBFileParser::ParseRemark200()
 
 	if (inRM200({"HIGHEST RESOLUTION SHELL, RANGE HIGH (A)"})) // that one field is mandatory...
 	{
-		getCategory("reflns_shell")->emplace({{"d_res_high", mRemark200["HIGHEST RESOLUTION SHELL, RANGE HIGH (A)"]}, {"d_res_low", mRemark200["HIGHEST RESOLUTION SHELL, RANGE LOW (A)"]}, {"percent_possible_all", mRemark200["COMPLETENESS FOR SHELL (%)"]}, {"Rmerge_I_obs", mRemark200["R MERGE FOR SHELL (I)"]}, {"pdbx_Rsym_value", mRemark200["R SYM FOR SHELL (I)"]}, {"meanI_over_sigI_obs", mRemark200["<I/SIGMA(I)> FOR SHELL"]}, {"pdbx_redundancy", mRemark200["DATA REDUNDANCY IN SHELL"]}, {"pdbx_ordinal", 1}, {"pdbx_diffrn_id", 1}});
+		getCategory("reflns_shell")->emplace({{"d_res_high", mRemark200["HIGHEST RESOLUTION SHELL, RANGE HIGH (A)"]},
+		{"d_res_low", mRemark200["HIGHEST RESOLUTION SHELL, RANGE LOW (A)"]},
+		{"percent_possible_all", mRemark200["COMPLETENESS FOR SHELL (%)"]},
+		{"Rmerge_I_obs", mRemark200["R MERGE FOR SHELL (I)"]},
+		{"pdbx_Rsym_value", mRemark200["R SYM FOR SHELL (I)"]},
+		{"meanI_over_sigI_obs", mRemark200["<I/SIGMA(I)> FOR SHELL"]},
+		{"pdbx_redundancy", mRemark200["DATA REDUNDANCY IN SHELL"]},
+		{"pdbx_ordinal", 1},
+		{"pdbx_diffrn_id", 1}});
 	}
 	else if (inRM200({"HIGHEST RESOLUTION SHELL, RANGE LOW (A)", "COMPLETENESS FOR SHELL (%)",
 	                  "R MERGE FOR SHELL (I)", "R SYM FOR SHELL (I)", "<I/SIGMA(I)> FOR SHELL", "DATA REDUNDANCY IN SHELL"}))
@@ -3091,7 +3212,11 @@ void PDBFileParser::ParseRemark350()
 							else
 								details = "author_and_software_defined_assembly";
 
-							getCategory("pdbx_struct_assembly")->emplace({{"id", biomolecule}, {"details", details}, {"method_details", values["SOFTWARE USED"]}, {"oligomeric_details", oligomer}, {"oligomeric_count", count > 0 ? std::to_string(count) : ""}});
+							getCategory("pdbx_struct_assembly")->emplace({{"id", biomolecule},
+							{"details", details},
+							{"method_details", values["SOFTWARE USED"]},
+							{"oligomeric_details", oligomer},
+							{"oligomeric_count", count > 0 ? std::to_string(count) : ""}});
 
 							auto cat = getCategory("pdbx_struct_assembly_prop");
 
@@ -3115,21 +3240,23 @@ void PDBFileParser::ParseRemark350()
 
 						boost::format fmt("%12.10f");
 
-						getCategory("pdbx_struct_oper_list")->emplace({{"id", operID}, {"type", mat == std::vector<double>{1, 0, 0, 0, 1, 0, 0, 0, 1} and vec == std::vector<double>{0, 0, 0} ? "identity operation" : "crystal symmetry operation"},
-						                                               //										{ "name", "" },
-						                                               //										{ "symmetryOperation", "" },
-						                                               {"matrix[1][1]", (fmt % mat[0]).str()},
-						                                               {"matrix[1][2]", (fmt % mat[1]).str()},
-						                                               {"matrix[1][3]", (fmt % mat[2]).str()},
-						                                               {"vector[1]", (fmt % vec[0]).str()},
-						                                               {"matrix[2][1]", (fmt % mat[3]).str()},
-						                                               {"matrix[2][2]", (fmt % mat[4]).str()},
-						                                               {"matrix[2][3]", (fmt % mat[5]).str()},
-						                                               {"vector[2]", (fmt % vec[1]).str()},
-						                                               {"matrix[3][1]", (fmt % mat[6]).str()},
-						                                               {"matrix[3][2]", (fmt % mat[7]).str()},
-						                                               {"matrix[3][3]", (fmt % mat[8]).str()},
-						                                               {"vector[3]", (fmt % vec[2]).str()}});
+						getCategory("pdbx_struct_oper_list")->emplace({
+							{"id", operID},
+							{"type", mat == std::vector<double>{1, 0, 0, 0, 1, 0, 0, 0, 1} and vec == std::vector<double>{0, 0, 0} ? "identity operation" : "crystal symmetry operation"},
+							// { "name", "" },
+							// { "symmetryOperation", "" },
+							{"matrix[1][1]", (fmt % mat[0]).str()},
+							{"matrix[1][2]", (fmt % mat[1]).str()},
+							{"matrix[1][3]", (fmt % mat[2]).str()},
+							{"vector[1]", (fmt % vec[0]).str()},
+							{"matrix[2][1]", (fmt % mat[3]).str()},
+							{"matrix[2][2]", (fmt % mat[4]).str()},
+							{"matrix[2][3]", (fmt % mat[5]).str()},
+							{"vector[2]", (fmt % vec[1]).str()},
+							{"matrix[3][1]", (fmt % mat[6]).str()},
+							{"matrix[3][2]", (fmt % mat[7]).str()},
+							{"matrix[3][3]", (fmt % mat[8]).str()},
+							{"vector[3]", (fmt % vec[2]).str()}});
 
 						mat.clear();
 						vec.clear();
@@ -3140,7 +3267,9 @@ void PDBFileParser::ParseRemark350()
 					if (not(vec.empty() and mat.empty()))
 						throw std::runtime_error("Invalid REMARK 350");
 
-					getCategory("pdbx_struct_assembly_gen")->emplace({{"assembly_id", biomolecule}, {"oper_expression", ba::join(operExpression, ",")}, {"asym_id_list", ba::join(asymIdList, ",")}});
+					getCategory("pdbx_struct_assembly_gen")->emplace({{"assembly_id", biomolecule},
+					{"oper_expression", ba::join(operExpression, ",")},
+					{"asym_id_list", ba::join(asymIdList, ",")}});
 
 					biomolecule = stoi(m[1].str());
 					asymIdList.clear();
@@ -3154,7 +3283,9 @@ void PDBFileParser::ParseRemark350()
 
 	if (not operExpression.empty())
 	{
-		getCategory("pdbx_struct_assembly_gen")->emplace({{"assembly_id", biomolecule}, {"oper_expression", ba::join(operExpression, ",")}, {"asym_id_list", ba::join(asymIdList, ",")}});
+		getCategory("pdbx_struct_assembly_gen")->emplace({{"assembly_id", biomolecule},
+		{"oper_expression", ba::join(operExpression, ",")},
+		{"asym_id_list", ba::join(asymIdList, ",")}});
 	}
 
 	mRec = saved;
@@ -3641,10 +3772,11 @@ void PDBFileParser::ConstructEntities()
 		mAsymID2EntityID[asymID] = entityID;
 
 		getCategory("struct_asym")->emplace({
-			{"id", asymID}, {"pdbx_blank_PDB_chainid_flag", chain.mDbref.chainID == ' ' ? "Y" : "N"},
-			//			pdbx_modified
+			{"id", asymID},
+			{"pdbx_blank_PDB_chainid_flag", chain.mDbref.chainID == ' ' ? "Y" : "N"},
+			// pdbx_modified
 			{"entity_id", entityID},
-			//			details
+			// details
 		});
 
 		int seqNr = 1;
@@ -3708,7 +3840,32 @@ void PDBFileParser::ConstructEntities()
 		{
 			srcMethod = "man";
 
-			getCategory("entity_src_gen")->emplace({{"entity_id", mMolID2EntityID[cmp.mMolID]}, {"pdbx_src_id", structRefID}, {"gene_src_common_name", cmp.mSource["ORGANISM_COMMON"]}, {"pdbx_gene_src_gene", cmp.mSource["GENE"]}, {"gene_src_strain", cmp.mSource["STRAIN"]}, {"gene_src_tissue", cmp.mSource["TISSUE"]}, {"gene_src_tissue_fraction", cmp.mSource["TISSUE_FRACTION"]}, {"pdbx_gene_src_cell_line", cmp.mSource["CELL_LINE"]}, {"pdbx_gene_src_organelle", cmp.mSource["ORGANELLE"]}, {"pdbx_gene_src_cell", cmp.mSource["CELL"]}, {"pdbx_gene_src_cellular_location", cmp.mSource["CELLULAR_LOCATION"]}, {"host_org_common_name", cmp.mSource["EXPRESSION_SYSTEM_COMMON"]}, {"pdbx_gene_src_scientific_name", cmp.mSource["ORGANISM_SCIENTIFIC"]}, {"pdbx_gene_src_ncbi_taxonomy_id", cmp.mSource["ORGANISM_TAXID"]}, {"pdbx_host_org_scientific_name", cmp.mSource["EXPRESSION_SYSTEM"]}, {"pdbx_host_org_ncbi_taxonomy_id", cmp.mSource["EXPRESSION_SYSTEM_TAXID"]}, {"pdbx_host_org_strain", cmp.mSource["EXPRESSION_SYSTEM_STRAIN"]}, {"pdbx_host_org_variant", cmp.mSource["EXPRESSION_SYSTEM_VARIANT"]}, {"pdbx_host_org_cell_line", cmp.mSource["EXPRESSION_SYSTEM_CELL_LINE"]}, {"pdbx_host_org_cellular_location", cmp.mSource["EXPRESSION_SYSTEM_CELLULAR_LOCATION"]}, {"pdbx_host_org_vector_type", cmp.mSource["EXPRESSION_SYSTEM_VECTOR_TYPE"]}, {"pdbx_host_org_vector", cmp.mSource["EXPRESSION_SYSTEM_VECTOR"]}, {"pdbx_host_org_gene", cmp.mSource["EXPRESSION_SYSTEM_GENE"]}, {"plasmid_name", cmp.mSource["EXPRESSION_SYSTEM_PLASMID"]}, {"pdbx_description", cmp.mSource["OTHER_DETAILS"]}});
+			getCategory("entity_src_gen")->emplace({
+				{"entity_id", mMolID2EntityID[cmp.mMolID]},
+				{"pdbx_src_id", structRefID},
+				{"gene_src_common_name", cmp.mSource["ORGANISM_COMMON"]},
+				{"pdbx_gene_src_gene", cmp.mSource["GENE"]},
+				{"gene_src_strain", cmp.mSource["STRAIN"]},
+				{"gene_src_tissue", cmp.mSource["TISSUE"]},
+				{"gene_src_tissue_fraction", cmp.mSource["TISSUE_FRACTION"]},
+				{"pdbx_gene_src_cell_line", cmp.mSource["CELL_LINE"]},
+				{"pdbx_gene_src_organelle", cmp.mSource["ORGANELLE"]},
+				{"pdbx_gene_src_cell", cmp.mSource["CELL"]},
+				{"pdbx_gene_src_cellular_location", cmp.mSource["CELLULAR_LOCATION"]},
+				{"host_org_common_name", cmp.mSource["EXPRESSION_SYSTEM_COMMON"]},
+				{"pdbx_gene_src_scientific_name", cmp.mSource["ORGANISM_SCIENTIFIC"]},
+				{"pdbx_gene_src_ncbi_taxonomy_id", cmp.mSource["ORGANISM_TAXID"]},
+				{"pdbx_host_org_scientific_name", cmp.mSource["EXPRESSION_SYSTEM"]},
+				{"pdbx_host_org_ncbi_taxonomy_id", cmp.mSource["EXPRESSION_SYSTEM_TAXID"]},
+				{"pdbx_host_org_strain", cmp.mSource["EXPRESSION_SYSTEM_STRAIN"]},
+				{"pdbx_host_org_variant", cmp.mSource["EXPRESSION_SYSTEM_VARIANT"]},
+				{"pdbx_host_org_cell_line", cmp.mSource["EXPRESSION_SYSTEM_CELL_LINE"]},
+				{"pdbx_host_org_cellular_location", cmp.mSource["EXPRESSION_SYSTEM_CELLULAR_LOCATION"]},
+				{"pdbx_host_org_vector_type", cmp.mSource["EXPRESSION_SYSTEM_VECTOR_TYPE"]},
+				{"pdbx_host_org_vector", cmp.mSource["EXPRESSION_SYSTEM_VECTOR"]},
+				{"pdbx_host_org_gene", cmp.mSource["EXPRESSION_SYSTEM_GENE"]},
+				{"plasmid_name", cmp.mSource["EXPRESSION_SYSTEM_PLASMID"]},
+				{"pdbx_description", cmp.mSource["OTHER_DETAILS"]}});
 		}
 		else if (not cmp.mSource["ORGANISM_SCIENTIFIC"].empty())
 		{
@@ -3741,7 +3898,10 @@ void PDBFileParser::ConstructEntities()
 
 		if (not cmp.mInfo["SYNONYM"].empty())
 		{
-			getCategory("entity_name_com")->emplace({{"entity_id", mMolID2EntityID[cmp.mMolID]}, {"name", cmp.mInfo["SYNONYM"]}});
+			getCategory("entity_name_com")->emplace({
+				{"entity_id", mMolID2EntityID[cmp.mMolID]},
+				{"name", cmp.mInfo["SYNONYM"]}
+			});
 		}
 
 		std::string desc = cmp.mInfo["MOLECULE"];
@@ -3761,7 +3921,11 @@ void PDBFileParser::ConstructEntities()
 		if (ci != mChains.end() and not ci->mDbref.dbIdCode.empty())
 		{
 			getCategory("struct_ref")->emplace({
-				{"id", structRefID}, {"entity_id", mMolID2EntityID[cmp.mMolID]}, {"db_name", ci->mDbref.database}, {"db_code", ci->mDbref.dbIdCode}, {"pdbx_db_accession", ci->mDbref.dbAccession},
+				{"id", structRefID},
+				{"entity_id", mMolID2EntityID[cmp.mMolID]},
+				{"db_name", ci->mDbref.database},
+				{"db_code", ci->mDbref.dbIdCode},
+				{"pdbx_db_accession", ci->mDbref.dbAccession},
 				//				{ "pdbx_align_begin", ci->mDbref.dbSeqBegin }
 			});
 		}
@@ -3810,7 +3974,23 @@ void PDBFileParser::ConstructEntities()
 				{
 				}
 
-				getCategory("struct_ref_seq")->emplace({{"align_id", structRefSeqAlignID}, {"ref_id", structRefID}, {"pdbx_PDB_id_code", dbref.PDBIDCode}, {"pdbx_strand_id", std::string{chain.mDbref.chainID}}, {"seq_align_beg", seqAlignBeg}, {"pdbx_seq_align_beg_ins_code", insToStr(dbref.insertBegin)}, {"seq_align_end", seqAlignEnd}, {"pdbx_seq_align_end_ins_code", insToStr(dbref.insertEnd)}, {"pdbx_db_accession", dbref.dbAccession}, {"db_align_beg", dbref.dbSeqBegin}, {"pdbx_db_align_beg_ins_code", insToStr(dbref.dbinsBeg)}, {"db_align_end", dbref.dbSeqEnd}, {"pdbx_db_align_end_ins_code", insToStr(dbref.dbinsEnd)}, {"pdbx_auth_seq_align_beg", dbref.seqBegin}, {"pdbx_auth_seq_align_end", dbref.seqEnd}});
+				getCategory("struct_ref_seq")->emplace({
+					{"align_id", structRefSeqAlignID},
+					{"ref_id", structRefID},
+					{"pdbx_PDB_id_code", dbref.PDBIDCode},
+					{"pdbx_strand_id", std::string{chain.mDbref.chainID}},
+					{"seq_align_beg", seqAlignBeg},
+					{"pdbx_seq_align_beg_ins_code", insToStr(dbref.insertBegin)},
+					{"seq_align_end", seqAlignEnd},
+					{"pdbx_seq_align_end_ins_code", insToStr(dbref.insertEnd)},
+					{"pdbx_db_accession", dbref.dbAccession},
+					{"db_align_beg", dbref.dbSeqBegin},
+					{"pdbx_db_align_beg_ins_code", insToStr(dbref.dbinsBeg)},
+					{"db_align_end", dbref.dbSeqEnd},
+					{"pdbx_db_align_end_ins_code", insToStr(dbref.dbinsEnd)},
+					{"pdbx_auth_seq_align_beg", dbref.seqBegin},
+					{"pdbx_auth_seq_align_end", dbref.seqEnd}
+				});
 
 				// write the struct_ref_seq_dif
 				for (auto &seqadv : mSeqadvs)
@@ -3832,7 +4012,21 @@ void PDBFileParser::ConstructEntities()
 
 					seqNum = std::to_string(labelSeq);
 
-					getCategory("struct_ref_seq_dif")->emplace({{"align_id", structRefSeqAlignID}, {"pdbx_PDB_id_code", dbref.PDBIDCode}, {"mon_id", seqadv.resName}, {"pdbx_pdb_strand_id", seqadv.chainID}, {"seq_num", seqNum}, {"pdbx_pdb_ins_code", seqadv.iCode == ' ' ? std::string{} : std::string{seqadv.iCode}}, {"pdbx_seq_db_name", seqadv.database}, {"pdbx_seq_db_accession_code", seqadv.dbAccession}, {"db_mon_id", seqadv.dbRes}, {"pdbx_seq_db_seq_num", seqadv.dbSeq}, {"details", seqadv.conflict}, {"pdbx_auth_seq_num", seqadv.seqNum}, {"pdbx_ordinal", ++mPdbxDifOrdinal}});
+					getCategory("struct_ref_seq_dif")->emplace({
+						{"align_id", structRefSeqAlignID},
+						{"pdbx_PDB_id_code", dbref.PDBIDCode},
+						{"mon_id", seqadv.resName},
+						{"pdbx_pdb_strand_id", seqadv.chainID},
+						{"seq_num", seqNum},
+						{"pdbx_pdb_ins_code", seqadv.iCode == ' ' ? std::string{} : std::string{seqadv.iCode}},
+						{"pdbx_seq_db_name", seqadv.database},
+						{"pdbx_seq_db_accession_code", seqadv.dbAccession},
+						{"db_mon_id", seqadv.dbRes},
+						{"pdbx_seq_db_seq_num", seqadv.dbSeq},
+						{"details", seqadv.conflict},
+						{"pdbx_auth_seq_num", seqadv.seqNum},
+						{"pdbx_ordinal", ++mPdbxDifOrdinal}
+					});
 				}
 			}
 
@@ -3932,15 +4126,23 @@ void PDBFileParser::ConstructEntities()
 		else if (mightBeDNA and not mightBePolyPeptide)
 			type = "polyribonucleotide";
 
-		getCategory("entity_poly")->emplace({{"entity_id", mMolID2EntityID[cmp.mMolID]}, {"pdbx_seq_one_letter_code", seq}, {"pdbx_seq_one_letter_code_can", seqCan}, {"nstd_monomer", (nstdMonomer ? "yes" : "no")}, {"pdbx_strand_id", ba::join(chains, ",")}, {"nstd_linkage", nonstandardLinkage ? "yes" : "no"}, {"type", type}});
+		getCategory("entity_poly")->emplace({{"entity_id", mMolID2EntityID[cmp.mMolID]},
+		{"pdbx_seq_one_letter_code", seq},
+		{"pdbx_seq_one_letter_code_can", seqCan},
+		{"nstd_monomer", (nstdMonomer ? "yes" : "no")},
+		{"pdbx_strand_id", ba::join(chains, ",")},
+		{"nstd_linkage", nonstandardLinkage ? "yes" : "no"},
+		{"type", type}});
 	}
 
 	if (not(structTitle.empty() and structDescription.empty()))
 	{
-		getCategory("struct")->emplace({{"entry_id", mStructureID},
-		                                {"title", ba::join(structTitle, ", ")},
-		                                {"pdbx_descriptor", ba::join(structDescription, ", ")},
-		                                {"pdbx_model_type_details", mModelTypeDetails}});
+		getCategory("struct")->emplace({
+			{"entry_id", mStructureID},
+			{"title", ba::join(structTitle, ", ")},
+			{"pdbx_descriptor", ba::join(structDescription, ", ")},
+			{"pdbx_model_type_details", mModelTypeDetails}
+		});
 	}
 
 	// build sugar trees first
@@ -4026,7 +4228,9 @@ void PDBFileParser::ConstructEntities()
 			std::string name = mHetnams[hetID];
 			if (name.empty() and hetID == mWaterHetID)
 				name = "water";
-			getCategory("pdbx_entity_nonpoly")->emplace({{"entity_id", entityID}, {"name", name}, {"comp_id", hetID}});
+			getCategory("pdbx_entity_nonpoly")->emplace({{"entity_id", entityID},
+			{"name", name},
+			{"comp_id", hetID}});
 		}
 
 		// create an asym for this het/chain combo, if needed
@@ -4063,7 +4267,8 @@ void PDBFileParser::ConstructEntities()
 			{
 				writtenAsyms.insert(asymID);
 				getCategory("struct_asym")->emplace({
-					{"id", asymID}, {"pdbx_blank_PDB_chainid_flag", het.chainID == ' ' ? "Y" : "N"},
+					{"id", asymID},
+					{"pdbx_blank_PDB_chainid_flag", het.chainID == ' ' ? "Y" : "N"},
 					//					pdbx_modified
 					{"entity_id", mHet2EntityID[hetID]},
 					//					details
@@ -4078,12 +4283,18 @@ void PDBFileParser::ConstructEntities()
 		if (iCode.empty())
 			iCode = {'.'};
 
-		getCategory("pdbx_nonpoly_scheme")->emplace({{"asym_id", asymID}, {"entity_id", mHet2EntityID[hetID]}, {"mon_id", hetID}, {"ndb_seq_num", seqNr}, {"pdb_seq_num", het.seqNum},
-		                                             //			{ "auth_seq_num", het.seqNum },	// ????
-		                                             {"pdb_mon_id", hetID},
-		                                             //			{ "auth_mon_id", hetID },
-		                                             {"pdb_strand_id", std::string{het.chainID}},
-		                                             {"pdb_ins_code", iCode}});
+		getCategory("pdbx_nonpoly_scheme")->emplace({
+			{"asym_id", asymID},
+			{"entity_id", mHet2EntityID[hetID]},
+			{"mon_id", hetID},
+			{"ndb_seq_num", seqNr},
+			{"pdb_seq_num", het.seqNum},
+			// { "auth_seq_num", het.seqNum },	// ????
+			{"pdb_mon_id", hetID},
+			// { "auth_mon_id", hetID },
+			{"pdb_strand_id", std::string{het.chainID}},
+			{"pdb_ins_code", iCode}
+		});
 
 		// mapping needed?
 		mChainSeq2AsymSeq[std::make_tuple(het.chainID, het.seqNum, het.iCode)] = std::make_tuple(asymID, seqNr, false);
@@ -4113,7 +4324,18 @@ void PDBFileParser::ConstructEntities()
 			continue;
 		}
 
-		getCategory("pdbx_struct_mod_residue")->emplace({{"id", modResID++}, {"label_asym_id", asymID}, {"label_seq_id", seq}, {"label_comp_id", resName}, {"auth_asym_id", std::string(1, chainID)}, {"auth_seq_id", seqNum}, {"auth_comp_id", resName}, {"PDB_ins_code", iCode == ' ' ? "" : std::string{iCode}}, {"parent_comp_id", stdRes}, {"details", comment}});
+		getCategory("pdbx_struct_mod_residue")->emplace({
+			{"id", modResID++},
+			{"label_asym_id", asymID},
+			{"label_seq_id", seq},
+			{"label_comp_id", resName},
+			{"auth_asym_id", std::string(1, chainID)},
+			{"auth_seq_id", seqNum},
+			{"auth_comp_id", resName},
+			{"PDB_ins_code", iCode == ' ' ? "" : std::string{iCode}},
+			{"parent_comp_id", stdRes},
+			{"details", comment}
+		});
 
 		modResSet.insert(resName);
 	}
@@ -4162,7 +4384,12 @@ void PDBFileParser::ConstructEntities()
 		if (modResSet.count(cc))
 			nstd = "n";
 
-		getCategory("chem_comp")->emplace({{"id", cc}, {"name", name}, {"formula", formula}, {"formula_weight", formulaWeight}, {"mon_nstd_flag", nstd}, {"type", type}});
+		getCategory("chem_comp")->emplace({{"id", cc},
+		{"name", name},
+		{"formula", formula},
+		{"formula_weight", formulaWeight},
+		{"mon_nstd_flag", nstd},
+		{"type", type}});
 	}
 
 	getCategory("chem_comp")->reorderByIndex();
@@ -4195,16 +4422,39 @@ void PDBFileParser::ConstructEntities()
 
 		if (unobs.atoms.empty())
 		{
-			getCategory("pdbx_unobs_or_zero_occ_residues")->emplace({{"id", std::to_string(++idRes)}, {"polymer_flag", isPolymer ? "Y" : "N"}, {"occupancy_flag", 1}, {"PDB_model_num", unobs.modelNr ? unobs.modelNr : 1}, {"auth_asym_id", std::string{unobs.chain}}, {"auth_comp_id", unobs.res}, {"auth_seq_id", unobs.seq}, {"PDB_ins_code", unobs.iCode == ' ' ? "" : std::string{unobs.iCode}}, {"label_asym_id", asymID}, {"label_comp_id", compID}, // TODO: change to correct comp_id
-			                                                         {"label_seq_id", seqNr > 0 ? std::to_string(seqNr) : ""}});
+			getCategory("pdbx_unobs_or_zero_occ_residues")->emplace({
+				{"id", std::to_string(++idRes)},
+				{"polymer_flag", isPolymer ? "Y" : "N"},
+				{"occupancy_flag", 1},
+				{"PDB_model_num", unobs.modelNr ? unobs.modelNr : 1},
+				{"auth_asym_id", std::string{unobs.chain}},
+				{"auth_comp_id", unobs.res},
+				{"auth_seq_id", unobs.seq},
+				{"PDB_ins_code", unobs.iCode == ' ' ? "" : std::string{unobs.iCode}},
+				{"label_asym_id", asymID},
+				{"label_comp_id", compID}, // TODO: change to correct comp_id
+				{"label_seq_id", seqNr > 0 ? std::to_string(seqNr) : ""}
+			});
 		}
 		else
 		{
 			for (auto &atom : unobs.atoms)
 			{
-				getCategory("pdbx_unobs_or_zero_occ_atoms")->emplace({{"id", std::to_string(++idAtom)}, {"polymer_flag", isPolymer ? "Y" : "N"}, {"occupancy_flag", 1}, {"PDB_model_num", unobs.modelNr ? unobs.modelNr : 1}, {"auth_asym_id", std::string{unobs.chain}}, {"auth_comp_id", unobs.res}, {"auth_seq_id", unobs.seq}, {"PDB_ins_code", unobs.iCode == ' ' ? "" : std::string{unobs.iCode}}, {"auth_atom_id", atom}, {"label_asym_id", asymID}, {"label_comp_id", compID}, // TODO: change to correct comp_id
-				                                                      {"label_seq_id", seqNr > 0 ? std::to_string(seqNr) : ""},
-				                                                      {"label_atom_id", atom}});
+				getCategory("pdbx_unobs_or_zero_occ_atoms")->emplace({
+					{"id", std::to_string(++idAtom)},
+					{"polymer_flag", isPolymer ? "Y" : "N"},
+					{"occupancy_flag", 1},
+					{"PDB_model_num", unobs.modelNr ? unobs.modelNr : 1},
+					{"auth_asym_id", std::string{unobs.chain}},
+					{"auth_comp_id", unobs.res},
+					{"auth_seq_id", unobs.seq},
+					{"PDB_ins_code", unobs.iCode == ' ' ? "" : std::string{unobs.iCode}},
+					{"auth_atom_id", atom},
+					{"label_asym_id", asymID},
+					{"label_comp_id", compID}, // TODO: change to correct comp_id
+					{"label_seq_id", seqNr > 0 ? std::to_string(seqNr) : ""},
+					{"label_atom_id", atom}
+				});
 			}
 		}
 	}
@@ -4288,14 +4538,18 @@ void PDBFileParser::ConstructSugarTrees(int &asymNr)
 					                                {"src_method", "man"},
 					                                {"pdbx_description", branchName}});
 
-					getCategory("pdbx_entity_branch")->emplace({{"entity_id", entityID}, {"type", "oligosaccharide"}});
+					getCategory("pdbx_entity_branch")->emplace({{"entity_id", entityID},
+					{"type", "oligosaccharide"}});
 
 					int num = 0;
 					std::map<ATOM_REF, int> branch_list;
 
 					for (auto &s : sugarTree)
 					{
-						getCategory("pdbx_entity_branch_list")->emplace({{"entity_id", entityID}, {"comp_id", s.c1.resName}, {"num", ++num}, {"hetero", ci.size() == 1 ? "n" : "y"}});
+						getCategory("pdbx_entity_branch_list")->emplace({{"entity_id", entityID},
+						{"comp_id", s.c1.resName},
+						{"num", ++num},
+						{"hetero", ci.size() == 1 ? "n" : "y"}});
 
 						branch_list[s.c1] = num;
 					}
@@ -4327,7 +4581,10 @@ void PDBFileParser::ConstructSugarTrees(int &asymNr)
 
 				std::string asymID = cif::cifIdForNumber(asymNr++);
 
-				getCategory("struct_asym")->emplace({{"id", asymID}, {"pdbx_blank_PDB_chainid_flag", si->chainID == ' ' ? "Y" : "N"}, {"pdbx_modified", "N"}, {"entity_id", entityID}});
+				getCategory("struct_asym")->emplace({{"id", asymID},
+				{"pdbx_blank_PDB_chainid_flag", si->chainID == ' ' ? "Y" : "N"},
+				{"pdbx_modified", "N"},
+				{"entity_id", entityID}});
 
 				std::string iCode{si->iCode};
 				ba::trim(iCode);
@@ -4337,7 +4594,19 @@ void PDBFileParser::ConstructSugarTrees(int &asymNr)
 				int num = 0;
 				for (auto s : sugarTree)
 				{
-					getCategory("pdbx_branch_scheme")->emplace({{"asym_id", asymID}, {"entity_id", entityID}, {"mon_id", s.c1.resName}, {"num", ++num}, {"pdb_asym_id", asymID}, {"pdb_mon_id", s.c1.resName}, {"pdb_seq_num", num}, {"auth_asym_id", std::string{s.c1.chainID}}, {"auth_mon_id", s.next.resName}, {"auth_seq_num", s.c1.resSeq}, {"hetero", ci.size() == 1 ? "n" : "y"}});
+					getCategory("pdbx_branch_scheme")->emplace({
+						{"asym_id", asymID},
+						{"entity_id", entityID},
+						{"mon_id", s.c1.resName},
+						{"num", ++num},
+						{"pdb_asym_id", asymID},
+						{"pdb_mon_id", s.c1.resName},
+						{"pdb_seq_num", num},
+						{"auth_asym_id", std::string{s.c1.chainID}},
+						{"auth_mon_id", s.next.resName},
+						{"auth_seq_num", s.c1.resSeq},
+						{"hetero", ci.size() == 1 ? "n" : "y"}
+					});
 
 					auto k = std::make_tuple(s.c1.chainID, s.c1.resSeq, s.c1.iCode);
 					assert(mChainSeq2AsymSeq.count(k) == 0);
@@ -4506,7 +4775,10 @@ void PDBFileParser::ParseSecondaryStructure()
 
 		if (sense != 0)
 		{
-			getCategory("struct_sheet_order")->emplace({{"sheet_id", sheetID}, {"range_id_1", rangeID}, {"range_id_2", rangeID + 1}, {"sense", sense == -1 ? "anti-parallel" : "parallel"}});
+			getCategory("struct_sheet_order")->emplace({{"sheet_id", sheetID},
+			{"range_id_1", rangeID},
+			{"range_id_2", rangeID + 1},
+			{"sense", sense == -1 ? "anti-parallel" : "parallel"}});
 		}
 
 		std::string begAsymID, endAsymID;
@@ -4559,17 +4831,30 @@ void PDBFileParser::ParseSecondaryStructure()
 						std::cerr << "skipping unmatched pdbx_struct_sheet_hbond record" << std::endl;
 				}
 				else
-					getCategory("pdbx_struct_sheet_hbond")->emplace({{"sheet_id", sheetID}, {"range_id_1", rangeID}, {"range_id_2", rangeID + 1}, {"range_1_label_atom_id", vS(57, 60)}, {"range_1_label_comp_id", vS(61, 63)}, {"range_1_label_asym_id", r1AsymID}, {"range_1_label_seq_id", r1Seq}, {"range_1_PDB_ins_code", vS(70, 70)}, {"range_1_auth_atom_id", vS(57, 60)}, {"range_1_auth_comp_id", vS(61, 63)}, {"range_1_auth_asym_id", vS(65, 65)}, {"range_1_auth_seq_id", vI(66, 69)},
+					getCategory("pdbx_struct_sheet_hbond")->emplace({
+						{"sheet_id", sheetID},
+						{"range_id_1", rangeID},
+						{"range_id_2", rangeID + 1},
+						{"range_1_label_atom_id", vS(57, 60)},
+						{"range_1_label_comp_id", vS(61, 63)},
+						{"range_1_label_asym_id", r1AsymID},
+						{"range_1_label_seq_id", r1Seq},
+						{"range_1_PDB_ins_code", vS(70, 70)},
+						{"range_1_auth_atom_id", vS(57, 60)},
+						{"range_1_auth_comp_id", vS(61, 63)},
+						{"range_1_auth_asym_id", vS(65, 65)},
+						{"range_1_auth_seq_id", vI(66, 69)},
 
-					                                                 {"range_2_label_atom_id", vS(42, 45)},
-					                                                 {"range_2_label_comp_id", vS(46, 48)},
-					                                                 {"range_2_label_asym_id", r2AsymID},
-					                                                 {"range_2_label_seq_id", r2Seq},
-					                                                 {"range_2_PDB_ins_code", vS(55, 55)},
-					                                                 {"range_2_auth_atom_id", vS(42, 45)},
-					                                                 {"range_2_auth_comp_id", vS(46, 48)},
-					                                                 {"range_2_auth_asym_id", vS(50, 50)},
-					                                                 {"range_2_auth_seq_id", vI(51, 54)}});
+						{"range_2_label_atom_id", vS(42, 45)},
+						{"range_2_label_comp_id", vS(46, 48)},
+						{"range_2_label_asym_id", r2AsymID},
+						{"range_2_label_seq_id", r2Seq},
+						{"range_2_PDB_ins_code", vS(55, 55)},
+						{"range_2_auth_atom_id", vS(42, 45)},
+						{"range_2_auth_comp_id", vS(46, 48)},
+						{"range_2_auth_asym_id", vS(50, 50)},
+						{"range_2_auth_seq_id", vI(51, 54)}
+					});
 			}
 
 			if (sense != 0)
@@ -4798,7 +5083,8 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				continue;
 			}
 
-			getCategory("struct_conn")->emplace({{"id", type + std::to_string(linkNr)}, {"conn_type_id", type},
+			getCategory("struct_conn")->emplace({{"id", type + std::to_string(linkNr)},
+			{"conn_type_id", type},
 
 			                                     // { "ccp4_link_id", ccp4LinkID },
 
@@ -4871,7 +5157,24 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			std::string iCode1str = iCode1 == ' ' ? std::string() : std::string{iCode1};
 			std::string iCode2str = iCode2 == ' ' ? std::string() : std::string{iCode2};
 
-			getCategory("struct_mon_prot_cis")->emplace({{"pdbx_id", serNum}, {"label_comp_id", pep1}, {"label_seq_id", lResSeq1}, {"label_asym_id", lAsym1}, {"label_alt_id", "."}, {"pdbx_PDB_ins_code", iCode1str}, {"auth_comp_id", pep1}, {"auth_seq_id", seqNum1}, {"auth_asym_id", std::string{chainID1}}, {"pdbx_label_comp_id_2", pep2}, {"pdbx_label_seq_id_2", lResSeq2}, {"pdbx_label_asym_id_2", lAsym2}, {"pdbx_PDB_ins_code_2", iCode2str}, {"pdbx_auth_comp_id_2", pep2}, {"pdbx_auth_seq_id_2", seqNum2}, {"pdbx_auth_asym_id_2", std::string{chainID2}}, {"pdbx_PDB_model_num", modNum}, {"pdbx_omega_angle", measure}});
+			getCategory("struct_mon_prot_cis")->emplace({{"pdbx_id", serNum},
+			{"label_comp_id", pep1},
+			{"label_seq_id", lResSeq1},
+			{"label_asym_id", lAsym1},
+			{"label_alt_id", "."},
+			{"pdbx_PDB_ins_code", iCode1str},
+			{"auth_comp_id", pep1},
+			{"auth_seq_id", seqNum1},
+			{"auth_asym_id", std::string{chainID1}},
+			{"pdbx_label_comp_id_2", pep2},
+			{"pdbx_label_seq_id_2", lResSeq2},
+			{"pdbx_label_asym_id_2", lAsym2},
+			{"pdbx_PDB_ins_code_2", iCode2str},
+			{"pdbx_auth_comp_id_2", pep2},
+			{"pdbx_auth_seq_id_2", seqNum2},
+			{"pdbx_auth_asym_id_2", std::string{chainID2}},
+			{"pdbx_PDB_model_num", modNum},
+			{"pdbx_omega_angle", measure}});
 
 			continue;
 		}
@@ -4964,7 +5267,9 @@ void PDBFileParser::ParseCrystallographic()
 	{
 	}
 
-	getCategory("symmetry")->emplace({{"entry_id", mStructureID}, {"space_group_name_H-M", spaceGroup}, {"Int_Tables_number", intTablesNr}});
+	getCategory("symmetry")->emplace({{"entry_id", mStructureID},
+	{"space_group_name_H-M", spaceGroup},
+	{"Int_Tables_number", intTablesNr}});
 
 	GetNextRecord();
 }
@@ -5056,7 +5361,20 @@ void PDBFileParser::ParseCoordinateTransformation()
 			GetNextRecord();          //	                                           transformations  of the molecule are
 		}                             //	                                           contained in the datablock. Otherwise, blank.
 
-		getCategory("struct_ncs_oper")->emplace({{"id", serial}, {"matrix[1][1]", m[0][0]}, {"matrix[1][2]", m[0][1]}, {"matrix[1][3]", m[0][2]}, {"matrix[2][1]", m[1][0]}, {"matrix[2][2]", m[1][1]}, {"matrix[2][3]", m[1][2]}, {"matrix[3][1]", m[2][0]}, {"matrix[3][2]", m[2][1]}, {"matrix[3][3]", m[2][2]}, {"vector[1]", v[0]}, {"vector[2]", v[1]}, {"vector[3]", v[2]}, {"code", igiven ? "given" : ""}});
+		getCategory("struct_ncs_oper")->emplace({{"id", serial},
+		{"matrix[1][1]", m[0][0]},
+		{"matrix[1][2]", m[0][1]},
+		{"matrix[1][3]", m[0][2]},
+		{"matrix[2][1]", m[1][0]},
+		{"matrix[2][2]", m[1][1]},
+		{"matrix[2][3]", m[1][2]},
+		{"matrix[3][1]", m[2][0]},
+		{"matrix[3][2]", m[2][1]},
+		{"matrix[3][3]", m[2][2]},
+		{"vector[1]", v[0]},
+		{"vector[2]", v[1]},
+		{"vector[3]", v[2]},
+		{"code", igiven ? "given" : ""}});
 	}
 }
 
@@ -5215,7 +5533,27 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			}
 		}
 
-		getCategory("atom_site")->emplace({{"group_PDB", groupPDB}, {"id", mAtomID}, {"type_symbol", element}, {"label_atom_id", name}, {"label_alt_id", altLoc != ' ' ? std::string{altLoc} : "."}, {"label_comp_id", resName}, {"label_asym_id", asymID}, {"label_entity_id", entityID}, {"label_seq_id", (isResseq and seqID > 0) ? std::to_string(seqID) : "."}, {"pdbx_PDB_ins_code", iCode == ' ' ? "" : std::string{iCode}}, {"Cartn_x", x}, {"Cartn_y", y}, {"Cartn_z", z}, {"occupancy", occupancy}, {"B_iso_or_equiv", tempFactor}, {"pdbx_formal_charge", charge}, {"auth_seq_id", resSeq}, {"auth_comp_id", resName}, {"auth_asym_id", std::string{chainID}}, {"auth_atom_id", name}, {"pdbx_PDB_model_num", modelNr}});
+		getCategory("atom_site")->emplace({{"group_PDB", groupPDB},
+		{"id", mAtomID},
+		{"type_symbol", element},
+		{"label_atom_id", name},
+		{"label_alt_id", altLoc != ' ' ? std::string{altLoc} : "."},
+		{"label_comp_id", resName},
+		{"label_asym_id", asymID},
+		{"label_entity_id", entityID},
+		{"label_seq_id", (isResseq and seqID > 0) ? std::to_string(seqID) : "."},
+		{"pdbx_PDB_ins_code", iCode == ' ' ? "" : std::string{iCode}},
+		{"Cartn_x", x},
+		{"Cartn_y", y},
+		{"Cartn_z", z},
+		{"occupancy", occupancy},
+		{"B_iso_or_equiv", tempFactor},
+		{"pdbx_formal_charge", charge},
+		{"auth_seq_id", resSeq},
+		{"auth_comp_id", resName},
+		{"auth_asym_id", std::string{chainID}},
+		{"auth_atom_id", name},
+		{"pdbx_PDB_model_num", modelNr}});
 
 		InsertAtomType(element);
 
@@ -5237,7 +5575,23 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			auto f = [](float f) -> std::string
 			{ return (boost::format("%6.4f") % f).str(); };
 
-			getCategory("atom_site_anisotrop")->emplace({{"id", mAtomID}, {"type_symbol", element}, {"pdbx_label_atom_id", name}, {"pdbx_label_alt_id", altLoc != ' ' ? std::string{altLoc} : "."}, {"pdbx_label_comp_id", resName}, {"pdbx_label_asym_id", asymID}, {"pdbx_label_seq_id", (isResseq and seqID > 0) ? std::to_string(seqID) : "."}, {"U[1][1]", f(u11 / 10000.f)}, {"U[2][2]", f(u22 / 10000.f)}, {"U[3][3]", f(u33 / 10000.f)}, {"U[1][2]", f(u12 / 10000.f)}, {"U[1][3]", f(u13 / 10000.f)}, {"U[2][3]", f(u23 / 10000.f)}, {"pdbx_auth_seq_id", resSeq}, {"pdbx_auth_comp_id", resName}, {"pdbx_auth_asym_id", std::string{chainID}}, {"pdbx_auth_atom_id", name}});
+			getCategory("atom_site_anisotrop")->emplace({{"id", mAtomID},
+			{"type_symbol", element},
+			{"pdbx_label_atom_id", name},
+			{"pdbx_label_alt_id", altLoc != ' ' ? std::string{altLoc} : "."},
+			{"pdbx_label_comp_id", resName},
+			{"pdbx_label_asym_id", asymID},
+			{"pdbx_label_seq_id", (isResseq and seqID > 0) ? std::to_string(seqID) : "."},
+			{"U[1][1]", f(u11 / 10000.f)},
+			{"U[2][2]", f(u22 / 10000.f)},
+			{"U[3][3]", f(u33 / 10000.f)},
+			{"U[1][2]", f(u12 / 10000.f)},
+			{"U[1][3]", f(u13 / 10000.f)},
+			{"U[2][3]", f(u23 / 10000.f)},
+			{"pdbx_auth_seq_id", resSeq},
+			{"pdbx_auth_comp_id", resName},
+			{"pdbx_auth_asym_id", std::string{chainID}},
+			{"pdbx_auth_atom_id", name}});
 		}
 	}
 

@@ -123,11 +123,12 @@ const uint8_t kCharToLowerMap[256] =
 
 // --------------------------------------------------------------------
 
-bool iequals(const std::string &a, const std::string &b)
+bool iequals(std::string_view a, std::string_view b)
 {
 	bool result = a.length() == b.length();
-	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end() and bi != b.end(); ++ai, ++bi)
-		result = tolower(*ai) == tolower(*bi);
+	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end(); ++ai, ++bi)
+		result = kCharToLowerMap[uint8_t(*ai)] == kCharToLowerMap[uint8_t(*bi)];
+		// result = tolower(*ai) == tolower(*bi);
 	return result;
 }
 
@@ -140,7 +141,7 @@ bool iequals(const char *a, const char *b)
 	return result and *a == *b;
 }
 
-int icompare(const std::string &a, const std::string &b)
+int icompare(std::string_view a, std::string_view b)
 {
 	int d = 0;
 	auto ai = a.begin(), bi = b.begin();
@@ -193,7 +194,7 @@ std::string toLowerCopy(const std::string &s)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string, std::string> splitTagName(const std::string &tag)
+std::tuple<std::string, std::string> splitTagName(std::string_view tag)
 {
 	if (tag.empty())
 		throw std::runtime_error("empty tag");

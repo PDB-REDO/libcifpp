@@ -109,12 +109,12 @@ class Atom
 	float occupancy() const;
 
 	template <typename T>
-	T property(const std::string &name) const;
+	T property(const std::string_view name) const;
 
-	void property(const std::string &name, const std::string &value);
+	void property(const std::string_view name, const std::string &value);
 
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	void property(const std::string &name, const T &value)
+	void property(const std::string_view name, const T &value)
 	{
 		property(name, std::to_string(value));
 	}
@@ -236,6 +236,8 @@ class Residue
 	Atom atomByID(const std::string &atomID) const;
 
 	const std::string &compoundID() const { return mCompoundID; }
+	void setCompoundID(const std::string &id) { mCompoundID = id; }
+
 	const std::string &asymID() const { return mAsymID; }
 	int seqID() const { return mSeqID; }
 	std::string entityID() const;
@@ -404,7 +406,7 @@ class File : public std::enable_shared_from_this<File>
 	File(const File &) = delete;
 	File &operator=(const File &) = delete;
 
-	cif::Datablock& createDatablock(const std::string &name);
+	cif::Datablock& createDatablock(const std::string_view name);
 
 	void load(const std::filesystem::path &path);
 	void save(const std::filesystem::path &path);
@@ -461,8 +463,23 @@ class Structure
 	Atom getAtomByLabel(const std::string &atomID, const std::string &asymID,
 		const std::string &compID, int seqID, const std::string &altID = "");
 
+	/// \brief Return the atom closest to point \a p
+	Atom getAtomByPosition(Point p) const;
+
+	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
+	Atom getAtomByPositionAndType(Point p, std::string_view type, std::string_view res_type) const;
+
 	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
 	const Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID = 0) const;
+
+	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
+	Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID = 0);
+
+	/// \brief Get a the single residue for an asym with id \a asymID
+	const Residue &getResidue(const std::string &asymID) const;
+
+	/// \brief Get a the single residue for an asym with id \a asymID
+	Residue &getResidue(const std::string &asymID);
 
 	// map between auth and label locations
 
@@ -488,7 +505,7 @@ class Structure
 	void removeAtom(Atom &a);
 	void swapAtoms(Atom &a1, Atom &a2); // swap the labels for these atoms
 	void moveAtom(Atom &a, Point p);    // move atom to a new location
-	void changeResidue(const Residue &res, const std::string &newCompound,
+	void changeResidue(Residue &res, const std::string &newCompound,
 		const std::vector<std::tuple<std::string, std::string>> &remappedAtoms);
 
 	/// \brief Create a new non-polymer entity, returns new ID
@@ -519,14 +536,15 @@ class Structure
 
 	void cleanupEmptyCategories();
 
+	/// \brief Direct access to underlying data
+	cif::Category &category(std::string_view name) const;
+	cif::Datablock &datablock() const;
+
   private:
 	friend Polymer;
 	friend Residue;
 	// friend residue_view;
 	// friend residue_iterator;
-
-	cif::Category &category(const char *name) const;
-	cif::Datablock &datablock() const;
 
 	std::string insertCompound(const std::string &compoundID, bool isEntity);
 

@@ -128,6 +128,8 @@ Compound::Compound(cif::Datablock &db)
 	// The name should not contain newline characters since that triggers validation errors later on
 	ba::replace_all(mName, "\n", "");
 
+	mGroup = "non-polymer";
+
 	auto &chemCompAtom = db["chem_comp_atom"];
 	for (auto row : chemCompAtom)
 	{
@@ -151,10 +153,11 @@ Compound::Compound(cif::Datablock &db)
 	}
 }
 
-Compound::Compound(cif::Datablock &db, const std::string &id, const std::string &name, const std::string &type)
+Compound::Compound(cif::Datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group)
 	: mID(id)
 	, mName(name)
 	, mType(type)
+	, mGroup(group)
 {
 	auto &chemCompAtom = db["chem_comp_atom"];
 	for (auto row : chemCompAtom)
@@ -411,7 +414,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::filesystem::path &file, std:
 
 			auto &db = cifFile["comp_" + id];
 
-			mCompounds.push_back(new Compound(db, id, name, type));
+			mCompounds.push_back(new Compound(db, id, name, type, group));
 		}
 	}
 	else
@@ -617,7 +620,7 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 			else
 				type = "non-polymer";
 
-			mCompounds.push_back(new Compound(db, id, name, type));
+			mCompounds.push_back(new Compound(db, id, name, type, group));
 			result = mCompounds.back();
 		}
 	}

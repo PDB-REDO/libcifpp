@@ -36,6 +36,10 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <iomanip>
+#include <shared_mutex>
+
+#include <boost/format.hpp>
 
 #include "cif++/CifUtils.hpp"
 
@@ -141,14 +145,27 @@ class Item
   public:
 	Item() {}
 
+	Item(std::string_view name, char value)
+		: mName(name)
+		, mValue({ value })
+	{
+	}
+
+	template<typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+	Item(std::string_view name, const T& value, const char *fmt)
+		: mName(name)
+		, mValue((boost::format(fmt) % value).str())
+	{
+	}
+
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	Item(const std::string &name, const T &value)
+	Item(const std::string_view name, const T &value)
 		: mName(name)
 		, mValue(std::to_string(value))
 	{
 	}
 
-	Item(const std::string &name, const std::string &value)
+	Item(const std::string_view name, const std::string_view value)
 		: mName(name)
 		, mValue(value)
 	{
@@ -221,7 +238,7 @@ class Datablock
 	using iterator = CategoryList::iterator;
 	using const_iterator = CategoryList::const_iterator;
 
-	Datablock(const std::string &name);
+	Datablock(const std::string_view name);
 	~Datablock();
 
 	Datablock(const Datablock &) = delete;
@@ -230,33 +247,31 @@ class Datablock
 	std::string getName() const { return mName; }
 	void setName(const std::string &n) { mName = n; }
 
-	std::string firstItem(const std::string &tag) const;
-
 	iterator begin() { return mCategories.begin(); }
 	iterator end() { return mCategories.end(); }
 
 	const_iterator begin() const { return mCategories.begin(); }
 	const_iterator end() const { return mCategories.end(); }
 
-	Category &operator[](const std::string &name);
+	Category &operator[](std::string_view name);
 
-	std::tuple<iterator, bool> emplace(const std::string &name);
+	std::tuple<iterator, bool> emplace(std::string_view name);
 
 	bool isValid();
 	void validateLinks() const;
 
-	void setValidator(Validator *v);
+	void setValidator(const Validator *v);
 
 	// this one only looks up a Category, returns nullptr if it does not exist
-	const Category *get(const std::string &name) const;
-	Category *get(const std::string &name);
+	const Category *get(std::string_view name) const;
+	Category *get(std::string_view name);
 
 	void getTagOrder(std::vector<std::string> &tags) const;
 	void write(std::ostream &os, const std::vector<std::string> &order);
 	void write(std::ostream &os);
 
 	// convenience function, add a line to the software category
-	void add_software(const std::string &name, const std::string &classification,
+	void add_software(const std::string_view name, const std::string &classification,
 		const std::string &versionNr, const std::string &versionDate);
 
 	friend bool operator==(const Datablock &lhs, const Datablock &rhs);
@@ -264,9 +279,10 @@ class Datablock
 	friend std::ostream& operator<<(std::ostream &os, const Datablock &data);
 
   private:
-	std::list<Category> mCategories;
+	CategoryList mCategories;		// LRU
+	mutable std::shared_mutex mLock;
 	std::string mName;
-	Validator *mValidator;
+	const Validator *mValidator;
 	Datablock *mNext;
 };
 
@@ -350,14 +366,14 @@ namespace detail
 	  private:
 		friend class ::cif::Row;
 
-		ItemReference(const char *name, size_t column, Row &row)
+		ItemReference(std::string_view name, size_t column, Row &row)
 			: mName(name)
 			, mColumn(column)
 			, mRow(row)
 		{
 		}
 
-		ItemReference(const char *name, size_t column, const Row &row)
+		ItemReference(std::string_view name, size_t column, const Row &row)
 			: mName(name)
 			, mColumn(column)
 			, mRow(const_cast<Row &>(row))
@@ -365,7 +381,7 @@ namespace detail
 		{
 		}
 
-		const char *mName;
+		std::string_view mName;
 		size_t mColumn;
 		Row &mRow;
 		bool mConst = false;
@@ -746,16 +762,16 @@ class Row
 		return detail::ItemReference(itemTag, column, *this);
 	}
 
-	const detail::ItemReference operator[](const std::string &itemTag) const
+	const detail::ItemReference operator[](std::string_view itemTag) const
 	{
-		size_t column = ColumnForItemTag(itemTag.c_str());
-		return detail::ItemReference(itemTag.c_str(), column, *this);
+		size_t column = ColumnForItemTag(itemTag);
+		return detail::ItemReference(itemTag, column, *this);
 	}
 
-	detail::ItemReference operator[](const std::string &itemTag)
+	detail::ItemReference operator[](std::string_view itemTag)
 	{
-		size_t column = ColumnForItemTag(itemTag.c_str());
-		return detail::ItemReference(itemTag.c_str(), column, *this);
+		size_t column = ColumnForItemTag(itemTag);
+		return detail::ItemReference(itemTag, column, *this);
 	}
 
 	template <typename... Ts, size_t N>
@@ -776,7 +792,7 @@ class Row
 	}
 
 	void assign(const std::vector<Item> &values);
-	void assign(const std::string &name, const std::string &value, bool updateLinked);
+	void assign(std::string_view name, const std::string &value, bool updateLinked);
 
 	bool operator==(const Row &rhs) const
 	{
@@ -803,7 +819,7 @@ class Row
 
 	static void swap(size_t column, ItemRow *a, ItemRow *b);
 
-	size_t ColumnForItemTag(const char *itemTag) const;
+	size_t ColumnForItemTag(std::string_view itemTag) const;
 
 	mutable ItemRow *mData;
 	uint32_t mLineNr = 0;
@@ -1169,11 +1185,11 @@ struct Empty
 
 struct Key
 {
-	Key(const std::string &itemTag)
+	explicit Key(const std::string &itemTag)
 		: mItemTag(itemTag)
 	{
 	}
-	Key(const char *itemTag)
+	explicit Key(const char *itemTag)
 		: mItemTag(itemTag)
 	{
 	}
@@ -1816,12 +1832,12 @@ class Category
 	friend class Row;
 	friend class detail::ItemReference;
 
-	Category(Datablock &db, const std::string &name, Validator *Validator);
+	Category(Datablock &db, const std::string_view name, const Validator *Validator);
 	Category(const Category &) = delete;
 	Category &operator=(const Category &) = delete;
 	~Category();
 
-	const std::string name() const { return mName; }
+	const std::string &name() const { return mName; }
 
 	using iterator = iterator_impl<Row>;
 	using const_iterator = iterator_impl<const Row>;
@@ -2064,7 +2080,7 @@ class Category
 
 	Datablock &db() { return mDb; }
 
-	void setValidator(Validator *v);
+	void setValidator(const Validator *v);
 
 	iset fields() const;
 	iset mandatoryFields() const;
@@ -2077,8 +2093,8 @@ class Category
 	void getTagOrder(std::vector<std::string> &tags) const;
 
 	// return index for known column, or the next available column index
-	size_t getColumnIndex(const std::string &name) const;
-	bool hasColumn(const std::string &name) const;
+	size_t getColumnIndex(std::string_view name) const;
+	bool hasColumn(std::string_view name) const;
 	const std::string &getColumnName(size_t columnIndex) const;
 	std::vector<std::string> getColumnNames() const;
 
@@ -2119,16 +2135,26 @@ class Category
 	void write(std::ostream &os, const std::vector<std::string> &order);
 	void write(std::ostream &os, const std::vector<size_t> &order, bool includeEmptyColumns);
 
-	size_t addColumn(const std::string &name);
+	size_t addColumn(std::string_view name);
+
+	struct Linked
+	{
+		Category *linked;
+		const ValidateLink *v;
+	};
+
+	void updateLinks();
 
 	Datablock &mDb;
 	std::string mName;
-	Validator *mValidator;
+	const Validator *mValidator;
 	const ValidateCategory *mCatValidator = nullptr;
 	std::vector<ItemColumn> mColumns;
 	ItemRow *mHead;
 	ItemRow *mTail;
 	class CatIndex *mIndex;
+
+	std::vector<Linked> mParentLinks, mChildLinks;
 };
 
 // --------------------------------------------------------------------
@@ -2162,7 +2188,8 @@ class File
 
 	void loadDictionary();                 // load the default dictionary, that is mmcifDdl in this case
 	void loadDictionary(const char *dict); // load one of the compiled in dictionaries
-	void loadDictionary(std::istream &is); // load dictionary from input stream
+
+	void setValidator(const Validator *v);
 
 	bool isValid();
 	void validateLinks() const;
@@ -2183,8 +2210,8 @@ class File
 
 	void append(Datablock *e);
 
-	Datablock *get(const std::string &name) const;
-	Datablock &operator[](const std::string &name);
+	Datablock *get(std::string_view name) const;
+	Datablock &operator[](std::string_view name);
 
 	struct iterator
 	{
@@ -2226,10 +2253,8 @@ class File
 	void getTagOrder(std::vector<std::string> &tags) const;
 
   private:
-	void setValidator(Validator *v);
-
 	Datablock *mHead;
-	Validator *mValidator;
+	const Validator *mValidator;
 };
 
 // --------------------------------------------------------------------
