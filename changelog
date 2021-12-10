@@ -2,6 +2,7 @@ Version 3.0.0
 - Replaced many strings in the API with string_view for
   performance reasons.
 - Upgraded mmcif::Structure
+- various other small fixes
 
 Version 2.0.4
 - Reverted a too strict test when reading cif files.
