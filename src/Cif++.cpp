@@ -604,6 +604,8 @@ void Datablock::write(std::ostream &os, const std::vector<std::string> &order)
 
 bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 {
+	bool result = true;
+
 	std::shared_lock lockA(dbA.mLock);
 	std::shared_lock lockB(dbB.mLock);
 
@@ -632,14 +634,59 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 
 	while (catA_i != catA.end() and catB_i != catB.end())
 	{
-		if (not iequals(*catA_i, *catB_i))
-			return false;
+		std::string nA = *catA_i;
+		ba::to_lower(nA);
+		
+		std::string nB = *catB_i;
+		ba::to_lower(nB);
+		
+		int d = nA.compare(nB);
+		if (d > 0)
+		{
+			auto cat = dbB.get(*catB_i);
+			
+			if (cat == nullptr)
+				missingA.push_back(*catB_i);
 
-		++catA_i, ++catB_i;
+			++catB_i;
+		}
+		else if (d < 0)
+		{
+			auto cat = dbA.get(*catA_i);
+			
+			if (cat == nullptr)
+				missingB.push_back(*catA_i);
+
+			++catA_i;
+		}
+		else
+			++catA_i, ++catB_i;
 	}
+	
+	while (catA_i != catA.end())
+		missingB.push_back(*catA_i++);
 
-	if (catA_i != catA.end() or catB_i != catB.end())
-		return false;
+	while (catB_i != catB.end())
+		missingA.push_back(*catB_i++);
+
+	if (not (missingA.empty() and missingB.empty()))
+	{
+		if (cif::VERBOSE > 1)
+		{
+			std::cerr << "compare of datablocks failed" << std::endl;
+			if (not missingA.empty())
+				std::cerr << "Categories missing in A: " << ba::join(missingA, ", ") << std::endl
+					<< std::endl;
+		
+			if (not missingB.empty())
+				std::cerr << "Categories missing in B: " << ba::join(missingB, ", ") << std::endl
+					<< std::endl;
+
+			result = false;
+		}
+		else
+			return false;
+	}
 
 	// Second loop, now compare category values
 	catA_i = catA.begin(), catB_i = catB.begin();
@@ -660,13 +707,21 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 		else
 		{
 			if (not (*dbA.get(*catA_i) == *dbB.get(*catB_i)))
-				return false;
+			{
+				if (cif::VERBOSE > 1)
+				{
+					std::cerr << "Compare of datablocks failed due to unequal values in category " << *catA_i << std::endl;
+					result = false;
+				}
+				else
+					return false;
+			}
 			++catA_i;
 			++catB_i;
 		}
 	}
 
-	return true;
+	return result;
 }
 
 std::ostream& operator<<(std::ostream &os, const Datablock &data)
@@ -2354,7 +2409,9 @@ std::set<size_t> Category::keyFieldsByIndex() const
 bool operator==(const Category &a, const Category &b)
 {
 	using namespace std::placeholders; 
-	
+
+	bool result = true;
+
 //	set<std::string> tagsA(a.fields()), tagsB(b.fields());
 //	
 //	if (tagsA != tagsB)
@@ -2388,7 +2445,7 @@ bool operator==(const Category &a, const Category &b)
 	// a.reorderByIndex();
 	// b.reorderByIndex();
 	
-	auto rowEqual = [&](const cif::Row& a, const cif::Row& b)
+	auto rowEqual = [&](const cif::Row& ra, const cif::Row& rb)
 	{
 		int d = 0;
 
@@ -2399,10 +2456,14 @@ bool operator==(const Category &a, const Category &b)
 			
 			std::tie(tag, compare) = tags[kix];
 
-			d = compare(a[tag].c_str(), b[tag].c_str());
+			d = compare(ra[tag].c_str(), rb[tag].c_str());
 
 			if (d != 0)
+			{
+				if (cif::VERBOSE > 1)
+					std::cerr << "Values in _" << a.name() << '.' << tag << " are not equal: '" << ra[tag].c_str() << "' != '" << rb[tag].c_str() << '\'' << std::endl;
 				break;
+			}
 		}
 		
 		return d == 0;
@@ -2412,12 +2473,26 @@ bool operator==(const Category &a, const Category &b)
 	while (ai != a.end() or bi != b.end())
 	{
 		if (ai == a.end() or bi == b.end())
-			return false;
+		{
+			if (cif::VERBOSE > 1)
+			{
+				std::cerr << "Unequal number of rows in " << a.name() << std::endl;
+				result = false;
+				break;
+			}
+			else
+				return false;
+		}
 		
 		cif::Row ra = *ai, rb = *bi;
 		
 		if (not rowEqual(ra, rb))
-			return false;
+		{
+			if (cif::VERBOSE > 1)
+				result = false;
+			else
+				return false;
+		}
 		
 		std::vector<std::string> missingA, missingB, different;
 		
@@ -2434,14 +2509,22 @@ bool operator==(const Category &a, const Category &b)
 			const char* tb = rb[tag].c_str();	if (strcmp(tb, ".") == 0 or strcmp(tb, "?") == 0) tb = "";
 			
 			if (compare(ta, tb) != 0)
-				return false;
+			{
+				if (cif::VERBOSE > 1)
+				{
+					std::cerr << "Values in _" << a.name() << '.' << tag << " are not equal: '" << ta << "' != '" << tb << '\'' << std::endl;
+					result = false;
+				}
+				else
+					return false;
+			}
 		}
 		
 		++ai;
 		++bi;
 	}
 
-	return true;
+	return result;
 }
 
 // auto Category::iterator::operator++() -> iterator&

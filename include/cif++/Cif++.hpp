@@ -36,7 +36,10 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <iomanip>
 #include <shared_mutex>
+
+#include <boost/format.hpp>
 
 #include "cif++/CifUtils.hpp"
 
@@ -141,6 +144,19 @@ class Item
 {
   public:
 	Item() {}
+
+	Item(std::string_view name, char value)
+		: mName(name)
+		, mValue({ value })
+	{
+	}
+
+	template<typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+	Item(std::string_view name, const T& value, const char *fmt)
+		: mName(name)
+		, mValue((boost::format(fmt) % value).str())
+	{
+	}
 
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
 	Item(const std::string_view name, const T &value)
