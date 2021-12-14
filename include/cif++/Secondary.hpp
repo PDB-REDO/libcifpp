@@ -184,6 +184,15 @@ class DSSP
 		std::tuple<ResidueInfo,double> acceptor(int i) const;
 		std::tuple<ResidueInfo,double> donor(int i) const;
 
+		/// \brief Simple compare equals
+		bool operator==(const ResidueInfo &rhs) const
+		{
+			return mImpl == rhs.mImpl;
+		}
+
+		/// \brief Returns \result true if there is a bond between two residues
+		friend bool TestBond(ResidueInfo const &a, ResidueInfo const &b);
+
 	  private:
 		ResidueInfo(Res* res) : mImpl(res) {}
 
