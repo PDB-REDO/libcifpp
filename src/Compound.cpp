@@ -403,7 +403,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::filesystem::path &file, std:
 
 			if (cif::iequals(id, "gly"))
 				type = "peptide linking";
-			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide"))
+			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide") or cif::iequals(group, "p-peptide"))
 				type = "L-peptide linking";
 			else if (cif::iequals(group, "DNA"))
 				type = "DNA linking";
@@ -611,7 +611,7 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 
 			if (cif::iequals(id, "gly"))
 				type = "peptide linking";
-			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide"))
+			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide") or cif::iequals(group, "p-peptide"))
 				type = "L-peptide linking";
 			else if (cif::iequals(group, "DNA"))
 				type = "DNA linking";
