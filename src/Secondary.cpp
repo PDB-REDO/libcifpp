@@ -1431,6 +1431,12 @@ DSSP::iterator &DSSP::iterator::operator++()
 	return *this;
 }
 
+DSSP::iterator &DSSP::iterator::operator--()
+{
+	--mCurrent.mImpl;
+	return *this;
+}
+
 // --------------------------------------------------------------------
 
 DSSP::DSSP(const Structure &s, int min_poly_proline_stretch, bool calculateSurfaceAccessibility)

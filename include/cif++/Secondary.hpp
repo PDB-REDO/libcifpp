@@ -202,7 +202,7 @@ class DSSP
 	class iterator
 	{
 	  public:
-		using iterator_category = std::input_iterator_tag;
+		using iterator_category = std::bidirectional_iterator_tag;
 		using value_type = ResidueInfo;
 		using difference_type = std::ptrdiff_t;
 		using pointer = value_type*;
@@ -220,6 +220,14 @@ class DSSP
 		{
 			auto tmp(*this);
 			this->operator++();
+			return tmp;
+		}
+
+		iterator& operator--();
+		iterator operator--(int)
+		{
+			auto tmp(*this);
+			this->operator--();
 			return tmp;
 		}
 
