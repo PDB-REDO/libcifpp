@@ -131,7 +131,7 @@ class Atom
 	std::string authAtomID() const;
 	std::string authCompID() const;
 	std::string authAsymID() const;
-	std::string authSeqID() const;
+	const std::string& authSeqID() const		{ return mAuthSeqID; }
 	std::string pdbxAuthInsCode() const;
 	std::string pdbxAuthAltID() const;
 
@@ -164,6 +164,7 @@ class Atom
 		std::swap(mAsymID, b.mAsymID);
 		std::swap(mSeqID, b.mSeqID);
 		std::swap(mAltID, b.mAltID);
+		std::swap(mAuthSeqID, b.mAuthSeqID);
 	}
 
 	int compare(const Atom &b) const;
@@ -190,6 +191,7 @@ class Atom
 	std::string mAsymID;
 	int mSeqID;
 	std::string mAltID;
+	std::string mAuthSeqID;
 };
 
 inline void swap(mmcif::Atom &a, mmcif::Atom &b)

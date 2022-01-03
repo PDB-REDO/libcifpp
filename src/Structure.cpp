@@ -208,11 +208,6 @@ struct AtomImpl
 		: mDb(i.mDb)
 		, mID(i.mID)
 		, mType(i.mType)
-		// , mAtomID(i.mAtomID)
-		// , mCompID(i.mCompID)
-		// , mAsymID(i.mAsymID)
-		// , mSeqID(i.mSeqID)
-		// , mAltID(i.mAltID)
 		, mLocation(i.mLocation)
 		, mRefcount(1)
 		, mRow(i.mRow)
@@ -221,7 +216,6 @@ struct AtomImpl
 		, mRadius(i.mRadius)
 		, mSymmetryCopy(i.mSymmetryCopy)
 		, mClone(true)
-	// , mRTop(i.mRTop), mD(i.mD)
 	{
 	}
 
@@ -234,8 +228,6 @@ struct AtomImpl
 		auto &cat = db["atom_site"];
 
 		mRow = cat[cif::Key("id") == mID];
-
-		// prefetch();
 	}
 
 	AtomImpl(cif::Datablock &db, cif::Row &row)
@@ -245,7 +237,6 @@ struct AtomImpl
 		, mRow(row)
 		, mCompound(nullptr)
 	{
-		// prefetch();
 	}
 
 	AtomImpl(cif::Datablock &db, const std::string &id, cif::Row row)
@@ -255,18 +246,12 @@ struct AtomImpl
 		, mRow(row)
 		, mCompound(nullptr)
 	{
-		// prefetch();
 	}
 
 	AtomImpl(const AtomImpl &impl, const Point &loc, const std::string &sym_op)
 		: mDb(impl.mDb)
 		, mID(impl.mID)
 		, mType(impl.mType)
-		// , mAtomID(impl.mAtomID)
-		// , mCompID(impl.mCompID)
-		// , mAsymID(impl.mAsymID)
-		// , mSeqID(impl.mSeqID)
-		// , mAltID(impl.mAltID)
 		, mLocation(loc)
 		, mRefcount(1)
 		, mRow(impl.mRow)
@@ -278,12 +263,12 @@ struct AtomImpl
 	{
 	}
 
-	void prefetch(std::string &atomID, std::string &compID, std::string &asymID, int &seqID, std::string &altID)
+	void prefetch(std::string &atomID, std::string &compID, std::string &asymID, int &seqID, std::string &altID, std::string &authSeqID)
 	{
 		// Prefetch some data
 		std::string symbol;
-		cif::tie(symbol, atomID, compID, asymID, seqID, altID) =
-			mRow.get("type_symbol", "label_atom_id", "label_comp_id", "label_asym_id", "label_seq_id", "label_alt_id");
+		cif::tie(symbol, atomID, compID, asymID, seqID, altID, authSeqID) =
+			mRow.get("type_symbol", "label_atom_id", "label_comp_id", "label_asym_id", "label_seq_id", "label_alt_id", "auth_seq_id");
 
 		if (symbol != "X")
 			mType = AtomTypeTraits(symbol).type();
@@ -404,12 +389,6 @@ struct AtomImpl
 	std::string mID;
 	AtomType mType;
 
-	// std::string mAtomID;
-	// std::string mCompID;
-	// std::string mAsymID;
-	// int mSeqID;
-	// std::string mAltID;
-
 	Point mLocation;
 	int mRefcount;
 	cif::Row mRow;
@@ -443,7 +422,7 @@ Atom::Atom(AtomImpl *impl)
 	: mImpl_(impl)
 {
 	if (mImpl_)
-		mImpl_->prefetch(mAtomID, mCompID, mAsymID, mSeqID, mAltID);
+		mImpl_->prefetch(mAtomID, mCompID, mAsymID, mSeqID, mAltID, mAuthSeqID);
 }
 
 Atom::Atom(cif::Datablock &db, cif::Row &row)
@@ -463,6 +442,7 @@ Atom::Atom(const Atom &rhs)
 	, mAsymID(rhs.mAsymID)
 	, mSeqID(rhs.mSeqID)
 	, mAltID(rhs.mAltID)
+	, mAuthSeqID(rhs.mAuthSeqID)
 {
 	if (mImpl_)
 		mImpl_->reference();
@@ -506,6 +486,7 @@ Atom &Atom::operator=(const Atom &rhs)
 		mAsymID = rhs.mAsymID;
 		mSeqID = rhs.mSeqID;
 		mAltID = rhs.mAltID;
+		mAuthSeqID = rhs.mAuthSeqID;
 
 		if (mImpl_)
 			mImpl_->reference();
@@ -612,21 +593,6 @@ std::string Atom::labelEntityID() const
 	return property<std::string>("label_entity_id");
 }
 
-// const std::string& Atom::labelAltID() const
-// {
-// 	return impl()->mAltID;
-// }
-
-// bool Atom::isAlternate() const
-// {
-// 	return not impl()->mAltID.empty();
-// }
-
-// int Atom::labelSeqID() const
-// {
-// 	return impl()->mSeqID;
-// }
-
 std::string Atom::authAsymID() const
 {
 	return property<std::string>("auth_asym_id");
@@ -650,11 +616,6 @@ std::string Atom::pdbxAuthInsCode() const
 std::string Atom::authCompID() const
 {
 	return property<std::string>("auth_comp_id");
-}
-
-std::string Atom::authSeqID() const
-{
-	return property<std::string>("auth_seq_id");
 }
 
 std::string Atom::labelID() const
@@ -768,6 +729,8 @@ int Atom::compare(const Atom &b) const
 		d = mSeqID - b.mSeqID;
 	if (d == 0)
 		d = mAtomID.compare(b.mAtomID);
+	if (d == 0)
+		d = mAuthSeqID.compare(b.mAuthSeqID);
 
 	return d;
 }
