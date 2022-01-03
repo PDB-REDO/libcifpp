@@ -208,11 +208,11 @@ struct AtomImpl
 		: mDb(i.mDb)
 		, mID(i.mID)
 		, mType(i.mType)
-		, mAtomID(i.mAtomID)
-		, mCompID(i.mCompID)
-		, mAsymID(i.mAsymID)
-		, mSeqID(i.mSeqID)
-		, mAltID(i.mAltID)
+		// , mAtomID(i.mAtomID)
+		// , mCompID(i.mCompID)
+		// , mAsymID(i.mAsymID)
+		// , mSeqID(i.mSeqID)
+		// , mAltID(i.mAltID)
 		, mLocation(i.mLocation)
 		, mRefcount(1)
 		, mRow(i.mRow)
@@ -235,7 +235,7 @@ struct AtomImpl
 
 		mRow = cat[cif::Key("id") == mID];
 
-		prefetch();
+		// prefetch();
 	}
 
 	AtomImpl(cif::Datablock &db, cif::Row &row)
@@ -245,7 +245,7 @@ struct AtomImpl
 		, mRow(row)
 		, mCompound(nullptr)
 	{
-		prefetch();
+		// prefetch();
 	}
 
 	AtomImpl(cif::Datablock &db, const std::string &id, cif::Row row)
@@ -255,18 +255,18 @@ struct AtomImpl
 		, mRow(row)
 		, mCompound(nullptr)
 	{
-		prefetch();
+		// prefetch();
 	}
 
 	AtomImpl(const AtomImpl &impl, const Point &loc, const std::string &sym_op)
 		: mDb(impl.mDb)
 		, mID(impl.mID)
 		, mType(impl.mType)
-		, mAtomID(impl.mAtomID)
-		, mCompID(impl.mCompID)
-		, mAsymID(impl.mAsymID)
-		, mSeqID(impl.mSeqID)
-		, mAltID(impl.mAltID)
+		// , mAtomID(impl.mAtomID)
+		// , mCompID(impl.mCompID)
+		// , mAsymID(impl.mAsymID)
+		// , mSeqID(impl.mSeqID)
+		// , mAltID(impl.mAltID)
 		, mLocation(loc)
 		, mRefcount(1)
 		, mRow(impl.mRow)
@@ -278,11 +278,11 @@ struct AtomImpl
 	{
 	}
 
-	void prefetch()
+	void prefetch(std::string &atomID, std::string &compID, std::string &asymID, int &seqID, std::string &altID)
 	{
 		// Prefetch some data
 		std::string symbol;
-		cif::tie(symbol, mAtomID, mCompID, mAsymID, mSeqID, mAltID) =
+		cif::tie(symbol, atomID, compID, asymID, seqID, altID) =
 			mRow.get("type_symbol", "label_atom_id", "label_comp_id", "label_asym_id", "label_seq_id", "label_alt_id");
 
 		if (symbol != "X")
@@ -292,11 +292,6 @@ struct AtomImpl
 		cif::tie(x, y, z) = mRow.get("Cartn_x", "Cartn_y", "Cartn_z");
 
 		mLocation = Point(x, y, z);
-
-		std::string compID;
-		cif::tie(compID) = mRow.get("label_comp_id");
-
-		// mCompound = CompoundFactory::instance().create(compID);
 	}
 
 	void reference()
@@ -373,12 +368,6 @@ struct AtomImpl
 		return *mCompound;
 	}
 
-	bool isWater() const
-	{
-		// mCompound may still be null here, and besides, this check is not that exciting anyway
-		return mCompID == "HOH" or mCompID == "H2O" or mCompID == "WAT";
-	}
-
 	float radius() const
 	{
 		return mRadius;
@@ -411,30 +400,15 @@ struct AtomImpl
 		std::get<1>(mCachedRefs.back()) = value;
 	}
 
-	int compare(const AtomImpl &b) const
-	{
-		int d = mAsymID.compare(b.mAsymID);
-		if (d == 0)
-			d = mSeqID - b.mSeqID;
-		if (d == 0)
-			d = mAtomID.compare(b.mAtomID);
-		return d;
-	}
-
-	void swapAtomLabels(AtomImpl &b)
-	{
-		std::swap(mAtomID, b.mAtomID);
-	}
-
 	const cif::Datablock &mDb;
 	std::string mID;
 	AtomType mType;
 
-	std::string mAtomID;
-	std::string mCompID;
-	std::string mAsymID;
-	int mSeqID;
-	std::string mAltID;
+	// std::string mAtomID;
+	// std::string mCompID;
+	// std::string mAsymID;
+	// int mSeqID;
+	// std::string mAltID;
 
 	Point mLocation;
 	int mRefcount;
@@ -461,18 +435,43 @@ struct AtomImpl
 //
 
 Atom::Atom()
-	: mImpl_(nullptr)
+	: Atom(nullptr)
 {
 }
 
 Atom::Atom(AtomImpl *impl)
 	: mImpl_(impl)
 {
+	if (mImpl_)
+		mImpl_->prefetch(mAtomID, mCompID, mAsymID, mSeqID, mAltID);
 }
 
 Atom::Atom(cif::Datablock &db, cif::Row &row)
-	: mImpl_(new AtomImpl(db, row))
+	: Atom(new AtomImpl(db, row))
 {
+}
+
+Atom::Atom(const Atom &rhs, const Point &loc, const std::string &sym_op)
+	: Atom(new AtomImpl(*rhs.mImpl_, loc, sym_op))
+{
+}
+
+Atom::Atom(const Atom &rhs)
+	: mImpl_(rhs.mImpl_)
+	, mAtomID(rhs.mAtomID)
+	, mCompID(rhs.mCompID)
+	, mAsymID(rhs.mAsymID)
+	, mSeqID(rhs.mSeqID)
+	, mAltID(rhs.mAltID)
+{
+	if (mImpl_)
+		mImpl_->reference();
+}
+
+Atom::~Atom()
+{
+	if (mImpl_)
+		mImpl_->release();
 }
 
 AtomImpl *Atom::impl()
@@ -494,31 +493,20 @@ Atom Atom::clone() const
 	return Atom(mImpl_ ? new AtomImpl(*mImpl_) : nullptr);
 }
 
-Atom::Atom(const Atom &rhs, const Point &loc, const std::string &sym_op)
-	: mImpl_(new AtomImpl(*rhs.mImpl_, loc, sym_op))
-{
-}
-
-Atom::Atom(const Atom &rhs)
-	: mImpl_(rhs.mImpl_)
-{
-	if (mImpl_)
-		mImpl_->reference();
-}
-
-Atom::~Atom()
-{
-	if (mImpl_)
-		mImpl_->release();
-}
-
 Atom &Atom::operator=(const Atom &rhs)
 {
 	if (this != &rhs)
 	{
 		if (mImpl_)
 			mImpl_->release();
+
 		mImpl_ = rhs.mImpl_;
+		mAtomID = rhs.mAtomID;
+		mCompID = rhs.mCompID;
+		mAsymID = rhs.mAsymID;
+		mSeqID = rhs.mSeqID;
+		mAltID = rhs.mAltID;
+
 		if (mImpl_)
 			mImpl_->reference();
 	}
@@ -604,40 +592,40 @@ float Atom::occupancy() const
 	return property<float>("occupancy");
 }
 
-std::string Atom::labelAtomID() const
-{
-	return impl()->mAtomID;
-}
+// const std::string& Atom::labelAtomID() const
+// {
+// 	return impl()->mAtomID;
+// }
 
-std::string Atom::labelCompID() const
-{
-	return impl()->mCompID;
-}
+// const std::string& Atom::labelCompID() const
+// {
+// 	return impl()->mCompID;
+// }
 
-std::string Atom::labelAsymID() const
-{
-	return impl()->mAsymID;
-}
+// const std::string& Atom::labelAsymID() const
+// {
+// 	return impl()->mAsymID;
+// }
 
 std::string Atom::labelEntityID() const
 {
 	return property<std::string>("label_entity_id");
 }
 
-std::string Atom::labelAltID() const
-{
-	return impl()->mAltID;
-}
+// const std::string& Atom::labelAltID() const
+// {
+// 	return impl()->mAltID;
+// }
 
-bool Atom::isAlternate() const
-{
-	return not impl()->mAltID.empty();
-}
+// bool Atom::isAlternate() const
+// {
+// 	return not impl()->mAltID.empty();
+// }
 
-int Atom::labelSeqID() const
-{
-	return impl()->mSeqID;
-}
+// int Atom::labelSeqID() const
+// {
+// 	return impl()->mSeqID;
+// }
 
 std::string Atom::authAsymID() const
 {
@@ -671,7 +659,7 @@ std::string Atom::authSeqID() const
 
 std::string Atom::labelID() const
 {
-	return property<std::string>("label_comp_id") + '_' + impl()->mAsymID + '_' + std::to_string(impl()->mSeqID) + ':' + impl()->mAtomID;
+	return mCompID + '_' + mAsymID + '_' + std::to_string(mSeqID) + ':' + mAtomID;
 }
 
 std::string Atom::pdbID() const
@@ -743,7 +731,8 @@ const Compound &Atom::comp() const
 
 bool Atom::isWater() const
 {
-	return impl()->isWater();
+	(void)impl();
+	return mCompID == "HOH" or mCompID == "H2O" or mCompID == "WAT";
 }
 
 bool Atom::operator==(const Atom &rhs) const
@@ -774,7 +763,13 @@ float Atom::radius() const
 
 int Atom::compare(const Atom &b) const
 {
-	return impl() == b.impl() ? 0 : impl()->compare(*b.impl());
+	int d = mAsymID.compare(b.mAsymID);
+	if (d == 0)
+		d = mSeqID - b.mSeqID;
+	if (d == 0)
+		d = mAtomID.compare(b.mAtomID);
+
+	return d;
 }
 
 void Atom::setID(int id)
@@ -1843,7 +1838,6 @@ void Structure::loadAtomsForModel(StructureOpenOptions options)
 	}
 }
 
-
 Structure::Structure(const Structure &s)
 	: mFile(s.mFile)
 	, mModelNr(s.mModelNr)
@@ -2424,7 +2418,7 @@ void Structure::swapAtoms(Atom &a1, Atom &a2)
 	auto l2 = r2["label_atom_id"];
 	l1.swap(l2);
 
-	a1.impl()->swapAtomLabels(*a2.impl());
+	std::swap(a1.mAtomID, a2.mAtomID);
 
 	auto l3 = r1["auth_atom_id"];
 	auto l4 = r2["auth_atom_id"];

@@ -120,13 +120,13 @@ class Atom
 	}
 
 	// specifications
-	std::string labelAtomID() const;
-	std::string labelCompID() const;
-	std::string labelAsymID() const;
+	const std::string& labelAtomID() const		{ return mAtomID; }
+	const std::string& labelCompID() const		{ return mCompID; }
+	const std::string& labelAsymID() const		{ return mAsymID; }
 	std::string labelEntityID() const;
-	int labelSeqID() const;
-	std::string labelAltID() const;
-	bool isAlternate() const;
+	int labelSeqID() const						{ return mSeqID; }
+	const std::string& labelAltID() const		{ return mAltID; }
+	bool isAlternate() const					{ return not mAltID.empty(); }
 
 	std::string authAtomID() const;
 	std::string authCompID() const;
@@ -159,6 +159,11 @@ class Atom
 	void swap(Atom &b)
 	{
 		std::swap(mImpl_, b.mImpl_);
+		std::swap(mAtomID, b.mAtomID);
+		std::swap(mCompID, b.mCompID);
+		std::swap(mAsymID, b.mAsymID);
+		std::swap(mSeqID, b.mSeqID);
+		std::swap(mAltID, b.mAltID);
 	}
 
 	int compare(const Atom &b) const;
@@ -178,6 +183,13 @@ class Atom
 	const AtomImpl *impl() const;
 
 	struct AtomImpl *mImpl_;
+
+	// cached values
+	std::string mAtomID;
+	std::string mCompID;
+	std::string mAsymID;
+	int mSeqID;
+	std::string mAltID;
 };
 
 inline void swap(mmcif::Atom &a, mmcif::Atom &b)
