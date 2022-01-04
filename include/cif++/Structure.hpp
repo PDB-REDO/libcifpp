@@ -241,6 +241,11 @@ class Residue
 	const Compound &compound() const;
 	const AtomView &atoms() const;
 
+	void addAtom(const Atom &atom)
+	{
+		mAtoms.push_back(atom);
+	}
+
 	/// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
 	AtomView unique_atoms() const;
 
@@ -290,6 +295,8 @@ class Residue
 	std::tuple<Point, float> centerAndRadius() const;
 
 	friend std::ostream &operator<<(std::ostream &os, const Residue &res);
+
+	friend Structure;
 
   protected:
 	Residue() {}

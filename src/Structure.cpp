@@ -764,27 +764,27 @@ Residue::Residue(const Structure &structure, const std::string &compoundID,
 	, mAsymID(asymID)
 	, mAuthSeqID(authSeqID)
 {
-	for (auto &a : mStructure->atoms())
-	{
-		if (a.labelAsymID() != mAsymID or
-			a.labelCompID() != mCompoundID)
-			continue;
+	// for (auto &a : mStructure->atoms())
+	// {
+	// 	if (a.labelAsymID() != mAsymID or
+	// 		a.labelCompID() != mCompoundID)
+	// 		continue;
 
-		if (compoundID == "HOH")
-		{
-			if (not mAuthSeqID.empty() and a.authSeqID() != mAuthSeqID)
-				continue;
-		}
-		else
-		{
-			if (mSeqID > 0 and a.labelSeqID() != mSeqID)
-				continue;
-		}
+	// 	if (compoundID == "HOH")
+	// 	{
+	// 		if (not mAuthSeqID.empty() and a.authSeqID() != mAuthSeqID)
+	// 			continue;
+	// 	}
+	// 	else
+	// 	{
+	// 		if (mSeqID > 0 and a.labelSeqID() != mSeqID)
+	// 			continue;
+	// 	}
 
-		mAtoms.push_back(a);
-	}
+	// 	mAtoms.push_back(a);
+	// }
 
-	assert(not mAtoms.empty());
+	// assert(not mAtoms.empty());
 }
 
 Residue::Residue(const Structure &structure, const std::string &compoundID, const std::string &asymID)
@@ -802,17 +802,17 @@ Residue::Residue(const Structure &structure, const std::string &compoundID,
 {
 	assert(mCompoundID != "HOH");
 
-	for (auto &a : mStructure->atoms())
-	{
-		if (mSeqID > 0 and a.labelSeqID() != mSeqID)
-			continue;
+	// for (auto &a : mStructure->atoms())
+	// {
+	// 	if (mSeqID > 0 and a.labelSeqID() != mSeqID)
+	// 		continue;
 
-		if (a.labelAsymID() != mAsymID or
-			a.labelCompID() != mCompoundID)
-			continue;
+	// 	if (a.labelAsymID() != mAsymID or
+	// 		a.labelCompID() != mCompoundID)
+	// 		continue;
 
-		mAtoms.push_back(a);
-	}
+	// 	mAtoms.push_back(a);
+	// }
 }
 
 Residue::Residue(Residue &&rhs)
@@ -1103,11 +1103,6 @@ std::ostream &operator<<(std::ostream &os, const Residue &res)
 // --------------------------------------------------------------------
 // monomer
 
-//Monomer::Monomer(Monomer&& rhs)
-//	: Residue(std::move(rhs)), mPolymer(rhs.mPolymer), mIndex(rhs.mIndex)
-//{
-//}
-
 Monomer::Monomer(const Polymer &polymer, size_t index, int seqID, const std::string &authSeqID, const std::string &compoundID)
 	: Residue(*polymer.structure(), compoundID, polymer.asymID(), seqID, authSeqID)
 	, mPolymer(&polymer)
@@ -1120,23 +1115,11 @@ Monomer::Monomer(Monomer &&rhs)
 	, mPolymer(rhs.mPolymer)
 	, mIndex(rhs.mIndex)
 {
-	std::cerr << "move constructor monomer" << std::endl;
-
-	//	mStructure = rhs.mStructure;			rhs.mStructure = nullptr;
-	//	mCompoundID = std::move(rhs.mCompoundID);
-	//	mAsymID = std::move(rhs.mAsymID);
-	//	mSeqID = rhs.mSeqID;
-	//	mAtoms = std::move(rhs.mAtoms);
-	//
-	//	mPolymer = rhs.mPolymer; rhs.mPolymer = nullptr;
-	//	mIndex = rhs.mIndex;
 	rhs.mPolymer = nullptr;
 }
 
 Monomer &Monomer::operator=(Monomer &&rhs)
 {
-	std::cerr << "move assignment monomer" << std::endl;
-
 	Residue::operator=(std::move(rhs));
 	mPolymer = rhs.mPolymer;
 	rhs.mPolymer = nullptr;
@@ -1508,94 +1491,6 @@ bool Monomer::isCis(const mmcif::Monomer &a, const mmcif::Monomer &b)
 
 // --------------------------------------------------------------------
 // polymer
-//
-//Polymer::iterator::iterator(const Polymer& p, uint32_t index)
-//	: mPolymer(&p), mIndex(index), mCurrent(p, index)
-//{
-//	auto& polySeq = mPolymer->mPolySeq;
-//
-//	if (index < polySeq.size())
-//	{
-//		int seqID;
-//		std::string asymID, monID;
-//		cif::tie(asymID, seqID, monID) =
-//			polySeq[mIndex].get("asym_id", "seq_id", "mon_id");
-//
-//		mCurrent = Monomer(*mPolymer, index, seqID, monID, "");
-//	}
-//}
-//
-//Monomer Polymer::operator[](size_t index) const
-//{
-//	if (index >= mPolySeq.size())
-//		throw out_of_range("Invalid index for residue in polymer");
-//
-//	std::string compoundID;
-//	int seqID;
-//
-//	auto r = mPolySeq[index];
-//
-//	cif::tie(seqID, compoundID) =
-//		r.get("seq_id", "mon_id");
-//
-//	return Monomer(const_cast<Polymer&>(*this), index, seqID, compoundID, "");
-//}
-//
-//Polymer::iterator::iterator(const iterator& rhs)
-//	: mPolymer(rhs.mPolymer), mIndex(rhs.mIndex), mCurrent(rhs.mCurrent)
-//{
-//}
-//
-//Polymer::iterator& Polymer::iterator::operator++()
-//{
-//	auto& polySeq = mPolymer->mPolySeq;
-//
-//	if (mIndex < polySeq.size())
-//		++mIndex;
-//
-//	if (mIndex < polySeq.size())
-//	{
-//		int seqID;
-//		std::string asymID, monID;
-//		cif::tie(asymID, seqID, monID) =
-//			polySeq[mIndex].get("asym_id", "seq_id", "mon_id");
-//
-//		mCurrent = Monomer(*mPolymer, mIndex, seqID, monID, "");
-//	}
-//
-//	return *this;
-//}
-
-//Polymer::Polymer(const Structure& s, const std::string& asymID)
-//	: mStructure(const_cast<Structure*>(&s)), mAsymID(asymID)
-//	, mPolySeq(s.category("pdbx_poly_seq_scheme").find(cif::Key("asym_id") == mAsymID))
-//{
-//	mEntityID = mPolySeq.front()["entity_id"].as<std::string>();
-//
-//#if DEBUG
-//	for (auto r: mPolySeq)
-//		assert(r["entity_id"] == mEntityID);
-//#endif
-//
-//}
-
-//Polymer::Polymer(Polymer&& rhs)
-//	: std::vector<Monomer>(std::move(rhs))
-//	, mStructure(rhs.mStructure)
-//	, mEntityID(std::move(rhs.mEntityID)), mAsymID(std::move(rhs.mAsymID)), mPolySeq(std::move(rhs.mPolySeq))
-//{
-//	rhs.mStructure = nullptr;
-//}
-//
-//Polymer& Polymer::operator=(Polymer&& rhs)
-//{
-//	std::vector<Monomer>::operator=(std::move(rhs));
-//	mStructure = rhs.mStructure;			rhs.mStructure = nullptr;
-//	mEntityID = std::move(rhs.mEntityID);
-//	mAsymID = std::move(rhs.mAsymID);
-//	mPolySeq = std::move(rhs.mPolySeq);
-//	return *this;
-//}
 
 Polymer::Polymer(const Structure &s, const std::string &entityID, const std::string &asymID)
 	: mStructure(const_cast<Structure *>(&s))
@@ -1855,6 +1750,42 @@ void Structure::loadData()
 			r.get("asym_id", "mon_id", "num");
 
 		mBranchResidues.emplace_back(*this, monID, asymID, num);
+	}
+
+	// place atoms in residues
+
+	using key_type = std::tuple<std::string,std::string,int>;
+	using map_type = std::map<key_type,Residue*>;
+	map_type resMap;
+
+	for (auto &poly : mPolymers)
+	{
+		for (auto &res : poly)
+			resMap[{ res.asymID(), res.compoundID(), res.seqID() }] = &res;
+	}
+
+	for (auto &res : mNonPolymers)
+		resMap[{ res.asymID(), res.compoundID(), (res.isWater() ? std::stoi(res.mAuthSeqID) : res.seqID()) }] = &res;
+
+	for (auto &res : mBranchResidues)
+		resMap[{ res.asymID(), res.compoundID(), res.seqID() }] = &res;
+
+	for (auto &atom: mAtoms)
+	{
+		key_type k(atom.labelAsymID(), atom.labelCompID(), atom.isWater() ? std::stoi(atom.authSeqID()) : atom.labelSeqID());
+		auto ri = resMap.find(k);
+
+		if (ri == resMap.end())
+		{
+			if (cif::VERBOSE)
+				std::cerr << "Missing residue for atom " << atom << std::endl;
+
+			assert(false);
+
+			continue;
+		}
+	
+		ri->second->addAtom(atom);
 	}
 }
 
