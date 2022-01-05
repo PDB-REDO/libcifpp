@@ -3009,12 +3009,12 @@ void Row::assign(const Item &value, bool skipUpdateLinked)
 	assign(value.name(), value.value(), skipUpdateLinked);
 }
 
-void Row::assign(std::string_view name, const std::string &value, bool skipUpdateLinked)
+void Row::assign(std::string_view name, const std::string &value, bool skipUpdateLinked, bool validate)
 {
 	try
 	{
 		auto cat = mData->mCategory;
-		assign(cat->addColumn(name), value, skipUpdateLinked);
+		assign(cat->addColumn(name), value, skipUpdateLinked, validate);
 	}
 	catch (const std::exception &ex)
 	{
@@ -3024,7 +3024,7 @@ void Row::assign(std::string_view name, const std::string &value, bool skipUpdat
 	}
 }
 
-void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked)
+void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked, bool validate)
 {
 	if (mData == nullptr)
 		throw std::logic_error("invalid Row, no data assigning value '" + value + "' to column with index " + std::to_string(column));
@@ -3050,7 +3050,7 @@ void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked)
 	std::string oldStrValue = oldValue ? oldValue : "";
 
 	// check the value
-	if (col.mValidator)
+	if (col.mValidator and validate)
 		(*col.mValidator)(value);
 
 	// If the field is part of the Key for this Category, remove it from the index

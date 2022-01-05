@@ -109,7 +109,7 @@ void FileImpl::load_data(const char *data, size_t length)
 	//	if (mData.getValidator() == nullptr)
 	mData.loadDictionary("mmcif_pdbx_v50");
 	if (not mData.isValid() and cif::VERBOSE >= 0)
-		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << std::endl;
+		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
 }
 
 void FileImpl::load(const std::filesystem::path &path)
@@ -181,7 +181,7 @@ void FileImpl::load(const std::filesystem::path &path)
 	//	if (mData.getValidator() == nullptr)
 	mData.loadDictionary("mmcif_pdbx_v50");
 	if (not mData.isValid() and cif::VERBOSE >= 0)
-		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << std::endl;
+		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
 }
 
 void FileImpl::save(const std::filesystem::path &path)
@@ -295,16 +295,13 @@ void Atom::AtomImpl::moveTo(const Point &p)
 
 	if (not mClone)
 	{
-		set_property("Cartn_x", std::to_string(p.getX()));
-		set_property("Cartn_y", std::to_string(p.getY()));
-		set_property("Cartn_z", std::to_string(p.getZ()));
+		// set_property("Cartn_x", std::to_string(p.getX()));
+		// set_property("Cartn_y", std::to_string(p.getY()));
+		// set_property("Cartn_z", std::to_string(p.getZ()));
+		mRow.assign("Cartn_x", std::to_string(p.getX()), true);
+		mRow.assign("Cartn_y", std::to_string(p.getY()), true);
+		mRow.assign("Cartn_z", std::to_string(p.getZ()), true);
 	}
-
-	//		boost::format kPosFmt("%.3f");
-	//
-	//		mRow["Cartn_x"] = (kPosFmt % p.getX()).str();
-	//		mRow["Cartn_y"] = (kPosFmt % p.getY()).str();
-	//		mRow["Cartn_z"] = (kPosFmt % p.getZ()).str();
 
 	mLocation = p;
 }

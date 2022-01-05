@@ -792,7 +792,7 @@ class Row
 	}
 
 	void assign(const std::vector<Item> &values);
-	void assign(std::string_view name, const std::string &value, bool updateLinked);
+	void assign(std::string_view name, const std::string &value, bool updateLinked, bool validate = true);
 
 	bool operator==(const Row &rhs) const
 	{
@@ -814,7 +814,7 @@ class Row
 	friend std::ostream &operator<<(std::ostream &os, const Row &row);
 
   private:
-	void assign(size_t column, const std::string &value, bool updateLinked);
+	void assign(size_t column, const std::string &value, bool updateLinked, bool validate = true);
 	void assign(const Item &i, bool updateLinked);
 
 	static void swap(size_t column, ItemRow *a, ItemRow *b);
