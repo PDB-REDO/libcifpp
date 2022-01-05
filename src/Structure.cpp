@@ -1870,65 +1870,6 @@ std::string Structure::insertCompound(const std::string &compoundID, bool isEnti
 	return entity_id;
 }
 
-// // --------------------------------------------------------------------
-
-// Structure::residue_iterator::residue_iterator(const Structure* s, poly_iterator polyIter, size_t polyResIndex, size_t nonPolyIndex)
-// 	: mStructure(*s), mPolyIter(polyIter), mPolyResIndex(polyResIndex), mNonPolyIndex(nonPolyIndex)
-// {
-// 	while (mPolyIter != mStructure.mPolymers.end() and mPolyResIndex == mPolyIter->size())
-// 		++mPolyIter;
-// }
-
-// auto Structure::residue_iterator::operator*() -> reference
-// {
-// 	if (mPolyIter != mStructure.mPolymers.end())
-// 		return (*mPolyIter)[mPolyResIndex];
-// 	else
-// 		return mStructure.mNonPolymers[mNonPolyIndex];
-// }
-
-// auto Structure::residue_iterator::operator->() -> pointer
-// {
-// 	if (mPolyIter != mStructure.mPolymers.end())
-// 		return &(*mPolyIter)[mPolyResIndex];
-// 	else
-// 		return &mStructure.mNonPolymers[mNonPolyIndex];
-// }
-
-// Structure::residue_iterator& Structure::residue_iterator::operator++()
-// {
-// 	if (mPolyIter != mStructure.mPolymers.end())
-// 	{
-// 		++mPolyResIndex;
-// 		if (mPolyResIndex >= mPolyIter->size())
-// 		{
-// 			++mPolyIter;
-// 			mPolyResIndex = 0;
-// 		}
-// 	}
-// 	else
-// 		++mNonPolyIndex;
-
-// 	return *this;
-// }
-
-// Structure::residue_iterator Structure::residue_iterator::operator++(int)
-// {
-// 	auto result = *this;
-// 	operator++();
-// 	return result;
-// }
-
-// bool Structure::residue_iterator::operator==(const Structure::residue_iterator& rhs) const
-// {
-// 	return mPolyIter == rhs.mPolyIter and mPolyResIndex == rhs.mPolyResIndex and mNonPolyIndex == rhs.mNonPolyIndex;
-// }
-
-// bool Structure::residue_iterator::operator!=(const Structure::residue_iterator& rhs) const
-// {
-// 	return mPolyIter != rhs.mPolyIter or mPolyResIndex != rhs.mPolyResIndex or mNonPolyIndex != rhs.mNonPolyIndex;
-// }
-
 // --------------------------------------------------------------------
 
 void Structure::removeAtom(Atom &a)
