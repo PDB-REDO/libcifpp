@@ -295,12 +295,9 @@ void Atom::AtomImpl::moveTo(const Point &p)
 
 	if (not mClone)
 	{
-		// set_property("Cartn_x", std::to_string(p.getX()));
-		// set_property("Cartn_y", std::to_string(p.getY()));
-		// set_property("Cartn_z", std::to_string(p.getZ()));
-		mRow.assign("Cartn_x", std::to_string(p.getX()), true);
-		mRow.assign("Cartn_y", std::to_string(p.getY()), true);
-		mRow.assign("Cartn_z", std::to_string(p.getZ()), true);
+		mRow.assign("Cartn_x", std::to_string(p.getX()), false, false);
+		mRow.assign("Cartn_y", std::to_string(p.getY()), false, false);
+		mRow.assign("Cartn_z", std::to_string(p.getZ()), false, false);
 	}
 
 	mLocation = p;
@@ -449,6 +446,14 @@ void Atom::translate(Point t)
 void Atom::rotate(Quaternion q)
 {
 	auto loc = location();
+	loc.rotate(q);
+	location(loc);
+}
+
+void Atom::translateAndRotate(Point t, Quaternion q)
+{
+	auto loc = location();
+	loc += t;
 	loc.rotate(q);
 	location(loc);
 }
@@ -2184,6 +2189,12 @@ void Structure::rotate(Quaternion q)
 {
 	for (auto &a : mAtoms)
 		a.rotate(q);
+}
+
+void Structure::translateAndRotate(Point t, Quaternion q)
+{
+	for (auto &a : mAtoms)
+		a.translateAndRotate(t, q);
 }
 
 } // namespace mmcif
