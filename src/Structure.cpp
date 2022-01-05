@@ -295,9 +295,9 @@ void Atom::AtomImpl::moveTo(const Point &p)
 
 	if (not mClone)
 	{
-		mRow.assign("Cartn_x", std::to_string(p.getX()), false, false);
-		mRow.assign("Cartn_y", std::to_string(p.getY()), false, false);
-		mRow.assign("Cartn_z", std::to_string(p.getZ()), false, false);
+		mRow.assign("Cartn_x", std::to_string(p.getX()), true, false);
+		mRow.assign("Cartn_y", std::to_string(p.getY()), true, false);
+		mRow.assign("Cartn_z", std::to_string(p.getZ()), true, false);
 	}
 
 	mLocation = p;
