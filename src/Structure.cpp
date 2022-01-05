@@ -108,7 +108,7 @@ void FileImpl::load_data(const char *data, size_t length)
 	// And validate, otherwise lots of functionality won't work
 	//	if (mData.getValidator() == nullptr)
 	mData.loadDictionary("mmcif_pdbx_v50");
-	if (not mData.isValid())
+	if (not mData.isValid() and cif::VERBOSE >= 0)
 		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << std::endl;
 }
 
@@ -179,7 +179,7 @@ void FileImpl::load(const std::filesystem::path &path)
 	// And validate, otherwise lots of functionality won't work
 	//	if (mData.getValidator() == nullptr)
 	mData.loadDictionary("mmcif_pdbx_v50");
-	if (not mData.isValid())
+	if (not mData.isValid() and cif::VERBOSE >= 0)
 		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE ? "." : " use --verbose option to see errors") << std::endl;
 }
 
