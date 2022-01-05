@@ -1237,7 +1237,7 @@ std::filesystem::path gDataDir;
 
 void addDataDirectory(std::filesystem::path dataDir)
 {
-	if (VERBOSE and not fs::exists(dataDir))
+	if (VERBOSE > 0 and not fs::exists(dataDir))
 		std::cerr << "The specified data directory " << dataDir << " does not exist" << std::endl;
 	gDataDir = dataDir;
 }

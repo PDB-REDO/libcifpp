@@ -354,7 +354,7 @@ void Validator::reportError(const std::string &msg, bool fatal) const
 {
 	if (mStrict or fatal)
 		throw ValidationError(msg);
-	else if (VERBOSE)
+	else if (VERBOSE > 0)
 		std::cerr << msg << std::endl;
 }
 

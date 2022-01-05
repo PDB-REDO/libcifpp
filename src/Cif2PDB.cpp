@@ -753,7 +753,8 @@ class Ff : public FBase
             }
             catch (const std::exception& ex)
             {
-                std::cerr << "Failed to write '" << s << "' as a double, this indicates an error in the code for writing PDB files" << std::endl;
+				if (cif::VERBOSE >= 0)
+	                std::cerr << "Failed to write '" << s << "' as a double, this indicates an error in the code for writing PDB files" << std::endl;
                 os << s;
             }
         }
@@ -2329,7 +2330,8 @@ void WriteRemark200(std::ostream& pdbFile, Datablock& db)
 	}
 	catch (const std::exception& ex)
 	{
-		std::cerr << ex.what() << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << ex.what() << std::endl;
 	}
 }
 
@@ -2390,7 +2392,8 @@ void WriteRemark280(std::ostream& pdbFile, Datablock& db)
 	}
 	catch (const std::exception& ex)
 	{
-		std::cerr << ex.what() << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << ex.what() << std::endl;
 	}
 }
 

@@ -1497,7 +1497,7 @@ size_t Category::getColumnIndex(std::string_view name) const
 			break;
 	}
 
-	if (VERBOSE and result == mColumns.size() and mCatValidator != nullptr) // validate the name, if it is known at all (since it was not found)
+	if (VERBOSE > 0 and result == mColumns.size() and mCatValidator != nullptr) // validate the name, if it is known at all (since it was not found)
 	{
 		auto iv = mCatValidator->getValidatorForItem(name);
 		if (iv == nullptr)
@@ -2340,7 +2340,7 @@ void Category::validateLinks() const
 			if (not hasParent(r, *parentCat, *link))
 				++missing;
 
-		if (missing)
+		if (missing and VERBOSE >= 0)
 		{
 			std::cerr << "Links for " << link->mLinkGroupLabel << " are incomplete" << std::endl
 					  << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parentCat->mName << std::endl;
@@ -2900,7 +2900,7 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 				}
 
 				// cannot update this...
-				if (cif::VERBOSE)
+				if (cif::VERBOSE > 0)
 					std::cerr << "Cannot update child " << childCat->mName << "." << childTag << " with value " << value << std::endl;
 			}
 
@@ -3018,7 +3018,8 @@ void Row::assign(std::string_view name, const std::string &value, bool skipUpdat
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Could not assign value '" << value << "' to column _" << mData->mCategory->name() << '.' << name << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Could not assign value '" << value << "' to column _" << mData->mCategory->name() << '.' << name << std::endl;
 		throw;
 	}
 }
@@ -3181,7 +3182,7 @@ void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked)
 			auto rows_n = childCat->find(std::move(cond_n));
 			if (not rows_n.empty())
 			{
-				if (cif::VERBOSE)
+				if (cif::VERBOSE > 0)
 					std::cerr << "Will not rename in child category since there are already rows that link to the parent" << std::endl;
 
 				continue;
@@ -3387,7 +3388,7 @@ void Row::swap(size_t cix, ItemRow *a, ItemRow *b)
 					}
 					else
 					{
-						if (VERBOSE)
+						if (VERBOSE > 0)
 							std::cerr << "In " << childCat->mName << " changing " << linkChildColName << ": " << r[linkChildColName].as<std::string>() << " => " << (i ? i->mText : "") << std::endl;
 						r[linkChildColName] = i ? i->mText : "";
 					}
@@ -3496,7 +3497,8 @@ File::File(const std::filesystem::path &path, bool validate)
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Error while loading file " << path << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error while loading file " << path << std::endl;
 		throw;
 	}
 }
@@ -3564,7 +3566,8 @@ void File::load(const std::filesystem::path &p)
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Error loading file " << path << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error loading file " << path << std::endl;
 		throw;
 	}
 }
@@ -3660,7 +3663,7 @@ bool File::isValid()
 {
 	if (mValidator == nullptr)
 	{
-		if (VERBOSE)
+		if (VERBOSE > 0)
 			std::cerr << "No dictionary loaded explicitly, loading default" << std::endl;
 
 		loadDictionary();

@@ -288,7 +288,7 @@ SacParser::CIFToken SacParser::getNextToken()
 					mState = eStateTextField + 1;
 				else if (ch == kEOF)
 					error("unterminated textfield");
-				else if (not isAnyPrint(ch))
+				else if (not isAnyPrint(ch) and cif::VERBOSE >= 0)
 					//					error("invalid character in text field '" + string({ static_cast<char>(ch) }) + "' (" + to_string((int)ch) + ")");
 					std::cerr << "invalid character in text field '" << std::string({static_cast<char>(ch)}) << "' (" << ch << ") line: " << mLineNr << std::endl;
 				break;
@@ -1220,7 +1220,7 @@ void DictParser::linkItems()
 	{
 		for (auto &iv : cv.mItemValidators)
 		{
-			if (iv.mType == nullptr)
+			if (iv.mType == nullptr and cif::VERBOSE >= 0)
 				std::cerr << "Missing item_type for " << iv.mTag << std::endl;
 		}
 	}
@@ -1255,7 +1255,8 @@ void DictParser::loadDictionary()
 	}
 	catch (const std::exception &)
 	{
-		std::cerr << "Error parsing dictionary" << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error parsing dictionary" << std::endl;
 		throw;
 	}
 

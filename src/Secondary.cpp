@@ -1240,7 +1240,7 @@ void DSSPImpl::calculateSecondaryStructure()
 		auto r1 = findRes(asym1, seq1);
 		if (r1 == mResidues.end())
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Missing (incomplete?) residue for SS bond when trying to find " << asym1 << '/' << seq1 << std::endl;
 			continue;
 			// throw std::runtime_error("Invalid file, missing residue for SS bond");
@@ -1249,7 +1249,7 @@ void DSSPImpl::calculateSecondaryStructure()
 		auto r2 = findRes(asym2, seq2);
 		if (r2 == mResidues.end())
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Missing (incomplete?) residue for SS bond when trying to find " << asym2 << '/' << seq2 << std::endl;
 			continue;
 			// throw std::runtime_error("Invalid file, missing residue for SS bond");
@@ -1300,7 +1300,7 @@ void DSSPImpl::calculateSecondaryStructure()
 	{
 		if (a == b)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "In the SS bonds list, the residue " << a->mM << " is bonded to itself" << std::endl;
 			continue;
 		}
@@ -1483,7 +1483,7 @@ SecondaryStructureType DSSP::operator()(const std::string &inAsymID, int inSeqID
 		{ return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
 	if (i != mImpl->mResidues.end())
 		result = i->mSecondaryStructure;
-	else if (cif::VERBOSE)
+	else if (cif::VERBOSE > 0)
 		std::cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << std::endl;
 	return result;
 }
@@ -1501,7 +1501,7 @@ double DSSP::accessibility(const std::string &inAsymID, int inSeqID) const
 		{ return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
 	if (i != mImpl->mResidues.end())
 		result = i->mSecondaryStructure;
-	else if (cif::VERBOSE)
+	else if (cif::VERBOSE > 0)
 		std::cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << std::endl;
 	return result;
 }
@@ -1526,7 +1526,7 @@ bool DSSP::isAlphaHelixEndBeforeStart(const std::string &inAsymID, int inSeqID) 
 
 	if (i != mImpl->mResidues.end() and i + 1 != mImpl->mResidues.end())
 		result = i->GetHelixFlag(HelixType::rh_alpha) == Helix::End and (i + 1)->GetHelixFlag(HelixType::rh_alpha) == Helix::Start;
-	else if (cif::VERBOSE)
+	else if (cif::VERBOSE > 0)
 		std::cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << std::endl;
 
 	return result;

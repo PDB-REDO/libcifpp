@@ -140,14 +140,14 @@ void FileImpl::load(const std::filesystem::path &path)
 		{
 			try
 			{
-				if (cif::VERBOSE)
+				if (cif::VERBOSE > 0)
 					std::cerr << "unrecognized file extension, trying cif" << std::endl;
 
 				mData.load(in);
 			}
 			catch (const cif::CifParserError &e)
 			{
-				if (cif::VERBOSE)
+				if (cif::VERBOSE > 0)
 					std::cerr << "Not cif, trying plain old PDB" << std::endl;
 
 				// pffft...
@@ -169,7 +169,8 @@ void FileImpl::load(const std::filesystem::path &path)
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Error trying to load file " << path << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error trying to load file " << path << std::endl;
 		throw;
 	}
 
@@ -317,7 +318,7 @@ const Compound &Atom::AtomImpl::comp() const
 
 		mCompound = CompoundFactory::instance().create(compID);
 
-		if (cif::VERBOSE and mCompound == nullptr)
+		if (cif::VERBOSE > 0 and mCompound == nullptr)
 			std::cerr << "Compound not found: '" << compID << '\'' << std::endl;
 	}
 
@@ -623,7 +624,7 @@ AtomView Residue::unique_atoms() const
 			firstAlt = alt;
 		else if (alt != firstAlt)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "skipping alternate atom " << atom << std::endl;
 			continue;
 		}
@@ -829,7 +830,7 @@ float Monomer::phi() const
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 			std::cerr << ex.what() << std::endl;
 	}
 
@@ -851,7 +852,7 @@ float Monomer::psi() const
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 			std::cerr << ex.what() << std::endl;
 	}
 
@@ -875,7 +876,7 @@ float Monomer::alpha() const
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 			std::cerr << ex.what() << std::endl;
 	}
 
@@ -903,7 +904,7 @@ float Monomer::kappa() const
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 			std::cerr << "When trying to calculate kappa for " << asymID() << ':' << seqID() << ": "
 					  << ex.what() << std::endl;
 	}
@@ -926,7 +927,7 @@ float Monomer::tco() const
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 			std::cerr << "When trying to calculate tco for " << asymID() << ':' << seqID() << ": "
 					  << ex.what() << std::endl;
 	}
@@ -945,7 +946,7 @@ float Monomer::omega() const
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 			std::cerr << "When trying to calculate omega for " << asymID() << ':' << seqID() << ": "
 					  << ex.what() << std::endl;
 	}
@@ -1016,7 +1017,7 @@ float Monomer::chi(size_t nr) const
 	}
 	catch (const std::exception &e)
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 			std::cerr << e.what() << std::endl;
 		result = 0;
 	}
@@ -1182,7 +1183,7 @@ Polymer::Polymer(const Structure &s, const std::string &entityID, const std::str
 			ix[seqID] = index;
 			emplace_back(*this, index, seqID, authSeqID, compoundID);
 		}
-		else if (cif::VERBOSE)
+		else if (cif::VERBOSE > 0)
 		{
 			Monomer m{*this, index, seqID, authSeqID, compoundID};
 			std::cerr << "Dropping alternate residue " << m << std::endl;
@@ -1327,7 +1328,7 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 		cif::tie(model_nr) = atomCat.front().get("pdbx_PDB_model_num");
 		if (model_nr and *model_nr != mModelNr)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "No atoms loaded for model 1, trying model " << *model_nr << std::endl;
 			mModelNr = *model_nr;
 			loadAtomsForModel(options);
@@ -1335,7 +1336,10 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 	}
 
 	if (mAtoms.empty())
-		std::cerr << "Warning: no atoms loaded" << std::endl;
+	{
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Warning: no atoms loaded" << std::endl;
+	}
 	else
 		loadData();
 }
@@ -1443,7 +1447,7 @@ void Structure::loadData()
 
 		if (ri == resMap.end())
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Missing residue for atom " << atom << std::endl;
 
 			assert(false);
@@ -2006,7 +2010,8 @@ void Structure::changeResidue(Residue &res, const std::string &newCompound,
 			{ return a.labelAtomID() == a1; });
 		if (i == atoms.end())
 		{
-			std::cerr << "Missing atom for atom ID " << a1 << std::endl;
+			if (cif::VERBOSE >= 0)
+				std::cerr << "Missing atom for atom ID " << a1 << std::endl;
 			continue;
 		}
 

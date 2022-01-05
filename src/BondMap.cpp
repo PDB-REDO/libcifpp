@@ -180,7 +180,10 @@ bool CompoundBondMap::bonded(const std::string &compoundID, const std::string &a
 
 	auto compound = mmcif::CompoundFactory::instance().create(compoundID);
 	if (not compound)
-		std::cerr << "Missing compound bond info for " << compoundID << std::endl;
+	{
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Missing compound bond info for " << compoundID << std::endl;
+	}
 	else
 	{
 		for (auto &atom : compound->bonds())
@@ -308,7 +311,7 @@ BondMap::BondMap(const Structure &p)
 	{
 		if (c == "HOH" or c == "H2O" or c == "WAT")
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "skipping water in bond map calculation" << std::endl;
 			continue;
 		}
