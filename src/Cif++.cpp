@@ -1601,11 +1601,13 @@ std::string Category::getUniqueID(std::function<std::string(int)> generator)
 	if (mCatValidator != nullptr and mCatValidator->mKeys.size() == 1)
 		key = mCatValidator->mKeys.front();
 
-	size_t nr = size();
+	// calling size() often is a waste of resources
+	if (mLastUniqueNr == 0)
+		mLastUniqueNr = size();
 
 	for (;;)
 	{
-		std::string result = generator(int(nr++));
+		std::string result = generator(static_cast<int>(mLastUniqueNr++));
 
 		if (exists(Key(key) == result))
 			continue;

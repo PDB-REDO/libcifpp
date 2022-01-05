@@ -2152,6 +2152,7 @@ class Category
 	std::vector<ItemColumn> mColumns;
 	ItemRow *mHead;
 	ItemRow *mTail;
+	size_t mLastUniqueNr = 0;
 	class CatIndex *mIndex;
 
 	std::vector<Linked> mParentLinks, mChildLinks;
