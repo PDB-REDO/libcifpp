@@ -2063,6 +2063,8 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 
 	auto &atom_site = db["atom_site"];
 
+	auto &res = mNonPolymers.emplace_back(*this, comp_id, asym_id);
+
 	for (auto &atom : atoms)
 	{
 		auto atom_id = atom_site.getUniqueID("");
@@ -2089,10 +2091,9 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 			{"auth_atom_id", atom.get_property<std::string>("label_atom_id")},
 			{"pdbx_PDB_model_num", 1}});
 
-		mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		res.addAtom(newAtom);
 	}
-
-	mNonPolymers.emplace_back(*this, comp_id, asym_id);
 
 	return asym_id;
 }
