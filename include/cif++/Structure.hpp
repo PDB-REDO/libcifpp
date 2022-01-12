@@ -60,30 +60,101 @@ class File;
 
 class Atom
 {
+  private:
+
+	struct AtomImpl : public std::enable_shared_from_this<AtomImpl>
+	{
+		AtomImpl(cif::Datablock &db, const std::string &id, cif::Row row);
+
+		// constructor for a symmetry copy of an atom
+		AtomImpl(const AtomImpl &impl, const Point &loc, const std::string &sym_op);
+
+		AtomImpl(const AtomImpl &i) = default;
+
+		void prefetch();
+
+		int compare(const AtomImpl &b) const;
+
+		bool getAnisoU(float anisou[6]) const;
+
+		void moveTo(const Point &p);
+
+		const Compound &comp() const;
+
+		const std::string get_property(const std::string_view name) const;
+		void set_property(const std::string_view name, const std::string &value);
+
+		const cif::Datablock &mDb;
+		std::string mID;
+		AtomType mType;
+
+		std::string mAtomID;
+		std::string mCompID;
+		std::string mAsymID;
+		int mSeqID;
+		std::string mAltID;
+		std::string mAuthSeqID;
+
+		Point mLocation;
+		int mRefcount;
+		cif::Row mRow;
+
+		mutable std::vector<std::tuple<std::string,cif::detail::ItemReference>> mCachedRefs;
+
+		mutable const Compound *mCompound = nullptr;
+
+		bool mSymmetryCopy = false;
+		bool mClone = false;
+
+		std::string mSymmetryOperator = "1_555";
+	};
+
   public:
-	Atom();
-	Atom(struct AtomImpl *impl);
-	Atom(const Atom &rhs);
+
+	Atom() {}
+
+	Atom(std::shared_ptr<AtomImpl> impl)
+		: mImpl(impl) {}
+
+	Atom(const Atom &rhs)
+		: mImpl(rhs.mImpl) {}
 
 	Atom(cif::Datablock &db, cif::Row &row);
 
 	// a special constructor to create symmetry copies
 	Atom(const Atom &rhs, const Point &symmmetry_location, const std::string &symmetry_operation);
 
-	~Atom();
-
-	explicit operator bool() const { return mImpl_ != nullptr; }
+	explicit operator bool() const { return (bool)mImpl; }
 
 	// return a copy of this atom, with data copied instead of referenced
-	Atom clone() const;
+	Atom clone() const
+	{
+		auto copy = std::make_shared<AtomImpl>(*mImpl);
+		copy->mClone = true;
+		return Atom(copy);
+	}
 
-	Atom &operator=(const Atom &rhs);
+	Atom &operator=(const Atom &rhs) = default;
 
-	const std::string &id() const;
-	AtomType type() const;
+	template <typename T>
+	T get_property(const std::string_view name) const;
 
-	Point location() const;
-	void location(Point p);
+	void set_property(const std::string_view name, const std::string &value)
+	{
+		mImpl->set_property(name, value);
+	}
+
+	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	void property(const std::string_view name, const T &value)
+	{
+		set_property(name, std::to_string(value));
+	}
+
+	const std::string &id() const			{ return mImpl->mID; }
+	AtomType type() const					{ return mImpl->mType; }
+
+	Point location() const					{ return mImpl->mLocation; }
+	void location(Point p)					{ mImpl->moveTo(p); }
 
 	/// \brief Translate the position of this atom by \a t
 	void translate(Point t);
@@ -91,47 +162,40 @@ class Atom
 	/// \brief Rotate the position of this atom by \a q
 	void rotate(Quaternion q);
 
+	/// \brief Translate and rotate the position of this atom by \a t and \a q
+	void translateAndRotate(Point t, Quaternion q);
+
+	/// \brief Translate, rotate and translate again the coordinates this atom by \a t1 , \a q and \a t2
+	void translateRotateAndTranslate(Point t1, Quaternion q, Point t2);
+
 	// for direct access to underlying data, be careful!
-	const cif::Row getRow() const;
+	const cif::Row getRow() const			{ return mImpl->mRow; }
 	const cif::Row getRowAniso() const;
 
-	// Atom symmetryCopy(const Point& d, const clipper::RTop_orth& rt);
-	bool isSymmetryCopy() const;
-	std::string symmetry() const;
-	// const clipper::RTop_orth& symop() const;
+	bool isSymmetryCopy() const				{ return mImpl->mSymmetryCopy; }
+	std::string symmetry() const			{ return mImpl->mSymmetryOperator; }
 
-	const Compound &comp() const;
-	bool isWater() const;
+	const Compound &comp() const			{ return mImpl->comp(); }
+	bool isWater() const					{ return mImpl->mCompID == "HOH" or mImpl->mCompID == "H2O" or mImpl->mCompID == "WAT"; }
 	int charge() const;
 
 	float uIso() const;
-	bool getAnisoU(float anisou[6]) const;
+	bool getAnisoU(float anisou[6]) const	{ return mImpl->getAnisoU(anisou); }
 	float occupancy() const;
 
-	template <typename T>
-	T property(const std::string_view name) const;
-
-	void property(const std::string_view name, const std::string &value);
-
-	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	void property(const std::string_view name, const T &value)
-	{
-		property(name, std::to_string(value));
-	}
-
 	// specifications
-	const std::string& labelAtomID() const		{ return mAtomID; }
-	const std::string& labelCompID() const		{ return mCompID; }
-	const std::string& labelAsymID() const		{ return mAsymID; }
+	const std::string& labelAtomID() const		{ return mImpl->mAtomID; }
+	const std::string& labelCompID() const		{ return mImpl->mCompID; }
+	const std::string& labelAsymID() const		{ return mImpl->mAsymID; }
 	std::string labelEntityID() const;
-	int labelSeqID() const						{ return mSeqID; }
-	const std::string& labelAltID() const		{ return mAltID; }
-	bool isAlternate() const					{ return not mAltID.empty(); }
+	int labelSeqID() const						{ return mImpl->mSeqID; }
+	const std::string& labelAltID() const		{ return mImpl->mAltID; }
+	bool isAlternate() const					{ return not mImpl->mAltID.empty(); }
 
 	std::string authAtomID() const;
 	std::string authCompID() const;
 	std::string authAsymID() const;
-	const std::string& authSeqID() const		{ return mAuthSeqID; }
+	const std::string& authSeqID() const		{ return mImpl->mAuthSeqID; }
 	std::string pdbxAuthInsCode() const;
 	std::string pdbxAuthAltID() const;
 
@@ -139,13 +203,6 @@ class Atom
 	std::string pdbID() const;   // auth_comp_id + '_' + auth_asym_id + '_' + auth_seq_id + pdbx_PDB_ins_code
 
 	bool operator==(const Atom &rhs) const;
-
-	// // get clipper format Atom
-	// clipper::Atom toClipper() const;
-
-	// Radius calculation based on integrating the density until perc of electrons is found
-	void calculateRadius(float resHigh, float resLow, float perc);
-	float radius() const;
 
 	// access data in compound for this atom
 
@@ -158,16 +215,10 @@ class Atom
 
 	void swap(Atom &b)
 	{
-		std::swap(mImpl_, b.mImpl_);
-		std::swap(mAtomID, b.mAtomID);
-		std::swap(mCompID, b.mCompID);
-		std::swap(mAsymID, b.mAsymID);
-		std::swap(mSeqID, b.mSeqID);
-		std::swap(mAltID, b.mAltID);
-		std::swap(mAuthSeqID, b.mAuthSeqID);
+		std::swap(mImpl, b.mImpl);
 	}
 
-	int compare(const Atom &b) const;
+	int compare(const Atom &b) const		{ return mImpl->compare(*b.mImpl); }
 
 	bool operator<(const Atom &rhs) const
 	{
@@ -178,21 +229,30 @@ class Atom
 
   private:
 	friend class Structure;
+
 	void setID(int id);
 
-	AtomImpl *impl();
-	const AtomImpl *impl() const;
-
-	struct AtomImpl *mImpl_;
-
-	// cached values
-	std::string mAtomID;
-	std::string mCompID;
-	std::string mAsymID;
-	int mSeqID;
-	std::string mAltID;
-	std::string mAuthSeqID;
+	std::shared_ptr<AtomImpl> mImpl;
 };
+
+template <>
+inline std::string Atom::get_property<std::string>(const std::string_view name) const
+{
+	return mImpl->get_property(name);
+}
+
+template <>
+inline int Atom::get_property<int>(const std::string_view name) const
+{
+	auto v = mImpl->get_property(name);
+	return v.empty() ? 0 : stoi(v);
+}
+
+template <>
+inline float Atom::get_property<float>(const std::string_view name) const
+{
+	return stof(mImpl->get_property(name));
+}
 
 inline void swap(mmcif::Atom &a, mmcif::Atom &b)
 {
@@ -216,19 +276,16 @@ typedef std::vector<Atom> AtomView;
 class Residue
 {
   public:
-	// constructors should be private, but that's not possible for now (needed in emplace)
-
-	// constructor for waters
+	// constructor
 	Residue(const Structure &structure, const std::string &compoundID,
-		const std::string &asymID, const std::string &authSeqID);
-
-	// constructor for a residue without a sequence number
-	Residue(const Structure &structure, const std::string &compoundID,
-		const std::string &asymID);
-
-	// constructor for a residue with a sequence number
-	Residue(const Structure &structure, const std::string &compoundID,
-		const std::string &asymID, int seqID, const std::string &authSeqID);
+		const std::string &asymID, int seqID = 0, const std::string &authSeqID = {})
+		: mStructure(&structure)
+		, mCompoundID(compoundID)
+		, mAsymID(asymID)
+		, mSeqID(seqID)
+		, mAuthSeqID(authSeqID)
+	{
+	}
 
 	Residue(const Residue &rhs) = delete;
 	Residue &operator=(const Residue &rhs) = delete;
@@ -551,6 +608,12 @@ class Structure
 
 	/// \brief Rotate the coordinates of all atoms in the structure by \a q
 	void rotate(Quaternion t);
+
+	/// \brief Translate and rotate the coordinates of all atoms in the structure by \a t and \a q
+	void translateAndRotate(Point t, Quaternion q);
+
+	/// \brief Translate, rotate and translate again the coordinates of all atoms in the structure by \a t1 , \a q and \a t2
+	void translateRotateAndTranslate(Point t1, Quaternion q, Point t2);
 
 	const std::vector<Residue> &getNonPolymers() const { return mNonPolymers; }
 	const std::vector<Residue> &getBranchResidues() const { return mBranchResidues; }

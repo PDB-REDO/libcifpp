@@ -248,7 +248,7 @@ struct TLSSelectionNot : public TLSSelection
 		for (auto& r: residues)
 			r.selected = not r.selected;
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "NOT" << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -267,7 +267,7 @@ struct TLSSelectionAll : public TLSSelection
 		for (auto& r: residues)
 			r.selected = true;
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "ALL" << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -287,7 +287,7 @@ struct TLSSelectionChain : public TLSSelectionAll
 		for (auto& r: residues)
 			r.selected = allChains or r.chainID == m_chain;
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "CHAIN " << m_chain << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -307,7 +307,7 @@ struct TLSSelectionResID : public TLSSelectionAll
 		for (auto& r: residues)
 			r.selected = r.seqNr == m_seq_nr and r.iCode == m_icode;
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "ResID " << m_seq_nr << (m_icode ? std::string { m_icode} : "") << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -331,7 +331,7 @@ struct TLSSelectionRangeSeq : public TLSSelectionAll
 						  (r.seqNr <= m_last or m_last == kResidueNrWildcard));
 		}
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "Range " << m_first << ':' << m_last << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -374,7 +374,7 @@ struct TLSSelectionRangeID : public TLSSelectionAll
 			}
 		}
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "Through " << m_first << ':' << m_last << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -407,7 +407,7 @@ struct TLSSelectionUnion : public TLSSelection
 		for (auto ai = a.begin(), bi = b.begin(), ri = residues.begin(); ri != residues.end(); ++ai, ++bi, ++ri)
 			ri->selected = ai->selected or bi->selected;
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "Union" << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -440,7 +440,7 @@ struct TLSSelectionIntersection : public TLSSelection
 		for (auto ai = a.begin(), bi = b.begin(), ri = residues.begin(); ri != residues.end(); ++ai, ++bi, ++ri)
 			ri->selected = ai->selected and bi->selected;
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "Intersection" << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -462,7 +462,7 @@ struct TLSSelectionByName : public TLSSelectionAll
 		for (auto& r: residues)
 			r.selected = r.name == m_name;
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "Name " << m_name << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -488,7 +488,7 @@ struct TLSSelectionByElement : public TLSSelectionAll
 		for (auto& r: residues)
 			r.selected = iequals(r.name, m_element);
 
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 		{
 			std::cout << std::string(indentLevel * 2, ' ') << "Element " << m_element << std::endl;
 			DumpSelection(residues, indentLevel);
@@ -890,7 +890,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::Parse()
 
 	Match(pt_EOLN);
 	
-	if (extraParenthesis)
+	if (extraParenthesis and cif::VERBOSE > 0)
 		std::cerr << "WARNING: too many closing parenthesis in TLS selection statement" << std::endl;
 	
 	return result;
@@ -931,7 +931,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 		case '(':
 			Match('(');
 			result = ParseAtomSelection();
-			if (m_lookahead == pt_EOLN)
+			if (m_lookahead == pt_EOLN and cif::VERBOSE > 0)
 				std::cerr << "WARNING: missing closing parenthesis in TLS selection statement" << std::endl;
 			else
 				Match(')');
@@ -1033,7 +1033,7 @@ TLSSelectionPtr TLSSelectionParserImplPhenix::ParseFactor()
 					result.reset(new TLSSelectionRangeID(from, to, icode_from, icode_to));
 				else
 				{
-					if (cif::VERBOSE and (icode_from or icode_to))
+					if (cif::VERBOSE > 0 and (icode_from or icode_to))
 						std::cerr << "Warning, ignoring insertion codes" << std::endl;
 					
 					result.reset(new TLSSelectionRangeSeq(from, to));
@@ -1231,7 +1231,8 @@ TLSSelectionPtr TLSSelectionParserImplBuster::ParseGroup()
 				std::tie(chain2, seqNr2) = ParseAtom();
 				if (chain1 != chain2)
 				{
-					std::cerr << "Warning, ranges over multiple chains detected" << std::endl;
+					if (cif::VERBOSE > 0)
+						std::cerr << "Warning, ranges over multiple chains detected" << std::endl;
 					
 					TLSSelectionPtr sc1(new TLSSelectionChain(chain1));
 					TLSSelectionPtr sr1(new TLSSelectionRangeSeq(seqNr1, kResidueNrWildcard));
@@ -1289,7 +1290,7 @@ std::tuple<std::string,int> TLSSelectionParserImplBuster::ParseAtom()
 			Match(':');
 			std::string atom = m_value_s;
 			
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Warning: ignoring atom ID '" << atom << "' in TLS selection" << std::endl;
 			
 			Match(bt_IDENT);
@@ -1810,7 +1811,8 @@ class TLSSelectionParser
 		}
 		catch (const std::exception& ex)
 		{
-			std::cerr << "ParseError: " << ex.what() << std::endl;
+			if (cif::VERBOSE >= 0)
+				std::cerr << "ParseError: " << ex.what() << std::endl;
 		}
 		
 		return result;
@@ -1834,14 +1836,14 @@ TLSSelectionPtr ParseSelectionDetails(const std::string& program, const std::str
 
 		if (not result)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Falling back to old BUSTER" << std::endl;
 			result = busterOld.Parse(selection);
 		}
 		
 		if (not result)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Falling back to PHENIX" << std::endl;
 			result = phenix.Parse(selection);
 		}
@@ -1852,35 +1854,35 @@ TLSSelectionPtr ParseSelectionDetails(const std::string& program, const std::str
 
 		if (not result)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Falling back to BUSTER" << std::endl;
 			result = buster.Parse(selection);
 		}
 
 		if (not result)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Falling back to old BUSTER" << std::endl;
 			result = busterOld.Parse(selection);
 		}
 	}
 	else
 	{
-		if (cif::VERBOSE)
+		if (cif::VERBOSE > 0)
 			std::cerr << "No known program specified, trying PHENIX" << std::endl;
 
 		result = phenix.Parse(selection);
 
 		if (not result)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Falling back to BUSTER" << std::endl;
 			result = buster.Parse(selection);
 		}
 
 		if (not result)
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Falling back to old BUSTER" << std::endl;
 			result = busterOld.Parse(selection);
 		}

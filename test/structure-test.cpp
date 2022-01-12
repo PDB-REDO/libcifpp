@@ -179,3 +179,23 @@ _struct_asym.details                       ?
 				<< structure.getFile().data() << std::endl;
 	}
 }
+
+// // --------------------------------------------------------------------
+
+// BOOST_AUTO_TEST_CASE(test_load_1)
+// {
+// 	mmcif::File cf(gTestDir / "5v3g.cif.gz");
+// 	mmcif::Structure s(cf);
+
+// 	for (auto &poly : s.polymers())
+// 	{
+// 		std::cout << std::string(80, '=') << std::endl;
+// 		for (auto &res : poly)
+// 		{
+// 			std::cout << res << std::endl;
+
+// 			for (auto &atom : res.atoms())
+// 				std::cout << "  " << atom << std::endl;
+// 		}
+// 	}
+// }
