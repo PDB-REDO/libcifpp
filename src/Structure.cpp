@@ -458,6 +458,15 @@ void Atom::translateAndRotate(Point t, Quaternion q)
 	location(loc);
 }
 
+void Atom::translateRotateAndTranslate(Point t1, Quaternion q, Point t2)
+{
+	auto loc = location();
+	loc += t1;
+	loc.rotate(q);
+	loc += t2;
+	location(loc);
+}
+
 bool Atom::operator==(const Atom &rhs) const
 {
 	return mImpl == rhs.mImpl or
@@ -2196,6 +2205,12 @@ void Structure::translateAndRotate(Point t, Quaternion q)
 {
 	for (auto &a : mAtoms)
 		a.translateAndRotate(t, q);
+}
+
+void Structure::translateRotateAndTranslate(Point t1, Quaternion q, Point t2)
+{
+	for (auto &a : mAtoms)
+		a.translateRotateAndTranslate(t1, q, t2);
 }
 
 } // namespace mmcif

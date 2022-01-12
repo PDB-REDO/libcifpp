@@ -165,6 +165,9 @@ class Atom
 	/// \brief Translate and rotate the position of this atom by \a t and \a q
 	void translateAndRotate(Point t, Quaternion q);
 
+	/// \brief Translate, rotate and translate again the coordinates this atom by \a t1 , \a q and \a t2
+	void translateRotateAndTranslate(Point t1, Quaternion q, Point t2);
+
 	// for direct access to underlying data, be careful!
 	const cif::Row getRow() const			{ return mImpl->mRow; }
 	const cif::Row getRowAniso() const;
@@ -608,6 +611,9 @@ class Structure
 
 	/// \brief Translate and rotate the coordinates of all atoms in the structure by \a t and \a q
 	void translateAndRotate(Point t, Quaternion q);
+
+	/// \brief Translate, rotate and translate again the coordinates of all atoms in the structure by \a t1 , \a q and \a t2
+	void translateRotateAndTranslate(Point t1, Quaternion q, Point t2);
 
 	const std::vector<Residue> &getNonPolymers() const { return mNonPolymers; }
 	const std::vector<Residue> &getBranchResidues() const { return mBranchResidues; }
