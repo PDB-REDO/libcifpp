@@ -38,6 +38,7 @@ include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
 include(FindFilesystem)
+include(FindAtomic)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
@@ -200,7 +201,7 @@ if(CIFPP_RECREATE_SYMOP_DATA)
 
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
-	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES})
+	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem std::atomic ${ZLIB_LIBRARIES})
 	if(Boost_INCLUDE_DIR)
 		target_include_directories(symop-map-generator PUBLIC ${Boost_INCLUDE_DIR})
 	endif()
@@ -271,7 +272,7 @@ target_include_directories(cifpp
 	${CMAKE_BINARY_DIR}
 )
 
-target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES})
+target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} std::filesystem std::atomic ${ZLIB_LIBRARIES})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -428,7 +429,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES})
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem std::atomic ${ZLIB_LIBRARIES})
 
 		if(CIFPP_USE_RSRC)
 			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
