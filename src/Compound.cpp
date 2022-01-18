@@ -193,7 +193,7 @@ Compound::Compound(cif::Datablock &db, const std::string &id, const std::string 
 			bond.type = BondType::delo;
 		else
 		{
-			if (cif::VERBOSE)
+			if (cif::VERBOSE > 0)
 				std::cerr << "Unimplemented chem_comp_bond.type " << btype << " in " << id << std::endl;
 			bond.type = BondType::sing;
 		}
@@ -403,7 +403,7 @@ CompoundFactoryImpl::CompoundFactoryImpl(const std::filesystem::path &file, std:
 
 			if (cif::iequals(id, "gly"))
 				type = "peptide linking";
-			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide"))
+			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide") or cif::iequals(group, "p-peptide"))
 				type = "L-peptide linking";
 			else if (cif::iequals(group, "DNA"))
 				type = "DNA linking";
@@ -520,7 +520,7 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 		}
 	}
 
-	if (result == nullptr and cif::VERBOSE)
+	if (result == nullptr and cif::VERBOSE > 0)
 		std::cerr << "Could not locate compound " << id << " in the CCD components file" << std::endl;
 
 	return result;
@@ -611,7 +611,7 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 
 			if (cif::iequals(id, "gly"))
 				type = "peptide linking";
-			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide"))
+			else if (cif::iequals(group, "l-peptide") or cif::iequals(group, "L-peptide linking") or cif::iequals(group, "peptide") or cif::iequals(group, "p-peptide"))
 				type = "L-peptide linking";
 			else if (cif::iequals(group, "DNA"))
 				type = "DNA linking";
@@ -645,13 +645,13 @@ CompoundFactory::CompoundFactory()
 	auto ccd = cif::loadResource("components.cif");
 	if (ccd)
 		mImpl.reset(new CCDCompoundFactoryImpl(mImpl));
-	else if (cif::VERBOSE)
+	else if (cif::VERBOSE > 0)
 		std::cerr << "CCD components.cif file was not found" << std::endl;
 
 	const char *clibd_mon = getenv("CLIBD_MON");
 	if (clibd_mon != nullptr and fs::is_directory(clibd_mon))
 		mImpl.reset(new CCP4CompoundFactoryImpl(clibd_mon));
-	else if (cif::VERBOSE)
+	else if (cif::VERBOSE > 0)
 		std::cerr << "CCP4 monomers library not found, CLIBD_MON is not defined" << std::endl;
 
 }
@@ -695,7 +695,8 @@ void CompoundFactory::setDefaultDictionary(const std::filesystem::path &inDictFi
 	}
 	catch (const std::exception &)
 	{
-		std::cerr << "Error loading dictionary " << inDictFile << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error loading dictionary " << inDictFile << std::endl;
 		throw;
 	}
 }
@@ -715,7 +716,8 @@ void CompoundFactory::pushDictionary(const std::filesystem::path &inDictFile)
 	}
 	catch (const std::exception &)
 	{
-		std::cerr << "Error loading dictionary " << inDictFile << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error loading dictionary " << inDictFile << std::endl;
 		throw;
 	}
 }

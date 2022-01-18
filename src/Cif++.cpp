@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -30,10 +30,10 @@
 #include <numeric>
 #include <regex>
 #include <set>
+#include <shared_mutex>
 #include <stack>
 #include <tuple>
 #include <unordered_map>
-#include <shared_mutex>
 
 #include <filesystem>
 
@@ -570,36 +570,6 @@ void Datablock::write(std::ostream &os, const std::vector<std::string> &order)
 
 		cat.write(os);
 	}
-
-	//	// mmcif support, sort of. First write the 'entry' Category
-	//	// and if it exists, _AND_ we have a Validator, write out the
-	//	// auditConform record.
-	//
-	//	for (auto& cat: mCategories)
-	//	{
-	//		if (cat.name() == "entry")
-	//		{
-	//			cat.write(os);
-	//
-	//			if (mValidator != nullptr)
-	//			{
-	//				Category auditConform(*this, "audit_conform", nullptr);
-	//				auditConform.emplace({
-	//					{ "dict_name", mValidator->dictName() },
-	//					{ "dict_version", mValidator->dictVersion() }
-	//				});
-	//				auditConform.write(os);
-	//			}
-	//
-	//			break;
-	//		}
-	//	}
-	//
-	//	for (auto& cat: mCategories)
-	//	{
-	//		if (cat.name() != "entry" and cat.name() != "audit_conform")
-	//			cat.write(os);
-	//	}
 }
 
 bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
@@ -636,15 +606,15 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 	{
 		std::string nA = *catA_i;
 		ba::to_lower(nA);
-		
+
 		std::string nB = *catB_i;
 		ba::to_lower(nB);
-		
+
 		int d = nA.compare(nB);
 		if (d > 0)
 		{
 			auto cat = dbB.get(*catB_i);
-			
+
 			if (cat == nullptr)
 				missingA.push_back(*catB_i);
 
@@ -653,7 +623,7 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 		else if (d < 0)
 		{
 			auto cat = dbA.get(*catA_i);
-			
+
 			if (cat == nullptr)
 				missingB.push_back(*catA_i);
 
@@ -662,25 +632,25 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 		else
 			++catA_i, ++catB_i;
 	}
-	
+
 	while (catA_i != catA.end())
 		missingB.push_back(*catA_i++);
 
 	while (catB_i != catB.end())
 		missingA.push_back(*catB_i++);
 
-	if (not (missingA.empty() and missingB.empty()))
+	if (not(missingA.empty() and missingB.empty()))
 	{
 		if (cif::VERBOSE > 1)
 		{
 			std::cerr << "compare of datablocks failed" << std::endl;
 			if (not missingA.empty())
 				std::cerr << "Categories missing in A: " << ba::join(missingA, ", ") << std::endl
-					<< std::endl;
-		
+						  << std::endl;
+
 			if (not missingB.empty())
 				std::cerr << "Categories missing in B: " << ba::join(missingB, ", ") << std::endl
-					<< std::endl;
+						  << std::endl;
 
 			result = false;
 		}
@@ -706,7 +676,7 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 			++catA_i;
 		else
 		{
-			if (not (*dbA.get(*catA_i) == *dbB.get(*catB_i)))
+			if (not(*dbA.get(*catA_i) == *dbB.get(*catB_i)))
 			{
 				if (cif::VERBOSE > 1)
 				{
@@ -724,10 +694,10 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 	return result;
 }
 
-std::ostream& operator<<(std::ostream &os, const Datablock &data)
+std::ostream &operator<<(std::ostream &os, const Datablock &data)
 {
 	// whoohoo... this sucks!
-	const_cast<Datablock&>(data).write(os);
+	const_cast<Datablock &>(data).write(os);
 	return os;
 }
 
@@ -1162,7 +1132,7 @@ void CatIndex::reconstruct()
 		insert(r.mData);
 
 	// maybe reconstruction can be done quicker by using the following commented code.
-	// however, I've not had the time to think of a way to std::set the red/black flag correctly in that case.
+	// however, I've not had the time to think of a way to set the red/black flag correctly in that case.
 
 	//	std::vector<ItemRow*> rows;
 	//	transform(mCat.begin(), mCat.end(), backInserter(rows),
@@ -1254,82 +1224,15 @@ size_t CatIndex::size() const
 	return result;
 }
 
-//bool CatIndex::isValid() const
-//{
-//	bool result = true;
-//
-//	if (mRoot != nullptr)
-//	{
-//		uint32_t minBlack = numeric_limits<uint32_t>::max();
-//		uint32_t maxBlack = 0;
-//
-//		assert(not mRoot->mRed);
-//
-//		result = isValid(mRoot, false, 0, minBlack, maxBlack);
-//		assert(minBlack == maxBlack);
-//	}
-//
-//	return result;
-//}
-//
-//bool CatIndex::validate(entry* h, bool isParentRed, uint32_t blackDepth, uint32_t& minBlack, uint32_t& maxBlack) const
-//{
-//	bool result = true;
-//
-//	if (h->mRed)
-//		assert(not isParentRed);
-//	else
-//		++blackDepth;
-//
-//	if (isParentRed)
-//		assert(not h->mRed);
-//
-//	if (h->mLeft != nullptr and h->mRight != nullptr)
-//	{
-//		if (isRed(h->mLeft))
-//			assert(not isRed(h->mRight));
-//		if (isRed(h->mRight))
-//			assert(not isRed(h->mLeft));
-//	}
-//
-//	if (h->mLeft != nullptr)
-//	{
-//		assert(mComp(h->mLeft->mRow, h->mRow) < 0);
-//		validate(h->mLeft, h->mRed, blackDepth, minBlack, maxBlack);
-//	}
-//	else
-//	{
-//		if (minBlack > blackDepth)
-//			minBlack = blackDepth;
-//		if (maxBlack < blackDepth)
-//			maxBlack = blackDepth;
-//	}
-//
-//	if (h->mRight != nullptr)
-//	{
-//		assert(mComp(h->mRight->mRow, h->mRow) > 0);
-//		validate(h->mRight, h->mRight, blackDepth, minBlack, maxBlack);
-//	}
-//	else
-//	{
-//		if (minBlack > blackDepth)
-//			minBlack = blackDepth;
-//		if (maxBlack < blackDepth)
-//			maxBlack = blackDepth;
-//	}
-//}
-
 // --------------------------------------------------------------------
 
 RowSet::RowSet(Category &cat)
 	: mCat(&cat)
-// , mCond(nullptr)
 {
 }
 
 RowSet::RowSet(Category &cat, Condition &&cond)
 	: mCat(&cat)
-// , mCond(new Condition(std::forward<Condition>(cond)))
 {
 	cond.prepare(cat);
 
@@ -1343,21 +1246,17 @@ RowSet::RowSet(Category &cat, Condition &&cond)
 RowSet::RowSet(const RowSet &rhs)
 	: mCat(rhs.mCat)
 	, mItems(rhs.mItems)
-// , mCond(nullptr)
 {
 }
 
 RowSet::RowSet(RowSet &&rhs)
 	: mCat(rhs.mCat)
 	, mItems(std::move(rhs.mItems))
-// , mCond(rhs.mCond)
 {
-	// rhs.mCond = nullptr;
 }
 
 RowSet::~RowSet()
 {
-	// delete mCond;
 }
 
 RowSet &RowSet::operator=(const RowSet &rhs)
@@ -1469,7 +1368,7 @@ void Category::updateLinks()
 			auto childCat = mDb.get(link->mChildCategory);
 			if (childCat == nullptr)
 				continue;
-			mChildLinks.push_back({ childCat, link });
+			mChildLinks.push_back({childCat, link});
 		}
 
 		for (auto link : mValidator->getLinksForChild(mName))
@@ -1477,7 +1376,7 @@ void Category::updateLinks()
 			auto parentCat = mDb.get(link->mParentCategory);
 			if (parentCat == nullptr)
 				continue;
-			mParentLinks.push_back({ parentCat, link });
+			mParentLinks.push_back({parentCat, link});
 		}
 	}
 }
@@ -1497,7 +1396,7 @@ size_t Category::getColumnIndex(std::string_view name) const
 			break;
 	}
 
-	if (VERBOSE and result == mColumns.size() and mCatValidator != nullptr) // validate the name, if it is known at all (since it was not found)
+	if (VERBOSE > 0 and result == mColumns.size() and mCatValidator != nullptr) // validate the name, if it is known at all (since it was not found)
 	{
 		auto iv = mCatValidator->getValidatorForItem(name);
 		if (iv == nullptr)
@@ -1543,21 +1442,6 @@ size_t Category::addColumn(std::string_view name)
 	return result;
 }
 
-// RowSet Category::find(Condition&& cond)
-// {
-// 	RowSet result(*this);
-
-// 	cond.prepare(*this);
-
-// 	for (auto r: *this)
-// 	{
-// 		if (cond(*this, r))
-// 			result.push_back(r);
-// 	}
-
-// 	return result;
-// }
-
 void Category::reorderByIndex()
 {
 	if (mIndex != nullptr)
@@ -1601,11 +1485,13 @@ std::string Category::getUniqueID(std::function<std::string(int)> generator)
 	if (mCatValidator != nullptr and mCatValidator->mKeys.size() == 1)
 		key = mCatValidator->mKeys.front();
 
-	size_t nr = size();
+	// calling size() often is a waste of resources
+	if (mLastUniqueNr == 0)
+		mLastUniqueNr = size();
 
 	for (;;)
 	{
-		std::string result = generator(int(nr++));
+		std::string result = generator(static_cast<int>(mLastUniqueNr++));
 
 		if (exists(Key(key) == result))
 			continue;
@@ -1664,21 +1550,6 @@ Row Category::operator[](Condition &&cond)
 
 	return result;
 }
-
-// RowSet Category::find(Condition&& cond)
-// {
-// 	// return RowSet(*this, std::forward<Condition>(cond));
-// 	RowSet result(*this);
-
-// 	cond.prepare(*this);
-
-// 	for (auto r: *this)
-// 	{
-// 		if (cond(*this, r))
-// 			result.insert(result.end(), r);
-// 	}
-// 	return result;
-// }
 
 bool Category::exists(Condition &&cond) const
 {
@@ -2340,7 +2211,7 @@ void Category::validateLinks() const
 			if (not hasParent(r, *parentCat, *link))
 				++missing;
 
-		if (missing)
+		if (missing and VERBOSE >= 0)
 		{
 			std::cerr << "Links for " << link->mLinkGroupLabel << " are incomplete" << std::endl
 					  << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parentCat->mName << std::endl;
@@ -2408,26 +2279,26 @@ std::set<size_t> Category::keyFieldsByIndex() const
 
 bool operator==(const Category &a, const Category &b)
 {
-	using namespace std::placeholders; 
+	using namespace std::placeholders;
 
 	bool result = true;
 
-//	set<std::string> tagsA(a.fields()), tagsB(b.fields());
-//	
-//	if (tagsA != tagsB)
-//		std::cout << "Unequal number of fields" << std::endl;
+	//	set<std::string> tagsA(a.fields()), tagsB(b.fields());
+	//
+	//	if (tagsA != tagsB)
+	//		std::cout << "Unequal number of fields" << std::endl;
 
-	auto& validator = a.getValidator();
+	auto &validator = a.getValidator();
 	auto catValidator = validator.getValidatorForCategory(a.name());
 	if (catValidator == nullptr)
 		throw std::runtime_error("missing cat validator");
-	
-	typedef std::function<int(const char*,const char*)> compType;
-	std::vector<std::tuple<std::string,compType>> tags;
+
+	typedef std::function<int(const char *, const char *)> compType;
+	std::vector<std::tuple<std::string, compType>> tags;
 	auto keys = catValidator->mKeys;
 	std::vector<size_t> keyIx;
-	
-	for (auto& tag: a.fields())
+
+	for (auto &tag : a.fields())
 	{
 		auto iv = catValidator->getValidatorForItem(tag);
 		if (iv == nullptr)
@@ -2436,24 +2307,25 @@ bool operator==(const Category &a, const Category &b)
 		if (tv == nullptr)
 			throw std::runtime_error("missing type validator");
 		tags.push_back(std::make_tuple(tag, std::bind(&cif::ValidateType::compare, tv, std::placeholders::_1, std::placeholders::_2)));
-		
-		auto pred = [tag](const std::string& s) -> bool { return cif::iequals(tag, s) == 0; };
+
+		auto pred = [tag](const std::string &s) -> bool
+		{ return cif::iequals(tag, s) == 0; };
 		if (find_if(keys.begin(), keys.end(), pred) == keys.end())
 			keyIx.push_back(tags.size() - 1);
 	}
-	
+
 	// a.reorderByIndex();
 	// b.reorderByIndex();
-	
-	auto rowEqual = [&](const cif::Row& ra, const cif::Row& rb)
+
+	auto rowEqual = [&](const cif::Row &ra, const cif::Row &rb)
 	{
 		int d = 0;
 
-		for (auto kix: keyIx)
+		for (auto kix : keyIx)
 		{
 			std::string tag;
 			compType compare;
-			
+
 			std::tie(tag, compare) = tags[kix];
 
 			d = compare(ra[tag].c_str(), rb[tag].c_str());
@@ -2465,7 +2337,7 @@ bool operator==(const Category &a, const Category &b)
 				break;
 			}
 		}
-		
+
 		return d == 0;
 	};
 
@@ -2483,9 +2355,9 @@ bool operator==(const Category &a, const Category &b)
 			else
 				return false;
 		}
-		
+
 		cif::Row ra = *ai, rb = *bi;
-		
+
 		if (not rowEqual(ra, rb))
 		{
 			if (cif::VERBOSE > 1)
@@ -2493,21 +2365,25 @@ bool operator==(const Category &a, const Category &b)
 			else
 				return false;
 		}
-		
+
 		std::vector<std::string> missingA, missingB, different;
-		
-		for (auto& tt: tags)
+
+		for (auto &tt : tags)
 		{
 			std::string tag;
 			compType compare;
-			
+
 			std::tie(tag, compare) = tt;
-			
+
 			// make it an option to compare unapplicable to empty or something
-			
-			const char* ta = ra[tag].c_str();	if (strcmp(ta, ".") == 0 or strcmp(ta, "?") == 0) ta = "";
-			const char* tb = rb[tag].c_str();	if (strcmp(tb, ".") == 0 or strcmp(tb, "?") == 0) tb = "";
-			
+
+			const char *ta = ra[tag].c_str();
+			if (strcmp(ta, ".") == 0 or strcmp(ta, "?") == 0)
+				ta = "";
+			const char *tb = rb[tag].c_str();
+			if (strcmp(tb, ".") == 0 or strcmp(tb, "?") == 0)
+				tb = "";
+
 			if (compare(ta, tb) != 0)
 			{
 				if (cif::VERBOSE > 1)
@@ -2519,25 +2395,13 @@ bool operator==(const Category &a, const Category &b)
 					return false;
 			}
 		}
-		
+
 		++ai;
 		++bi;
 	}
 
 	return result;
 }
-
-// auto Category::iterator::operator++() -> iterator&
-// {
-// 	mCurrent = Row(mCurrent.data()->mNext);
-// 	return *this;
-// }
-
-// auto Category::const_iterator::operator++() -> const_iterator&
-// {
-// 	mCurrent = Row(mCurrent.data()->mNext);
-// 	return *this;
-// }
 
 namespace detail
 {
@@ -2900,7 +2764,7 @@ void Category::update_value(RowSet &&rows, const std::string &tag, const std::st
 				}
 
 				// cannot update this...
-				if (cif::VERBOSE)
+				if (cif::VERBOSE > 0)
 					std::cerr << "Cannot update child " << childCat->mName << "." << childTag << " with value " << value << std::endl;
 			}
 
@@ -3009,21 +2873,22 @@ void Row::assign(const Item &value, bool skipUpdateLinked)
 	assign(value.name(), value.value(), skipUpdateLinked);
 }
 
-void Row::assign(std::string_view name, const std::string &value, bool skipUpdateLinked)
+void Row::assign(std::string_view name, const std::string &value, bool skipUpdateLinked, bool validate)
 {
 	try
 	{
 		auto cat = mData->mCategory;
-		assign(cat->addColumn(name), value, skipUpdateLinked);
+		assign(cat->addColumn(name), value, skipUpdateLinked, validate);
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Could not assign value '" << value << "' to column _" << mData->mCategory->name() << '.' << name << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Could not assign value '" << value << "' to column _" << mData->mCategory->name() << '.' << name << std::endl;
 		throw;
 	}
 }
 
-void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked)
+void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked, bool validate)
 {
 	if (mData == nullptr)
 		throw std::logic_error("invalid Row, no data assigning value '" + value + "' to column with index " + std::to_string(column));
@@ -3049,7 +2914,7 @@ void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked)
 	std::string oldStrValue = oldValue ? oldValue : "";
 
 	// check the value
-	if (col.mValidator)
+	if (col.mValidator and validate)
 		(*col.mValidator)(value);
 
 	// If the field is part of the Key for this Category, remove it from the index
@@ -3181,7 +3046,7 @@ void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked)
 			auto rows_n = childCat->find(std::move(cond_n));
 			if (not rows_n.empty())
 			{
-				if (cif::VERBOSE)
+				if (cif::VERBOSE > 0)
 					std::cerr << "Will not rename in child category since there are already rows that link to the parent" << std::endl;
 
 				continue;
@@ -3387,7 +3252,7 @@ void Row::swap(size_t cix, ItemRow *a, ItemRow *b)
 					}
 					else
 					{
-						if (VERBOSE)
+						if (VERBOSE > 0)
 							std::cerr << "In " << childCat->mName << " changing " << linkChildColName << ": " << r[linkChildColName].as<std::string>() << " => " << (i ? i->mText : "") << std::endl;
 						r[linkChildColName] = i ? i->mText : "";
 					}
@@ -3496,7 +3361,8 @@ File::File(const std::filesystem::path &path, bool validate)
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Error while loading file " << path << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error while loading file " << path << std::endl;
 		throw;
 	}
 }
@@ -3564,7 +3430,8 @@ void File::load(const std::filesystem::path &p)
 	}
 	catch (const std::exception &ex)
 	{
-		std::cerr << "Error loading file " << path << std::endl;
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error loading file " << path << std::endl;
 		throw;
 	}
 }
@@ -3660,7 +3527,7 @@ bool File::isValid()
 {
 	if (mValidator == nullptr)
 	{
-		if (VERBOSE)
+		if (VERBOSE > 0)
 			std::cerr << "No dictionary loaded explicitly, loading default" << std::endl;
 
 		loadDictionary();

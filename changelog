@@ -1,3 +1,11 @@
+Version 3.0.2
+- refactored mmcif::Atom for performance reasons
+
+Version 3.0.1
+- Fixed processing of proline restraints file from CCP4, proline
+  is a peptide, really.
+- Added code to facilitate DSSP
+
 Version 3.0.0
 - Replaced many strings in the API with string_view for
   performance reasons.

@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 3.0.1 LANGUAGES CXX)
+project(cifpp VERSION 3.0.2 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -133,8 +133,6 @@ if(MSVC)
 		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
 	endif()	
 
-	set(COFF_SPEC "--coff=${COFF_TYPE}")
-
 	# for mrc, just in case
 	list(APPEND CMAKE_PREFIX_PATH "$ENV{LOCALAPPDATA}/mrc")
 endif()
@@ -150,12 +148,12 @@ endif()
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_program(MRC mrc)
+	find_package(Mrc)
 
-	if(MRC)
-		option(CIFPP_USE_RSRC "Use mrc to create resources" ON)
+	if(MRC_FOUND)
+		option(USE_RSRC "Use mrc to create resources" ON)
 	else()
-		message("Using resources not possible since mrc was not found")
+		message(WARNING "Not using resources since mrc was not found")
 	endif()
 
 	if(CIFPP_USE_RSRC STREQUAL "ON")
@@ -176,9 +174,7 @@ find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex program_opt
 
 if(NOT MSVC AND Boost_USE_STATIC_LIBS)
 	find_package(ZLIB REQUIRED)
-	find_package(BZip2 REQUIRED)
-
-	list(APPEND CIFPP_REQUIRED_LIBRARIES ${ZLIB_LIBRARIES} ${BZip2_LIBRARIES})
+	list(APPEND CIFPP_REQUIRED_LIBRARIES ${ZLIB_LIBRARIES})
 endif()
 
 include(FindFilesystem)
@@ -341,6 +337,13 @@ install(TARGETS cifpp
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+if(MSVC)
+	install(
+		FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		OPTIONAL)
+endif()
+
 install(EXPORT cifppTargets
 	FILE "cifppTargets.cmake"
 	NAMESPACE cifpp::
@@ -414,13 +417,6 @@ option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
 
-	if(CIFPP_USE_RSRC)
-		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj
-			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic ${COFF_SPEC}
-		)
-		set(CIFPP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj)
-	endif()
-
 	list(APPEND CIFPP_tests
 		# pdb2cif
 		rename-compound
@@ -431,7 +427,7 @@ if(CIFPP_BUILD_TESTS)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")
 		set(CIFPP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test/${CIFPP_TEST}.cpp")
 
-		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE} ${CIFPP_TEST_RESOURCE})
+		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
 		target_include_directories(${CIFPP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -439,7 +435,11 @@ if(CIFPP_BUILD_TESTS)
 		)
 
 		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} ${CIFPP_REQUIRED_LIBRARIES})
-	
+
+		if(CIFPP_USE_RSRC)
+			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
+		endif()
+
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
 			target_compile_options(${CIFPP_TEST} PRIVATE /EHsc)
