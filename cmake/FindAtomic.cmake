@@ -1,4 +1,4 @@
-# Simplistic
+# Simple check to see if we need a library for std::atomic
 
 if(TARGET std::atomic)
 	return()
