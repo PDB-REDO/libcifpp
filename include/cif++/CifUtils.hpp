@@ -26,11 +26,7 @@
 
 #pragma once
 
-#include <cassert>
 #include <filesystem>
-#include <iostream>
-#include <list>
-#include <memory>
 #include <set>
 #include <vector>
 

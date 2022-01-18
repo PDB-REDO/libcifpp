@@ -25,19 +25,12 @@
  */
 
 #include <atomic>
-#include <chrono>
 #include <cmath>
-#include <cstdio>
-#include <filesystem>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
-#include <map>
 #include <mutex>
 #include <regex>
-#include <sstream>
 #include <thread>
-#include <tuple>
 
 #if defined(_MSC_VER)
 #define TERM_WIDTH 80
