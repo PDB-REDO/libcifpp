@@ -2098,6 +2098,16 @@ Residue &Structure::getResidue(const std::string &asymID)
 	return const_cast<Residue&>(const_cast<Structure const&>(*this).getResidue(asymID));
 }
 
+Residue &Structure::getResidue(const mmcif::Atom &atom)
+{
+	return getResidue(atom.labelAsymID(), atom.labelCompID(), atom.labelSeqID());
+}
+
+const Residue &Structure::getResidue(const mmcif::Atom &atom) const
+{
+	return getResidue(atom.labelAsymID(), atom.labelCompID(), atom.labelSeqID());
+}
+
 File &Structure::getFile() const
 {
 	return mFile;

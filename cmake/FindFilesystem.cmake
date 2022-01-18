@@ -59,8 +59,10 @@ if(_found)
 		# Nothing to add...
 	elseif(CXX_FILESYSTEM_STDCPPFS_NEEDED)
 		set_target_properties(std::filesystem PROPERTIES IMPORTED_LIBNAME stdc++fs)
+		set(STDCPPFS_LIBRARY stdc++fs)
 	elseif(CXX_FILESYSTEM_CPPFS_NEEDED)
 		set_target_properties(std::filesystem PROPERTIES IMPORTED_LIBNAME c++fs)
+		set(STDCPPFS_LIBRARY c++fs)
 	endif()
 endif()
 

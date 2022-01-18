@@ -481,6 +481,12 @@ class Structure
 	/// \brief Get a the single residue for an asym with id \a asymID
 	Residue &getResidue(const std::string &asymID);
 
+	/// \brief Get a the residue for atom \a atom
+	Residue &getResidue(const mmcif::Atom &atom);
+
+	/// \brief Get a the residue for atom \a atom
+	const Residue &getResidue(const mmcif::Atom &atom) const;
+
 	// map between auth and label locations
 
 	std::tuple<std::string, int, std::string> MapAuthToLabel(const std::string &asymID,
