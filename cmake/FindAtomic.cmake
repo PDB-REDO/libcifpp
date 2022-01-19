@@ -20,9 +20,8 @@ mark_as_advanced(_CXX_ATOMIC_HAVE_HEADER)
 set(code [[
 #include <atomic>
 int main(int argc, char** argv) {
-  struct Test { int val; };
-  std::atomic<Test> s;
-  (void)s.is_lock_free();
+  std::atomic<long long> s;
+  ++s;
   return 0;
 }
 ]])
