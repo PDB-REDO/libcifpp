@@ -121,20 +121,6 @@ if(MSVC)
 		message(STATUS "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
-
-	# Find out the processor type for the target
-	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-		set(COFF_TYPE "x64")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
-		set(COFF_TYPE "x86")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
-		set(COFF_TYPE "arm64")
-	else()
-		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
-	endif()	
-
-	# for mrc, just in case
-	list(APPEND CMAKE_PREFIX_PATH "$ENV{LOCALAPPDATA}/mrc")
 endif()
 
 if(UNIX AND NOT APPLE AND NOT BUILD_FOR_CCP4 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -184,21 +170,8 @@ include(FindAtomic)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 
 # Create a revision file, containing the current git version info
-
-include(GetGitRevisionDescription)
-option(GENERATE_CUSTOM_VERSION "Generate a custom version string" OFF)
-if(GIT-NOTFOUND OR HEAD-HASH-NOTFOUND OR NOT GENERATE_CUSTOM_VERSION)
-    get_git_head_revision(REFSPEC COMMITHASH)
-
-	# Generate our own version string
-	git_describe_working_tree(BUILD_VERSION_STRING --match=build --dirty)
-else()
-    SET(BUILD_VERSION_STRING ${PROJECT_VERSION})
-endif()
-
-# generate version.h
-string(TIMESTAMP BUILD_DATE_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
-configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
+include(VersionString)
+write_version_header("LibCIFPP")
 
 # SymOp data table
 if(CIFPP_RECREATE_SYMOP_DATA)
@@ -277,7 +250,8 @@ target_include_directories(cifpp
 	${CMAKE_BINARY_DIR}
 )
 
-target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} ${CIFPP_REQUIRED_LIBRARIES})
+target_link_libraries(cifpp PUBLIC Threads::Threads Boost::regex Boost::iostreams ${CIFPP_REQUIRED_LIBRARIES})
+# target_link_libraries(cifpp PRIVATE)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -434,7 +408,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} ${CIFPP_REQUIRED_LIBRARIES})
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp Boost::program_options ${CIFPP_REQUIRED_LIBRARIES})
 
 		if(CIFPP_USE_RSRC)
 			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
