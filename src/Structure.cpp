@@ -2088,7 +2088,8 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 	{
 		auto atom_id = atom_site.getUniqueID("");
 
-		auto &&[row, inserted] = atom_site.emplace({{"group_PDB", atom.get_property<std::string>("group_PDB")},
+		auto &&[row, inserted] = atom_site.emplace({
+			{"group_PDB", atom.get_property<std::string>("group_PDB")},
 			{"id", atom_id},
 			{"type_symbol", atom.get_property<std::string>("type_symbol")},
 			{"label_atom_id", atom.get_property<std::string>("label_atom_id")},
@@ -2109,6 +2110,53 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 			{"auth_asym_id", asym_id},
 			{"auth_atom_id", atom.get_property<std::string>("label_atom_id")},
 			{"pdbx_PDB_model_num", 1}});
+
+		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		res.addAtom(newAtom);
+	}
+
+	return asym_id;
+}
+
+std::string Structure::createNonpoly(const std::string &entity_id, std::vector<std::vector<cif::Item>> &atom_info)
+{
+	using namespace cif::literals;
+
+	cif::Datablock &db = *mFile.impl().mDb;
+	auto &struct_asym = db["struct_asym"];
+	std::string asym_id = struct_asym.getUniqueID();
+
+	struct_asym.emplace({{"id", asym_id},
+		{"pdbx_blank_PDB_chainid_flag", "N"},
+		{"pdbx_modified", "N"},
+		{"entity_id", entity_id},
+		{"details", "?"}});
+
+	std::string comp_id = db["pdbx_entity_nonpoly"].find1<std::string>("entity_id"_key == entity_id, "comp_id");
+
+	auto &atom_site = db["atom_site"];
+
+	auto &res = mNonPolymers.emplace_back(*this, comp_id, asym_id);
+
+	for (auto &atom : atom_info)
+	{
+		auto atom_id = atom_site.getUniqueID("");
+
+		atom.insert(atom.end(), {
+			{"group_PDB", "HETATM"},
+			{"id", atom_id},
+			{"label_comp_id", comp_id},
+			{"label_asym_id", asym_id},
+			{"label_seq_id", ""},
+			{"label_entity_id", entity_id},
+			{"auth_comp_id", comp_id},
+			{"auth_asym_id", asym_id},
+			{"auth_seq_id", ""},
+			{"pdbx_PDB_model_num", 1},
+			{"label_alt_id", ""}
+		});
+
+		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
 
 		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
 		res.addAtom(newAtom);

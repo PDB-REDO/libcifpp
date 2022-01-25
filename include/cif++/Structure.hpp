@@ -605,6 +605,14 @@ class Structure
 	/// \return				The newly create asym ID
 	std::string createNonpoly(const std::string &entity_id, const std::vector<mmcif::Atom> &atoms);
 
+	/// \brief Create a new NonPolymer struct_asym with atoms constructed from info in \a atom_info, returns asym_id.
+	/// This method creates new atom records filled with info from the info.
+	///
+	/// \param entity_id	The entity ID of the new nonpoly
+	/// \param atoms		The array of sets of cif::item data containing the data for the atoms.
+	/// \return				The newly create asym ID
+	std::string createNonpoly(const std::string &entity_id, std::vector<std::vector<cif::Item>> &atom_info);
+
 	/// \brief To sort the atoms in order of model > asym-id > res-id > atom-id
 	/// Will asssign new atom_id's to all atoms. Be carefull
 	void sortAtoms();
