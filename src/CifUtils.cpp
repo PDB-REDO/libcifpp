@@ -28,8 +28,10 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <mutex>
 #include <regex>
+#include <sstream>
 #include <thread>
 
 #if defined(_MSC_VER)
