@@ -160,7 +160,7 @@ find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex program_opt
 
 if(NOT MSVC AND Boost_USE_STATIC_LIBS)
 	find_package(ZLIB REQUIRED)
-	list(APPEND CIFPP_REQUIRED_LIBRARIES ${ZLIB_LIBRARIES})
+	list(APPEND CIFPP_REQUIRED_LIBRARIES ZLIB::ZLIB)
 endif()
 
 include(FindFilesystem)
@@ -408,7 +408,7 @@ if(CIFPP_BUILD_TESTS)
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp Boost::program_options ${CIFPP_REQUIRED_LIBRARIES})
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp )
 
 		if(CIFPP_USE_RSRC)
 			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
