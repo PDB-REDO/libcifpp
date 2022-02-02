@@ -1,3 +1,8 @@
+Version 3.0.3
+- Better configuration checks, for atomic e.g.
+- Fixed a problem introduced in refactoring mmcif::Atom
+- Version string creation
+
 Version 3.0.2
 - refactored mmcif::Atom for performance reasons
 
