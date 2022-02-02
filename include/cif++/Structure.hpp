@@ -141,6 +141,8 @@ class Atom
 
 	void set_property(const std::string_view name, const std::string &value)
 	{
+		if (not mImpl)
+			throw std::logic_error("Error trying to modify an uninitialized atom");
 		mImpl->set_property(name, value);
 	}
 
@@ -150,11 +152,16 @@ class Atom
 		set_property(name, std::to_string(value));
 	}
 
-	const std::string &id() const			{ return mImpl->mID; }
-	AtomType type() const					{ return mImpl->mType; }
+	const std::string &id() const			{ return impl().mID; }
+	AtomType type() const					{ return impl().mType; }
 
-	Point location() const					{ return mImpl->mLocation; }
-	void location(Point p)					{ mImpl->moveTo(p); }
+	Point location() const					{ return impl().mLocation; }
+	void location(Point p)
+	{
+		if (not mImpl)
+			throw std::logic_error("Error trying to modify an uninitialized atom");
+		mImpl->moveTo(p);
+	}
 
 	/// \brief Translate the position of this atom by \a t
 	void translate(Point t);
@@ -169,33 +176,33 @@ class Atom
 	void translateRotateAndTranslate(Point t1, Quaternion q, Point t2);
 
 	// for direct access to underlying data, be careful!
-	const cif::Row getRow() const			{ return mImpl->mRow; }
+	const cif::Row getRow() const			{ return impl().mRow; }
 	const cif::Row getRowAniso() const;
 
-	bool isSymmetryCopy() const				{ return mImpl->mSymmetryCopy; }
-	std::string symmetry() const			{ return mImpl->mSymmetryOperator; }
+	bool isSymmetryCopy() const				{ return impl().mSymmetryCopy; }
+	std::string symmetry() const			{ return impl().mSymmetryOperator; }
 
-	const Compound &comp() const			{ return mImpl->comp(); }
-	bool isWater() const					{ return mImpl->mCompID == "HOH" or mImpl->mCompID == "H2O" or mImpl->mCompID == "WAT"; }
+	const Compound &comp() const			{ return impl().comp(); }
+	bool isWater() const					{ return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
 	int charge() const;
 
 	float uIso() const;
-	bool getAnisoU(float anisou[6]) const	{ return mImpl->getAnisoU(anisou); }
+	bool getAnisoU(float anisou[6]) const	{ return impl().getAnisoU(anisou); }
 	float occupancy() const;
 
 	// specifications
-	const std::string& labelAtomID() const		{ return mImpl->mAtomID; }
-	const std::string& labelCompID() const		{ return mImpl->mCompID; }
-	const std::string& labelAsymID() const		{ return mImpl->mAsymID; }
+	const std::string& labelAtomID() const		{ return impl().mAtomID; }
+	const std::string& labelCompID() const		{ return impl().mCompID; }
+	const std::string& labelAsymID() const		{ return impl().mAsymID; }
 	std::string labelEntityID() const;
-	int labelSeqID() const						{ return mImpl->mSeqID; }
-	const std::string& labelAltID() const		{ return mImpl->mAltID; }
-	bool isAlternate() const					{ return not mImpl->mAltID.empty(); }
+	int labelSeqID() const						{ return impl().mSeqID; }
+	const std::string& labelAltID() const		{ return impl().mAltID; }
+	bool isAlternate() const					{ return not impl().mAltID.empty(); }
 
 	std::string authAtomID() const;
 	std::string authCompID() const;
 	std::string authAsymID() const;
-	const std::string& authSeqID() const		{ return mImpl->mAuthSeqID; }
+	const std::string& authSeqID() const		{ return impl().mAuthSeqID; }
 	std::string pdbxAuthInsCode() const;
 	std::string pdbxAuthAltID() const;
 
@@ -218,7 +225,7 @@ class Atom
 		std::swap(mImpl, b.mImpl);
 	}
 
-	int compare(const Atom &b) const		{ return mImpl->compare(*b.mImpl); }
+	int compare(const Atom &b) const		{ return impl().compare(*b.mImpl); }
 
 	bool operator<(const Atom &rhs) const
 	{
@@ -232,26 +239,33 @@ class Atom
 
 	void setID(int id);
 
+	const AtomImpl &impl() const
+	{
+		if (not mImpl)
+			throw std::runtime_error("Uninitialized atom, not found?");
+		return *mImpl;
+	}
+
 	std::shared_ptr<AtomImpl> mImpl;
 };
 
 template <>
 inline std::string Atom::get_property<std::string>(const std::string_view name) const
 {
-	return mImpl->get_property(name);
+	return impl().get_property(name);
 }
 
 template <>
 inline int Atom::get_property<int>(const std::string_view name) const
 {
-	auto v = mImpl->get_property(name);
+	auto v = impl().get_property(name);
 	return v.empty() ? 0 : stoi(v);
 }
 
 template <>
 inline float Atom::get_property<float>(const std::string_view name) const
 {
-	return stof(mImpl->get_property(name));
+	return stof(impl().get_property(name));
 }
 
 inline void swap(mmcif::Atom &a, mmcif::Atom &b)

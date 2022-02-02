@@ -43,10 +43,10 @@ set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# https://stackoverflow.com/questions/63902528/program-crashes-when-filesystempath-is-destroyed
 find_package(Filesystem REQUIRED)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	# https://stackoverflow.com/questions/63902528/program-crashes-when-filesystempath-is-destroyed
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")

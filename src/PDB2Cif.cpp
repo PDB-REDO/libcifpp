@@ -657,7 +657,7 @@ class PDBFileParser
 		int mSeqNum;
 		char mIcode;
 
-		int mDbSeqNum;
+		int mDbSeqNum = 0;
 		bool mSeen = false;
 		std::set<std::string> mAlts;
 
@@ -941,7 +941,10 @@ class PDBFileParser
 	std::string pdb2cifDate(std::string s)
 	{
 		std::error_code ec;
-		return pdb2cifDate(s, ec);
+		auto result = pdb2cifDate(s, ec);
+		if (ec and cif::VERBOSE > 0)
+			std::cerr << "Invalid date(" << s << "): " << ec.message() << std::endl;
+		return result;
 	}
 
 	std::string pdb2cifAuth(std::string author)
