@@ -371,8 +371,7 @@ auto DistancePointToLine(const PointF<F> &l1, const PointF<F> &l2, const PointF<
 // a random direction with a distance randomly chosen from a normal
 // distribution with a stddev of offset.
 
-template <typename F>
-PointF<F> Nudge(PointF<F> p, F offset);
+Point Nudge(Point p, float offset);
 
 // --------------------------------------------------------------------
 // We use quaternions to do rotations in 3d space

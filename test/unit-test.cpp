@@ -1735,12 +1735,12 @@ BOOST_AUTO_TEST_CASE(t1)
 
 	auto p2 = p1;
 
-	Point c1 = CenterPoints(p1);
+	CenterPoints(p1);
 
 	for (auto &p : p2)
 		p.rotate(q);
 	
-	Point c2 = CenterPoints(p2);
+	CenterPoints(p2);
 
 	auto q2 = AlignPoints(p1, p2);
 
