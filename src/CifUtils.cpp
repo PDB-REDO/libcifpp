@@ -49,6 +49,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "cif++/CifUtils.hpp"
+#include "revision.hpp"
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
@@ -64,39 +65,9 @@ extern int VERBOSE;
 
 std::string get_version_nr()
 {
-	const std::regex
-		rxVersionNr1(R"(build-(\d+)-g[0-9a-f]{7}(-dirty)?)"),
-		rxVersionNr2(R"(libcifpp-version: (\d+\.\d+\.\d+))");
-
-#include "revision.hpp"
-
-	struct membuf : public std::streambuf
-	{
-		membuf(char *data, size_t length) { this->setg(data, data, data + length); }
-	} buffer(const_cast<char *>(kRevision), sizeof(kRevision));
-
-	std::istream is(&buffer);
-
-	std::string line, result;
-
-	while (getline(is, line))
-	{
-		std::smatch m;
-
-		if (std::regex_match(line, m, rxVersionNr1))
-		{
-			result = m[1];
-			if (m[2].matched)
-				result += '*';
-			break;
-		}
-
-		// always the first, replace with more specific if followed by the other info
-		if (std::regex_match(line, m, rxVersionNr2))
-			result = m[1];
-	}
-
-	return result;
+	std::ostringstream s;
+	write_version_string(s, false);
+	return s.str();
 }
 
 // --------------------------------------------------------------------

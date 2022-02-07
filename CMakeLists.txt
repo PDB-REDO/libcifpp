@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 2.0.3 LANGUAGES CXX)
+project(cifpp VERSION 2.0.5 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -37,17 +37,13 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
-include(FindFilesystem)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Filesystem REQUIRED)
-
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	# https://stackoverflow.com/questions/63902528/program-crashes-when-filesystempath-is-destroyed
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
@@ -122,22 +118,6 @@ if(MSVC)
 		message(STATUS "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
 	endif()
-
-	# Find out the processor type for the target
-	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-		set(COFF_TYPE "x64")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
-		set(COFF_TYPE "x86")
-	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
-		set(COFF_TYPE "arm64")
-	else()
-		message(FATAL_ERROR "Unsupported or unknown processor type ${CMAKE_SYSTEM_PROCESSOR}")
-	endif()	
-
-	set(COFF_SPEC "--coff=${COFF_TYPE}")
-
-	# for mrc, just in case
-	list(APPEND CMAKE_PREFIX_PATH "$ENV{LOCALAPPDATA}/mrc")
 endif()
 
 if(UNIX AND NOT APPLE AND NOT BUILD_FOR_CCP4 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -151,12 +131,12 @@ endif()
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
-	find_program(MRC mrc)
+	find_package(Mrc)
 
-	if(MRC)
-		option(CIFPP_USE_RSRC "Use mrc to create resources" ON)
+	if(MRC_FOUND)
+		option(USE_RSRC "Use mrc to create resources" ON)
 	else()
-		message("Using resources not possible since mrc was not found")
+		message(WARNING "Not using resources since mrc was not found")
 	endif()
 
 	if(CIFPP_USE_RSRC STREQUAL "ON")
@@ -173,35 +153,22 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-set(Boost_DETAILED_FAILURE_MSG ON)
-if(NOT BUILD_SHARED_LIBS)
-	set(Boost_USE_STATIC_LIBS ON)
-endif()
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex program_options)
 
 if(NOT MSVC AND Boost_USE_STATIC_LIBS)
 	find_package(ZLIB REQUIRED)
-	find_package(BZip2 REQUIRED)
+	list(APPEND CIFPP_REQUIRED_LIBRARIES ZLIB::ZLIB)
 endif()
+
+include(FindFilesystem)
+list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
+
+include(FindAtomic)
+list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 
 # Create a revision file, containing the current git version info
-
-find_package(Git)
-if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
-	include(GetGitRevisionDescription)
-    get_git_head_revision(REFSPEC COMMITHASH)
-
-	# Generate our own version string
-	git_describe_working_tree(BUILD_VERSION_STRING --match=build --dirty)
-else()
-    message(WARNING "Git not found, cannot set version info")
-
-    SET(BUILD_VERSION_STRING ${PROJECT_VERSION})
-endif()
-
-# generate version.h
-string(TIMESTAMP BUILD_DATE_TIME "%Y-%m-%dT%H:%M:%SZ" UTC)
-configure_file("${CMAKE_SOURCE_DIR}/src/revision.hpp.in" "${CMAKE_BINARY_DIR}/revision.hpp" @ONLY)
+include(VersionString)
+write_version_header("LibCIFPP")
 
 # SymOp data table
 if(CIFPP_RECREATE_SYMOP_DATA)
@@ -209,7 +176,7 @@ if(CIFPP_RECREATE_SYMOP_DATA)
 
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
-	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES} ${BZip2_LIBRARIES})
+	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} ${CIFPP_REQUIRED_LIBRARIES})
 	if(Boost_INCLUDE_DIR)
 		target_include_directories(symop-map-generator PUBLIC ${Boost_INCLUDE_DIR})
 	endif()
@@ -256,7 +223,6 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/CifUtils.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/CifValidator.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/Compound.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Matrix.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/PDB2Cif.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/PDB2CifRemark3.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/Point.hpp
@@ -281,7 +247,8 @@ target_include_directories(cifpp
 	${CMAKE_BINARY_DIR}
 )
 
-target_link_libraries(cifpp Threads::Threads ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES} ${BZip2_LIBRARIES})
+target_link_libraries(cifpp PUBLIC Threads::Threads Boost::regex Boost::iostreams ${CIFPP_REQUIRED_LIBRARIES})
+# target_link_libraries(cifpp PRIVATE)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -340,6 +307,13 @@ install(TARGETS cifpp
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+if(MSVC AND BUILD_SHARED_LIBS)
+	install(
+		FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		OPTIONAL)
+endif()
 
 install(EXPORT cifppTargets
 	FILE "cifppTargets.cmake"
@@ -414,13 +388,6 @@ option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
 
-	if(CIFPP_USE_RSRC)
-		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj
-			COMMAND ${MRC} -o ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic ${COFF_SPEC}
-		)
-		set(CIFPP_TEST_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/cifpp_test_rsrc.obj)
-	endif()
-
 	list(APPEND CIFPP_tests
 		# pdb2cif
 		rename-compound
@@ -431,15 +398,19 @@ if(CIFPP_BUILD_TESTS)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")
 		set(CIFPP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test/${CIFPP_TEST}.cpp")
 
-		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE} ${CIFPP_TEST_RESOURCE})
+		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
 		target_include_directories(${CIFPP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
 			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp ${Boost_LIBRARIES} std::filesystem ${ZLIB_LIBRARIES} ${BZip2_LIBRARIES})
-	
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp )
+
+		if(CIFPP_USE_RSRC)
+			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
+		endif()
+
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
 			target_compile_options(${CIFPP_TEST} PRIVATE /EHsc)
@@ -449,10 +420,10 @@ if(CIFPP_BUILD_TESTS)
 
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch
-			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${PROJECT_SOURCE_DIR}/test)
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_SOURCE_DIR}/test)
 
 		add_test(NAME ${CIFPP_TEST}
-			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${PROJECT_SOURCE_DIR}/test)
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_SOURCE_DIR}/test)
 
 	endforeach()
 endif()
