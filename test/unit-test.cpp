@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,36 +31,35 @@
 #include <stdexcept>
 
 // #include "cif++/DistanceMap.hpp"
-#include "cif++/Cif++.hpp"
 #include "cif++/BondMap.hpp"
+#include "cif++/Cif++.hpp"
 #include "cif++/CifValidator.hpp"
 
 namespace tt = boost::test_tools;
 
-
-std::filesystem::path gTestDir = std::filesystem::current_path();	// filled in first test
+std::filesystem::path gTestDir = std::filesystem::current_path(); // filled in first test
 
 // --------------------------------------------------------------------
 
-cif::File operator""_cf(const char* text, size_t length)
+cif::File operator""_cf(const char *text, size_t length)
 {
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(text), length);
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(text), length);
 
-    std::istream is(&buffer);
-    return cif::File(is);
+	std::istream is(&buffer);
+	return cif::File(is);
 }
 
 // --------------------------------------------------------------------
 
 bool init_unit_test()
 {
-    cif::VERBOSE = 1;
+	cif::VERBOSE = 1;
 
 	// not a test, just initialize test dir
 	if (boost::unit_test::framework::master_test_suite().argc == 2)
@@ -79,9 +78,9 @@ bool init_unit_test()
 
 BOOST_AUTO_TEST_CASE(ut1)
 {
-    // using namespace mmcif;
+	// using namespace mmcif;
 
-    auto f = R"(data_TEST
+	auto f = R"(data_TEST
 #
 loop_
 _test.id
@@ -91,36 +90,36 @@ _test.name
 3 mies
     )"_cf;
 
-    auto& db = f.firstDatablock();
+	auto &db = f.firstDatablock();
 
-    BOOST_CHECK(db.getName() == "TEST");
-    
-    auto& test = db["test"];
-    BOOST_CHECK(test.size() == 3);
+	BOOST_CHECK(db.getName() == "TEST");
 
-    // wrong! the next lines will crash. And that's OK, don't do that
-    // for (auto r: test)
-    // 	test.erase(r);
-    
-    // BOOST_CHECK(test.empty());
+	auto &test = db["test"];
+	BOOST_CHECK(test.size() == 3);
 
-    // test.purge();
+	// wrong! the next lines will crash. And that's OK, don't do that
+	// for (auto r: test)
+	// 	test.erase(r);
 
-    auto n = test.erase(cif::Key("id") == 1, [](const cif::Row& r) {
+	// BOOST_CHECK(test.empty());
+
+	// test.purge();
+
+	auto n = test.erase(cif::Key("id") == 1, [](const cif::Row &r)
+		{
         BOOST_CHECK_EQUAL(r["id"].as<int>(), 1);
-        BOOST_CHECK_EQUAL(r["name"].as<std::string>(), "aap");
-      });
+        BOOST_CHECK_EQUAL(r["name"].as<std::string>(), "aap"); });
 
-    BOOST_CHECK_EQUAL(n, 1);
+	BOOST_CHECK_EQUAL(n, 1);
 }
 
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(ut2)
 {
-    // using namespace mmcif;
+	// using namespace mmcif;
 
-    auto f = R"(data_TEST
+	auto f = R"(data_TEST
 #
 loop_
 _test.id
@@ -131,36 +130,36 @@ _test.value
 3 mies  1.2
     )"_cf;
 
-    auto& db = f.firstDatablock();
+	auto &db = f.firstDatablock();
 
-    BOOST_CHECK(db.getName() == "TEST");
-    
-    auto& test = db["test"];
-    BOOST_CHECK(test.size() == 3);
+	BOOST_CHECK(db.getName() == "TEST");
 
-    int n = 0;
-    for (auto r: test.find(cif::Key("name") == "aap"))
-    {
-        BOOST_CHECK(++n == 1);
-        BOOST_CHECK(r["id"].as<int>() == 1);
-        BOOST_CHECK(r["name"].as<std::string>() == "aap");
-        BOOST_CHECK(r["value"].as<float>() == 1.0);
-    }
+	auto &test = db["test"];
+	BOOST_CHECK(test.size() == 3);
 
-    auto t = test.find(cif::Key("id") == 1);
-    BOOST_CHECK(not t.empty());
-    BOOST_CHECK(t.front()["name"].as<std::string>() == "aap");
+	int n = 0;
+	for (auto r : test.find(cif::Key("name") == "aap"))
+	{
+		BOOST_CHECK(++n == 1);
+		BOOST_CHECK(r["id"].as<int>() == 1);
+		BOOST_CHECK(r["name"].as<std::string>() == "aap");
+		BOOST_CHECK(r["value"].as<float>() == 1.0);
+	}
 
-    auto t2 = test.find(cif::Key("value") == 1.2);
-    BOOST_CHECK(not t2.empty());
-    BOOST_CHECK(t2.front()["name"].as<std::string>() == "mies");
+	auto t = test.find(cif::Key("id") == 1);
+	BOOST_CHECK(not t.empty());
+	BOOST_CHECK(t.front()["name"].as<std::string>() == "aap");
+
+	auto t2 = test.find(cif::Key("value") == 1.2);
+	BOOST_CHECK(not t2.empty());
+	BOOST_CHECK(t2.front()["name"].as<std::string>() == "mies");
 }
 
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(d1)
 {
-    const char dict[] = R"(
+	const char dict[] = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -253,24 +252,24 @@ save__cat_2.desc
     save_
     )";
 
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
 
-    std::istream is_dict(&buffer);
+	std::istream is_dict(&buffer);
 
 	cif::Validator validator("test", is_dict);
 
-    cif::File f;
-    f.setValidator(&validator);
+	cif::File f;
+	f.setValidator(&validator);
 
-    // --------------------------------------------------------------------
+	// --------------------------------------------------------------------
 
-    const char data[] = R"(
+	const char data[] = R"(
 data_test
 loop_
 _cat_1.id
@@ -286,48 +285,47 @@ _cat_2.desc
 1 1 'Een dier'
 2 1 'Een andere aap'
 3 2 'walnoot bijvoorbeeld'
-    )";   
+    )";
 
-    struct data_membuf : public std::streambuf
-    {
-        data_membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } data_buffer(const_cast<char*>(data), sizeof(data) - 1);
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
-    std::istream is_data(&data_buffer);
-    f.load(is_data);
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
 
-    auto& cat1 = f.firstDatablock()["cat_1"];
-    auto& cat2 = f.firstDatablock()["cat_2"];
+	auto &cat1 = f.firstDatablock()["cat_1"];
+	auto &cat2 = f.firstDatablock()["cat_2"];
 
-    BOOST_CHECK(cat1.size() == 3);
-    BOOST_CHECK(cat2.size() == 3);
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 3);
 
-    cat1.erase(cif::Key("id") == 1);
+	cat1.erase(cif::Key("id") == 1);
 
-    BOOST_CHECK(cat1.size() == 2);
-    BOOST_CHECK(cat2.size() == 1);
+	BOOST_CHECK(cat1.size() == 2);
+	BOOST_CHECK(cat2.size() == 1);
 
-    // BOOST_CHECK_THROW(cat2.emplace({
-    //     { "id", 4 },
-    //     { "parent_id", 4 },
-    //     { "desc", "moet fout gaan" }
-    // }), std::exception);
+	// BOOST_CHECK_THROW(cat2.emplace({
+	//     { "id", 4 },
+	//     { "parent_id", 4 },
+	//     { "desc", "moet fout gaan" }
+	// }), std::exception);
 
-    BOOST_CHECK_THROW(cat2.emplace({
-        { "id", "vijf" },   // <- invalid value
-        { "parent_id", 2 },
-        { "desc", "moet fout gaan" }
-    }), std::exception);
+	BOOST_CHECK_THROW(cat2.emplace({{"id", "vijf"}, // <- invalid value
+						  {"parent_id", 2},
+						  {"desc", "moet fout gaan"}}),
+		std::exception);
 }
 
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(d2)
 {
-    const char dict[] = R"(
+	const char dict[] = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -383,24 +381,24 @@ save__cat_1.c
     save_
 )";
 
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
 
-    std::istream is_dict(&buffer);
+	std::istream is_dict(&buffer);
 
 	cif::Validator validator("test", is_dict);
 
-    cif::File f;
-    f.setValidator(&validator);
+	cif::File f;
+	f.setValidator(&validator);
 
-    // --------------------------------------------------------------------
+	// --------------------------------------------------------------------
 
-    const char data[] = R"(
+	const char data[] = R"(
 data_test
 loop_
 _cat_1.id
@@ -408,39 +406,37 @@ _cat_1.c
 aap  Aap
 noot Noot
 mies Mies
-)";   
+)";
 
-    struct data_membuf : public std::streambuf
-    {
-        data_membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } data_buffer(const_cast<char*>(data), sizeof(data) - 1);
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
-    std::istream is_data(&data_buffer);
-    f.load(is_data);
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
 
-    auto& cat1 = f.firstDatablock()["cat_1"];
+	auto &cat1 = f.firstDatablock()["cat_1"];
 
-    BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat1.size() == 3);
 
-    cat1.erase(cif::Key("id") == "AAP");
+	cat1.erase(cif::Key("id") == "AAP");
 
-    BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat1.size() == 3);
 
-    cat1.erase(cif::Key("id") == "noot");
+	cat1.erase(cif::Key("id") == "noot");
 
-    BOOST_CHECK(cat1.size() == 2);
-
-
+	BOOST_CHECK(cat1.size() == 2);
 }
 
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(d3)
 {
-    const char dict[] = R"(
+	const char dict[] = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -533,24 +529,24 @@ save__cat_2.desc
     save_
     )";
 
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
 
-    std::istream is_dict(&buffer);
+	std::istream is_dict(&buffer);
 
 	cif::Validator validator("test", is_dict);
 
-    cif::File f;
-    f.setValidator(&validator);
+	cif::File f;
+	f.setValidator(&validator);
 
-    // --------------------------------------------------------------------
+	// --------------------------------------------------------------------
 
-    const char data[] = R"(
+	const char data[] = R"(
 data_test
 loop_
 _cat_1.id
@@ -569,84 +565,79 @@ _cat_2.desc
 2 1 .     'Een andere aap'
 3 2 noot  'walnoot bijvoorbeeld'
 4 2 n2     hazelnoot
-    )";   
+    )";
 
-    struct data_membuf : public std::streambuf
-    {
-        data_membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } data_buffer(const_cast<char*>(data), sizeof(data) - 1);
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
-    std::istream is_data(&data_buffer);
-    f.load(is_data);
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
 
-    auto& cat1 = f.firstDatablock()["cat_1"];
-    auto& cat2 = f.firstDatablock()["cat_2"];
+	auto &cat1 = f.firstDatablock()["cat_1"];
+	auto &cat2 = f.firstDatablock()["cat_2"];
 
-    // check a rename in parent and child
+	// check a rename in parent and child
 
-    for (auto r: cat1.find(cif::Key("id") == 1))
-    {
-        r["id"] = 10;
-        break;
-    }
+	for (auto r : cat1.find(cif::Key("id") == 1))
+	{
+		r["id"] = 10;
+		break;
+	}
 
-    BOOST_CHECK(cat1.size() == 3);
-    BOOST_CHECK(cat2.size() == 4);
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 4);
 
-    BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 2);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 2);
 
-    // check a rename in parent and child, this time only one child should be renamed
+	// check a rename in parent and child, this time only one child should be renamed
 
-    for (auto r: cat1.find(cif::Key("id") == 2))
-    {
-        r["id"] = 20;
-        break;
-    }
+	for (auto r : cat1.find(cif::Key("id") == 2))
+	{
+		r["id"] = 20;
+		break;
+	}
 
-    BOOST_CHECK(cat1.size() == 3);
-    BOOST_CHECK(cat2.size() == 4);
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 4);
 
-    BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 1);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 1);
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "noot").size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "n2").size() == 1);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "noot").size() == 1);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "n2").size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "noot").size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "n2").size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "noot").size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "n2").size() == 0);
 
+	// // --------------------------------------------------------------------
 
+	// cat1.erase(cif::Key("id") == 10);
 
-    // // --------------------------------------------------------------------
-    
-    // cat1.erase(cif::Key("id") == 10);
+	// BOOST_CHECK(cat1.size() == 2);
+	// BOOST_CHECK(cat2.size() == 2);
 
-    // BOOST_CHECK(cat1.size() == 2);
-    // BOOST_CHECK(cat2.size() == 2);
+	// cat1.erase(cif::Key("id") == 20);
 
-    // cat1.erase(cif::Key("id") == 20);
-
-    // BOOST_CHECK(cat1.size() == 1);
-    // BOOST_CHECK(cat2.size() == 1);
-
-
-
+	// BOOST_CHECK(cat1.size() == 1);
+	// BOOST_CHECK(cat2.size() == 1);
 }
 
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(d4)
 {
-    const char dict[] = R"(
+	const char dict[] = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -741,24 +732,24 @@ save__cat_2.parent_id3
 
     )";
 
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
 
-    std::istream is_dict(&buffer);
+	std::istream is_dict(&buffer);
 
 	cif::Validator validator("test", is_dict);
 
-    cif::File f;
-    f.setValidator(&validator);
+	cif::File f;
+	f.setValidator(&validator);
 
-    // --------------------------------------------------------------------
+	// --------------------------------------------------------------------
 
-    const char data[] = R"(
+	const char data[] = R"(
 data_test
 loop_
 _cat_1.id
@@ -787,93 +778,90 @@ _cat_2.parent_id3
 11 4 roos  roos
 12 4 .     roos
 13 4 roos  .
-    )";   
+    )";
 
-    struct data_membuf : public std::streambuf
-    {
-        data_membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } data_buffer(const_cast<char*>(data), sizeof(data) - 1);
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
-    std::istream is_data(&data_buffer);
-    f.load(is_data);
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
 
-    auto& cat1 = f.firstDatablock()["cat_1"];
-    auto& cat2 = f.firstDatablock()["cat_2"];
+	auto &cat1 = f.firstDatablock()["cat_1"];
+	auto &cat2 = f.firstDatablock()["cat_2"];
 
-    // check a rename in parent and child
+	// check a rename in parent and child
 
-    for (auto r: cat1.find(cif::Key("id") == 1))
-    {
-        r["id"] = 10;
-        break;
-    }
+	for (auto r : cat1.find(cif::Key("id") == 1))
+	{
+		r["id"] = 10;
+		break;
+	}
 
-    BOOST_CHECK(cat1.size() == 4);
-    BOOST_CHECK(cat2.size() == 13);
+	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK(cat2.size() == 13);
 
-    BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 1);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 2);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 2);
 
+	for (auto r : cat1.find(cif::Key("id") == 2))
+	{
+		r["id"] = 20;
+		break;
+	}
 
-    for (auto r: cat1.find(cif::Key("id") == 2))
-    {
-        r["id"] = 20;
-        break;
-    }
+	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK(cat2.size() == 13);
 
-    BOOST_CHECK(cat1.size() == 4);
-    BOOST_CHECK(cat2.size() == 13);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
 
-    BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 2);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 2);
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 2);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 2);
+	for (auto r : cat1.find(cif::Key("id") == 3))
+	{
+		r["id"] = 30;
+		break;
+	}
 
+	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK(cat2.size() == 13);
 
-    for (auto r: cat1.find(cif::Key("id") == 3))
-    {
-        r["id"] = 30;
-        break;
-    }
+	BOOST_CHECK(cat1.find(cif::Key("id") == 3).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 30).size() == 1);
 
-    BOOST_CHECK(cat1.size() == 4);
-    BOOST_CHECK(cat2.size() == 13);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 3).size() == 2);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 30).size() == 1);
 
-    BOOST_CHECK(cat1.find(cif::Key("id") == 3).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 30).size() == 1);
+	for (auto r : cat1.find(cif::Key("id") == 4))
+	{
+		r["id"] = 40;
+		break;
+	}
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 3).size() == 2);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 30).size() == 1);
+	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK(cat2.size() == 13);
 
+	BOOST_CHECK(cat1.find(cif::Key("id") == 4).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
 
-    for (auto r: cat1.find(cif::Key("id") == 4))
-    {
-        r["id"] = 40;
-        break;
-    }
-
-    BOOST_CHECK(cat1.size() == 4);
-    BOOST_CHECK(cat2.size() == 13);
-
-    BOOST_CHECK(cat1.find(cif::Key("id") == 4).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
-
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 4).size() == 3);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 40).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 4).size() == 3);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 40).size() == 0);
 }
 
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(d5)
 {
-    const char dict[] = R"(
+	const char dict[] = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -965,24 +953,24 @@ cat_2 2 cat_2:cat_1:2
 cat_2 3 cat_2:cat_1:3
     )";
 
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
 
-    std::istream is_dict(&buffer);
+	std::istream is_dict(&buffer);
 
 	cif::Validator validator("test", is_dict);
 
-    cif::File f;
-    f.setValidator(&validator);
+	cif::File f;
+	f.setValidator(&validator);
 
-    // --------------------------------------------------------------------
+	// --------------------------------------------------------------------
 
-    const char data[] = R"(
+	const char data[] = R"(
 data_test
 loop_
 _cat_1.id
@@ -1004,119 +992,120 @@ _cat_2.parent_id3
  7 3 3 3
     )";
 
-    // --------------------------------------------------------------------
-    
-    struct data_membuf : public std::streambuf
-    {
-        data_membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } data_buffer(const_cast<char*>(data), sizeof(data) - 1);
+	// --------------------------------------------------------------------
 
-    std::istream is_data(&data_buffer);
-    f.load(is_data);
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
-    auto& cat1 = f.firstDatablock()["cat_1"];
-    auto& cat2 = f.firstDatablock()["cat_2"];
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
 
-    // --------------------------------------------------------------------
-    // check iterate children
+	auto &cat1 = f.firstDatablock()["cat_1"];
+	auto &cat2 = f.firstDatablock()["cat_2"];
 
-    auto PR2set = cat1.find(cif::Key("id") == 2);
-    BOOST_ASSERT(PR2set.size() == 1);
-    auto PR2 = PR2set.front();
-    BOOST_CHECK(PR2["id"].as<int>() == 2);
+	// --------------------------------------------------------------------
+	// check iterate children
 
-    auto CR2set = cat1.getChildren(PR2, "cat_2");
-    BOOST_ASSERT(CR2set.size() == 3);
+	auto PR2set = cat1.find(cif::Key("id") == 2);
+	BOOST_ASSERT(PR2set.size() == 1);
+	auto PR2 = PR2set.front();
+	BOOST_CHECK(PR2["id"].as<int>() == 2);
 
-    std::vector<int> CRids;
-    std::transform(CR2set.begin(), CR2set.end(), std::back_inserter(CRids), [](cif::Row r) { return r["id"].as<int>(); });
-    std::sort(CRids.begin(), CRids.end());
-    BOOST_CHECK(CRids == std::vector<int>({ 4, 5, 6}));
+	auto CR2set = cat1.getChildren(PR2, "cat_2");
+	BOOST_ASSERT(CR2set.size() == 3);
 
-    // check a rename in parent and child
+	std::vector<int> CRids;
+	std::transform(CR2set.begin(), CR2set.end(), std::back_inserter(CRids), [](cif::Row r)
+		{ return r["id"].as<int>(); });
+	std::sort(CRids.begin(), CRids.end());
+	BOOST_CHECK(CRids == std::vector<int>({4, 5, 6}));
 
-    for (auto r: cat1.find(cif::Key("id") == 1))
-    {
-        r["id"] = 10;
-        break;
-    }
+	// check a rename in parent and child
 
-    BOOST_CHECK(cat1.size() == 3);
-    BOOST_CHECK(cat2.size() == 7);
+	for (auto r : cat1.find(cif::Key("id") == 1))
+	{
+		r["id"] = 10;
+		break;
+	}
 
-    BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 7);
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 1).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 1).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 1);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 10).size() == 1);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 10).size() == 1);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
 
-    for (auto r: cat1.find(cif::Key("id") == 2))
-    {
-        r["id"] = 20;
-        break;
-    }
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 1).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 1).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 10).size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 10).size() == 1);
 
-    BOOST_CHECK(cat1.size() == 3);
-    BOOST_CHECK(cat2.size() == 7);
+	for (auto r : cat1.find(cif::Key("id") == 2))
+	{
+		r["id"] = 20;
+		break;
+	}
 
-    BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 7);
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 2).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 2).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 2);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 20).size() == 2);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 20).size() == 2);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
 
-    for (auto r: cat1.find(cif::Key("id") == 3))
-    {
-        r["id"] = 30;
-        break;
-    }
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 2).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 2).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 2);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 20).size() == 2);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 20).size() == 2);
 
-    BOOST_CHECK(cat1.size() == 3);
-    BOOST_CHECK(cat2.size() == 7);
+	for (auto r : cat1.find(cif::Key("id") == 3))
+	{
+		r["id"] = 30;
+		break;
+	}
 
-    BOOST_CHECK(cat1.find(cif::Key("id") == 3).size() == 0);
-    BOOST_CHECK(cat1.find(cif::Key("id") == 30).size() == 1);
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 7);
 
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 3).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 3).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 3).size() == 0);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id") == 30).size() == 1);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 30).size() == 1);
-    BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 30).size() == 1);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 3).size() == 0);
+	BOOST_CHECK(cat1.find(cif::Key("id") == 30).size() == 1);
 
-    // test delete
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 3).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 3).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 3).size() == 0);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 30).size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 30).size() == 1);
+	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 30).size() == 1);
 
-    cat1.erase(cif::Key("id") == 10);
-    BOOST_CHECK(cat1.size() == 2);
-    BOOST_CHECK(cat2.size() == 4);
+	// test delete
 
-    cat1.erase(cif::Key("id") == 20);
-    BOOST_CHECK(cat1.size() == 1);
-    BOOST_CHECK(cat2.size() == 1);
+	cat1.erase(cif::Key("id") == 10);
+	BOOST_CHECK(cat1.size() == 2);
+	BOOST_CHECK(cat2.size() == 4);
 
-    cat1.erase(cif::Key("id") == 30);
-    BOOST_CHECK(cat1.size() == 0);
-    BOOST_CHECK(cat2.size() == 0);
+	cat1.erase(cif::Key("id") == 20);
+	BOOST_CHECK(cat1.size() == 1);
+	BOOST_CHECK(cat2.size() == 1);
+
+	cat1.erase(cif::Key("id") == 30);
+	BOOST_CHECK(cat1.size() == 0);
+	BOOST_CHECK(cat2.size() == 0);
 }
 
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(c1)
 {
-    cif::VERBOSE = 1;
+	cif::VERBOSE = 1;
 
-    auto f = R"(data_TEST
+	auto f = R"(data_TEST
 #
 loop_
 _test.id
@@ -1128,52 +1117,52 @@ _test.name
 5 ?
     )"_cf;
 
-    auto& db = f.firstDatablock();
+	auto &db = f.firstDatablock();
 
-    for (auto r: db["test"].find(cif::Key("id") == 1))
-    {
-        const auto& [id, name] = r.get<int, std::string>({"id", "name"});
-        BOOST_CHECK(id == 1);
-        BOOST_CHECK(name == "aap");
-    }
+	for (auto r : db["test"].find(cif::Key("id") == 1))
+	{
+		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		BOOST_CHECK(id == 1);
+		BOOST_CHECK(name == "aap");
+	}
 
-    for (auto r: db["test"].find(cif::Key("id") == 4))
-    {
-        const auto& [id, name] = r.get<int, std::string>({"id", "name"});
-        BOOST_CHECK(id == 4);
-        BOOST_CHECK(name.empty());
-    }
+	for (auto r : db["test"].find(cif::Key("id") == 4))
+	{
+		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		BOOST_CHECK(id == 4);
+		BOOST_CHECK(name.empty());
+	}
 
-    for (auto r: db["test"].find(cif::Key("id") == 5))
-    {
-        const auto& [id, name] = r.get<int, std::string>({"id", "name"});
-        BOOST_CHECK(id == 5);
-        BOOST_CHECK(name.empty());
-    }
+	for (auto r : db["test"].find(cif::Key("id") == 5))
+	{
+		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		BOOST_CHECK(id == 5);
+		BOOST_CHECK(name.empty());
+	}
 
-    // optional
+	// optional
 
-    for (auto r: db["test"])
-    {
-        const auto& [id, name] = r.get<int, std::optional<std::string>>({"id", "name"});
-        switch (id)
-        {
-            case 1: BOOST_CHECK(name == "aap"); break;
-            case 2: BOOST_CHECK(name == "noot"); break;
-            case 3: BOOST_CHECK(name == "mies"); break;
-            case 4:
-            case 5: BOOST_CHECK(not name); break;
-            default: 
-                    BOOST_CHECK(false);
-        }
-    }
+	for (auto r : db["test"])
+	{
+		const auto &[id, name] = r.get<int, std::optional<std::string>>({"id", "name"});
+		switch (id)
+		{
+			case 1: BOOST_CHECK(name == "aap"); break;
+			case 2: BOOST_CHECK(name == "noot"); break;
+			case 3: BOOST_CHECK(name == "mies"); break;
+			case 4:
+			case 5: BOOST_CHECK(not name); break;
+			default:
+				BOOST_CHECK(false);
+		}
+	}
 }
 
 BOOST_AUTO_TEST_CASE(c2)
 {
-    cif::VERBOSE = 1;
+	cif::VERBOSE = 1;
 
-    auto f = R"(data_TEST
+	auto f = R"(data_TEST
 #
 loop_
 _test.id
@@ -1185,31 +1174,30 @@ _test.name
 5 ?
     )"_cf;
 
-    auto& db = f.firstDatablock();
+	auto &db = f.firstDatablock();
 
-    // query tests
+	// query tests
 
-    for (const auto& [id, name]: db["test"].rows<int, std::optional<std::string>>("id", "name"))
-    {
-        switch (id)
-        {
-            case 1: BOOST_CHECK(name == "aap"); break;
-            case 2: BOOST_CHECK(name == "noot"); break;
-            case 3: BOOST_CHECK(name == "mies"); break;
-            case 4:
-            case 5: BOOST_CHECK(not name); break;
-            default: 
-                    BOOST_CHECK(false);
-        }
-    }
+	for (const auto &[id, name] : db["test"].rows<int, std::optional<std::string>>("id", "name"))
+	{
+		switch (id)
+		{
+			case 1: BOOST_CHECK(name == "aap"); break;
+			case 2: BOOST_CHECK(name == "noot"); break;
+			case 3: BOOST_CHECK(name == "mies"); break;
+			case 4:
+			case 5: BOOST_CHECK(not name); break;
+			default:
+				BOOST_CHECK(false);
+		}
+	}
 }
-
 
 BOOST_AUTO_TEST_CASE(c3)
 {
-    cif::VERBOSE = 1;
+	cif::VERBOSE = 1;
 
-    auto f = R"(data_TEST
+	auto f = R"(data_TEST
 #
 loop_
 _test.id
@@ -1221,27 +1209,27 @@ _test.name
 5 ?
     )"_cf;
 
-    auto& db = f.firstDatablock();
+	auto &db = f.firstDatablock();
 
-    // query tests
-    for (const auto& [id, name]: db["test"].find<int, std::optional<std::string>>(cif::All(), "id", "name"))
-    {
-        switch (id)
-        {
-            case 1: BOOST_CHECK(name == "aap"); break;
-            case 2: BOOST_CHECK(name == "noot"); break;
-            case 3: BOOST_CHECK(name == "mies"); break;
-            case 4:
-            case 5: BOOST_CHECK(not name); break;
-            default: 
-                    BOOST_CHECK(false);
-        }
-    }
+	// query tests
+	for (const auto &[id, name] : db["test"].find<int, std::optional<std::string>>(cif::All(), "id", "name"))
+	{
+		switch (id)
+		{
+			case 1: BOOST_CHECK(name == "aap"); break;
+			case 2: BOOST_CHECK(name == "noot"); break;
+			case 3: BOOST_CHECK(name == "mies"); break;
+			case 4:
+			case 5: BOOST_CHECK(not name); break;
+			default:
+				BOOST_CHECK(false);
+		}
+	}
 
-    const auto& [id, name] = db["test"].find1<int, std::string>(cif::Key("id") == 1, "id", "name");
+	const auto &[id, name] = db["test"].find1<int, std::string>(cif::Key("id") == 1, "id", "name");
 
-    BOOST_CHECK(id == 1);
-    BOOST_CHECK(name == "aap");
+	BOOST_CHECK(id == 1);
+	BOOST_CHECK(name == "aap");
 }
 
 // --------------------------------------------------------------------
@@ -1250,22 +1238,22 @@ _test.name
 BOOST_AUTO_TEST_CASE(r1)
 {
 	/*
-		Rationale:
+	    Rationale:
 
-		The pdbx_mmcif dictionary contains inconsistent child-parent relations. E.g. atom_site is parent
-		of pdbx_nonpoly_scheme which itself is a parent of pdbx_entity_nonpoly. If I want to rename a residue
-		I cannot update pdbx_nonpoly_scheme since changing a parent changes children, but not vice versa.
+	    The pdbx_mmcif dictionary contains inconsistent child-parent relations. E.g. atom_site is parent
+	    of pdbx_nonpoly_scheme which itself is a parent of pdbx_entity_nonpoly. If I want to rename a residue
+	    I cannot update pdbx_nonpoly_scheme since changing a parent changes children, but not vice versa.
 
-		But if I change the comp_id in atom_site, the pdbx_nonpoly_scheme is update, that's good, and then
-		pdbx_entity_nonpoly is updated and that's bad.
-		
-		The idea is now that if we update a parent and a child that must change as well, we first check
-		if there are more parents of this child that will not change. In that case we have to split the
-		child into two, one with the new value and one with the old. We then of course have to split all
-		children of this split row that are direct children.
+	    But if I change the comp_id in atom_site, the pdbx_nonpoly_scheme is update, that's good, and then
+	    pdbx_entity_nonpoly is updated and that's bad.
+
+	    The idea is now that if we update a parent and a child that must change as well, we first check
+	    if there are more parents of this child that will not change. In that case we have to split the
+	    child into two, one with the new value and one with the old. We then of course have to split all
+	    children of this split row that are direct children.
 	*/
 
-    const char dict[] = R"(
+	const char dict[] = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -1394,23 +1382,23 @@ cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
 
     )";
 
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(dict), sizeof(dict) - 1);
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
 
-    std::istream is_dict(&buffer);
+	std::istream is_dict(&buffer);
 	cif::Validator validator("test", is_dict);
 
-    cif::File f;
-    f.setValidator(&validator);
+	cif::File f;
+	f.setValidator(&validator);
 
-    // --------------------------------------------------------------------
+	// --------------------------------------------------------------------
 
-    const char data[] = R"(
+	const char data[] = R"(
 data_test
 loop_
 _cat_1.id
@@ -1435,29 +1423,29 @@ _cat_3.name
 _cat_3.num
 1 aap 1
 2 aap 2
-    )";   
+    )";
 
 	using namespace cif::literals;
 
-    struct data_membuf : public std::streambuf
-    {
-        data_membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } data_buffer(const_cast<char*>(data), sizeof(data) - 1);
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
-    std::istream is_data(&data_buffer);
-    f.load(is_data);
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
 
-    auto& cat1 = f.firstDatablock()["cat_1"];
-    auto& cat2 = f.firstDatablock()["cat_2"];
-	auto& cat3 = f.firstDatablock()["cat_3"];
+	auto &cat1 = f.firstDatablock()["cat_1"];
+	auto &cat2 = f.firstDatablock()["cat_2"];
+	auto &cat3 = f.firstDatablock()["cat_3"];
 
 	cat3.update_value("name"_key == "aap" and "num"_key == 1, "name", "aapje");
 
 	BOOST_CHECK(cat3.size() == 2);
-	
+
 	{
 		int id, num;
 		std::string name;
@@ -1471,9 +1459,9 @@ _cat_3.num
 		BOOST_CHECK(num == 2);
 		BOOST_CHECK(name == "aap");
 	}
-	
-	int i = 0;	
-	for (const auto &[id, name, num, desc]: cat2.rows<int,std::string,int,std::string>("id", "name", "num", "desc"))
+
+	int i = 0;
+	for (const auto &[id, name, num, desc] : cat2.rows<int, std::string, int, std::string>("id", "name", "num", "desc"))
 	{
 		switch (++i)
 		{
@@ -1497,7 +1485,7 @@ _cat_3.num
 				BOOST_CHECK(name == "noot");
 				BOOST_CHECK(desc == "walnoot bijvoorbeeld");
 				break;
-			
+
 			default:
 				BOOST_FAIL("Unexpected record");
 		}
@@ -1505,7 +1493,7 @@ _cat_3.num
 
 	BOOST_CHECK(cat1.size() == 4);
 	i = 0;
-	for (const auto &[id, name, desc]: cat1.rows<int,std::string,std::string>("id", "name", "desc"))
+	for (const auto &[id, name, desc] : cat1.rows<int, std::string, std::string>("id", "name", "desc"))
 	{
 		switch (++i)
 		{
@@ -1526,13 +1514,13 @@ _cat_3.num
 				BOOST_CHECK(name == "mies");
 				BOOST_CHECK(desc == "Mies");
 				break;
-			
+
 			case 4:
 				BOOST_CHECK(id == 4);
 				BOOST_CHECK(name == "aap");
 				BOOST_CHECK(desc == "Aap");
 				break;
-			
+
 			default:
 				BOOST_FAIL("Unexpected record");
 		}
@@ -1545,7 +1533,7 @@ _cat_3.num
 
 BOOST_AUTO_TEST_CASE(bondmap_1)
 {
-    cif::VERBOSE = 2;
+	cif::VERBOSE = 2;
 
 	// sections taken from CCD compounds.cif
 	auto components = R"(
@@ -1634,7 +1622,7 @@ PRO CD  HD3 SING N N 16
 PRO OXT HXT SING N N 17
 )"_cf;
 
-	const std::filesystem::path example(gTestDir / ".."/"examples"/"1cbs.cif.gz");
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
 	mmcif::File file(example.string());
 	mmcif::Structure structure(file);
 
@@ -1642,11 +1630,11 @@ PRO OXT HXT SING N N 17
 
 	mmcif::BondMap bm(structure);
 
-	// Test the bonds of the first three residues, that's PRO A 1, ASN A 2, PHE A 3	
+	// Test the bonds of the first three residues, that's PRO A 1, ASN A 2, PHE A 3
 
-	for (const auto& [compound, seqnr]: std::initializer_list<std::tuple<std::string,int>>{ { "PRO", 1 }, { "ASN", 2 }, { "PHE", 3 } })
+	for (const auto &[compound, seqnr] : std::initializer_list<std::tuple<std::string, int>>{{"PRO", 1}, {"ASN", 2}, {"PHE", 3}})
 	{
-		auto& res = structure.getResidue("A", compound, seqnr);
+		auto &res = structure.getResidue("A", compound, seqnr);
 		auto atoms = res.atoms();
 
 		auto dc = components.get(compound);
@@ -1655,14 +1643,14 @@ PRO OXT HXT SING N N 17
 		auto cc = dc->get("chem_comp_bond");
 		BOOST_ASSERT(cc != nullptr);
 
-		std::set<std::tuple<std::string,std::string>> bonded;
+		std::set<std::tuple<std::string, std::string>> bonded;
 
-		for (const auto& [atom_id_1, atom_id_2]: cc->rows<std::string,std::string>("atom_id_1", "atom_id_2"))
+		for (const auto &[atom_id_1, atom_id_2] : cc->rows<std::string, std::string>("atom_id_1", "atom_id_2"))
 		{
 			if (atom_id_1 > atom_id_2)
-				bonded.insert({ atom_id_2, atom_id_1 });
+				bonded.insert({atom_id_2, atom_id_1});
 			else
-				bonded.insert({ atom_id_1, atom_id_2 });
+				bonded.insert({atom_id_1, atom_id_2});
 		}
 
 		for (size_t i = 0; i + 1 < atoms.size(); ++i)
@@ -1677,8 +1665,8 @@ PRO OXT HXT SING N N 17
 				bool bonded_1_i = bm(atoms[j], atoms[i]);
 
 				bool bonded_t = label_i > label_j
-					? bonded.count({ label_j, label_i })
-					: bonded.count({ label_i, label_j });
+				                    ? bonded.count({label_j, label_i})
+				                    : bonded.count({label_i, label_j});
 
 				BOOST_CHECK(bonded_1 == bonded_t);
 				BOOST_CHECK(bonded_1_i == bonded_t);
@@ -1718,20 +1706,19 @@ BOOST_AUTO_TEST_CASE(t1)
 	// q = Normalize(q);
 
 	// Quaternion q{ 0.1, 0.2, 0.3, 0.4 };
-	Quaternion q{ 0.5, 0.5, 0.5, 0.5 };
+	Quaternion q{0.5, 0.5, 0.5, 0.5};
 	q = Normalize(q);
 
 	const auto &&[angle0, axis0] = QuaternionToAngleAxis(q);
 
 	std::vector<Point> p1{
-		{ 16.979, 13.301, 44.555 },
-		{ 18.150, 13.525, 43.680 },
-		{ 18.656, 14.966, 43.784 },
-		{ 17.890, 15.889, 44.078 },
-		{ 17.678, 13.270, 42.255 },
-		{ 16.248, 13.734, 42.347 },
-		{ 15.762, 13.216, 43.724 }
-	};
+		{16.979, 13.301, 44.555},
+		{18.150, 13.525, 43.680},
+		{18.656, 14.966, 43.784},
+		{17.890, 15.889, 44.078},
+		{17.678, 13.270, 42.255},
+		{16.248, 13.734, 42.347},
+		{15.762, 13.216, 43.724}};
 
 	auto p2 = p1;
 
@@ -1739,7 +1726,7 @@ BOOST_AUTO_TEST_CASE(t1)
 
 	for (auto &p : p2)
 		p.rotate(q);
-	
+
 	CenterPoints(p2);
 
 	auto q2 = AlignPoints(p1, p2);
@@ -1756,4 +1743,39 @@ BOOST_AUTO_TEST_CASE(t1)
 	BOOST_TEST(rmsd < 1e-5);
 
 	// std::cout << "rmsd: " << RMSd(p1, p2) << std::endl;
+}
+
+BOOST_AUTO_TEST_CASE(parser_test_1)
+{
+	auto data1 = R"(
+data_QM
+_test.text ??
+)"_cf;
+
+	auto &db1 = data1.firstDatablock();
+	auto &test1 = db1["test"];
+
+	BOOST_CHECK_EQUAL(test1.size(), 1);
+
+	for (auto r : test1)
+	{
+		const auto &[text] = r.get<std::string>({"text"});
+		BOOST_CHECK_EQUAL(text, "??");
+	}
+
+	std::stringstream ss;
+	data1.save(ss);
+
+	auto data2 = cif::File(ss);
+
+	auto &db2 = data2.firstDatablock();
+	auto &test2 = db2["test"];
+
+	BOOST_CHECK_EQUAL(test2.size(), 1);
+
+	for (auto r : test2)
+	{
+		const auto &[text] = r.get<std::string>({"text"});
+		BOOST_CHECK_EQUAL(text, "??");
+	}
 }

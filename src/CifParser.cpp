@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -42,7 +42,7 @@ namespace cif
 const uint32_t kMaxLineLength = 132;
 
 const uint8_t kCharTraitsTable[128] = {
-//	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
+	//	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
 	14, 15, 14, 14, 14, 15, 15, 14, 15, 15, 15, 15, 15, 15, 15, 15, //	2
 	15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 10, 15, 15, 15, 15, //	3
 	15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, //	4
@@ -151,23 +151,26 @@ void SacParser::retract()
 	mTokenValue.pop_back();
 }
 
-void SacParser::restart()
+
+int SacParser::restart(int start)
 {
+	int result = 0;
+
 	while (not mTokenValue.empty())
 		retract();
 
-	switch (mStart)
+	switch (start)
 	{
 		case eStateStart:
-			mState = mStart = eStateFloat;
+			result = eStateFloat;
 			break;
 
 		case eStateFloat:
-			mState = mStart = eStateInt;
+			result = eStateInt;
 			break;
 
 		case eStateInt:
-			mState = mStart = eStateValue;
+			result = eStateValue;
 			break;
 
 		default:
@@ -175,6 +178,8 @@ void SacParser::restart()
 	}
 
 	mBol = false;
+
+	return result;
 }
 
 void SacParser::match(SacParser::CIFToken t)
@@ -191,7 +196,7 @@ SacParser::CIFToken SacParser::getNextToken()
 
 	CIFToken result = eCIFTokenUnknown;
 	int quoteChar = 0;
-	mState = mStart = eStateStart;
+	int state = eStateStart, start = eStateStart;
 	mBol = false;
 
 	mTokenValue.clear();
@@ -201,7 +206,7 @@ SacParser::CIFToken SacParser::getNextToken()
 	{
 		auto ch = getNextChar();
 
-		switch (mState)
+		switch (state)
 		{
 			case eStateStart:
 				if (ch == kEOF)
@@ -209,27 +214,23 @@ SacParser::CIFToken SacParser::getNextToken()
 				else if (ch == '\n')
 				{
 					mBol = true;
-					mState = eStateWhite;
+					state = eStateWhite;
 				}
 				else if (ch == ' ' or ch == '\t')
-					mState = eStateWhite;
+					state = eStateWhite;
 				else if (ch == '#')
-					mState = eStateComment;
-				else if (ch == '.')
-					mState = eStateDot;
+					state = eStateComment;
 				else if (ch == '_')
-					mState = eStateTag;
+					state = eStateTag;
 				else if (ch == ';' and mBol)
-					mState = eStateTextField;
+					state = eStateTextField;
 				else if (ch == '\'' or ch == '"')
 				{
 					quoteChar = ch;
-					mState = eStateQuotedString;
+					state = eStateQuotedString;
 				}
-				else if (ch == '?')
-					mState = eStateQuestionMark;
 				else
-					restart();
+					state = start = restart(start);
 				break;
 
 			case eStateWhite:
@@ -237,7 +238,7 @@ SacParser::CIFToken SacParser::getNextToken()
 					result = eCIFTokenEOF;
 				else if (not isspace(ch))
 				{
-					mState = eStateStart;
+					state = eStateStart;
 					retract();
 					mTokenValue.clear();
 				}
@@ -248,7 +249,7 @@ SacParser::CIFToken SacParser::getNextToken()
 			case eStateComment:
 				if (ch == '\n')
 				{
-					mState = eStateStart;
+					state = eStateStart;
 					mBol = true;
 					mTokenValue.clear();
 				}
@@ -258,44 +259,19 @@ SacParser::CIFToken SacParser::getNextToken()
 					error("invalid character in comment");
 				break;
 
-			case eStateQuestionMark:
-				if (isNonBlank(ch))
-					mState = eStateValue;
-				else
-				{
-					retract();
-					result = eCIFTokenValue;
-					mTokenValue.clear();
-					mTokenType = eCIFValueUnknown;
-				}
-				break;
-
-			case eStateDot:
-				if (isdigit(ch))
-					mState = eStateFloat + 2;
-				else if (isspace(ch))
-				{
-					retract();
-					result = eCIFTokenValue;
-					mTokenType = eCIFValueInapplicable;
-				}
-				else
-					mState = eStateValue;
-				break;
-
 			case eStateTextField:
 				if (ch == '\n')
-					mState = eStateTextField + 1;
+					state = eStateTextField + 1;
 				else if (ch == kEOF)
 					error("unterminated textfield");
-				else if (not isAnyPrint(ch) and cif::VERBOSE >= 0)
+				else if (not isAnyPrint(ch))
 					//					error("invalid character in text field '" + string({ static_cast<char>(ch) }) + "' (" + to_string((int)ch) + ")");
 					std::cerr << "invalid character in text field '" << std::string({static_cast<char>(ch)}) << "' (" << ch << ") line: " << mLineNr << std::endl;
 				break;
 
 			case eStateTextField + 1:
 				if (isTextLead(ch) or ch == ' ' or ch == '\t')
-					mState = eStateTextField;
+					state = eStateTextField;
 				else if (ch == ';')
 				{
 					assert(mTokenValue.length() >= 2);
@@ -313,7 +289,7 @@ SacParser::CIFToken SacParser::getNextToken()
 				if (ch == kEOF)
 					error("unterminated quoted string");
 				else if (ch == quoteChar)
-					mState = eStateQuotedStringQuote;
+					state = eStateQuotedStringQuote;
 				else if (not isAnyPrint(ch))
 					error("invalid character in quoted string");
 				break;
@@ -331,7 +307,7 @@ SacParser::CIFToken SacParser::getNextToken()
 				else if (ch == quoteChar)
 					;
 				else if (isAnyPrint(ch))
-					mState = eStateQuotedString;
+					state = eStateQuotedString;
 				else if (ch == kEOF)
 					error("unterminated quoted string");
 				else
@@ -349,12 +325,12 @@ SacParser::CIFToken SacParser::getNextToken()
 			case eStateFloat:
 				if (ch == '+' or ch == '-')
 				{
-					mState = eStateFloat + 1;
+					state = eStateFloat + 1;
 				}
 				else if (isdigit(ch))
-					mState = eStateFloat + 1;
+					state = eStateFloat + 1;
 				else
-					restart();
+					state = start = restart(start);
 				break;
 
 			case eStateFloat + 1:
@@ -362,9 +338,9 @@ SacParser::CIFToken SacParser::getNextToken()
 				//					mState = eStateNumericSuffix;
 				//				else
 				if (ch == '.')
-					mState = eStateFloat + 2;
+					state = eStateFloat + 2;
 				else if (tolower(ch) == 'e')
-					mState = eStateFloat + 3;
+					state = eStateFloat + 3;
 				else if (isWhite(ch) or ch == kEOF)
 				{
 					retract();
@@ -372,16 +348,13 @@ SacParser::CIFToken SacParser::getNextToken()
 					mTokenType = eCIFValueInt;
 				}
 				else
-					restart();
+					state = start = restart(start);
 				break;
 
 			// parsed '.'
 			case eStateFloat + 2:
-				//				if (ch == '(')	// numeric???
-				//					mState = eStateNumericSuffix;
-				//				else
 				if (tolower(ch) == 'e')
-					mState = eStateFloat + 3;
+					state = eStateFloat + 3;
 				else if (isWhite(ch) or ch == kEOF)
 				{
 					retract();
@@ -389,30 +362,27 @@ SacParser::CIFToken SacParser::getNextToken()
 					mTokenType = eCIFValueFloat;
 				}
 				else
-					restart();
+					state = start = restart(start);
 				break;
 
 			// parsed 'e'
 			case eStateFloat + 3:
 				if (ch == '-' or ch == '+')
-					mState = eStateFloat + 4;
+					state = eStateFloat + 4;
 				else if (isdigit(ch))
-					mState = eStateFloat + 5;
+					state = eStateFloat + 5;
 				else
-					restart();
+					state = start = restart(start);
 				break;
 
 			case eStateFloat + 4:
 				if (isdigit(ch))
-					mState = eStateFloat + 5;
+					state = eStateFloat + 5;
 				else
-					restart();
+					state = start = restart(start);
 				break;
 
 			case eStateFloat + 5:
-				//				if (ch == '(')
-				//					mState = eStateNumericSuffix;
-				//				else
 				if (isWhite(ch) or ch == kEOF)
 				{
 					retract();
@@ -420,14 +390,14 @@ SacParser::CIFToken SacParser::getNextToken()
 					mTokenType = eCIFValueFloat;
 				}
 				else
-					restart();
+					state = start = restart(start);
 				break;
 
 			case eStateInt:
 				if (isdigit(ch) or ch == '+' or ch == '-')
-					mState = eStateInt + 1;
+					state = eStateInt + 1;
 				else
-					restart();
+					state = start = restart(start);
 				break;
 
 			case eStateInt + 1:
@@ -438,35 +408,11 @@ SacParser::CIFToken SacParser::getNextToken()
 					mTokenType = eCIFValueInt;
 				}
 				else
-					restart();
+					state = start = restart(start);
 				break;
-
-				//			case eStateNumericSuffix:
-				//				if (isdigit(ch))
-				//					mState = eStateNumericSuffix + 1;
-				//				else
-				//					restart();
-				//				break;
-				//
-				//			case eStateNumericSuffix + 1:
-				//				if (ch == ')')
-				//				{
-				//					result = eCIFTokenValue;
-				//					mTokenType = eCIFValueNumeric;
-				//				}
-				//				else if (not isdigit(ch))
-				//					restart();
-				//				break;
 
 			case eStateValue:
-				if (isNonBlank(ch))
-					mState = eStateValue + 1;
-				else
-					error("invalid character at this position");
-				break;
-
-			case eStateValue + 1:
-				if (ch == '_') // first _, check for keywords
+				if (ch == '_')
 				{
 					std::string s = toLowerCopy(mTokenValue);
 
@@ -476,23 +422,40 @@ SacParser::CIFToken SacParser::getNextToken()
 						result = eCIFTokenSTOP;
 					else if (s == "loop_")
 						result = eCIFTokenLOOP;
-					else if (s == "data_" or s == "save_")
-						mState = eStateValue + 2;
+					else if (s == "data_")
+					{
+						state = eStateDATA;
+						continue;
+					}
+					else if (s == "save_")
+					{
+						state = eStateSAVE;
+						continue;
+					}
 				}
-				else if (not isNonBlank(ch))
+
+				if (result == eCIFTokenUnknown and not isNonBlank(ch))
 				{
 					retract();
 					result = eCIFTokenValue;
-					mTokenType = eCIFValueString;
+
+					if (mTokenValue == ".")
+						mTokenType = eCIFValueInapplicable;
+					else if (mTokenValue == "?")
+					{
+						mTokenType = eCIFValueUnknown;
+						mTokenValue.clear();
+					}
 				}
 				break;
 
-			case eStateValue + 2:
+			case eStateDATA:
+			case eStateSAVE:
 				if (not isNonBlank(ch))
 				{
 					retract();
 
-					if (tolower(mTokenValue[0]) == 'd')
+					if (state == eStateDATA)
 						result = eCIFTokenDATA;
 					else
 						result = eCIFTokenSAVE;
@@ -520,6 +483,7 @@ SacParser::CIFToken SacParser::getNextToken()
 
 	return result;
 }
+
 
 DatablockIndex SacParser::indexDatablocks()
 {
