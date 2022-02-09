@@ -642,7 +642,6 @@ void ProgressImpl::PrintProgress()
 
 	msg.append("| ");
 
-	//	const char		kSpinner[] = { '|', '/', '-', '\\' };
 	const char kSpinner[] = {' ', '.', 'o', 'O', '0', 'O', 'o', '.'};
 	const size_t kSpinnerCount = sizeof(kSpinner);
 

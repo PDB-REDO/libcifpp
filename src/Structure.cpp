@@ -1435,25 +1435,25 @@ void Structure::loadData()
 
 	// place atoms in residues
 
-	using key_type = std::tuple<std::string, std::string, int>;
+	using key_type = std::tuple<std::string, int>;
 	using map_type = std::map<key_type, Residue *>;
 	map_type resMap;
 
 	for (auto &poly : mPolymers)
 	{
 		for (auto &res : poly)
-			resMap[{res.asymID(), res.compoundID(), res.seqID()}] = &res;
+			resMap[{res.asymID(), res.seqID()}] = &res;
 	}
 
 	for (auto &res : mNonPolymers)
-		resMap[{res.asymID(), res.compoundID(), (res.isWater() ? std::stoi(res.mAuthSeqID) : res.seqID())}] = &res;
+		resMap[{res.asymID(), (res.isWater() ? std::stoi(res.mAuthSeqID) : res.seqID())}] = &res;
 
 	for (auto &res : mBranchResidues)
-		resMap[{res.asymID(), res.compoundID(), res.seqID()}] = &res;
+		resMap[{res.asymID(), res.seqID()}] = &res;
 
 	for (auto &atom : mAtoms)
 	{
-		key_type k(atom.labelAsymID(), atom.labelCompID(), atom.isWater() ? std::stoi(atom.authSeqID()) : atom.labelSeqID());
+		key_type k(atom.labelAsymID(), atom.isWater() ? std::stoi(atom.authSeqID()) : atom.labelSeqID());
 		auto ri = resMap.find(k);
 
 		if (ri == resMap.end())
@@ -1461,7 +1461,7 @@ void Structure::loadData()
 			if (cif::VERBOSE > 0)
 				std::cerr << "Missing residue for atom " << atom << std::endl;
 
-			assert(false);
+			// assert(false);
 
 			continue;
 		}
