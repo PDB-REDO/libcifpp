@@ -70,6 +70,8 @@ if(BUILD_FOR_CCP4)
 			set(BUILD_SHARED_LIBS ON)
 		endif()
 	endif("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
+
+	add_definitions(-DCCP4=1)
 endif()
 
 # Check if CCP4 is available

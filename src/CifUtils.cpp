@@ -1251,6 +1251,19 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 	}
 #endif
 
+#if defined(CCP4) and CCP4
+	if (not result and not fs::exists(p))
+	{
+		const char* CCP4_DIR = getenv("CCP4");
+		if (CCP4_DIR != nullptr and fs::exists(CCP4_DIR))
+		{
+			auto p2 = fs::path(DATA_DIR) / p;
+			if (fs::exists(p2))
+				swap(p, p2);
+		}
+	}
+#endif
+
 	if (not result and fs::exists(p))
 	{
 		std::unique_ptr<std::ifstream> file(new std::ifstream(p, std::ios::binary));
