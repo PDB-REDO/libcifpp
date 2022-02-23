@@ -1920,6 +1920,11 @@ void Structure::removeAtom(Atom &a)
 	updateAtomIndex();
 }
 
+void Structure::removeResidue(const std::string &asym_id, int seq_id)
+{
+	
+}
+
 void Structure::swapAtoms(Atom &a1, Atom &a2)
 {
 	cif::Datablock &db = *mFile.impl().mDb;

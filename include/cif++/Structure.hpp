@@ -627,6 +627,12 @@ class Structure
 	/// \return				The newly create asym ID
 	std::string createNonpoly(const std::string &entity_id, std::vector<std::vector<cif::Item>> &atom_info);
 
+	/// \brief Remove a residue, can be monomer or nonpoly
+	///
+	/// \param asym_id     The asym ID
+	/// \param seq_id      The sequence ID
+	void removeResidue(const std::string &sym_id, int seq_id);
+
 	/// \brief To sort the atoms in order of model > asym-id > res-id > atom-id
 	/// Will asssign new atom_id's to all atoms. Be carefull
 	void sortAtoms();
