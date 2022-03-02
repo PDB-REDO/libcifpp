@@ -50,157 +50,6 @@ namespace mmcif
 {
 
 // --------------------------------------------------------------------
-// FileImpl
-
-struct FileImpl
-{
-	cif::File mData;
-	cif::Datablock *mDb = nullptr;
-
-	void load_data(const char *data, size_t length);
-
-	void load(const std::filesystem::path &path);
-	void save(const std::filesystem::path &path);
-};
-
-void FileImpl::load_data(const char *data, size_t length)
-{
-	bool gzipped = length > 2 and data[0] == static_cast<char>(0x1f) and data[1] == static_cast<char>(0x8b);
-
-	try
-	{
-		// First try mmCIF
-		struct membuf : public std::streambuf
-		{
-			membuf(char *data, size_t length) { this->setg(data, data, data + length); }
-		} buffer(const_cast<char *>(data), length);
-
-		std::istream is(&buffer);
-
-		io::filtering_stream<io::input> in;
-		if (gzipped)
-			in.push(io::gzip_decompressor());
-		in.push(is);
-
-		mData.load(in);
-	}
-	catch (const cif::CifParserError &e)
-	{
-		// First try mmCIF
-		struct membuf : public std::streambuf
-		{
-			membuf(char *data, size_t length) { this->setg(data, data, data + length); }
-		} buffer(const_cast<char *>(data), length);
-
-		std::istream is(&buffer);
-
-		io::filtering_stream<io::input> in;
-		if (gzipped)
-			in.push(io::gzip_decompressor());
-		in.push(is);
-
-		ReadPDBFile(in, mData);
-	}
-
-	// Yes, we've parsed the data. Now locate the datablock.
-	mDb = &mData.firstDatablock();
-
-	// And validate, otherwise lots of functionality won't work
-	//	if (mData.getValidator() == nullptr)
-	mData.loadDictionary("mmcif_pdbx_v50");
-	if (not mData.isValid() and cif::VERBOSE >= 0)
-		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
-}
-
-void FileImpl::load(const std::filesystem::path &path)
-{
-	std::ifstream inFile(path, std::ios_base::in | std::ios_base::binary);
-	if (not inFile.is_open())
-		throw std::runtime_error("No such file: " + path.string());
-
-	io::filtering_stream<io::input> in;
-	std::string ext = path.extension().string();
-
-	if (path.extension() == ".gz")
-	{
-		in.push(io::gzip_decompressor());
-		ext = path.stem().extension().string();
-	}
-
-	in.push(inFile);
-
-	try
-	{
-		// OK, we've got the file, now create a protein
-		if (ext == ".cif")
-			mData.load(in);
-		else if (ext == ".pdb" or ext == ".ent")
-			ReadPDBFile(in, mData);
-		else
-		{
-			try
-			{
-				if (cif::VERBOSE > 0)
-					std::cerr << "unrecognized file extension, trying cif" << std::endl;
-
-				mData.load(in);
-			}
-			catch (const cif::CifParserError &e)
-			{
-				if (cif::VERBOSE > 0)
-					std::cerr << "Not cif, trying plain old PDB" << std::endl;
-
-				// pffft...
-				in.reset();
-
-				if (inFile.is_open())
-					inFile.seekg(0);
-				else
-					inFile.open(path, std::ios_base::in | std::ios::binary);
-
-				if (path.extension() == ".gz")
-					in.push(io::gzip_decompressor());
-
-				in.push(inFile);
-
-				ReadPDBFile(in, mData);
-			}
-		}
-	}
-	catch (const std::exception &ex)
-	{
-		if (cif::VERBOSE >= 0)
-			std::cerr << "Error trying to load file " << path << std::endl;
-		throw;
-	}
-
-	// Yes, we've parsed the data. Now locate the datablock.
-	mDb = &mData.firstDatablock();
-
-	// And validate, otherwise lots of functionality won't work
-	//	if (mData.getValidator() == nullptr)
-	mData.loadDictionary("mmcif_pdbx_v50");
-	if (not mData.isValid() and cif::VERBOSE >= 0)
-		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
-}
-
-void FileImpl::save(const std::filesystem::path &path)
-{
-	std::ofstream outFile(path, std::ios_base::out | std::ios_base::binary);
-	io::filtering_stream<io::output> out;
-
-	if (path.extension() == ".gz")
-		out.push(io::gzip_compressor());
-
-	out.push(outFile);
-
-	if (path.extension() == ".pdb")
-		WritePDBFile(out, mData);
-	else
-		mData.save(out);
-}
-
-// --------------------------------------------------------------------
 // Atom
 
 Atom::AtomImpl::AtomImpl(cif::Datablock &db, const std::string &id, cif::Row row)
@@ -1131,10 +980,10 @@ bool Monomer::areBonded(const Monomer &a, const Monomer &b, float errorMargin)
 		auto distanceCACA = Distance(atoms[0], atoms[3]);
 		double omega = DihedralAngle(atoms[0], atoms[1], atoms[2], atoms[3]);
 
-		bool cis = abs(omega) <= 30.0;
+		bool cis = std::abs(omega) <= 30.0;
 		float maxCACADistance = cis ? 3.0f : 3.8f;
 
-		result = abs(distanceCACA - maxCACADistance) < errorMargin;
+		result = std::abs(distanceCACA - maxCACADistance) < errorMargin;
 	}
 	catch (...)
 	{
@@ -1242,7 +1091,7 @@ int Polymer::Distance(const Monomer &a, const Monomer &b) const
 				ixb = ix, ++f;
 			if (f == 2)
 			{
-				result = abs(ixa - ixb);
+				result = std::abs(ixa - ixb);
 				break;
 			}
 		}
@@ -1254,81 +1103,120 @@ int Polymer::Distance(const Monomer &a, const Monomer &b) const
 // --------------------------------------------------------------------
 // File
 
-File::File()
-	: mImpl(new FileImpl)
+void File::load(const std::filesystem::path &path)
 {
+	std::ifstream inFile(path, std::ios_base::in | std::ios_base::binary);
+	if (not inFile.is_open())
+		throw std::runtime_error("No such file: " + path.string());
+
+	io::filtering_stream<io::input> in;
+	std::string ext = path.extension().string();
+
+	if (path.extension() == ".gz")
+	{
+		in.push(io::gzip_decompressor());
+		ext = path.stem().extension().string();
+	}
+
+	in.push(inFile);
+
+	try
+	{
+		// OK, we've got the file, now create a protein
+		if (ext == ".cif")
+			load(in);
+		else if (ext == ".pdb" or ext == ".ent")
+			ReadPDBFile(in, *this);
+		else
+		{
+			try
+			{
+				if (cif::VERBOSE > 0)
+					std::cerr << "unrecognized file extension, trying cif" << std::endl;
+
+				cif::File::load(in);
+			}
+			catch (const cif::CifParserError &e)
+			{
+				if (cif::VERBOSE > 0)
+					std::cerr << "Not cif, trying plain old PDB" << std::endl;
+
+				// pffft...
+				in.reset();
+
+				if (inFile.is_open())
+					inFile.seekg(0);
+				else
+					inFile.open(path, std::ios_base::in | std::ios::binary);
+
+				if (path.extension() == ".gz")
+					in.push(io::gzip_decompressor());
+
+				in.push(inFile);
+
+				ReadPDBFile(in, *this);
+			}
+		}
+	}
+	catch (const std::exception &ex)
+	{
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error trying to load file " << path << std::endl;
+		throw;
+	}
+
+	// validate, otherwise lots of functionality won't work
+	loadDictionary("mmcif_pdbx_v50");
+	if (not isValid() and cif::VERBOSE >= 0)
+		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
 }
 
-File::File(const char *data, size_t length)
-	: mImpl(new FileImpl)
+void File::load(std::istream &is)
 {
-	mImpl->load_data(data, length);
+	try
+	{
+		cif::File::load(is);
+	}
+	catch (const cif::CifParserError &e)
+	{
+		ReadPDBFile(is, *this);
+	}
+
+	// validate, otherwise lots of functionality won't work
+	loadDictionary("mmcif_pdbx_v50");
+	if (not isValid() and cif::VERBOSE >= 0)
+		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
 }
 
-File::File(const std::filesystem::path &File)
-	: mImpl(new FileImpl)
+void File::save(const std::filesystem::path &path)
 {
-	load(File);
-}
+	fs::path file = path.filename();
 
-File::~File()
-{
-	delete mImpl;
-}
+	std::ofstream outFile(path, std::ios_base::out | std::ios_base::binary);
+	io::filtering_stream<io::output> out;
 
-cif::Datablock &File::createDatablock(const std::string_view name)
-{
-	auto db = new cif::Datablock(name);
+	if (file.extension() == ".gz")
+	{
+		out.push(io::gzip_compressor());
+		file.replace_extension("");
+	}
 
-	mImpl->mData.append(db);
-	mImpl->mDb = db;
+	out.push(outFile);
 
-	return *mImpl->mDb;
-}
-
-void File::load(const std::filesystem::path &p)
-{
-	mImpl->load(p);
-}
-
-void File::save(const std::filesystem::path &file)
-{
-	mImpl->save(file);
-}
-
-cif::Datablock &File::data()
-{
-	assert(mImpl);
-	assert(mImpl->mDb);
-
-	if (mImpl == nullptr or mImpl->mDb == nullptr)
-		throw std::runtime_error("No data loaded");
-
-	return *mImpl->mDb;
-}
-
-cif::File &File::file()
-{
-	assert(mImpl);
-
-	if (mImpl == nullptr)
-		throw std::runtime_error("No data loaded");
-
-	return mImpl->mData;
+	if (file.extension() == ".pdb")
+		WritePDBFile(out, *this);
+	else
+		cif::File::save(out);
 }
 
 // --------------------------------------------------------------------
 //	Structure
 
-Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
-	: mFile(f)
+Structure::Structure(cif::Datablock &db, size_t modelNr, StructureOpenOptions options)
+	: mDb(db)
 	, mModelNr(modelNr)
 {
-	auto db = mFile.impl().mDb;
-	if (db == nullptr)
-		throw std::logic_error("Empty file!");
-
-	auto &atomCat = (*db)["atom_site"];
+	auto &atomCat = db["atom_site"];
 
 	loadAtomsForModel(options);
 
@@ -1357,8 +1245,8 @@ Structure::Structure(File &f, size_t modelNr, StructureOpenOptions options)
 
 void Structure::loadAtomsForModel(StructureOpenOptions options)
 {
-	auto db = mFile.impl().mDb;
-	auto &atomCat = (*db)["atom_site"];
+	auto &db = datablock();
+	auto &atomCat = db["atom_site"];
 
 	for (auto &a : atomCat)
 	{
@@ -1373,12 +1261,12 @@ void Structure::loadAtomsForModel(StructureOpenOptions options)
 		if ((options bitand StructureOpenOptions::SkipHydrogen) and type_symbol == "H")
 			continue;
 
-		mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(*db, id, a));
+		mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, id, a));
 	}
 }
 
 Structure::Structure(const Structure &s)
-	: mFile(s.mFile)
+	: mDb(s.mDb)
 	, mModelNr(s.mModelNr)
 {
 	mAtoms.reserve(s.mAtoms.size());
@@ -1677,21 +1565,10 @@ const Residue &Structure::getResidue(const mmcif::Atom &atom) const
 	return getResidue(atom.labelAsymID(), atom.labelCompID(), atom.labelSeqID());
 }
 
-File &Structure::getFile() const
-{
-	return mFile;
-}
-
-cif::Category &Structure::category(std::string_view name) const
-{
-	auto &db = datablock();
-	return db[name];
-}
-
 std::tuple<char, int, char> Structure::MapLabelToAuth(
 	const std::string &asymID, int seqID) const
 {
-	auto &db = *getFile().impl().mDb;
+	auto &db = datablock();
 
 	std::tuple<char, int, char> result;
 	bool found = false;
@@ -1841,11 +1718,6 @@ std::tuple<std::string, int, std::string> Structure::MapPDBToLabel(const std::st
 	return result;
 }
 
-cif::Datablock &Structure::datablock() const
-{
-	return *mFile.impl().mDb;
-}
-
 std::string Structure::insertCompound(const std::string &compoundID, bool isEntity)
 {
 	using namespace cif::literals;
@@ -1854,7 +1726,7 @@ std::string Structure::insertCompound(const std::string &compoundID, bool isEnti
 	if (compound == nullptr)
 		throw std::runtime_error("Trying to insert unknown compound " + compoundID + " (not found in CCD)");
 
-	cif::Datablock &db = *mFile.impl().mDb;
+	cif::Datablock &db = datablock();
 
 	auto &chemComp = db["chem_comp"];
 	auto r = chemComp.find(cif::Key("id") == compoundID);
@@ -1899,7 +1771,7 @@ std::string Structure::insertCompound(const std::string &compoundID, bool isEnti
 
 void Structure::removeAtom(Atom &a)
 {
-	cif::Datablock &db = *mFile.impl().mDb;
+	cif::Datablock &db = datablock();
 
 	auto &atomSites = db["atom_site"];
 
@@ -1922,12 +1794,11 @@ void Structure::removeAtom(Atom &a)
 
 void Structure::removeResidue(const std::string &asym_id, int seq_id)
 {
-	
 }
 
 void Structure::swapAtoms(Atom &a1, Atom &a2)
 {
-	cif::Datablock &db = *mFile.impl().mDb;
+	cif::Datablock &db = datablock();
 	auto &atomSites = db["atom_site"];
 
 	auto rs1 = atomSites.find(cif::Key("id") == a1.id());
@@ -1963,7 +1834,7 @@ void Structure::changeResidue(Residue &res, const std::string &newCompound,
 {
 	using namespace cif::literals;
 
-	cif::Datablock &db = *mFile.impl().mDb;
+	cif::Datablock &db = datablock();
 	std::string asymID = res.asymID();
 
 	const auto compound = CompoundFactory::instance().create(newCompound);
@@ -2073,7 +1944,7 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 {
 	using namespace cif::literals;
 
-	cif::Datablock &db = *mFile.impl().mDb;
+	cif::Datablock &db = datablock();
 	auto &struct_asym = db["struct_asym"];
 	std::string asym_id = struct_asym.getUniqueID();
 
@@ -2093,8 +1964,7 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 	{
 		auto atom_id = atom_site.getUniqueID("");
 
-		auto &&[row, inserted] = atom_site.emplace({
-			{"group_PDB", atom.get_property<std::string>("group_PDB")},
+		auto &&[row, inserted] = atom_site.emplace({{"group_PDB", atom.get_property<std::string>("group_PDB")},
 			{"id", atom_id},
 			{"type_symbol", atom.get_property<std::string>("type_symbol")},
 			{"label_atom_id", atom.get_property<std::string>("label_atom_id")},
@@ -2127,7 +1997,7 @@ std::string Structure::createNonpoly(const std::string &entity_id, std::vector<s
 {
 	using namespace cif::literals;
 
-	cif::Datablock &db = *mFile.impl().mDb;
+	cif::Datablock &db = datablock();
 	auto &struct_asym = db["struct_asym"];
 	std::string asym_id = struct_asym.getUniqueID();
 
@@ -2143,23 +2013,27 @@ std::string Structure::createNonpoly(const std::string &entity_id, std::vector<s
 
 	auto &res = mNonPolymers.emplace_back(*this, comp_id, asym_id);
 
+	auto appendUnlessSet = [](std::vector<cif::Item> &ai, cif::Item &&i)
+	{
+		if (find_if(ai.begin(), ai.end(), [name = i.name()](cif::Item &ci) { return ci.name() == name; }) == ai.end())
+			ai.emplace_back(std::move(i));
+	};
+
 	for (auto &atom : atom_info)
 	{
 		auto atom_id = atom_site.getUniqueID("");
 
-		atom.insert(atom.end(), {
-			{"group_PDB", "HETATM"},
-			{"id", atom_id},
-			{"label_comp_id", comp_id},
-			{"label_asym_id", asym_id},
-			{"label_seq_id", ""},
-			{"label_entity_id", entity_id},
-			{"auth_comp_id", comp_id},
-			{"auth_asym_id", asym_id},
-			{"auth_seq_id", ""},
-			{"pdbx_PDB_model_num", 1},
-			{"label_alt_id", ""}
-		});
+		appendUnlessSet(atom, { "group_PDB", "HETATM"} );
+		appendUnlessSet(atom, { "id", atom_id} );
+		appendUnlessSet(atom, { "label_comp_id", comp_id} );
+		appendUnlessSet(atom, { "label_asym_id", asym_id} );
+		appendUnlessSet(atom, { "label_seq_id", ""} );
+		appendUnlessSet(atom, { "label_entity_id", entity_id} );
+		appendUnlessSet(atom, { "auth_comp_id", comp_id} );
+		appendUnlessSet(atom, { "auth_asym_id", asym_id} );
+		appendUnlessSet(atom, { "auth_seq_id", ""} );
+		appendUnlessSet(atom, { "pdbx_PDB_model_num", 1} );
+		appendUnlessSet(atom, { "label_alt_id", ""} );
 
 		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
 
@@ -2174,7 +2048,7 @@ void Structure::cleanupEmptyCategories()
 {
 	using namespace cif::literals;
 
-	cif::Datablock &db = *mFile.impl().mDb;
+	cif::Datablock &db = datablock();
 
 	auto &atomSite = db["atom_site"];
 

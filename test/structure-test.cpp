@@ -78,8 +78,8 @@ BOOST_AUTO_TEST_CASE(create_nonpoly_1)
     cif::VERBOSE = 1;
 
 	mmcif::File file;
-	file.file().loadDictionary("mmcif_pdbx_v50.dic");
-	file.createDatablock("TEST");	// create a datablock
+	file.loadDictionary("mmcif_pdbx_v50.dic");
+	file.emplace("TEST");	// create a datablock
 	
 	mmcif::Structure structure(file);
 
@@ -171,12 +171,12 @@ _struct_asym.details                       ?
 
 	expected.loadDictionary("mmcif_pdbx_v50.dic");
 
-	if (not (expected.firstDatablock() == structure.getFile().data()))
+	if (not (expected.firstDatablock() == structure.datablock()))
 	{
 		BOOST_TEST(false);
 		std::cout << expected.firstDatablock() << std::endl
 				<< std::endl
-				<< structure.getFile().data() << std::endl;
+				<< structure.datablock() << std::endl;
 	}
 }
 

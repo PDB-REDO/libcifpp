@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 
 		structure.cleanupEmptyCategories();
 
-		f.file().save(std::cout);
+		f.save(std::cout);
 	}
 	catch (const std::exception& e)
 	{

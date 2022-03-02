@@ -1626,7 +1626,7 @@ PRO OXT HXT SING N N 17
 	mmcif::File file(example.string());
 	mmcif::Structure structure(file);
 
-	(void)file.file().isValid();
+	(void)file.isValid();
 
 	mmcif::BondMap bm(structure);
 

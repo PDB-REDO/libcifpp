@@ -2169,17 +2169,21 @@ class File
 	File();
 	File(std::istream &is, bool validate = false);
 	File(const std::filesystem::path &path, bool validate = false);
+	File(const char *data, size_t length); // good luck trying to find out what it is...
+
 	File(File &&rhs);
 	File(const File &rhs) = delete;
 	File &operator=(const File &rhs) = delete;
 
-	~File();
+	virtual ~File();
 
-	void load(const std::filesystem::path &p);
-	void save(const std::filesystem::path &p);
+	virtual void load(const std::filesystem::path &p);
+	virtual void save(const std::filesystem::path &p);
 
-	void load(std::istream &is);
-	void save(std::ostream &os);
+	virtual void load(std::istream &is);
+	virtual void save(std::ostream &os);
+
+	virtual void load(const char *data, std::size_t length);
 
 	/// \brief Load only the data block \a datablock from the mmCIF file
 	void load(std::istream &is, const std::string &datablock);
@@ -2211,6 +2215,12 @@ class File
 
 	void append(Datablock *e);
 
+	Datablock &emplace(std::string_view name)
+	{
+		append(new Datablock(name));
+		return back();
+	}
+	
 	Datablock *get(std::string_view name) const;
 	Datablock &operator[](std::string_view name);
 
@@ -2247,6 +2257,9 @@ class File
 
 	iterator begin() const;
 	iterator end() const;
+
+	Datablock &front();
+	Datablock &back();
 
 	bool empty() const { return mHead == nullptr; }
 

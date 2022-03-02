@@ -233,7 +233,7 @@ BondMap::BondMap(const Structure &p)
 		link[b].insert(a);
 	};
 
-	cif::Datablock &db = p.getFile().data();
+	cif::Datablock &db = p.datablock();
 
 	// collect all compounds first
 	std::set<std::string> compounds;

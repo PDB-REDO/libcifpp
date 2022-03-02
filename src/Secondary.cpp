@@ -535,7 +535,7 @@ double CalculateHBondEnergy(Res &inDonor, Res &inAcceptor)
 			result = kCouplingConstant / distanceHO - kCouplingConstant / distanceHC + kCouplingConstant / distanceNC - kCouplingConstant / distanceNO;
 
 		// DSSP compatibility mode:
-		result = round(result * 1000) / 1000;
+		result = std::round(result * 1000) / 1000;
 
 		if (result < kMinHBondEnergy)
 			result = kMinHBondEnergy;
@@ -1230,7 +1230,7 @@ DSSPImpl::DSSPImpl(const Structure &s, int min_poly_proline_stretch_length)
 
 void DSSPImpl::calculateSecondaryStructure()
 {
-	auto &db = mStructure.getFile().data();
+	auto &db = mStructure.datablock();
 	for (auto r : db["struct_conn"].find(cif::Key("conn_type_id") == "disulf"))
 	{
 		std::string asym1, asym2;

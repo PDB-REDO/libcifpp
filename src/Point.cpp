@@ -301,7 +301,7 @@ std::tuple<double,Point> QuaternionToAngleAxis(Quaternion q)
 		q = Normalize(q);
 
 	// angle:
-	double angle = 2 * acos(q.R_component_1());
+	double angle = 2 * std::acos(q.R_component_1());
 	angle = angle * 180 / kPI;
 
 	// axis:

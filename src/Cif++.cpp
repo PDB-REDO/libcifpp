@@ -2408,7 +2408,7 @@ namespace detail
 
 	size_t writeValue(std::ostream &os, std::string value, size_t offset, size_t width)
 	{
-		if (value.find('\n') != std::string::npos or width == 0 or value.length() >= 132) // write as text field
+		if (value.find('\n') != std::string::npos or width == 0 or value.length() > 132) // write as text field
 		{
 			ba::replace_all(value, "\n;", "\n\\;");
 
@@ -2511,7 +2511,7 @@ void Category::write(std::ostream &os, const std::vector<size_t> &order, bool in
 					if (not isUnquotedString(v->mText))
 						l += 2;
 
-					if (l >= 132)
+					if (l > 132)
 						continue;
 
 					if (columnWidths[v->mColumnIndex] < l + 1)
@@ -2547,7 +2547,7 @@ void Category::write(std::ostream &os, const std::vector<size_t> &order, bool in
 				if (l < w)
 					l = w;
 
-				if (offset + l >= 132 and offset > 0)
+				if (offset + l > 132 and offset > 0)
 				{
 					os << std::endl;
 					offset = 0;
@@ -2555,7 +2555,7 @@ void Category::write(std::ostream &os, const std::vector<size_t> &order, bool in
 
 				offset = detail::writeValue(os, s, offset, w);
 
-				if (offset >= 132)
+				if (offset > 132)
 				{
 					os << std::endl;
 					offset = 0;
@@ -3367,6 +3367,11 @@ File::File(const std::filesystem::path &path, bool validate)
 	}
 }
 
+File::File(const char *data, std::size_t length)
+{
+	load(data, length);
+}
+
 File::File(File &&rhs)
 	: mHead(nullptr)
 	, mValidator(nullptr)
@@ -3483,6 +3488,25 @@ void File::load(std::istream &is, const std::string &datablock)
 	}
 }
 
+void File::load(const char *data, std::size_t length)
+{
+	bool gzipped = length > 2 and data[0] == static_cast<char>(0x1f) and data[1] == static_cast<char>(0x8b);
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *data, size_t length) { this->setg(data, data, data + length); }
+	} buffer(const_cast<char *>(data), length);
+
+	std::istream is(&buffer);
+
+	io::filtering_stream<io::input> in;
+	if (gzipped)
+		in.push(io::gzip_decompressor());
+	in.push(is);
+
+	load(is);
+}
+
 void File::save(std::ostream &os)
 {
 	Datablock *e = mHead;
@@ -3521,6 +3545,21 @@ Datablock &File::operator[](std::string_view name)
 	if (result == nullptr)
 		throw std::runtime_error("Datablock " + std::string(name) + " does not exist");
 	return *result;
+}
+
+Datablock &File::front()
+{
+	assert(mHead);
+	return *mHead;
+}
+
+Datablock &File::back()
+{
+	assert(mHead);
+	auto *block = mHead;
+	while (block->mNext != nullptr)
+		block = block->mNext;
+	return *block;
 }
 
 bool File::isValid()

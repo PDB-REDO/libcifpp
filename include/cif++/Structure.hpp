@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -34,16 +34,16 @@
 #include "cif++/Point.hpp"
 
 /*
-	To modify a structure, you will have to use actions.
-	
-	The currently supported actions are:
-	
+    To modify a structure, you will have to use actions.
+
+    The currently supported actions are:
+
 //	- Move atom to new location
-	- Remove atom
+    - Remove atom
 //	- Add new atom that was formerly missing
 //	- Add alternate Residue
-	- 
-	
+    -
+
 */
 
 namespace mmcif
@@ -61,7 +61,6 @@ class File;
 class Atom
 {
   private:
-
 	struct AtomImpl : public std::enable_shared_from_this<AtomImpl>
 	{
 		AtomImpl(cif::Datablock &db, const std::string &id, cif::Row row);
@@ -99,7 +98,7 @@ class Atom
 		int mRefcount;
 		cif::Row mRow;
 
-		mutable std::vector<std::tuple<std::string,cif::detail::ItemReference>> mCachedRefs;
+		mutable std::vector<std::tuple<std::string, cif::detail::ItemReference>> mCachedRefs;
 
 		mutable const Compound *mCompound = nullptr;
 
@@ -110,14 +109,17 @@ class Atom
 	};
 
   public:
-
 	Atom() {}
 
 	Atom(std::shared_ptr<AtomImpl> impl)
-		: mImpl(impl) {}
+		: mImpl(impl)
+	{
+	}
 
 	Atom(const Atom &rhs)
-		: mImpl(rhs.mImpl) {}
+		: mImpl(rhs.mImpl)
+	{
+	}
 
 	Atom(cif::Datablock &db, cif::Row &row);
 
@@ -152,10 +154,10 @@ class Atom
 		set_property(name, std::to_string(value));
 	}
 
-	const std::string &id() const			{ return impl().mID; }
-	AtomType type() const					{ return impl().mType; }
+	const std::string &id() const { return impl().mID; }
+	AtomType type() const { return impl().mType; }
 
-	Point location() const					{ return impl().mLocation; }
+	Point location() const { return impl().mLocation; }
 	void location(Point p)
 	{
 		if (not mImpl)
@@ -176,33 +178,33 @@ class Atom
 	void translateRotateAndTranslate(Point t1, Quaternion q, Point t2);
 
 	// for direct access to underlying data, be careful!
-	const cif::Row getRow() const			{ return impl().mRow; }
+	const cif::Row getRow() const { return impl().mRow; }
 	const cif::Row getRowAniso() const;
 
-	bool isSymmetryCopy() const				{ return impl().mSymmetryCopy; }
-	std::string symmetry() const			{ return impl().mSymmetryOperator; }
+	bool isSymmetryCopy() const { return impl().mSymmetryCopy; }
+	std::string symmetry() const { return impl().mSymmetryOperator; }
 
-	const Compound &comp() const			{ return impl().comp(); }
-	bool isWater() const					{ return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
+	const Compound &comp() const { return impl().comp(); }
+	bool isWater() const { return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
 	int charge() const;
 
 	float uIso() const;
-	bool getAnisoU(float anisou[6]) const	{ return impl().getAnisoU(anisou); }
+	bool getAnisoU(float anisou[6]) const { return impl().getAnisoU(anisou); }
 	float occupancy() const;
 
 	// specifications
-	const std::string& labelAtomID() const		{ return impl().mAtomID; }
-	const std::string& labelCompID() const		{ return impl().mCompID; }
-	const std::string& labelAsymID() const		{ return impl().mAsymID; }
+	const std::string &labelAtomID() const { return impl().mAtomID; }
+	const std::string &labelCompID() const { return impl().mCompID; }
+	const std::string &labelAsymID() const { return impl().mAsymID; }
 	std::string labelEntityID() const;
-	int labelSeqID() const						{ return impl().mSeqID; }
-	const std::string& labelAltID() const		{ return impl().mAltID; }
-	bool isAlternate() const					{ return not impl().mAltID.empty(); }
+	int labelSeqID() const { return impl().mSeqID; }
+	const std::string &labelAltID() const { return impl().mAltID; }
+	bool isAlternate() const { return not impl().mAltID.empty(); }
 
 	std::string authAtomID() const;
 	std::string authCompID() const;
 	std::string authAsymID() const;
-	const std::string& authSeqID() const		{ return impl().mAuthSeqID; }
+	const std::string &authSeqID() const { return impl().mAuthSeqID; }
 	std::string pdbxAuthInsCode() const;
 	std::string pdbxAuthAltID() const;
 
@@ -225,7 +227,7 @@ class Atom
 		std::swap(mImpl, b.mImpl);
 	}
 
-	int compare(const Atom &b) const		{ return impl().compare(*b.mImpl); }
+	int compare(const Atom &b) const { return impl().compare(*b.mImpl); }
 
 	bool operator<(const Atom &rhs) const
 	{
@@ -487,31 +489,33 @@ class Polymer : public std::vector<Monomer>
 // file is a reference to the data stored in e.g. the cif file.
 // This object is not copyable.
 
-class File : public std::enable_shared_from_this<File>
+class File : public cif::File
 {
   public:
-	File();
-	File(const std::filesystem::path &path);
-	File(const char *data, size_t length); // good luck trying to find out what it is...
-	~File();
+	File() {}
+
+	File(const std::filesystem::path &path)
+	{
+		load(path);
+	}
+
+	File(const char *data, size_t length)
+	{
+		load(data, length);
+	}
 
 	File(const File &) = delete;
 	File &operator=(const File &) = delete;
 
-	cif::Datablock& createDatablock(const std::string_view name);
+	void load(const std::filesystem::path &p) override;
+	void save(const std::filesystem::path &p) override;
 
-	void load(const std::filesystem::path &path);
-	void save(const std::filesystem::path &path);
+	void load(std::istream &is) override;
+	
+	using cif::File::save;
+	using cif::File::load;
 
-	Structure *model(size_t nr = 1);
-
-	struct FileImpl &impl() const { return *mImpl; }
-
-	cif::Datablock &data();
-	cif::File &file();
-
-  private:
-	struct FileImpl *mImpl;
+	cif::Datablock &data() { return front(); }
 };
 
 // --------------------------------------------------------------------
@@ -531,14 +535,18 @@ inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
 class Structure
 {
   public:
-	Structure(File &p, size_t modelNr = 1, StructureOpenOptions options = {});
-	Structure &operator=(const Structure &) = delete;
-	~Structure();
+	Structure(File &p, size_t modelNr = 1, StructureOpenOptions options = {})
+		: Structure(p.firstDatablock(), modelNr, options)
+	{
+	}
+
+	Structure(cif::Datablock &db, size_t modelNr = 1, StructureOpenOptions options = {});
 
 	// Create a read-only clone of the current structure (for multithreaded calculations that move atoms)
 	Structure(const Structure &);
 
-	File &getFile() const;
+	Structure &operator=(const Structure &) = delete;
+	~Structure();
 
 	const AtomView &atoms() const { return mAtoms; }
 	AtomView waters() const;
@@ -655,8 +663,15 @@ class Structure
 	void cleanupEmptyCategories();
 
 	/// \brief Direct access to underlying data
-	cif::Category &category(std::string_view name) const;
-	cif::Datablock &datablock() const;
+	cif::Category &category(std::string_view name) const
+	{
+		return mDb[name];
+	}
+
+	cif::Datablock &datablock() const
+	{
+		return mDb;
+	}
 
   private:
 	friend Polymer;
@@ -671,7 +686,7 @@ class Structure
 
 	void loadAtomsForModel(StructureOpenOptions options);
 
-	File &mFile;
+	cif::Datablock &mDb;
 	size_t mModelNr;
 	AtomView mAtoms;
 	std::vector<size_t> mAtomIndex;

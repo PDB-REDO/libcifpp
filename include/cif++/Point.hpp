@@ -221,7 +221,7 @@ struct PointF
 
 	FType length() const
 	{
-		return sqrt(mX * mX + mY * mY + mZ * mZ);
+		return std::sqrt(mX * mX + mY * mY + mZ * mZ);
 	}
 };
 
@@ -285,7 +285,7 @@ inline double DistanceSquared(const PointF<F> &a, const PointF<F> &b)
 template <typename F>
 inline double Distance(const PointF<F> &a, const PointF<F> &b)
 {
-	return sqrt(
+	return std::sqrt(
 		(a.mX - b.mX) * (a.mX - b.mX) +
 		(a.mY - b.mY) * (a.mY - b.mY) +
 		(a.mZ - b.mZ) * (a.mZ - b.mZ));
@@ -332,10 +332,10 @@ double DihedralAngle(const PointF<F> &p1, const PointF<F> &p2, const PointF<F> &
 	double result = 360;
 	if (u > 0 and v > 0)
 	{
-		u = DotProduct(p, x) / sqrt(u);
-		v = DotProduct(p, y) / sqrt(v);
+		u = DotProduct(p, x) / std::sqrt(u);
+		v = DotProduct(p, y) / std::sqrt(v);
 		if (u != 0 or v != 0)
-			result = atan2(v, u) * 180 / kPI;
+			result = std::atan2(v, u) * 180 / kPI;
 	}
 
 	return result;
@@ -351,7 +351,7 @@ double CosinusAngle(const PointF<F> &p1, const PointF<F> &p2, const PointF<F> &p
 
 	double x = DotProduct(v12, v12) * DotProduct(v34, v34);
 	if (x > 0)
-		result = DotProduct(v12, v34) / sqrt(x);
+		result = DotProduct(v12, v34) / std::sqrt(x);
 
 	return result;
 }
@@ -436,9 +436,9 @@ class SphericalDots
 			double lat = std::asin((2.0 * i) / P);
 			double lon = std::fmod(i, kGoldenRatio) * 2 * kPI / kGoldenRatio;
 
-			p->mX = sin(lon) * cos(lat);
-			p->mY = cos(lon) * cos(lat);
-			p->mZ = sin(lat);
+			p->mX = std::sin(lon) * std::cos(lat);
+			p->mY = std::cos(lon) * std::cos(lat);
+			p->mZ = std::sin(lat);
 
 			++p;
 		}
