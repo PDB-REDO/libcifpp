@@ -172,19 +172,26 @@ enum AtomType : uint8_t
 // --------------------------------------------------------------------
 // AtomTypeInfo
 
-enum RadiusType
+enum class RadiusType
 {
-	eRadiusCalculated,
-	eRadiusEmpirical,
-	eRadiusCovalentEmpirical,
+	Calculated,
+	Empirical,
+	CovalentEmpirical,
 
-	eRadiusSingleBond,
-	eRadiusDoubleBond,
-	eRadiusTripleBond,
+	SingleBond,
+	DoubleBond,
+	TripleBond,
 
-	eRadiusVanderWaals,
+	VanderWaals,
 
-	eRadiusTypeCount
+	TypeCount
+};
+
+constexpr size_t RadiusTypeCount = static_cast<size_t>(RadiusType::TypeCount);
+
+enum class IonicRadiusType
+{
+	Effective, Crystal
 };
 
 struct AtomTypeInfo
@@ -194,7 +201,7 @@ struct AtomTypeInfo
 	std::string symbol;
 	float weight;
 	bool metal;
-	float radii[eRadiusTypeCount];
+	float radii[RadiusTypeCount];
 };
 
 extern const AtomTypeInfo kKnownAtoms[];
@@ -218,11 +225,32 @@ class AtomTypeTraits
 	static bool isElement(const std::string &symbol);
 	static bool isMetal(const std::string &symbol);
 
-	float radius(RadiusType type = eRadiusSingleBond) const
+	float radius(RadiusType type = RadiusType::SingleBond) const
 	{
-		if (type >= eRadiusTypeCount)
+		if (type >= RadiusType::TypeCount)
 			throw std::invalid_argument("invalid radius requested");
-		return mInfo->radii[type] / 100.f;
+		return mInfo->radii[static_cast<size_t>(type)] / 100.f;
+	}
+
+	/// \brief Return the radius for a charged version of this atom in a solid crystal
+	///
+	/// \param charge  The charge of the ion
+	/// \return        The radius of the ion
+	float crystal_ionic_radius(int charge) const;
+
+	/// \brief Return the radius for a charged version of this atom in a non-solid environment
+	///
+	/// \param charge  The charge of the ion
+	/// \return        The radius of the ion
+	float effective_ionic_radius(int charge) const;
+
+	/// \brief Return the radius for a charged version of this atom, returns the effective radius by default
+	///
+	/// \param charge  The charge of the ion
+	/// \return        The radius of the ion
+	float ionic_radius(int charge, IonicRadiusType type = IonicRadiusType::Effective) const
+	{
+		return type == IonicRadiusType::Effective ? effective_ionic_radius(charge) : crystal_ionic_radius(charge);
 	}
 
 	// data type encapsulating the Waasmaier & Kirfel scattering factors
