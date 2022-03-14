@@ -312,6 +312,8 @@ class Residue
 	virtual ~Residue();
 
 	const Compound &compound() const;
+
+	AtomView &atoms();
 	const AtomView &atoms() const;
 
 	void addAtom(const Atom &atom)

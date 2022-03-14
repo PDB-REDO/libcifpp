@@ -159,10 +159,220 @@ const AtomTypeInfo kKnownAtoms[] =
 	{ Ts,	"Tennessine",		"Ts",	294,		true,  {	kNA,	kNA,	kNA,	165,	kNA,	kNA,	kNA } },  //	117	Ts	 Tenness­ine       
 	{ Og,	"Oganesson",		"Og",	294,		true,  {	kNA,	kNA,	kNA,	157,	kNA,	kNA,	kNA } },  //	118	Og	 Oga­nesson        
 
-	{ D,	"Deuterium",		"D",	2.014f,	false, {	53,		25,		37,		32,		kNA,	kNA,	120 } },  //	1	D	 Deuterium         
+	{ D,	"Deuterium",		"D",	2.014f,		false, {	53,		25,		37,		32,		kNA,	kNA,	120 } },  //	1	D	 Deuterium         
 };                                                                                                                                                    
 
 uint32_t kKnownAtomsCount = sizeof(kKnownAtoms) / sizeof(AtomTypeInfo);
+
+// --------------------------------------------------------------------
+// Crystal ionic radii, as taken from Wikipedia (https://en.m.wikipedia.org/wiki/Ionic_radius)
+
+const struct IonicRadii
+{
+	AtomType type;
+	float radii[11];
+} kCrystalIonicRadii[] = {
+	{ H,	{ kNA,	kNA,	208,	-4,		kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Hydrogen 
+	{ Li,	{ kNA,	kNA,	kNA,	90,		kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Lithium 
+	{ Be,	{ kNA,	kNA,	kNA,	kNA,	59,		kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Beryllium 
+	{ B,	{ kNA,	kNA,	kNA,	kNA,	kNA,	41,		kNA,	kNA,	kNA,	kNA,	kNA } },	// Boron 
+	{ C,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	30,		kNA,	kNA,	kNA,	kNA } },	// Carbon 
+	{ N,	{ 132,	kNA,	kNA,	kNA,	kNA,	30,		kNA,	27,		kNA,	kNA,	kNA } },	// Nitrogen 
+	{ O,	{ kNA,	126,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Oxygen 
+	{ F,	{ kNA,	kNA,	119,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	22,		kNA } },	// Fluorine 
+	{ Na,	{ kNA,	kNA,	kNA,	116,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Sodium 
+	{ Mg,	{ kNA,	kNA,	kNA,	kNA,	86,		kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Magnesium 
+	{ Al,	{ kNA,	kNA,	kNA,	kNA,	kNA,	67.5,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Aluminium 
+	{ Si,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	54,		kNA,	kNA,	kNA,	kNA } },	// Silicon 
+	{ P,	{ kNA,	kNA,	kNA,	kNA,	kNA,	58,		kNA,	52,		kNA,	kNA,	kNA } },	// Phosphorus 
+	{ S,	{ kNA,	170,	kNA,	kNA,	kNA,	kNA,	51,		kNA,	43,		kNA,	kNA } },	// Sulfur 
+	{ Cl,	{ kNA,	kNA,	181,	kNA,	kNA,	kNA,	kNA,	26,		kNA,	41,		kNA } },	// Chlorine 
+	{ K,	{ kNA,	kNA,	kNA,	152,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Potassium 
+	{ Ca,	{ kNA,	kNA,	kNA,	kNA,	114,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Calcium 
+	{ Sc,	{ kNA,	kNA,	kNA,	kNA,	kNA,	88.5,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Scandium 
+	{ Ti,	{ kNA,	kNA,	kNA,	kNA,	100,	81,		74.5,	kNA,	kNA,	kNA,	kNA } },	// Titanium 
+	{ V,	{ kNA,	kNA,	kNA,	kNA,	93,		78,		72,		68,		kNA,	kNA,	kNA } },	// Vanadium 
+	{ Cr,	{ kNA,	kNA,	kNA,	kNA,	87,		75.5,	69,		63,		58,		kNA,	kNA } },	// Chromium ls 
+	// { Cr,{ kNA,	kNA,	kNA,	kNA,	94,		kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Chromium hs 
+	{ Mn,	{ kNA,	kNA,	kNA,	kNA,	81,		72,		67,		47,		39.5,	60,		kNA } },	// Manganese ls 
+	// { Mn,{ kNA,	kNA,	kNA,	kNA,	97,		78.5,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Manganese hs 
+	{ Fe,	{ kNA,	kNA,	kNA,	kNA,	75,		69,		72.5,	kNA,	39,		kNA,	kNA } },	// Iron ls 
+	// { Fe,{ kNA,	kNA,	kNA,	kNA,	92,		78.5,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Iron hs 
+	{ Co,	{ kNA,	kNA,	kNA,	kNA,	79,		68.5,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Cobalt ls 
+	// { Co,{ kNA,	kNA,	kNA,	kNA,	88.5,	75,		67,		kNA,	kNA,	kNA,	kNA } },	// Cobalt hs 
+	{ Ni,	{ kNA,	kNA,	kNA,	kNA,	83,		70,		62,		kNA,	kNA,	kNA,	kNA } },	// Nickel ls 
+	// { Ni,{ kNA,	kNA,	kNA,	kNA,	kNA,	74,		kNA,	kNA,	kNA,	kNA,	kNA } },	// Nickel hs 
+	{ Cu,	{ kNA,	kNA,	kNA,	91,		87,		68,		kNA,	kNA,	kNA,	kNA,	kNA } },	// Copper 
+	{ Zn,	{ kNA,	kNA,	kNA,	kNA,	88	,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Zinc 
+	{ Ga,	{ kNA,	kNA,	kNA,	kNA,	kNA,	76,		kNA,	kNA,	kNA,	kNA,	kNA } },	// Gallium 
+	{ Ge,	{ kNA,	kNA,	kNA,	kNA,	87,		kNA,	67,		kNA,	kNA,	kNA,	kNA } },	// Germanium 
+	{ As,	{ kNA,	kNA,	kNA,	kNA,	kNA,	72,		kNA,	60,		kNA,	kNA,	kNA } },	// Arsenic 
+	{ Se,	{ kNA,	184,	kNA,	kNA,	kNA,	kNA,	64,		kNA,	56,		kNA,	kNA } },	// Selenium 
+	{ Br,	{ kNA,	kNA,	182,	kNA,	kNA,	73,		kNA,	45,		kNA,	53,		kNA } },	// Bromine 
+	{ Rb,	{ kNA,	kNA,	kNA,	166,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Rubidium 
+	{ Sr,	{ kNA,	kNA,	kNA,	kNA,	132,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Strontium 
+	{ Y,	{ kNA,	kNA,	kNA,	kNA,	kNA,	104,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Yttrium 
+	{ Zr,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	86,		kNA,	kNA,	kNA,	kNA } },	// Zirconium 
+	{ Nb,	{ kNA,	kNA,	kNA,	kNA,	kNA,	86,		82,		78,		kNA,	kNA,	kNA } },	// Niobium 
+	{ Mo,	{ kNA,	kNA,	kNA,	kNA,	kNA,	83,		79,		75,		73,		kNA,	kNA } },	// Molybdenum 
+	{ Tc,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	78.5,	74,		kNA,	70,		kNA } },	// Technetium 
+	{ Ru,	{ kNA,	kNA,	kNA,	kNA,	kNA,	82,		76,		70.5,	kNA,	52,		150 } },	// Ruthenium 
+	{ Rh,	{ kNA,	kNA,	kNA,	kNA,	kNA,	80.5,	74,		69,		kNA,	kNA,	kNA } },	// Rhodium 
+	{ Pd,	{ kNA,	kNA,	kNA,	73,		100,	90,		75.5,	kNA,	kNA,	kNA,	kNA } },	// Palladium 
+	{ Ag,	{ kNA,	kNA,	kNA,	129,	108,	89,		kNA,	kNA,	kNA,	kNA,	kNA } },	// Silver 
+	{ Cd,	{ kNA,	kNA,	kNA,	kNA,	109,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Cadmium 
+	{ In,	{ kNA,	kNA,	kNA,	kNA,	kNA,	94,		kNA,	kNA,	kNA,	kNA,	kNA } },	// Indium 
+	{ Sn,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	83,		kNA,	kNA,	kNA,	kNA } },	// Tin 
+	{ Sb,	{ kNA,	kNA,	kNA,	kNA,	kNA,	90,		kNA,	74,		kNA,	kNA,	kNA } },	// Antimony 
+	{ Te,	{ kNA,	207,	kNA,	kNA,	kNA,	kNA,	111,	kNA,	70,		kNA,	kNA } },	// Tellurium 
+	{ I,	{ kNA,	kNA,	206,	kNA,	kNA,	kNA,	kNA,	109,	kNA,	67,		kNA } },	// Iodine 
+	{ Xe,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	62 } },		// Xenon 
+	{ Cs,	{ kNA,	kNA,	kNA,	167,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Caesium 
+	{ Ba,	{ kNA,	kNA,	kNA,	kNA,	149,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Barium 
+	{ La,	{ kNA,	kNA,	kNA,	kNA,	kNA,	117.2,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Lanthanum 
+	{ Ce,	{ kNA,	kNA,	kNA,	kNA,	kNA,	115,	101,	kNA,	kNA,	kNA,	kNA } },	// Cerium 
+	{ Pr,	{ kNA,	kNA,	kNA,	kNA,	kNA,	113,	99,		kNA,	kNA,	kNA,	kNA } },	// Praseodymium 
+	{ Nd,	{ kNA,	kNA,	kNA,	kNA,	143,	112.3,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Neodymium 
+	{ Pm,	{ kNA,	kNA,	kNA,	kNA,	kNA,	111,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Promethium 
+	{ Sm,	{ kNA,	kNA,	kNA,	kNA,	136,	109.8,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Samarium 
+	{ Eu,	{ kNA,	kNA,	kNA,	kNA,	131,	108.7,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Europium 
+	{ Gd,	{ kNA,	kNA,	kNA,	kNA,	kNA,	107.8,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Gadolinium 
+	{ Tb,	{ kNA,	kNA,	kNA,	kNA,	kNA,	106.3,	90,		kNA,	kNA,	kNA,	kNA } },	// Terbium 
+	{ Dy,	{ kNA,	kNA,	kNA,	kNA,	121,	105.2,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Dysprosium 
+	{ Ho,	{ kNA,	kNA,	kNA,	kNA,	kNA,	104.1,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Holmium 
+	{ Er,	{ kNA,	kNA,	kNA,	kNA,	kNA,	103,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Erbium 
+	{ Tm,	{ kNA,	kNA,	kNA,	kNA,	117,	102,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Thulium 
+	{ Yb,	{ kNA,	kNA,	kNA,	kNA,	116,	100.8,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Ytterbium 
+	{ Lu,	{ kNA,	kNA,	kNA,	kNA,	kNA,	100.1,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Lutetium 
+	{ Hf,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	85,		kNA,	kNA,	kNA,	kNA } },	// Hafnium 
+	{ Ta,	{ kNA,	kNA,	kNA,	kNA,	kNA,	86,		82,		78,		kNA,	kNA,	kNA } },	// Tantalum 
+	{ W,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	80,		76,		74,		kNA,	kNA } },	// Tungsten 
+	{ Re,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	77,		72,		69,		67,		kNA } },	// Rhenium 
+	{ Os,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	77,		71.5,	68.5,	66.5,	53 } },		// Osmium 
+	{ Ir,	{ kNA,	kNA,	kNA,	kNA,	kNA,	82,		76.5,	71,		kNA,	kNA,	kNA } },	// Iridium 
+	{ Pt,	{ kNA,	kNA,	kNA,	kNA,	94,		kNA,	76.5,	71,		kNA,	kNA,	kNA } },	// Platinum 
+	{ Au,	{ kNA,	kNA,	kNA,	151,	kNA,	99,		kNA,	71,		kNA,	kNA,	kNA } },	// Gold 
+	{ Hg,	{ kNA,	kNA,	kNA,	133,	116,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Mercury 
+	{ Tl,	{ kNA,	kNA,	kNA,	164,	kNA,	102.5,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Thallium 
+	{ Pb,	{ kNA,	kNA,	kNA,	kNA,	133,	kNA,	91.5,	kNA,	kNA,	kNA,	kNA } },	// Lead 
+	{ Bi,	{ kNA,	kNA,	kNA,	kNA,	kNA,	117,	kNA,	90,		kNA,	kNA,	kNA } },	// Bismuth 
+	{ Po,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	108,	kNA,	81,		kNA,	kNA } },	// Polonium 
+	{ At,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	76,		kNA } },	// Astatine 
+	{ Fr,	{ kNA,	kNA,	kNA,	194,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Francium 
+	{ Ra,	{ kNA,	kNA,	kNA,	kNA,	162,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Radium 
+	{ Ac,	{ kNA,	kNA,	kNA,	kNA,	kNA,	126,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Actinium 
+	{ Th,	{ kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	108,	kNA,	kNA,	kNA,	kNA } },	// Thorium 
+	{ Pa,	{ kNA,	kNA,	kNA,	kNA,	kNA,	116,	104,	92,		kNA,	kNA,	kNA } },	// Protactinium 
+	{ U,	{ kNA,	kNA,	kNA,	kNA,	kNA,	116.5,	103,	90,		87,		kNA,	kNA } },	// Uranium 
+	{ Np,	{ kNA,	kNA,	kNA,	kNA,	124,	115,	101,	89,		86,		85,		kNA } },	// Neptunium 
+	{ Pu,	{ kNA,	kNA,	kNA,	kNA,	kNA,	114,	100,	88,		85,		kNA,	kNA } },	// Plutonium 
+	{ Am,	{ kNA,	kNA,	kNA,	kNA,	140,	111.5,	99,		kNA,	kNA,	kNA,	kNA } },	// Americium 
+	{ Cm,	{ kNA,	kNA,	kNA,	kNA,	kNA,	111,	99,		kNA,	kNA,	kNA,	kNA } },	// Curium 
+	{ Bk,	{ kNA,	kNA,	kNA,	kNA,	kNA,	110,	97,		kNA,	kNA,	kNA,	kNA } },	// Berkelium 
+	{ Cf,	{ kNA,	kNA,	kNA,	kNA,	kNA,	109,	96.1,	kNA,	kNA,	kNA,	kNA } },	// Californium 
+	{ Es,	{ kNA,	kNA,	kNA,	kNA,	kNA,	92.8,	kNA,	kNA,	kNA,	kNA,	kNA } },	// Einsteinium 	
+}, kEffectiveIonicRadii[] = {
+	{ H,	{ kNA, 	kNA, 	139.9,	-18,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Hydrogen 
+	{ Li,	{ kNA, 	kNA, 	kNA, 	76,		kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Lithium 
+	{ Be,	{ kNA, 	kNA, 	kNA, 	kNA, 	45,		kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Beryllium 
+	{ B,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	27,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Boron 
+	{ C,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	16,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Carbon 
+	{ N,	{ 146,	kNA, 	kNA, 	kNA, 	kNA, 	16,		kNA, 	13,		kNA, 	kNA, 	kNA } }, 	// Nitrogen 
+	{ O,	{ kNA, 	140,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Oxygen 
+	{ F,	{ kNA, 	kNA, 	133,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	8,		kNA } }, 	// Fluorine 
+	{ Na,	{ kNA, 	kNA, 	kNA, 	102,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Sodium 
+	{ Mg,	{ kNA, 	kNA, 	kNA, 	kNA, 	72,		kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Magnesium 
+	{ Al,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	53.5,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Aluminium 
+	{ Si,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	40,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Silicon 
+	{ P,	{ 212,	kNA, 	kNA, 	kNA, 	kNA, 	44,		kNA, 	38,		kNA, 	kNA, 	kNA } }, 	// Phosphorus 
+	{ S,	{ kNA, 	184,	kNA, 	kNA, 	kNA, 	kNA, 	37,		kNA, 	29,		kNA, 	kNA } }, 	// Sulfur 
+	{ Cl,	{ kNA, 	kNA, 	181,	kNA, 	kNA, 	kNA, 	kNA, 	12,		kNA, 	27,		kNA } }, 	// Chlorine 
+	{ K,	{ kNA, 	kNA, 	kNA, 	138,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Potassium 
+	{ Ca,	{ kNA, 	kNA, 	kNA, 	kNA, 	100,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Calcium 
+	{ Sc,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	74.5,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Scandium 
+	{ Ti,	{ kNA, 	kNA, 	kNA, 	kNA, 	86,		67,		60.5,	kNA, 	kNA, 	kNA, 	kNA } }, 	// Titanium 
+	{ V,	{ kNA, 	kNA, 	kNA, 	kNA, 	79,		64,		58,		54,		kNA, 	kNA, 	kNA } }, 	// Vanadium 
+	{ Cr,	{ kNA, 	kNA, 	kNA, 	kNA, 	73,		61.5,	55,		49,		44,		kNA, 	kNA } }, 	// Chromium ls 
+	{ Cr,	{ kNA, 	kNA, 	kNA, 	kNA, 	80,		kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Chromium hs 
+	{ Mn,	{ kNA, 	kNA, 	kNA, 	kNA, 	67,		58,		53,		33,		25.5,	46,		kNA } }, 	// Manganese ls 
+	{ Mn,	{ kNA, 	kNA, 	kNA, 	kNA, 	83,		64.5,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Manganese hs 
+	{ Fe,	{ kNA, 	kNA, 	kNA, 	kNA, 	61,		55,		58.5,	kNA, 	25,		kNA, 	kNA } }, 	// Iron ls 
+	{ Fe,	{ kNA, 	kNA, 	kNA, 	kNA, 	78,		64.5,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Iron hs 
+	{ Co,	{ kNA, 	kNA, 	kNA, 	kNA, 	65,		54.5,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Cobalt ls 
+	{ Co,	{ kNA, 	kNA, 	kNA, 	kNA, 	74.5,	61,		53,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Cobalt hs 
+	{ Ni,	{ kNA, 	kNA, 	kNA, 	kNA, 	69,		56,		48,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Nickel ls 
+	{ Ni,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	60,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Nickel hs 
+	{ Cu,	{ kNA, 	kNA, 	kNA, 	77,		73,		54, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Copper 
+	{ Zn,	{ kNA, 	kNA, 	kNA, 	kNA, 	74,		kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Zinc 
+	{ Ga,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	62,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Gallium 
+	{ Ge,	{ kNA, 	kNA, 	kNA, 	kNA, 	73,		kNA, 	53,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Germanium 
+	{ As,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	58,		kNA, 	46,		kNA, 	kNA, 	kNA } }, 	// Arsenic 
+	{ Se,	{ kNA, 	198,	kNA, 	kNA, 	kNA, 	kNA, 	50,		kNA, 	42,		kNA, 	kNA } }, 	// Selenium 
+	{ Br,	{ kNA, 	kNA, 	196,	kNA, 	kNA, 	59,		kNA, 	31,		kNA, 	39,		kNA } }, 	// Bromine 
+	{ Rb,	{ kNA, 	kNA, 	kNA, 	152,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Rubidium 
+	{ Sr,	{ kNA, 	kNA, 	kNA, 	kNA, 	118,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Strontium 
+	{ Y,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	90,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Yttrium 
+	{ Zr,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	72,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Zirconium 
+	{ Nb,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	72,		68,		64,		kNA, 	kNA, 	kNA } }, 	// Niobium 
+	{ Mo,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	69,		65,		61,		59,		kNA, 	kNA } }, 	// Molybdenum 
+	{ Tc,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	64.5,	60,		kNA, 	56,		kNA } }, 	// Technetium 
+	{ Ru,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	68,		62,		56.5,	kNA, 	38,		36 } },		// Ruthenium 
+	{ Rh,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	66.5,	60,		55,		kNA, 	kNA, 	kNA } }, 	// Rhodium 
+	{ Pd,	{ kNA, 	kNA, 	kNA, 	59,		86,		76,		61.5,	kNA, 	kNA, 	kNA, 	kNA } }, 	// Palladium 
+	{ Ag,	{ kNA, 	kNA, 	kNA, 	115,	94,		75,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Silver 
+	{ Cd,	{ kNA, 	kNA, 	kNA, 	kNA, 	95,		kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Cadmium 
+	{ In,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	80,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Indium 
+	{ Sn,	{ kNA, 	kNA, 	kNA, 	kNA, 	118,	kNA, 	69,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Tin 
+	{ Sb,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	76,		kNA, 	60,		kNA, 	kNA, 	kNA } }, 	// Antimony 
+	{ Te,	{ kNA, 	221,	kNA, 	kNA, 	kNA, 	kNA, 	97,		kNA, 	56,		kNA, 	kNA } }, 	// Tellurium 
+	{ I,	{ kNA, 	kNA, 	220,	kNA, 	kNA, 	kNA, 	kNA, 	95,		kNA, 	53,		kNA } }, 	// Iodine 
+	{ Xe,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	48 } },		// Xenon 
+	{ Cs,	{ kNA, 	kNA, 	kNA, 	167,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Caesium 
+	{ Ba,	{ kNA, 	kNA, 	kNA, 	kNA, 	135,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Barium 
+	{ La,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	103.2,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Lanthanum 
+	{ Ce,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	101,	87,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Cerium 
+	{ Pr,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	99,		85,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Praseodymium 
+	{ Nd,	{ kNA, 	kNA, 	kNA, 	kNA, 	129,	98.3,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Neodymium 
+	{ Pm,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	97,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Promethium 
+	{ Sm,	{ kNA, 	kNA, 	kNA, 	kNA, 	122,	95.8,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Samarium 
+	{ Eu,	{ kNA, 	kNA, 	kNA, 	kNA, 	117,	94.7,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Europium 
+	{ Gd,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	93.5,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Gadolinium 
+	{ Tb,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	92.3,	76,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Terbium 
+	{ Dy,	{ kNA, 	kNA, 	kNA, 	kNA, 	107,	91.2,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Dysprosium 
+	{ Ho,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	90.1,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Holmium 
+	{ Er,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	89,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Erbium 
+	{ Tm,	{ kNA, 	kNA, 	kNA, 	kNA, 	103,	88,		kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Thulium 
+	{ Yb,	{ kNA, 	kNA, 	kNA, 	kNA, 	102,	86.8,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Ytterbium 
+	{ Lu,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	86.1,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Lutetium 
+	{ Hf,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	71,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Hafnium 
+	{ Ta,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	72,		68,		64,		kNA, 	kNA, 	kNA } }, 	// Tantalum 
+	{ W,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	66,		62,		60,		kNA, 	kNA } }, 	// Tungsten 
+	{ Re,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	63,		58,		55,		53,		kNA } }, 	// Rhenium 
+	{ Os,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	63,		57.5,	54.5,	52.5,	39 } },		// Osmium 
+	{ Ir,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	68,		62.5,	57,		kNA, 	kNA, 	kNA } }, 	// Iridium 
+	{ Pt,	{ kNA, 	kNA, 	kNA, 	kNA, 	80,		kNA, 	62.5,	57,		kNA, 	kNA, 	kNA } }, 	// Platinum 
+	{ Au,	{ kNA, 	kNA, 	kNA, 	137,	kNA, 	85,		kNA, 	57,		kNA, 	kNA, 	kNA } }, 	// Gold 
+	{ Hg,	{ kNA, 	kNA, 	kNA, 	119,	102,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Mercury 
+	{ Tl,	{ kNA, 	kNA, 	kNA, 	150,	kNA, 	88.5,	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Thallium 
+	{ Pb,	{ kNA, 	kNA, 	kNA, 	kNA, 	119,	kNA, 	77.5,	kNA, 	kNA, 	kNA, 	kNA } }, 	// Lead 
+	{ Bi,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	103,	kNA, 	76,		kNA, 	kNA, 	kNA } }, 	// Bismuth 
+	{ Po,	{ kNA, 	223,	kNA, 	kNA, 	kNA, 	kNA, 	94,		kNA, 	67,		kNA, 	kNA } }, 	// Polonium 
+	{ At,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	62,		kNA } }, 	// Astatine 
+	{ Fr,	{ kNA, 	kNA, 	kNA, 	180,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Francium 
+	{ Ra,	{ kNA, 	kNA, 	kNA, 	kNA, 	148,	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } }, 	// Radium 
+	{ Ac,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	106.5, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA } },		// Actinium 
+	{ Th,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	94,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Thorium 
+	{ Pa,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	104,	90,		78,		kNA, 	kNA, 	kNA } }, 	// Protactinium 
+	{ U,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	102.5,	89,		76,		73,		kNA, 	kNA } }, 	// Uranium 
+	{ Np,	{ kNA, 	kNA, 	kNA, 	kNA, 	110,	101,	87,		75,		72,		71,		kNA } }, 	// Neptunium 
+	{ Pu,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	100,	86,		74,		71,		kNA, 	kNA } }, 	// Plutonium 
+	{ Am,	{ kNA, 	kNA, 	kNA, 	kNA, 	126,	97.5,	85,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Americium 
+	{ Cm,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	97,		85,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Curium 
+	{ Bk,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	96,		83,		kNA, 	kNA, 	kNA, 	kNA } }, 	// Berkelium 
+	{ Cf,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	95,		82.1,	kNA, 	kNA, 	kNA, 	kNA } }, 	// Californium 
+	{ Es,	{ kNA, 	kNA, 	kNA, 	kNA, 	kNA, 	83.5,	kNA, 	kNA,	kNA,	kNA, 	kNA } }, 	// Einsteinium 	
+};
+
 
 // --------------------------------------------------------------------
 // The coefficients from Waasmaier & Kirfel (1995), Acta Cryst. A51, 416-431.
@@ -886,5 +1096,45 @@ auto AtomTypeTraits::elsf() const -> const SFData&
 
 	throw std::runtime_error("No scattering factor found for " + name());
 }
-	
+
+// ionic radii
+
+float AtomTypeTraits::crystal_ionic_radius(int charge) const
+{
+	float result = data::kNA;
+
+	if (charge >= -3 and charge <= 8)
+	{
+		for (auto &r : data::kCrystalIonicRadii)
+		{
+			if (r.type != mInfo->type)
+				continue;
+			
+			result = r.radii[charge < 0 ? charge + 3 : charge + 2] / 100.0f;
+			break;
+		}
+	}
+
+	return result;
+}
+
+float AtomTypeTraits::effective_ionic_radius(int charge) const
+{
+	float result = data::kNA;
+
+	if (charge >= -3 and charge <= 8)
+	{
+		for (auto &r : data::kEffectiveIonicRadii)
+		{
+			if (r.type != mInfo->type)
+				continue;
+			
+			result = r.radii[charge < 0 ? charge + 3 : charge + 2] / 100.0f;
+			break;
+		}
+	}
+
+	return result;
+}
+
 }

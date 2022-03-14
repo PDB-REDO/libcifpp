@@ -444,6 +444,14 @@ const Compound &Residue::compound() const
 	return *result;
 }
 
+AtomView &Residue::atoms()
+{
+	if (mStructure == nullptr)
+		throw std::runtime_error("Invalid Residue object");
+
+	return mAtoms;
+}
+
 const AtomView &Residue::atoms() const
 {
 	if (mStructure == nullptr)
@@ -1990,6 +1998,21 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 		res.addAtom(newAtom);
 	}
 
+	auto &pdbx_nonpoly_scheme = db["pdbx_nonpoly_scheme"];
+	int ndb_nr = pdbx_nonpoly_scheme.find("asym_id"_key == asym_id and "entity_id"_key == entity_id).size() + 1;
+	pdbx_nonpoly_scheme.emplace({
+		{ "asym_id", asym_id },
+		{ "entity_id", entity_id },
+		{ "mon_id", comp_id },
+		{ "ndb_seq_num", ndb_nr },
+		{ "pdb_seq_num", res.authSeqID()  },
+		{ "auth_seq_num", res.authSeqID() },
+		{ "pdb_mon_id", comp_id },
+		{ "auth_mon_id", comp_id },
+		{ "pdb_strand_id", asym_id },
+		{ "pdb_ins_code", "." },
+	});
+
 	return asym_id;
 }
 
@@ -2040,6 +2063,21 @@ std::string Structure::createNonpoly(const std::string &entity_id, std::vector<s
 		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
 		res.addAtom(newAtom);
 	}
+
+	auto &pdbx_nonpoly_scheme = db["pdbx_nonpoly_scheme"];
+	int ndb_nr = pdbx_nonpoly_scheme.find("asym_id"_key == asym_id and "entity_id"_key == entity_id).size() + 1;
+	pdbx_nonpoly_scheme.emplace({
+		{ "asym_id", asym_id },
+		{ "entity_id", entity_id },
+		{ "mon_id", comp_id },
+		{ "ndb_seq_num", ndb_nr },
+		{ "pdb_seq_num", res.authSeqID()  },
+		{ "auth_seq_num", res.authSeqID() },
+		{ "pdb_mon_id", comp_id },
+		{ "auth_mon_id", comp_id },
+		{ "pdb_strand_id", asym_id },
+		{ "pdb_ins_code", "." },
+	});
 
 	return asym_id;
 }
