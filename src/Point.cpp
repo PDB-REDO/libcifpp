@@ -295,6 +295,19 @@ Quaternion Normalize(Quaternion q)
 
 // --------------------------------------------------------------------
 
+Quaternion ConstructFromAngleAxis(float angle, Point axis)
+{
+	auto q = std::cos((angle * mmcif::kPI / 180) / 2);
+	auto s = std::sqrt(1 - q * q);
+
+	axis.normalize();
+
+	return Normalize(Quaternion{q,
+		static_cast<float>(s * axis.mX),
+		static_cast<float>(s * axis.mY),
+		static_cast<float>(s * axis.mZ)});
+}
+
 std::tuple<double,Point> QuaternionToAngleAxis(Quaternion q)
 {
 	if (q.R_component_1() > 1)

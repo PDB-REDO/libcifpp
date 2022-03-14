@@ -1745,6 +1745,47 @@ BOOST_AUTO_TEST_CASE(t1)
 	// std::cout << "rmsd: " << RMSd(p1, p2) << std::endl;
 }
 
+BOOST_AUTO_TEST_CASE(t2)
+{
+	Point p[] = {
+		{ 1, 1, 0 },
+		{ 2, 1, 0 },
+		{ 1, 2, 0 }
+	};
+
+	Point xp = mmcif::CrossProduct(p[1] - p[0], p[2] - p[0]);
+
+	Quaternion q = ConstructFromAngleAxis(45, xp); //mmcif::Normalize(Quaternion{45 * mmcif::kPI / 180, xp.mX, xp.mY, xp.mZ});
+
+	auto &&[angle, axis] = mmcif::QuaternionToAngleAxis(q);
+
+	BOOST_TEST(angle == 45, tt::tolerance(0.01));
+}
+
+BOOST_AUTO_TEST_CASE(t3)
+{
+	Point p[] = {
+		{ 1, 1, 0 },
+		{ 2, 1, 0 },
+		{ 1, 2, 0 }
+	};
+
+	Point xp = mmcif::CrossProduct(p[1] - p[0], p[2] - p[0]);
+
+	Quaternion q = ConstructFromAngleAxis(45, xp); //mmcif::Normalize(Quaternion{45 * mmcif::kPI / 180, xp.mX, xp.mY, xp.mZ});
+
+	Point v = p[1];
+	v -= p[0];
+	v.rotate(q);
+	v += p[0];
+
+	std::cout << v << std::endl;
+
+	double a = mmcif::Angle(v, p[0], p[1]);
+
+	BOOST_TEST(a == 45, tt::tolerance(0.01));
+}
+
 BOOST_AUTO_TEST_CASE(parser_test_1)
 {
 	auto data1 = R"(
