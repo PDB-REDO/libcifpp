@@ -551,6 +551,8 @@ class Structure
 	~Structure();
 
 	const AtomView &atoms() const { return mAtoms; }
+	AtomView &atoms() { return mAtoms; }
+
 	AtomView waters() const;
 
 	const std::list<Polymer> &polymers() const { return mPolymers; }
@@ -579,6 +581,9 @@ class Structure
 
 	/// \brief Get a the single residue for an asym with id \a asymID
 	const Residue &getResidue(const std::string &asymID) const;
+
+	/// \brief Get a the single residue for an asym with id \a asymID and seq id \a seqID
+	const Residue &getResidue(const std::string &asymID, int seqID) const;
 
 	/// \brief Get a the single residue for an asym with id \a asymID
 	Residue &getResidue(const std::string &asymID);

@@ -302,7 +302,8 @@ Quaternion ConstructFromAngleAxis(float angle, Point axis)
 
 	axis.normalize();
 
-	return Normalize(Quaternion{q,
+	return Normalize(Quaternion{
+		static_cast<float>(q),
 		static_cast<float>(s * axis.mX),
 		static_cast<float>(s * axis.mY),
 		static_cast<float>(s * axis.mZ)});

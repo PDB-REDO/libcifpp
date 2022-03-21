@@ -1429,10 +1429,21 @@ Atom Structure::getAtomByID(std::string id) const
 	//	auto i = find_if(mAtoms.begin(), mAtoms.end(),
 	//		[&id](auto& a) { return a.id() == id; });
 
-	if (i == mAtomIndex.end() or mAtoms[*i].id() != id)
-		throw std::out_of_range("Could not find atom with id " + id);
+	Atom result;
 
-	return mAtoms[*i];
+	if (i == mAtomIndex.end() or mAtoms[*i].id() != id)
+	{
+		auto j = std::find_if(mAtoms.begin(), mAtoms.end(), [id](const Atom &a) { return a.id() == id; });
+
+		if (j == mAtoms.end())
+			throw std::out_of_range("Could not find atom with id " + id);
+		
+		result = *j;
+	}
+	else
+		result = mAtoms[*i];
+
+	return result;
 }
 
 Atom Structure::getAtomByLabel(const std::string &atomID, const std::string &asymID, const std::string &compID, int seqID, const std::string &altID)
@@ -1556,6 +1567,42 @@ const Residue &Structure::getResidue(const std::string &asymID) const
 	}
 
 	throw std::out_of_range("Could not find residue " + asymID);
+}
+
+const Residue &Structure::getResidue(const std::string &asymID, int seqID) const
+{
+	if (seqID == 0)
+	{
+		for (auto &res : mNonPolymers)
+		{
+			if (res.asymID() != asymID)
+				continue;
+
+			return res;
+		}
+	}
+
+	for (auto &poly : mPolymers)
+	{
+		if (poly.asymID() != asymID)
+			continue;
+
+		for (auto &res : poly)
+		{
+			if (res.seqID() == seqID)
+				return res;
+		}
+	}
+
+	for (auto &res : mBranchResidues)
+	{
+		if (res.asymID() != asymID or res.seqID() != seqID)
+			continue;
+
+		return res;
+	}
+
+	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
 }
 
 Residue &Structure::getResidue(const std::string &asymID)
