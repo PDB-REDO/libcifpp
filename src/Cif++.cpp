@@ -613,20 +613,12 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 		int d = nA.compare(nB);
 		if (d > 0)
 		{
-			auto cat = dbB.get(*catB_i);
-
-			if (cat == nullptr)
-				missingA.push_back(*catB_i);
-
+			missingA.push_back(*catB_i);
 			++catB_i;
 		}
 		else if (d < 0)
 		{
-			auto cat = dbA.get(*catA_i);
-
-			if (cat == nullptr)
-				missingB.push_back(*catA_i);
-
+			missingB.push_back(*catA_i);
 			++catA_i;
 		}
 		else

@@ -118,6 +118,17 @@ HETATM C  CHD . ? -4.342  36.262 -3.536  1.00 8.00  ?
 
 	auto expected = R"(
 data_TEST
+# 
+_pdbx_nonpoly_scheme.asym_id         A 
+_pdbx_nonpoly_scheme.ndb_seq_num     1 
+_pdbx_nonpoly_scheme.entity_id       1 
+_pdbx_nonpoly_scheme.mon_id          HEM 
+_pdbx_nonpoly_scheme.pdb_seq_num     0 
+_pdbx_nonpoly_scheme.auth_seq_num    0 
+_pdbx_nonpoly_scheme.pdb_mon_id      HEM 
+_pdbx_nonpoly_scheme.auth_mon_id     HEM 
+_pdbx_nonpoly_scheme.pdb_strand_id   A 
+_pdbx_nonpoly_scheme.pdb_ins_code    . 
 #
 loop_
 _atom_site.id
@@ -141,10 +152,10 @@ _atom_site.auth_seq_id
 _atom_site.auth_comp_id
 _atom_site.auth_atom_id
 _atom_site.pdbx_PDB_model_num
-1 A ? A CHA HEM 1 . C HETATM ? -5.248 39.769 -0.250 1.00 7.67 ? ? HEM CHA 1
-2 A ? A CHB HEM 1 . C HETATM ? -3.774 36.790 3.280  1.00 7.05 ? ? HEM CHB 1
-3 A ? A CHC HEM 1 . C HETATM ? -2.879 33.328 0.013  1.00 7.69 ? ? HEM CHC 1
-4 A ? A CHD HEM 1 . C HETATM ? -4.342 36.262 -3.536 1.00 8.00 ? ? HEM CHD 1
+1 A ? A CHA HEM 1 . C HETATM ? -5.248 39.769 -0.250 1.00 7.67 ? 1 HEM CHA 1
+2 A ? A CHB HEM 1 . C HETATM ? -3.774 36.790 3.280  1.00 7.05 ? 1 HEM CHB 1
+3 A ? A CHC HEM 1 . C HETATM ? -2.879 33.328 0.013  1.00 7.69 ? 1 HEM CHC 1
+4 A ? A CHD HEM 1 . C HETATM ? -4.342 36.262 -3.536 1.00 8.00 ? 1 HEM CHD 1
 #
 _chem_comp.id               HEM
 _chem_comp.type             NON-POLYMER

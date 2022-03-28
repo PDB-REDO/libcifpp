@@ -76,6 +76,8 @@ class Atom
 
 		bool getAnisoU(float anisou[6]) const;
 
+		int charge() const;
+
 		void moveTo(const Point &p);
 
 		const Compound &comp() const;
@@ -488,6 +490,48 @@ class Polymer : public std::vector<Monomer>
 };
 
 // --------------------------------------------------------------------
+// Sugar and Branch, to describe glycosylation sites
+
+class Branch;
+
+class Sugar : public Residue
+{
+  public:
+	Sugar(const Branch &branch, const std::string &compoundID,
+		const std::string &asymID, int authSeqID);
+
+	int num() const { return std::stoi(mAuthSeqID); }
+	std::string name() const;
+
+	// Sugar &
+
+  private:
+	const Branch &mBranch;
+};
+
+class Branch : public std::vector<Sugar>
+{
+  public:
+	Branch(Structure &structure, const std::string &asymID);
+
+	std::string name() const;
+	float weight() const;
+	std::string asymID() const	{ return mAsymID; }
+
+	Structure &structure() { return *mStructure; }
+	const Structure &structure() const { return *mStructure; }
+
+	Sugar &getSugarByNum(int nr);
+	const Sugar &getSugarByNum(int nr) const;
+
+  private:
+	friend Sugar;
+
+	Structure *mStructure;
+	std::string mAsymID;
+};
+
+// --------------------------------------------------------------------
 // file is a reference to the data stored in e.g. the cif file.
 // This object is not copyable.
 
@@ -513,9 +557,9 @@ class File : public cif::File
 	void save(const std::filesystem::path &p) override;
 
 	void load(std::istream &is) override;
-	
-	using cif::File::save;
+
 	using cif::File::load;
+	using cif::File::save;
 
 	cif::Datablock &data() { return front(); }
 };
@@ -558,9 +602,17 @@ class Structure
 	const std::list<Polymer> &polymers() const { return mPolymers; }
 	std::list<Polymer> &polymers() { return mPolymers; }
 
-	const std::vector<Residue> &nonPolymers() const { return mNonPolymers; }
-	const std::vector<Residue> &branchResidues() const { return mBranchResidues; }
+	Polymer &getPolymerByAsymID(const std::string &asymID);
+	const Polymer &getPolymerByAsymID(const std::string &asymID) const;
 
+	const std::list<Branch> &branches() const { return mBranches; }
+	std::list<Branch> &branches() { return mBranches; }
+	
+	Branch &getBranchByAsymID(const std::string &asymID);
+	const Branch &getBranchByAsymID(const std::string &asymID) const;
+
+	const std::vector<Residue> &nonPolymers() const { return mNonPolymers; }
+	
 	Atom getAtomByID(std::string id) const;
 	// Atom getAtomByLocation(Point pt, float maxDistance) const;
 
@@ -642,6 +694,9 @@ class Structure
 	/// \return				The newly create asym ID
 	std::string createNonpoly(const std::string &entity_id, std::vector<std::vector<cif::Item>> &atom_info);
 
+	/// \brief Create a new (sugar) branch with one first NAG containing atoms \a nag_atoms
+	Branch& createBranch(std::vector<std::vector<cif::Item>> &nag_atoms);
+
 	/// \brief Remove a residue, can be monomer or nonpoly
 	///
 	/// \param asym_id     The asym ID
@@ -665,7 +720,6 @@ class Structure
 	void translateRotateAndTranslate(Point t1, Quaternion q, Point t2);
 
 	const std::vector<Residue> &getNonPolymers() const { return mNonPolymers; }
-	const std::vector<Residue> &getBranchResidues() const { return mBranchResidues; }
 
 	void cleanupEmptyCategories();
 
@@ -688,6 +742,8 @@ class Structure
 
 	std::string insertCompound(const std::string &compoundID, bool isEntity);
 
+	std::string createEntityForBranch(Branch &branch);
+
 	void loadData();
 	void updateAtomIndex();
 
@@ -698,7 +754,8 @@ class Structure
 	AtomView mAtoms;
 	std::vector<size_t> mAtomIndex;
 	std::list<Polymer> mPolymers;
-	std::vector<Residue> mNonPolymers, mBranchResidues;
+	std::list<Branch> mBranches;
+	std::vector<Residue> mNonPolymers;
 };
 
 } // namespace mmcif
