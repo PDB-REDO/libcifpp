@@ -291,7 +291,8 @@ SacParser::CIFToken SacParser::getNextToken()
 				else if (ch == quoteChar)
 					state = eStateQuotedStringQuote;
 				else if (not isAnyPrint(ch))
-					error("invalid character in quoted string");
+					std::cerr << "invalid character in quoted string '" << std::string({static_cast<char>(ch)}) << "' (" << ch << ") line: " << mLineNr << std::endl;
+					// error("invalid character in quoted string");
 				break;
 
 			case eStateQuotedStringQuote:
