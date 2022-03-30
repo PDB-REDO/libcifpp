@@ -140,11 +140,18 @@ int Atom::AtomImpl::charge() const
 {
 	auto formalCharge = mRow["pdbx_formal_charge"].as<std::optional<int>>();
 
-	if (not formalCharge.has_value() and AtomTypeTraits(mType).isMetal())
+	if (not formalCharge.has_value())
 	{
 		auto &compound = comp();
-		
-		formalCharge = compound.formalCharge();
+
+		for (auto cAtom : compound.atoms())
+		{
+			if (cAtom.id != mAtomID)
+				continue;
+			
+			formalCharge = cAtom.charge;
+			break;
+		}
 	}
 
 	return formalCharge.value_or(0);
