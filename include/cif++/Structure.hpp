@@ -296,7 +296,7 @@ class Residue
   public:
 	// constructor
 	Residue(const Structure &structure, const std::string &compoundID,
-		const std::string &asymID, int seqID = 0, const std::string &authSeqID = {})
+		const std::string &asymID, int seqID, const std::string &authSeqID)
 		: mStructure(&structure)
 		, mCompoundID(compoundID)
 		, mAsymID(asymID)
@@ -383,9 +383,6 @@ class Residue
 	const Structure *mStructure = nullptr;
 	std::string mCompoundID, mAsymID;
 	int mSeqID = 0;
-
-	// Watch out, this is used only to label waters... The rest of the code relies on
-	// MapLabelToAuth to get this info. Perhaps we should rename this member field.
 	std::string mAuthSeqID;
 	AtomView mAtoms;
 };
@@ -625,26 +622,41 @@ class Structure
 	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
 	Atom getAtomByPositionAndType(Point p, std::string_view type, std::string_view res_type) const;
 
-	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
-	const Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID = 0) const;
+	/// \brief Get a residue for an asym with id \a asymID seq id \a seqID and authSeqID \a authSeqID
+	Residue &getResidue(const std::string &asymID, int seqID, const std::string &authSeqID);
 
-	/// \brief Get a residue, if \a seqID is zero, the non-polymers are searched
-	Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID = 0);
+	/// \brief Get a the single residue for an asym with id \a asymID seq id \a seqID and authSeqID \a authSeqID
+	const Residue &getResidue(const std::string &asymID, int seqID, const std::string &authSeqID) const
+	{
+		return const_cast<Structure*>(this)->getResidue(asymID, seqID, authSeqID);
+	}
 
-	/// \brief Get a the single residue for an asym with id \a asymID
-	const Residue &getResidue(const std::string &asymID) const;
+	/// \brief Get a residue for an asym with id \a asymID, compound id \a compID, seq id \a seqID and authSeqID \a authSeqID
+	Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID);
 
-	/// \brief Get a the single residue for an asym with id \a asymID and seq id \a seqID
-	const Residue &getResidue(const std::string &asymID, int seqID) const;
+	/// \brief Get a residue for an asym with id \a asymID, compound id \a compID, seq id \a seqID and authSeqID \a authSeqID
+	const Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID) const
+	{
+		return const_cast<Structure*>(this)->getResidue(asymID, compID, seqID, authSeqID);
+	}
 
 	/// \brief Get a the single residue for an asym with id \a asymID
 	Residue &getResidue(const std::string &asymID);
+
+	/// \brief Get a the single residue for an asym with id \a asymID
+	const Residue &getResidue(const std::string &asymID) const
+	{
+		return const_cast<Structure*>(this)->getResidue(asymID);
+	}
 
 	/// \brief Get a the residue for atom \a atom
 	Residue &getResidue(const mmcif::Atom &atom);
 
 	/// \brief Get a the residue for atom \a atom
-	const Residue &getResidue(const mmcif::Atom &atom) const;
+	const Residue &getResidue(const mmcif::Atom &atom) const
+	{
+		return const_cast<Structure*>(this)->getResidue(atom);
+	}
 
 	// map between auth and label locations
 
@@ -697,11 +709,14 @@ class Structure
 	/// \brief Create a new (sugar) branch with one first NAG containing atoms \a nag_atoms
 	Branch& createBranch(std::vector<std::vector<cif::Item>> &nag_atoms);
 
+	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms \a atoms
+	Branch& extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atoms);
+
 	/// \brief Remove a residue, can be monomer or nonpoly
 	///
 	/// \param asym_id     The asym ID
 	/// \param seq_id      The sequence ID
-	void removeResidue(const std::string &sym_id, int seq_id);
+	void removeResidue(const std::string &asym_id, int seq_id);
 
 	/// \brief To sort the atoms in order of model > asym-id > res-id > atom-id
 	/// Will asssign new atom_id's to all atoms. Be carefull

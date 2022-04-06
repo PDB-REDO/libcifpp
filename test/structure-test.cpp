@@ -123,8 +123,8 @@ _pdbx_nonpoly_scheme.asym_id         A
 _pdbx_nonpoly_scheme.ndb_seq_num     1 
 _pdbx_nonpoly_scheme.entity_id       1 
 _pdbx_nonpoly_scheme.mon_id          HEM 
-_pdbx_nonpoly_scheme.pdb_seq_num     0 
-_pdbx_nonpoly_scheme.auth_seq_num    0 
+_pdbx_nonpoly_scheme.pdb_seq_num     1 
+_pdbx_nonpoly_scheme.auth_seq_num    1 
 _pdbx_nonpoly_scheme.pdb_mon_id      HEM 
 _pdbx_nonpoly_scheme.auth_mon_id     HEM 
 _pdbx_nonpoly_scheme.pdb_strand_id   A 

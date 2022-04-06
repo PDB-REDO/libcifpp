@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 		mmcif::File f(testdir / ".."/"examples"/"1cbs.cif.gz");
 		mmcif::Structure structure(f);
 
-		auto &res = structure.getResidue("B", "REA");
+		auto &res = structure.getResidue("B");
 		structure.changeResidue(res, "RXA", {});
 
 		structure.cleanupEmptyCategories();

@@ -1634,7 +1634,7 @@ PRO OXT HXT SING N N 17
 
 	for (const auto &[compound, seqnr] : std::initializer_list<std::tuple<std::string, int>>{{"PRO", 1}, {"ASN", 2}, {"PHE", 3}})
 	{
-		auto &res = structure.getResidue("A", compound, seqnr);
+		auto &res = structure.getResidue("A", compound, seqnr, "");
 		auto atoms = res.atoms();
 
 		auto dc = components.get(compound);

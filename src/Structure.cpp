@@ -28,12 +28,18 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <numeric>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
+
+#if __cpp_lib_format
+#include <format>
+#else
+#include <boost/format.hpp>
+#endif
 
 #include "cif++/Cif2PDB.hpp"
 #include "cif++/CifParser.hpp"
@@ -144,14 +150,18 @@ int Atom::AtomImpl::charge() const
 	{
 		auto &compound = comp();
 
-		for (auto cAtom : compound.atoms())
-		{
-			if (cAtom.id != mAtomID)
-				continue;
-			
-			formalCharge = cAtom.charge;
-			break;
-		}
+		if (compound.atoms().size() == 1)
+			formalCharge = compound.atoms().front().charge;
+		// {
+		// 	for (auto cAtom : compound.atoms())
+		// 	{
+		// 		if (cAtom.id != mAtomID)
+		// 			continue;
+				
+		// 		formalCharge = cAtom.charge;
+		// 		break;
+		// 	}
+		// }
 	}
 
 	return formalCharge.value_or(0);
@@ -165,9 +175,15 @@ void Atom::AtomImpl::moveTo(const Point &p)
 
 	if (not mClone)
 	{
-		mRow.assign("Cartn_x", std::to_string(p.getX()), true, false);
-		mRow.assign("Cartn_y", std::to_string(p.getY()), true, false);
-		mRow.assign("Cartn_z", std::to_string(p.getZ()), true, false);
+#if __cpp_lib_format
+		mRow.assign("Cartn_x", std::format("{:.3f}", p.getX()), true, false);
+		mRow.assign("Cartn_y", std::format("{:.3f}", p.getY()), true, false);
+		mRow.assign("Cartn_z", std::format("{:.3f}", p.getZ()), true, false);
+#else
+		mRow.assign("Cartn_x", (boost::format("%.3f") % p.getX()).str(), true, false);
+		mRow.assign("Cartn_y", (boost::format("%.3f") % p.getY()).str(), true, false);
+		mRow.assign("Cartn_z", (boost::format("%.3f") % p.getZ()).str(), true, false);
+#endif
 	}
 
 	mLocation = p;
@@ -200,7 +216,7 @@ const std::string Atom::AtomImpl::get_property(const std::string_view name) cons
 			return ref.as<std::string>();
 	}
 
-	mCachedRefs.emplace_back(name, mRow[name]);
+	mCachedRefs.emplace_back(name, const_cast<cif::Row&>(mRow)[name]);
 	return std::get<1>(mCachedRefs.back()).as<std::string>();
 }
 
@@ -440,21 +456,7 @@ std::string Residue::authAsymID() const
 
 std::string Residue::authSeqID() const
 {
-	assert(mStructure);
-
-	std::string result;
-
-	try
-	{
-		int seqID;
-		tie(std::ignore, seqID, std::ignore) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
-		result = std::to_string(seqID);
-	}
-	catch (...)
-	{
-	}
-
-	return result;
+	return mAuthSeqID;
 }
 
 const Compound &Residue::compound() const
@@ -1453,10 +1455,7 @@ void Structure::loadData()
 		cif::tie(asymID, monID, pdbSeqNum) =
 			r.get("asym_id", "mon_id", "pdb_seq_num");
 
-		if (monID == "HOH")
-			mNonPolymers.emplace_back(*this, monID, asymID, 0, pdbSeqNum);
-		else if (mNonPolymers.empty() or mNonPolymers.back().asymID() != asymID)
-			mNonPolymers.emplace_back(*this, monID, asymID);
+		mNonPolymers.emplace_back(*this, monID, asymID, 0, pdbSeqNum);
 	}
 
 	// place atoms in residues
@@ -1659,52 +1658,7 @@ Atom Structure::getAtomByPositionAndType(Point p, std::string_view type, std::st
 	return {};
 }
 
-const Residue &Structure::getResidue(const std::string &asymID, const std::string &compID, int seqID) const
-{
-	for (auto &poly : mPolymers)
-	{
-		if (poly.asymID() != asymID)
-			continue;
-
-		for (auto &res : poly)
-		{
-			if (res.seqID() == seqID and res.compoundID() == compID)
-				return res;
-		}
-	}
-
-	for (auto &branch : mBranches)
-	{
-		if (branch.asymID() != asymID)
-			continue;
-
-		for (auto &sugar : branch)
-		{
-			if (sugar.asymID() == asymID and sugar.compoundID() == compID and sugar.num() == seqID)
-				return sugar;
-		}
-	}
-
-	if (seqID == 0)
-	{
-		for (auto &res : mNonPolymers)
-		{
-			if (res.asymID() != asymID or res.compoundID() != compID)
-				continue;
-
-			return res;
-		}
-	}
-
-	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
-}
-
-Residue &Structure::getResidue(const std::string &asymID, const std::string &compID, int seqID)
-{
-	return const_cast<Residue &>(const_cast<Structure const &>(*this).getResidue(asymID, compID, seqID));
-}
-
-const Residue &Structure::getResidue(const std::string &asymID) const
+Residue &Structure::getResidue(const std::string &asymID)
 {
 	for (auto &res : mNonPolymers)
 	{
@@ -1717,16 +1671,14 @@ const Residue &Structure::getResidue(const std::string &asymID) const
 	throw std::out_of_range("Could not find residue " + asymID);
 }
 
-const Residue &Structure::getResidue(const std::string &asymID, int seqID) const
+Residue &Structure::getResidue(const std::string &asymID, int seqID, const std::string &authSeqID)
 {
 	if (seqID == 0)
 	{
 		for (auto &res : mNonPolymers)
 		{
-			if (res.asymID() != asymID)
-				continue;
-
-			return res;
+			if (res.asymID() == asymID and res.authSeqID() == authSeqID)
+				return res;
 		}
 	}
 
@@ -1749,17 +1701,50 @@ const Residue &Structure::getResidue(const std::string &asymID, int seqID) const
 
 		for (auto &sugar : branch)
 		{
-			if (sugar.asymID() == asymID and sugar.num() == seqID)
+			if (sugar.asymID() == asymID and sugar.authSeqID() == authSeqID)
 				return sugar;
 		}
 	}
 
-	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
+	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID) + '-' + authSeqID);
 }
 
-Residue &Structure::getResidue(const std::string &asymID)
+Residue &Structure::getResidue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID)
 {
-	return const_cast<Residue &>(const_cast<Structure const &>(*this).getResidue(asymID));
+	if (seqID == 0)
+	{
+		for (auto &res : mNonPolymers)
+		{
+			if (res.asymID() == asymID and res.authSeqID() == authSeqID and res.compoundID() == compID)
+				return res;
+		}
+	}
+
+	for (auto &poly : mPolymers)
+	{
+		if (poly.asymID() != asymID)
+			continue;
+
+		for (auto &res : poly)
+		{
+			if (res.seqID() == seqID and res.compoundID() == compID)
+				return res;
+		}
+	}
+
+	for (auto &branch : mBranches)
+	{
+		if (branch.asymID() != asymID)
+			continue;
+
+		for (auto &sugar : branch)
+		{
+			if (sugar.asymID() == asymID and sugar.authSeqID() == authSeqID and sugar.compoundID() == compID)
+				return sugar;
+		}
+	}
+
+	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID) + '-' + authSeqID);
 }
 
 Residue &Structure::getResidue(const mmcif::Atom &atom)
@@ -1830,11 +1815,6 @@ Residue &Structure::getResidue(const mmcif::Atom &atom)
 	}
 
 	throw std::out_of_range("Could not find residue " + asymID);
-}
-
-const Residue &Structure::getResidue(const mmcif::Atom &atom) const
-{
-	return const_cast<Structure*>(this)->getResidue(atom.labelAsymID(), atom.labelCompID(), atom.labelSeqID());
 }
 
 std::tuple<char, int, char> Structure::MapLabelToAuth(
@@ -2249,7 +2229,7 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 
 	auto &atom_site = db["atom_site"];
 
-	auto &res = mNonPolymers.emplace_back(*this, comp_id, asym_id);
+	auto &res = mNonPolymers.emplace_back(*this, comp_id, asym_id, 0, "1");
 
 	for (auto &atom : atoms)
 	{
@@ -2320,7 +2300,7 @@ std::string Structure::createNonpoly(const std::string &entity_id, std::vector<s
 
 	auto &atom_site = db["atom_site"];
 
-	auto &res = mNonPolymers.emplace_back(*this, comp_id, asym_id);
+	auto &res = mNonPolymers.emplace_back(*this, comp_id, asym_id, 0, "1");
 
 	auto appendUnlessSet = [](std::vector<cif::Item> &ai, cif::Item &&i)
 	{
@@ -2414,7 +2394,7 @@ Branch& Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 		appendUnlessSet(atom, { "id", atom_id} );
 		appendUnlessSet(atom, { "label_comp_id", "NAG"} );
 		appendUnlessSet(atom, { "label_asym_id", asym_id} );
-		appendUnlessSet(atom, { "label_seq_id", ""} );
+		appendUnlessSet(atom, { "label_seq_id", "."} );
 		appendUnlessSet(atom, { "label_entity_id", entity_id} );
 		appendUnlessSet(atom, { "auth_comp_id", "NAG"} );
 		appendUnlessSet(atom, { "auth_asym_id", asym_id} );
@@ -2437,40 +2417,115 @@ Branch& Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 		{ "pdb_asym_id", asym_id },
 		{ "pdb_seq_num", 1 },
 		{ "pdb_mon_id", "NAG" },
+
+		// TODO: need fix, collect from nag_atoms?
+		{ "auth_asym_id", asym_id },
+		{ "auth_mon_id", "NAG" },
+		{ "auth_seq_num", 1 },
+
+		{ "hetero", "n" }
 	});
 
 	return branch;
+}
 
-	// 		db["pdbx_entity_branch"].emplace({
-	// 			{ "entity_id", entityID },
-	// 			{ "type", "oligosaccharide" }
-	// 		});
+Branch& Structure::extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atoms)
+{
+	// sanity check
+	std::string compoundID;
 
-	// 		for (std::size_t i = 0; i < st.size(); ++i)
-	// 		{
-	// 			db["pdbx_entity_branch_list"].emplace({
-	// 				{ "entity_id", entityID },
-	// 				{ "comp_id", st[i].compID },
-	// 				{ "num", i + 1 },
-	// 				{ "hetero", "n" }
-	// 			});
-	// 		}
+	for (auto &atom : atoms)
+	{
+		for (auto info : atom)
+		{
+			if (info.name() != "label_comp_id")
+				continue;
+			
+			if (compoundID.empty())
+				compoundID = info.value();
+			else if (info.value() != compoundID)
+				throw std::logic_error("All atoms should be of the same type");
+		}
+	}
 
-	// 		for (std::size_t i = 0; i + 1 < st.size(); ++i)
-	// 		{
-	// 			auto linkID = db["pdbx_entity_branch_link"].getUniqueID("");
+	using namespace cif::literals;
 
-	// 			db["pdbx_entity_branch_link"].emplace({
-	// 				{ "link_id", linkID },
-	// 				{ "atom_id_1", "C1" }
+	cif::Datablock &db = datablock();
 
-	// 			});
-	// 		}
-	// 	}
+	auto bi = std::find_if(mBranches.begin(), mBranches.end(), [asym_id](Branch &b) { return b.asymID() == asym_id; });
+	if (bi == mBranches.end())
+		throw std::logic_error("Create a branch first!");
 
+	Branch &branch = *bi;
 
+	// auto &branch = mBranches.emplace_back(*this, asym_id);
+	int sugarNum = branch.size() + 1;
 
-	// return asym_id;
+	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum);
+
+	auto entity_id = createEntityForBranch(branch);
+
+	for (auto &sugar : branch)
+	{
+		for (auto atom : sugar.atoms())
+			atom.set_property("label_entity_id", entity_id);
+	}
+
+	auto &atom_site = db["atom_site"];
+
+	auto appendUnlessSet = [](std::vector<cif::Item> &ai, cif::Item &&i)
+	{
+		if (find_if(ai.begin(), ai.end(), [name = i.name()](cif::Item &ci) { return ci.name() == name; }) == ai.end())
+			ai.emplace_back(std::move(i));
+	};
+
+	for (auto &atom : atoms)
+	{
+		auto atom_id = atom_site.getUniqueID("");
+
+		appendUnlessSet(atom, { "group_PDB", "HETATM"} );
+		appendUnlessSet(atom, { "id", atom_id} );
+		appendUnlessSet(atom, { "label_comp_id", compoundID} );
+		appendUnlessSet(atom, { "label_asym_id", asym_id} );
+		appendUnlessSet(atom, { "label_seq_id", "."} );
+		appendUnlessSet(atom, { "label_entity_id", entity_id} );
+		appendUnlessSet(atom, { "auth_comp_id", compoundID} );
+		appendUnlessSet(atom, { "auth_asym_id", asym_id} );
+		appendUnlessSet(atom, { "auth_seq_id", sugarNum} );
+		appendUnlessSet(atom, { "pdbx_PDB_model_num", 1} );
+		appendUnlessSet(atom, { "label_alt_id", ""} );
+
+		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
+
+		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		sugar.addAtom(newAtom);
+	}
+
+	auto &pdbx_branch_scheme = db["pdbx_branch_scheme"];
+	pdbx_branch_scheme.erase("asym_id"_key == asym_id);
+
+	for (auto &sugar : branch)
+	{
+		pdbx_branch_scheme.emplace({
+			{ "asym_id", asym_id },
+			{ "entity_id", entity_id },
+			{ "num", sugar.num() },
+			{ "mon_id", sugar.compoundID() },
+
+			{ "pdb_asym_id", asym_id },
+			{ "pdb_seq_num", sugar.num() },
+			{ "pdb_mon_id", sugar.compoundID() },
+
+			// TODO: need fix, collect from nag_atoms?
+			{ "auth_asym_id", asym_id },
+			{ "auth_mon_id", sugar.compoundID() },
+			{ "auth_seq_num", sugar.num() },
+
+			{ "hetero", "n" }
+		});
+	}
+
+	return branch;
 }
 
 std::string Structure::createEntityForBranch(Branch &branch)
@@ -2498,6 +2553,19 @@ std::string Structure::createEntityForBranch(Branch &branch)
 			{ "src_method", "man" },
 			{ "pdbx_description", entityName },
 			{ "formula_weight", branch.weight() }
+		});
+	}
+
+	auto &pdbx_entity_branch_list = mDb["pdbx_entity_branch_list"];
+	pdbx_entity_branch_list.erase("entity_id"_key == entityID);
+
+	for (auto &sugar : branch)
+	{
+		pdbx_entity_branch_list.emplace({
+			{ "entity_id", entityID },
+			{ "comp_id", sugar.compoundID() },
+			{ "num", sugar.num() },
+			{ "hetero", "n" }
 		});
 	}
 

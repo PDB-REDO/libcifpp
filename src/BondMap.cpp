@@ -255,10 +255,10 @@ BondMap::BondMap(const Structure &p)
 	cif::Progress progress(compounds.size(), "Creating bond map");
 
 	// some helper indices to speed things up a bit
-	std::map<std::tuple<std::string, int, std::string>, std::string> atomMapByAsymSeqAndAtom;
+	std::map<std::tuple<std::string, int, std::string, std::string>, std::string> atomMapByAsymSeqAndAtom;
 	for (auto &a : p.atoms())
 	{
-		auto key = make_tuple(a.labelAsymID(), a.labelSeqID(), a.labelAtomID());
+		auto key = make_tuple(a.labelAsymID(), a.labelSeqID(), a.labelAtomID(), a.authSeqID());
 		atomMapByAsymSeqAndAtom[key] = a.id();
 	}
 
@@ -280,8 +280,8 @@ BondMap::BondMap(const Structure &p)
 			continue;
 		}
 
-		auto c = atomMapByAsymSeqAndAtom[make_tuple(asymID, lastSeqID, "C")];
-		auto n = atomMapByAsymSeqAndAtom[make_tuple(asymID, seqID, "N")];
+		auto c = atomMapByAsymSeqAndAtom[make_tuple(asymID, lastSeqID, "C", "")];
+		auto n = atomMapByAsymSeqAndAtom[make_tuple(asymID, seqID, "N", "")];
 
 		if (not(c.empty() or n.empty()))
 			bindAtoms(c, n);
@@ -293,14 +293,16 @@ BondMap::BondMap(const Structure &p)
 	{
 		std::string asym1, asym2, atomId1, atomId2;
 		int seqId1 = 0, seqId2 = 0;
-		cif::tie(asym1, asym2, atomId1, atomId2, seqId1, seqId2) =
+		std::string authSeqId1, authSeqId2;
+
+		cif::tie(asym1, asym2, atomId1, atomId2, seqId1, seqId2, authSeqId1, authSeqId2) =
 			l.get("ptnr1_label_asym_id", "ptnr2_label_asym_id",
 				"ptnr1_label_atom_id", "ptnr2_label_atom_id",
-				"ptnr1_label_seq_id", "ptnr2_label_seq_id");
+				"ptnr1_label_seq_id", "ptnr2_label_seq_id",
+				"ptnr1_auth_seq_id", "ptnr2_auth_seq_id");
 
-		std::string a = atomMapByAsymSeqAndAtom[make_tuple(asym1, seqId1, atomId1)];
-		std::string b = atomMapByAsymSeqAndAtom[make_tuple(asym2, seqId2, atomId2)];
-
+		std::string a = atomMapByAsymSeqAndAtom[make_tuple(asym1, seqId1, atomId1, authSeqId1)];
+		std::string b = atomMapByAsymSeqAndAtom[make_tuple(asym2, seqId2, atomId2, authSeqId2)];
 		if (not(a.empty() or b.empty()))
 			linkAtoms(a, b);
 	}
@@ -373,15 +375,12 @@ BondMap::BondMap(const Structure &p)
 		}
 
 		// loop over pdbx_branch_scheme
-		for (auto r : db["pdbx_branch_scheme"].find(cif::Key("mon_id") == c))
+		for (const auto &[asym_id, pdb_seq_num] : db["pdbx_branch_scheme"].find<std::string,std::string>(cif::Key("mon_id") == c, "asym_id", "pdb_seq_num"))
 		{
-			std::string asymID;
-			cif::tie(asymID) = r.get("asym_id");
-
 			std::vector<Atom> rAtoms;
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
-				[&](auto &a)
-				{ return a.labelAsymID() == asymID; });
+				[&](const Atom &a)
+				{ return a.labelAsymID() == asym_id and a.authSeqID() == pdb_seq_num; });
 
 			for (uint32_t i = 0; i + 1 < rAtoms.size(); ++i)
 			{
