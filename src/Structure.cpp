@@ -1460,43 +1460,35 @@ void Structure::loadData()
 
 	// place atoms in residues
 
-	using key_type = std::tuple<std::string, int>;
-	using map_type = std::map<key_type, Residue *>;
-	map_type resMap;
+	using key_type = std::tuple<std::string, int, std::string>;
+	std::map<key_type, Residue *> resMap;
 
 	for (auto &poly : mPolymers)
 	{
 		for (auto &res : poly)
-			resMap[{res.asymID(), res.seqID()}] = &res;
+			resMap[{res.asymID(), res.seqID(), res.authSeqID()}] = &res;
 	}
 
 	for (auto &res : mNonPolymers)
-		resMap[{res.asymID(), (res.isWater() ? std::stoi(res.mAuthSeqID) : res.seqID())}] = &res;
+		resMap[{res.asymID(), res.seqID(), res.mAuthSeqID}] = &res;
 
 	std::set<std::string> sugars;
 	for (auto &branch : mBranches)
 	{
 		for (auto &sugar : branch)
 		{
-			resMap[{sugar.asymID(), sugar.num()}] = &sugar;
+			resMap[{sugar.asymID(), sugar.seqID(), sugar.authSeqID()}] = &sugar;
 			sugars.insert(sugar.compoundID());
 		}
 	}
 
 	for (auto &atom : mAtoms)
 	{
-		key_type k(atom.labelAsymID(), atom.isWater() ? std::stoi(atom.authSeqID()) : atom.labelSeqID());
+		key_type k(atom.labelAsymID(), atom.labelSeqID(), atom.authSeqID());
 		auto ri = resMap.find(k);
-
-		if (ri == resMap.end() and sugars.count(atom.labelCompID()))
-		{
-			k = { atom.labelAsymID(), std::stoi(atom.authSeqID()) };
-			ri = resMap.find(k);
-		}
 
 		if (ri == resMap.end())
 		{
-
 			if (cif::VERBOSE > 0)
 				std::cerr << "Missing residue for atom " << atom << std::endl;
 
@@ -1747,75 +1739,75 @@ Residue &Structure::getResidue(const std::string &asymID, const std::string &com
 	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID) + '-' + authSeqID);
 }
 
-Residue &Structure::getResidue(const mmcif::Atom &atom)
-{
-	using namespace cif::literals;
+// Residue &Structure::getResidue(const mmcif::Atom &atom)
+// {
+// 	using namespace cif::literals;
 
-	auto asymID = atom.labelAsymID();
-	auto entityID = atom.labelEntityID();
-	auto type = mDb["entity"].find1<std::string>("id"_key == entityID, "type");
+// 	auto asymID = atom.labelAsymID();
+// 	auto entityID = atom.labelEntityID();
+// 	auto type = mDb["entity"].find1<std::string>("id"_key == entityID, "type");
 
-	if (type == "water")
-	{
-		auto authSeqID = atom.authSeqID();
+// 	if (type == "water")
+// 	{
+// 		auto authSeqID = atom.authSeqID();
 
-		for (auto &res : mNonPolymers)
-		{
-			if (res.asymID() != asymID or res.authSeqID() != authSeqID)
-				continue;
+// 		for (auto &res : mNonPolymers)
+// 		{
+// 			if (res.asymID() != asymID or res.authSeqID() != authSeqID)
+// 				continue;
 
-			return res;
-		}
+// 			return res;
+// 		}
 
-		throw std::out_of_range("Could not find water " + asymID + '/' + authSeqID);
-	}
-	else if (type == "branched")
-	{
-		auto authSeqID = std::stoi(atom.authSeqID());
+// 		throw std::out_of_range("Could not find water " + asymID + '/' + authSeqID);
+// 	}
+// 	else if (type == "branched")
+// 	{
+// 		auto authSeqID = std::stoi(atom.authSeqID());
 
-		for (auto &branch : mBranches)
-		{
-			if (branch.asymID() != asymID)
-				continue;
+// 		for (auto &branch : mBranches)
+// 		{
+// 			if (branch.asymID() != asymID)
+// 				continue;
 
-			for (auto &sugar : branch)
-			{
-				if (sugar.asymID() == asymID and sugar.num() == authSeqID)
-					return sugar;
-			}
-		}
+// 			for (auto &sugar : branch)
+// 			{
+// 				if (sugar.asymID() == asymID and sugar.num() == authSeqID)
+// 					return sugar;
+// 			}
+// 		}
 
-		throw std::out_of_range("Could not find sugar residue " + asymID + '/' + std::to_string(authSeqID));
-	}
-	else if (type == "polymer")
-	{
-		auto seqID = atom.labelSeqID();
+// 		throw std::out_of_range("Could not find sugar residue " + asymID + '/' + std::to_string(authSeqID));
+// 	}
+// 	else if (type == "polymer")
+// 	{
+// 		auto seqID = atom.labelSeqID();
 
-		for (auto &poly : mPolymers)
-		{
-			if (poly.asymID() != asymID)
-				continue;
+// 		for (auto &poly : mPolymers)
+// 		{
+// 			if (poly.asymID() != asymID)
+// 				continue;
 
-			for (auto &res : poly)
-			{
-				if (res.seqID() == seqID)
-					return res;
-			}
-		}
+// 			for (auto &res : poly)
+// 			{
+// 				if (res.seqID() == seqID)
+// 					return res;
+// 			}
+// 		}
 
-		throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
-	}
+// 		throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
+// 	}
 
-	for (auto &res : mNonPolymers)
-	{
-		if (res.asymID() != asymID)
-			continue;
+// 	for (auto &res : mNonPolymers)
+// 	{
+// 		if (res.asymID() != asymID)
+// 			continue;
 
-		return res;
-	}
+// 		return res;
+// 	}
 
-	throw std::out_of_range("Could not find residue " + asymID);
-}
+// 	throw std::out_of_range("Could not find residue " + asymID);
+// }
 
 std::tuple<char, int, char> Structure::MapLabelToAuth(
 	const std::string &asymID, int seqID) const

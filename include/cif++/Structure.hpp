@@ -650,12 +650,15 @@ class Structure
 	}
 
 	/// \brief Get a the residue for atom \a atom
-	Residue &getResidue(const mmcif::Atom &atom);
+	Residue &getResidue(const mmcif::Atom &atom)
+	{
+		return getResidue(atom.labelAsymID(), atom.labelCompID(), atom.labelSeqID(), atom.authSeqID());
+	}
 
 	/// \brief Get a the residue for atom \a atom
 	const Residue &getResidue(const mmcif::Atom &atom) const
 	{
-		return const_cast<Structure*>(this)->getResidue(atom);
+		return getResidue(atom.labelAsymID(), atom.labelCompID(), atom.labelSeqID(), atom.authSeqID());
 	}
 
 	// map between auth and label locations
