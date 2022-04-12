@@ -1492,7 +1492,15 @@ void Structure::loadData()
 			if (cif::VERBOSE > 0)
 				std::cerr << "Missing residue for atom " << atom << std::endl;
 
-			// assert(false);
+			// see if it might match a non poly
+			for (auto &res : mNonPolymers)
+			{
+				if (res.asymID() != atom.labelAsymID())
+					continue;
+				
+				res.addAtom(atom);
+				break;
+			}
 
 			continue;
 		}
