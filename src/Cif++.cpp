@@ -1900,10 +1900,15 @@ bool Category::hasParent(Row r, const Category &parentCat, const ValidateLink &l
 			if (mCatValidator->mMandatoryFields.count(name) and field.is_null())
 				cond = std::move(cond) and (Key(link.mParentKeys[ix]) == Empty());
 		}
-		else
+		else if (parentCat.mCatValidator->mMandatoryFields.count(link.mParentKeys[ix]))
 		{
 			const char *value = field.c_str();
 			cond = std::move(cond) and (Key(link.mParentKeys[ix]) == value);
+		}
+		else
+		{
+			const char *value = field.c_str();
+			cond = std::move(cond) and (Key(link.mParentKeys[ix]) == value or Key(link.mParentKeys[ix]) == Empty());
 		}
 	}
 
@@ -2201,9 +2206,27 @@ void Category::validateLinks() const
 		size_t missing = 0;
 		for (auto r : *this)
 			if (not hasParent(r, *parentCat, *link))
+			{
+				if (cif::VERBOSE > 1)
+				{
+					if (missing == 0)
+					{
+						std::cerr << "Links for " << link->mLinkGroupLabel << " are incomplete" << std::endl
+								  << "  These are the items in " << mName << " that don't have matching parent items in " << parentCat->mName << std::endl
+								  << std::endl;
+					}
+
+					for (auto k : link->mChildKeys)
+						std::cerr << k << ": " << r[k].as<std::string>() << std::endl;
+					
+					std::cerr << std::endl;
+				}
+
 				++missing;
 
-		if (missing and VERBOSE >= 0)
+			}
+
+		if (missing and VERBOSE == 1)
 		{
 			std::cerr << "Links for " << link->mLinkGroupLabel << " are incomplete" << std::endl
 					  << "  There are " << missing << " items in " << mName << " that don't have matching parent items in " << parentCat->mName << std::endl;

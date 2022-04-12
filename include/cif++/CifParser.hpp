@@ -82,16 +82,7 @@ inline bool isAnyPrint(int ch)
 	       (ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kAnyPrintMask) != 0);
 }
 
-inline bool isUnquotedString(const char *s)
-{
-	bool result = isOrdinary(*s++);
-	while (result and *s != 0)
-	{
-		result = isNonBlank(*s);
-		++s;
-	}
-	return result;
-}
+bool isUnquotedString(const char *s);
 
 // --------------------------------------------------------------------
 

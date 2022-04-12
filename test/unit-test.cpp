@@ -1820,3 +1820,38 @@ _test.text ??
 		BOOST_CHECK_EQUAL(text, "??");
 	}
 }
+
+BOOST_AUTO_TEST_CASE(output_test_1)
+{
+	auto data1 = R"(
+data_Q
+_test.text "stop_the_crap"
+)"_cf;
+
+	auto &db1 = data1.firstDatablock();
+	auto &test1 = db1["test"];
+
+	BOOST_CHECK_EQUAL(test1.size(), 1);
+
+	for (auto r : test1)
+	{
+		const auto &[text] = r.get<std::string>({"text"});
+		BOOST_CHECK_EQUAL(text, "stop_the_crap");
+	}
+
+	std::stringstream ss;
+	data1.save(ss);
+
+	auto data2 = cif::File(ss);
+
+	auto &db2 = data2.firstDatablock();
+	auto &test2 = db2["test"];
+
+	BOOST_CHECK_EQUAL(test2.size(), 1);
+
+	for (auto r : test2)
+	{
+		const auto &[text] = r.get<std::string>({"text"});
+		BOOST_CHECK_EQUAL(text, "stop_the_crap");
+	}
+}

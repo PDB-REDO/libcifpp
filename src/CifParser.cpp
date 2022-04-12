@@ -82,6 +82,29 @@ const char *SacParser::kValueName[] = {
 
 // --------------------------------------------------------------------
 
+bool isUnquotedString(const char *s)
+{
+	auto ss = s;
+
+	bool result = isOrdinary(*s++);
+	while (result and *s != 0)
+	{
+		result = isNonBlank(*s);
+		++s;
+	}
+
+	// but be careful it does not contain e.g. stop_
+	if (result)
+	{
+		const std::regex reservedRx(R"(^(?:data|save|loop|stop|global)_.+)", std::regex_constants::icase);
+		result = not std::regex_match(ss, reservedRx);
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
 SacParser::SacParser(std::istream &is, bool init)
 	: mData(is)
 {
