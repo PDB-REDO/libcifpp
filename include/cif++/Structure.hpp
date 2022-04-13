@@ -600,7 +600,11 @@ class Structure
 	std::list<Polymer> &polymers() { return mPolymers; }
 
 	Polymer &getPolymerByAsymID(const std::string &asymID);
-	const Polymer &getPolymerByAsymID(const std::string &asymID) const;
+
+	const Polymer &getPolymerByAsymID(const std::string &asymID) const
+	{
+		return const_cast<Structure*>(this)->getPolymerByAsymID(asymID);
+	}
 
 	const std::list<Branch> &branches() const { return mBranches; }
 	std::list<Branch> &branches() { return mBranches; }

@@ -1594,6 +1594,19 @@ Atom Structure::getAtomByPositionAndType(Point p, std::string_view type, std::st
 	return {};
 }
 
+Polymer &Structure::getPolymerByAsymID(const std::string &asymID)
+{
+	for (auto &poly : mPolymers)
+	{
+		if (poly.asymID() != asymID)
+			continue;
+		
+		return poly;
+	}
+
+	throw std::runtime_error("Polymer with asym id " + asymID + " not found");
+}
+
 Residue &Structure::getResidue(const std::string &asymID)
 {
 	for (auto &res : mNonPolymers)
