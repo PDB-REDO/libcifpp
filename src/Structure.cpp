@@ -421,7 +421,7 @@ std::string Residue::authInsCode() const
 
 	std::string result;
 	if (not mAtoms.empty())
-		result = mAtoms.front().get_property<std::string>("PDB_ins_code");
+		result = mAtoms.front().get_property<std::string>("pdbx_PDB_ins_code");
 
 	return result;
 }
