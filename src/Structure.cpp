@@ -420,18 +420,8 @@ std::string Residue::authInsCode() const
 	assert(mStructure);
 
 	std::string result;
-
-	try
-	{
-		char iCode;
-		tie(std::ignore, std::ignore, iCode) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
-
-		result = std::string{iCode};
-		ba::trim(result);
-	}
-	catch (...)
-	{
-	}
+	if (not mAtoms.empty())
+		result = mAtoms.front().get_property<std::string>("PDB_ins_code");
 
 	return result;
 }
@@ -441,15 +431,8 @@ std::string Residue::authAsymID() const
 	assert(mStructure);
 
 	std::string result;
-
-	try
-	{
-		tie(result, std::ignore, std::ignore) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
-	}
-	catch (...)
-	{
-		result = mAsymID;
-	}
+	if (not mAtoms.empty())
+		result = mAtoms.front().get_property<std::string>("auth_asym_id");
 
 	return result;
 }
@@ -574,25 +557,7 @@ bool Residue::isEntity() const
 
 std::string Residue::authID() const
 {
-	std::string result;
-
-	try
-	{
-		char chainID, iCode;
-		int seqNum;
-
-		std::tie(chainID, seqNum, iCode) = mStructure->MapLabelToAuth(mAsymID, mSeqID);
-
-		result = chainID + std::to_string(seqNum);
-		if (iCode != ' ' and iCode != 0)
-			result += iCode;
-	}
-	catch (...)
-	{
-		result = mAsymID + std::to_string(mSeqID);
-	}
-
-	return result;
+	return authAsymID() + authSeqID() + authInsCode();
 }
 
 std::string Residue::labelID() const
@@ -1425,8 +1390,6 @@ Structure::~Structure()
 
 void Structure::loadData()
 {
-	updateAtomIndex();
-
 	auto &polySeqScheme = category("pdbx_poly_seq_scheme");
 
 	for (auto &r : polySeqScheme)
@@ -1509,16 +1472,6 @@ void Structure::loadData()
 	}
 }
 
-void Structure::updateAtomIndex()
-{
-	mAtomIndex = std::vector<size_t>(mAtoms.size());
-
-	iota(mAtomIndex.begin(), mAtomIndex.end(), 0);
-
-	sort(mAtomIndex.begin(), mAtomIndex.end(), [this](size_t a, size_t b)
-		{ return mAtoms[a].id() < mAtoms[b].id(); });
-}
-
 void Structure::sortAtoms()
 {
 	sort(mAtoms.begin(), mAtoms.end(), [](auto &a, auto &b)
@@ -1530,8 +1483,6 @@ void Structure::sortAtoms()
 		atom.setID(id);
 		++id;
 	}
-
-	updateAtomIndex();
 }
 
 AtomView Structure::waters() const
@@ -1565,28 +1516,13 @@ AtomView Structure::waters() const
 
 Atom Structure::getAtomByID(std::string id) const
 {
-	auto i = std::lower_bound(mAtomIndex.begin(), mAtomIndex.end(),
-		id, [this](auto &a, auto &b)
-		{ return mAtoms[a].id() < b; });
-
-	//	auto i = find_if(mAtoms.begin(), mAtoms.end(),
-	//		[&id](auto& a) { return a.id() == id; });
-
-	Atom result;
-
-	if (i == mAtomIndex.end() or mAtoms[*i].id() != id)
+	for (auto &atom : mAtoms)
 	{
-		auto j = std::find_if(mAtoms.begin(), mAtoms.end(), [id](const Atom &a) { return a.id() == id; });
-
-		if (j == mAtoms.end())
-			throw std::out_of_range("Could not find atom with id " + id);
-		
-		result = *j;
+		if (atom.id() == id)
+			return atom;
 	}
-	else
-		result = mAtoms[*i];
 
-	return result;
+	throw std::out_of_range("Could not find atom with id " + id);
 }
 
 Atom Structure::getAtomByLabel(const std::string &atomID, const std::string &asymID, const std::string &compID, int seqID, const std::string &altID)
@@ -1747,248 +1683,6 @@ Residue &Structure::getResidue(const std::string &asymID, const std::string &com
 	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID) + '-' + authSeqID);
 }
 
-// Residue &Structure::getResidue(const mmcif::Atom &atom)
-// {
-// 	using namespace cif::literals;
-
-// 	auto asymID = atom.labelAsymID();
-// 	auto entityID = atom.labelEntityID();
-// 	auto type = mDb["entity"].find1<std::string>("id"_key == entityID, "type");
-
-// 	if (type == "water")
-// 	{
-// 		auto authSeqID = atom.authSeqID();
-
-// 		for (auto &res : mNonPolymers)
-// 		{
-// 			if (res.asymID() != asymID or res.authSeqID() != authSeqID)
-// 				continue;
-
-// 			return res;
-// 		}
-
-// 		throw std::out_of_range("Could not find water " + asymID + '/' + authSeqID);
-// 	}
-// 	else if (type == "branched")
-// 	{
-// 		auto authSeqID = std::stoi(atom.authSeqID());
-
-// 		for (auto &branch : mBranches)
-// 		{
-// 			if (branch.asymID() != asymID)
-// 				continue;
-
-// 			for (auto &sugar : branch)
-// 			{
-// 				if (sugar.asymID() == asymID and sugar.num() == authSeqID)
-// 					return sugar;
-// 			}
-// 		}
-
-// 		throw std::out_of_range("Could not find sugar residue " + asymID + '/' + std::to_string(authSeqID));
-// 	}
-// 	else if (type == "polymer")
-// 	{
-// 		auto seqID = atom.labelSeqID();
-
-// 		for (auto &poly : mPolymers)
-// 		{
-// 			if (poly.asymID() != asymID)
-// 				continue;
-
-// 			for (auto &res : poly)
-// 			{
-// 				if (res.seqID() == seqID)
-// 					return res;
-// 			}
-// 		}
-
-// 		throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID));
-// 	}
-
-// 	for (auto &res : mNonPolymers)
-// 	{
-// 		if (res.asymID() != asymID)
-// 			continue;
-
-// 		return res;
-// 	}
-
-// 	throw std::out_of_range("Could not find residue " + asymID);
-// }
-
-std::tuple<char, int, char> Structure::MapLabelToAuth(
-	const std::string &asymID, int seqID) const
-{
-	auto &db = datablock();
-
-	std::tuple<char, int, char> result;
-	bool found = false;
-
-	for (auto r : db["pdbx_poly_seq_scheme"].find(
-			 cif::Key("asym_id") == asymID and
-			 cif::Key("seq_id") == seqID))
-	{
-		std::string auth_asym_id, pdb_ins_code, pdb_seq_num, auth_seq_num;
-
-		cif::tie(auth_asym_id, auth_seq_num, pdb_seq_num, pdb_ins_code) =
-			r.get("pdb_strand_id", "auth_seq_num", "pdb_seq_num", "pdb_ins_code");
-
-		if (auth_seq_num.empty())
-			auth_seq_num = pdb_seq_num;
-
-		try
-		{
-			result = std::make_tuple(auth_asym_id.front(), std::stoi(auth_seq_num),
-				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
-		}
-		catch (const std::exception &ex)
-		{
-			result = std::make_tuple(auth_asym_id.front(), 0,
-				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
-		}
-
-		found = true;
-		break;
-	}
-
-	if (not found)
-	{
-		auto r = db["pdbx_nonpoly_scheme"].find(cif::Key("asym_id") == asymID);
-		if (r.size() == 1)
-		{
-			std::string pdb_strand_id, pdb_ins_code;
-			int pdb_seq_num;
-
-			cif::tie(pdb_strand_id, pdb_seq_num, pdb_ins_code) =
-				r.front().get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
-
-			result = std::make_tuple(pdb_strand_id.front(), pdb_seq_num,
-				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
-
-			found = true;
-		}
-	}
-
-	if (not found)
-	{
-		auto r = db["pdbx_"].find(cif::Key("asym_id") == asymID);
-		if (r.size() == 1)
-		{
-			std::string pdb_strand_id, pdb_ins_code;
-			int pdb_seq_num;
-
-			cif::tie(pdb_strand_id, pdb_seq_num, pdb_ins_code) =
-				r.front().get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
-
-			result = std::make_tuple(pdb_strand_id.front(), pdb_seq_num,
-				pdb_ins_code.empty() ? ' ' : pdb_ins_code.front());
-
-			found = true;
-		}
-	}
-
-
-	return result;
-}
-
-std::tuple<std::string, int, std::string, std::string> Structure::MapLabelToPDB(
-	const std::string &asymID, int seqID, const std::string &monID,
-	const std::string &authSeqID) const
-{
-	auto &db = datablock();
-
-	std::tuple<std::string, int, std::string, std::string> result;
-
-	if (monID == "HOH")
-	{
-		for (auto r : db["pdbx_nonpoly_scheme"].find(
-				 cif::Key("asym_id") == asymID and
-				 cif::Key("pdb_seq_num") == authSeqID and
-				 cif::Key("mon_id") == monID))
-		{
-			result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-			break;
-		}
-	}
-	else
-	{
-		for (auto r : db["pdbx_poly_seq_scheme"].find(
-				 cif::Key("asym_id") == asymID and
-				 cif::Key("seq_id") == seqID and
-				 cif::Key("mon_id") == monID))
-		{
-			result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-			break;
-		}
-
-		for (auto r : db["pdbx_nonpoly_scheme"].find(
-				 cif::Key("asym_id") == asymID and
-				 cif::Key("mon_id") == monID))
-		{
-			result = r.get("pdb_strand_id", "pdb_seq_num", "pdb_mon_id", "pdb_ins_code");
-			break;
-		}
-	}
-
-	return result;
-}
-
-std::tuple<std::string, int, std::string> Structure::MapPDBToLabel(const std::string &asymID, int seqID,
-	const std::string &compID, const std::string &iCode) const
-{
-	auto &db = datablock();
-
-	std::tuple<std::string, int, std::string> result;
-
-	if (iCode.empty())
-	{
-		for (auto r : db["pdbx_poly_seq_scheme"].find(
-				 cif::Key("pdb_strand_id") == asymID and
-				 cif::Key("pdb_seq_num") == seqID and
-				 cif::Key("pdb_mon_id") == compID and
-				 cif::Key("pdb_ins_code") == cif::Empty()))
-		{
-			result = r.get("asym_id", "seq_id", "mon_id");
-			break;
-		}
-
-		for (auto r : db["pdbx_nonpoly_scheme"].find(
-				 cif::Key("pdb_strand_id") == asymID and
-				 cif::Key("pdb_seq_num") == seqID and
-				 cif::Key("pdb_mon_id") == compID and
-				 cif::Key("pdb_ins_code") == cif::Empty()))
-		{
-			result = r.get("asym_id", "ndb_seq_num", "mon_id");
-			break;
-		}
-	}
-	else
-	{
-		for (auto r : db["pdbx_poly_seq_scheme"].find(
-				 cif::Key("pdb_strand_id") == asymID and
-				 cif::Key("pdb_seq_num") == seqID and
-				 cif::Key("pdb_mon_id") == compID and
-				 cif::Key("pdb_ins_code") == iCode))
-		{
-			result = r.get("asym_id", "seq_id", "mon_id");
-			break;
-		}
-
-		for (auto r : db["pdbx_nonpoly_scheme"].find(
-				 cif::Key("pdb_strand_id") == asymID and
-				 cif::Key("pdb_seq_num") == seqID and
-				 cif::Key("pdb_mon_id") == compID and
-				 cif::Key("pdb_ins_code") == iCode))
-		{
-			result = r.get("asym_id", "ndb_seq_num", "mon_id");
-			break;
-		}
-	}
-
-	return result;
-}
-
 std::string Structure::insertCompound(const std::string &compoundID, bool isEntity)
 {
 	using namespace cif::literals;
@@ -2059,8 +1753,6 @@ void Structure::removeAtom(Atom &a)
 	}
 
 	mAtoms.erase(remove(mAtoms.begin(), mAtoms.end(), a), mAtoms.end());
-
-	updateAtomIndex();
 }
 
 void Structure::removeResidue(const std::string &asym_id, int seq_id)

@@ -661,26 +661,6 @@ class Structure
 		return getResidue(atom.labelAsymID(), atom.labelCompID(), atom.labelSeqID(), atom.authSeqID());
 	}
 
-	// map between auth and label locations
-
-	std::tuple<std::string, int, std::string> MapAuthToLabel(const std::string &asymID,
-		const std::string &seqID, const std::string &compID, const std::string &insCode = "");
-
-	std::tuple<std::string, std::string, std::string, std::string> MapLabelToAuth(
-		const std::string &asymID, int seqID, const std::string &compID);
-
-	// returns chain, seqnr, icode
-	std::tuple<char, int, char> MapLabelToAuth(
-		const std::string &asymID, int seqID) const;
-
-	// returns chain,seqnr,comp,iCode
-	std::tuple<std::string, int, std::string, std::string> MapLabelToPDB(
-		const std::string &asymID, int seqID, const std::string &compID,
-		const std::string &authSeqID) const;
-
-	std::tuple<std::string, int, std::string> MapPDBToLabel(
-		const std::string &asymID, int seqID, const std::string &compID, const std::string &iCode) const;
-
 	// Actions
 	void removeAtom(Atom &a);
 	void swapAtoms(Atom &a1, Atom &a2); // swap the labels for these atoms
@@ -755,22 +735,18 @@ class Structure
   private:
 	friend Polymer;
 	friend Residue;
-	// friend residue_view;
-	// friend residue_iterator;
 
 	std::string insertCompound(const std::string &compoundID, bool isEntity);
 
 	std::string createEntityForBranch(Branch &branch);
 
 	void loadData();
-	void updateAtomIndex();
 
 	void loadAtomsForModel(StructureOpenOptions options);
 
 	cif::Datablock &mDb;
 	size_t mModelNr;
 	AtomView mAtoms;
-	std::vector<size_t> mAtomIndex;
 	std::list<Polymer> mPolymers;
 	std::list<Branch> mBranches;
 	std::vector<Residue> mNonPolymers;

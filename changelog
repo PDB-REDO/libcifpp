@@ -1,6 +1,7 @@
 Version 4.0.0
 - getResidue in mmcif::Structure now requires both a
-  sequence ID and an auth sequence ID. Very unfortunate.
+  sequence ID and an auth sequence ID. As a result the code was cleaned
+  up considerably.
 
 Version 3.0.5
 - mmcif::Structure redesign. It is now a wrapper around a cif::Datablock.

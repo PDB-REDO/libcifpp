@@ -34,6 +34,7 @@
 #include "cif++/BondMap.hpp"
 #include "cif++/Cif++.hpp"
 #include "cif++/CifValidator.hpp"
+#include "cif++/CifParser.hpp"
 
 namespace tt = boost::test_tools;
 
@@ -1825,18 +1826,38 @@ BOOST_AUTO_TEST_CASE(output_test_1)
 {
 	auto data1 = R"(
 data_Q
-_test.text "stop_the_crap"
+loop_
+_test.text
+"stop_the_crap"
+'and stop_ this too'
+'data_dinges'
+'blablaglobal_bla'
+boo.data_.whatever
 )"_cf;
 
 	auto &db1 = data1.firstDatablock();
 	auto &test1 = db1["test"];
 
-	BOOST_CHECK_EQUAL(test1.size(), 1);
+	struct T {
+		const char *s;
+		bool q;
+	} kS[] = {
+		{ "stop_the_crap", false },
+		{ "and stop_ this too", false },
+		{ "data_dinges", false },
+		{ "blablaglobal_bla", false },
+		{ "boo.data_.whatever", true }
+	};
 
+	BOOST_CHECK_EQUAL(test1.size(), sizeof(kS) / sizeof(T));
+
+	size_t i = 0;
 	for (auto r : test1)
 	{
 		const auto &[text] = r.get<std::string>({"text"});
-		BOOST_CHECK_EQUAL(text, "stop_the_crap");
+		BOOST_CHECK_EQUAL(text, kS[i].s);
+		BOOST_CHECK_EQUAL(cif::isUnquotedString(kS[i].s), kS[i].q);
+		++i;
 	}
 
 	std::stringstream ss;
@@ -1847,11 +1868,12 @@ _test.text "stop_the_crap"
 	auto &db2 = data2.firstDatablock();
 	auto &test2 = db2["test"];
 
-	BOOST_CHECK_EQUAL(test2.size(), 1);
+	BOOST_CHECK_EQUAL(test2.size(), sizeof(kS) / sizeof(T));
 
+	i = 0;
 	for (auto r : test2)
 	{
 		const auto &[text] = r.get<std::string>({"text"});
-		BOOST_CHECK_EQUAL(text, "stop_the_crap");
+		BOOST_CHECK_EQUAL(text, kS[i++].s);
 	}
 }
