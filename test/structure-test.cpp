@@ -191,22 +191,25 @@ _struct_asym.details                       ?
 	}
 }
 
-// // --------------------------------------------------------------------
+// --------------------------------------------------------------------
 
-// BOOST_AUTO_TEST_CASE(test_load_1)
-// {
-// 	mmcif::File cf(gTestDir / "5v3g.cif.gz");
-// 	mmcif::Structure s(cf);
+BOOST_AUTO_TEST_CASE(test_load_1)
+{
+	using namespace cif::literals;
 
-// 	for (auto &poly : s.polymers())
-// 	{
-// 		std::cout << std::string(80, '=') << std::endl;
-// 		for (auto &res : poly)
-// 		{
-// 			std::cout << res << std::endl;
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	mmcif::File file(example.string());
 
-// 			for (auto &atom : res.atoms())
-// 				std::cout << "  " << atom << std::endl;
-// 		}
-// 	}
-// }
+	auto &db = file.data();
+
+	mmcif::Structure s(file);
+
+	BOOST_CHECK(s.polymers().size() == 1);
+
+	auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
+
+	for (auto &poly : s.polymers())
+	{
+		BOOST_CHECK_EQUAL(poly.size(), pdbx_poly_seq_scheme.find("asym_id"_key == poly.asymID()).size());
+	}
+}
