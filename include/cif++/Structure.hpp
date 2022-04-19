@@ -513,7 +513,7 @@ class Branch : public std::vector<Sugar>
 
 	std::string name() const;
 	float weight() const;
-	std::string asymID() const	{ return mAsymID; }
+	std::string asymID() const { return mAsymID; }
 
 	Structure &structure() { return *mStructure; }
 	const Structure &structure() const { return *mStructure; }
@@ -603,17 +603,17 @@ class Structure
 
 	const Polymer &getPolymerByAsymID(const std::string &asymID) const
 	{
-		return const_cast<Structure*>(this)->getPolymerByAsymID(asymID);
+		return const_cast<Structure *>(this)->getPolymerByAsymID(asymID);
 	}
 
 	const std::list<Branch> &branches() const { return mBranches; }
 	std::list<Branch> &branches() { return mBranches; }
-	
+
 	Branch &getBranchByAsymID(const std::string &asymID);
 	const Branch &getBranchByAsymID(const std::string &asymID) const;
 
 	const std::vector<Residue> &nonPolymers() const { return mNonPolymers; }
-	
+
 	Atom getAtomByID(std::string id) const;
 	// Atom getAtomByLocation(Point pt, float maxDistance) const;
 
@@ -626,13 +626,25 @@ class Structure
 	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
 	Atom getAtomByPositionAndType(Point p, std::string_view type, std::string_view res_type) const;
 
+	/// \brief Get a non-poly residue for an asym with id \a asymID
+	Residue &getResidue(const std::string &asymID)
+	{
+		return getResidue(asymID, 0, "");
+	}
+
+	/// \brief Get a non-poly residue for an asym with id \a asymID
+	const Residue &getResidue(const std::string &asymID) const
+	{
+		return getResidue(asymID, 0, "");
+	}
+
 	/// \brief Get a residue for an asym with id \a asymID seq id \a seqID and authSeqID \a authSeqID
 	Residue &getResidue(const std::string &asymID, int seqID, const std::string &authSeqID);
 
 	/// \brief Get a the single residue for an asym with id \a asymID seq id \a seqID and authSeqID \a authSeqID
 	const Residue &getResidue(const std::string &asymID, int seqID, const std::string &authSeqID) const
 	{
-		return const_cast<Structure*>(this)->getResidue(asymID, seqID, authSeqID);
+		return const_cast<Structure *>(this)->getResidue(asymID, seqID, authSeqID);
 	}
 
 	/// \brief Get a residue for an asym with id \a asymID, compound id \a compID, seq id \a seqID and authSeqID \a authSeqID
@@ -641,16 +653,7 @@ class Structure
 	/// \brief Get a residue for an asym with id \a asymID, compound id \a compID, seq id \a seqID and authSeqID \a authSeqID
 	const Residue &getResidue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID) const
 	{
-		return const_cast<Structure*>(this)->getResidue(asymID, compID, seqID, authSeqID);
-	}
-
-	/// \brief Get a the single residue for an asym with id \a asymID
-	Residue &getResidue(const std::string &asymID);
-
-	/// \brief Get a the single residue for an asym with id \a asymID
-	const Residue &getResidue(const std::string &asymID) const
-	{
-		return const_cast<Structure*>(this)->getResidue(asymID);
+		return const_cast<Structure *>(this)->getResidue(asymID, compID, seqID, authSeqID);
 	}
 
 	/// \brief Get a the residue for atom \a atom
@@ -667,8 +670,8 @@ class Structure
 
 	// Actions
 	void removeAtom(Atom &a);
-	void swapAtoms(Atom &a1, Atom &a2); // swap the labels for these atoms
-	void moveAtom(Atom &a, Point p);    // move atom to a new location
+	void swapAtoms(Atom a1, Atom a2); // swap the labels for these atoms
+	void moveAtom(Atom a, Point p);  // move atom to a new location
 	void changeResidue(Residue &res, const std::string &newCompound,
 		const std::vector<std::tuple<std::string, std::string>> &remappedAtoms);
 
@@ -694,10 +697,10 @@ class Structure
 	std::string createNonpoly(const std::string &entity_id, std::vector<std::vector<cif::Item>> &atom_info);
 
 	/// \brief Create a new (sugar) branch with one first NAG containing atoms \a nag_atoms
-	Branch& createBranch(std::vector<std::vector<cif::Item>> &nag_atoms);
+	Branch &createBranch(std::vector<std::vector<cif::Item>> &nag_atoms);
 
 	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms \a atoms
-	Branch& extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atoms);
+	Branch &extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atoms);
 
 	/// \brief Remove a residue, can be monomer or nonpoly
 	///
