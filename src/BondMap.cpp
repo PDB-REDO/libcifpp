@@ -264,29 +264,26 @@ BondMap::BondMap(const Structure &p)
 
 	// first link all residues in a polyseq
 
-	std::string lastAsymID;
+	std::string lastAsymID, lastAuthSeqID;
 	int lastSeqID = 0;
-	for (auto r : db["pdbx_poly_seq_scheme"])
+	for (const auto &[asymID, seqID, authSeqID] : db["pdbx_poly_seq_scheme"].rows<std::string,int,std::string>("asym_id", "seq_id", "pdb_seq_num"))
 	{
-		std::string asymID;
-		int seqID;
-
-		cif::tie(asymID, seqID) = r.get("asym_id", "seq_id");
-
 		if (asymID != lastAsymID) // first in a new sequece
 		{
 			lastAsymID = asymID;
 			lastSeqID = seqID;
+			lastAuthSeqID = authSeqID;
 			continue;
 		}
 
-		auto c = atomMapByAsymSeqAndAtom[make_tuple(asymID, lastSeqID, "C", "")];
-		auto n = atomMapByAsymSeqAndAtom[make_tuple(asymID, seqID, "N", "")];
+		auto c = atomMapByAsymSeqAndAtom.at(make_tuple(asymID, lastSeqID, "C", lastAuthSeqID));
+		auto n = atomMapByAsymSeqAndAtom.at(make_tuple(asymID, seqID, "N", authSeqID));
 
 		if (not(c.empty() or n.empty()))
 			bindAtoms(c, n);
 
 		lastSeqID = seqID;
+		lastAuthSeqID = authSeqID;
 	}
 
 	for (auto l : db["struct_conn"])
@@ -301,8 +298,8 @@ BondMap::BondMap(const Structure &p)
 				"ptnr1_label_seq_id", "ptnr2_label_seq_id",
 				"ptnr1_auth_seq_id", "ptnr2_auth_seq_id");
 
-		std::string a = atomMapByAsymSeqAndAtom[make_tuple(asym1, seqId1, atomId1, authSeqId1)];
-		std::string b = atomMapByAsymSeqAndAtom[make_tuple(asym2, seqId2, atomId2, authSeqId2)];
+		std::string a = atomMapByAsymSeqAndAtom.at(make_tuple(asym1, seqId1, atomId1, authSeqId1));
+		std::string b = atomMapByAsymSeqAndAtom.at(make_tuple(asym2, seqId2, atomId2, authSeqId2));
 		if (not(a.empty() or b.empty()))
 			linkAtoms(a, b);
 	}

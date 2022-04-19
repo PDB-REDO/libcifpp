@@ -1674,6 +1674,19 @@ PRO OXT HXT SING N N 17
 			}
 		}
 	}
+
+	// And check the inter-aminoacid links
+
+	auto &poly = structure.polymers().front();
+
+	for (size_t i = 0; i + 1 < poly.size(); ++i)
+	{
+		auto C = poly[i].atomByID("C");
+		auto N = poly[i + 1].atomByID("N");
+
+		BOOST_CHECK(bm(C, N));
+		BOOST_CHECK(bm(N, C));
+	}
 }
 
 BOOST_AUTO_TEST_CASE(bondmap_2)
@@ -1877,3 +1890,4 @@ boo.data_.whatever
 		BOOST_CHECK_EQUAL(text, kS[i++].s);
 	}
 }
+
