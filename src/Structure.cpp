@@ -1818,8 +1818,6 @@ void Structure::removeAtom(Atom &a)
 		else
 			R = i - 1;
 	}
-
-	assert(L <= R);
 }
 
 void Structure::swapAtoms(Atom a1, Atom a2)
