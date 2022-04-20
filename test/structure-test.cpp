@@ -322,3 +322,25 @@ BOOST_AUTO_TEST_CASE(atom_numbers_1)
 
 	BOOST_ASSERT(ai == atoms.end());
 }
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(test_load_1)
+{
+	using namespace cif::literals;
+
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	mmcif::File file(example.string());
+
+	auto &db = file.data();
+
+	mmcif::Structure s(file);
+
+	BOOST_CHECK(s.polymers().size() == 1);
+
+	auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
+
+	for (auto &poly : s.polymers())
+	{
+		BOOST_CHECK_EQUAL(poly.size(), pdbx_poly_seq_scheme.find("asym_id"_key == poly.asymID()).size());
+	}
+}

@@ -1625,26 +1625,13 @@ Polymer &Structure::getPolymerByAsymID(const std::string &asymID)
 	throw std::runtime_error("Polymer with asym id " + asymID + " not found");
 }
 
-Residue &Structure::getResidue(const std::string &asymID)
-{
-	for (auto &res : mNonPolymers)
-	{
-		if (res.asymID() != asymID)
-			continue;
-
-		return res;
-	}
-
-	throw std::out_of_range("Could not find residue " + asymID);
-}
-
 Residue &Structure::getResidue(const std::string &asymID, int seqID, const std::string &authSeqID)
 {
 	if (seqID == 0)
 	{
 		for (auto &res : mNonPolymers)
 		{
-			if (res.asymID() == asymID and res.authSeqID() == authSeqID)
+			if (res.asymID() == asymID and (authSeqID.empty() or res.authSeqID() == authSeqID))
 				return res;
 		}
 	}
@@ -1835,11 +1822,7 @@ void Structure::removeAtom(Atom &a)
 	assert(L <= R);
 }
 
-// void Structure::removeResidue(const std::string &asym_id, int seq_id)
-// {
-// }
-
-void Structure::swapAtoms(Atom &a1, Atom &a2)
+void Structure::swapAtoms(Atom a1, Atom a2)
 {
 	cif::Datablock &db = datablock();
 	auto &atomSites = db["atom_site"];
@@ -1867,7 +1850,7 @@ void Structure::swapAtoms(Atom &a1, Atom &a2)
 	l3.swap(l4);
 }
 
-void Structure::moveAtom(Atom &a, Point p)
+void Structure::moveAtom(Atom a, Point p)
 {
 	a.location(p);
 }
