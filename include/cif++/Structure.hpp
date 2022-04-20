@@ -241,8 +241,6 @@ class Atom
   private:
 	friend class Structure;
 
-	void setID(int id);
-
 	const AtomImpl &impl() const
 	{
 		if (not mImpl)
@@ -578,8 +576,8 @@ inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
 class Structure
 {
   public:
-	Structure(File &p, size_t modelNr = 1, StructureOpenOptions options = {})
-		: Structure(p.firstDatablock(), modelNr, options)
+	Structure(cif::File &p, size_t modelNr = 1, StructureOpenOptions options = {})
+		: Structure(p.front(), modelNr, options)
 	{
 	}
 
@@ -592,7 +590,7 @@ class Structure
 	~Structure();
 
 	const AtomView &atoms() const { return mAtoms; }
-	AtomView &atoms() { return mAtoms; }
+	// AtomView &atoms() { return mAtoms; }
 
 	AtomView waters() const;
 
@@ -614,7 +612,7 @@ class Structure
 
 	const std::vector<Residue> &nonPolymers() const { return mNonPolymers; }
 	
-	Atom getAtomByID(std::string id) const;
+	Atom getAtomByID(const std::string &id) const;
 	// Atom getAtomByLocation(Point pt, float maxDistance) const;
 
 	Atom getAtomByLabel(const std::string &atomID, const std::string &asymID,
@@ -705,10 +703,6 @@ class Structure
 	/// \param seq_id      The sequence ID
 	void removeResidue(const std::string &asym_id, int seq_id);
 
-	/// \brief To sort the atoms in order of model > asym-id > res-id > atom-id
-	/// Will asssign new atom_id's to all atoms. Be carefull
-	void sortAtoms();
-
 	/// \brief Translate the coordinates of all atoms in the structure by \a t
 	void translate(Point t);
 
@@ -748,9 +742,18 @@ class Structure
 
 	void loadAtomsForModel(StructureOpenOptions options);
 
+	template<typename... Args>
+	Atom& emplace_atom(Args ...args)
+	{
+		return emplace_atom(Atom{std::forward<Args>(args)...});
+	}
+
+	Atom &emplace_atom(Atom &&atom);
+
 	cif::Datablock &mDb;
 	size_t mModelNr;
 	AtomView mAtoms;
+	std::vector<size_t> mAtomIndex;
 	std::list<Polymer> mPolymers;
 	std::list<Branch> mBranches;
 	std::vector<Residue> mNonPolymers;

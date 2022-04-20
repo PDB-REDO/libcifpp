@@ -11,4 +11,5 @@ data/components.cif*
 CMakeSettings.json
 msvc/
 Testing/
-
+rsrc/feature-request.txt
+test/1cbs.cif

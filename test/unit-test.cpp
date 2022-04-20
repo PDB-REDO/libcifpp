@@ -156,6 +156,35 @@ _test.value
 	BOOST_CHECK(t2.front()["name"].as<std::string>() == "mies");
 }
 
+BOOST_AUTO_TEST_CASE(ut3)
+{
+	using namespace cif::literals;
+
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+_test.value
+1 aap   1.0
+2 noot  1.1
+3 mies  1.2
+4 boom  .
+5 roos  ?
+    )"_cf;
+
+	auto &db = f.firstDatablock();
+
+	BOOST_CHECK(db.getName() == "TEST");
+
+	auto &test = db["test"];
+	BOOST_CHECK(test.size() == 5);
+
+
+	BOOST_CHECK(test.exists("value"_key == cif::null));
+	BOOST_CHECK(test.find("value"_key == cif::null).size() == 2);
+}
+
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(d1)

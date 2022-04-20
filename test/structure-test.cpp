@@ -210,3 +210,115 @@ _struct_asym.details                       ?
 // 		}
 // 	}
 // }
+
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(test_atom_id)
+{
+	auto data = R"(
+data_TEST
+# 
+_pdbx_nonpoly_scheme.asym_id         A 
+_pdbx_nonpoly_scheme.ndb_seq_num     1 
+_pdbx_nonpoly_scheme.entity_id       1 
+_pdbx_nonpoly_scheme.mon_id          HEM 
+_pdbx_nonpoly_scheme.pdb_seq_num     1 
+_pdbx_nonpoly_scheme.auth_seq_num    1 
+_pdbx_nonpoly_scheme.pdb_mon_id      HEM 
+_pdbx_nonpoly_scheme.auth_mon_id     HEM 
+_pdbx_nonpoly_scheme.pdb_strand_id   A 
+_pdbx_nonpoly_scheme.pdb_ins_code    . 
+#
+loop_
+_atom_site.id
+_atom_site.auth_asym_id
+_atom_site.label_alt_id
+_atom_site.label_asym_id
+_atom_site.label_atom_id
+_atom_site.label_comp_id
+_atom_site.label_entity_id
+_atom_site.label_seq_id
+_atom_site.type_symbol
+_atom_site.group_PDB
+_atom_site.pdbx_PDB_ins_code
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.occupancy
+_atom_site.B_iso_or_equiv
+_atom_site.pdbx_formal_charge
+_atom_site.auth_seq_id
+_atom_site.auth_comp_id
+_atom_site.auth_atom_id
+_atom_site.pdbx_PDB_model_num
+1 A ? A CHA HEM 1 . C HETATM ? -5.248 39.769 -0.250 1.00 7.67 ? 1 HEM CHA 1
+3 A ? A CHB HEM 1 . C HETATM ? -3.774 36.790 3.280  1.00 7.05 ? 1 HEM CHB 1
+2 A ? A CHC HEM 1 . C HETATM ? -2.879 33.328 0.013  1.00 7.69 ? 1 HEM CHC 1
+4 A ? A CHD HEM 1 . C HETATM ? -4.342 36.262 -3.536 1.00 8.00 ? 1 HEM CHD 1
+#
+_chem_comp.id               HEM
+_chem_comp.type             NON-POLYMER
+_chem_comp.name             'PROTOPORPHYRIN IX CONTAINING FE'
+_chem_comp.formula          'C34 H32 Fe N4 O4'
+_chem_comp.formula_weight   616.487000
+#
+_pdbx_entity_nonpoly.entity_id   1
+_pdbx_entity_nonpoly.name        'PROTOPORPHYRIN IX CONTAINING FE'
+_pdbx_entity_nonpoly.comp_id     HEM
+#
+_entity.id                 1
+_entity.type               non-polymer
+_entity.pdbx_description   'PROTOPORPHYRIN IX CONTAINING FE'
+_entity.formula_weight     616.487000
+#
+_struct_asym.id                            A
+_struct_asym.entity_id                     1
+_struct_asym.pdbx_blank_PDB_chainid_flag   N
+_struct_asym.pdbx_modified                 N
+_struct_asym.details                       ?
+#
+)"_cf;
+
+	data.loadDictionary("mmcif_pdbx_v50.dic");
+
+	mmcif::Structure s(data);
+
+	BOOST_CHECK_EQUAL(s.getAtomByID("1").authAtomID(), "CHA");
+	BOOST_CHECK_EQUAL(s.getAtomByID("2").authAtomID(), "CHC");
+	BOOST_CHECK_EQUAL(s.getAtomByID("3").authAtomID(), "CHB");
+	BOOST_CHECK_EQUAL(s.getAtomByID("4").authAtomID(), "CHD");
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(atom_numbers_1)
+{
+	const std::filesystem::path test1(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	mmcif::File file(test1.string());
+	mmcif::Structure structure(file);
+
+	auto &db = file.data();
+
+	auto &atoms = structure.atoms();
+	auto ai = atoms.begin();
+
+	for (const auto &[id, label_asym_id, label_seq_id, label_atom_id, auth_seq_id, label_comp_id] :
+		db["atom_site"].rows<std::string,std::string,int,std::string,std::string,std::string>("id", "label_asym_id", "label_seq_id", "label_atom_id", "auth_seq_id", "label_comp_id"))
+	{
+		auto atom = structure.getAtomByID(id);
+
+		BOOST_CHECK_EQUAL(atom.labelAsymID(), label_asym_id);
+		BOOST_CHECK_EQUAL(atom.labelSeqID(), label_seq_id);
+		BOOST_CHECK_EQUAL(atom.labelAtomID(), label_atom_id);
+		BOOST_CHECK_EQUAL(atom.authSeqID(), auth_seq_id);
+		BOOST_CHECK_EQUAL(atom.labelCompID(), label_comp_id);
+
+		BOOST_ASSERT(ai != atoms.end());
+
+		BOOST_CHECK_EQUAL(ai->id(), id);
+		++ai;
+	}
+
+	BOOST_ASSERT(ai == atoms.end());
+}

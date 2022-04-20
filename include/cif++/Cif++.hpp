@@ -1183,6 +1183,9 @@ struct Empty
 {
 };
 
+/// \brief A helper to make it possible to have conditions like ("id"_key == cif::null)
+inline constexpr Empty null = Empty();
+
 struct Key
 {
 	explicit Key(const std::string &itemTag)

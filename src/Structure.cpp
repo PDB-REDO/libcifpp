@@ -113,9 +113,9 @@ int Atom::AtomImpl::compare(const AtomImpl &b) const
 	if (d == 0)
 		d = mSeqID - b.mSeqID;
 	if (d == 0)
-		d = mAtomID.compare(b.mAtomID);
-	if (d == 0)
 		d = mAuthSeqID.compare(b.mAuthSeqID);
+	if (d == 0)
+		d = mAtomID.compare(b.mAtomID);
 
 	return d;
 }
@@ -357,11 +357,6 @@ bool Atom::operator==(const Atom &rhs) const
 {
 	return mImpl == rhs.mImpl or
 	       (&mImpl->mDb == &rhs.mImpl->mDb and mImpl->mID == rhs.mImpl->mID);
-}
-
-void Atom::setID(int id)
-{
-	mImpl->mID = std::to_string(id);
 }
 
 std::ostream &operator<<(std::ostream &os, const Atom &atom)
@@ -1369,7 +1364,7 @@ void Structure::loadAtomsForModel(StructureOpenOptions options)
 		if ((options bitand StructureOpenOptions::SkipHydrogen) and type_symbol == "H")
 			continue;
 
-		mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, id, a));
+		emplace_atom(std::make_shared<Atom::AtomImpl>(db, id, a));
 	}
 }
 
@@ -1379,7 +1374,7 @@ Structure::Structure(const Structure &s)
 {
 	mAtoms.reserve(s.mAtoms.size());
 	for (auto &atom : s.mAtoms)
-		mAtoms.emplace_back(atom.clone());
+		emplace_atom(atom.clone());
 
 	loadData();
 }
@@ -1472,19 +1467,6 @@ void Structure::loadData()
 	}
 }
 
-void Structure::sortAtoms()
-{
-	sort(mAtoms.begin(), mAtoms.end(), [](auto &a, auto &b)
-		{ return a.compare(b) < 0; });
-
-	int id = 1;
-	for (auto &atom : mAtoms)
-	{
-		atom.setID(id);
-		++id;
-	}
-}
-
 AtomView Structure::waters() const
 {
 	AtomView result;
@@ -1514,13 +1496,49 @@ AtomView Structure::waters() const
 	return result;
 }
 
-Atom Structure::getAtomByID(std::string id) const
+Atom Structure::getAtomByID(const std::string &id) const
 {
-	for (auto &atom : mAtoms)
+	// int L = 0, R = mAtoms.size() - 1;
+	// while (L <= R)
+	// {
+	// 	int i = (L + R) / 2;
+	// 	int d = mAtoms[i].id().compare(id);
+
+	// 	if (d == 0)
+	// 		return mAtoms[i];
+
+	// 	if (d < 0)
+	// 		L = i + 1;
+	// 	else
+	// 		R = i - 1;
+	// }
+
+	assert(mAtoms.size() == mAtomIndex.size());
+	
+	int L = 0, R = mAtoms.size() - 1;
+	while (L <= R)
 	{
-		if (atom.id() == id)
+		int i = (L + R) / 2;
+
+		const Atom &atom = mAtoms[mAtomIndex[i]];
+
+		int d = atom.id().compare(id);
+
+		if (d == 0)
 			return atom;
+
+		if (d < 0)
+			L = i + 1;
+		else
+			R = i - 1;
 	}
+
+
+	// for (auto &atom : mAtoms)
+	// {
+	// 	if (atom.id() == id)
+	// 		return atom;
+	// }
 
 	throw std::out_of_range("Could not find atom with id " + id);
 }
@@ -1747,6 +1765,31 @@ std::string Structure::insertCompound(const std::string &compoundID, bool isEnti
 
 // --------------------------------------------------------------------
 
+Atom& Structure::emplace_atom(Atom &&atom)
+{
+	int L = 0, R = mAtomIndex.size() - 1;
+	while (L <= R)
+	{
+		int i = (L + R) / 2;
+
+		const Atom &ai = mAtoms[mAtomIndex[i]];
+
+		int d = ai.id().compare(atom.id());
+
+		if (d == 0)
+			throw std::runtime_error("Duplicate atom ID " + atom.id());
+
+		if (d < 0)
+			L = i + 1;
+		else
+			R = i - 1;
+	}
+
+	mAtomIndex.insert(mAtomIndex.begin() + R + 1, mAtoms.size());
+
+	return mAtoms.emplace_back(std::move(atom));
+}
+
 void Structure::removeAtom(Atom &a)
 {
 	cif::Datablock &db = datablock();
@@ -1765,12 +1808,36 @@ void Structure::removeAtom(Atom &a)
 		}
 	}
 
-	mAtoms.erase(remove(mAtoms.begin(), mAtoms.end(), a), mAtoms.end());
+	assert(mAtomIndex.size() == mAtoms.size());
+
+	int L = 0, R = mAtomIndex.size() - 1;
+	while (L <= R)
+	{
+		int i = (L + R) / 2;
+
+		const Atom &atom = mAtoms[mAtomIndex[i]];
+
+		int d = atom.id().compare(a.id());
+
+		if (d == 0)
+		{
+			mAtoms.erase(mAtoms.begin() + mAtomIndex[i]);
+			mAtomIndex.erase(mAtomIndex.begin() + i);
+			break;
+		}
+
+		if (d < 0)
+			L = i + 1;
+		else
+			R = i - 1;
+	}
+
+	assert(L <= R);
 }
 
-void Structure::removeResidue(const std::string &asym_id, int seq_id)
-{
-}
+// void Structure::removeResidue(const std::string &asym_id, int seq_id)
+// {
+// }
 
 void Structure::swapAtoms(Atom &a1, Atom &a2)
 {
@@ -1964,7 +2031,7 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 			{"pdbx_PDB_model_num", 1}
 		});
 
-		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		auto &newAtom = emplace_atom(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
 		res.addAtom(newAtom);
 	}
 
@@ -2031,7 +2098,7 @@ std::string Structure::createNonpoly(const std::string &entity_id, std::vector<s
 
 		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
 
-		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		auto &newAtom = emplace_atom(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
 		res.addAtom(newAtom);
 	}
 
@@ -2109,7 +2176,7 @@ Branch& Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 
 		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
 
-		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		auto &newAtom = emplace_atom(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
 		sugar.addAtom(newAtom);
 	}
 
@@ -2202,7 +2269,7 @@ Branch& Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 
 		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
 
-		auto &newAtom = mAtoms.emplace_back(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		auto &newAtom = emplace_atom(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
 		sugar.addAtom(newAtom);
 	}
 
