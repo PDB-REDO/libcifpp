@@ -394,6 +394,7 @@ if(CIFPP_BUILD_TESTS)
 		# pdb2cif
 		rename-compound
 		structure
+		sugar
 		unit)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
