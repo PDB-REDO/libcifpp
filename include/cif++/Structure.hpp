@@ -373,6 +373,16 @@ class Residue
 
 	friend Structure;
 
+	bool operator==(const mmcif::Residue &rhs) const
+	{
+		return this == &rhs or (
+			mStructure == rhs.mStructure and
+			mSeqID == rhs.mSeqID and
+			mAsymID == rhs.mAsymID and
+			mCompoundID == rhs.mCompoundID and
+			mAuthSeqID == rhs.mAuthSeqID);
+	}
+
   protected:
 	Residue() {}
 
@@ -706,6 +716,11 @@ class Structure
 	/// \param seq_id      The sequence ID
 	void removeResidue(const std::string &asym_id, int seq_id);
 
+	/// \brief Remove residue \a res
+	///
+	/// \param res         The residue to remove
+	void removeResidue(mmcif::Residue &res);
+
 	/// \brief Translate the coordinates of all atoms in the structure by \a t
 	void translate(Point t);
 
@@ -732,6 +747,8 @@ class Structure
 	{
 		return mDb;
 	}
+
+	void validateAtoms() const;
 
   private:
 	friend Polymer;

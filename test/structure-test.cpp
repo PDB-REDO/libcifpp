@@ -344,3 +344,16 @@ BOOST_AUTO_TEST_CASE(test_load_1)
 		BOOST_CHECK_EQUAL(poly.size(), pdbx_poly_seq_scheme.find("asym_id"_key == poly.asymID()).size());
 	}
 }
+
+BOOST_AUTO_TEST_CASE(remove_residue_1)
+{
+	using namespace cif::literals;
+
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	mmcif::File file(example.string());
+
+	mmcif::Structure s(file);
+	s.removeResidue(s.getResidue("B"));
+
+	BOOST_CHECK_NO_THROW(s.validateAtoms());
+}

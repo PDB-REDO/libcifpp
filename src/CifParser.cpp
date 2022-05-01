@@ -96,7 +96,7 @@ bool isUnquotedString(const char *s)
 	// but be careful it does not contain e.g. stop_
 	if (result)
 	{
-		const std::regex reservedRx(R"((^(?:data|save)|.*(?:loop|stop|global))_.+)", std::regex_constants::icase);
+		static const std::regex reservedRx(R"((^(?:data|save)|.*(?:loop|stop|global))_.+)", std::regex_constants::icase);
 		result = not std::regex_match(ss, reservedRx);
 	}
 

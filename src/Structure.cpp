@@ -1779,23 +1779,29 @@ Atom& Structure::emplace_atom(Atom &&atom)
 
 void Structure::removeAtom(Atom &a)
 {
+	using namespace cif::literals;
+
 	cif::Datablock &db = datablock();
 
 	auto &atomSites = db["atom_site"];
+	atomSites.erase("id"_key == a.id());
 
-	for (auto i = atomSites.begin(); i != atomSites.end(); ++i)
+	try
 	{
-		std::string id;
-		cif::tie(id) = i->get("id");
-
-		if (id == a.id())
-		{
-			atomSites.erase(i);
-			break;
-		}
+		auto &res = getResidue(a);
+		res.mAtoms.erase(std::remove(res.mAtoms.begin(), res.mAtoms.end(), a), res.mAtoms.end());
+	}
+	catch(const std::exception& e)
+	{
+		if (cif::VERBOSE > 0)
+			std::cerr << "Error removing atom from residue: " << e.what() << std::endl;
 	}
 
 	assert(mAtomIndex.size() == mAtoms.size());
+
+#ifndef NDEBUG
+	bool removed = false;
+#endif
 
 	int L = 0, R = mAtomIndex.size() - 1;
 	while (L <= R)
@@ -1809,7 +1815,18 @@ void Structure::removeAtom(Atom &a)
 		if (d == 0)
 		{
 			mAtoms.erase(mAtoms.begin() + mAtomIndex[i]);
+
+			auto ai = mAtomIndex[i];
 			mAtomIndex.erase(mAtomIndex.begin() + i);
+
+			for (auto &j : mAtomIndex)
+			{
+				if (j > ai)
+					--j;
+			}
+#ifndef NDEBUG
+			removed = true;
+#endif
 			break;
 		}
 
@@ -1818,6 +1835,9 @@ void Structure::removeAtom(Atom &a)
 		else
 			R = i - 1;
 	}
+#ifndef NDEBUG
+assert(removed);
+#endif
 }
 
 void Structure::swapAtoms(Atom a1, Atom a2)
@@ -1956,6 +1976,27 @@ void Structure::changeResidue(Residue &res, const std::string &newCompound,
 	{
 		atomSites.update_value(cif::Key("id") == a.id(), "label_comp_id", newCompound);
 		atomSites.update_value(cif::Key("id") == a.id(), "auth_comp_id", newCompound);
+	}
+}
+
+void Structure::removeResidue(Residue &res)
+{
+	using namespace cif::literals;
+
+	std::string asymID = res.asymID();
+
+	auto atoms = res.atoms();
+
+	for (auto atom : atoms)
+		removeAtom(atom);
+	
+	for (auto npi = mNonPolymers.begin(); npi != mNonPolymers.end(); ++npi)
+	{
+		if (not (*npi == res))
+			continue;
+		
+		mNonPolymers.erase(npi);
+		break;
 	}
 }
 
@@ -2429,6 +2470,49 @@ void Structure::translateRotateAndTranslate(Point t1, Quaternion q, Point t2)
 {
 	for (auto &a : mAtoms)
 		a.translateRotateAndTranslate(t1, q, t2);
+}
+
+void Structure::validateAtoms() const
+{
+	// validate order
+	assert(mAtoms.size() == mAtomIndex.size());
+	for (size_t i = 0; i + i < mAtoms.size(); ++i)
+		assert(mAtoms[mAtomIndex[i]].id().compare(mAtoms[mAtomIndex[i + 1]].id()) < 0);
+
+	std::vector<Atom> atoms = mAtoms;
+
+	auto removeAtom = [&atoms](const Atom &a)
+	{
+		auto i = std::find(atoms.begin(), atoms.end(), a);
+		assert(i != atoms.end());
+		atoms.erase(i);
+	};
+	
+	for (auto &poly : mPolymers)
+	{
+		for (auto &monomer : poly)
+		{
+			for (auto &atom : monomer.atoms())
+				removeAtom(atom);
+		}
+	}
+
+	for (auto &branch : mBranches)
+	{
+		for (auto &sugar : branch)
+		{
+			for (auto &atom : sugar.atoms())
+				removeAtom(atom);
+		}
+	}
+
+	for (auto &res : mNonPolymers)
+	{
+		for (auto &atom : res.atoms())
+			removeAtom(atom);
+	}
+
+	assert(atoms.empty());
 }
 
 } // namespace mmcif
