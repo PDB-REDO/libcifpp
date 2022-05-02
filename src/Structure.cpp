@@ -2518,25 +2518,25 @@ std::string Structure::createEntityForBranch(Branch &branch)
 
 	for (auto &s1 : branch)
 	{
-		auto l1 = s1.getLink();
+		auto l2 = s1.getLink();
 
-		if (not l1)
+		if (not l2)
 			continue;
 		
-		auto &s2 = branch.at(std::stoi(l1.authSeqID()) - 1);
-		auto l2 = s2.atomByID("C1");
+		auto &s2 = branch.at(std::stoi(l2.authSeqID()) - 1);
+		auto l1 = s2.atomByID("C1");
 
 		pdbx_entity_branch_link.emplace({
 			{ "link_id", pdbx_entity_branch_link.getUniqueID("") },
 			{ "entity_id", entityID },
-			{ "entity_branch_list_num_1", s2.authSeqID() },
-			{ "comp_id_1", s2.compoundID() },
-			{ "atom_id_1", l2.labelAtomID() },
+			{ "entity_branch_list_num_1", s1.authSeqID() },
+			{ "comp_id_1", s1.compoundID() },
+			{ "atom_id_1", l1.labelAtomID() },
 			{ "leaving_atom_id_1", "O1" },
-			{ "entity_branch_list_num_2", s1.authSeqID() },
-			{ "comp_id_2", s1.compoundID() },
-			{ "atom_id_2", l1.labelAtomID() },
-			{ "leaving_atom_id_2", "H" + l1.labelAtomID() },
+			{ "entity_branch_list_num_2", s2.authSeqID() },
+			{ "comp_id_2", s2.compoundID() },
+			{ "atom_id_2", l2.labelAtomID() },
+			{ "leaving_atom_id_2", "H" + l2.labelAtomID() },
 			{ "value_order", "sing" }
 		});
 	}
