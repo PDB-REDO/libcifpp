@@ -276,11 +276,17 @@ BondMap::BondMap(const Structure &p)
 			continue;
 		}
 
-		auto c = atomMapByAsymSeqAndAtom.at(make_tuple(asymID, lastSeqID, "C", lastAuthSeqID));
-		auto n = atomMapByAsymSeqAndAtom.at(make_tuple(asymID, seqID, "N", authSeqID));
+		auto kc = make_tuple(asymID, lastSeqID, "C", lastAuthSeqID);
+		auto kn = make_tuple(asymID, seqID, "N", authSeqID);
 
-		if (not(c.empty() or n.empty()))
+		if (atomMapByAsymSeqAndAtom.count(kc) and atomMapByAsymSeqAndAtom.count(kn))
+		{
+			auto c = atomMapByAsymSeqAndAtom.at(kc);
+			auto n = atomMapByAsymSeqAndAtom.at(kn);
+
 			bindAtoms(c, n);
+		}
+		// if (not(c.empty() or n.empty()))
 
 		lastSeqID = seqID;
 		lastAuthSeqID = authSeqID;
@@ -298,10 +304,21 @@ BondMap::BondMap(const Structure &p)
 				"ptnr1_label_seq_id", "ptnr2_label_seq_id",
 				"ptnr1_auth_seq_id", "ptnr2_auth_seq_id");
 
-		std::string a = atomMapByAsymSeqAndAtom.at(make_tuple(asym1, seqId1, atomId1, authSeqId1));
-		std::string b = atomMapByAsymSeqAndAtom.at(make_tuple(asym2, seqId2, atomId2, authSeqId2));
-		if (not(a.empty() or b.empty()))
+		auto ka = make_tuple(asym1, seqId1, atomId1, authSeqId1);
+		auto kb = make_tuple(asym2, seqId2, atomId2, authSeqId2);
+
+		if (atomMapByAsymSeqAndAtom.count(ka) and atomMapByAsymSeqAndAtom.count(kb))
+		{
+			auto a = atomMapByAsymSeqAndAtom.at(ka);
+			auto b = atomMapByAsymSeqAndAtom.at(kb);
+
 			linkAtoms(a, b);
+		}
+
+		// std::string a = atomMapByAsymSeqAndAtom.at(make_tuple(asym1, seqId1, atomId1, authSeqId1));
+		// std::string b = atomMapByAsymSeqAndAtom.at(make_tuple(asym2, seqId2, atomId2, authSeqId2));
+		// if (not(a.empty() or b.empty()))
+		// 	linkAtoms(a, b);
 	}
 
 	// then link all atoms in the compounds

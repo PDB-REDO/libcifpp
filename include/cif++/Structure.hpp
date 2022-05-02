@@ -214,6 +214,10 @@ class Atom
 	std::string pdbID() const;   // auth_comp_id + '_' + auth_asym_id + '_' + auth_seq_id + pdbx_PDB_ins_code
 
 	bool operator==(const Atom &rhs) const;
+	bool operator!=(const Atom &rhs) const
+	{
+		return not operator==(rhs);
+	}
 
 	// access data in compound for this atom
 
@@ -237,6 +241,13 @@ class Atom
 	}
 
 	friend std::ostream &operator<<(std::ostream &os, const Atom &atom);
+
+	/// \brief Synchronize data with underlying cif data
+	void sync()
+	{
+		if (mImpl)
+			mImpl->prefetch();
+	}
 
   private:
 	friend class Structure;
@@ -289,6 +300,13 @@ typedef std::vector<Atom> AtomView;
 
 // --------------------------------------------------------------------
 
+enum class EntityType
+{
+	Polymer, NonPolymer, Macrolide, Water, Branched
+};
+
+// --------------------------------------------------------------------
+
 class Residue
 {
   public:
@@ -316,10 +334,7 @@ class Residue
 	AtomView &atoms();
 	const AtomView &atoms() const;
 
-	void addAtom(const Atom &atom)
-	{
-		mAtoms.push_back(atom);
-	}
+	void addAtom(Atom &atom);
 
 	/// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
 	AtomView unique_atoms() const;
@@ -335,6 +350,8 @@ class Residue
 	const std::string &asymID() const { return mAsymID; }
 	int seqID() const { return mSeqID; }
 	std::string entityID() const;
+
+	EntityType entityType() const;
 
 	std::string authAsymID() const;
 	std::string authSeqID() const;
@@ -457,6 +474,11 @@ class Monomer : public Residue
 	// for LEU and VAL
 	float chiralVolume() const;
 
+	bool operator==(const Monomer &rhs) const
+	{
+		return mPolymer == rhs.mPolymer and mIndex == rhs.mIndex;
+	}
+
   private:
 	const Polymer *mPolymer;
 	size_t mIndex;
@@ -508,16 +530,22 @@ class Sugar : public Residue
 	int num() const { return std::stoi(mAuthSeqID); }
 	std::string name() const;
 
-	// Sugar &
+	/// \brief Return the atom the C1 is linked to
+	Atom getLink() const { return mLink; }
+	void setLink(Atom link) { mLink = link; }
 
   private:
+
 	const Branch &mBranch;
+	Atom mLink;
 };
 
 class Branch : public std::vector<Sugar>
 {
   public:
 	Branch(Structure &structure, const std::string &asymID);
+
+	void linkAtoms();
 
 	std::string name() const;
 	float weight() const;
@@ -531,6 +559,8 @@ class Branch : public std::vector<Sugar>
 
   private:
 	friend Sugar;
+
+	std::string name(const Sugar &s) const;
 
 	Structure *mStructure;
 	std::string mAsymID;
@@ -601,6 +631,9 @@ class Structure
 
 	const AtomView &atoms() const { return mAtoms; }
 	// AtomView &atoms() { return mAtoms; }
+
+	EntityType getEntityTypeForEntityID(const std::string entityID) const;
+	EntityType getEntityTypeForAsymID(const std::string asymID) const;
 
 	AtomView waters() const;
 
@@ -683,6 +716,18 @@ class Structure
 	void changeResidue(Residue &res, const std::string &newCompound,
 		const std::vector<std::tuple<std::string, std::string>> &remappedAtoms);
 
+	/// \brief Remove a residue, can be monomer or nonpoly
+	///
+	/// \param asym_id     The asym ID
+	/// \param seq_id      The sequence ID
+	void removeResidue(const std::string &asym_id, int seq_id, const std::string &auth_seq_id)
+	{
+		removeResidue(getResidue(asym_id, seq_id, auth_seq_id));
+	}
+
+	/// \brief Remove residue \a res, can be monomer or nonpoly
+	void removeResidue(Residue &res);
+	
 	/// \brief Create a new non-polymer entity, returns new ID
 	/// \param mon_id	The mon_id for the new nonpoly, must be an existing and known compound from CCD
 	/// \return			The ID of the created entity
@@ -704,17 +749,20 @@ class Structure
 	/// \return				The newly create asym ID
 	std::string createNonpoly(const std::string &entity_id, std::vector<std::vector<cif::Item>> &atom_info);
 
-	/// \brief Create a new (sugar) branch with one first NAG containing atoms \a nag_atoms
-	Branch &createBranch(std::vector<std::vector<cif::Item>> &nag_atoms);
+	/// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a nag_atom_info
+	Branch &createBranch(std::vector<std::vector<cif::Item>> &nag_atom_info);
 
-	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms \a atoms
-	Branch &extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atoms);
-
-	/// \brief Remove a residue, can be monomer or nonpoly
+	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms constructed from \a atom_info
 	///
-	/// \param asym_id     The asym ID
-	/// \param seq_id      The sequence ID
-	void removeResidue(const std::string &asym_id, int seq_id);
+	/// \param asym_id      The asym id of the branch to extend
+	/// \param atom_info    Array containing the info for the atoms to construct for the new sugar
+	/// \param link_sugar   The sugar to link to, note: this is the sugar number (1 based)
+	/// \param link_atom    The atom id of the atom linked in the sugar
+	Branch &extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atom_info,
+		int link_sugar, const std::string &link_atom);
+
+	/// \brief Remove \a branch
+	void removeBranch(Branch &branch);
 
 	/// \brief Remove residue \a res
 	///
