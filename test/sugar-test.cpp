@@ -119,13 +119,15 @@ BOOST_AUTO_TEST_CASE(create_sugar_1)
 	auto &db = s.datablock();
 	auto &as = db["atom_site"];
 
-	for (auto r : as.find("label_asym_id"_key == "L" and "auth_seq_id"_key == 1))
+	for (auto r : as.find("label_asym_id"_key == "L"))
 		ai.emplace_back(r.begin(), r.end());
 
 	auto &branch = s.createBranch(ai);
 
 	BOOST_CHECK_EQUAL(branch.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
 	BOOST_CHECK_EQUAL(branch.size(), 1);
+
+	BOOST_CHECK_EQUAL(branch[0].atoms().size(), nagAtoms.size());
 }
 
 // --------------------------------------------------------------------
@@ -150,7 +152,7 @@ BOOST_AUTO_TEST_CASE(create_sugar_2)
 
 	for (size_t i = 0; i < 2; ++i)
 	{
-		for (auto r : as.find("label_asym_id"_key == "H" and "auth_seq_id"_key == i))
+		for (auto r : as.find("label_asym_id"_key == "H" and "auth_seq_id"_key == i + 1))
 			ai[i].emplace_back(r.begin(), r.end());
 	}
 
