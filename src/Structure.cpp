@@ -412,7 +412,19 @@ Residue::~Residue()
 
 std::string Residue::entityID() const
 {
-	return mAtoms.empty() ? "" : mAtoms.front().labelEntityID();
+	std::string result;
+
+	if (not mAtoms.empty())
+		result = mAtoms.front().labelEntityID();
+	else if (mStructure != nullptr and not mAsymID.empty())
+	{
+		using namespace cif::literals;
+
+		auto &db = mStructure->datablock();
+		result = db["struct_asym"].find1<std::string>("id"_key == mAsymID, "entity_id");
+	}
+
+	return result;
 }
 
 EntityType Residue::entityType() const
@@ -487,7 +499,8 @@ void Residue::addAtom(Atom &atom)
 {
 	atom.set_property("label_comp_id", mCompoundID);
 	atom.set_property("label_asym_id", mAsymID);
-	atom.set_property("label_seq_id", std::to_string(mSeqID));
+	if (mSeqID != 0)
+		atom.set_property("label_seq_id", std::to_string(mSeqID));
 	atom.set_property("auth_seq_id", mAuthSeqID);
 
 	mAtoms.push_back(atom);
@@ -1882,10 +1895,10 @@ void Structure::removeAtom(Atom &a)
 		auto &res = getResidue(a);
 		res.mAtoms.erase(std::remove(res.mAtoms.begin(), res.mAtoms.end(), a), res.mAtoms.end());
 	}
-	catch(const std::exception& e)
+	catch (const std::exception &ex)
 	{
 		if (cif::VERBOSE > 0)
-			std::cerr << "Error removing atom from residue: " << e.what() << std::endl;
+			std::cerr << "Error removing atom from residue: " << ex.what() << std::endl;
 	}
 
 	assert(mAtomIndex.size() == mAtoms.size());
@@ -2071,6 +2084,10 @@ void Structure::removeResidue(Residue &res)
 
 	cif::Datablock &db = datablock();
 
+	auto atoms = res.atoms();
+	for (auto atom : atoms)
+		removeAtom(atom);
+
 	switch (res.entityType())
 	{
 		case EntityType::Polymer:
@@ -2105,9 +2122,6 @@ void Structure::removeResidue(Residue &res)
 			// TODO: Fix this?
 			throw std::runtime_error("no support for macrolides yet");
 	}
-
-	for (auto atom : res.atoms())
-		removeAtom(atom);
 }
 
 void Structure::removeBranch(Branch &branch)
@@ -2121,7 +2135,8 @@ void Structure::removeBranch(Branch &branch)
 
 	for (auto &sugar : branch)
 	{
-		for (auto atom : sugar.atoms())
+		auto atoms = sugar.atoms();
+		for (auto atom : atoms)
 			removeAtom(atom);
 	}
 
@@ -2644,7 +2659,7 @@ void Structure::validateAtoms() const
 
 	std::vector<Atom> atoms = mAtoms;
 
-	auto removeAtom = [&atoms](const Atom &a)
+	auto removeAtomFromList = [&atoms](const Atom &a)
 	{
 		auto i = std::find(atoms.begin(), atoms.end(), a);
 		assert(i != atoms.end());
@@ -2656,7 +2671,7 @@ void Structure::validateAtoms() const
 		for (auto &monomer : poly)
 		{
 			for (auto &atom : monomer.atoms())
-				removeAtom(atom);
+				removeAtomFromList(atom);
 		}
 	}
 
@@ -2665,14 +2680,14 @@ void Structure::validateAtoms() const
 		for (auto &sugar : branch)
 		{
 			for (auto &atom : sugar.atoms())
-				removeAtom(atom);
+				removeAtomFromList(atom);
 		}
 	}
 
 	for (auto &res : mNonPolymers)
 	{
 		for (auto &atom : res.atoms())
-			removeAtom(atom);
+			removeAtomFromList(atom);
 	}
 
 	assert(atoms.empty());

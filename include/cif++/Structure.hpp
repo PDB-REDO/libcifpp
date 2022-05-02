@@ -725,9 +725,6 @@ class Structure
 		removeResidue(getResidue(asym_id, seq_id, auth_seq_id));
 	}
 
-	/// \brief Remove residue \a res, can be monomer or nonpoly
-	void removeResidue(Residue &res);
-	
 	/// \brief Create a new non-polymer entity, returns new ID
 	/// \param mon_id	The mon_id for the new nonpoly, must be an existing and known compound from CCD
 	/// \return			The ID of the created entity

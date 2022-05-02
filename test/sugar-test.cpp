@@ -112,8 +112,6 @@ BOOST_AUTO_TEST_CASE(create_sugar_1)
 	auto &NAG = s.getResidue("L");
 	auto nagAtoms = NAG.atoms();
 
-	s.removeResidue(NAG);
-
 	std::vector<std::vector<cif::Item>> ai;
 
 	auto &db = s.datablock();
@@ -121,6 +119,8 @@ BOOST_AUTO_TEST_CASE(create_sugar_1)
 
 	for (auto r : as.find("label_asym_id"_key == "L"))
 		ai.emplace_back(r.begin(), r.end());
+
+	s.removeResidue(NAG);
 
 	auto &branch = s.createBranch(ai);
 
