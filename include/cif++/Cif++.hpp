@@ -176,6 +176,7 @@ class Item
 		, mValue(rhs.mValue)
 	{
 	}
+
 	Item(Item &&rhs) noexcept
 		: mName(std::move(rhs.mName))
 		, mValue(std::move(rhs.mValue))

@@ -31,6 +31,7 @@
 
 #include "cif++/Cif++.hpp"
 #include "cif++/Structure.hpp"
+#include "cif++/CifValidator.hpp"
 
 // --------------------------------------------------------------------
 
@@ -113,7 +114,15 @@ BOOST_AUTO_TEST_CASE(create_sugar_1)
 
 	s.removeResidue(NAG);
 
-	auto &branch = s.createBranch(nagAtoms);
+	std::vector<std::vector<cif::Item>> ai;
+
+	auto &db = s.datablock();
+	auto &as = db["atom_site"];
+
+	for (auto r : as.find("label_asym_id"_key == "L" and "auth_seq_id"_key == 1))
+		ai.emplace_back(r.begin(), r.end());
+
+	auto &branch = s.createBranch(ai);
 
 	BOOST_CHECK_EQUAL(branch.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
 	BOOST_CHECK_EQUAL(branch.size(), 1);
@@ -134,13 +143,21 @@ BOOST_AUTO_TEST_CASE(create_sugar_2)
 
 	BOOST_CHECK_EQUAL(bH.size(), 2);
 
-	auto a_sH1 = bH[0].atoms();
-	auto a_sH2 = bH[1].atoms();
+	std::vector<std::vector<cif::Item>> ai[2];
+
+	auto &db = s.datablock();
+	auto &as = db["atom_site"];
+
+	for (size_t i = 0; i < 2; ++i)
+	{
+		for (auto r : as.find("label_asym_id"_key == "H" and "auth_seq_id"_key == i))
+			ai[i].emplace_back(r.begin(), r.end());
+	}
 
 	s.removeBranch(bH);
 
-	auto &bN = s.createBranch(a_sH1);
-	s.extendBranch(bN.asymID(), a_sH2);
+	auto &bN = s.createBranch(ai[0]);
+	s.extendBranch(bN.asymID(), ai[1], 1, "O4");
 
 	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose-(1-4)-2-acetamido-2-deoxy-beta-D-glucopyranose");
 	BOOST_CHECK_EQUAL(bN.size(), 2);

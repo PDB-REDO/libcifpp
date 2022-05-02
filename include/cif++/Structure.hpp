@@ -747,14 +747,14 @@ class Structure
 	/// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a nag_atom_info
 	Branch &createBranch(std::vector<std::vector<cif::Item>> &nag_atom_info);
 
-	/// \brief Create a new (sugar) branch with one first NAG containing atoms \a nag_atoms
-	Branch &createBranch(std::vector<Atom> &nag_atoms);
-
 	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms constructed from \a atom_info
-	Branch &extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atom_info);
-
-	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms \a atoms
-	Branch &extendBranch(const std::string &asym_id, std::vector<Atom> &atoms);
+	///
+	/// \param asym_id      The asym id of the branch to extend
+	/// \param atom_info    Array containing the info for the atoms to construct for the new sugar
+	/// \param link_sugar   The sugar to link to, note: this is the sugar number (1 based)
+	/// \param link_atom    The atom id of the atom linked in the sugar
+	Branch &extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atom_info,
+		int link_sugar, const std::string &link_atom);
 
 	/// \brief Remove \a branch
 	void removeBranch(Branch &branch);

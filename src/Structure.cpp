@@ -2259,6 +2259,10 @@ Branch& Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 	auto &struct_asym = db["struct_asym"];
 	std::string asym_id = struct_asym.getUniqueID();
 
+	auto &branch = mBranches.emplace_back(*this, asym_id);
+	auto &sugar = branch.emplace_back(branch, "NAG", asym_id, 1);
+	auto tmp_entity_id = db["entity"].getUniqueID("");
+
 	auto &atom_site = db["atom_site"];
 
 	auto appendUnlessSet = [](std::vector<cif::Item> &ai, cif::Item &&i)
@@ -2266,8 +2270,6 @@ Branch& Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 		if (find_if(ai.begin(), ai.end(), [name = i.name()](cif::Item &ci) { return ci.name() == name; }) == ai.end())
 			ai.emplace_back(std::move(i));
 	};
-
-	std::vector<Atom> atoms;
 
 	for (auto &atom : nag_atoms)
 	{
@@ -2278,7 +2280,7 @@ Branch& Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 		appendUnlessSet(atom, { "label_comp_id", "NAG"} );
 		appendUnlessSet(atom, { "label_asym_id", asym_id} );
 		appendUnlessSet(atom, { "label_seq_id", "."} );
-		// appendUnlessSet(atom, { "label_entity_id", tmp_entity_id} );
+		appendUnlessSet(atom, { "label_entity_id", tmp_entity_id} );
 		appendUnlessSet(atom, { "auth_comp_id", "NAG"} );
 		appendUnlessSet(atom, { "auth_asym_id", asym_id} );
 		appendUnlessSet(atom, { "auth_seq_id", 1} );
@@ -2288,25 +2290,8 @@ Branch& Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
 
 		auto &newAtom = emplace_atom(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
-		atoms.push_back(newAtom);
+		sugar.addAtom(newAtom);
 	}
-
-	return createBranch(atoms);
-}
-
-Branch& Structure::createBranch(std::vector<Atom> &nag_atoms)
-{
-	using namespace cif::literals;
-
-	cif::Datablock &db = datablock();
-	auto &struct_asym = db["struct_asym"];
-	std::string asym_id = struct_asym.getUniqueID();
-
-	auto &branch = mBranches.emplace_back(*this, asym_id);
-	auto &sugar = branch.emplace_back(branch, "NAG", asym_id, 1);
-
-	for (auto &atom : nag_atoms)
-		sugar.addAtom(atom);
 
 	// now we can create the entity and get the real ID
 	auto entity_id = createEntityForBranch(branch);
@@ -2342,7 +2327,8 @@ Branch& Structure::createBranch(std::vector<Atom> &nag_atoms)
 	return branch;
 }
 
-Branch& Structure::extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atom_info)
+Branch& Structure::extendBranch(const std::string &asym_id, std::vector<std::vector<cif::Item>> &atom_info,
+	int link_sugar, const std::string &link_atom)
 {
 	// sanity check
 	std::string compoundID;
@@ -2376,41 +2362,6 @@ Branch& Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 			ai.emplace_back(std::move(i));
 	};
 
-	std::vector<Atom> atoms;
-
-	for (auto &atom : atom_info)
-	{
-		auto atom_id = atom_site.getUniqueID("");
-
-		appendUnlessSet(atom, { "group_PDB", "HETATM"} );
-		appendUnlessSet(atom, { "id", atom_id} );
-		appendUnlessSet(atom, { "label_comp_id", compoundID} );
-		appendUnlessSet(atom, { "label_asym_id", asym_id} );
-		appendUnlessSet(atom, { "label_seq_id", "."} );
-		appendUnlessSet(atom, { "label_entity_id", tmp_entity_id} );
-		appendUnlessSet(atom, { "auth_comp_id", compoundID} );
-		appendUnlessSet(atom, { "auth_asym_id", asym_id} );
-		// appendUnlessSet(atom, { "auth_seq_id", sugarNum} );
-		appendUnlessSet(atom, { "pdbx_PDB_model_num", 1} );
-		appendUnlessSet(atom, { "label_alt_id", ""} );
-
-		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
-
-		auto &newAtom = emplace_atom(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
-		atoms.push_back(newAtom);
-	}
-
-	return extendBranch(asym_id, atoms);
-}
-
-Branch& Structure::extendBranch(const std::string &asym_id, std::vector<Atom> &atoms)
-{
-	using namespace cif::literals;
-
-	std::string compoundID = atoms.front().labelCompID();
-
-	cif::Datablock &db = datablock();
-
 	auto bi = std::find_if(mBranches.begin(), mBranches.end(), [asym_id](Branch &b) { return b.asymID() == asym_id; });
 	if (bi == mBranches.end())
 		throw std::logic_error("Create a branch first!");
@@ -2421,6 +2372,27 @@ Branch& Structure::extendBranch(const std::string &asym_id, std::vector<Atom> &a
 
 	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum);
 
+	for (auto &atom : atom_info)
+	{
+		auto atom_id = atom_site.getUniqueID("");
+
+		appendUnlessSet(atom, { "group_PDB", "HETATM"} );
+		appendUnlessSet(atom, { "id", atom_id} );
+		appendUnlessSet(atom, { "label_comp_id", compoundID} );
+		appendUnlessSet(atom, { "label_entity_id", tmp_entity_id} );
+		appendUnlessSet(atom, { "auth_comp_id", compoundID} );
+		appendUnlessSet(atom, { "auth_asym_id", asym_id} );
+		appendUnlessSet(atom, { "pdbx_PDB_model_num", 1} );
+		appendUnlessSet(atom, { "label_alt_id", ""} );
+
+		auto &&[row, inserted] = atom_site.emplace(atom.begin(), atom.end());
+
+		auto &newAtom = emplace_atom(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
+		sugar.addAtom(newAtom);
+	}
+
+	sugar.setLink(branch.at(link_sugar - 1).atomByID(link_atom));
+
 	auto entity_id = createEntityForBranch(branch);
 
 	for (auto &sugar : branch)
@@ -2428,9 +2400,6 @@ Branch& Structure::extendBranch(const std::string &asym_id, std::vector<Atom> &a
 		for (auto atom : sugar.atoms())
 			atom.set_property("label_entity_id", entity_id);
 	}
-
-	for (auto &atom : atoms)
-		sugar.addAtom(atom);
 
 	auto &pdbx_branch_scheme = db["pdbx_branch_scheme"];
 	pdbx_branch_scheme.erase("asym_id"_key == asym_id);
@@ -2455,7 +2424,7 @@ Branch& Structure::extendBranch(const std::string &asym_id, std::vector<Atom> &a
 			{ "hetero", "n" }
 		});
 	}
-
+	
 	return branch;
 }
 
@@ -2497,6 +2466,34 @@ std::string Structure::createEntityForBranch(Branch &branch)
 			{ "comp_id", sugar.compoundID() },
 			{ "num", sugar.num() },
 			{ "hetero", "n" }
+		});
+	}
+
+	auto &pdbx_entity_branch_link = mDb["pdbx_entity_branch_link"];
+	pdbx_entity_branch_link.erase("entity_id"_key == entityID);
+
+	for (auto &s1 : branch)
+	{
+		auto l1 = s1.getLink();
+
+		if (not l1)
+			continue;
+		
+		auto &s2 = branch.at(std::stoi(l1.authSeqID()) - 1);
+		auto l2 = s2.atomByID("C1");
+
+		pdbx_entity_branch_link.emplace({
+			{ "link_id", pdbx_entity_branch_link.getUniqueID("") },
+			{ "entity_id", entityID },
+			{ "entity_branch_list_num_1", s2.authSeqID() },
+			{ "comp_id_1", s2.compoundID() },
+			{ "atom_id_1", l2.labelAtomID() },
+			{ "leaving_atom_id_1", "O1" },
+			{ "entity_branch_list_num_2", s1.authSeqID() },
+			{ "comp_id_2", s1.compoundID() },
+			{ "atom_id_2", l1.labelAtomID() },
+			{ "leaving_atom_id_2", "H" + l1.labelAtomID() },
+			{ "value_order", "sing" }
 		});
 	}
 
