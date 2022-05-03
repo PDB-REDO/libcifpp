@@ -1380,7 +1380,7 @@ void File::save(const std::filesystem::path &path)
 	out.push(outFile);
 
 	if (file.extension() == ".pdb")
-		WritePDBFile(out, *this);
+		WritePDBFile(out, data());
 	else
 		cif::File::save(out);
 }

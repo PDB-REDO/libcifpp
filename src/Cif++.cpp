@@ -409,6 +409,22 @@ Category &Datablock::operator[](std::string_view name)
 	return *i;
 }
 
+const Category &Datablock::operator[](std::string_view name) const
+{
+	using namespace std::literals;
+
+	auto result = get(name);
+	if (result == nullptr)
+		// throw std::out_of_range("The category with name " + std::string(name) + " does not exist");
+	{
+		std::unique_lock lock(mLock);
+		if (not mNullCategory)
+			mNullCategory.reset(new Category(const_cast<Datablock&>(*this), "<null>", nullptr));
+		result = mNullCategory.get();
+	}
+	return *result;
+}
+
 Category *Datablock::get(std::string_view name)
 {
 	std::shared_lock lock(mLock);
@@ -1523,6 +1539,11 @@ void Category::drop(const std::string &field)
 
 		mColumns.erase(ci);
 	}
+}
+
+const Row Category::operator[](Condition &&cond) const
+{
+	return const_cast<Category*>(this)->operator[](std::forward<Condition>(cond));
 }
 
 Row Category::operator[](Condition &&cond)

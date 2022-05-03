@@ -1,3 +1,7 @@
+Version 4.0.1
+- Added a bunch of const methods to Datablock and Category.
+- Changed PDB writing interface to accept Datablock instead of File.
+
 Version 4.0.0
 - getResidue in mmcif::Structure now requires both a
   sequence ID and an auth sequence ID. As a result the code was cleaned

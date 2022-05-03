@@ -146,7 +146,7 @@ std::string cif2pdbSymmetry(std::string s)
 	return s;
 }
 
-std::string cif2pdbAtomName(std::string name, std::string resName, Datablock& db)
+std::string cif2pdbAtomName(std::string name, std::string resName, const Datablock& db)
 {
 	if (name.length() < 4)
 	{
@@ -166,7 +166,7 @@ std::string cif2pdbAtomName(std::string name, std::string resName, Datablock& db
 
 enum SoftwareType { eRefinement, eDataScaling, eDataExtraction, eDataReduction, ePhasing };
 
-std::string cifSoftware(Datablock& db, SoftwareType sw)
+std::string cifSoftware(const Datablock& db, SoftwareType sw)
 {
 	std::string result = "NULL";
 	
@@ -210,7 +210,7 @@ std::string cifSoftware(Datablock& db, SoftwareType sw)
 }
 
 // Map asym ID's back to PDB Chain ID's
-std::vector<std::string> MapAsymIDs2ChainIDs(const std::vector<std::string>& asymIDs, Datablock& db)
+std::vector<std::string> MapAsymIDs2ChainIDs(const std::vector<std::string>& asymIDs, const Datablock& db)
 {
 	std::set<std::string> result;
 	
@@ -275,7 +275,7 @@ size_t WriteOneContinuedLine(std::ostream& pdbFile, std::string header, int cLen
 	return WriteContinuedLine(pdbFile, header, count, cLen, line, lStart);
 }
 
-size_t WriteCitation(std::ostream& pdbFile, Datablock& db, Row r, int reference)
+size_t WriteCitation(std::ostream& pdbFile, const Datablock& db, Row r, int reference)
 {
 	size_t result = 0;
 	
@@ -361,7 +361,7 @@ size_t WriteCitation(std::ostream& pdbFile, Datablock& db, Row r, int reference)
 	return result;
 }
 
-void WriteHeaderLines(std::ostream& pdbFile, Datablock& db)
+void WriteHeaderLines(std::ostream& pdbFile, const Datablock& db)
 {
 	//    0         1         2         3         4         5         6         7         8
 	//    HEADER    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxDDDDDDDDD   IIII
@@ -592,7 +592,7 @@ void WriteHeaderLines(std::ostream& pdbFile, Datablock& db)
 		WriteOneContinuedLine(pdbFile, "AUTHOR  ", 2, ba::join(authors, ","));
 }
 
-void WriteTitle(std::ostream& pdbFile, Datablock& db)
+void WriteTitle(std::ostream& pdbFile, const Datablock& db)
 {
 	WriteHeaderLines(pdbFile, db);
 	
@@ -644,7 +644,7 @@ void WriteTitle(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark1(std::ostream& pdbFile, Datablock& db)
+void WriteRemark1(std::ostream& pdbFile, const Datablock& db)
 {
 	int reference = 0;
 	
@@ -662,7 +662,7 @@ void WriteRemark1(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark2(std::ostream& pdbFile, Datablock& db)
+void WriteRemark2(std::ostream& pdbFile, const Datablock& db)
 {
 	auto& refine = db["refine"];
 	if (refine.empty())
@@ -698,7 +698,7 @@ class FBase
   protected:
 	FBase(Row r, const char* f)
 		: mRow(r), mField(f) {}
-	FBase(Category& cat, cif::Condition&& cond, const char* f)
+	FBase(const Category& cat, cif::Condition&& cond, const char* f)
 		: mField(f)
 	{
 		auto r = cat.find(std::move(cond));
@@ -714,7 +714,7 @@ class Fi : public FBase
 {
   public:
 	Fi(Row r, const char* f) : FBase(r, f) {}
-	Fi(Category& cat, cif::Condition&& cond, const char* f) : FBase(cat, std::move(cond), f) {}
+	Fi(const Category& cat, cif::Condition&& cond, const char* f) : FBase(cat, std::move(cond), f) {}
 	
 	virtual void out(std::ostream& os)
 	{
@@ -734,7 +734,7 @@ class Ff : public FBase
 {
   public:
 	Ff(Row r, const char* f) : FBase(r, f) {}
-	Ff(Category& cat, cif::Condition&& cond, const char* f) : FBase(cat, std::move(cond), f) {}
+	Ff(const Category& cat, cif::Condition&& cond, const char* f) : FBase(cat, std::move(cond), f) {}
 	
 	virtual void out(std::ostream& os)
 	{
@@ -765,7 +765,7 @@ class Fs : public FBase
 {
   public:
 	Fs(Row r, const char* f, int remarkNr = 3) : FBase(r, f), mNr(remarkNr) {}
-	Fs(Category& cat, cif::Condition&& cond, const char* f, int remarkNr = 3) : FBase(cat, std::move(cond), f), mNr(remarkNr) {}
+	Fs(const Category& cat, cif::Condition&& cond, const char* f, int remarkNr = 3) : FBase(cat, std::move(cond), f), mNr(remarkNr) {}
 	
 	virtual void out(std::ostream& os)
 	{
@@ -831,7 +831,7 @@ std::ostream& operator<<(std::ostream& os, SEP&& sep)
 
 // --------------------------------------------------------------------
 
-void WriteRemark3BusterTNT(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3BusterTNT(std::ostream& pdbFile, const Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto ls_shell = db["refine_ls_shell"].front();
@@ -1009,7 +1009,7 @@ void WriteRemark3BusterTNT(std::ostream& pdbFile, Datablock& db)
 
 // --------------------------------------------------------------------
 
-void WriteRemark3CNS(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3CNS(std::ostream& pdbFile, const Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto ls_shell = db["refine_ls_shell"].front();
@@ -1149,7 +1149,7 @@ void WriteRemark3CNS(std::ostream& pdbFile, Datablock& db)
 
 // --------------------------------------------------------------------
 
-void WriteRemark3Refmac(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3Refmac(std::ostream& pdbFile, const Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto ls_shell = db["refine_ls_shell"].front();
@@ -1476,7 +1476,7 @@ void WriteRemark3Refmac(std::ostream& pdbFile, Datablock& db)
 			<< RM3("") << std::endl;
 }
 
-void WriteRemark3Shelxl(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3Shelxl(std::ostream& pdbFile, const Datablock& db)
 {
 	auto refine = db["refine"].front();
 //	auto ls_shell = db["refine_ls_shell"].front();
@@ -1555,7 +1555,7 @@ void WriteRemark3Shelxl(std::ostream& pdbFile, Datablock& db)
 			<< RM3("") << std::endl;
 }
 
-void WriteRemark3Phenix(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3Phenix(std::ostream& pdbFile, const Datablock& db)
 {
 	auto refine = db["refine"].front();
 //	auto ls_shell = db["refine_ls_shell"].front();
@@ -1782,7 +1782,7 @@ void WriteRemark3Phenix(std::ostream& pdbFile, Datablock& db)
 	pdbFile << RM3("") << std::endl;
 }
 
-void WriteRemark3XPlor(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3XPlor(std::ostream& pdbFile, const Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto ls_shell = db["refine_ls_shell"].front();
@@ -1897,7 +1897,7 @@ void WriteRemark3XPlor(std::ostream& pdbFile, Datablock& db)
 			<< RM3("") << std::endl;
 }
 
-void WriteRemark3NuclSQ(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3NuclSQ(std::ostream& pdbFile, const Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto pdbx_refine = db["pdbx_refine"].front();
@@ -2001,7 +2001,7 @@ void WriteRemark3NuclSQ(std::ostream& pdbFile, Datablock& db)
 			<< RM3("") << std::endl;
 }
 
-void WriteRemark3ProlSQ(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3ProlSQ(std::ostream& pdbFile, const Datablock& db)
 {
 	auto refine = db["refine"].front();
 	auto pdbx_refine = db["pdbx_refine"].front();
@@ -2120,7 +2120,7 @@ void WriteRemark3ProlSQ(std::ostream& pdbFile, Datablock& db)
 			<< RM3("") << std::endl;
 }
 
-void WriteRemark3(std::ostream& pdbFile, Datablock& db)
+void WriteRemark3(std::ostream& pdbFile, const Datablock& db)
 {
 	std::string program, authors;
 
@@ -2200,7 +2200,7 @@ void WriteRemark3(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark200(std::ostream& pdbFile, Datablock& db)
+void WriteRemark200(std::ostream& pdbFile, const Datablock& db)
 {
 	typedef RM<200> RM;
 	
@@ -2335,7 +2335,7 @@ void WriteRemark200(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark280(std::ostream& pdbFile, Datablock& db)
+void WriteRemark280(std::ostream& pdbFile, const Datablock& db)
 {
 	typedef RM<280> RM;
 	
@@ -2397,7 +2397,7 @@ void WriteRemark280(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark350(std::ostream& pdbFile, Datablock& db)
+void WriteRemark350(std::ostream& pdbFile, const Datablock& db)
 {
 	auto& c1 = db["pdbx_struct_assembly"];
 	if (c1.empty())
@@ -2517,7 +2517,7 @@ void WriteRemark350(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark400(std::ostream& pdbFile, Datablock& db)
+void WriteRemark400(std::ostream& pdbFile, const Datablock& db)
 {
 	for (auto& r: db["pdbx_entry_details"])
 	{
@@ -2527,7 +2527,7 @@ void WriteRemark400(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark450(std::ostream& pdbFile, Datablock& db)
+void WriteRemark450(std::ostream& pdbFile, const Datablock& db)
 {
 	for (auto& r: db["pdbx_entry_details"])
 	{
@@ -2538,7 +2538,7 @@ void WriteRemark450(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark465(std::ostream& pdbFile, Datablock& db)
+void WriteRemark465(std::ostream& pdbFile, const Datablock& db)
 {
 	bool first = true;
 	typedef RM<465> RM;
@@ -2587,7 +2587,7 @@ void WriteRemark465(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark470(std::ostream& pdbFile, Datablock& db)
+void WriteRemark470(std::ostream& pdbFile, const Datablock& db)
 {
 	typedef RM<470> RM;
 	boost::format fmt("REMARK 470 %3.3s %3.3s %1.1s%4.4d%1.1s  ");
@@ -2646,12 +2646,12 @@ void WriteRemark470(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark610(std::ostream& pdbFile, Datablock& db)
+void WriteRemark610(std::ostream& pdbFile, const Datablock& db)
 {
 	// #warning("unimplemented!");
 }
 
-void WriteRemark800(std::ostream& pdbFile, Datablock& db)
+void WriteRemark800(std::ostream& pdbFile, const Datablock& db)
 {
 	int nr = 0;
 	for (auto r: db["struct_site"])
@@ -2676,7 +2676,7 @@ void WriteRemark800(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemark999(std::ostream& pdbFile, Datablock& db)
+void WriteRemark999(std::ostream& pdbFile, const Datablock& db)
 {
 	for (auto& r: db["pdbx_entry_details"])
 	{
@@ -2687,7 +2687,7 @@ void WriteRemark999(std::ostream& pdbFile, Datablock& db)
 	}
 }
 
-void WriteRemarks(std::ostream& pdbFile, Datablock& db)
+void WriteRemarks(std::ostream& pdbFile, const Datablock& db)
 {
 	WriteRemark1(pdbFile, db);
 	WriteRemark2(pdbFile, db);
@@ -2709,7 +2709,7 @@ void WriteRemarks(std::ostream& pdbFile, Datablock& db)
 	WriteRemark999(pdbFile, db);
 }
 
-int WritePrimaryStructure(std::ostream& pdbFile, Datablock& db)
+int WritePrimaryStructure(std::ostream& pdbFile, const Datablock& db)
 {
 	int numSeq = 0;
 	
@@ -2863,7 +2863,7 @@ int WritePrimaryStructure(std::ostream& pdbFile, Datablock& db)
 	return numSeq;
 }
 
-int WriteHeterogen(std::ostream& pdbFile, Datablock& db)
+int WriteHeterogen(std::ostream& pdbFile, const Datablock& db)
 {
 	int numHet = 0;
 	
@@ -3132,7 +3132,7 @@ int WriteHeterogen(std::ostream& pdbFile, Datablock& db)
 	return numHet;
 }
 
-std::tuple<int,int> WriteSecondaryStructure(std::ostream& pdbFile, Datablock& db)
+std::tuple<int,int> WriteSecondaryStructure(std::ostream& pdbFile, const Datablock& db)
 {
 	int numHelix = 0, numSheet = 0;
 	
@@ -3290,7 +3290,7 @@ std::tuple<int,int> WriteSecondaryStructure(std::ostream& pdbFile, Datablock& db
 	return std::make_tuple(numHelix, numSheet);
 }
 
-void WriteConnectivity(std::ostream& pdbFile, cif::Datablock& db)
+void WriteConnectivity(std::ostream& pdbFile, const cif::Datablock& db)
 {
 	// SSBOND
 	// have to filter out alts
@@ -3406,7 +3406,7 @@ void WriteConnectivity(std::ostream& pdbFile, cif::Datablock& db)
 	}
 }
 
-int WriteMiscellaneousFeatures(std::ostream& pdbFile, Datablock& db)
+int WriteMiscellaneousFeatures(std::ostream& pdbFile, const Datablock& db)
 {
 	int numSite = 0;
 	
@@ -3459,7 +3459,7 @@ int WriteMiscellaneousFeatures(std::ostream& pdbFile, Datablock& db)
 	return numSite;
 }
 
-void WriteCrystallographic(std::ostream& pdbFile, Datablock& db)
+void WriteCrystallographic(std::ostream& pdbFile, const Datablock& db)
 {
 	auto r = db["symmetry"][cif::Key("entry_id") == db.getName()];
 	std::string symmetry = r["space_group_name_H-M"].as<std::string>();
@@ -3479,7 +3479,7 @@ void WriteCrystallographic(std::ostream& pdbFile, Datablock& db)
 		% r["Z_PDB"].as<double>()) << std::endl;
 }
 
-int WriteCoordinateTransformation(std::ostream& pdbFile, Datablock& db)
+int WriteCoordinateTransformation(std::ostream& pdbFile, const Datablock& db)
 {
 	int result = 0;
 	
@@ -3520,7 +3520,7 @@ int WriteCoordinateTransformation(std::ostream& pdbFile, Datablock& db)
 	return result;
 }
 
-std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, Datablock& db,
+std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, const Datablock& db,
 	const std::map<std::string,std::tuple<std::string,int,std::string>>& last_resseq_for_chain_map,
 	std::set<std::string>& TERminatedChains, int model_nr)
 {
@@ -3658,7 +3658,7 @@ std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, Datablock& d
 	return std::make_tuple(numCoord, numTer);
 }
 
-std::tuple<int,int> WriteCoordinate(std::ostream& pdbFile, Datablock& db)
+std::tuple<int,int> WriteCoordinate(std::ostream& pdbFile, const Datablock& db)
 {
 	// residues known from seqres
 //	map<tuple<std::string,int,std::string>,std::string> res2chain_map;
@@ -3718,7 +3718,7 @@ std::tuple<int,int> WriteCoordinate(std::ostream& pdbFile, Datablock& db)
 	return result;
 }
 
-void WritePDBFile(std::ostream& pdbFile, cif::File& cifFile)
+void WritePDBFile(std::ostream& pdbFile, const Datablock &db)
 {
 	io::filtering_ostream out;
 	out.push(FillOutLineFilter());
@@ -3726,8 +3726,6 @@ void WritePDBFile(std::ostream& pdbFile, cif::File& cifFile)
 
 	auto filter = out.component<FillOutLineFilter>(0);
 	assert(filter);
-
-	auto& db = cifFile.firstDatablock();
 	
 	int numRemark = 0, numHet = 0, numHelix = 0, numSheet = 0, numTurn = 0, numSite = 0, numXform = 0, numCoord = 0, numTer = 0, numConect = 0, numSeq = 0;
 	
@@ -3753,7 +3751,7 @@ void WritePDBFile(std::ostream& pdbFile, cif::File& cifFile)
 		<< "END" << std::endl;
 }
 
-void WritePDBHeaderLines(std::ostream& os, cif::File& cifFile)
+void WritePDBHeaderLines(std::ostream& os, const Datablock &db)
 {
 	// io::filtering_ostream out;
 	// out.push(FillOutLineFilter());
@@ -3761,8 +3759,6 @@ void WritePDBHeaderLines(std::ostream& os, cif::File& cifFile)
 
 	// auto filter = out.component<FillOutLineFilter>(0);
 	// assert(filter);
-
-	auto& db = cifFile.firstDatablock();
 
 	WriteHeaderLines(os, db);
 }
@@ -3779,10 +3775,8 @@ std::string FixStringLength(const std::string& s, std::string::size_type l)
 	return result;
 }
 
-std::string GetPDBHEADERLine(cif::File& cifFile, std::string::size_type truncate_at)
+std::string GetPDBHEADERLine(const Datablock &db, std::string::size_type truncate_at)
 {
-	auto& db = cifFile.firstDatablock();
-
 	//    0         1         2         3         4         5         6         7         8
 	//    HEADER    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxDDDDDDDDD   IIII
 	const char kHeader[] =
@@ -3825,10 +3819,8 @@ std::string GetPDBHEADERLine(cif::File& cifFile, std::string::size_type truncate
 	return FixStringLength((boost::format(kHeader) % keywords % date % db.getName()).str(), truncate_at);
 }
 
-std::string GetPDBCOMPNDLine(cif::File& cifFile, std::string::size_type truncate_at)
+std::string GetPDBCOMPNDLine(const Datablock &db, std::string::size_type truncate_at)
 {
-	auto& db = cifFile.firstDatablock();
-
 	// COMPND
 	using namespace std::placeholders;
 	
@@ -3886,10 +3878,8 @@ std::string GetPDBCOMPNDLine(cif::File& cifFile, std::string::size_type truncate
 	return FixStringLength("COMPND    " + ba::join(cmpnd, "; "), truncate_at);
 }
 
-std::string GetPDBSOURCELine(cif::File& cifFile, std::string::size_type truncate_at)
+std::string GetPDBSOURCELine(const Datablock &db, std::string::size_type truncate_at)
 {
-	auto& db = cifFile.firstDatablock();
-
 	// SOURCE
 	
 	int molID = 0;
@@ -3971,10 +3961,8 @@ std::string GetPDBSOURCELine(cif::File& cifFile, std::string::size_type truncate
 	return FixStringLength("SOURCE    " + ba::join(source, "; "), truncate_at);
 }
 
-std::string GetPDBAUTHORLine(cif::File& cifFile, std::string::size_type truncate_at)
+std::string GetPDBAUTHORLine(const Datablock &db, std::string::size_type truncate_at)
 {
-	auto& db = cifFile.firstDatablock();
-
 	// AUTHOR
 	std::vector<std::string> author;
 	for (auto r: db["audit_author"])
