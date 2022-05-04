@@ -148,19 +148,10 @@ int Atom::AtomImpl::charge() const
 
 	if (not formalCharge.has_value())
 	{
-		try
-		{
-			auto &compound = comp();
+		auto c = compound();
 
-			if (compound.atoms().size() == 1)
-				formalCharge = compound.atoms().front().charge;
-		}
-		catch (const std::exception &ex)
-		{
-			if (cif::VERBOSE > 0)
-				std::cerr << "Error when trying to get charge of atom: " << ex.what() << std::endl;
-			formalCharge = 0;
-		}
+		if (c != nullptr and c->atoms().size() == 1)
+			formalCharge = c->atoms().front().charge;
 	}
 
 	return formalCharge.value_or(0);
@@ -188,23 +179,16 @@ void Atom::AtomImpl::moveTo(const Point &p)
 	mLocation = p;
 }
 
-const Compound &Atom::AtomImpl::comp() const
+const Compound *Atom::AtomImpl::compound() const
 {
 	if (mCompound == nullptr)
 	{
-		std::string compID;
-		cif::tie(compID) = mRow.get("label_comp_id");
+		std::string compID = get_property("label_comp_id");
 
 		mCompound = CompoundFactory::instance().create(compID);
-
-		if (cif::VERBOSE > 0 and mCompound == nullptr)
-			std::cerr << "Compound not found: '" << compID << '\'' << std::endl;
 	}
 
-	if (mCompound == nullptr)
-		throw std::runtime_error("no compound");
-
-	return *mCompound;
+	return mCompound;
 }
 
 const std::string Atom::AtomImpl::get_property(const std::string_view name) const
@@ -279,6 +263,21 @@ std::string Atom::pdbID() const
 	       get_property<std::string>("auth_asym_id") + '_' +
 	       get_property<std::string>("auth_seq_id") +
 	       get_property<std::string>("pdbx_PDB_ins_code");
+}
+
+const Compound &Atom::compound() const
+{
+	auto result = impl().compound();
+
+	if (result == nullptr)
+	{
+		if (cif::VERBOSE > 0)
+			std::cerr << "Compound not found: '" << get_property<std::string>("label_comp_id") << '\'' << std::endl;
+
+		throw std::runtime_error("no compound");
+	}
+
+	return *result;
 }
 
 int Atom::charge() const

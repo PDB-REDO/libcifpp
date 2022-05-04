@@ -80,7 +80,7 @@ class Atom
 
 		void moveTo(const Point &p);
 
-		const Compound &comp() const;
+		const Compound *compound() const;
 
 		const std::string get_property(const std::string_view name) const;
 		void set_property(const std::string_view name, const std::string &value);
@@ -186,7 +186,7 @@ class Atom
 	bool isSymmetryCopy() const { return impl().mSymmetryCopy; }
 	std::string symmetry() const { return impl().mSymmetryOperator; }
 
-	const Compound &comp() const { return impl().comp(); }
+	const Compound &compound() const;
 	bool isWater() const { return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
 	int charge() const;
 

@@ -1,3 +1,6 @@
+Version 4.1.0
+- Some interface changes for mmcif::Atom
+
 Version 4.0.0
 - getResidue in mmcif::Structure now requires both a
   sequence ID and an auth sequence ID. As a result the code was cleaned
