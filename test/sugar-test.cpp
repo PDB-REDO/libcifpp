@@ -165,4 +165,35 @@ BOOST_AUTO_TEST_CASE(create_sugar_2)
 	BOOST_CHECK_EQUAL(bN.size(), 2);
 
 	file.save(gTestDir / "test-create_sugar_2.cif");
+
+	BOOST_CHECK_NO_THROW(mmcif::Structure s2(file));
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(delete_sugar_1)
+{
+	using namespace cif::literals;
+
+	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
+	mmcif::File file(example.string());
+	mmcif::Structure s(file);
+
+	// Get branch for H
+	auto &bG = s.getBranchByAsymID("G");
+
+	BOOST_CHECK_EQUAL(bG.size(), 4);
+
+	s.removeResidue(bG[1]);
+
+	BOOST_CHECK_EQUAL(bG.size(), 1);
+
+	auto &bN = s.getBranchByAsymID("G");
+
+	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
+	BOOST_CHECK_EQUAL(bN.size(), 1);
+
+	file.save(gTestDir / "test-create_sugar_3.cif");
+
+	BOOST_CHECK_NO_THROW(mmcif::Structure s2(file));
 }

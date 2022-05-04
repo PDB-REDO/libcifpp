@@ -1128,8 +1128,26 @@ int Polymer::Distance(const Monomer &a, const Monomer &b) const
 Sugar::Sugar(const Branch &branch, const std::string &compoundID,
 	const std::string &asymID, int authSeqID)
 	: Residue(branch.structure(), compoundID, asymID, 0, std::to_string(authSeqID))
-	, mBranch(branch)
+	, mBranch(&branch)
 {
+}
+
+Sugar::Sugar(Sugar &&rhs)
+	: Residue(std::forward<Residue>(rhs))
+	, mBranch(rhs.mBranch)
+{
+
+}
+
+Sugar &Sugar::operator=(Sugar &&rhs)
+{
+	if (this != &rhs)
+	{
+		Residue::operator=(std::forward<Residue>(rhs));
+		mBranch = rhs.mBranch;
+	}
+
+	return *this;
 }
 
 // bool Sugar::hasLinkedSugarAtLeavingO(int leavingO) const
@@ -1874,7 +1892,7 @@ Atom &Structure::emplace_atom(Atom &&atom)
 	return mAtoms.emplace_back(std::move(atom));
 }
 
-void Structure::removeAtom(Atom &a)
+void Structure::removeAtom(Atom &a, bool removeFromResidue)
 {
 	using namespace cif::literals;
 
@@ -1883,15 +1901,18 @@ void Structure::removeAtom(Atom &a)
 	auto &atomSites = db["atom_site"];
 	atomSites.erase("id"_key == a.id());
 
-	try
+	if (removeFromResidue)
 	{
-		auto &res = getResidue(a);
-		res.mAtoms.erase(std::remove(res.mAtoms.begin(), res.mAtoms.end(), a), res.mAtoms.end());
-	}
-	catch (const std::exception &ex)
-	{
-		if (cif::VERBOSE > 0)
-			std::cerr << "Error removing atom from residue: " << ex.what() << std::endl;
+		try
+		{
+			auto &res = getResidue(a);
+			res.mAtoms.erase(std::remove(res.mAtoms.begin(), res.mAtoms.end(), a), res.mAtoms.end());
+		}
+		catch (const std::exception &ex)
+		{
+			if (cif::VERBOSE > 0)
+				std::cerr << "Error removing atom from residue: " << ex.what() << std::endl;
+		}
 	}
 
 	assert(mAtomIndex.size() == mAtoms.size());
@@ -2078,8 +2099,6 @@ void Structure::removeResidue(Residue &res)
 	cif::Datablock &db = datablock();
 
 	auto atoms = res.atoms();
-	for (auto atom : atoms)
-		removeAtom(atom);
 
 	switch (res.entityType())
 	{
@@ -2108,11 +2127,103 @@ void Structure::removeResidue(Residue &res)
 			break;
 
 		case EntityType::Branched:
-			throw std::runtime_error("Don't remove a sugar using removeResidue...");
+		{
+			Sugar &sugar = dynamic_cast<Sugar&>(res);
+
+			removeSugar(sugar);
+
+			atoms.clear();
+			break;
+		}
 
 		case EntityType::Macrolide:
 			// TODO: Fix this?
 			throw std::runtime_error("no support for macrolides yet");
+	}
+
+	for (auto atom : atoms)
+		removeAtom(atom, false);
+}
+
+void Structure::removeSugar(Sugar &sugar)
+{
+	using namespace cif::literals;
+
+	std::string asym_id = sugar.asymID();
+	Branch &branch = getBranchByAsymID(asym_id);
+	auto si = std::find(branch.begin(), branch.end(), sugar);
+	if (si == branch.end())
+		throw std::runtime_error("Sugar not part of branch");
+	size_t six = si - branch.begin();
+
+	if (six == 0)	// first sugar, means the death of this branch
+		removeBranch(branch);
+	else
+	{
+		std::set<size_t> dix;
+		std::stack<size_t> test;
+		test.push(sugar.num());
+
+		while (not test.empty())
+		{
+			auto tix = test.top();
+			test.pop();
+
+			if (dix.count(tix))
+				continue;
+			
+			dix.insert(tix);
+
+			for (auto atom : branch[tix - 1].atoms())
+				removeAtom(atom, false);
+
+			for (auto &s : branch)
+			{
+				if (s.getLinkNr() == tix)
+					test.push(s.num());
+			}
+		}
+
+		branch.erase(remove_if(branch.begin(), branch.end(), [dix](const Sugar &s) { return dix.count(s.num()); }), branch.end());
+
+		cif::Datablock &db = datablock();
+
+		auto entity_id = createEntityForBranch(branch);
+
+		// Update the entity id of the asym
+		auto &struct_asym = db["struct_asym"];
+		auto r = struct_asym.find1("id"_key == asym_id);
+		r["entity_id"] = entity_id;
+
+		for (auto &sugar : branch)
+		{
+			for (auto atom : sugar.atoms())
+				atom.set_property("label_entity_id", entity_id);
+		}
+
+		auto &pdbx_branch_scheme = db["pdbx_branch_scheme"];
+		pdbx_branch_scheme.erase("asym_id"_key == asym_id);
+
+		for (auto &sugar : branch)
+		{
+			pdbx_branch_scheme.emplace({
+				{"asym_id", asym_id},
+				{"entity_id", entity_id},
+				{"num", sugar.num()},
+				{"mon_id", sugar.compoundID()},
+
+				{"pdb_asym_id", asym_id},
+				{"pdb_seq_num", sugar.num()},
+				{"pdb_mon_id", sugar.compoundID()},
+
+				// TODO: need fix, collect from nag_atoms?
+				{"auth_asym_id", asym_id},
+				{"auth_mon_id", sugar.compoundID()},
+				{"auth_seq_num", sugar.num()},
+
+				{"hetero", "n"}
+			});
+		}
 	}
 }
 
@@ -2331,16 +2442,19 @@ Branch &Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 	// now we can create the entity and get the real ID
 	auto entity_id = createEntityForBranch(branch);
 
-	struct_asym.emplace({{"id", asym_id},
+	struct_asym.emplace({
+		{"id", asym_id},
 		{"pdbx_blank_PDB_chainid_flag", "N"},
 		{"pdbx_modified", "N"},
 		{"entity_id", entity_id},
-		{"details", "?"}});
+		{"details", "?"}
+	});
 
 	for (auto &a : sugar.atoms())
 		a.set_property("label_entity_id", entity_id);
 
-	db["pdbx_branch_scheme"].emplace({{"asym_id", asym_id},
+	db["pdbx_branch_scheme"].emplace({
+		{"asym_id", asym_id},
 		{"entity_id", entity_id},
 		{"num", 1},
 		{"mon_id", "NAG"},
@@ -2354,7 +2468,8 @@ Branch &Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 		{"auth_mon_id", "NAG"},
 		{"auth_seq_num", 1},
 
-		{"hetero", "n"}});
+		{"hetero", "n"}
+	});
 
 	return branch;
 }
@@ -2412,6 +2527,7 @@ Branch &Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 
 		appendUnlessSet(atom, {"group_PDB", "HETATM"});
 		appendUnlessSet(atom, {"id", atom_id});
+		appendUnlessSet(atom, {"label_asym_id", asym_id});
 		appendUnlessSet(atom, {"label_comp_id", compoundID});
 		appendUnlessSet(atom, {"label_entity_id", tmp_entity_id});
 		appendUnlessSet(atom, {"auth_comp_id", compoundID});
@@ -2429,6 +2545,11 @@ Branch &Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 
 	auto entity_id = createEntityForBranch(branch);
 
+	// Update the entity id of the asym
+	auto &struct_asym = db["struct_asym"];
+	auto r = struct_asym.find1("id"_key == asym_id);
+	r["entity_id"] = entity_id;
+
 	for (auto &sugar : branch)
 	{
 		for (auto atom : sugar.atoms())
@@ -2440,7 +2561,8 @@ Branch &Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 
 	for (auto &sugar : branch)
 	{
-		pdbx_branch_scheme.emplace({{"asym_id", asym_id},
+		pdbx_branch_scheme.emplace({
+			{"asym_id", asym_id},
 			{"entity_id", entity_id},
 			{"num", sugar.num()},
 			{"mon_id", sugar.compoundID()},
@@ -2454,7 +2576,8 @@ Branch &Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 			{"auth_mon_id", sugar.compoundID()},
 			{"auth_seq_num", sugar.num()},
 
-			{"hetero", "n"}});
+			{"hetero", "n"}
+		});
 	}
 
 	return branch;
@@ -2484,43 +2607,42 @@ std::string Structure::createEntityForBranch(Branch &branch)
 			{"src_method", "man"},
 			{"pdbx_description", entityName},
 			{"formula_weight", branch.weight()}});
-	}
+		auto &pdbx_entity_branch_list = mDb["pdbx_entity_branch_list"];
+		for (auto &sugar : branch)
+		{
+			pdbx_entity_branch_list.emplace({
+				{"entity_id", entityID},
+				{"comp_id", sugar.compoundID()},
+				{"num", sugar.num()},
+				{"hetero", "n"}
+			});
+		}
 
-	auto &pdbx_entity_branch_list = mDb["pdbx_entity_branch_list"];
-	pdbx_entity_branch_list.erase("entity_id"_key == entityID);
+		auto &pdbx_entity_branch_link = mDb["pdbx_entity_branch_link"];
+		for (auto &s1 : branch)
+		{
+			auto l2 = s1.getLink();
 
-	for (auto &sugar : branch)
-	{
-		pdbx_entity_branch_list.emplace({{"entity_id", entityID},
-			{"comp_id", sugar.compoundID()},
-			{"num", sugar.num()},
-			{"hetero", "n"}});
-	}
+			if (not l2)
+				continue;
 
-	auto &pdbx_entity_branch_link = mDb["pdbx_entity_branch_link"];
-	pdbx_entity_branch_link.erase("entity_id"_key == entityID);
+			auto &s2 = branch.at(std::stoi(l2.authSeqID()) - 1);
+			auto l1 = s2.atomByID("C1");
 
-	for (auto &s1 : branch)
-	{
-		auto l2 = s1.getLink();
-
-		if (not l2)
-			continue;
-
-		auto &s2 = branch.at(std::stoi(l2.authSeqID()) - 1);
-		auto l1 = s2.atomByID("C1");
-
-		pdbx_entity_branch_link.emplace({{"link_id", pdbx_entity_branch_link.getUniqueID("")},
-			{"entity_id", entityID},
-			{"entity_branch_list_num_1", s1.authSeqID()},
-			{"comp_id_1", s1.compoundID()},
-			{"atom_id_1", l1.labelAtomID()},
-			{"leaving_atom_id_1", "O1"},
-			{"entity_branch_list_num_2", s2.authSeqID()},
-			{"comp_id_2", s2.compoundID()},
-			{"atom_id_2", l2.labelAtomID()},
-			{"leaving_atom_id_2", "H" + l2.labelAtomID()},
-			{"value_order", "sing"}});
+			pdbx_entity_branch_link.emplace({
+				{"link_id", pdbx_entity_branch_link.getUniqueID("")},
+				{"entity_id", entityID},
+				{"entity_branch_list_num_1", s1.authSeqID()},
+				{"comp_id_1", s1.compoundID()},
+				{"atom_id_1", l1.labelAtomID()},
+				{"leaving_atom_id_1", "O1"},
+				{"entity_branch_list_num_2", s2.authSeqID()},
+				{"comp_id_2", s2.compoundID()},
+				{"atom_id_2", l2.labelAtomID()},
+				{"leaving_atom_id_2", "H" + l2.labelAtomID()},
+				{"value_order", "sing"}
+			});
+		}
 	}
 
 	return entityID;

@@ -527,6 +527,9 @@ class Sugar : public Residue
 	Sugar(const Branch &branch, const std::string &compoundID,
 		const std::string &asymID, int authSeqID);
 
+	Sugar(Sugar &&rhs);
+	Sugar &operator=(Sugar &&rhs);
+
 	int num() const { return std::stoi(mAuthSeqID); }
 	std::string name() const;
 
@@ -534,9 +537,14 @@ class Sugar : public Residue
 	Atom getLink() const { return mLink; }
 	void setLink(Atom link) { mLink = link; }
 
+	size_t getLinkNr() const
+	{
+		return mLink ? std::stoi(mLink.authSeqID()) : 0;
+	}
+
   private:
 
-	const Branch &mBranch;
+	const Branch *mBranch;
 	Atom mLink;
 };
 
@@ -710,7 +718,11 @@ class Structure
 	}
 
 	// Actions
-	void removeAtom(Atom &a);
+	void removeAtom(Atom &a)
+	{
+		removeAtom(a, true);
+	}
+
 	void swapAtoms(Atom a1, Atom a2); // swap the labels for these atoms
 	void moveAtom(Atom a, Point p);  // move atom to a new location
 	void changeResidue(Residue &res, const std::string &newCompound,
@@ -814,6 +826,9 @@ class Structure
 	}
 
 	Atom &emplace_atom(Atom &&atom);
+
+	void removeAtom(Atom &a, bool removeFromResidue);
+	void removeSugar(Sugar &sugar);
 
 	cif::Datablock &mDb;
 	size_t mModelNr;
