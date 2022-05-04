@@ -254,7 +254,14 @@ class Datablock
 	const_iterator begin() const { return mCategories.begin(); }
 	const_iterator end() const { return mCategories.end(); }
 
+	/// \brief Access to the category with name \a name, will create it if it doesn't exist.
 	Category &operator[](std::string_view name);
+
+	// /// \brief Access to the category with name \a name, will throw if it doesn't exist.
+	// const Category &operator[](std::string_view name) const;
+
+	/// \brief Access to the category with name \a name, will return an empty category if is doesn't exist.
+	const Category &operator[](std::string_view name) const;
 
 	std::tuple<iterator, bool> emplace(std::string_view name);
 
@@ -285,6 +292,9 @@ class Datablock
 	std::string mName;
 	const Validator *mValidator;
 	Datablock *mNext;
+
+	// for returning empty categories in the const operator[]
+	mutable std::unique_ptr<Category> mNullCategory;
 };
 
 // --------------------------------------------------------------------
@@ -1862,6 +1872,9 @@ class Category
 
 	Row front() { return Row(mHead); }
 	Row back() { return Row(mTail); }
+
+	const Row front() const { return Row(mHead); }
+	const Row back() const { return Row(mTail); }
 
 	Row operator[](Condition &&cond);
 	const Row operator[](Condition &&cond) const;

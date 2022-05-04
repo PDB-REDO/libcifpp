@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,12 +28,12 @@
 
 #include "cif++/Cif++.hpp"
 
-void WritePDBFile(std::ostream& pdbFile, cif::File& cifFile);
+void WritePDBFile(std::ostream &os, const cif::Datablock &data);
 
 /// \brief Just the HEADER, COMPND, SOURCE and AUTHOR lines
-void WritePDBHeaderLines(std::ostream& os, cif::File& cifFile);
+void WritePDBHeaderLines(std::ostream &os, const cif::Datablock &data);
 
-std::string GetPDBHEADERLine(cif::File& cifFile, std::string::size_type truncate_at = 127);
-std::string GetPDBCOMPNDLine(cif::File& cifFile, std::string::size_type truncate_at = 127);
-std::string GetPDBSOURCELine(cif::File& cifFile, std::string::size_type truncate_at = 127);
-std::string GetPDBAUTHORLine(cif::File& cifFile, std::string::size_type truncate_at = 127);
+std::string GetPDBHEADERLine(const cif::Datablock &data, std::string::size_type truncate_at = 127);
+std::string GetPDBCOMPNDLine(const cif::Datablock &data, std::string::size_type truncate_at = 127);
+std::string GetPDBSOURCELine(const cif::Datablock &data, std::string::size_type truncate_at = 127);
+std::string GetPDBAUTHORLine(const cif::Datablock &data, std::string::size_type truncate_at = 127);
