@@ -631,10 +631,14 @@ class Structure
 
 	Structure(cif::Datablock &db, size_t modelNr = 1, StructureOpenOptions options = {});
 
+	Structure(Structure &&s) = default;
+
 	// Create a read-only clone of the current structure (for multithreaded calculations that move atoms)
 	Structure(const Structure &);
 
 	Structure &operator=(const Structure &) = delete;
+	Structure &operator=(Structure &&s) = default;
+
 	~Structure();
 
 	const AtomView &atoms() const { return mAtoms; }
