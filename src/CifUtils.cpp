@@ -1204,15 +1204,18 @@ std::filesystem::path gDataDir;
 
 void addDataDirectory(std::filesystem::path dataDir)
 {
-	if (VERBOSE > 0 and not fs::exists(dataDir))
-		std::cerr << "The specified data directory " << dataDir << " does not exist" << std::endl;
-	gDataDir = dataDir;
+	std::error_code ec;
+	if (fs::exists(dataDir, ec))
+		gDataDir = dataDir;
+	else if (VERBOSE > 0)
+		std::cerr << "The specified data directory " << dataDir << " cannot be used: " << ec.message() << std::endl;
 }
 
 void addFileResource(const std::string &name, std::filesystem::path dataFile)
 {
-	if (not fs::exists(dataFile))
-		throw std::runtime_error("Attempt to add a file resource for " + name + " that does not exist: " + dataFile.string());
+	std::error_code ec;
+	if (not fs::exists(dataFile, ec) or ec)
+		throw std::runtime_error("Attempt to add a file resource for " + name + " that cannot be used (" + dataFile.string() + ") :" + ec.message());
 
 	gLocalResources[name] = dataFile;
 }
