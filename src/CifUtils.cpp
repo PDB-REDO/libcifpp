@@ -1236,7 +1236,11 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 	}
 
 	if (not result and (not fs::exists(p, ec) or ec) and not gDataDir.empty())
-		p = gDataDir / name;
+	{
+		auto p2 = gDataDir / p;
+		if (fs::exists(p2, ec) and not ec)
+			swap(p, p2);
+	}
 
 #if defined(CACHE_DIR)
 	if (not result and (not fs::exists(p, ec) or ec))
