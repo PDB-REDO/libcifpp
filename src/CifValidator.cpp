@@ -389,6 +389,8 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary)
 		mValidators.emplace_back(dictionary, *data);
 	else
 	{
+		std::error_code ec;
+
 		// might be a compressed dictionary on disk
 		fs::path p = dictionary;
 		if (p.extension() == ".dic")
@@ -397,12 +399,12 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary)
 			p = p.parent_path() / (p.filename().string() + ".dic.gz");
 
 #if defined(CACHE_DIR) and defined(DATA_DIR)
-		if (not fs::exists(p))
+		if (not fs::exists(p, ec) or ec)
 		{
 			for (const char *dir : {CACHE_DIR, DATA_DIR})
 			{
 				auto p2 = fs::path(dir) / p;
-				if (fs::exists(p2))
+				if (fs::exists(p2, ec) and not ec)
 				{
 					swap(p, p2);
 					break;
@@ -411,7 +413,7 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary)
 		}
 #endif
 
-		if (fs::exists(p))
+		if (fs::exists(p, ec) and not ec)
 		{
 			std::ifstream file(p, std::ios::binary);
 			if (not file.is_open())
