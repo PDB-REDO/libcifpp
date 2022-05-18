@@ -1083,6 +1083,20 @@ auto AtomTypeTraits::wksf(int charge) const -> const SFData&
 			return sf.sf;
 	}
 
+	if (charge != 0)
+	{
+		// Oops, not found. Fall back to zero charge and see if we can use that
+
+		if (cif::VERBOSE > 0)
+			std::cerr << "No scattering factor found for " << name() << " with charge " << charge << " will try to fall back to zero charge..." << std::endl;
+
+		for (auto& sf: data::kWKSFData)
+		{
+			if (sf.symbol == mInfo->type and sf.charge == 0)
+				return sf.sf;
+		}
+	}
+
 	throw std::runtime_error("No scattering factor found for " + name() + std::to_string(charge));
 }
 	

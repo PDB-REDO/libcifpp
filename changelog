@@ -1,3 +1,8 @@
+Version 4.1.1
+- Fall back to zero charge for scattering factors if the atom
+  was not found in the table.
+- Improve code to locate resources, failing less.
+
 Version 4.1.0
 - Some interface changes for mmcif::Atom
 
