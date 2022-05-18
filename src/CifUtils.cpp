@@ -1220,42 +1220,47 @@ void addFileResource(const std::string &name, std::filesystem::path dataFile)
 std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 {
 	std::unique_ptr<std::istream> result;
+	std::error_code ec;
 
 	fs::path p = name;
 
 	if (gLocalResources.count(name.string()))
 	{
-		std::unique_ptr<std::ifstream> file(new std::ifstream(gLocalResources[name.string()], std::ios::binary));
-		if (file->is_open())
-			result.reset(file.release());
+		try
+		{
+			std::unique_ptr<std::ifstream> file(new std::ifstream(gLocalResources[name.string()], std::ios::binary));
+			if (file->is_open())
+				result.reset(file.release());
+		}
+		catch (...) {}
 	}
 
-	if (not result and not fs::exists(p) and not gDataDir.empty())
+	if (not result and (not fs::exists(p, ec) or ec) and not gDataDir.empty())
 		p = gDataDir / name;
 
 #if defined(CACHE_DIR)
-	if (not result and not fs::exists(p))
+	if (not result and (not fs::exists(p, ec) or ec))
 	{
 		auto p2 = fs::path(CACHE_DIR) / p;
-		if (fs::exists(p2))
+		if (fs::exists(p2, ec) and not ec)
 			swap(p, p2);
 	}
 #endif
 
 #if defined(DATA_DIR)
-	if (not result and not fs::exists(p))
+	if (not result and (not fs::exists(p, ec) or ec))
 	{
 		auto p2 = fs::path(DATA_DIR) / p;
-		if (fs::exists(p2))
+		if (fs::exists(p2, ec) and not ec)
 			swap(p, p2);
 	}
 #endif
 
 #if defined(CCP4) and CCP4
-	if (not result and not fs::exists(p))
+	if (not result and (not fs::exists(p, ec) or ec))
 	{
 		const char* CCP4_DIR = getenv("CCP4");
-		if (CCP4_DIR != nullptr and fs::exists(CCP4_DIR))
+		if (CCP4_DIR != nullptr and fs::exists(CCP4_DIR, ec) and not ec)
 		{
 			auto p2 = fs::path(DATA_DIR) / p;
 			if (fs::exists(p2))
@@ -1264,11 +1269,15 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 	}
 #endif
 
-	if (not result and fs::exists(p))
+	if (not result and fs::exists(p, ec) and not ec)
 	{
-		std::unique_ptr<std::ifstream> file(new std::ifstream(p, std::ios::binary));
-		if (file->is_open())
-			result.reset(file.release());
+		try
+		{
+			std::unique_ptr<std::ifstream> file(new std::ifstream(p, std::ios::binary));
+			if (file->is_open())
+				result.reset(file.release());
+		}
+		catch (...) {}		
 	}
 
 	if (not result and gResourceData)
