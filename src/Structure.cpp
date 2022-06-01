@@ -127,15 +127,12 @@ bool Atom::AtomImpl::getAnisoU(float anisou[6]) const
 	auto cat = mDb.get("atom_site_anisotrop");
 	if (cat)
 	{
-		try
+		for (auto r : cat->find(cif::Key("id") == mID))
 		{
-			auto r = cat->find1(cif::Key("id") == mID);
 			cif::tie(anisou[0], anisou[1], anisou[2], anisou[3], anisou[4], anisou[5]) =
 				r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
 			result = true;
-		}
-		catch (const std::exception &e)
-		{
+			break;
 		}
 	}
 
@@ -1471,12 +1468,8 @@ void Structure::loadData()
 {
 	auto &polySeqScheme = category("pdbx_poly_seq_scheme");
 
-	for (auto &r : polySeqScheme)
+	for (const auto &[asymID, entityID] : polySeqScheme.rows<std::string,std::string>("asym_id", "entity_id"))
 	{
-		std::string asymID, entityID, seqID, monID;
-		cif::tie(asymID, entityID, seqID, monID) =
-			r.get("asym_id", "entity_id", "seq_id", "mon_id");
-
 		if (mPolymers.empty() or mPolymers.back().asymID() != asymID or mPolymers.back().entityID() != entityID)
 			mPolymers.emplace_back(*this, entityID, asymID);
 	}
@@ -1491,14 +1484,8 @@ void Structure::loadData()
 
 	auto &nonPolyScheme = category("pdbx_nonpoly_scheme");
 
-	for (auto &r : nonPolyScheme)
-	{
-		std::string asymID, monID, pdbSeqNum;
-		cif::tie(asymID, monID, pdbSeqNum) =
-			r.get("asym_id", "mon_id", "pdb_seq_num");
-
+	for (const auto&[asymID, monID, pdbSeqNum] : nonPolyScheme.rows<std::string,std::string,std::string>("asym_id", "mon_id", "pdb_seq_num"))
 		mNonPolymers.emplace_back(*this, monID, asymID, 0, pdbSeqNum);
-	}
 
 	// place atoms in residues
 
@@ -1595,28 +1582,23 @@ EntityType Structure::getEntityTypeForAsymID(const std::string asymID) const
 
 AtomView Structure::waters() const
 {
+	using namespace cif::literals;
+
 	AtomView result;
 
 	auto &db = datablock();
 
-	// Get the entity id for water
+	// Get the entity id for water. Watch out, structure may not have water at all
 	auto &entityCat = db["entity"];
-	std::string waterEntityID;
-	for (auto &e : entityCat)
+	for (const auto &[waterEntityID] : entityCat.find<std::string>("type"_key == "water", "id"))
 	{
-		std::string id, type;
-		cif::tie(id, type) = e.get("id", "type");
-		if (ba::iequals(type, "water"))
+		for (auto &a : mAtoms)
 		{
-			waterEntityID = id;
-			break;
+			if (a.get_property<std::string>("label_entity_id") == waterEntityID)
+				result.push_back(a);
 		}
-	}
 
-	for (auto &a : mAtoms)
-	{
-		if (a.get_property<std::string>("label_entity_id") == waterEntityID)
-			result.push_back(a);
+		break;
 	}
 
 	return result;
@@ -1764,7 +1746,15 @@ Residue &Structure::getResidue(const std::string &asymID, int seqID, const std::
 		}
 	}
 
-	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID) + '-' + authSeqID);
+	std::string desc = asymID;
+
+	if (seqID != 0)
+		desc += "/" + std::to_string(seqID);
+	
+	if (not authSeqID.empty())
+		desc += "-" + authSeqID;
+
+	throw std::out_of_range("Could not find residue " + desc);
 }
 
 Residue &Structure::getResidue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID)
@@ -1802,7 +1792,15 @@ Residue &Structure::getResidue(const std::string &asymID, const std::string &com
 		}
 	}
 
-	throw std::out_of_range("Could not find residue " + asymID + '/' + std::to_string(seqID) + '-' + authSeqID);
+	std::string desc = asymID;
+
+	if (seqID != 0)
+		desc += "/" + std::to_string(seqID);
+	
+	if (not authSeqID.empty())
+		desc += "-" + authSeqID;
+
+	throw std::out_of_range("Could not find residue " + desc + " of type " + compID);
 }
 
 Branch &Structure::getBranchByAsymID(const std::string &asymID)

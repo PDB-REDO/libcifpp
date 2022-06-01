@@ -3801,12 +3801,27 @@ void PDBFileParser::ConstructEntities()
 
 			for (std::string monID : monIds)
 			{
-				std::string authMonID, authSeqNum;
+				std::string authMonID, authSeqNum, authInsCode;
 				if (res.mSeen)
 				{
 					authMonID = monID;
 					authSeqNum = std::to_string(res.mSeqNum);
+					if (res.mIcode != ' ' and res.mIcode != 0)
+						authInsCode = std::string{res.mIcode};
 				}
+				else
+				{
+					authMonID = res.mMonID;
+					authSeqNum = std::to_string(res.mSeqNum);
+
+					if (res.mIcode != ' ' and res.mIcode != 0)
+						authInsCode = std::string{res.mIcode} + "A";
+					else
+						authInsCode = "A";
+				}
+
+				if (authInsCode.empty())
+					authInsCode = ".";
 
 				cat->emplace({{"asym_id", asymID},
 				              {"entity_id", mMolID2EntityID[chain.mMolID]},
@@ -3818,7 +3833,7 @@ void PDBFileParser::ConstructEntities()
 				              {"pdb_mon_id", authMonID},
 				              {"auth_mon_id", authMonID},
 				              {"pdb_strand_id", std::string{chain.mDbref.chainID}},
-				              {"pdb_ins_code", (res.mIcode == ' ' or res.mIcode == 0) ? "." : std::string{res.mIcode}},
+				              {"pdb_ins_code", authInsCode},
 				              {"hetero", res.mAlts.empty() ? "n" : "y"}});
 			}
 		}
