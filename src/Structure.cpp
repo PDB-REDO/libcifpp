@@ -1123,17 +1123,15 @@ int Polymer::Distance(const Monomer &a, const Monomer &b) const
 // --------------------------------------------------------------------
 
 Sugar::Sugar(const Branch &branch, const std::string &compoundID,
-	const std::string &asymID, int authSeqID, int number)
+	const std::string &asymID, int authSeqID)
 	: Residue(branch.structure(), compoundID, asymID, 0, std::to_string(authSeqID))
 	, mBranch(&branch)
-	, mNumber(number)
 {
 }
 
 Sugar::Sugar(Sugar &&rhs)
 	: Residue(std::forward<Residue>(rhs))
 	, mBranch(rhs.mBranch)
-	, mNumber(rhs.mNumber)
 {
 
 }
@@ -1144,7 +1142,6 @@ Sugar &Sugar::operator=(Sugar &&rhs)
 	{
 		Residue::operator=(std::forward<Residue>(rhs));
 		mBranch = rhs.mBranch;
-		mNumber = rhs.mNumber;
 	}
 
 	return *this;
@@ -1206,10 +1203,10 @@ Branch::Branch(Structure &structure, const std::string &asymID)
 
 	for (const auto &[entity_id] : struct_asym.find<std::string>("id"_key == asymID, "entity_id"))
 	{
-		for (const auto &[comp_id, number, auth_seq_num] : branch_scheme.find<std::string, int, int>(
-				 "asym_id"_key == asymID, "mon_id", "pdb_seq_num", "auth_seq_num"))
+		for (const auto &[comp_id, num] : branch_scheme.find<std::string, int>(
+				 "asym_id"_key == asymID, "mon_id", "pdb_seq_num"))
 		{
-			emplace_back(*this, comp_id, asymID, auth_seq_num, number);
+			emplace_back(*this, comp_id, asymID, num);
 		}
 
 		for (const auto &[num1, num2, atom1, atom2] : branch_link.find<size_t, size_t, std::string, std::string>(
@@ -2260,11 +2257,13 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 	auto &struct_asym = db["struct_asym"];
 	std::string asym_id = struct_asym.getUniqueID();
 
-	struct_asym.emplace({{"id", asym_id},
+	struct_asym.emplace({
+		{"id", asym_id},
 		{"pdbx_blank_PDB_chainid_flag", "N"},
 		{"pdbx_modified", "N"},
 		{"entity_id", entity_id},
-		{"details", "?"}});
+		{"details", "?"}
+	});
 
 	std::string comp_id = db["pdbx_entity_nonpoly"].find1<std::string>("entity_id"_key == entity_id, "comp_id");
 
@@ -2276,7 +2275,8 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 	{
 		auto atom_id = atom_site.getUniqueID("");
 
-		auto &&[row, inserted] = atom_site.emplace({{"group_PDB", atom.get_property<std::string>("group_PDB")},
+		auto &&[row, inserted] = atom_site.emplace({
+			{"group_PDB", atom.get_property<std::string>("group_PDB")},
 			{"id", atom_id},
 			{"type_symbol", atom.get_property<std::string>("type_symbol")},
 			{"label_atom_id", atom.get_property<std::string>("label_atom_id")},
@@ -2296,7 +2296,8 @@ std::string Structure::createNonpoly(const std::string &entity_id, const std::ve
 			{"auth_comp_id", comp_id},
 			{"auth_asym_id", asym_id},
 			{"auth_atom_id", atom.get_property<std::string>("label_atom_id")},
-			{"pdbx_PDB_model_num", 1}});
+			{"pdbx_PDB_model_num", 1}
+		});
 
 		auto &newAtom = emplace_atom(std::make_shared<Atom::AtomImpl>(db, atom_id, row));
 		res.addAtom(newAtom);
@@ -2328,11 +2329,13 @@ std::string Structure::createNonpoly(const std::string &entity_id, std::vector<s
 	auto &struct_asym = db["struct_asym"];
 	std::string asym_id = struct_asym.getUniqueID();
 
-	struct_asym.emplace({{"id", asym_id},
+	struct_asym.emplace({
+		{"id", asym_id},
 		{"pdbx_blank_PDB_chainid_flag", "N"},
 		{"pdbx_modified", "N"},
 		{"entity_id", entity_id},
-		{"details", "?"}});
+		{"details", "?"}
+	});
 
 	std::string comp_id = db["pdbx_entity_nonpoly"].find1<std::string>("entity_id"_key == entity_id, "comp_id");
 
@@ -2406,7 +2409,7 @@ Branch &Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 	std::string asym_id = struct_asym.getUniqueID();
 
 	auto &branch = mBranches.emplace_back(*this, asym_id);
-	auto &sugar = branch.emplace_back(branch, "NAG", asym_id, 1, 1);
+	auto &sugar = branch.emplace_back(branch, "NAG", asym_id, 1);
 	auto tmp_entity_id = db["entity"].getUniqueID("");
 
 	auto &atom_site = db["atom_site"];
@@ -2520,7 +2523,7 @@ Branch &Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 
 	int sugarNum = branch.size() + 1;
 
-	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum, sugarNum);
+	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum);
 
 	for (auto &atom : atom_info)
 	{

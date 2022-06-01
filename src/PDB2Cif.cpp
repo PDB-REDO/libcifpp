@@ -1077,6 +1077,7 @@ class PDBFileParser
 	std::map<std::string, std::string> mBranch2EntityID;
 	std::map<std::string, std::string> mAsymID2EntityID;
 	std::map<std::string, std::string> mMod2parent;
+	std::set<std::string> mSugarEntities;
 };
 
 // --------------------------------------------------------------------
@@ -3776,6 +3777,10 @@ void PDBFileParser::ConstructEntities()
 	for (auto &chain : mChains)
 	{
 		std::string asymID = cif::cifIdForNumber(asymNr++);
+
+		if (mMolID2EntityID.count(chain.mMolID) == 0)
+			continue;
+
 		std::string entityID = mMolID2EntityID[chain.mMolID];
 
 		mAsymID2EntityID[asymID] = entityID;
@@ -4601,14 +4606,20 @@ void PDBFileParser::ConstructSugarTrees(int &asymNr)
 					}
 				}
 
+				mSugarEntities.insert(entityID);
+
 				// create an asym for this sugar tree
 
 				std::string asymID = cif::cifIdForNumber(asymNr++);
 
-				getCategory("struct_asym")->emplace({{"id", asymID},
-				{"pdbx_blank_PDB_chainid_flag", si->chainID == ' ' ? "Y" : "N"},
-				{"pdbx_modified", "N"},
-				{"entity_id", entityID}});
+				mAsymID2EntityID[asymID] = entityID;
+
+				getCategory("struct_asym")->emplace({
+					{"id", asymID},
+					{"pdbx_blank_PDB_chainid_flag", si->chainID == ' ' ? "Y" : "N"},
+					{"pdbx_modified", "N"},
+					{"entity_id", entityID}
+				});
 
 				std::string iCode{si->iCode};
 				ba::trim(iCode);
@@ -5107,40 +5118,42 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				continue;
 			}
 
-			getCategory("struct_conn")->emplace({{"id", type + std::to_string(linkNr)},
-			{"conn_type_id", type},
+			getCategory("struct_conn")->emplace({
+				{"id", type + std::to_string(linkNr)},
+				{"conn_type_id", type},
 
-			                                     // { "ccp4_link_id", ccp4LinkID },
+				// { "ccp4_link_id", ccp4LinkID },
 
-			                                     {"ptnr1_label_asym_id", p1Asym},
-			                                     {"ptnr1_label_comp_id", vS(18, 20)},
-			                                     {"ptnr1_label_seq_id", (isResseq1 and p1Seq) ? std::to_string(p1Seq) : "."},
-			                                     {"ptnr1_label_atom_id", vS(13, 16)},
-			                                     {"pdbx_ptnr1_label_alt_id", vS(17, 17)},
-			                                     {"pdbx_ptnr1_PDB_ins_code", vS(27, 27)},
-			                                     {"pdbx_ptnr1_standard_comp_id", ""},
-			                                     {"ptnr1_symmetry", sym1},
+				{"ptnr1_label_asym_id", p1Asym},
+				{"ptnr1_label_comp_id", vS(18, 20)},
+				{"ptnr1_label_seq_id", (isResseq1 and p1Seq) ? std::to_string(p1Seq) : "."},
+				{"ptnr1_label_atom_id", vS(13, 16)},
+				{"pdbx_ptnr1_label_alt_id", vS(17, 17)},
+				{"pdbx_ptnr1_PDB_ins_code", vS(27, 27)},
+				{"pdbx_ptnr1_standard_comp_id", ""},
+				{"ptnr1_symmetry", sym1},
 
-			                                     {"ptnr2_label_asym_id", p2Asym},
-			                                     {"ptnr2_label_comp_id", vS(48, 50)},
-			                                     {"ptnr2_label_seq_id", (isResseq2 and p2Seq) ? std::to_string(p2Seq) : "."},
-			                                     {"ptnr2_label_atom_id", vS(43, 46)},
-			                                     {"pdbx_ptnr2_label_alt_id", vS(47, 47)},
-			                                     {"pdbx_ptnr2_PDB_ins_code", vS(57, 57)},
+				{"ptnr2_label_asym_id", p2Asym},
+				{"ptnr2_label_comp_id", vS(48, 50)},
+				{"ptnr2_label_seq_id", (isResseq2 and p2Seq) ? std::to_string(p2Seq) : "."},
+				{"ptnr2_label_atom_id", vS(43, 46)},
+				{"pdbx_ptnr2_label_alt_id", vS(47, 47)},
+				{"pdbx_ptnr2_PDB_ins_code", vS(57, 57)},
 
-			                                     {"ptnr1_auth_asym_id", vS(22, 22)},
-			                                     {"ptnr1_auth_comp_id", vS(18, 20)},
-			                                     {"ptnr1_auth_seq_id", vI(23, 26)},
-			                                     {"ptnr2_auth_asym_id", vS(52, 52)},
-			                                     {"ptnr2_auth_comp_id", vS(48, 50)},
-			                                     {"ptnr2_auth_seq_id", vI(53, 56)},
+				{"ptnr1_auth_asym_id", vS(22, 22)},
+				{"ptnr1_auth_comp_id", vS(18, 20)},
+				{"ptnr1_auth_seq_id", vI(23, 26)},
+				{"ptnr2_auth_asym_id", vS(52, 52)},
+				{"ptnr2_auth_comp_id", vS(48, 50)},
+				{"ptnr2_auth_seq_id", vI(53, 56)},
 
-			                                     // { "ptnr1_auth_atom_id", vS(13, 16) },
-			                                     // { "ptnr2_auth_atom_id", vS(43, 46) },
+				// { "ptnr1_auth_atom_id", vS(13, 16) },
+				// { "ptnr2_auth_atom_id", vS(43, 46) },
 
-			                                     {"ptnr2_symmetry", sym2},
+				{"ptnr2_symmetry", sym2},
 
-			                                     {"pdbx_dist_value", distance}});
+				{"pdbx_dist_value", distance}
+			});
 
 			continue;
 		}
@@ -5181,24 +5194,26 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			std::string iCode1str = iCode1 == ' ' ? std::string() : std::string{iCode1};
 			std::string iCode2str = iCode2 == ' ' ? std::string() : std::string{iCode2};
 
-			getCategory("struct_mon_prot_cis")->emplace({{"pdbx_id", serNum},
-			{"label_comp_id", pep1},
-			{"label_seq_id", lResSeq1},
-			{"label_asym_id", lAsym1},
-			{"label_alt_id", "."},
-			{"pdbx_PDB_ins_code", iCode1str},
-			{"auth_comp_id", pep1},
-			{"auth_seq_id", seqNum1},
-			{"auth_asym_id", std::string{chainID1}},
-			{"pdbx_label_comp_id_2", pep2},
-			{"pdbx_label_seq_id_2", lResSeq2},
-			{"pdbx_label_asym_id_2", lAsym2},
-			{"pdbx_PDB_ins_code_2", iCode2str},
-			{"pdbx_auth_comp_id_2", pep2},
-			{"pdbx_auth_seq_id_2", seqNum2},
-			{"pdbx_auth_asym_id_2", std::string{chainID2}},
-			{"pdbx_PDB_model_num", modNum},
-			{"pdbx_omega_angle", measure}});
+			getCategory("struct_mon_prot_cis")->emplace({
+				{"pdbx_id", serNum},
+				{"label_comp_id", pep1},
+				{"label_seq_id", lResSeq1},
+				{"label_asym_id", lAsym1},
+				{"label_alt_id", "."},
+				{"pdbx_PDB_ins_code", iCode1str},
+				{"auth_comp_id", pep1},
+				{"auth_seq_id", seqNum1},
+				{"auth_asym_id", std::string{chainID1}},
+				{"pdbx_label_comp_id_2", pep2},
+				{"pdbx_label_seq_id_2", lResSeq2},
+				{"pdbx_label_asym_id_2", lAsym2},
+				{"pdbx_PDB_ins_code_2", iCode2str},
+				{"pdbx_auth_comp_id_2", pep2},
+				{"pdbx_auth_seq_id_2", seqNum2},
+				{"pdbx_auth_asym_id_2", std::string{chainID2}},
+				{"pdbx_PDB_model_num", modNum},
+				{"pdbx_omega_angle", measure}
+			});
 
 			continue;
 		}
@@ -5557,27 +5572,38 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 			}
 		}
 
-		getCategory("atom_site")->emplace({{"group_PDB", groupPDB},
-		{"id", mAtomID},
-		{"type_symbol", element},
-		{"label_atom_id", name},
-		{"label_alt_id", altLoc != ' ' ? std::string{altLoc} : "."},
-		{"label_comp_id", resName},
-		{"label_asym_id", asymID},
-		{"label_entity_id", entityID},
-		{"label_seq_id", (isResseq and seqID > 0) ? std::to_string(seqID) : "."},
-		{"pdbx_PDB_ins_code", iCode == ' ' ? "" : std::string{iCode}},
-		{"Cartn_x", x},
-		{"Cartn_y", y},
-		{"Cartn_z", z},
-		{"occupancy", occupancy},
-		{"B_iso_or_equiv", tempFactor},
-		{"pdbx_formal_charge", charge},
-		{"auth_seq_id", resSeq},
-		{"auth_comp_id", resName},
-		{"auth_asym_id", std::string{chainID}},
-		{"auth_atom_id", name},
-		{"pdbx_PDB_model_num", modelNr}});
+		// if the atom is part of a sugar, we need to replace the auth_seq_id/resSeq
+		if (mSugarEntities.count(entityID))
+		{
+			using namespace cif::literals;
+
+			auto &branch_scheme = *getCategory("pdbx_branch_scheme");
+			resSeq = branch_scheme.find1<int>("asym_id"_key == asymID and "auth_seq_num"_key == resSeq, "pdb_seq_num");
+		}
+
+		getCategory("atom_site")->emplace({
+			{"group_PDB", groupPDB},
+			{"id", mAtomID},
+			{"type_symbol", element},
+			{"label_atom_id", name},
+			{"label_alt_id", altLoc != ' ' ? std::string{altLoc} : "."},
+			{"label_comp_id", resName},
+			{"label_asym_id", asymID},
+			{"label_entity_id", entityID},
+			{"label_seq_id", (isResseq and seqID > 0) ? std::to_string(seqID) : "."},
+			{"pdbx_PDB_ins_code", iCode == ' ' ? "" : std::string{iCode}},
+			{"Cartn_x", x},
+			{"Cartn_y", y},
+			{"Cartn_z", z},
+			{"occupancy", occupancy},
+			{"B_iso_or_equiv", tempFactor},
+			{"pdbx_formal_charge", charge},
+			{"auth_seq_id", resSeq},
+			{"auth_comp_id", resName},
+			{"auth_asym_id", std::string{chainID}},
+			{"auth_atom_id", name},
+			{"pdbx_PDB_model_num", modelNr}
+		});
 
 		InsertAtomType(element);
 
