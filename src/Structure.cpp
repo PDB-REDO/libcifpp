@@ -1123,15 +1123,17 @@ int Polymer::Distance(const Monomer &a, const Monomer &b) const
 // --------------------------------------------------------------------
 
 Sugar::Sugar(const Branch &branch, const std::string &compoundID,
-	const std::string &asymID, int authSeqID)
+	const std::string &asymID, int authSeqID, int number)
 	: Residue(branch.structure(), compoundID, asymID, 0, std::to_string(authSeqID))
 	, mBranch(&branch)
+	, mNumber(number)
 {
 }
 
 Sugar::Sugar(Sugar &&rhs)
 	: Residue(std::forward<Residue>(rhs))
 	, mBranch(rhs.mBranch)
+	, mNumber(rhs.mNumber)
 {
 
 }
@@ -1142,6 +1144,7 @@ Sugar &Sugar::operator=(Sugar &&rhs)
 	{
 		Residue::operator=(std::forward<Residue>(rhs));
 		mBranch = rhs.mBranch;
+		mNumber = rhs.mNumber;
 	}
 
 	return *this;
@@ -1198,15 +1201,15 @@ Branch::Branch(Structure &structure, const std::string &asymID)
 
 	auto &db = structure.datablock();
 	auto &struct_asym = db["struct_asym"];
-	auto &branch_list = db["pdbx_entity_branch_list"];
+	auto &branch_scheme = db["pdbx_branch_scheme"];
 	auto &branch_link = db["pdbx_entity_branch_link"];
 
 	for (const auto &[entity_id] : struct_asym.find<std::string>("id"_key == asymID, "entity_id"))
 	{
-		for (const auto &[comp_id, num] : branch_list.find<std::string, int>(
-				 "entity_id"_key == entity_id, "comp_id", "num"))
+		for (const auto &[comp_id, number, auth_seq_num] : branch_scheme.find<std::string, int, int>(
+				 "asym_id"_key == asymID, "mon_id", "pdb_seq_num", "auth_seq_num"))
 		{
-			emplace_back(*this, comp_id, asymID, num);
+			emplace_back(*this, comp_id, asymID, auth_seq_num, number);
 		}
 
 		for (const auto &[num1, num2, atom1, atom2] : branch_link.find<size_t, size_t, std::string, std::string>(
@@ -2217,7 +2220,7 @@ void Structure::removeSugar(Sugar &sugar)
 				// TODO: need fix, collect from nag_atoms?
 				{"auth_asym_id", asym_id},
 				{"auth_mon_id", sugar.compoundID()},
-				{"auth_seq_num", sugar.num()},
+				{"auth_seq_num", sugar.authSeqID()},
 
 				{"hetero", "n"}
 			});
@@ -2403,7 +2406,7 @@ Branch &Structure::createBranch(std::vector<std::vector<cif::Item>> &nag_atoms)
 	std::string asym_id = struct_asym.getUniqueID();
 
 	auto &branch = mBranches.emplace_back(*this, asym_id);
-	auto &sugar = branch.emplace_back(branch, "NAG", asym_id, 1);
+	auto &sugar = branch.emplace_back(branch, "NAG", asym_id, 1, 1);
 	auto tmp_entity_id = db["entity"].getUniqueID("");
 
 	auto &atom_site = db["atom_site"];
@@ -2517,7 +2520,7 @@ Branch &Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 
 	int sugarNum = branch.size() + 1;
 
-	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum);
+	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum, sugarNum);
 
 	for (auto &atom : atom_info)
 	{
@@ -2572,7 +2575,7 @@ Branch &Structure::extendBranch(const std::string &asym_id, std::vector<std::vec
 			// TODO: need fix, collect from nag_atoms?
 			{"auth_asym_id", asym_id},
 			{"auth_mon_id", sugar.compoundID()},
-			{"auth_seq_num", sugar.num()},
+			{"auth_seq_num", sugar.authSeqID()},
 
 			{"hetero", "n"}
 		});

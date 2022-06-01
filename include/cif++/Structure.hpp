@@ -525,12 +525,12 @@ class Sugar : public Residue
 {
   public:
 	Sugar(const Branch &branch, const std::string &compoundID,
-		const std::string &asymID, int authSeqID);
+		const std::string &asymID, int authSeqID, int number);
 
 	Sugar(Sugar &&rhs);
 	Sugar &operator=(Sugar &&rhs);
 
-	int num() const { return std::stoi(mAuthSeqID); }
+	int num() const { return mNumber; }
 	std::string name() const;
 
 	/// \brief Return the atom the C1 is linked to
@@ -545,6 +545,7 @@ class Sugar : public Residue
   private:
 
 	const Branch *mBranch;
+	int mNumber;
 	Atom mLink;
 };
 
