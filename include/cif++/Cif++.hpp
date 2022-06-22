@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,82 +26,82 @@
 
 #pragma once
 
-#include <string>
-
 #include <array>
+#include <cstring>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <list>
 #include <optional>
 #include <regex>
 #include <set>
-#include <sstream>
-#include <iomanip>
 #include <shared_mutex>
+#include <sstream>
+#include <string>
 
 #include <boost/format.hpp>
 
 #include "cif++/CifUtils.hpp"
 
 /*
-	Simple C++ interface to CIF files.
-	
-	Assumptions: a file contains one or more datablocks modelled by the class datablock.
-	Each datablock contains categories. These map to the original tables used to fill
-	the mmCIF file. Each Category can contain multiple Items, the columns in the table.
-	
-	Values are stored as character strings internally.
-	
-	Synopsis:
-	
-	// create a cif file
-	
-	cif::datablock e("1MVE");
-	e.append(cif::Category{"_entry", { "id", "1MVE" } });
-	
-	cif::Category atomSite("atom_site");
-	size_t nr{};
-	for (auto& myAtom: atoms)
-	{
-		atomSite.push_back({
-			{ "group_PDB", "ATOM" },
-			{ "id", ++nr },
-			{ "type_symbol", myAtom.type.str() },
-			...
-		});
-	}
-	
-	e.append(move(atomSite));
-	
-	cif::File f;
-	f.append(e);
-	
-	ofstream os("1mve.cif");
-	f.write(os);
+    Simple C++ interface to CIF files.
 
-	// read
-	f.read(ifstream{"1mve.cif"});
-	
-	auto& e = f.firstDatablock();
-	
-	cout << "ID of datablock: " << e.id() << endl;
-	
-	auto& atoms = e["atom_site"];
-	for (auto& atom: atoms)
-	{
-		cout << atom["group_PDB"] << ", "
-			 << atom["id"] << ", "
-			 ...
+    Assumptions: a file contains one or more datablocks modelled by the class datablock.
+    Each datablock contains categories. These map to the original tables used to fill
+    the mmCIF file. Each Category can contain multiple Items, the columns in the table.
 
-		float x, y, z;
-		cif::tie(x, y, z) = atom.get("Cartn_x", "Cartn_y", "Cartn_z");
-		...
-	}
+    Values are stored as character strings internally.
 
-	Another way of querying a Category is by using this construct:
-	
-	auto cat& = e["atom_site"];
-	auto Rows = cat.find(Key("label_asym_id") == "A" and Key("label_seq_id") == 1);
+    Synopsis:
+
+    // create a cif file
+
+    cif::datablock e("1MVE");
+    e.append(cif::Category{"_entry", { "id", "1MVE" } });
+
+    cif::Category atomSite("atom_site");
+    size_t nr{};
+    for (auto& myAtom: atoms)
+    {
+        atomSite.push_back({
+            { "group_PDB", "ATOM" },
+            { "id", ++nr },
+            { "type_symbol", myAtom.type.str() },
+            ...
+        });
+    }
+
+    e.append(move(atomSite));
+
+    cif::File f;
+    f.append(e);
+
+    ofstream os("1mve.cif");
+    f.write(os);
+
+    // read
+    f.read(ifstream{"1mve.cif"});
+
+    auto& e = f.firstDatablock();
+
+    cout << "ID of datablock: " << e.id() << endl;
+
+    auto& atoms = e["atom_site"];
+    for (auto& atom: atoms)
+    {
+        cout << atom["group_PDB"] << ", "
+             << atom["id"] << ", "
+             ...
+
+        float x, y, z;
+        cif::tie(x, y, z) = atom.get("Cartn_x", "Cartn_y", "Cartn_z");
+        ...
+    }
+
+    Another way of querying a Category is by using this construct:
+
+    auto cat& = e["atom_site"];
+    auto Rows = cat.find(Key("label_asym_id") == "A" and Key("label_seq_id") == 1);
 
 
 */
@@ -147,12 +147,12 @@ class Item
 
 	Item(std::string_view name, char value)
 		: mName(name)
-		, mValue({ value })
+		, mValue({value})
 	{
 	}
 
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
-	Item(std::string_view name, const T& value, const char *fmt)
+	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+	Item(std::string_view name, const T &value, const char *fmt)
 		: mName(name)
 		, mValue((boost::format(fmt) % value).str())
 	{
@@ -284,10 +284,10 @@ class Datablock
 
 	friend bool operator==(const Datablock &lhs, const Datablock &rhs);
 
-	friend std::ostream& operator<<(std::ostream &os, const Datablock &data);
+	friend std::ostream &operator<<(std::ostream &os, const Datablock &data);
 
   private:
-	CategoryList mCategories;		// LRU
+	CategoryList mCategories; // LRU
 	mutable std::shared_mutex mLock;
 	std::string mName;
 	const Validator *mValidator;
@@ -1636,7 +1636,7 @@ class conditional_iterator_proxy
 	using iterator = conditional_iterator_impl;
 	using reference = typename iterator::reference;
 
-	template<typename... Ns>
+	template <typename... Ns>
 	conditional_iterator_proxy(CategoryType &cat, row_iterator pos, Condition &&cond, Ns... names);
 
 	conditional_iterator_proxy(conditional_iterator_proxy &&p);
@@ -1910,7 +1910,7 @@ class Category
 
 	conditional_iterator_proxy<const Category> find(const_iterator pos, Condition &&cond) const
 	{
-		return conditional_iterator_proxy<const Category>{const_cast<Category&>(*this), pos, std::forward<Condition>(cond)};
+		return conditional_iterator_proxy<const Category>{const_cast<Category &>(*this), pos, std::forward<Condition>(cond)};
 	}
 
 	template <typename... Ts, typename... Ns>
@@ -1931,14 +1931,14 @@ class Category
 	conditional_iterator_proxy<Category, Ts...> find(const_iterator pos, Condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return {*this, pos, std::forward<Condition>(cond), std::forward<Ns>(names)... };
+		return {*this, pos, std::forward<Condition>(cond), std::forward<Ns>(names)...};
 	}
 
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<const Category, Ts...> find(const_iterator pos, Condition &&cond, Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return {*this, pos, std::forward<Condition>(cond), std::forward<Ns>(names)... };
+		return {*this, pos, std::forward<Condition>(cond), std::forward<Ns>(names)...};
 	}
 
 	// --------------------------------------------------------------------
@@ -1981,13 +1981,13 @@ class Category
 	}
 
 	template <typename T>
-	T find1(Condition &&cond, const char* column) const
+	T find1(Condition &&cond, const char *column) const
 	{
 		return find1<T>(cbegin(), std::forward<Condition>(cond), column);
 	}
 
 	template <typename T>
-	T find1(const_iterator pos, Condition &&cond, const char* column) const
+	T find1(const_iterator pos, Condition &&cond, const char *column) const
 	{
 		auto h = find<T>(pos, std::forward<Condition>(cond), column);
 
@@ -2237,7 +2237,7 @@ class File
 		append(new Datablock(name));
 		return back();
 	}
-	
+
 	Datablock *get(std::string_view name) const;
 	Datablock &operator[](std::string_view name);
 
