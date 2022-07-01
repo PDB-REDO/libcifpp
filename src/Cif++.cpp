@@ -34,6 +34,7 @@
 #include <stack>
 #include <tuple>
 #include <unordered_map>
+#include <mutex>
 
 #include <filesystem>
 
