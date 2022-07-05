@@ -393,8 +393,8 @@ BondMap::BondMap(const Structure &p)
 		{
 			std::vector<Atom> rAtoms;
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
-				[&](const Atom &a)
-				{ return a.labelAsymID() == asym_id and a.authSeqID() == pdb_seq_num; });
+				[id = asym_id, nr = pdb_seq_num](const Atom &a)
+				{ return a.labelAsymID() == id and a.authSeqID() == nr; });
 
 			for (uint32_t i = 0; i + 1 < rAtoms.size(); ++i)
 			{
