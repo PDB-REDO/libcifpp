@@ -637,7 +637,7 @@ class Structure
 	Structure(const Structure &);
 
 	Structure &operator=(const Structure &) = delete;
-	Structure &operator=(Structure &&s) = default;
+	// Structure &operator=(Structure &&s) = default;
 
 	~Structure();
 
