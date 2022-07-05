@@ -378,9 +378,10 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary)
 
 	// not found, add it
 
-	fs::path dict_name(dictionary);
+	// too bad clang version 10 did not have a constructor for fs::path that accepts a std::string_view
+	fs::path dict_name(dictionary.data(), dictionary.data() + dictionary.length());
 
-	auto data = loadResource(dictionary);
+	auto data = loadResource(dict_name);
 
 	if (not data and dict_name.extension().string() != ".dic")
 		data = loadResource(dict_name.parent_path() / (dict_name.filename().string() + ".dic"));
@@ -392,7 +393,7 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary)
 		std::error_code ec;
 
 		// might be a compressed dictionary on disk
-		fs::path p = dictionary;
+		fs::path p = dict_name;
 		if (p.extension() == ".dic")
 			p = p.parent_path() / (p.filename().string() + ".gz");
 		else
