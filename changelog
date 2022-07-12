@@ -1,3 +1,6 @@
+Version 4.2.1
+- Improved REMARK 3 parser (for TLS in large molecules)
+
 Version 4.2.0
 - Yet another rewrite of resource loading
 
