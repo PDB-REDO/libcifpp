@@ -386,16 +386,50 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary)
 	if (not data and dict_name.extension().string() != ".dic")
 		data = loadResource(dict_name.parent_path() / (dict_name.filename().string() + ".dic"));
 
-	if (not data)
-		data = loadResource(dict_name.parent_path() / (dict_name.filename().string() + ".gz"));
+	if (data)
+		mValidators.emplace_back(dictionary, *data);
+	else
+	{
+		std::error_code ec;
 
-	if (not data and dict_name.extension().string() != ".dic")
-		data = loadResource(dict_name.parent_path() / (dict_name.filename().string() + ".dic.gz"));
+		// might be a compressed dictionary on disk
+		fs::path p = dict_name;
+		if (p.extension() == ".dic")
+			p = p.parent_path() / (p.filename().string() + ".gz");
+		else
+			p = p.parent_path() / (p.filename().string() + ".dic.gz");
 
-	if (not data)
-		throw std::runtime_error("Dictionary not found or defined (" + dict_name.string() + ")");
+#if defined(CACHE_DIR) and defined(DATA_DIR)
+		if (not fs::exists(p, ec) or ec)
+		{
+			for (const char *dir : {CACHE_DIR, DATA_DIR})
+			{
+				auto p2 = fs::path(dir) / p;
+				if (fs::exists(p2, ec) and not ec)
+				{
+					swap(p, p2);
+					break;
+				}
+			}
+		}
+#endif
 
-	mValidators.emplace_back(dictionary, *data);
+		if (fs::exists(p, ec) and not ec)
+		{
+			std::ifstream file(p, std::ios::binary);
+			if (not file.is_open())
+				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
+
+			io::filtering_stream<io::input> in;
+			in.push(io::gzip_decompressor());
+			in.push(file);
+
+			mValidators.emplace_back(dictionary, in);
+		}
+		else
+			throw std::runtime_error("Dictionary not found or defined (" + dict_name.string() + ")");
+	}
+
 	assert(iequals(mValidators.back().mName, dictionary));
 
 	return mValidators.back();
