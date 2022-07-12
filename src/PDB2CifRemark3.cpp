@@ -727,7 +727,7 @@ const TemplateLine kREFMAC5_Template[] = {
 /* 114 */	{ R"(NUMBER OF COMPONENTS GROUP\s*:\s*(.+))", 1 },
 /* 115 */	{ R"(COMPONENTS C SSSEQI TO C SSSEQI)", 1 },
 /* 116 */	{ R"(RESIDUE RANGE\s*:\s+(\S+)\s+(\d*\S)\s+(\S+)\s+(\d*\S))", 0, "pdbx_refine_tls_group", { "beg_auth_asym_id", "beg_auth_seq_id", "end_auth_asym_id", "end_auth_seq_id" }, nullptr, true },
-/* 117 */	{ R"(ORIGIN FOR THE GROUP(?:\s*\(A\))?\s*:\s*(\S+)\s+(\S+)\s+(\S+))", 1, "pdbx_refine_tls", { "origin_x", "origin_y", "origin_z" } },
+/* 117 */	{ R"(ORIGIN FOR THE GROUP(?:\s*\(A\))?\s*:\s*([-+]?\d+(?:\.\d+)?)\s*([-+]?\d+(?:\.\d+)?)\s*([-+]?\d+(?:\.\d+)?))", 1, "pdbx_refine_tls", { "origin_x", "origin_y", "origin_z" } },
 /* 118 */	{ R"(T TENSOR)", 1 },
 /* 119 */	{ R"(T11\s*:\s*(.+) T22\s*:\s*(.+))", 1, "pdbx_refine_tls", { "T[1][1]", "T[2][2]" } },
 /* 120 */	{ R"(T33\s*:\s*(.+) T12\s*:\s*(.+))", 1, "pdbx_refine_tls", { "T[3][3]", "T[1][2]" } },
