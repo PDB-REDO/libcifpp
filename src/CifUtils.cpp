@@ -1260,19 +1260,19 @@ class ResourcePool
 
 ResourcePool::ResourcePool()
 {
-	pushDir(getenv("LIBCIFPP_DATA_DIR"));
-
 #if defined(DATA_DIR)
 	pushDir(DATA_DIR);
 #endif
 
-#if defined(CACHE_DIR)
-	pushDir(CACHE_DIR);
-#endif
+	pushDir(getenv("LIBCIFPP_DATA_DIR"));
 
 	auto ccp4 = getenv("CCP4");
 	if (ccp4 != nullptr)
 		pushDir(fs::path(ccp4) / "share" / "libcifpp");
+
+#if defined(CACHE_DIR)
+	pushDir(CACHE_DIR);
+#endif
 }
 
 std::unique_ptr<std::istream> ResourcePool::load(fs::path name)
