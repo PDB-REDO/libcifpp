@@ -1199,92 +1199,97 @@ namespace cif
 
 // --------------------------------------------------------------------
 
-std::map<std::string,std::filesystem::path> gLocalResources;
-std::filesystem::path gDataDir;
-
-void addDataDirectory(std::filesystem::path dataDir)
+class ResourcePool
 {
-	std::error_code ec;
-	if (fs::exists(dataDir, ec))
-		gDataDir = dataDir;
-	else if (VERBOSE > 0)
-		std::cerr << "The specified data directory " << dataDir << " cannot be used: " << ec.message() << std::endl;
+  public:
+	static ResourcePool &instance()
+	{
+		static std::unique_ptr<ResourcePool> sInstance(new ResourcePool);
+		return *sInstance;
+	}
+
+	void pushDir(fs::path dir)
+	{
+		std::error_code ec;
+
+		if (fs::exists(dir, ec) and not ec)
+			mDirs.push_front(dir);
+	}
+
+	void pushDir(const char *path)
+	{
+		if (path != nullptr)
+			pushDir(fs::path(path));
+	}
+
+	void pushAlias(const std::string &name, std::filesystem::path dataFile)
+	{
+		std::error_code ec;
+		if (not fs::exists(dataFile, ec) or ec)
+			throw std::runtime_error("Attempt to add a file resource for " + name + " that cannot be used (" + dataFile.string() + ") :" + ec.message());
+
+		mLocalResources[name] = dataFile;
+	}
+
+	std::unique_ptr<std::istream> load(fs::path name);
+
+  private:
+	ResourcePool();
+
+	std::unique_ptr<std::ifstream> open(fs::path &p)
+	{
+		std::unique_ptr<std::ifstream> result;
+
+		try
+		{
+			if (fs::exists(p))
+			{
+				std::unique_ptr<std::ifstream> file(new std::ifstream(p, std::ios::binary));
+				if (file->is_open())
+					result.reset(file.release());
+			}
+		}
+		catch (...) {}
+
+		return result;
+	}
+
+	std::map<std::string,std::filesystem::path> mLocalResources;
+	std::deque<fs::path> mDirs;
+};
+
+ResourcePool::ResourcePool()
+{
+	pushDir(getenv("LIBCIFPP_DATA_DIR"));
+
+#if defined(DATA_DIR)
+	pushDir(DATA_DIR);
+#endif
+
+#if defined(CACHE_DIR)
+	pushDir(CACHE_DIR);
+#endif
+
+	auto ccp4 = getenv("CCP4");
+	if (ccp4 != nullptr)
+		pushDir(fs::path(ccp4) / "share" / "libcifpp");
 }
 
-void addFileResource(const std::string &name, std::filesystem::path dataFile)
-{
-	std::error_code ec;
-	if (not fs::exists(dataFile, ec) or ec)
-		throw std::runtime_error("Attempt to add a file resource for " + name + " that cannot be used (" + dataFile.string() + ") :" + ec.message());
-
-	gLocalResources[name] = dataFile;
-}
-
-std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
+std::unique_ptr<std::istream> ResourcePool::load(fs::path name)
 {
 	std::unique_ptr<std::istream> result;
 	std::error_code ec;
 
 	fs::path p = name;
 
-	if (gLocalResources.count(name.string()))
-	{
-		try
-		{
-			std::unique_ptr<std::ifstream> file(new std::ifstream(gLocalResources[name.string()], std::ios::binary));
-			if (file->is_open())
-				result.reset(file.release());
-		}
-		catch (...) {}
-	}
+	if (mLocalResources.count(name.string()))
+		result = open(mLocalResources[name.string()]);
 
-	if (not result and (not fs::exists(p, ec) or ec) and not gDataDir.empty())
+	for (auto di = mDirs.begin(); not result and di != mDirs.end(); ++di)
 	{
-		auto p2 = gDataDir / p;
+		auto p2 = *di / p;
 		if (fs::exists(p2, ec) and not ec)
-			swap(p, p2);
-	}
-
-#if defined(CACHE_DIR)
-	if (not result and (not fs::exists(p, ec) or ec))
-	{
-		auto p2 = fs::path(CACHE_DIR) / p;
-		if (fs::exists(p2, ec) and not ec)
-			swap(p, p2);
-	}
-#endif
-
-#if defined(DATA_DIR)
-	if (not result and (not fs::exists(p, ec) or ec))
-	{
-		auto p2 = fs::path(DATA_DIR) / p;
-		if (fs::exists(p2, ec) and not ec)
-			swap(p, p2);
-	}
-#endif
-
-#if defined(CCP4) and CCP4
-	if (not result and (not fs::exists(p, ec) or ec))
-	{
-		const char* CCP4_DIR = getenv("CCP4");
-		if (CCP4_DIR != nullptr and fs::exists(CCP4_DIR, ec) and not ec)
-		{
-			auto p2 = fs::path(DATA_DIR) / p;
-			if (fs::exists(p2))
-				swap(p, p2);
-		}
-	}
-#endif
-
-	if (not result and fs::exists(p, ec) and not ec)
-	{
-		try
-		{
-			std::unique_ptr<std::ifstream> file(new std::ifstream(p, std::ios::binary));
-			if (file->is_open())
-				result.reset(file.release());
-		}
-		catch (...) {}		
+			result = open(p2);
 	}
 
 	if (not result and gResourceData)
@@ -1294,7 +1299,24 @@ std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
 			result.reset(new mrsrc::istream(rsrc));
 	}
 
-	return result;
+	return result;	
+}
+
+// --------------------------------------------------------------------
+
+void addDataDirectory(std::filesystem::path dataDir)
+{
+	ResourcePool::instance().pushDir(dataDir);
+}
+
+void addFileResource(const std::string &name, std::filesystem::path dataFile)
+{
+	ResourcePool::instance().pushAlias(name, dataFile);
+}
+
+std::unique_ptr<std::istream> loadResource(std::filesystem::path name)
+{
+	return ResourcePool::instance().load(name);
 }
 
 } // namespace cif

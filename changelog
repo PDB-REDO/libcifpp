@@ -1,3 +1,6 @@
+Version 4.2.0
+- Yet another rewrite of resource loading
+
 Version 4.1.1
 - Fall back to zero charge for scattering factors if the atom
   was not found in the table.
