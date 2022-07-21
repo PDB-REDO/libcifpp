@@ -325,7 +325,9 @@ SacParser::CIFToken SacParser::getNextToken()
 					result = eCIFTokenValue;
 					mTokenType = eCIFValueString;
 
-					assert(mTokenValue.length() >= 3);
+					if (mTokenValue.length() < 2)
+						error("Invalid quoted string token");
+						
 					mTokenValue = mTokenValue.substr(1, mTokenValue.length() - 2);
 				}
 				else if (ch == quoteChar)

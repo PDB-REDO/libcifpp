@@ -3522,7 +3522,7 @@ int WriteCoordinateTransformation(std::ostream& pdbFile, const Datablock& db)
 
 std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, const Datablock& db,
 	const std::map<std::string,std::tuple<std::string,int,std::string>>& last_resseq_for_chain_map,
-	std::set<std::string>& TERminatedChains, int model_nr)
+	std::set<std::string>& terminatedChains, int model_nr)
 {
 	int numCoord = 0, numTer = 0;
 	
@@ -3554,7 +3554,7 @@ std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, const Databl
 			continue;
 		}
 
-		if (chainID.empty() == false and TERminatedChains.count(chainID) == 0)
+		if (chainID.empty() == false and terminatedChains.count(chainID) == 0)
 		{
 			bool terminate = nextChainID != chainID;
 
@@ -3573,7 +3573,7 @@ std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, const Databl
 					% iCode) << std::endl;
 	
 				++serial;
-				TERminatedChains.insert(chainID);
+				terminatedChains.insert(chainID);
 				
 				++numTer;
 			}
@@ -3597,6 +3597,9 @@ std::tuple<int,int> WriteCoordinatesForModel(std::ostream& pdbFile, const Databl
 			r.get("id", "group_PDB", "label_atom_id", "label_alt_id", "auth_comp_id", "auth_asym_id", "auth_seq_id",
 				"pdbx_PDB_ins_code", "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol", "pdbx_formal_charge");
 		
+		if (chainID.length() > 1)
+			throw std::runtime_error("Chain ID " + chainID + " won't fit into a PDB file");
+
 		if (name.length() < 4 and (element.length() == 1 or std::toupper(name[0]) != std::toupper(element[0]) or std::toupper(name[1]) != std::toupper(element[1])))
 			name.insert(name.begin(), ' ');
 		
