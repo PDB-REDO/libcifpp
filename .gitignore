@@ -12,5 +12,5 @@ CMakeSettings.json
 msvc/
 Testing/
 rsrc/feature-request.txt
-test/1cbs.cif
-test/test-create_sugar_?.cif
+test/*.cif*
+test/*.ent*
