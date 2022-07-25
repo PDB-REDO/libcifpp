@@ -1880,10 +1880,10 @@ class Category
 	const Row operator[](Condition &&cond) const;
 
 	template <typename... Ts, typename... Ns>
-	iterator_proxy<const Row, Ts...> rows(Ns... names) const
+	iterator_proxy<const Category, Ts...> rows(Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return iterator_proxy<const Row, Ts...>(*this, begin(), {names...});
+		return iterator_proxy<const Category, Ts...>(*this, begin(), {names...});
 	}
 
 	template <typename... Ts, typename... Ns>

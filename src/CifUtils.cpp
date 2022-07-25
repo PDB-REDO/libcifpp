@@ -708,7 +708,7 @@ void ProgressImpl::PrintDone()
 	std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - mStart;
 
 	std::ostringstream msgstr;
-	msgstr << mAction << " done in " << elapsed << " cpu / %ws wall";
+	msgstr << mAction << " done in " << elapsed << " seconds";
 	auto msg = msgstr.str();
 
 	uint32_t width = get_terminal_width();
