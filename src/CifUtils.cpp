@@ -835,7 +835,8 @@ class rsrc_data
   private:
 	rsrc_data()
 	{
-		if (gResourceIndex and (gResourceIndex[0].m_child > 0 or gResourceIndex[0].m_size > 0) and gResourceIndex and gResourceName)
+		// if (gResourceIndex and (gResourceIndex[0].m_child > 0 or gResourceIndex[0].m_size > 0) and gResourceIndex and gResourceName)
+		if (gResourceIndex[0].m_child > 0 or gResourceIndex[0].m_size > 0)
 		{
 			m_index = gResourceIndex;
 			m_data = gResourceData;
@@ -1292,7 +1293,8 @@ std::unique_ptr<std::istream> ResourcePool::load(fs::path name)
 			result = open(p2);
 	}
 
-	if (not result and gResourceData)
+	// if (not result and gResourceData)
+	if (not result and (gResourceIndex[0].m_child > 0 or gResourceIndex[0].m_size > 0))
 	{
 		mrsrc::rsrc rsrc(name);
 		if (rsrc)

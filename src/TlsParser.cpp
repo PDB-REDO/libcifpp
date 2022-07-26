@@ -356,12 +356,12 @@ struct TLSSelectionRangeID : public TLSSelectionAll
 		for (std::string chain: chains)
 		{
 			auto f = std::find_if(residues.begin(), residues.end(),
-				[=](auto r) -> bool {
+				[=,this](auto r) -> bool {
 					return r.chainID == chain and r.seqNr == m_first and r.iCode == m_icode_first;
 				});
 			
 			auto l = std::find_if(residues.begin(), residues.end(),
-				[=](auto r) -> bool {
+				[=,this](auto r) -> bool {
 					return r.chainID == chain and r.seqNr == m_last and r.iCode == m_icode_last;
 				});
 			

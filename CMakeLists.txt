@@ -40,7 +40,7 @@ include(Dart)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -395,7 +395,8 @@ if(CIFPP_BUILD_TESTS)
 		rename-compound
 		structure
 		sugar
-		unit)
+		unit
+		unit-v2)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")

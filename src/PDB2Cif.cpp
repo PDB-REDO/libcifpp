@@ -5940,7 +5940,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	y = highY;
 
 	// C++ is getting closer to Pascal :-)
-	auto printAlignment = [=]()
+	auto printAlignment = [=,this]()
 	{
 		std::cerr << std::string(cif::get_terminal_width(), '-') << std::endl
 				  << "Alignment for chain " << mDbref.chainID << std::endl
