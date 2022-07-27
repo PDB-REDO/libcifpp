@@ -35,50 +35,117 @@
 
 #include "cif++/CifUtils.hpp"
 
-namespace cif_v2
+#include "cif++/v2/item.hpp"
+
+namespace cif::v2
 {
 
-template <typename Alloc = std::allocator<void>>
-class item_t
+// template <typename Alloc = std::allocator<void>>
+// class item
+// {
+//   public:
+// 	item() = default;
+
+// 	item(std::string_view name, char value)
+// 		: m_name(name)
+// 		, m_value(value)
+// 	{
+// 	}
+
+// #if defined(__cpp_lib_format)
+// 	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+// 	item(std::string_view name, const T &value, int precision)
+// 		: m_name(name)
+// 		, m_value(std::format(".{}f", value, precision))
+// 	{
+// 	}
+// #endif
+
+// 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+// 	item(const std::string_view name, const T &value)
+// 		: m_name(name)
+// 		, m_value(std::to_string(value))
+// 	{
+// 	}
+
+// 	item(const std::string_view name, const std::string_view value)
+// 		: m_name(name)
+// 		, m_value(value)
+// 	{
+// 	}
+
+// 	item(const item &rhs) = default;
+
+// 	item(item &&rhs) noexcept = default;
+
+// 	item &operator=(const item &rhs) = default;
+
+// 	item &operator=(item &&rhs) noexcept = default;
+
+// 	const std::string &name() const { return m_name; }
+// 	const std::string &value() const { return m_value; }
+
+// 	void value(const std::string &v) { m_value = v; }
+
+// 	/// \brief empty means either null or unknown
+// 	bool empty() const { return m_value.empty(); }
+
+// 	/// \brief returns true if the field contains '.'
+// 	bool is_null() const { return m_value == "."; }
+
+// 	/// \brief returns true if the field contains '?'
+// 	bool is_unknown() const { return m_value == "?"; }
+
+// 	size_t length() const { return m_value.length(); }
+// 	const char *c_str() const { return m_value.c_str(); }
+
+//   private:
+// 	std::string m_name;
+// 	std::string m_value;
+// };
+
+// using item = item<>;
+
+class item
 {
   public:
-	item_t() = default;
+	item() = default;
 
-	item_t(std::string_view name, char value)
+	item(std::string_view name, char value)
 		: m_name(name)
-		, m_value(value)
+		, m_value({ value })
 	{
 	}
 
-#if defined(__cpp_lib_format)
 	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
-	item_t(std::string_view name, const T &value, int precision)
+	item(std::string_view name, const T &value, int precision)
 		: m_name(name)
+#if defined(__cpp_lib_format)
 		, m_value(std::format(".{}f", value, precision))
+#endif
 	{
 	}
-#endif
 
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	item_t(const std::string_view name, const T &value)
+	item(const std::string_view name, const T &value)
 		: m_name(name)
 		, m_value(std::to_string(value))
 	{
 	}
 
-	item_t(const std::string_view name, const std::string_view value)
+	item(const std::string_view name, const std::string_view value)
 		: m_name(name)
 		, m_value(value)
 	{
 	}
 
-	item_t(const item_t &rhs) = default;
+	item(const item &rhs) = default;
 
-	item_t(item_t &&rhs) noexcept = default;
+	item(item &&rhs) noexcept = default;
 
-	item_t &operator=(const item_t &rhs) = default;
+	item &operator=(const item &rhs) = default;
 
-	item_t &operator=(item_t &&rhs) noexcept = default;
+	item &operator=(item &&rhs) noexcept = default;
 
 	const std::string &name() const { return m_name; }
 	const std::string &value() const { return m_value; }
@@ -102,99 +169,113 @@ class item_t
 	std::string m_value;
 };
 
-using item = item_t<>;
 
 // --------------------------------------------------------------------
 
-// template <
-// 	typename Item = item,
-// 	typename Alloc = std::allocator<Item>>
-// class row_t : public std::list<Item, Alloc>
-// {
-//   public:
-// 	using value_type = Item;
-// 	using base_type = std::list<Item, Alloc>;
-// 	using allocator_type = Alloc;
-
-// 	row_t() = default;
-
-// 	row_t(const std::string &name, const allocator_type &alloc = allocator_type())
-// 		: base_type(alloc)
-// 		, m_name(name) {}
-
-// 	row_t(const row_t &) = default;
-
-// 	row_t(row_t &&) = default;
-
-// 	template<typename Alloc2>
-// 	row_t(const row_t &r, const Alloc2 &a)
-// 		: base_type(r, a)
-// 		, m_name(r.m_name)
-// 	{
-// 	}
-
-// 	template<typename Alloc2>
-// 	row_t(row_t &&r, const Alloc2 &a)
-// 		: base_type(std::move(r), a)
-// 		, m_name(r.m_name)
-// 	{
-// 	}
-
-// 	row_t &operator=(const row_t &) = default;
-// 	row_t &operator=(row_t &&) = default;
-
-// 	row_t(std::initializer_list<item_type> items, const allocator_type &alloc = allocator_type())
-// 	{
-
-// 	}
-
-// 	// --------------------------------------------------------------------
-
-// 	const std::string &name() const { return m_name; }
-// 	const std::string &value() const { return m_value; }
-
-//   private:
-// 	std::string m_name;
-// 	std::string m_value;
-// };
-
-// using row = row_t<>;
-
-// --------------------------------------------------------------------
-
-namespace detail
+template <typename Alloc = std::allocator<std::byte>>
+class row_t
 {
+	using byte_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<std::byte>;
 
-struct item_value
-{
-	item_value *m_next;
-	uint32_t m_column_ix;
-	char m_text[4];
+	struct AllocTraitsImpl : std::allocator_traits<byte_allocator_type>
+	{
+		using base_type = std::allocator_traits<byte_allocator_type>;
+
+		static constexpr typename base_type::pointer
+		allocate(byte_allocator_type &a, typename base_type::size_type n)
+		{
+			return base_type::allocate(a, n);
+		}
+	};
+
+
+	using AllocTraits = AllocTraitsImpl;
+
+  public:
+
+	using allocator_type = byte_allocator_type;
+
+	row_t(const allocator_type &alloc = allocator_type())
+		: m_allocator(alloc) {}
+
+	row_t(const row_t &) = default;
+
+	row_t(row_t &&) = default;
+
+	// template<typename Alloc2>
+	// row_t(const row_t &r, const Alloc2 &a)
+	// 	: m_allocator(a)
+	// {
+	// }
+
+	// template<typename Alloc2>
+	// row_t(row_t &&r, const Alloc2 &a)
+	// 	: m_allocator(a)
+	// {
+	// }
+
+	row_t &operator=(const row_t &) = default;
+	row_t &operator=(row_t &&) = default;
+
+	row_t(std::initializer_list<item> items, const allocator_type &alloc = allocator_type())
+		: m_allocator(alloc)
+	{
+
+	}
+
+	item_handle<row_t> operator[](uint32_t column_ix)
+	{
+		return item_handle<row_t>(column_ix, *this);
+	}
+
+	const item_handle<const row_t> operator[](uint32_t column_ix) const
+	{
+		return item_handle<const row_t>(column_ix, *this);
+	}
+
+	item_handle<row_t> operator[](std::string_view column_name)
+	{
+		return item_handle<row_t>(column_name, get_column_ix(column_name), *this);
+	}
+
+	const item_handle<const row_t> operator[](std::string_view column_name) const
+	{
+		return item_handle<const row_t>(column_name, get_column_ix(column_name), *this);
+	}
+
+
+
+
+	// --------------------------------------------------------------------
+
+  private:
+
+	uint32_t get_column_ix(std::string_view name) const
+	{
+		return 0;
+	}
+
+	template<typename R> friend class item_handle;
+
+
+	allocator_type m_allocator;
+
+	item_value *m_head = nullptr, *m_tail = nullptr;
+	size_t m_size = 0;
 };
 
-
-}
-
-
-// --------------------------------------------------------------------
-
-
-
-
-
-template <typename Item = item, typename Alloc = std::allocator<Item>>
-using row = std::forward_list<Item, Alloc>;
+using row = row_t<>;
 
 // --------------------------------------------------------------------
 
 template <
+	typename Row = row,
 	typename Alloc = std::allocator<std::byte>>
-class category_t
+class category_t : public std::forward_list<Row, std::scoped_allocator_adaptor<std::allocator<Row>>>
 {
   public:
-	using item_type = Item;
 	using value_type = Row;
-	using base_type = std::list<Row, Alloc>;
+	using base_type = std::forward_list<Row, std::scoped_allocator_adaptor<std::allocator<Row>>>;
 	using allocator_type = Alloc;
 
 	category_t() = default;
@@ -232,9 +313,9 @@ class category_t
 
 	void emplace(value_type &&row);
 
-	void emplace(std::initializer_list<item_type> items)
+	void emplace(std::initializer_list<item> items)
 	{
-		this->emplace_back(value_type{items});
+		this->emplace_back(value_type{items, this->get_allocator()});
 	}
 
 	// void write(std::ostream &os, const std::vector<size_t> &order, bool includeEmptyColumns)
@@ -424,7 +505,7 @@ class category_t
 	};
 
 	std::string m_name;
-	std::vector<item_column> m_columns;
+	std::vector<item_column, typename std::allocator_traits<allocator_type>::template rebind_alloc<item_column>> m_columns;
 };
 
 using category = category_t<>;

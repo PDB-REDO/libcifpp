@@ -41,7 +41,7 @@ std::filesystem::path gTestDir = std::filesystem::current_path(); // filled in f
 
 // --------------------------------------------------------------------
 
-cif_v2::file operator""_cf(const char *text, size_t length)
+cif::v2::file operator""_cf(const char *text, size_t length)
 {
 	struct membuf : public std::streambuf
 	{
@@ -52,7 +52,7 @@ cif_v2::file operator""_cf(const char *text, size_t length)
 	} buffer(const_cast<char *>(text), length);
 
 	std::istream is(&buffer);
-	return cif_v2::file(is);
+	return cif::v2::file(is);
 }
 
 // --------------------------------------------------------------------
@@ -78,18 +78,24 @@ bool init_unit_test()
 
 BOOST_AUTO_TEST_CASE(r_1)
 {
-	cif_v2::category c("foo");
-	c.emplace({
-		{ "f-1", 1 },
-		{ "f-2", "two" },
-		{ "f-3", 3.0 },
-		// { "f-4", 3.0, 3 }
-	});
+	cif::v2::row r;
 
-	cif_v2::datablock db("test");
-	db.emplace_back(std::move(c));
+	std::cout << r["f1"].value_or("<leeg>") << std::endl;
 
-	std::cout << db << std::endl;
+	// cif::v2::category c("foo");
+	// c.emplace({
+	// 	{ "f-1", 1 },
+	// 	{ "f-2", "two" },
+	// 	{ "f-3", 3.0 },
+	// 	// { "f-4", 3.0, 3 }
+	// });
+
+	// cif::v2::datablock db("test");
+	// db.emplace_back(std::move(c));
+
+	// std::cout << db << std::endl;
+
+	
 
 }
 
