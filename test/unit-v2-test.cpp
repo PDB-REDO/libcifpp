@@ -78,17 +78,13 @@ bool init_unit_test()
 
 BOOST_AUTO_TEST_CASE(r_1)
 {
-	cif::v2::row r;
-
-	std::cout << r["f1"].value_or("<leeg>") << std::endl;
-
-	// cif::v2::category c("foo");
-	// c.emplace({
-	// 	{ "f-1", 1 },
-	// 	{ "f-2", "two" },
-	// 	{ "f-3", 3.0 },
-	// 	// { "f-4", 3.0, 3 }
-	// });
+	cif::v2::category c("foo");
+	c.emplace({
+		{ "f-1", 1 },
+		{ "f-2", "two" },
+		{ "f-3", 3.0 },
+		// { "f-4", 3.0, 3 }
+	});
 
 	// cif::v2::datablock db("test");
 	// db.emplace_back(std::move(c));

@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -26,18 +26,35 @@
 
 #pragma once
 
-#include <filesystem>
-#include <forward_list>
-#include <list>
-#include <map>
-#include <scoped_allocator>
-#include <string>
-
-#include "cif++/CifUtils.hpp"
-
-#include "cif++/v2/file.hpp"
+#include "datablock.hpp"
 
 namespace cif::v2
 {
 
-} // namespace cif::v2
+// --------------------------------------------------------------------
+
+template <
+	typename Datablock = datablock,
+	typename Alloc = std::allocator<Datablock>>
+class file_t : public std::list<Datablock, Alloc>
+{
+  public:
+	using value_type = Datablock;
+	using base_type = std::list<value_type, Alloc>;
+	using allocator_type = Alloc;
+
+	file_t() = default;
+
+	file_t(std::istream &is, const allocator_type &alloc = allocator_type())
+	{
+	}
+
+	file_t(const file_t &) = default;
+	file_t(file_t &&) = default;
+	file_t &operator=(const file_t &) = default;
+	file_t &operator=(file_t &&) = default;
+};
+
+using file = file_t<>;
+
+}

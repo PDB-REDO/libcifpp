@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -26,18 +26,57 @@
 
 #pragma once
 
-#include <filesystem>
-#include <forward_list>
-#include <list>
-#include <map>
-#include <scoped_allocator>
-#include <string>
-
-#include "cif++/CifUtils.hpp"
-
-#include "cif++/v2/file.hpp"
+#include "item.hpp"
 
 namespace cif::v2
 {
 
-} // namespace cif::v2
+// --------------------------------------------------------------------
+/// \brief row_handle is the way to access data in rows
+
+template<typename Category>
+class row_handle
+{
+  public:
+
+	using category_type = Category;
+
+	row_handle(Category &cat)
+		: m_cat(cat) {}
+
+	// item_handle<row_t> operator[](uint32_t column_ix)
+	// {
+	// 	return item_handle<row_t>(column_ix, *this);
+	// }
+
+	// const item_handle<const row_t> operator[](uint32_t column_ix) const
+	// {
+	// 	return item_handle<const row_t>(column_ix, *this);
+	// }
+
+	// item_handle<row_t> operator[](std::string_view column_name)
+	// {
+	// 	return item_handle<row_t>(column_name, get_column_ix(column_name), *this);
+	// }
+
+	// const item_handle<const row_t> operator[](std::string_view column_name) const
+	// {
+	// 	return item_handle<const row_t>(column_name, get_column_ix(column_name), *this);
+	// }
+
+
+
+  private:
+
+	uint32_t get_column_ix(std::string_view name) const
+	{
+		return m_cat.get_column_ix(name);
+	}
+
+
+
+	category_type &m_cat;
+};
+
+
+}

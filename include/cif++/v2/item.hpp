@@ -28,11 +28,84 @@
 
 #include <cstring>
 
+#include <iomanip>
 #include <memory>
 #include <optional>
 
 namespace cif::v2
 {
+
+// --------------------------------------------------------------------
+/// \brief item is a transient class that is used to pass data into rows
+
+class item
+{
+  public:
+	item() = default;
+
+	item(std::string_view name, char value)
+		: m_name(name)
+		, m_value({ value })
+	{
+	}
+
+	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+	item(std::string_view name, const T &value, int precision)
+		: m_name(name)
+#if defined(__cpp_lib_format)
+		, m_value(std::format(".{}f", value, precision))
+#endif
+	{
+#if not defined(__cpp_lib_format)
+		// TODO: implement
+		m_value = std::to_string(value);
+#endif
+	}
+
+	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	item(const std::string_view name, const T &value)
+		: m_name(name)
+		, m_value(std::to_string(value))
+	{
+	}
+
+	item(const std::string_view name, const std::string_view value)
+		: m_name(name)
+		, m_value(value)
+	{
+	}
+
+	item(const item &rhs) = default;
+
+	item(item &&rhs) noexcept = default;
+
+	item &operator=(const item &rhs) = default;
+
+	item &operator=(item &&rhs) noexcept = default;
+
+	const std::string &name() const { return m_name; }
+	const std::string &value() const { return m_value; }
+
+	void value(const std::string &v) { m_value = v; }
+
+	/// \brief empty means either null or unknown
+	bool empty() const { return m_value.empty(); }
+
+	/// \brief returns true if the field contains '.'
+	bool is_null() const { return m_value == "."; }
+
+	/// \brief returns true if the field contains '?'
+	bool is_unknown() const { return m_value == "?"; }
+
+	size_t length() const { return m_value.length(); }
+	const char *c_str() const { return m_value.c_str(); }
+
+  private:
+	std::string m_name;
+	std::string m_value;
+};
+
+
 
 // --------------------------------------------------------------------
 // Internal storage, strictly forward linked list with minimal space
@@ -46,22 +119,12 @@ struct item_value
 		strcpy(m_text, value);
 	}
 
-	~item_value()
-	{
-		// remove recursively (and be paranoid)
-		while (m_next != nullptr and m_next != this)
-		{
-			auto n = m_next;
-			m_next = n->m_next;
-			n->m_next = nullptr;
-			delete n;
-		}
-	}
-
 	item_value *m_next;
 	uint32_t m_column_ix;
 	char m_text[4];
 };
+
+static_assert(sizeof(item_value) == 2 * sizeof(void*), "Item value should be two pointers in size...");
 
 // --------------------------------------------------------------------
 // Transient object to access stored data
