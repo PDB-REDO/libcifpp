@@ -2947,6 +2947,9 @@ void Row::assign(size_t column, const std::string &value, bool skipUpdateLinked,
 
 	if (oldValue != nullptr and value == oldValue) // no need to update
 		return;
+	
+	if (oldValue == nullptr and value.empty()) // no need to update either
+		return;
 
 	std::string oldStrValue = oldValue ? oldValue : "";
 
