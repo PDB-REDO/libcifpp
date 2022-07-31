@@ -31,6 +31,7 @@
 #include <iomanip>
 #include <memory>
 #include <optional>
+#include <limits>
 
 namespace cif::v2
 {
@@ -109,22 +110,67 @@ class item
 
 // --------------------------------------------------------------------
 // Internal storage, strictly forward linked list with minimal space
-// requirements.
+// requirements. Strings of size 7 or shorter are stored internally.
+// Typically, more than 99% of the strings in an mmCIF file are less
+// than 8 bytes in length.
 
 struct item_value
 {
-	item_value(uint32_t column_ix, const char *value)
-		: m_column_ix(column_ix)
+	item_value(uint16_t column_ix, const char *value)
+		: item_value(column_ix, std::string_view{value})
 	{
-		strcpy(m_text, value);
 	}
 
+	item_value(uint16_t column_ix, std::string_view value)
+		: m_next(nullptr)
+		, m_length(value.length())
+	{
+		if (value.length() > std::numeric_limits<uint16_t>::max())
+			throw std::runtime_error("libcifpp does not support string lengths longer than " + std::to_string(std::numeric_limits<uint16_t>::max()) + " bytes");
+
+		char *data;
+		if (m_length >= kBufferSize)
+			data = m_data = new char[m_length];
+		else
+			data = m_local_data;
+
+		std::copy(value.begin(), value.end(), data);
+		data[m_length] = 0;
+	}
+
+	~item_value()
+	{
+		if (m_length >= kBufferSize)
+			delete [] m_data;
+	}
+
+	item_value() = delete;
+	item_value(const item_value &) = delete;
+	item_value &operator=(const item_value &) = delete;
+
 	item_value *m_next;
-	uint32_t m_column_ix;
-	char m_text[4];
+	uint16_t m_column_ix;
+	uint16_t m_length;
+	union
+	{
+		char m_local_data[8];
+		char *m_data;
+	};
+
+	static constexpr size_t kBufferSize = sizeof(m_local_data);
+
+	std::string_view text() const
+	{
+		return { m_length >= kBufferSize ? m_data : m_local_data, m_length };
+	}
+	
+	const char *c_str() const
+	{
+		return m_length >= kBufferSize ? m_data : m_local_data;
+	}
 };
 
-static_assert(sizeof(item_value) == 2 * sizeof(void*), "Item value should be two pointers in size...");
+static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes");
 
 // --------------------------------------------------------------------
 // Transient object to access stored data

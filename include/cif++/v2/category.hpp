@@ -83,6 +83,14 @@ class category_t
 		auto r = m_head;
 		while (r != nullptr)
 		{
+			auto i = r->m_head;
+			while (i != nullptr)
+			{
+				auto ti = i->m_next;
+				delete_item(i);
+				i = ti;
+			}
+
 			auto t = r->m_next;
 			delete_row(r);
 			r = t;
@@ -149,19 +157,23 @@ class category_t
 		// 	}
 		// }
 
-
-		
-
-
 		auto r = create_row(m_head, nullptr);
 
-		std::vector<item_value *> item_values;
-		// std::transform(b, e, std::back_inserter(item_values), [this](Item &i) { return this->create_item(i); });
-		for (auto i = b; i != e; ++i)
-			item_values.push_back(this->create_item(*i));
+		if (m_head == nullptr)
+			m_head = m_tail = r;
+		else
+			m_tail = m_tail->m_next = r;
 
-		for (auto p : item_values)
-			delete_item(p);
+		for (auto i = b; i != e; ++i)
+		{
+			std::unique_ptr<item_value> new_item(this->create_item(*i));
+
+			if (r->m_head == nullptr)
+				r->m_head = r->m_tail = new_item.release();
+			else
+				r->m_tail = r->m_tail->m_next = new_item.release();
+		}
+
 
 		return {};
 
@@ -203,9 +215,9 @@ class category_t
 	// --------------------------------------------------------------------
 	/// \brief Return the index number for \a column_name
 
-	uint32_t get_column_ix(std::string_view column_name) const
+	uint16_t get_column_ix(std::string_view column_name) const
 	{
-		uint32_t result;
+		uint16_t result;
 
 		for (result = 0; result < m_columns.size(); ++result)
 		{
@@ -223,7 +235,7 @@ class category_t
 		return result;
 	}
 
-	uint32_t add_column(std::string_view column_name)
+	uint16_t add_column(std::string_view column_name)
 	{
 		using namespace std::literals;
 
@@ -317,17 +329,6 @@ class category_t
 		row_allocator_traits::deallocate(ra, r, 1);
 	}
 
-	constexpr static size_t calculate_item_size(const char* text)
-	{
-		return calculate_item_size(strlen(text));
-	}
-
-	constexpr static size_t calculate_item_size(size_t text_len)
-	{
-		size_t raw_size = sizeof(item_value) + text_len + 1 - 4;
-		return raw_size / sizeof(item_value) + ((raw_size % sizeof(item_value)) ? 1 : 0);
-	}
-
 	using item_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<item_value>;
 	using item_allocator_traits = std::allocator_traits<item_allocator_type>;
 
@@ -343,15 +344,15 @@ class category_t
 	// };
 
 
-	item_allocator_traits::pointer get_item(size_t item_size)
+	item_allocator_traits::pointer get_item()
 	{
 		item_allocator_type ia(get_allocator());
-		return item_allocator_traits::allocate(ia, item_size);
+		return item_allocator_traits::allocate(ia, 1);
 	}
 
-	item_value *create_item(uint32_t column_ix, const char *text)
+	item_value *create_item(uint16_t column_ix, std::string_view text)
 	{
-		auto p = this->get_item(calculate_item_size(text));
+		auto p = this->get_item();
 		item_allocator_type ia(get_allocator());
 		item_allocator_traits::construct(ia, p, column_ix, text);
 		return p;
@@ -359,7 +360,7 @@ class category_t
 
 	item_value *create_item(const item &i)
 	{
-		uint32_t ix = get_column_ix(i.name());
+		uint16_t ix = get_column_ix(i.name());
 		return create_item(ix, i.c_str());
 	}
 
