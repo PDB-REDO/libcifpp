@@ -157,7 +157,7 @@ class category_t
 		// 	}
 		// }
 
-		auto r = create_row(m_head, nullptr);
+		auto r = create_row();
 
 		if (m_head == nullptr)
 			m_head = m_tail = r;
@@ -261,6 +261,104 @@ class category_t
 
   private:
 
+	// --------------------------------------------------------------------
+	// Internal storage, strictly forward linked list with minimal space
+	// requirements. Strings of size 7 or shorter are stored internally.
+	// Typically, more than 99% of the strings in an mmCIF file are less
+	// than 8 bytes in length.
+
+	struct item_value
+	{
+		item_value(uint16_t column_ix, uint16_t length)
+			: m_next(nullptr)
+			, m_length(length)
+		{
+		}
+
+		item_value() = delete;
+		item_value(const item_value &) = delete;
+		item_value &operator=(const item_value &) = delete;
+
+		item_value *m_next;
+		uint16_t m_column_ix;
+		uint16_t m_length;
+		union
+		{
+			char m_local_data[8];
+			char *m_data;
+		};
+
+		static constexpr size_t kBufferSize = sizeof(m_local_data);
+
+		std::string_view text() const
+		{
+			return { m_length >= kBufferSize ? m_data : m_local_data, m_length };
+		}
+		
+		const char *c_str() const
+		{
+			return m_length >= kBufferSize ? m_data : m_local_data;
+		}
+	};
+
+	static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes");
+
+	using char_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<char>;
+	using char_allocator_traits = std::allocator_traits<char_allocator_type>;
+
+	using item_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<item_value>;
+	using item_allocator_traits = std::allocator_traits<item_allocator_type>;
+
+	item_allocator_traits::pointer get_item()
+	{
+		item_allocator_type ia(get_allocator());
+		return item_allocator_traits::allocate(ia, 1);
+	}
+
+	item_value *create_item(uint16_t column_ix, std::string_view text)
+	{
+		size_t text_length = text.length();
+
+		if (text_length + 1 > std::numeric_limits<uint16_t>::max())
+			throw std::runtime_error("libcifpp does not support string lengths longer than " + std::to_string(std::numeric_limits<uint16_t>::max()) + " bytes");
+
+		auto p = this->get_item();
+		item_allocator_type ia(get_allocator());
+		item_allocator_traits::construct(ia, p, column_ix, static_cast<uint16_t>(text_length));
+
+		char_allocator_type ca(get_allocator());
+
+		char *data;
+		if (text_length >= item_value::kBufferSize)
+			data = p->m_data = char_allocator_traits::allocate(ca, text_length + 1);
+		else
+			data = p->m_local_data;
+
+		std::copy(text.begin(), text.end(), data);
+		data[text_length] = 0;
+
+		return p;
+	}
+
+	item_value *create_item(const item &i)
+	{
+		uint16_t ix = get_column_ix(i.name());
+		return create_item(ix, i.value());
+	}
+
+	void delete_item(item_value *iv)
+	{
+		if (iv->m_length >= item_value::kBufferSize)
+		{
+			char_allocator_type ca(get_allocator());
+			char_allocator_traits::deallocate(ca, iv->m_data, iv->m_length + 1);
+		}
+
+		item_allocator_type ia(get_allocator());
+		item_allocator_traits::destroy(ia, iv);
+		item_allocator_traits::deallocate(ia, iv, 1);
+	}
+
 	struct row
 	{
 		// row() = default;
@@ -274,6 +372,13 @@ class category_t
 
 		template <typename R>
 		friend class item_handle;
+
+		row()
+			: m_next(nullptr)
+			, m_head(nullptr)
+			, m_tail(nullptr)
+		{
+		}
 
 		row(row *next, item_value *data)
 			: m_next(next)
@@ -290,18 +395,6 @@ class category_t
 
 		row *m_next = nullptr;
 		item_value *m_head = nullptr, *m_tail = nullptr;
-	};
-
-	struct item_column
-	{
-		std::string m_name;
-		ValidateItem *m_validator;
-
-		item_column(std::string_view name, ValidateItem *validator)
-			: m_name(name)
-			, m_validator(validator)
-		{
-		}
 	};
 
 	using row_allocator_type = typename std::allocator_traits<allocator_type>::template rebind_alloc<row>;
@@ -329,47 +422,19 @@ class category_t
 		row_allocator_traits::deallocate(ra, r, 1);
 	}
 
-	using item_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<item_value>;
-	using item_allocator_traits = std::allocator_traits<item_allocator_type>;
 
-	// struct item_allocator_traits : std::allocator_traits<item_allocator_type>
-	// {
-	// 	using base_type = std::allocator_traits<item_allocator_type>;
-
-	// 	static constexpr typename base_type::pointer
-	// 	allocate(item_allocator_type &a, typename base_type::size_type n)
-	// 	{
-	// 		return base_type::allocate(a, n);
-	// 	}
-	// };
-
-
-	item_allocator_traits::pointer get_item()
+	struct item_column
 	{
-		item_allocator_type ia(get_allocator());
-		return item_allocator_traits::allocate(ia, 1);
-	}
+		std::string m_name;
+		ValidateItem *m_validator;
 
-	item_value *create_item(uint16_t column_ix, std::string_view text)
-	{
-		auto p = this->get_item();
-		item_allocator_type ia(get_allocator());
-		item_allocator_traits::construct(ia, p, column_ix, text);
-		return p;
-	}
+		item_column(std::string_view name, ValidateItem *validator)
+			: m_name(name)
+			, m_validator(validator)
+		{
+		}
+	};
 
-	item_value *create_item(const item &i)
-	{
-		uint16_t ix = get_column_ix(i.name());
-		return create_item(ix, i.c_str());
-	}
-
-	void delete_item(item_value *iv)
-	{
-		item_allocator_type ia(get_allocator());
-		item_allocator_traits::destroy(ia, iv);
-		item_allocator_traits::deallocate(ia, iv, 1);
-	}
 
 	allocator_type m_allocator;
 	std::string m_name;

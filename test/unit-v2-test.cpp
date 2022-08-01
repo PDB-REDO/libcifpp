@@ -83,15 +83,26 @@ BOOST_AUTO_TEST_CASE(r_1)
 		{ "f-1", 1 },
 		{ "f-2", "two" },
 		{ "f-3", 3.0 },
-		// { "f-4", 3.0, 3 }
 	});
 
-	// cif::v2::datablock db("test");
-	// db.emplace_back(std::move(c));
+	auto row = c.front();
+	BOOST_CHECK_EQUAL(row["f-1"].compare(1), 0;)
+	BOOST_CHECK_EQUAL(row["f-2"].compare(1), "two";)
+	BOOST_CHECK_EQUAL(row["f-3"].compare(1), 3.0;)
+}
 
-	// std::cout << db << std::endl;
 
-	
+BOOST_AUTO_TEST_CASE(r_2)
+{
+	cif::v2::category c("foo");
+
+	for (size_t i = 1; i < 256; ++i)
+	{
+		c.emplace({
+			{ "id", i },
+			{ "txt", std::string(i, 'x') }
+		});
+	}
 
 }
 
