@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "row.hpp"
+#include <cif++/v2/row.hpp>
 
 namespace cif::v2
 {

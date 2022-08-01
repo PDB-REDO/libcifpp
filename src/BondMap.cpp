@@ -28,10 +28,10 @@
 #include <fstream>
 #include <mutex>
 
-#include "cif++/BondMap.hpp"
-#include "cif++/Cif++.hpp"
-#include "cif++/CifUtils.hpp"
-#include "cif++/Compound.hpp"
+#include <cif++/BondMap.hpp>
+#include <cif++/Cif++.hpp>
+#include <cif++/CifUtils.hpp>
+#include <cif++/Compound.hpp>
 
 namespace mmcif
 {

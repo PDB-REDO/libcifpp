@@ -26,10 +26,10 @@
 
 #pragma once
 
-#include "iterator.hpp"
-#include "row.hpp"
-#include "validate.hpp"
-
+#include <cif++/v2/condition.hpp>
+#include <cif++/v2/iterator.hpp>
+#include <cif++/v2/row.hpp>
+#include <cif++/v2/validate.hpp>
 namespace cif::v2
 {
 

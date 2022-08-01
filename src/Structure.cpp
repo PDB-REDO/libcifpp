@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "cif++/Structure.hpp"
+#include <cif++/Structure.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -41,10 +41,10 @@
 #include <boost/format.hpp>
 #endif
 
-#include "cif++/Cif2PDB.hpp"
-#include "cif++/CifParser.hpp"
-#include "cif++/PDB2Cif.hpp"
-// #include "cif++/AtomShape.hpp"
+#include <cif++/Cif2PDB.hpp>
+#include <cif++/CifParser.hpp>
+#include <cif++/PDB2Cif.hpp>
+// #include <cif++/AtomShape.hpp>
 
 namespace fs = std::filesystem;
 namespace ba = boost::algorithm;

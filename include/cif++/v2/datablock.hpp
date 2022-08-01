@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "category.hpp"
+#include <cif++/v2/category.hpp>
 
 namespace cif::v2
 {

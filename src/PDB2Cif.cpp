@@ -34,13 +34,13 @@
 #include <boost/format.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 
-#include "cif++/AtomType.hpp"
-#include "cif++/CifUtils.hpp"
-#include "cif++/Compound.hpp"
-#include "cif++/PDB2Cif.hpp"
-#include "cif++/PDB2CifRemark3.hpp"
-#include "cif++/Point.hpp"
-#include "cif++/Symmetry.hpp"
+#include <cif++/AtomType.hpp>
+#include <cif++/CifUtils.hpp>
+#include <cif++/Compound.hpp>
+#include <cif++/PDB2Cif.hpp>
+#include <cif++/PDB2CifRemark3.hpp>
+#include <cif++/Point.hpp>
+#include <cif++/Symmetry.hpp>
 
 namespace ba = boost::algorithm;
 

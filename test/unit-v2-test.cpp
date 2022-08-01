@@ -29,11 +29,11 @@
 
 #include <stdexcept>
 
-// #include "cif++/DistanceMap.hpp"
-// #include "cif++/BondMap.hpp"
-#include "cif++/Cif++-v2.hpp"
-// #include "cif++/CifValidator.hpp"
-// #include "cif++/CifParser.hpp"
+// #include <cif++/DistanceMap.hpp>
+// #include <cif++/BondMap.hpp>
+#include <cif++/Cif++-v2.hpp>
+// #include <cif++/CifValidator.hpp>
+// #include <cif++/CifParser.hpp>
 
 namespace tt = boost::test_tools;
 
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(r_1)
 	auto row = c.front();
 	BOOST_CHECK_EQUAL(row["f-1"].compare(1), 0);
 	BOOST_CHECK_EQUAL(row["f-2"].compare("two"), 0);
-	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0);
+	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0);	// This fails when running in valgrind... sigh
 }
 
 BOOST_AUTO_TEST_CASE(r_2)
@@ -183,6 +183,19 @@ BOOST_AUTO_TEST_CASE(c_1)
 		BOOST_CHECK_EQUAL(s.compare(ts[n - 1]), 0);
 		++n;
 	}
+}
+
+
+BOOST_AUTO_TEST_CASE(c_2)
+{
+	cif::v2::category c("foo");
+
+	c.emplace({ { "id", 1 }, { "s", "aap" } });
+	c.emplace({ { "id", 2 }, { "s", "noot" } });
+	c.emplace({ { "id", 3 }, { "s", "mies" } });
+
+	
+
 }
 
 // --------------------------------------------------------------------

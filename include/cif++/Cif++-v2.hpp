@@ -33,9 +33,9 @@
 #include <scoped_allocator>
 #include <string>
 
-#include "cif++/CifUtils.hpp"
+#include <cif++/CifUtils.hpp>
 
-#include "cif++/v2/file.hpp"
+#include <cif++/v2/file.hpp>
 
 namespace cif::v2
 {

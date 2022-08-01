@@ -37,9 +37,9 @@
 #include <boost/iostreams/concepts.hpp>    // output_filter
 #include <boost/iostreams/operations.hpp>  // put
 
-#include "cif++/Cif2PDB.hpp"
-#include "cif++/AtomType.hpp"
-#include "cif++/Compound.hpp"
+#include <cif++/Cif2PDB.hpp>
+#include <cif++/AtomType.hpp>
+#include <cif++/Compound.hpp>
 
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;

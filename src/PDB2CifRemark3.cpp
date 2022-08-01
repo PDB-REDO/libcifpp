@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "cif++/Cif++.hpp"
+#include <cif++/Cif++.hpp>
 
 #include <map>
 #include <set>
@@ -32,10 +32,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 
-#include "cif++/AtomType.hpp"
-#include "cif++/Compound.hpp"
-#include "cif++/PDB2CifRemark3.hpp"
-#include "cif++/CifUtils.hpp"
+#include <cif++/AtomType.hpp>
+#include <cif++/Compound.hpp>
+#include <cif++/PDB2CifRemark3.hpp>
+#include <cif++/CifUtils.hpp>
 
 namespace ba = boost::algorithm;
 

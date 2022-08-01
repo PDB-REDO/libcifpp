@@ -31,9 +31,9 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 
-#include "cif++/Cif++.hpp"
-#include "cif++/CifParser.hpp"
-#include "cif++/CifValidator.hpp"
+#include <cif++/Cif++.hpp>
+#include <cif++/CifParser.hpp>
+#include <cif++/CifValidator.hpp>
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;

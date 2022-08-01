@@ -43,10 +43,10 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/logic/tribool.hpp>
 
-#include "cif++/Cif++.hpp"
-#include "cif++/CifParser.hpp"
-#include "cif++/CifUtils.hpp"
-#include "cif++/CifValidator.hpp"
+#include <cif++/Cif++.hpp>
+#include <cif++/CifParser.hpp>
+#include <cif++/CifUtils.hpp>
+#include <cif++/CifValidator.hpp>
 
 namespace ba = boost::algorithm;
 namespace io = boost::iostreams;

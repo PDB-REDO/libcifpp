@@ -32,7 +32,7 @@
 
 #include <set>
 
-#include "cif++/CifUtils.hpp"
+#include <cif++/CifUtils.hpp>
 
 namespace cif::v2
 {

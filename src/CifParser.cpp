@@ -28,9 +28,9 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "cif++/Cif++.hpp"
-#include "cif++/CifParser.hpp"
-#include "cif++/CifValidator.hpp"
+#include <cif++/Cif++.hpp>
+#include <cif++/CifParser.hpp>
+#include <cif++/CifValidator.hpp>
 
 namespace ba = boost::algorithm;
 

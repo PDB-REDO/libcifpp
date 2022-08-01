@@ -34,8 +34,8 @@
 #include <tuple>
 #include <vector>
 
-#include "cif++/AtomType.hpp"
-#include "cif++/Cif++.hpp"
+#include <cif++/AtomType.hpp>
+#include <cif++/Cif++.hpp>
 
 namespace mmcif
 {

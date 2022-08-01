@@ -44,7 +44,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "cif++/CifUtils.hpp"
+#include <cif++/CifUtils.hpp>
 
 #include "revision.hpp"
 

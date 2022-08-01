@@ -27,7 +27,7 @@
 #include <random>
 #include <valarray>
 
-#include "cif++/Point.hpp"
+#include <cif++/Point.hpp>
 
 namespace mmcif
 {
