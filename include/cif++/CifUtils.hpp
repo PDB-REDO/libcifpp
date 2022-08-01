@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <charconv>
+#include <cmath>
 #include <filesystem>
 #include <set>
 #include <vector>
@@ -202,6 +204,129 @@ template <typename CharT, typename Traits, typename Alloc>
 inline auto coloured(std::basic_string<CharT, Traits, Alloc> &s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
 {
 	return ColouredString<std::basic_string<CharT, Traits, Alloc>, CharT>(s, fore, back, bold);
+}
+
+// --------------------------------------------------------------------
+
+/// std::from_chars for floating point types.
+template <typename FloatType>
+std::from_chars_result from_chars(const char *first, const char *last, FloatType &value)
+{
+	std::from_chars_result result{first, {}};
+
+	enum State {
+		IntegerSign,
+		Integer,
+		Fraction,
+		ExponentSign,
+		Exponent
+	} state = IntegerSign;
+	int sign = 1;
+	unsigned long long vi = 0;
+	long double f = 1;
+	int exponent_sign = 1;
+	int exponent = 0;
+	bool done = false;
+
+	while (not done and result.ec == std::errc())
+	{
+		char ch = result.ptr != last ? *result.ptr : 0;
+		++result.ptr;
+
+		switch (state)
+		{
+			case IntegerSign:
+				if (ch == '-')
+				{
+					sign = -1;
+					state = Integer;
+				}
+				else if (ch == '+')
+					state = Integer;
+				else if (ch >= '0' and ch <= '9')
+				{
+					vi = ch - '0';
+					state = Integer;
+				}
+				else if (ch == '.')
+					state = Fraction;
+				else
+					result.ec = std::errc::invalid_argument;
+				break;
+			
+			case Integer:
+				if (ch >= '0' and ch <= '9')
+					vi = 10 * vi + (ch - '0');
+				else if (ch == 'e' or ch == 'E')
+					state = ExponentSign;
+				else if (ch == '.')
+					state = Fraction;
+				else
+				{
+					done = true;
+					--result.ptr;
+				}
+				break;
+			
+			case Fraction:
+				if (ch >= '0' and ch <= '9')
+				{
+					vi = 10 * vi + (ch - '0');
+					f /= 10;
+				}
+				else if (ch == 'e' or ch == 'E')
+					state = ExponentSign;
+				else
+				{
+					done = true;
+					--result.ptr;
+				}
+				break;
+
+			case ExponentSign:
+				if (ch == '-')
+				{
+					exponent_sign = -1;
+					state = Exponent;
+				}
+				else if (ch == '+')
+					state = Exponent;
+				else if (ch >= '0' and ch <= '9')
+				{
+					exponent = ch - '0';
+					state = Exponent;
+				}
+				else
+					result.ec = std::errc::invalid_argument;
+				break;
+			
+			case Exponent:
+				if (ch >= '0' and ch <= '9')
+					exponent = 10 * exponent + (ch - '0');
+				else
+				{
+					done = true;
+					--result.ptr;
+				}
+				break;
+		}
+	}
+
+	if (result.ec == std::errc())
+	{
+		long double v = f * vi * sign;
+		if (exponent != 0)
+			v *= std::pow(10, exponent * exponent_sign);
+
+		if (std::isnan(v))
+			result.ec = std::errc::invalid_argument;
+		else if (std::abs(v) > std::numeric_limits<FloatType>::max())
+			result.ec = std::errc::result_out_of_range;
+
+		value = static_cast<FloatType>(v);
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------

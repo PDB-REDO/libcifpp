@@ -76,6 +76,38 @@ bool init_unit_test()
 
 // --------------------------------------------------------------------
 
+BOOST_AUTO_TEST_CASE(cc_1)
+{
+	std::tuple<std::string_view,float,char> tests[] = {
+		{ "1.0", 1.0, 0 },
+		{ "1.0e10", 1.0e10, 0 },
+		{ "-1.1e10", -1.1e10, 0 },
+		{ "-.2e11", -.2e11, 0 },
+		{ "1.3e-10", 1.3e-10, 0 },
+
+		{ "1.0 ", 1.0, ' ' },
+		{ "1.0e10 ", 1.0e10, ' ' },
+		{ "-1.1e10 ", -1.1e10, ' ' },
+		{ "-.2e11 ", -.2e11, ' ' },
+		{ "1.3e-10 ", 1.3e-10, ' ' },
+		
+	};
+
+	for (const auto &[txt, val, ch] : tests)
+	{
+		float tv;
+		const auto &[ptr, ec] = cif::from_chars(txt.begin(), txt.end(), tv);
+
+		BOOST_CHECK(ec == std::errc());
+		BOOST_CHECK_EQUAL(tv, val);
+		if (ch != 0)
+			BOOST_CHECK_EQUAL(*ptr, ch);
+	}
+
+}
+
+// --------------------------------------------------------------------
+
 BOOST_AUTO_TEST_CASE(r_1)
 {
 	cif::v2::category c("foo");
@@ -86,9 +118,9 @@ BOOST_AUTO_TEST_CASE(r_1)
 	});
 
 	auto row = c.front();
-	BOOST_CHECK_EQUAL(row["f-1"].compare(1), 0;)
-	BOOST_CHECK_EQUAL(row["f-2"].compare(1), "two";)
-	BOOST_CHECK_EQUAL(row["f-3"].compare(1), 3.0;)
+	BOOST_CHECK_EQUAL(row["f-1"].compare(1), 0);
+	BOOST_CHECK_EQUAL(row["f-2"].compare("two"), 0);
+	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0);
 }
 
 
@@ -104,6 +136,26 @@ BOOST_AUTO_TEST_CASE(r_2)
 		});
 	}
 
+}
+
+BOOST_AUTO_TEST_CASE(c_1)
+{
+	cif::v2::category c("foo");
+
+	c.emplace({ { "id", 1 }, { "s", "aap" } });
+	c.emplace({ { "id", 2 }, { "s", "noot" } });
+	c.emplace({ { "id", 3 }, { "s", "mies" } });
+
+	int n = 1;
+
+	const char *ts[] = { "aap", "noot", "mies" };
+
+	for (auto r : c)
+	{
+		BOOST_CHECK_EQUAL(r["id"].as<int>(), n);
+		BOOST_CHECK_EQUAL(r["s"].compare(ts[n - 1]), 0);
+		++n;
+	}
 }
 
 // --------------------------------------------------------------------

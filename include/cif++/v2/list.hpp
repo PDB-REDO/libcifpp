@@ -26,60 +26,54 @@
 
 #pragma once
 
-#include "item.hpp"
+#include <memory>
 
 namespace cif::v2
 {
 
 // --------------------------------------------------------------------
-/// \brief row_handle is the way to access data in rows
 
-template<typename Category>
-class row_handle
+template<typename Allocator = std::allocator<void>>
+class list
 {
   public:
 
-	using category_type = Category;
-	using row_type = category_type::row;
 
-	row_handle(category_type &cat, row_type &row)
-		: m_cat(cat)
-		, m_row(row) {}
 
-	item_handle<row_type> operator[](uint32_t column_ix)
+  protected:
+
+	struct list_item
 	{
-		return item_handle<row_type>(column_ix, m_row);
+		list_item *m_next = nullptr;
+	};
+
+	using list_item_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<list_item>;
+	using list_item_allocator_traits = std::allocator_traits<item_allocator_type>;
+
+	list_item_allocator_traits::pointer get_item()
+	{
+		list_item_allocator_type ia(get_allocator());
+		return list_item_allocator_traits::allocate(ia, 1);
 	}
 
-	const item_handle<const row_type> operator[](uint32_t column_ix) const
+	template<typename ...Arguments>
+	list_item *create_list_item(uint16_t column_ix, Arguments... args)
 	{
-		return item_handle<const row_type>(column_ix, m_row);
+		auto p = this->get_item();
+		list_item_allocator_type ia(get_allocator());
+		list_item_allocator_traits::construct(ia, p, std::forward<Arguments>(args)...);
+		return p;
 	}
 
-	item_handle<row_type> operator[](std::string_view column_name)
+	void delete_list_item(list_item *iv)
 	{
-		return item_handle<row_type>(get_column_ix(column_name), m_row);
+		list_item_allocator_type ia(get_allocator());
+		list_item_allocator_traits::destroy(ia, iv);
+		list_item_allocator_traits::deallocate(ia, iv, 1);
 	}
 
-	const item_handle<const row_type> operator[](std::string_view column_name) const
-	{
-		return item_handle<const row_type>(get_column_ix(column_name), m_row);
-	}
-
-
-
-  private:
-
-	uint32_t get_column_ix(std::string_view name) const
-	{
-		return m_cat.get_column_ix(name);
-	}
-
-
-
-	category_type &m_cat;
-	row_type &m_row;
+	list_item *m_head = nullptr, *m_tail = nullptr;
 };
 
 
-}
+} // namespace cif::v2

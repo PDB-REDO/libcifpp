@@ -27,7 +27,7 @@
 #pragma once
 
 #include <cstring>
-
+#include <charconv>
 #include <iomanip>
 #include <memory>
 #include <optional>
@@ -138,7 +138,7 @@ struct item_handle
 
 	item_handle &operator=(const std::string &value)
 	{
-		m_row.assign(m_name, value, false);
+		m_row.assign(m_column, value, false);
 		return *this;
 	}
 
@@ -166,7 +166,7 @@ struct item_handle
 	}
 
 	template <typename T>
-	int compare(const T &value, bool icase) const
+	int compare(const T &value, bool icase = true) const
 	{
 		return item_value_as<T>::compare(*this, value, icase);
 	}
@@ -174,8 +174,8 @@ struct item_handle
 	// empty means either null or unknown
 	bool empty() const
 	{
-		const char *s = c_str();
-		return *s == 0 or (s[1] == 0 and (*s == '.' or *s == '?'));
+		auto txt = text();
+		return txt.empty() or (txt.length() == 1 and (txt.front() == '.' or txt.front() == '?'));
 	}
 
 	explicit operator bool() const { return not empty(); }
@@ -183,54 +183,111 @@ struct item_handle
 	// is_null means the field contains '.'
 	bool is_null() const
 	{
-		const char *s = c_str();
-		return *s == '.' and s[1] == 0;
+		auto txt = text();
+		return txt.length() == 1 and txt.front() == '.';
 	}
 
 	// is_unknown means the field contains '?'
 	bool is_unknown() const
 	{
-		const char *s = c_str();
-		return *s == '?' and s[1] == 0;
+		auto txt = text();
+		return txt.length() == 1 and txt.front() == '?';
 	}
 
-	const char *c_str() const
+	// const char *c_str() const
+	// {
+	// 	for (auto iv = m_row.m_head; iv != nullptr; iv = iv->m_next)
+	// 	{
+	// 		if (iv->m_column_ix == m_column)
+	// 			return iv->m_text;
+	// 	}
+
+	// 	return s_empty_result;
+	// }
+
+	std::string_view text() const
 	{
 		for (auto iv = m_row.m_head; iv != nullptr; iv = iv->m_next)
 		{
 			if (iv->m_column_ix == m_column)
-				return iv->m_text;
+				return iv->text();
 		}
 
-		return s_empty_result;
+		return {};
 	}
 
 	// bool operator!=(const std::string &s) const { return s != c_str(); }
 	// bool operator==(const std::string &s) const { return s == c_str(); }
 
-	item_handle(std::string_view name, size_t column, row_type &row)
-		: m_name(name)
-		, m_column(column)
+	item_handle(uint16_t column, row_type &row)
+		: m_column(column)
 		, m_row(row)
-	{
-	}
-
-	item_handle(std::string_view name, size_t column, const row_type &row)
-		: m_name(name)
-		, m_column(column)
-		, m_row(const_cast<row_type &>(row))
-		// , mConst(true)
 	{
 	}
 
   private:
 
-	std::string_view m_name;
-	size_t m_column;
+	uint16_t m_column;
 	row_type &m_row;
 	// bool mConst = false;
 
 	static constexpr const char *s_empty_result = "";
+};
+
+// So sad that the gcc implementation of from_chars does not support floats yet...
+
+template <typename Row>
+template <typename T>
+struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T>>>
+{
+	using value_type = std::remove_reference_t<std::remove_cv_t<T>>;
+
+	static value_type convert(const item_handle &ref)
+	{
+		auto txt = ref.text();
+
+		value_type result = {};
+		auto [ptr, ec] { std::from_chars(txt.data(), txt.data() + txt.size(), result) };
+
+        if (ec == std::errc::invalid_argument)
+        {
+			// if (cif::VERBOSE)
+			// 	std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
+			result = {};
+        }
+        else if (ec == std::errc::result_out_of_range)
+        {
+			// if (cif::VERBOSE)
+			// 	std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
+			result = {};
+        }
+
+		return result;
+	}
+
+	static int compare(const item_handle &ref, double value, bool icase)
+	{
+		int result = 0;
+
+		auto txt = ref.text();
+
+		if (txt.empty())
+			result = 1;
+		else
+		{
+			value_type v = {};
+			auto [ptr, ec] { std::from_chars(txt.data(), txt.data() + txt.size(), v) };
+
+			if (ec != std::errc())
+				result = 1;
+			else if (v < value)
+				result = -1;
+			else if (v > value)
+				result = 1;
+		}
+
+		return result;
+	}
 };
 
 template <typename Row>
@@ -241,9 +298,24 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_floating_poin
 
 	static value_type convert(const item_handle &ref)
 	{
+		auto txt = ref.text();
+
 		value_type result = {};
-		if (not ref.empty())
-			result = static_cast<value_type>(std::stod(ref.c_str()));
+		auto [ptr, ec] { cif::from_chars(txt.data(), txt.data() + txt.size(), result) };
+
+        if (ec == std::errc::invalid_argument)
+        {
+			// if (cif::VERBOSE)
+			// 	std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
+			result = {};
+        }
+        else if (ec == std::errc::result_out_of_range)
+        {
+			// if (cif::VERBOSE)
+			// 	std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
+			result = {};
+        }
+
 		return result;
 	}
 
@@ -251,115 +323,110 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_floating_poin
 	{
 		int result = 0;
 
-		const char *s = ref.c_str();
+		auto txt = ref.text();
 
-		if (s == nullptr or *s == 0)
+		if (txt.empty())
 			result = 1;
 		else
 		{
-			try
-			{
-				auto v = std::strtod(s, nullptr);
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				// if (VERBOSE)
-				// 	std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+			value_type v = {};
+			auto [ptr, ec] { cif::from_chars(txt.data(), txt.data() + txt.size(), v) };
+
+			if (ec != std::errc())
 				result = 1;
-			}
+			else if (v < value)
+				result = -1;
+			else if (v > value)
+				result = 1;
 		}
 
 		return result;
 	}
 };
 
-template <typename Row>
-template <typename T>
-struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_unsigned_v<T> and not std::is_same_v<T, bool>>>
-{
-	static T convert(const item_handle &ref)
-	{
-		T result = {};
-		if (not ref.empty())
-			result = static_cast<T>(std::stoul(ref.c_str()));
-		return result;
-	}
+// template <typename Row>
+// template <typename T>
+// struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_unsigned_v<T> and not std::is_same_v<T, bool>>>
+// {
+// 	static T convert(const item_handle &ref)
+// 	{
+// 		T result = {};
+// 		if (not ref.empty())
+// 			result = static_cast<T>(std::stoul(ref.c_str()));
+// 		return result;
+// 	}
 
-	static int compare(const item_handle &ref, unsigned long value, bool icase)
-	{
-		int result = 0;
+// 	static int compare(const item_handle &ref, unsigned long value, bool icase)
+// 	{
+// 		int result = 0;
 
-		const char *s = ref.c_str();
+// 		auto txt = ref.text();
 
-		if (s == nullptr or *s == 0)
-			result = 1;
-		else
-		{
-			try
-			{
-				auto v = std::strtoul(s, nullptr, 10);
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				// if (VERBOSE)
-				// 	std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
-				result = 1;
-			}
-		}
+// 		if (txt.empty())
+// 			result = 1;
+// 		else
+// 		{
+// 			try
+// 			{
+// 				auto v = std::stol(txt);
+// 				if (v < value)
+// 					result = -1;
+// 				else if (v > value)
+// 					result = 1;
+// 			}
+// 			catch (...)
+// 			{
+// 				// if (VERBOSE)
+// 				// 	std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+// 				result = 1;
+// 			}
+// 		}
 
-		return result;
-	}
-};
+// 		return result;
+// 	}
+// };
 
-template <typename Row>
-template <typename T>
-struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T> and not std::is_same_v<T, bool>>>
-{
-	static T convert(const item_handle &ref)
-	{
-		T result = {};
-		if (not ref.empty())
-			result = static_cast<T>(std::stol(ref.c_str()));
-		return result;
-	}
+// template <typename Row>
+// template <typename T>
+// struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T> and not std::is_same_v<T, bool>>>
+// {
+// 	static T convert(const item_handle &ref)
+// 	{
+// 		T result = {};
+// 		if (not ref.empty())
+// 			result = static_cast<T>(std::stol(ref.text()));
+// 		return result;
+// 	}
 
-	static int compare(const item_handle &ref, long value, bool icase)
-	{
-		int result = 0;
+// 	static int compare(const item_handle &ref, long value, bool icase)
+// 	{
+// 		int result = 0;
 
-		const char *s = ref.c_str();
+// 		auto txt = ref.text();
 
-		if (s == nullptr or *s == 0)
-			result = 1;
-		else
-		{
-			try
-			{
-				auto v = std::strtol(s, nullptr, 10);
-				if (v < value)
-					result = -1;
-				else if (v > value)
-					result = 1;
-			}
-			catch (...)
-			{
-				// if (VERBOSE)
-				// 	std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
-				result = 1;
-			}
-		}
+// 		if (txt.empty())
+// 			result = 1;
+// 		else
+// 		{
+// 			try
+// 			{
+// 				auto v = std::stol(txt);
+// 				if (v < value)
+// 					result = -1;
+// 				else if (v > value)
+// 					result = 1;
+// 			}
+// 			catch (...)
+// 			{
+// 				// if (VERBOSE)
+// 				// 	std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
+// 				result = 1;
+// 			}
+// 		}
 
-		return result;
-	}
-};
+// 		return result;
+// 	}
+// };
 
 template <typename Row>
 template <typename T>
@@ -395,7 +462,7 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, boo
 	{
 		bool result = false;
 		if (not ref.empty())
-			result = iequals(ref.c_str(), "y");
+			result = iequals(ref.text(), "y");
 		return result;
 	}
 
@@ -411,14 +478,14 @@ template <typename Row>
 template <size_t N>
 struct item_handle<Row>::item_value_as<char[N]>
 {
-	static const char *convert(const item_handle &ref)
+	static std::string_view convert(const item_handle &ref)
 	{
-		return ref.c_str();
+		return ref.text();
 	}
 
 	static int compare(const item_handle &ref, const char (&value)[N], bool icase)
 	{
-		return icase ? cif::icompare(ref.c_str(), value) : std::strcmp(ref.c_str(), value);
+		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
 	}
 };
 
@@ -426,14 +493,14 @@ template <typename Row>
 template <typename T>
 struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, const char *>>>
 {
-	static const char *convert(const item_handle &ref)
+	static std::string_view convert(const item_handle &ref)
 	{
-		return ref.c_str();
+		return ref.text();
 	}
 
 	static int compare(const item_handle &ref, const char *value, bool icase)
 	{
-		return icase ? cif::icompare(ref.c_str(), value) : std::strcmp(ref.c_str(), value);
+		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
 	}
 };
 
@@ -441,14 +508,14 @@ template <typename Row>
 template <typename T>
 struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::string>>>
 {
-	static std::string convert(const item_handle &ref)
+	static std::string_view convert(const item_handle &ref)
 	{
-		return ref.c_str();
+		return ref.text();
 	}
 
 	static int compare(const item_handle &ref, const std::string &value, bool icase)
 	{
-		return icase ? cif::icompare(ref.c_str(), value) : std::strcmp(ref.c_str(), value.c_str());
+		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
 	}
 };
 

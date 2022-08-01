@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "iterator.hpp"
 #include "row.hpp"
 #include "validate.hpp"
 
@@ -46,8 +47,17 @@ class category_t
 		return m_allocator;
 	}
 
-	struct iterator {};
+	template <typename>
+	friend class row_handle;
 
+	template <typename, typename...>
+	friend class iterator_impl;
+
+	using value_type = row_handle<category_t>;
+	using reference = value_type;
+	using const_reference = const value_type;
+	using iterator = iterator_impl<category_t>;
+	using const_iterator = iterator_impl<const category_t>;
 
 	category_t() = default;
 
@@ -100,6 +110,56 @@ class category_t
 	// --------------------------------------------------------------------
 
 	const std::string &name() const { return m_name; }
+
+	reference front()
+	{
+		return {*this, *m_head};
+	}
+
+	const_reference front() const
+	{
+		return {*this, *m_head};
+	}
+
+	reference back()
+	{
+		return {*this, *m_tail};
+	}
+
+	const_reference back() const
+	{
+		return {*this, *m_tail};
+	}
+
+	iterator begin()
+	{
+		return {*this, m_head};
+	}
+
+	iterator end()
+	{
+		return {*this, nullptr};
+	}
+
+	const_iterator begin() const
+	{
+		return {*this, m_head};
+	}
+
+	const_iterator end() const
+	{
+		return {*this, nullptr};
+	}
+
+	const_iterator cbegin() const
+	{
+		return {*this, m_head};
+	}
+
+	const_iterator cend() const
+	{
+		return {*this, nullptr};
+	}
 
 	iterator emplace(std::initializer_list<item> items)
 	{
@@ -157,60 +217,39 @@ class category_t
 		// 	}
 		// }
 
-		auto r = create_row();
+		row *r = this->create_row();
+
+		try
+		{
+			for (auto i = b; i != e; ++i)
+			{
+				item_value *new_item = this->create_item(*i);
+
+				if (r->m_head == nullptr)
+					r->m_head = r->m_tail = new_item;
+				else
+					r->m_tail = r->m_tail->m_next = new_item;
+			}
+		}
+		catch (...)
+		{
+			if (r != nullptr)
+				this->delete_row(r);
+			throw;
+		}
 
 		if (m_head == nullptr)
 			m_head = m_tail = r;
 		else
 			m_tail = m_tail->m_next = r;
 
-		for (auto i = b; i != e; ++i)
-		{
-			std::unique_ptr<item_value> new_item(this->create_item(*i));
-
-			if (r->m_head == nullptr)
-				r->m_head = r->m_tail = new_item.release();
-			else
-				r->m_tail = r->m_tail->m_next = new_item.release();
-		}
-
-
-		return {};
-
-
-		// return iterator{ create_row() };
-
-		// Row r(nr);
-
-		// for (auto v = b; v != e; ++v)
-		// 	r.assign(*v, true);
-
-		// // if (isOrphan(r))
-		// // 	throw std::runtime_error("Cannot insert row in category " + mName + " since it would be an orphan");
-
-		// if (mHead == nullptr)
-		// {
-		// 	assert(mTail == nullptr);
-		// 	mHead = mTail = nr;
-		// }
-		// else
-		// {
-		// 	assert(mTail != nullptr);
-		// 	assert(mHead != nullptr);
-		// 	mTail->mNext = nr;
-		// 	mTail = nr;
-		// }
+		return { *this, r };
 
 		// result = r;
 
 		// if (mIndex != nullptr)
 		// 	mIndex->insert(nr);
 	}
-
-	// void emplace(std::initializer_list<item> items)
-	// {
-	// 	this->emplace_back(value_type{items, this->get_allocator()});
-	// }
 
 	// --------------------------------------------------------------------
 	/// \brief Return the index number for \a column_name
@@ -258,9 +297,7 @@ class category_t
 		return result;
 	}
 
-
   private:
-
 	// --------------------------------------------------------------------
 	// Internal storage, strictly forward linked list with minimal space
 	// requirements. Strings of size 7 or shorter are stored internally.
@@ -271,6 +308,7 @@ class category_t
 	{
 		item_value(uint16_t column_ix, uint16_t length)
 			: m_next(nullptr)
+			, m_column_ix(column_ix)
 			, m_length(length)
 		{
 		}
@@ -292,9 +330,9 @@ class category_t
 
 		std::string_view text() const
 		{
-			return { m_length >= kBufferSize ? m_data : m_local_data, m_length };
+			return {m_length >= kBufferSize ? m_data : m_local_data, m_length};
 		}
-		
+
 		const char *c_str() const
 		{
 			return m_length >= kBufferSize ? m_data : m_local_data;
@@ -342,7 +380,7 @@ class category_t
 
 	item_value *create_item(const item &i)
 	{
-		uint16_t ix = get_column_ix(i.name());
+		uint16_t ix = add_column(i.name());
 		return create_item(ix, i.value());
 	}
 
@@ -422,19 +460,17 @@ class category_t
 		row_allocator_traits::deallocate(ra, r, 1);
 	}
 
-
 	struct item_column
 	{
 		std::string m_name;
-		ValidateItem *m_validator;
+		const ValidateItem *m_validator;
 
-		item_column(std::string_view name, ValidateItem *validator)
+		item_column(std::string_view name, const ValidateItem *validator)
 			: m_name(name)
 			, m_validator(validator)
 		{
 		}
 	};
-
 
 	allocator_type m_allocator;
 	std::string m_name;
