@@ -90,7 +90,12 @@ BOOST_AUTO_TEST_CASE(cc_1)
 		{ "-1.1e10 ", -1.1e10, ' ' },
 		{ "-.2e11 ", -.2e11, ' ' },
 		{ "1.3e-10 ", 1.3e-10, ' ' },
-		
+
+		{ "3.0", 3.0, 0 },
+		{ "3.0 ", 3.0, ' ' },
+	
+		{ "3.000000", 3.0, 0 },
+		{ "3.000000 ", 3.0, ' ' },
 	};
 
 	for (const auto &[txt, val, ch] : tests)
@@ -123,7 +128,6 @@ BOOST_AUTO_TEST_CASE(r_1)
 	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0);
 }
 
-
 BOOST_AUTO_TEST_CASE(r_2)
 {
 	cif::v2::category c("foo");
@@ -154,6 +158,29 @@ BOOST_AUTO_TEST_CASE(c_1)
 	{
 		BOOST_CHECK_EQUAL(r["id"].as<int>(), n);
 		BOOST_CHECK_EQUAL(r["s"].compare(ts[n - 1]), 0);
+		++n;
+	}
+
+	n = 1;
+
+	for (auto r : c)
+	{
+		int i;
+		std::string s;
+
+		cif::v2::tie(i, s) = r.get("id", "s");
+
+		BOOST_CHECK_EQUAL(i, n);
+		BOOST_CHECK_EQUAL(s.compare(ts[n - 1]), 0);
+		++n;
+	}
+
+	n = 1;
+
+	for (const auto &[i, s] : c.rows<int,std::string>("id", "s"))
+	{
+		BOOST_CHECK_EQUAL(i, n);
+		BOOST_CHECK_EQUAL(s.compare(ts[n - 1]), 0);
 		++n;
 	}
 }

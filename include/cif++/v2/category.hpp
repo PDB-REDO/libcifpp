@@ -39,6 +39,50 @@ template <
 	typename Alloc = std::allocator<std::byte>>
 class category_t
 {
+  private:
+	// --------------------------------------------------------------------
+	// Internal storage, strictly forward linked list with minimal space
+	// requirements. Strings of size 7 or shorter are stored internally.
+	// Typically, more than 99% of the strings in an mmCIF file are less
+	// than 8 bytes in length.
+
+	struct item_value
+	{
+		item_value(uint16_t column_ix, uint16_t length)
+			: m_next(nullptr)
+			, m_column_ix(column_ix)
+			, m_length(length)
+		{
+		}
+
+		item_value() = delete;
+		item_value(const item_value &) = delete;
+		item_value &operator=(const item_value &) = delete;
+
+		item_value *m_next;
+		uint16_t m_column_ix;
+		uint16_t m_length;
+		union
+		{
+			char m_local_data[8];
+			char *m_data;
+		};
+
+		static constexpr size_t kBufferSize = sizeof(m_local_data);
+
+		std::string_view text() const
+		{
+			return {m_length >= kBufferSize ? m_data : m_local_data, m_length};
+		}
+
+		const char *c_str() const
+		{
+			return m_length >= kBufferSize ? m_data : m_local_data;
+		}
+	};
+
+	static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes");
+
   public:
 	using allocator_type = Alloc;
 
@@ -58,6 +102,42 @@ class category_t
 	using const_reference = const value_type;
 	using iterator = iterator_impl<category_t>;
 	using const_iterator = iterator_impl<const category_t>;
+
+	class row
+	{
+	  public:
+		row()
+			: m_next(nullptr)
+			, m_head(nullptr)
+			, m_tail(nullptr)
+		{
+		}
+
+		row(row *next, item_value *data)
+			: m_next(next)
+			, m_head(data)
+			, m_tail(data)
+		{
+			auto n = m_tail ? m_tail->m_next : nullptr;
+			while (n != nullptr)
+			{
+				m_tail = n;
+				n = n->m_next;
+			}
+		}
+
+	  private:
+		template <typename>
+		friend class item_handle;
+
+		template <typename, typename...>
+		friend class iterator_impl;
+
+		friend class category_t;
+
+		row *m_next = nullptr;
+		item_value *m_head = nullptr, *m_tail = nullptr;
+	};
 
 	category_t() = default;
 
@@ -161,6 +241,24 @@ class category_t
 		return {*this, nullptr};
 	}
 
+	// --------------------------------------------------------------------
+
+	template <typename... Ts, typename... Ns>
+	iterator_proxy<const category_t, Ts...> rows(Ns... names) const
+	{
+		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
+		return iterator_proxy<const category_t, Ts...>(*this, begin(), {names...});
+	}
+
+	template <typename... Ts, typename... Ns>
+	iterator_proxy<category_t, Ts...> rows(Ns... names)
+	{
+		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
+		return iterator_proxy<category_t, Ts...>(*this, begin(), {names...});
+	}
+
+	// --------------------------------------------------------------------
+
 	iterator emplace(std::initializer_list<item> items)
 	{
 		return this->emplace(items.begin(), items.end());
@@ -243,7 +341,7 @@ class category_t
 		else
 			m_tail = m_tail->m_next = r;
 
-		return { *this, r };
+		return {*this, r};
 
 		// result = r;
 
@@ -298,49 +396,6 @@ class category_t
 	}
 
   private:
-	// --------------------------------------------------------------------
-	// Internal storage, strictly forward linked list with minimal space
-	// requirements. Strings of size 7 or shorter are stored internally.
-	// Typically, more than 99% of the strings in an mmCIF file are less
-	// than 8 bytes in length.
-
-	struct item_value
-	{
-		item_value(uint16_t column_ix, uint16_t length)
-			: m_next(nullptr)
-			, m_column_ix(column_ix)
-			, m_length(length)
-		{
-		}
-
-		item_value() = delete;
-		item_value(const item_value &) = delete;
-		item_value &operator=(const item_value &) = delete;
-
-		item_value *m_next;
-		uint16_t m_column_ix;
-		uint16_t m_length;
-		union
-		{
-			char m_local_data[8];
-			char *m_data;
-		};
-
-		static constexpr size_t kBufferSize = sizeof(m_local_data);
-
-		std::string_view text() const
-		{
-			return {m_length >= kBufferSize ? m_data : m_local_data, m_length};
-		}
-
-		const char *c_str() const
-		{
-			return m_length >= kBufferSize ? m_data : m_local_data;
-		}
-	};
-
-	static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes");
-
 	using char_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<char>;
 	using char_allocator_traits = std::allocator_traits<char_allocator_type>;
 
@@ -396,44 +451,6 @@ class category_t
 		item_allocator_traits::destroy(ia, iv);
 		item_allocator_traits::deallocate(ia, iv, 1);
 	}
-
-	struct row
-	{
-		// row() = default;
-
-		// row(const row &) = default;
-
-		// row(row &&) = default;
-
-		// row &operator=(const row &) = default;
-		// row &operator=(row &&) = default;
-
-		template <typename R>
-		friend class item_handle;
-
-		row()
-			: m_next(nullptr)
-			, m_head(nullptr)
-			, m_tail(nullptr)
-		{
-		}
-
-		row(row *next, item_value *data)
-			: m_next(next)
-			, m_head(data)
-			, m_tail(data)
-		{
-			auto n = m_tail ? m_tail->m_next : nullptr;
-			while (n != nullptr)
-			{
-				m_tail = n;
-				n = n->m_next;
-			}
-		}
-
-		row *m_next = nullptr;
-		item_value *m_head = nullptr, *m_tail = nullptr;
-	};
 
 	using row_allocator_type = typename std::allocator_traits<allocator_type>::template rebind_alloc<row>;
 	using row_allocator_traits = std::allocator_traits<row_allocator_type>;

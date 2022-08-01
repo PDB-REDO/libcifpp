@@ -33,6 +33,12 @@
 #include <optional>
 #include <limits>
 
+namespace cif
+{
+	extern int VERBOSE;
+}
+
+
 namespace cif::v2
 {
 
@@ -238,7 +244,7 @@ struct item_handle
 
 template <typename Row>
 template <typename T>
-struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T>>>
+struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T>>>
 {
 	using value_type = std::remove_reference_t<std::remove_cv_t<T>>;
 
@@ -247,25 +253,30 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T>
 		auto txt = ref.text();
 
 		value_type result = {};
-		auto [ptr, ec] { std::from_chars(txt.data(), txt.data() + txt.size(), result) };
 
-        if (ec == std::errc::invalid_argument)
-        {
-			// if (cif::VERBOSE)
-			// 	std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
+		std::from_chars_result r;
+
+		if constexpr (std::is_floating_point_v<T>)
+			r = cif::from_chars(txt.data(), txt.data() + txt.size(), result);
+		else
+			r = std::from_chars(txt.data(), txt.data() + txt.size(), result);
+
+		if (r.ec != std::errc())
+		{
 			result = {};
-        }
-        else if (ec == std::errc::result_out_of_range)
-        {
-			// if (cif::VERBOSE)
-			// 	std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
-			result = {};
-        }
+			if (cif::VERBOSE)
+			{
+				if (r.ec == std::errc::invalid_argument)
+					std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
+				else if (r.ec == std::errc::result_out_of_range)
+					std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
+			}
+		}
 
 		return result;
 	}
 
-	static int compare(const item_handle &ref, double value, bool icase)
+	static int compare(const item_handle &ref, const T& value, bool icase)
 	{
 		int result = 0;
 
@@ -276,10 +287,25 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T>
 		else
 		{
 			value_type v = {};
-			auto [ptr, ec] { std::from_chars(txt.data(), txt.data() + txt.size(), v) };
 
-			if (ec != std::errc())
+			std::from_chars_result r;
+
+			if constexpr (std::is_floating_point_v<T>)
+				r = cif::from_chars(txt.data(), txt.data() + txt.size(), v);
+			else
+				r = std::from_chars(txt.data(), txt.data() + txt.size(), v);
+
+			if (r.ec != std::errc())
+			{
+				if (cif::VERBOSE)
+				{
+					if (r.ec == std::errc::invalid_argument)
+						std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
+					else if (r.ec == std::errc::result_out_of_range)
+						std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
+				}
 				result = 1;
+			}
 			else if (v < value)
 				result = -1;
 			else if (v > value)
@@ -289,144 +315,6 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T>
 		return result;
 	}
 };
-
-template <typename Row>
-template <typename T>
-struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_floating_point_v<T>>>
-{
-	using value_type = std::remove_reference_t<std::remove_cv_t<T>>;
-
-	static value_type convert(const item_handle &ref)
-	{
-		auto txt = ref.text();
-
-		value_type result = {};
-		auto [ptr, ec] { cif::from_chars(txt.data(), txt.data() + txt.size(), result) };
-
-        if (ec == std::errc::invalid_argument)
-        {
-			// if (cif::VERBOSE)
-			// 	std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
-			result = {};
-        }
-        else if (ec == std::errc::result_out_of_range)
-        {
-			// if (cif::VERBOSE)
-			// 	std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
-			result = {};
-        }
-
-		return result;
-	}
-
-	static int compare(const item_handle &ref, double value, bool icase)
-	{
-		int result = 0;
-
-		auto txt = ref.text();
-
-		if (txt.empty())
-			result = 1;
-		else
-		{
-			value_type v = {};
-			auto [ptr, ec] { cif::from_chars(txt.data(), txt.data() + txt.size(), v) };
-
-			if (ec != std::errc())
-				result = 1;
-			else if (v < value)
-				result = -1;
-			else if (v > value)
-				result = 1;
-		}
-
-		return result;
-	}
-};
-
-// template <typename Row>
-// template <typename T>
-// struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_unsigned_v<T> and not std::is_same_v<T, bool>>>
-// {
-// 	static T convert(const item_handle &ref)
-// 	{
-// 		T result = {};
-// 		if (not ref.empty())
-// 			result = static_cast<T>(std::stoul(ref.c_str()));
-// 		return result;
-// 	}
-
-// 	static int compare(const item_handle &ref, unsigned long value, bool icase)
-// 	{
-// 		int result = 0;
-
-// 		auto txt = ref.text();
-
-// 		if (txt.empty())
-// 			result = 1;
-// 		else
-// 		{
-// 			try
-// 			{
-// 				auto v = std::stol(txt);
-// 				if (v < value)
-// 					result = -1;
-// 				else if (v > value)
-// 					result = 1;
-// 			}
-// 			catch (...)
-// 			{
-// 				// if (VERBOSE)
-// 				// 	std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
-// 				result = 1;
-// 			}
-// 		}
-
-// 		return result;
-// 	}
-// };
-
-// template <typename Row>
-// template <typename T>
-// struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T> and not std::is_same_v<T, bool>>>
-// {
-// 	static T convert(const item_handle &ref)
-// 	{
-// 		T result = {};
-// 		if (not ref.empty())
-// 			result = static_cast<T>(std::stol(ref.text()));
-// 		return result;
-// 	}
-
-// 	static int compare(const item_handle &ref, long value, bool icase)
-// 	{
-// 		int result = 0;
-
-// 		auto txt = ref.text();
-
-// 		if (txt.empty())
-// 			result = 1;
-// 		else
-// 		{
-// 			try
-// 			{
-// 				auto v = std::stol(txt);
-// 				if (v < value)
-// 					result = -1;
-// 				else if (v > value)
-// 					result = 1;
-// 			}
-// 			catch (...)
-// 			{
-// 				// if (VERBOSE)
-// 				// 	std::cerr << "conversion error in compare for '" << ref.c_str() << '\'' << std::endl;
-// 				result = 1;
-// 			}
-// 		}
-
-// 		return result;
-// 	}
-// };
 
 template <typename Row>
 template <typename T>
