@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "cif++/Cif++.hpp"
+#include <cif++/Cif++.hpp>
 
 #include <map>
 #include <stack>

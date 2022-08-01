@@ -30,11 +30,11 @@
 
 #include <stdexcept>
 
-// #include "cif++/DistanceMap.hpp"
-#include "cif++/BondMap.hpp"
-#include "cif++/Cif++.hpp"
-#include "cif++/CifValidator.hpp"
-#include "cif++/CifParser.hpp"
+// #include <cif++/DistanceMap.hpp>
+#include <cif++/BondMap.hpp>
+#include <cif++/Cif++.hpp>
+#include <cif++/CifValidator.hpp>
+#include <cif++/CifParser.hpp>
 
 namespace tt = boost::test_tools;
 

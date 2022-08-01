@@ -28,10 +28,10 @@
 
 #include <numeric>
 
-#include "cif++/AtomType.hpp"
-#include "cif++/Cif++.hpp"
-#include "cif++/Compound.hpp"
-#include "cif++/Point.hpp"
+#include <cif++/AtomType.hpp>
+#include <cif++/Cif++.hpp>
+#include <cif++/Compound.hpp>
+#include <cif++/Point.hpp>
 
 /*
     To modify a structure, you will have to use actions.

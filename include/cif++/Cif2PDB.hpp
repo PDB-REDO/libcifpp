@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "cif++/Cif++.hpp"
+#include <cif++/Cif++.hpp>
 
 void WritePDBFile(std::ostream &os, const cif::Datablock &data);
 

@@ -382,7 +382,7 @@ int main(int argc, char* const argv[])
 // and $CLIBD/syminfo.lib using symop-map-generator,
 // part of the PDB-REDO suite of programs.
 
-#include "cif++/Symmetry.hpp"
+#include <cif++/Symmetry.hpp>
 
 namespace mmcif
 {

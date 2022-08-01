@@ -41,7 +41,7 @@
 #include <unistd.h>
 #endif
 
-#include "cif++/Cif++Export.hpp"
+#include <cif++/Cif++Export.hpp>
 
 #if _MSC_VER
 #pragma warning(disable : 4996) // unsafe function or variable	(strcpy e.g.)

@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "cif++/Cif++.hpp"
+#include <cif++/Cif++.hpp>
 
 // duh.. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86164
 // #include <regex>

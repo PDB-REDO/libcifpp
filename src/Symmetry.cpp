@@ -27,8 +27,8 @@
 #include <atomic>
 #include <mutex>
 
-#include "cif++/Symmetry.hpp"
-#include "cif++/CifUtils.hpp"
+#include <cif++/Symmetry.hpp>
+#include <cif++/CifUtils.hpp>
 
 #include "SymOpTable_data.hpp"
 

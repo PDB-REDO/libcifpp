@@ -30,7 +30,7 @@
 #include <string>
 #include <tuple>
 
-#include "cif++/Cif++.hpp"
+#include <cif++/Cif++.hpp>
 
 namespace cif
 {

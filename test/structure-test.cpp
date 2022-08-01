@@ -29,8 +29,8 @@
 
 #include <stdexcept>
 
-#include "cif++/Cif++.hpp"
-#include "cif++/Structure.hpp"
+#include <cif++/Cif++.hpp>
+#include <cif++/Structure.hpp>
 
 // --------------------------------------------------------------------
 

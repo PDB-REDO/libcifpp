@@ -41,7 +41,7 @@
 
 #include <boost/format.hpp>
 
-#include "cif++/CifUtils.hpp"
+#include <cif++/CifUtils.hpp>
 
 /*
     Simple C++ interface to CIF files.

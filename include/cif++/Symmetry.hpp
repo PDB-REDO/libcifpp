@@ -30,7 +30,7 @@
 #include <cstdint>
 #include <array>
 
-#include "CifUtils.hpp"
+#include <cif++/CifUtils.hpp>
 
 namespace mmcif
 {

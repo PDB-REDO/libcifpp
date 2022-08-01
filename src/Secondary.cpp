@@ -32,8 +32,8 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "cif++/Secondary.hpp"
-#include "cif++/Structure.hpp"
+#include <cif++/Secondary.hpp>
+#include <cif++/Structure.hpp>
 
 namespace ba = boost::algorithm;
 

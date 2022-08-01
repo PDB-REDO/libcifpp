@@ -34,11 +34,11 @@
 #include <filesystem>
 #include <fstream>
 
-#include "cif++/Cif++.hpp"
-#include "cif++/CifParser.hpp"
-#include "cif++/CifUtils.hpp"
-#include "cif++/Compound.hpp"
-#include "cif++/Point.hpp"
+#include <cif++/Cif++.hpp>
+#include <cif++/CifParser.hpp>
+#include <cif++/CifUtils.hpp>
+#include <cif++/Compound.hpp>
+#include <cif++/Point.hpp>
 
 namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
