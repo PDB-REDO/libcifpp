@@ -144,7 +144,7 @@ class category_t
 		, m_columns(rhs.m_columns)
 	{
 		for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
-			insert_impl(cend(), clone_row(*r));
+			insert_impl(end(), clone_row(*r));
 	}
 
 	category_t(category_t &&rhs)

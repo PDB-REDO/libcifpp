@@ -55,7 +55,10 @@ class iterator_impl
 	using pointer = std::conditional_t<N == 0, row_handle_type, value_type *>;
 	using reference = std::conditional_t<N == 0, row_handle_type, value_type &>;
 
-	iterator_impl(const iterator_impl &rhs)
+	iterator_impl(const iterator_impl &rhs) = default;
+
+	template<typename C2, typename... T2s>
+	iterator_impl(const iterator_impl<C2, T2s...> &rhs)
 		: m_category(rhs.m_category)
 		, m_current(rhs.m_current)
 		, m_value(rhs.m_value)

@@ -31,7 +31,8 @@
 namespace cif::v2
 {
 
-template<typename> class row_handle;
+template <typename>
+class row_handle;
 
 namespace detail
 {
@@ -39,8 +40,7 @@ namespace detail
 	// some helper classes to help create tuple result types
 	template <
 		typename Category,
-		typename... C
-	>
+		typename... C>
 	struct get_row_result
 	{
 		using category_type = Category;
@@ -102,7 +102,7 @@ namespace detail
 		std::tuple<Ts...> m_value;
 	};
 
-}
+} // namespace detail
 
 template <typename... Ts>
 auto tie(Ts &...v)
@@ -113,26 +113,36 @@ auto tie(Ts &...v)
 // --------------------------------------------------------------------
 /// \brief row_handle is the way to access data in rows
 
-template<typename Category>
+template <typename Category>
 class row_handle
 {
   public:
-
 	using category_type = Category;
 	using row_type = std::conditional_t<std::is_const_v<category_type>, const typename category_type::row, typename category_type::row>;
 
+	template <typename>
+	friend class row_handle;
+
 	row_handle() = default;
-	
+
 	row_handle(const row_handle &) = default;
 	row_handle(row_handle &&) = default;
 
 	row_handle &operator=(const row_handle &) = default;
 	row_handle &operator=(row_handle &&) = default;
 
+	template <typename C2>
+	row_handle(const row_handle<C2> &rhs)
+		: m_cat(rhs.m_cat)
+		, m_row(rhs.m_row)
+	{
+	}
+
 	row_handle(category_type &cat, row_type &row)
 		: m_cat(&cat)
-		, m_row(&row) {}
-
+		, m_row(&row)
+	{
+	}
 
 	explicit operator bool() const
 	{
@@ -177,7 +187,6 @@ class row_handle
 	}
 
   private:
-
 	uint32_t get_column_ix(std::string_view name) const
 	{
 		return m_cat->get_column_ix(name);
@@ -187,5 +196,4 @@ class row_handle
 	row_type *m_row = nullptr;
 };
 
-
-}
+} // namespace cif::v2

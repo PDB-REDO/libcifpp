@@ -240,6 +240,28 @@ BOOST_AUTO_TEST_CASE(c_2)
 	BOOST_CHECK_EQUAL(c.size(), 3);
 }
 
+BOOST_AUTO_TEST_CASE(ci_1)
+{
+	cif::v2::category c("foo");
+
+	c.emplace({{"id", 1}, {"s", "aap"}});
+	c.emplace({{"id", 2}, {"s", "noot"}});
+	c.emplace({{"id", 3}, {"s", "mies"}});
+
+	cif::v2::category::iterator i1 = c.begin();
+	cif::v2::category::const_iterator i2 = c.cbegin();
+	cif::v2::category::const_iterator i3 = c.begin();
+
+	cif::v2::category::const_iterator i4 = i2;
+	cif::v2::category::const_iterator i5 = i1;
+
+	BOOST_CHECK(i1 == i2);
+	BOOST_CHECK(i1 == i3);
+	BOOST_CHECK(i1 == i4);
+	BOOST_CHECK(i1 == i5);
+
+}
+
 // --------------------------------------------------------------------
 
 // BOOST_AUTO_TEST_CASE(f_1)
