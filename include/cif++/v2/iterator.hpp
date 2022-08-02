@@ -40,6 +40,9 @@ class iterator_impl
 	template <typename, typename...>
 	friend class iterator_impl;
 
+	template <typename>
+	friend class category_t;
+
 	static constexpr size_t N = sizeof...(Ts);
 
 	using category_type = Category;

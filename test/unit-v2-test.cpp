@@ -218,9 +218,6 @@ BOOST_AUTO_TEST_CASE(c_2)
 
 	cif::v2::category c2(c);
 
-	for (auto r : c)
-		c2.emplace(r);
-
 	BOOST_CHECK(not c2.empty());
 	BOOST_CHECK_EQUAL(c2.size(), 3);
 

@@ -106,25 +106,8 @@ class category_t
 	class row
 	{
 	  public:
-		row()
-			: m_next(nullptr)
-			, m_head(nullptr)
-			, m_tail(nullptr)
-		{
-		}
 
-		row(row *next, item_value *data)
-			: m_next(next)
-			, m_head(data)
-			, m_tail(data)
-		{
-			auto n = m_tail ? m_tail->m_next : nullptr;
-			while (n != nullptr)
-			{
-				m_tail = n;
-				n = n->m_next;
-			}
-		}
+		row() = default;
 
 	  private:
 		template <typename>
@@ -134,6 +117,14 @@ class category_t
 		friend class iterator_impl;
 
 		friend class category_t;
+
+		void append(item_value *iv)
+		{
+			if (m_head == nullptr)
+				m_head = m_tail = iv;
+			else
+				m_tail = m_tail->m_next = iv;
+		}
 
 		row *m_next = nullptr;
 		item_value *m_head = nullptr, *m_tail = nullptr;
@@ -152,13 +143,12 @@ class category_t
 		, m_name(rhs.m_name)
 		, m_columns(rhs.m_columns)
 	{
-		// for (value_type r : rhs)
-		// 	this->emplace(r);
+		for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
+			insert_impl(cend(), clone_row(*r));
 	}
 
 	category_t(category_t &&)
 	{
-
 	}
 
 	template <typename Alloc2>
@@ -177,12 +167,10 @@ class category_t
 
 	category_t &operator=(const category_t &)
 	{
-
 	}
 
 	category_t &operator=(category_t &&)
 	{
-
 	}
 
 	~category_t()
@@ -286,14 +274,19 @@ class category_t
 
 	// --------------------------------------------------------------------
 
+	void insert(const_iterator pos, const row &row)
+	{
+		insert_impl(pos, row);
+	}
+
+	void insert(const_iterator pos, row &&row)
+	{
+		insert_impl(pos, std::move(row));
+	}
+
 	iterator emplace(std::initializer_list<item> items)
 	{
 		return this->emplace(items.begin(), items.end());
-	}
-
-	iterator emplace(value_type row)
-	{
-		// return 
 	}
 
 	template <typename ItemIter>
@@ -354,11 +347,7 @@ class category_t
 			for (auto i = b; i != e; ++i)
 			{
 				item_value *new_item = this->create_item(*i);
-
-				if (r->m_head == nullptr)
-					r->m_head = r->m_tail = new_item;
-				else
-					r->m_tail = r->m_tail->m_next = new_item;
+				r->append(new_item);
 			}
 		}
 		catch (...)
@@ -368,12 +357,7 @@ class category_t
 			throw;
 		}
 
-		if (m_head == nullptr)
-			m_head = m_tail = r;
-		else
-			m_tail = m_tail->m_next = r;
-
-		return {*this, r};
+		return insert_impl(cend(), r);
 
 		// result = r;
 
@@ -493,13 +477,33 @@ class category_t
 		return row_allocator_traits::allocate(ra, 1);
 	}
 
-	template <typename... Args>
-	row *create_row(Args... args)
+	row *create_row()
 	{
 		auto p = this->get_row();
 		row_allocator_type ra(get_allocator());
-		row_allocator_traits::construct(ra, p, std::forward<Args>(args)...);
+		row_allocator_traits::construct(ra, p);
 		return p;
+	}
+
+	row *clone_row(const row &r)
+	{
+		row *result = create_row();
+
+		try
+		{
+			for (auto i = r.m_head; i != nullptr; i = i->m_next)
+			{
+				item_value *v = create_item(i->m_column_ix, i->text());
+				result->append(v);
+			}
+		}
+		catch (...)
+		{
+			delete_row(result);
+			throw;
+		}
+		
+		return result;
 	}
 
 	void delete_row(row *r)
@@ -520,6 +524,84 @@ class category_t
 		{
 		}
 	};
+
+	// proxy methods for every insertion
+	iterator insert_impl(const_iterator pos, row *n)
+	{
+		assert(n != nullptr);
+		assert(n->m_next == nullptr);
+
+		if (n == nullptr)
+			throw std::runtime_error("Invalid pointer passed to insert");
+
+		// insert at end, most often this is the case
+		if (pos.m_current == nullptr)
+		{
+			if (m_head == nullptr)
+				m_tail = m_head = n;
+			else
+				m_tail = m_tail->m_next = n;
+		}
+		else
+		{
+			assert(m_head != nullptr);
+
+			if (pos.m_current == m_head)
+				m_head = n->m_next = m_head;
+			else
+				n = n->m_next = m_head->m_next;
+		}
+
+		return iterator(*this, n);
+	}
+
+	iterator erase_impl(const_iterator pos)
+	{
+		if (pos == cend())
+			return pos;
+
+		row *n = const_cast<row *>(&*pos);
+		row *cur;
+
+		if (m_head == n)
+		{
+			m_head = static_cast<row *>(m_head->m_next);
+			if (m_head != nullptr)
+				m_head->m_prev = nullptr;
+			else
+				m_tail = nullptr;
+
+			n->m_next = n->m_prev = n->m_parent = nullptr;
+			delete_row(n);
+
+			cur = m_head;
+		}
+		else
+		{
+			cur = static_cast<row *>(n->m_next);
+
+			if (m_tail == n)
+				m_tail = static_cast<row *>(n->m_prev);
+
+			row *p = m_head;
+			while (p != nullptr and p->m_next != n)
+				p = p->m_next;
+
+			if (p != nullptr and p->m_next == n)
+			{
+				p->m_next = n->m_next;
+				if (p->m_next != nullptr)
+					p->m_next->m_prev = p;
+				n->m_next = nullptr;
+			}
+			else
+				throw std::runtime_error("remove for a row not found in the list");
+
+			delete_row(n);
+		}
+
+		return iterator(*this, cur);
+	}
 
 	allocator_type m_allocator;
 	std::string m_name;
