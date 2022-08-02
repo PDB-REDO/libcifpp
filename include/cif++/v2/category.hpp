@@ -147,8 +147,15 @@ class category_t
 			insert_impl(cend(), clone_row(*r));
 	}
 
-	category_t(category_t &&)
+	category_t(category_t &&rhs)
+		: m_allocator(std::move(rhs.m_allocator))
+		, m_name(std::move(rhs.m_name))
+		, m_columns(std::move(rhs.m_columns))
+		, m_head(rhs.m_head)
+		, m_tail(rhs.m_tail)
 	{
+		rhs.m_head = nullptr;
+		rhs.m_tail = nullptr;
 	}
 
 	template <typename Alloc2>
@@ -165,31 +172,47 @@ class category_t
 	{
 	}
 
-	category_t &operator=(const category_t &)
+	category_t &operator=(const category_t &rhs)
 	{
+		if (this != &rhs)
+		{
+			if (not empty())
+				clear();
+
+			m_allocator = std::allocator_traits<allocator_type>::select_on_container_copy_construction(rhs.get_allocator());
+			m_name = rhs.m_name;
+			m_columns = rhs.m_columns;
+
+			for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
+				insert_impl(cend(), clone_row(*r));
+		}
+
+		return *this;
 	}
 
-	category_t &operator=(category_t &&)
+	category_t &operator=(category_t &&rhs)
 	{
+		if (this != &rhs)
+		{
+			if (not empty())
+				clear();
+
+			m_allocator = std::move(rhs.m_allocator);
+			m_name = std::move(rhs.m_name);
+			m_columns = std::move(rhs.m_columns);
+
+			m_head = rhs.m_head;
+			m_tail = rhs.m_tail;
+
+			rhs.m_head = rhs.m_tail = nullptr;
+		}
+
+		return *this;
 	}
 
 	~category_t()
 	{
-		auto r = m_head;
-		while (r != nullptr)
-		{
-			auto i = r->m_head;
-			while (i != nullptr)
-			{
-				auto ti = i->m_next;
-				delete_item(i);
-				i = ti;
-			}
-
-			auto t = r->m_next;
-			delete_row(r);
-			r = t;
-		}
+		clear();
 	}
 
 	// --------------------------------------------------------------------
@@ -365,6 +388,19 @@ class category_t
 		// 	mIndex->insert(nr);
 	}
 
+	void clear()
+	{
+		auto i = m_head;
+		while (i != nullptr)
+		{
+			auto t = i;
+			i = i->m_next;
+			delete_row(t);
+		}
+
+		m_head = m_tail = nullptr;
+	}
+
 	// --------------------------------------------------------------------
 	/// \brief Return the index number for \a column_name
 
@@ -508,9 +544,20 @@ class category_t
 
 	void delete_row(row *r)
 	{
-		row_allocator_type ra(get_allocator());
-		row_allocator_traits::destroy(ra, r);
-		row_allocator_traits::deallocate(ra, r, 1);
+		if (r != nullptr)
+		{
+			auto i = r->m_head;
+			while (i != nullptr)
+			{
+				auto t = i;
+				i = i->m_next;
+				delete_item(t);
+			}
+
+			row_allocator_type ra(get_allocator());
+			row_allocator_traits::destroy(ra, r);
+			row_allocator_traits::deallocate(ra, r, 1);
+		}
 	}
 
 	struct item_column

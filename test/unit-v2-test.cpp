@@ -221,6 +221,23 @@ BOOST_AUTO_TEST_CASE(c_2)
 	BOOST_CHECK(not c2.empty());
 	BOOST_CHECK_EQUAL(c2.size(), 3);
 
+	cif::v2::category c3(std::move(c));
+
+	BOOST_CHECK(not c3.empty());
+	BOOST_CHECK_EQUAL(c3.size(), 3);
+
+	BOOST_CHECK(c.empty());
+	BOOST_CHECK_EQUAL(c.size(), 0);
+
+	c = c3;
+
+	BOOST_CHECK(not c.empty());
+	BOOST_CHECK_EQUAL(c.size(), 3);
+
+	c = std::move(c2);
+
+	BOOST_CHECK(not c.empty());
+	BOOST_CHECK_EQUAL(c.size(), 3);
 }
 
 // --------------------------------------------------------------------
