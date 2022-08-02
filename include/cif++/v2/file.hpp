@@ -139,7 +139,7 @@ class file_t
 		// setValidator(nullptr);
 
 		parser_type p(is, *this);
-		p.parseFile();
+		p.parse_file();
 
 		// if (saved != nullptr)
 		// {

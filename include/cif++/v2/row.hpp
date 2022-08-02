@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cif++/v2/item.hpp>
+#include <cif++/v2/condition.hpp>
 
 namespace cif::v2
 {

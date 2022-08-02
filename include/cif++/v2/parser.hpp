@@ -48,16 +48,16 @@ class parse_error : public std::runtime_error
 class sac_parser
 {
   public:
-	using DatablockIndex = std::map<std::string, std::size_t>;
+	using datablock_index = std::map<std::string, std::size_t>;
 
-	sac_parser(std::istream &is)
-		: mData(is)
+	sac_parser(std::istream &is, bool init = true)
+		: m_source(is)
 	{
 		m_validate = true;
 		m_line_nr = 1;
 		m_bol = true;
 
-		// if (init)
+		if (init)
 			m_lookahead = get_next_token();
 	}
 
@@ -157,6 +157,7 @@ class sac_parser
 			case CIFToken::STOP: return "STOP";
 			case CIFToken::Tag: return "Tag";
 			case CIFToken::Value: return "Value";
+			default: return "Invalid token parameter";
 		}
 	}
 
@@ -182,41 +183,42 @@ class sac_parser
 			case CIFValue::TextField: return "TextField";
 			case CIFValue::Inapplicable: return "Inapplicable";
 			case CIFValue::Unknown: return "Unknown";
+			default: return "Invalid type parameter";
 		}
 	}
 
-	// getNextChar takes a char from the buffer, or if it is empty
+	// get_next_char takes a char from the buffer, or if it is empty
 	// from the istream. This function also does carriage/linefeed
 	// translation.
-	int getNextChar()
+	int get_next_char()
 	{
 		int result;
 
-		if (mBuffer.empty())
-			result = mData.get();
+		if (m_buffer.empty())
+			result = m_source.get();
 		else
 		{
-			result = mBuffer.top();
-			mBuffer.pop();
+			result = m_buffer.top();
+			m_buffer.pop();
 		}
 
 		// very simple CR/LF translation into LF
 		if (result == '\r')
 		{
-			int lookahead = mData.get();
+			int lookahead = m_source.get();
 			if (lookahead != '\n')
-				mBuffer.push(lookahead);
+				m_buffer.push(lookahead);
 			result = '\n';
 		}
 
-		mTokenValue += static_cast<char>(result);
+		m_token_value += static_cast<char>(result);
 
 		if (result == '\n')
 			++m_line_nr;
 
 		if (VERBOSE >= 6)
 		{
-			std::cerr << "getNextChar => ";
+			std::cerr << "get_next_char => ";
 			if (iscntrl(result) or not isprint(result))
 				std::cerr << int(result) << std::endl;
 			else
@@ -228,21 +230,21 @@ class sac_parser
 
 	void retract()
 	{
-		assert(not mTokenValue.empty());
+		assert(not m_token_value.empty());
 
-		char ch = mTokenValue.back();
+		char ch = m_token_value.back();
 		if (ch == '\n')
 			--m_line_nr;
 
-		mBuffer.push(ch);
-		mTokenValue.pop_back();
+		m_buffer.push(ch);
+		m_token_value.pop_back();
 	}
 
 	int restart(int start)
 	{
 		int result = 0;
 
-		while (not mTokenValue.empty())
+		while (not m_token_value.empty())
 			retract();
 
 		switch (start)
@@ -277,12 +279,12 @@ class sac_parser
 		int state = State::Start, start = State::Start;
 		m_bol = false;
 
-		mTokenValue.clear();
+		m_token_value.clear();
 		mTokenType = CIFValue::Unknown;
 
 		while (result == CIFToken::Unknown)
 		{
-			auto ch = getNextChar();
+			auto ch = get_next_char();
 
 			switch (state)
 			{
@@ -318,7 +320,7 @@ class sac_parser
 					{
 						state = State::Start;
 						retract();
-						mTokenValue.clear();
+						m_token_value.clear();
 					}
 					else
 						m_bol = (ch == '\n');
@@ -329,7 +331,7 @@ class sac_parser
 					{
 						state = State::Start;
 						m_bol = true;
-						mTokenValue.clear();
+						m_token_value.clear();
 					}
 					else if (ch == kEOF)
 						result = CIFToken::Eof;
@@ -351,8 +353,8 @@ class sac_parser
 						state = State::TextField;
 					else if (ch == ';')
 					{
-						assert(mTokenValue.length() >= 2);
-						mTokenValue = mTokenValue.substr(1, mTokenValue.length() - 3);
+						assert(m_token_value.length() >= 2);
+						m_token_value = m_token_value.substr(1, m_token_value.length() - 3);
 						mTokenType = CIFValue::TextField;
 						result = CIFToken::Value;
 					}
@@ -378,10 +380,10 @@ class sac_parser
 						result = CIFToken::Value;
 						mTokenType = CIFValue::String;
 
-						if (mTokenValue.length() < 2)
+						if (m_token_value.length() < 2)
 							error("Invalid quoted string token");
 
-						mTokenValue = mTokenValue.substr(1, mTokenValue.length() - 2);
+						m_token_value = m_token_value.substr(1, m_token_value.length() - 2);
 					}
 					else if (ch == quoteChar)
 						;
@@ -493,7 +495,7 @@ class sac_parser
 				case State::Value:
 					if (ch == '_')
 					{
-						std::string s = toLowerCopy(mTokenValue);
+						std::string s = toLowerCopy(m_token_value);
 
 						if (s == "global_")
 							result = CIFToken::GLOBAL;
@@ -518,12 +520,12 @@ class sac_parser
 						retract();
 						result = CIFToken::Value;
 
-						if (mTokenValue == ".")
+						if (m_token_value == ".")
 							mTokenType = CIFValue::Inapplicable;
-						else if (mTokenValue == "?")
+						else if (m_token_value == "?")
 						{
 							mTokenType = CIFValue::Unknown;
-							mTokenValue.clear();
+							m_token_value.clear();
 						}
 					}
 					break;
@@ -539,7 +541,7 @@ class sac_parser
 						else
 							result = CIFToken::SAVE;
 
-						mTokenValue.erase(mTokenValue.begin(), mTokenValue.begin() + 5);
+						m_token_value.erase(m_token_value.begin(), m_token_value.begin() + 5);
 					}
 					break;
 
@@ -556,7 +558,7 @@ class sac_parser
 			if (mTokenType != CIFValue::Unknown)
 				std::cerr << ' ' << get_value_name(mTokenType);
 			if (result != CIFToken::Eof)
-				std::cerr << " " << std::quoted(mTokenValue);
+				std::cerr << " " << std::quoted(m_token_value);
 			std::cerr << std::endl;
 		}
 
@@ -572,10 +574,10 @@ class sac_parser
 	}
 
   public:
-	bool parseSingleDatablock(const std::string &datablock)
+	bool parse_single_datablock(const std::string &datablock)
 	{
 		// first locate the start, as fast as we can
-		auto &sb = *mData.rdbuf();
+		auto &sb = *m_source.rdbuf();
 
 		enum
 		{
@@ -653,20 +655,20 @@ class sac_parser
 
 		if (found)
 		{
-			produceDatablock(datablock);
+			produce_datablock(datablock);
 			m_lookahead = get_next_token();
-			parseDataBlock();
+			parse_datablock();
 		}
 
 		return found;
 	}
 
-	DatablockIndex indexDatablocks()
+	datablock_index index_datablocks()
 	{
-		DatablockIndex index;
+		datablock_index index;
 
 		// first locate the start, as fast as we can
-		auto &sb = *mData.rdbuf();
+		auto &sb = *m_source.rdbuf();
 
 		enum
 		{
@@ -748,7 +750,7 @@ class sac_parser
 					else if (isspace(ch))
 					{
 						if (not datablock.empty())
-							index[datablock] = mData.tellg();
+							index[datablock] = m_source.tellg();
 
 						state = start;
 					}
@@ -763,18 +765,18 @@ class sac_parser
 		return index;
 	}
 
-	bool parseSingleDatablock(const std::string &datablock, const DatablockIndex &index)
+	bool parse_single_datablock(const std::string &datablock, const datablock_index &index)
 	{
 		bool result = false;
 
 		auto i = index.find(datablock);
 		if (i != index.end())
 		{
-			mData.seekg(i->second);
+			m_source.seekg(i->second);
 
-			produceDatablock(datablock);
+			produce_datablock(datablock);
 			m_lookahead = get_next_token();
-			parseDataBlock();
+			parse_datablock();
 
 			result = true;
 		}
@@ -782,21 +784,21 @@ class sac_parser
 		return result;
 	}
 
-	void parseFile()
+	void parse_file()
 	{
 		while (m_lookahead != CIFToken::Eof)
 		{
 			switch (m_lookahead)
 			{
 				case CIFToken::GLOBAL:
-					parseGlobal();
+					parse_global();
 					break;
 
 				case CIFToken::DATA:
-					produceDatablock(mTokenValue);
+					produce_datablock(m_token_value);
 
 					match(CIFToken::DATA);
-					parseDataBlock();
+					parse_datablock();
 					break;
 
 				default:
@@ -807,7 +809,7 @@ class sac_parser
 	}
 
   protected:
-	void parseGlobal()
+	void parse_global()
 	{
 		match(CIFToken::GLOBAL);
 		while (m_lookahead == CIFToken::Tag)
@@ -817,7 +819,7 @@ class sac_parser
 		}
 	}
 
-	void parseDataBlock()
+	void parse_datablock()
 	{
 		std::string cat;
 
@@ -836,11 +838,11 @@ class sac_parser
 					while (m_lookahead == CIFToken::Tag)
 					{
 						std::string catName, itemName;
-						std::tie(catName, itemName) = splitTagName(mTokenValue);
+						std::tie(catName, itemName) = splitTagName(m_token_value);
 
 						if (cat.empty())
 						{
-							produceCategory(catName);
+							produce_category(catName);
 							cat = catName;
 						}
 						else if (not iequals(cat, catName))
@@ -853,11 +855,11 @@ class sac_parser
 
 					while (m_lookahead == CIFToken::Value)
 					{
-						produceRow();
+						produce_row();
 
 						for (auto tag : tags)
 						{
-							produceItem(cat, tag, mTokenValue);
+							produce_item(cat, tag, m_token_value);
 							match(CIFToken::Value);
 						}
 					}
@@ -869,25 +871,25 @@ class sac_parser
 				case CIFToken::Tag:
 				{
 					std::string catName, itemName;
-					std::tie(catName, itemName) = splitTagName(mTokenValue);
+					std::tie(catName, itemName) = splitTagName(m_token_value);
 
 					if (not iequals(cat, catName))
 					{
-						produceCategory(catName);
+						produce_category(catName);
 						cat = catName;
-						produceRow();
+						produce_row();
 					}
 
 					match(CIFToken::Tag);
 
-					produceItem(cat, itemName, mTokenValue);
+					produce_item(cat, itemName, m_token_value);
 
 					match(CIFToken::Value);
 					break;
 				}
 
 				case CIFToken::SAVE:
-					parseSaveFrame();
+					parse_save_frame();
 					break;
 
 				default:
@@ -897,7 +899,7 @@ class sac_parser
 		}
 	}
 
-	virtual void parseSaveFrame()
+	virtual void parse_save_frame()
 	{
 		error("A regular CIF file should not contain a save frame");
 	}
@@ -914,10 +916,10 @@ class sac_parser
 
 	// production methods, these are pure virtual here
 
-	virtual void produceDatablock(const std::string &name) = 0;
-	virtual void produceCategory(const std::string &name) = 0;
-	virtual void produceRow() = 0;
-	virtual void produceItem(const std::string &category, const std::string &item, const std::string &value) = 0;
+	virtual void produce_datablock(const std::string &name) = 0;
+	virtual void produce_category(const std::string &name) = 0;
+	virtual void produce_row() = 0;
+	virtual void produce_item(const std::string &category, const std::string &item, const std::string &value) = 0;
 
   protected:
 	enum State
@@ -939,16 +941,16 @@ class sac_parser
 		SAVE
 	};
 
-	std::istream &mData;
+	std::istream &m_source;
 
 	// Parser state
 	bool m_validate;
 	uint32_t m_line_nr;
 	bool m_bol;
 	CIFToken m_lookahead;
-	std::string mTokenValue;
+	std::string m_token_value;
 	CIFValue mTokenType;
-	std::stack<int> mBuffer;
+	std::stack<int> m_buffer;
 };
 
 // --------------------------------------------------------------------
@@ -971,12 +973,12 @@ class parser_t : public sac_parser
 	{
 	}
 
-	void produceDatablock(const std::string &name) override
+	void produce_datablock(const std::string &name) override
 	{
 		std::tie(m_datablock, std::ignore) = m_file.emplace(name);
 	}
 
-	void produceCategory(const std::string &name) override
+	void produce_category(const std::string &name) override
 	{
 		if (VERBOSE >= 4)
 			std::cerr << "producing category " << name << std::endl;
@@ -984,7 +986,7 @@ class parser_t : public sac_parser
 		std::tie(m_category, std::ignore) = m_datablock->emplace(name);
 	}
 
-	void produceRow() override
+	void produce_row() override
 	{
 		if (VERBOSE >= 4)
 			std::cerr << "producing row for category " << m_category->name() << std::endl;
@@ -994,7 +996,7 @@ class parser_t : public sac_parser
 		// m_row.lineNr(m_line_nr);
 	}
 
-	void produceItem(const std::string &category, const std::string &item, const std::string &value) override
+	void produce_item(const std::string &category, const std::string &item, const std::string &value) override
 	{
 		if (VERBOSE >= 4)
 			std::cerr << "producing _" << category << '.' << item << " -> " << value << std::endl;
@@ -1002,7 +1004,7 @@ class parser_t : public sac_parser
 		if (not iequals(category, m_category->name()))
 			error("inconsistent categories in loop_");
 
-		m_row[item] = mTokenValue;
+		m_row[item] = m_token_value;
 	}
 
   protected:
@@ -1012,24 +1014,7 @@ class parser_t : public sac_parser
 	row_handle_type m_row;
 };
 
-// class Parser : public SacParser
-// {
-//   public:
-// 	Parser(std::istream &is, File &f, bool init = true);
-
-// 	virtual void produceDatablock(const std::string &name);
-// 	virtual void produceCategory(const std::string &name);
-// 	virtual void produceRow();
-// 	virtual void produceItem(const std::string &category, const std::string &item, const std::string &value);
-
-//   protected:
-// 	File &mFile;
-// 	Datablock *mDataBlock;
-// 	Datablock::iterator m_category;
-// 	Row mRow;
-// };
-
-// // --------------------------------------------------------------------
+// --------------------------------------------------------------------
 
 // class DictParser : public Parser
 // {
@@ -1040,7 +1025,7 @@ class parser_t : public sac_parser
 // 	void loadDictionary();
 
 //   private:
-// 	virtual void parseSaveFrame();
+// 	virtual void parse_save_frame();
 
 // 	bool collectItemTypes();
 // 	void linkItems();
