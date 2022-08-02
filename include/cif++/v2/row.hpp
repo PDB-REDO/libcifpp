@@ -121,28 +121,42 @@ class row_handle
 	using category_type = Category;
 	using row_type = std::conditional_t<std::is_const_v<category_type>, const typename category_type::row, typename category_type::row>;
 
+	row_handle() = default;
+	
+	row_handle(const row_handle &) = default;
+	row_handle(row_handle &&) = default;
+
+	row_handle &operator=(const row_handle &) = default;
+	row_handle &operator=(row_handle &&) = default;
+
 	row_handle(category_type &cat, row_type &row)
-		: m_cat(cat)
-		, m_row(row) {}
+		: m_cat(&cat)
+		, m_row(&row) {}
+
+
+	explicit operator bool() const
+	{
+		return m_cat != nullptr and m_row != nullptr;
+	}
 
 	item_handle<row_type> operator[](uint32_t column_ix)
 	{
-		return item_handle<row_type>(column_ix, m_row);
+		return item_handle<row_type>(column_ix, *m_row);
 	}
 
 	const item_handle<const row_type> operator[](uint32_t column_ix) const
 	{
-		return item_handle<const row_type>(column_ix, m_row);
+		return item_handle<const row_type>(column_ix, *m_row);
 	}
 
 	item_handle<row_type> operator[](std::string_view column_name)
 	{
-		return item_handle<row_type>(get_column_ix(column_name), m_row);
+		return item_handle<row_type>(get_column_ix(column_name), *m_row);
 	}
 
 	const item_handle<const row_type> operator[](std::string_view column_name) const
 	{
-		return item_handle<const row_type>(get_column_ix(column_name), m_row);
+		return item_handle<const row_type>(get_column_ix(column_name), *m_row);
 	}
 
 	template <typename... Ts, size_t N>
@@ -166,11 +180,11 @@ class row_handle
 
 	uint32_t get_column_ix(std::string_view name) const
 	{
-		return m_cat.get_column_ix(name);
+		return m_cat->get_column_ix(name);
 	}
 
-	category_type &m_cat;
-	row_type &m_row;
+	category_type *m_cat = nullptr;
+	row_type *m_row = nullptr;
 };
 
 

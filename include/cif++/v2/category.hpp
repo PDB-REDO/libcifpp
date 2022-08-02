@@ -147,9 +147,19 @@ class category_t
 	{
 	}
 
-	category_t(const category_t &) = default;
+	category_t(const category_t &rhs)
+		: m_allocator(std::allocator_traits<allocator_type>::select_on_container_copy_construction(rhs.get_allocator()))
+		, m_name(rhs.m_name)
+		, m_columns(rhs.m_columns)
+	{
+		// for (value_type r : rhs)
+		// 	this->emplace(r);
+	}
 
-	category_t(category_t &&) = default;
+	category_t(category_t &&)
+	{
+
+	}
 
 	template <typename Alloc2>
 	category_t(const category_t &c, const Alloc2 &a)
@@ -165,8 +175,15 @@ class category_t
 	{
 	}
 
-	category_t &operator=(const category_t &) = default;
-	category_t &operator=(category_t &&) = default;
+	category_t &operator=(const category_t &)
+	{
+
+	}
+
+	category_t &operator=(category_t &&)
+	{
+
+	}
 
 	~category_t()
 	{
@@ -241,6 +258,16 @@ class category_t
 		return {*this, nullptr};
 	}
 
+	size_t size() const
+	{
+		return std::distance(cbegin(), cend());
+	}
+
+	bool empty() const
+	{
+		return m_head == nullptr;
+	}
+
 	// --------------------------------------------------------------------
 
 	template <typename... Ts, typename... Ns>
@@ -262,6 +289,11 @@ class category_t
 	iterator emplace(std::initializer_list<item> items)
 	{
 		return this->emplace(items.begin(), items.end());
+	}
+
+	iterator emplace(value_type row)
+	{
+		// return 
 	}
 
 	template <typename ItemIter>

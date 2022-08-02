@@ -209,7 +209,7 @@ inline auto coloured(std::basic_string<CharT, Traits, Alloc> &s, StringColour fo
 // --------------------------------------------------------------------
 
 /// std::from_chars for floating point types.
-template <typename FloatType>
+template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
 std::from_chars_result from_chars(const char *first, const char *last, FloatType &value)
 {
 	std::from_chars_result result{first, {}};
@@ -325,6 +325,92 @@ std::from_chars_result from_chars(const char *first, const char *last, FloatType
 
 		value = static_cast<FloatType>(v);
 	}
+
+	return result;
+}
+
+enum class chars_format
+{
+    scientific		= 1,
+    fixed			= 2,
+    // hex,
+    general = fixed | scientific
+};
+
+template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
+std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_format fmt)
+{
+	int size = last - first;
+	int r;
+
+	switch (fmt)
+	{
+		case chars_format::scientific:
+			if constexpr (std::is_same_v<FloatType, long double>)
+				r = snprintf(first, last - first, "%le", value);
+			else
+				r = snprintf(first, last - first, "%e", value);
+			break;
+
+		case chars_format::fixed:
+			if constexpr (std::is_same_v<FloatType, long double>)
+				r = snprintf(first, last - first, "%lf", value);
+			else
+				r = snprintf(first, last - first, "%f", value);
+			break;
+
+		case chars_format::general:
+			if constexpr (std::is_same_v<FloatType, long double>)
+				r = snprintf(first, last - first, "%lg", value);
+			else
+				r = snprintf(first, last - first, "%g", value);
+			break;
+	}
+
+	std::to_chars_result result;
+	if (r < 0 or r >= size)
+		result = { first, std::errc::value_too_large };
+	else
+		result = { first + r, std::errc() };
+
+	return result;
+}
+
+template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
+std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_format fmt, int precision)
+{
+	int size = last - first;
+	int r;
+
+	switch (fmt)
+	{
+		case chars_format::scientific:
+			if constexpr (std::is_same_v<FloatType, long double>)
+				r = snprintf(first, last - first, "%.*le", precision, value);
+			else
+				r = snprintf(first, last - first, "%.*e", precision, value);
+			break;
+
+		case chars_format::fixed:
+			if constexpr (std::is_same_v<FloatType, long double>)
+				r = snprintf(first, last - first, "%.*lf", precision, value);
+			else
+				r = snprintf(first, last - first, "%.*f", precision, value);
+			break;
+
+		case chars_format::general:
+			if constexpr (std::is_same_v<FloatType, long double>)
+				r = snprintf(first, last - first, "%.*lg", precision, value);
+			else
+				r = snprintf(first, last - first, "%.*g", precision, value);
+			break;
+	}
+
+	std::to_chars_result result;
+	if (r < 0 or r >= size)
+		result = { first, std::errc::value_too_large };
+	else
+		result = { first + r, std::errc() };
 
 	return result;
 }

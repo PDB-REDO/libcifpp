@@ -78,24 +78,24 @@ bool init_unit_test()
 
 BOOST_AUTO_TEST_CASE(cc_1)
 {
-	std::tuple<std::string_view,float,char> tests[] = {
-		{ "1.0", 1.0, 0 },
-		{ "1.0e10", 1.0e10, 0 },
-		{ "-1.1e10", -1.1e10, 0 },
-		{ "-.2e11", -.2e11, 0 },
-		{ "1.3e-10", 1.3e-10, 0 },
+	std::tuple<std::string_view, float, char> tests[] = {
+		{"1.0", 1.0, 0},
+		{"1.0e10", 1.0e10, 0},
+		{"-1.1e10", -1.1e10, 0},
+		{"-.2e11", -.2e11, 0},
+		{"1.3e-10", 1.3e-10, 0},
 
-		{ "1.0 ", 1.0, ' ' },
-		{ "1.0e10 ", 1.0e10, ' ' },
-		{ "-1.1e10 ", -1.1e10, ' ' },
-		{ "-.2e11 ", -.2e11, ' ' },
-		{ "1.3e-10 ", 1.3e-10, ' ' },
+		{"1.0 ", 1.0, ' '},
+		{"1.0e10 ", 1.0e10, ' '},
+		{"-1.1e10 ", -1.1e10, ' '},
+		{"-.2e11 ", -.2e11, ' '},
+		{"1.3e-10 ", 1.3e-10, ' '},
 
-		{ "3.0", 3.0, 0 },
-		{ "3.0 ", 3.0, ' ' },
-	
-		{ "3.000000", 3.0, 0 },
-		{ "3.000000 ", 3.0, ' ' },
+		{"3.0", 3.0, 0},
+		{"3.0 ", 3.0, ' '},
+
+		{"3.000000", 3.0, 0},
+		{"3.000000 ", 3.0, ' '},
 	};
 
 	for (const auto &[txt, val, ch] : tests)
@@ -108,8 +108,26 @@ BOOST_AUTO_TEST_CASE(cc_1)
 		if (ch != 0)
 			BOOST_CHECK_EQUAL(*ptr, ch);
 	}
-
 }
+
+BOOST_AUTO_TEST_CASE(cc_2)
+{
+	std::tuple<float, int, std::string_view> tests[] = {
+		{ 1.1, 1, "1.1" }
+	};
+
+	for (const auto &[val, prec, test] : tests)
+	{
+		char buffer[64];
+		const auto &[ptr, ec] = cif::to_chars(buffer, buffer + sizeof(buffer), val, cif::chars_format::fixed, prec);
+
+		BOOST_CHECK(ec == std::errc());
+
+		BOOST_CHECK_EQUAL(buffer, test);
+	}
+}
+
+
 
 // --------------------------------------------------------------------
 
@@ -117,15 +135,15 @@ BOOST_AUTO_TEST_CASE(r_1)
 {
 	cif::v2::category c("foo");
 	c.emplace({
-		{ "f-1", 1 },
-		{ "f-2", "two" },
-		{ "f-3", 3.0 },
+		{"f-1", 1},
+		{"f-2", "two"},
+		{"f-3", 3.0, 3},
 	});
 
 	auto row = c.front();
 	BOOST_CHECK_EQUAL(row["f-1"].compare(1), 0);
 	BOOST_CHECK_EQUAL(row["f-2"].compare("two"), 0);
-	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0);	// This fails when running in valgrind... sigh
+	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0); // This fails when running in valgrind... sigh
 }
 
 BOOST_AUTO_TEST_CASE(r_2)
@@ -134,25 +152,22 @@ BOOST_AUTO_TEST_CASE(r_2)
 
 	for (size_t i = 1; i < 256; ++i)
 	{
-		c.emplace({
-			{ "id", i },
-			{ "txt", std::string(i, 'x') }
-		});
+		c.emplace({{"id", i},
+			{"txt", std::string(i, 'x')}});
 	}
-
 }
 
 BOOST_AUTO_TEST_CASE(c_1)
 {
 	cif::v2::category c("foo");
 
-	c.emplace({ { "id", 1 }, { "s", "aap" } });
-	c.emplace({ { "id", 2 }, { "s", "noot" } });
-	c.emplace({ { "id", 3 }, { "s", "mies" } });
+	c.emplace({{"id", 1}, {"s", "aap"}});
+	c.emplace({{"id", 2}, {"s", "noot"}});
+	c.emplace({{"id", 3}, {"s", "mies"}});
 
 	int n = 1;
 
-	const char *ts[] = { "aap", "noot", "mies" };
+	const char *ts[] = {"aap", "noot", "mies"};
 
 	for (auto r : c)
 	{
@@ -177,7 +192,7 @@ BOOST_AUTO_TEST_CASE(c_1)
 
 	n = 1;
 
-	for (const auto &[i, s] : c.rows<int,std::string>("id", "s"))
+	for (const auto &[i, s] : c.rows<int, std::string>("id", "s"))
 	{
 		BOOST_CHECK_EQUAL(i, n);
 		BOOST_CHECK_EQUAL(s.compare(ts[n - 1]), 0);
@@ -185,16 +200,29 @@ BOOST_AUTO_TEST_CASE(c_1)
 	}
 }
 
-
 BOOST_AUTO_TEST_CASE(c_2)
 {
+	std::tuple<int,const char*> D[] = {
+		{1, "aap"},
+		{2, "noot"},
+		{3, "mies"}
+	};
+
 	cif::v2::category c("foo");
 
-	c.emplace({ { "id", 1 }, { "s", "aap" } });
-	c.emplace({ { "id", 2 }, { "s", "noot" } });
-	c.emplace({ { "id", 3 }, { "s", "mies" } });
+	for (const auto &[id, s] : D)
+		c.emplace({ {"id", id}, { "s", s} });
 
-	
+	BOOST_CHECK(not c.empty());
+	BOOST_CHECK_EQUAL(c.size(), 3);
+
+	cif::v2::category c2(c);
+
+	for (auto r : c)
+		c2.emplace(r);
+
+	BOOST_CHECK(not c2.empty());
+	BOOST_CHECK_EQUAL(c2.size(), 3);
 
 }
 
@@ -305,7 +333,6 @@ BOOST_AUTO_TEST_CASE(c_2)
 
 // 	auto &test = db["test"];
 // 	BOOST_CHECK(test.size() == 5);
-
 
 // 	BOOST_CHECK(test.exists("value"_key == cif::null));
 // 	BOOST_CHECK(test.find("value"_key == cif::null).size() == 2);
@@ -2045,4 +2072,3 @@ BOOST_AUTO_TEST_CASE(c_2)
 // 		BOOST_CHECK_EQUAL(text, kS[i++].s);
 // 	}
 // }
-

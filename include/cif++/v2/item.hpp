@@ -26,25 +26,26 @@
 
 #pragma once
 
-#include <cstring>
 #include <charconv>
+#include <cstring>
 #include <iomanip>
+#include <limits>
 #include <memory>
 #include <optional>
-#include <limits>
+
+#include <cif++/CifUtils.hpp>
 
 namespace cif
 {
-	extern int VERBOSE;
+extern int VERBOSE;
 }
-
 
 namespace cif::v2
 {
 
 // --------------------------------------------------------------------
 /// \brief item is a transient class that is used to pass data into rows
-
+///        but it also takes care of formatting data
 class item
 {
   public:
@@ -52,28 +53,51 @@ class item
 
 	item(std::string_view name, char value)
 		: m_name(name)
-		, m_value({ value })
+		, m_value(m_buffer, 1)
 	{
+		m_buffer[0] = value;
+		m_buffer[1] = 0;
 	}
 
 	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 	item(std::string_view name, const T &value, int precision)
 		: m_name(name)
-#if defined(__cpp_lib_format)
-		, m_value(std::format(".{}f", value, precision))
-#endif
 	{
-#if not defined(__cpp_lib_format)
-		// TODO: implement
-		m_value = std::to_string(value);
-#endif
+		auto r = cif::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, cif::chars_format::fixed, precision);
+		if (r.ec != std::errc())
+			throw std::runtime_error("Could not format number");
+		
+		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
+		*r.ptr = 0;
+		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
 	}
 
-	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
 		, m_value(std::to_string(value))
 	{
+		auto r = cif::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, cif::chars_format::general);
+		if (r.ec != std::errc())
+			throw std::runtime_error("Could not format number");
+		
+		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
+		*r.ptr = 0;
+		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
+	}
+
+	template <typename T, std::enable_if_t<std::is_integral_v<T>, int> = 0>
+	item(const std::string_view name, const T &value)
+		: m_name(name)
+		, m_value(std::to_string(value))
+	{
+		auto r = std::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value);
+		if (r.ec != std::errc())
+			throw std::runtime_error("Could not format number");
+		
+		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
+		*r.ptr = 0;
+		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
 	}
 
 	item(const std::string_view name, const std::string_view value)
@@ -90,8 +114,8 @@ class item
 
 	item &operator=(item &&rhs) noexcept = default;
 
-	const std::string &name() const { return m_name; }
-	const std::string &value() const { return m_value; }
+	std::string_view name() const { return m_name; }
+	std::string_view value() const { return m_value; }
 
 	void value(const std::string &v) { m_value = v; }
 
@@ -105,17 +129,18 @@ class item
 	bool is_unknown() const { return m_value == "?"; }
 
 	size_t length() const { return m_value.length(); }
-	const char *c_str() const { return m_value.c_str(); }
+	// const char *c_str() const { return m_value.c_str(); }
 
   private:
-	std::string m_name;
-	std::string m_value;
+	std::string_view m_name;
+	std::string_view m_value;
+	char m_buffer[64];		// TODO: optimize this magic number, might be too large
 };
 
 // --------------------------------------------------------------------
 // Transient object to access stored data
 
-template<typename Row>
+template <typename Row>
 struct item_handle
 {
 	using row_type = Row;
@@ -232,7 +257,6 @@ struct item_handle
 	}
 
   private:
-
 	uint16_t m_column;
 	row_type &m_row;
 	// bool mConst = false;
@@ -276,7 +300,7 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<
 		return result;
 	}
 
-	static int compare(const item_handle &ref, const T& value, bool icase)
+	static int compare(const item_handle &ref, const T &value, bool icase)
 	{
 		int result = 0;
 
@@ -358,7 +382,7 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, boo
 	{
 		bool rv = convert(ref);
 		return value && rv ? 0
-							: (rv < value ? -1 : 1);
+		                   : (rv < value ? -1 : 1);
 	}
 };
 
