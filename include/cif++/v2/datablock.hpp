@@ -34,17 +34,22 @@ namespace cif::v2
 // --------------------------------------------------------------------
 
 template <
-	typename Category = category,
-	typename Alloc = std::allocator<Category>>
-class datablock_t : public std::list<Category, Alloc>
+	typename Alloc = std::allocator<void>,
+	typename Category = category_t<Alloc>>
+class datablock_t
 {
   public:
 	using category_type = Category;
-	using base_type = std::list<category_type, Alloc>;
 	using allocator_type = Alloc;
 
-	datablock_t(const std::string &name, const allocator_type &alloc = allocator_type())
-		: base_type(alloc)
+	using category_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<category_type>;
+	using category_type_list = std::list<category_type, category_allocator_type>;
+
+	using iterator = category_type_list::iterator;
+	using const_iterator = category_type_list::const_iterator;
+
+	datablock_t(std::string_view name, const allocator_type &alloc = allocator_type())
+		: m_categories(alloc)
 		, m_name(name)
 	{
 	}
@@ -53,19 +58,19 @@ class datablock_t : public std::list<Category, Alloc>
 
 	datablock_t(datablock_t &&) = default;
 
-	template <typename Alloc2>
-	datablock_t(const datablock_t &db, const Alloc2 &a)
-		: base_type(db, a)
-		, m_name(db.m_name)
-	{
-	}
+	// template <typename Alloc2>
+	// datablock_t(const datablock_t &db, const Alloc2 &a)
+	// 	: m_categories(db, a)
+	// 	, m_name(db.m_name)
+	// {
+	// }
 
-	template <typename Alloc2>
-	datablock_t(datablock_t &&db, const Alloc2 &a)
-		: base_type(std::move(db), a)
-		, m_name(db.m_name)
-	{
-	}
+	// template <typename Alloc2>
+	// datablock_t(datablock_t &&db, const Alloc2 &a)
+	// 	: base_type(std::move(db), a)
+	// 	, m_name(db.m_name)
+	// {
+	// }
 
 	datablock_t &operator=(const datablock_t &) = default;
 	datablock_t &operator=(datablock_t &&) = default;
@@ -78,19 +83,57 @@ class datablock_t : public std::list<Category, Alloc>
 
 	category_type &operator[](std::string_view name)
 	{
-		auto i = std::find_if(this->begin(), this->end(), [name](const category_type &c)
+		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category_type &c)
 			{ return iequals(c.name(), name); });
-		if (i == this->end())
-			i = this->emplace(name);
-		return *i;
+		
+		if (i != m_categories.end())
+			return *i;
+
+		m_categories.emplace_back(name);
+		return m_categories.back();
 	}
 
 	const category_type &operator[](std::string_view name) const
 	{
 		static const category_type s_empty;
-		auto i = std::find_if(this->begin(), this->end(), [name](const category_type &c)
+		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category_type &c)
 			{ return iequals(c.name(), name); });
-		return i == this->end() ? s_empty : *i;
+		return i == m_categories.end() ? s_empty : *i;
+	}
+
+	std::tuple<iterator, bool> emplace(std::string_view name)
+	{
+		bool is_new = true;
+
+		auto i = m_categories.begin();
+		while (i != m_categories.end())
+		{
+			if (iequals(name, i->name()))
+			{
+				is_new = false;
+
+				if (i != m_categories.begin())
+				{
+					auto n = std::next(i);
+					m_categories.splice(m_categories.begin(), m_categories, i, n);
+				}
+
+				break;
+			}
+
+			++i;
+		}
+
+		if (is_new)
+		{
+			m_categories.emplace(m_categories.begin(), name);
+			// m_categories.emplace(begin(), *this, std::string(name), mValidator);
+
+			// for (auto &cat : mCategories)
+			// 	cat.updateLinks();
+		}
+
+		return std::make_tuple(m_categories.begin(), is_new);		
 	}
 
 	void write(std::ostream &os) const
@@ -104,7 +147,7 @@ class datablock_t : public std::list<Category, Alloc>
 		// and if it exists, _AND_ we have a Validator, write out the
 		// audit_conform record.
 
-		for (auto &cat : *this)
+		for (auto &cat : m_categories)
 		{
 			if (cat.name() != "entry")
 				continue;
@@ -122,7 +165,7 @@ class datablock_t : public std::list<Category, Alloc>
 			break;
 		}
 
-		for (auto &cat : *this)
+		for (auto &cat : m_categories)
 		{
 			if (cat.name() != "entry" and cat.name() != "audit_conform")
 				cat.write(os);
@@ -136,6 +179,7 @@ class datablock_t : public std::list<Category, Alloc>
 	}
 
   private:
+	category_type_list m_categories;
 	std::string m_name;
 };
 

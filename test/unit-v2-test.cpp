@@ -35,6 +35,8 @@
 // #include <cif++/CifValidator.hpp>
 // #include <cif++/CifParser.hpp>
 
+#include <cif++/v2/parser.hpp>
+
 namespace tt = boost::test_tools;
 
 std::filesystem::path gTestDir = std::filesystem::current_path(); // filled in first test
@@ -264,45 +266,54 @@ BOOST_AUTO_TEST_CASE(ci_1)
 
 // --------------------------------------------------------------------
 
-// BOOST_AUTO_TEST_CASE(f_1)
-// {
-// 	// using namespace mmcif;
+BOOST_AUTO_TEST_CASE(f_1)
+{
+	// using namespace mmcif;
 
-// 	auto f = R"(data_TEST
-// #
-// loop_
-// _test.id
-// _test.name
-// 1 aap
-// 2 noot
-// 3 mies
-//     )"_cf;
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+    )"_cf;
 
-// 	BOOST_ASSERT(not f.empty());
-// 	BOOST_ASSERT(f.size() == 1);
+	BOOST_ASSERT(not f.empty());
+	BOOST_ASSERT(f.size() == 1);
 
-// 	auto &db = f.front();
+	auto &db = f.front();
 
-// 	BOOST_CHECK(db.name() == "TEST");
+	BOOST_CHECK(db.name() == "TEST");
 
-// 	auto &test = db["test"];
-// 	BOOST_CHECK(test.size() == 3);
+	auto &test = db["test"];
+	BOOST_CHECK(test.size() == 3);
 
-// 	// wrong! the next lines will crash. And that's OK, don't do that
-// 	// for (auto r: test)
-// 	// 	test.erase(r);
+	const char *ts[] = {"aap", "noot", "mies"};
 
-// 	// BOOST_CHECK(test.empty());
+	int n = 1;
+	for (const auto &[i, s] : test.rows<int, std::string>("id", "name"))
+	{
+		BOOST_CHECK_EQUAL(i, n);
+		BOOST_CHECK_EQUAL(s.compare(ts[n - 1]), 0);
+		++n;
+	}
 
-// 	// test.purge();
+	// for (auto r: test)
+	// 	test.erase(r);
 
-// 	// auto n = test.erase(cif::Key("id") == 1, [](const cif::Row &r)
-// 	// 	{
-//     //     BOOST_CHECK_EQUAL(r["id"].as<int>(), 1);
-//     //     BOOST_CHECK_EQUAL(r["name"].as<std::string>(), "aap"); });
+	// BOOST_CHECK(test.empty());
 
-// 	// BOOST_CHECK_EQUAL(n, 1);
-// }
+	// test.clear();
+
+	// auto n = test.erase(cif::Key("id") == 1, [](const cif::Row &r)
+	// 	{
+    //     BOOST_CHECK_EQUAL(r["id"].as<int>(), 1);
+    //     BOOST_CHECK_EQUAL(r["name"].as<std::string>(), "aap"); });
+
+	// BOOST_CHECK_EQUAL(n, 1);
+}
 
 // // --------------------------------------------------------------------
 

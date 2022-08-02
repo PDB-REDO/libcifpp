@@ -66,7 +66,7 @@ class item
 		auto r = cif::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, cif::chars_format::fixed, precision);
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
-		
+
 		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
 		*r.ptr = 0;
 		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
@@ -94,7 +94,7 @@ class item
 		auto r = std::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value);
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
-		
+
 		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
 		*r.ptr = 0;
 		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
@@ -134,44 +134,52 @@ class item
   private:
 	std::string_view m_name;
 	std::string_view m_value;
-	char m_buffer[64];		// TODO: optimize this magic number, might be too large
+	char m_buffer[64]; // TODO: optimize this magic number, might be too large
 };
 
 // --------------------------------------------------------------------
 // Transient object to access stored data
 
-template <typename Row>
+template <typename RowHandle>
 struct item_handle
 {
-	using row_type = Row;
+	using row_handle_type = RowHandle;
 
   public:
 	// conversion helper class
 	template <typename T, typename = void>
 	struct item_value_as;
 
-	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	template <typename T>
 	item_handle &operator=(const T &value)
 	{
-		this->operator=(std::to_string(value));
+		item v{"", value};
+		m_row_handle.assign(m_column, v.value(), false);
 		return *this;
 	}
 
-	template <typename T>
-	item_handle &operator=(const std::optional<T> &value)
-	{
-		if (value)
-			this->operator=(*value);
-		else
-			this->operator=("?");
-		return *this;
-	}
+	// template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	// item_handle &operator=(const T &value)
+	// {
+	// 	this->operator=(std::to_string(value));
+	// 	return *this;
+	// }
 
-	item_handle &operator=(const std::string &value)
-	{
-		m_row.assign(m_column, value, false);
-		return *this;
-	}
+	// template <typename T>
+	// item_handle &operator=(const std::optional<T> &value)
+	// {
+	// 	if (value)
+	// 		this->operator=(*value);
+	// 	else
+	// 		this->operator=("?");
+	// 	return *this;
+	// }
+
+	// item_handle &operator=(std::string_view value)
+	// {
+	// 	m_row_handle.assign(m_column, value, false);
+	// 	return *this;
+	// }
 
 	template <typename... Ts>
 	void os(const Ts &...v)
@@ -227,7 +235,7 @@ struct item_handle
 
 	// const char *c_str() const
 	// {
-	// 	for (auto iv = m_row.m_head; iv != nullptr; iv = iv->m_next)
+	// 	for (auto iv = m_row_handle.m_head; iv != nullptr; iv = iv->m_next)
 	// 	{
 	// 		if (iv->m_column_ix == m_column)
 	// 			return iv->m_text;
@@ -238,7 +246,7 @@ struct item_handle
 
 	std::string_view text() const
 	{
-		for (auto iv = m_row.m_head; iv != nullptr; iv = iv->m_next)
+		for (auto iv = m_row_handle.m_row->m_head; iv != nullptr; iv = iv->m_next)
 		{
 			if (iv->m_column_ix == m_column)
 				return iv->text();
@@ -250,15 +258,15 @@ struct item_handle
 	// bool operator!=(const std::string &s) const { return s != c_str(); }
 	// bool operator==(const std::string &s) const { return s == c_str(); }
 
-	item_handle(uint16_t column, row_type &row)
+	item_handle(uint16_t column, row_handle_type &row)
 		: m_column(column)
-		, m_row(row)
+		, m_row_handle(row)
 	{
 	}
 
   private:
 	uint16_t m_column;
-	row_type &m_row;
+	row_handle_type &m_row_handle;
 	// bool mConst = false;
 
 	static constexpr const char *s_empty_result = "";

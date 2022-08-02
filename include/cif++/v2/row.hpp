@@ -120,8 +120,13 @@ class row_handle
 	using category_type = Category;
 	using row_type = std::conditional_t<std::is_const_v<category_type>, const typename category_type::row, typename category_type::row>;
 
+	using item_handle_type = item_handle<row_handle>;
+
 	template <typename>
 	friend class row_handle;
+
+	template <typename>
+	friend class item_handle;
 
 	row_handle() = default;
 
@@ -149,24 +154,24 @@ class row_handle
 		return m_cat != nullptr and m_row != nullptr;
 	}
 
-	item_handle<row_type> operator[](uint32_t column_ix)
+	item_handle_type operator[](uint32_t column_ix)
 	{
-		return item_handle<row_type>(column_ix, *m_row);
+		return item_handle_type(column_ix, *this);
 	}
 
-	const item_handle<const row_type> operator[](uint32_t column_ix) const
+	const item_handle_type operator[](uint32_t column_ix) const
 	{
-		return item_handle<const row_type>(column_ix, *m_row);
+		return item_handle_type(column_ix, const_cast<row_handle &>(*this));
 	}
 
-	item_handle<row_type> operator[](std::string_view column_name)
+	item_handle_type operator[](std::string_view column_name)
 	{
-		return item_handle<row_type>(get_column_ix(column_name), *m_row);
+		return item_handle_type(add_column(column_name), *this);
 	}
 
-	const item_handle<const row_type> operator[](std::string_view column_name) const
+	const item_handle_type operator[](std::string_view column_name) const
 	{
-		return item_handle<const row_type>(get_column_ix(column_name), *m_row);
+		return item_handle_type(get_column_ix(column_name), *this);
 	}
 
 	template <typename... Ts, size_t N>
@@ -186,10 +191,83 @@ class row_handle
 		return detail::get_row_result<category_type, C...>(*this, {get_column_ix(columns)...});
 	}
 
+	void assign(const std::vector<item> &values)
+	{
+		// std::map<std::string, std::tuple<size_t, std::string, std::string>> changed;
+
+		for (auto &value : values)
+		{
+			assign(value, true);
+
+			// auto columnIx = cat->add_column(value.name());
+			// auto &col = cat->m_columns[columnIx];
+			// std::string tag = col.mValidator ? col.mValidator->mTag : std::to_string(columnIx);
+
+			// changed[tag] = std::make_tuple(columnIx, operator[](columnIx).c_str(), value.value());
+
+			// assign(columnIx, value.value(), true);
+		}
+
+		// // see if we need to update any child categories that depend on these values
+		// // auto iv = col.mValidator;
+		// if (mCascade)
+		// {
+		// 	for (auto &&[childCat, linked] : cat->mChildLinks)
+		// 	{
+		// 		Condition cond;
+		// 		std::string childTag;
+
+		// 		std::vector<Item> newValues;
+
+		// 		for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+		// 		{
+		// 			std::string pk = linked->mParentKeys[ix];
+		// 			std::string ck = linked->mChildKeys[ix];
+
+		// 			if (changed.count(pk) > 0)
+		// 			{
+		// 				childTag = ck;
+		// 				cond = std::move(cond) && (Key(ck) == std::get<1>(changed[pk]));
+		// 				newValues.emplace_back(ck, std::get<2>(changed[pk]));
+		// 			}
+		// 			else
+		// 			{
+		// 				const char *value = (*this)[pk].c_str();
+		// 				cond = std::move(cond) && (Key(ck) == value);
+		// 			}
+		// 		}
+
+		// 		auto rows = childCat->find(std::move(cond));
+		// 		for (auto &cr : rows)
+		// 			cr.assign(newValues);
+		// 	}
+		// }
+	}
+
+	void assign(std::string_view name, std::string_view value, bool updateLinked, bool validate = true)
+	{
+		assign(m_cat->add_column(name), value, updateLinked, validate);
+	}
+
+	void assign(size_t column, std::string_view value, bool updateLinked, bool validate = true)
+	{
+		m_cat->update_value(m_row, column, value, updateLinked, validate);	
+	}
+
   private:
-	uint32_t get_column_ix(std::string_view name) const
+	uint16_t get_column_ix(std::string_view name) const
 	{
 		return m_cat->get_column_ix(name);
+	}
+
+	uint16_t add_column(std::string_view name)
+	{
+		return m_cat->add_column(name);
+	}
+
+	void assign(const item &i, bool updateLinked)
+	{
+		assign(i.name(), i.value(), updateLinked);
 	}
 
 	category_type *m_cat = nullptr;

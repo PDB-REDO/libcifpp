@@ -432,20 +432,188 @@ class category_t
 
 		if (result == m_columns.size())
 		{
-			const ValidateItem *itemValidator = nullptr;
+			const ValidateItem *item_validator = nullptr;
 
 			// if (mCatValidator != nullptr)
 			// {
-			// 	itemValidator = mCatValidator->getValidatorForItem(column_name);
-			// 	if (itemValidator == nullptr)
-			// 		mValidator->reportError("tag " + std::string(column_name) + " not allowed in Category " + mName, false);
+			// 	item_validator = mCatValidator->getValidatorForItem(column_name);
+			// 	if (item_validator == nullptr)
+			// 		m_validator->reportError("tag " + std::string(column_name) + " not allowed in Category " + mName, false);
 			// }
 
-			m_columns.emplace_back(column_name, itemValidator);
+			m_columns.emplace_back(column_name, item_validator);
 		}
 
 		return result;
 	}
+
+  private:
+	void update_value(row *row, size_t column, std::string_view value, bool updateLinked, bool validate = true)
+	{
+		auto &col = m_columns[column];
+
+		const char *oldValue = nullptr;
+		for (auto iv = row->m_head; iv != nullptr; iv = iv->m_next)
+		{
+			assert(iv != iv->m_next and (iv->m_next == nullptr or iv != iv->m_next->m_next));
+
+			if (iv->m_column_ix == column)
+			{
+				oldValue = iv->c_str();
+				break;
+			}
+		}
+
+		if (oldValue != nullptr and value == oldValue) // no need to update
+			return;
+
+		std::string oldStrValue = oldValue ? oldValue : "";
+
+		// // check the value
+		// if (col.m_validator and validate)
+		// 	(*col.m_validator)(value);
+
+		// If the field is part of the Key for this Category, remove it from the index
+		// before updating
+
+		bool reinsert = false;
+
+		// if (updateLinked and // an update of an Item's value
+		// 	cat->mIndex != nullptr and cat->keyFieldsByIndex().count(column))
+		// {
+		// 	reinsert = cat->mIndex->find(mData);
+		// 	if (reinsert)
+		// 		cat->mIndex->erase(mData);
+		// }
+
+		// first remove old value with cix
+
+		if (row->m_head == nullptr)
+			; // nothing to do
+		else if (row->m_head->m_column_ix == column)
+		{
+			auto iv = row->m_head;
+			row->m_head = iv->m_next;
+			iv->m_next = nullptr;
+			delete_item(iv);
+		}
+		else
+		{
+			for (auto iv = row->m_head; iv->m_next != nullptr; iv = iv->m_next)
+			{
+				if (iv->m_next->m_column_ix != column)
+					continue;
+
+				auto nv = iv->m_next;
+				iv->m_next = nv->m_next;
+				nv->m_next = nullptr;
+				delete_item(nv);
+
+				break;
+			}
+		}
+
+		if (not value.empty())
+		{
+			auto nv = create_item(column, value);
+
+			if (row->m_head == nullptr)
+				row->m_head = nv;
+			else
+			{
+				auto iv = row->m_head;
+				while (iv->m_next != nullptr)
+					iv = iv->m_next;
+				iv->m_next = nv;
+			}
+		}
+
+		// if (reinsert)
+		// 	cat->mIndex->insert(mData);
+
+		// // see if we need to update any child categories that depend on this value
+		// auto iv = col.m_validator;
+		// if (not skipUpdateLinked and iv != nullptr and mCascade)
+		// {
+		// 	for (auto &&[childCat, linked] : cat->mChildLinks)
+		// 	{
+		// 		if (find(linked->mParentKeys.begin(), linked->mParentKeys.end(), iv->mTag) == linked->mParentKeys.end())
+		// 			continue;
+
+		// 		Condition cond;
+		// 		std::string childTag;
+
+		// 		for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+		// 		{
+		// 			std::string pk = linked->mParentKeys[ix];
+		// 			std::string ck = linked->mChildKeys[ix];
+
+		// 			// TODO add code to *NOT* test mandatory fields for Empty
+
+		// 			if (pk == iv->mTag)
+		// 			{
+		// 				childTag = ck;
+		// 				cond = std::move(cond) && Key(ck) == oldStrValue;
+		// 			}
+		// 			else
+		// 			{
+		// 				const char *pk_value = (*this)[pk].c_str();
+		// 				if (*pk_value == 0)
+		// 					cond = std::move(cond) && Key(ck) == Empty();
+		// 				else
+		// 					cond = std::move(cond) && ((Key(ck) == pk_value) or Key(ck) == Empty());
+		// 			}
+		// 		}
+
+		// 		auto rows = childCat->find(std::move(cond));
+		// 		if (rows.empty())
+		// 			continue;
+
+		// 		// if (cif::VERBOSE > 2)
+		// 		// {
+		// 		// 	std::cerr << "Parent: " << linked->mParentCategory << " Child: " << linked->mChildCategory << std::endl
+		// 		// 			  << cond << std::endl;
+		// 		// }
+
+		// 		// Now, suppose there are already rows in child that conform to the new value,
+		// 		// we then skip this renam
+
+		// 		Condition cond_n;
+
+		// 		for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
+		// 		{
+		// 			std::string pk = linked->mParentKeys[ix];
+		// 			std::string ck = linked->mChildKeys[ix];
+
+		// 			// TODO add code to *NOT* test mandatory fields for Empty
+
+		// 			if (pk == iv->mTag)
+		// 				cond_n = std::move(cond_n) && Key(ck) == value;
+		// 			else
+		// 			{
+		// 				const char *pk_value = (*this)[pk].c_str();
+		// 				if (*pk_value == 0)
+		// 					cond_n = std::move(cond_n) && Key(ck) == Empty();
+		// 				else
+		// 					cond_n = std::move(cond_n) && ((Key(ck) == pk_value) or Key(ck) == Empty());
+		// 			}
+		// 		}
+
+		// 		auto rows_n = childCat->find(std::move(cond_n));
+		// 		if (not rows_n.empty())
+		// 		{
+		// 			if (cif::VERBOSE > 0)
+		// 				std::cerr << "Will not rename in child category since there are already rows that link to the parent" << std::endl;
+
+		// 			continue;
+		// 		}
+
+		// 		for (auto &cr : rows)
+		// 			cr.assign(childTag, value, false);
+		// 	}
+		// }		
+	}
+
 
   private:
 	using char_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<char>;
