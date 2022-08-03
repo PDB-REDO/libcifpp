@@ -216,6 +216,7 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/TlsParser.cpp
 
 	${PROJECT_SOURCE_DIR}/src/v2/category.cpp
+	${PROJECT_SOURCE_DIR}/src/v2/condition.cpp
 	${PROJECT_SOURCE_DIR}/src/v2/dictionary_parser.cpp
 	${PROJECT_SOURCE_DIR}/src/v2/item.cpp
 	${PROJECT_SOURCE_DIR}/src/v2/parser.cpp

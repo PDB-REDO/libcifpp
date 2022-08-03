@@ -37,6 +37,13 @@ namespace cif::v2
 {
 
 // --------------------------------------------------------------------
+// let's make life easier
+
+iset get_category_fields(const category &cat);
+uint16_t get_column_ix(const category &cat, std::string_view col);
+bool is_column_type_uchar(const category &cat, std::string_view col);
+
+// --------------------------------------------------------------------
 // some more templates to be able to do querying
 
 namespace detail
@@ -147,7 +154,10 @@ namespace detail
 		{
 		}
 
-		void prepare(const category &c) override;
+		void prepare(const category &c) override
+		{
+			m_item_ix = get_column_ix(c, m_item_tag);
+		}
 
 		bool test(row_handle r) const override
 		{
@@ -173,7 +183,11 @@ namespace detail
 		{
 		}
 
-		void prepare(const category &c) override;
+		void prepare(const category &c) override
+		{
+			m_item_ix = get_column_ix(c, m_item_tag);
+			m_icase = is_column_type_uchar(c, m_item_tag);
+		}
 
 		bool test(row_handle r) const override
 		{
@@ -201,7 +215,10 @@ namespace detail
 		{
 		}
 
-		void prepare(const category &c) override;
+		void prepare(const category &c) override
+		{
+			m_item_ix = get_column_ix(c, m_item_tag);
+		}
 
 		bool test(row_handle r) const override
 		{

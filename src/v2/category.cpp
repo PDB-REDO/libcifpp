@@ -274,9 +274,4 @@ category::iterator category::erase_impl(const_iterator pos)
 	// return iterator(*this, cur);
 }
 
-std::vector<std::string> get_category_fields(const category &cat)
-{
-	return {};
-}
-
 } // namespace cif::v2

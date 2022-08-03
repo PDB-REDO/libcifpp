@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,23 +24,38 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <string>
-#include <vector>
+#include <cif++/v2/category.hpp>
+#include <cif++/v2/condition.hpp>
 
 namespace cif::v2
 {
 
-class category;
-class datablock;
-class file;
-class parser;
+iset get_category_fields(const category &cat)
+{
+	return cat.fields();
+}
 
-class row;
-class row_handle;
+uint16_t get_column_ix(const category &cat, std::string_view col)
+{
+	return cat.get_column_ix(col);
+}
 
-class item;
-class item_handle;
+bool is_column_type_uchar(const category &cat, std::string_view col)
+{
+	bool result = false;
+
+	auto cv = cat.get_cat_validator();
+	if (cv)
+	{
+		auto iv = cv->getValidatorForItem(col);
+		if (iv != nullptr and iv->mType != nullptr)
+		{
+			auto type = iv->mType;
+			result = type->mPrimitiveType == DDL_PrimitiveType::UChar;
+		}
+	}
+
+	return result;
+}
 
 } // namespace cif::v2

@@ -349,7 +349,8 @@ class conditional_iterator_proxy
 
 	size_t size() const { return std::distance(begin(), end()); }
 
-	// row front() { return *begin(); }
+	row_handle front() { return *begin(); }
+	// row_handle back() { return *begin(); }
 
 	CategoryType &category() const { return *mCat; }
 

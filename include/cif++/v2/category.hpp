@@ -40,7 +40,6 @@ namespace cif::v2
 class category
 {
   public:
-
 	friend class row_handle;
 
 	template <typename, typename...>
@@ -122,6 +121,26 @@ class category
 
 	const std::string &name() const { return m_name; }
 
+	iset fields() const
+	{
+		if (m_validator == nullptr)
+			throw std::runtime_error("No Validator specified");
+
+		if (m_cat_validator == nullptr)
+			m_validator->reportError("undefined Category", true);
+
+		iset result;
+		for (auto &iv : m_cat_validator->mItemValidators)
+			result.insert(iv.mTag);
+
+		return result;
+	}
+
+	const Validator *get_validator() const { return m_validator; }
+	const ValidateCategory *get_cat_validator() const { return m_cat_validator; }
+
+	// --------------------------------------------------------------------
+
 	reference front()
 	{
 		return {*this, *m_head};
@@ -199,7 +218,7 @@ class category
 	}
 
 	// --------------------------------------------------------------------
-	
+
 	conditional_iterator_proxy<category> find(condition &&cond)
 	{
 		return find(begin(), std::forward<condition>(cond));
@@ -330,7 +349,23 @@ class category
 		return *h.begin();
 	}
 
-	bool exists(condition &&cond) const;
+	bool exists(condition &&cond) const
+	{
+		bool result = false;
+
+		cond.prepare(*this);
+
+		for (auto r : *this)
+		{
+			if (cond(r))
+			{
+				result = true;
+				break;
+			}
+		}
+
+		return result;
+	}
 
 	// --------------------------------------------------------------------
 
@@ -626,6 +661,8 @@ class category
 
 	std::string m_name;
 	std::vector<item_column> m_columns;
+	const Validator *m_validator = nullptr;
+	const ValidateCategory *m_cat_validator = nullptr;
 	row *m_head = nullptr, *m_tail = nullptr;
 };
 

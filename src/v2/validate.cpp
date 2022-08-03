@@ -31,10 +31,15 @@
 #include <cif++/v2/validate.hpp>
 #include <cif++/v2/dictionary_parser.hpp>
 
+namespace cif
+{
 extern int VERBOSE;
+}
 
 namespace cif::v2
 {
+
+using cif::VERBOSE;
 
 ValidationError::ValidationError(const std::string &msg)
 	: mMsg(msg)
@@ -217,13 +222,6 @@ const ValidateItem *ValidateCategory::getValidatorForItem(std::string_view tag) 
 }
 
 // --------------------------------------------------------------------
-
-// Validator::Validator(std::string_view name, std::istream &is)
-// 	: mName(name)
-// {
-// 	DictParser p(*this, is);
-// 	p.loadDictionary();
-// }
 
 void Validator::addTypeValidator(ValidateType &&v)
 {

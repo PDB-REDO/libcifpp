@@ -171,8 +171,8 @@ class Validator
 	Validator(const Validator &rhs) = delete;
 	Validator &operator=(const Validator &rhs) = delete;
 
-	Validator(Validator &&rhs);
-	Validator &operator=(Validator &&rhs);
+	Validator(Validator &&rhs) = default;
+	Validator &operator=(Validator &&rhs) = default;
 
 	friend class dictionary_parser;
 

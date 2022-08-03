@@ -315,75 +315,75 @@ _test.name
 	// BOOST_CHECK_EQUAL(n, 1);
 }
 
-// // --------------------------------------------------------------------
+// --------------------------------------------------------------------
 
-// BOOST_AUTO_TEST_CASE(ut2)
-// {
-// 	// using namespace mmcif;
+BOOST_AUTO_TEST_CASE(ut2)
+{
+	// using namespace mmcif;
 
-// 	auto f = R"(data_TEST
-// #
-// loop_
-// _test.id
-// _test.name
-// _test.value
-// 1 aap   1.0
-// 2 noot  1.1
-// 3 mies  1.2
-//     )"_cf;
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+_test.value
+1 aap   1.0
+2 noot  1.1
+3 mies  1.2
+    )"_cf;
 
-// 	auto &db = f.firstDatablock();
+	auto &db = f.front();
 
-// 	BOOST_CHECK(db.getName() == "TEST");
+	BOOST_CHECK(db.name() == "TEST");
 
-// 	auto &test = db["test"];
-// 	BOOST_CHECK(test.size() == 3);
+	auto &test = db["test"];
+	BOOST_CHECK(test.size() == 3);
 
-// 	int n = 0;
-// 	for (auto r : test.find(cif::Key("name") == "aap"))
-// 	{
-// 		BOOST_CHECK(++n == 1);
-// 		BOOST_CHECK(r["id"].as<int>() == 1);
-// 		BOOST_CHECK(r["name"].as<std::string>() == "aap");
-// 		BOOST_CHECK(r["value"].as<float>() == 1.0);
-// 	}
+	int n = 0;
+	for (auto r : test.find(cif::v2::key("name") == "aap"))
+	{
+		BOOST_CHECK(++n == 1);
+		BOOST_CHECK(r["id"].as<int>() == 1);
+		BOOST_CHECK(r["name"].as<std::string>() == "aap");
+		BOOST_CHECK(r["value"].as<float>() == 1.0);
+	}
 
-// 	auto t = test.find(cif::Key("id") == 1);
-// 	BOOST_CHECK(not t.empty());
-// 	BOOST_CHECK(t.front()["name"].as<std::string>() == "aap");
+	auto t = test.find(cif::v2::key("id") == 1);
+	BOOST_CHECK(not t.empty());
+	BOOST_CHECK(t.front()["name"].as<std::string>() == "aap");
 
-// 	auto t2 = test.find(cif::Key("value") == 1.2);
-// 	BOOST_CHECK(not t2.empty());
-// 	BOOST_CHECK(t2.front()["name"].as<std::string>() == "mies");
-// }
+	auto t2 = test.find(cif::v2::key("value") == 1.2);
+	BOOST_CHECK(not t2.empty());
+	BOOST_CHECK(t2.front()["name"].as<std::string>() == "mies");
+}
 
-// BOOST_AUTO_TEST_CASE(ut3)
-// {
-// 	using namespace cif::literals;
+BOOST_AUTO_TEST_CASE(ut3)
+{
+	using namespace cif::v2::literals;
 
-// 	auto f = R"(data_TEST
-// #
-// loop_
-// _test.id
-// _test.name
-// _test.value
-// 1 aap   1.0
-// 2 noot  1.1
-// 3 mies  1.2
-// 4 boom  .
-// 5 roos  ?
-//     )"_cf;
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+_test.value
+1 aap   1.0
+2 noot  1.1
+3 mies  1.2
+4 boom  .
+5 roos  ?
+    )"_cf;
 
-// 	auto &db = f.firstDatablock();
+	auto &db = f.front();
 
-// 	BOOST_CHECK(db.getName() == "TEST");
+	BOOST_CHECK(db.name() == "TEST");
 
-// 	auto &test = db["test"];
-// 	BOOST_CHECK(test.size() == 5);
+	auto &test = db["test"];
+	BOOST_CHECK(test.size() == 5);
 
-// 	BOOST_CHECK(test.exists("value"_key == cif::null));
-// 	BOOST_CHECK(test.find("value"_key == cif::null).size() == 2);
-// }
+	BOOST_CHECK(test.exists("value"_key == cif::v2::null));
+	BOOST_CHECK(test.find("value"_key == cif::v2::null).size() == 2);
+}
 
 // // --------------------------------------------------------------------
 
@@ -528,8 +528,8 @@ _test.name
 // 	std::istream is_data(&data_buffer);
 // 	f.load(is_data);
 
-// 	auto &cat1 = f.firstDatablock()["cat_1"];
-// 	auto &cat2 = f.firstDatablock()["cat_2"];
+// 	auto &cat1 = f.front()["cat_1"];
+// 	auto &cat2 = f.front()["cat_2"];
 
 // 	BOOST_CHECK(cat1.size() == 3);
 // 	BOOST_CHECK(cat2.size() == 3);
@@ -649,7 +649,7 @@ _test.name
 // 	std::istream is_data(&data_buffer);
 // 	f.load(is_data);
 
-// 	auto &cat1 = f.firstDatablock()["cat_1"];
+// 	auto &cat1 = f.front()["cat_1"];
 
 // 	BOOST_CHECK(cat1.size() == 3);
 
@@ -808,8 +808,8 @@ _test.name
 // 	std::istream is_data(&data_buffer);
 // 	f.load(is_data);
 
-// 	auto &cat1 = f.firstDatablock()["cat_1"];
-// 	auto &cat2 = f.firstDatablock()["cat_2"];
+// 	auto &cat1 = f.front()["cat_1"];
+// 	auto &cat2 = f.front()["cat_2"];
 
 // 	// check a rename in parent and child
 
@@ -1021,8 +1021,8 @@ _test.name
 // 	std::istream is_data(&data_buffer);
 // 	f.load(is_data);
 
-// 	auto &cat1 = f.firstDatablock()["cat_1"];
-// 	auto &cat2 = f.firstDatablock()["cat_2"];
+// 	auto &cat1 = f.front()["cat_1"];
+// 	auto &cat2 = f.front()["cat_2"];
 
 // 	// check a rename in parent and child
 
@@ -1235,8 +1235,8 @@ _test.name
 // 	std::istream is_data(&data_buffer);
 // 	f.load(is_data);
 
-// 	auto &cat1 = f.firstDatablock()["cat_1"];
-// 	auto &cat2 = f.firstDatablock()["cat_2"];
+// 	auto &cat1 = f.front()["cat_1"];
+// 	auto &cat2 = f.front()["cat_2"];
 
 // 	// --------------------------------------------------------------------
 // 	// check iterate children
@@ -1347,7 +1347,7 @@ _test.name
 // 5 ?
 //     )"_cf;
 
-// 	auto &db = f.firstDatablock();
+// 	auto &db = f.front();
 
 // 	for (auto r : db["test"].find(cif::Key("id") == 1))
 // 	{
@@ -1404,7 +1404,7 @@ _test.name
 // 5 ?
 //     )"_cf;
 
-// 	auto &db = f.firstDatablock();
+// 	auto &db = f.front();
 
 // 	// query tests
 
@@ -1439,7 +1439,7 @@ _test.name
 // 5 ?
 //     )"_cf;
 
-// 	auto &db = f.firstDatablock();
+// 	auto &db = f.front();
 
 // 	// query tests
 // 	for (const auto &[id, name] : db["test"].find<int, std::optional<std::string>>(cif::All(), "id", "name"))
@@ -1668,9 +1668,9 @@ _test.name
 // 	std::istream is_data(&data_buffer);
 // 	f.load(is_data);
 
-// 	auto &cat1 = f.firstDatablock()["cat_1"];
-// 	auto &cat2 = f.firstDatablock()["cat_2"];
-// 	auto &cat3 = f.firstDatablock()["cat_3"];
+// 	auto &cat1 = f.front()["cat_1"];
+// 	auto &cat2 = f.front()["cat_2"];
+// 	auto &cat3 = f.front()["cat_3"];
 
 // 	cat3.update_value("name"_key == "aap" and "num"_key == 1, "name", "aapje");
 
@@ -2036,7 +2036,7 @@ _test.name
 // _test.text ??
 // )"_cf;
 
-// 	auto &db1 = data1.firstDatablock();
+// 	auto &db1 = data1.front();
 // 	auto &test1 = db1["test"];
 
 // 	BOOST_CHECK_EQUAL(test1.size(), 1);
@@ -2052,7 +2052,7 @@ _test.name
 
 // 	auto data2 = cif::File(ss);
 
-// 	auto &db2 = data2.firstDatablock();
+// 	auto &db2 = data2.front();
 // 	auto &test2 = db2["test"];
 
 // 	BOOST_CHECK_EQUAL(test2.size(), 1);
@@ -2077,7 +2077,7 @@ _test.name
 // boo.data_.whatever
 // )"_cf;
 
-// 	auto &db1 = data1.firstDatablock();
+// 	auto &db1 = data1.front();
 // 	auto &test1 = db1["test"];
 
 // 	struct T {
@@ -2107,7 +2107,7 @@ _test.name
 
 // 	auto data2 = cif::File(ss);
 
-// 	auto &db2 = data2.firstDatablock();
+// 	auto &db2 = data2.front();
 // 	auto &test2 = db2["test"];
 
 // 	BOOST_CHECK_EQUAL(test2.size(), sizeof(kS) / sizeof(T));
