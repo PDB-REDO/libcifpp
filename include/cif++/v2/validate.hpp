@@ -26,13 +26,19 @@
 
 #pragma once
 
+#include <filesystem>
+
 // duh.. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86164
 // #include <regex>
+
+// TODO: get rid of boost::iostreams
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/regex.hpp>
 
-#include <set>
-
 #include <cif++/CifUtils.hpp>
+
+namespace io = boost::iostreams;
 
 namespace cif::v2
 {
@@ -155,8 +161,11 @@ struct ValidateLink
 class Validator
 {
   public:
+	Validator(std::string_view name)
+		: m_name(name)
+	{
+	}
 
-	Validator(std::string_view name, std::istream &is);
 	~Validator();
 
 	Validator(const Validator &rhs) = delete;
@@ -165,8 +174,8 @@ class Validator
 	Validator(Validator &&rhs);
 	Validator &operator=(Validator &&rhs);
 
-	friend class DictParser;
-	friend class ValidatorFactory;
+	friend class dictionary_parser;
+	// friend class ValidatorFactory;
 
 	void addTypeValidator(ValidateType &&v);
 	const ValidateType *getValidatorForType(std::string_view typeCode) const;
@@ -180,47 +189,45 @@ class Validator
 
 	void reportError(const std::string &msg, bool fatal) const;
 
-	std::string dictName() const { return mName; }
-	void dictName(const std::string &name) { mName = name; }
+	const std::string &dictName() const { return m_name; }
+	void dictName(const std::string &name) { m_name = name; }
 
-	std::string dictVersion() const { return mVersion; }
-	void dictVersion(const std::string &version) { mVersion = version; }
+	const std::string &dictVersion() const { return m_version; }
+	void dictVersion(const std::string &version) { m_version = version; }
 
   private:
-
 	// name is fully qualified here:
 	ValidateItem *getValidatorForItem(std::string_view name) const;
 
-	std::string mName;
-	std::string mVersion;
+	std::string m_name;
+	std::string m_version;
 	bool mStrict = false;
-	//	std::set<uint32_t>			mSubCategories;
 	std::set<ValidateType> mTypeValidators;
 	std::set<ValidateCategory> mCategoryValidators;
 	std::vector<ValidateLink> mLinkValidators;
 };
 
 // --------------------------------------------------------------------
-
 class ValidatorFactory
 {
   public:
-
 	static ValidatorFactory &instance()
 	{
-		return sInstance;
+		static ValidatorFactory s_instance;
+		return s_instance;
 	}
 
-	const Validator &operator[](std::string_view dictionary);
+	const Validator &operator[](std::string_view dictionary_name);
 
   private:
+	void construct_validator(std::string_view name, std::istream &is);
 
-	static ValidatorFactory sInstance;
+	// --------------------------------------------------------------------
 
-	ValidatorFactory();
+	ValidatorFactory() = default;
 
 	std::mutex mMutex;
 	std::list<Validator> mValidators;
 };
 
-} // namespace cif
+} // namespace cif::v2

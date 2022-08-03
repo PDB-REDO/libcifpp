@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <cif++/v2/forward_decl.hpp>
+
 #include <cif++/v2/condition.hpp>
 #include <cif++/v2/iterator.hpp>
 #include <cif++/v2/row.hpp>
@@ -35,8 +37,7 @@ namespace cif::v2
 
 // --------------------------------------------------------------------
 
-template <
-	typename Alloc = std::allocator<std::byte>>
+template <typename Alloc>
 class category_t
 {
   private:
@@ -106,7 +107,6 @@ class category_t
 	class row
 	{
 	  public:
-
 		row() = default;
 
 	  private:
@@ -611,9 +611,8 @@ class category_t
 		// 		for (auto &cr : rows)
 		// 			cr.assign(childTag, value, false);
 		// 	}
-		// }		
+		// }
 	}
-
 
   private:
 	using char_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<char>;
@@ -706,7 +705,7 @@ class category_t
 			delete_row(result);
 			throw;
 		}
-		
+
 		return result;
 	}
 

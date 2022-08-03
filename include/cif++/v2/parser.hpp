@@ -26,8 +26,19 @@
 
 #pragma once
 
+#include <cassert>
+#include <iostream>
 #include <map>
 #include <stack>
+#include <regex>
+
+#include <cif++/v2/forward_decl.hpp>
+#include <cif++/CifUtils.hpp>
+
+namespace cif
+{
+extern int VERBOSE;
+}
 
 namespace cif::v2
 {
@@ -955,10 +966,7 @@ class sac_parser
 
 // --------------------------------------------------------------------
 
-template <
-	typename File,
-	typename Datablock,
-	typename Category>
+template <typename Alloc, typename File, typename Datablock, typename Category>
 class parser_t : public sac_parser
 {
   public:
@@ -975,7 +983,8 @@ class parser_t : public sac_parser
 
 	void produce_datablock(const std::string &name) override
 	{
-		std::tie(m_datablock, std::ignore) = m_file.emplace(name);
+		const auto &[iter, ignore] = m_file.emplace(name);
+		m_datablock = &(*iter);
 	}
 
 	void produce_category(const std::string &name) override
@@ -1009,31 +1018,9 @@ class parser_t : public sac_parser
 
   protected:
 	file_type &m_file;
-	file_type::iterator m_datablock;
+	datablock_type *m_datablock;
 	datablock_type::iterator m_category;
 	row_handle_type m_row;
 };
-
-// --------------------------------------------------------------------
-
-// class DictParser : public Parser
-// {
-//   public:
-// 	DictParser(Validator &validator, std::istream &is);
-// 	~DictParser();
-
-// 	void loadDictionary();
-
-//   private:
-// 	virtual void parse_save_frame();
-
-// 	bool collectItemTypes();
-// 	void linkItems();
-
-// 	Validator &mValidator;
-// 	File mFile;
-// 	struct DictParserDataImpl *mImpl;
-// 	bool mCollectedItemTypes = false;
-// };
 
 } // namespace cif::v2

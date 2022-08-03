@@ -192,7 +192,7 @@ struct item_handle
 	void swap(item_handle &b);
 
 	template <typename T = std::string>
-	auto as() const
+	auto as() const -> T
 	{
 		using value_type = std::remove_cv_t<std::remove_reference_t<T>>;
 		return item_value_as<value_type>::convert(*this);
@@ -398,10 +398,10 @@ template <typename Row>
 template <size_t N>
 struct item_handle<Row>::item_value_as<char[N]>
 {
-	static std::string_view convert(const item_handle &ref)
-	{
-		return ref.text();
-	}
+	// static std::string_view convert(const item_handle &ref)
+	// {
+	// 	return ref.text();
+	// }
 
 	static int compare(const item_handle &ref, const char (&value)[N], bool icase)
 	{
@@ -413,10 +413,10 @@ template <typename Row>
 template <typename T>
 struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, const char *>>>
 {
-	static std::string_view convert(const item_handle &ref)
-	{
-		return ref.text();
-	}
+	// static std::string_view convert(const item_handle &ref)
+	// {
+	// 	return ref.text();
+	// }
 
 	static int compare(const item_handle &ref, const char *value, bool icase)
 	{
@@ -428,9 +428,10 @@ template <typename Row>
 template <typename T>
 struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::string>>>
 {
-	static std::string_view convert(const item_handle &ref)
+	static std::string convert(const item_handle &ref)
 	{
-		return ref.text();
+		std::string_view txt = ref.text();
+		return { txt.data(), txt.size() };
 	}
 
 	static int compare(const item_handle &ref, const std::string &value, bool icase)

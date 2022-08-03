@@ -214,6 +214,9 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/Structure.cpp
 	${PROJECT_SOURCE_DIR}/src/Symmetry.cpp
 	${PROJECT_SOURCE_DIR}/src/TlsParser.cpp
+
+	${PROJECT_SOURCE_DIR}/src/v2/dictionary_parser.cpp
+	${PROJECT_SOURCE_DIR}/src/v2/validate.cpp
 )
 
 set(project_headers 

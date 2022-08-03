@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <regex>
@@ -119,8 +120,8 @@ class condition_t
 
 	bool operator()(const category_type &c, const row_type &r) const
 	{
-		assert(m_impl);
-		assert(m_prepared);
+		assert(this->m_impl != nullptr);
+		assert(this->m_prepared);
 		return m_impl ? m_impl->test(c, r) : false;
 	}
 
@@ -448,27 +449,26 @@ struct empty
 
 inline constexpr empty null = empty();
 
-template <typename Category>
-struct key_t
+struct key
 {
-	explicit key_t(const std::string &itemTag)
+	explicit key(const std::string &itemTag)
 		: m_item_tag(itemTag)
 	{
 	}
 
-	explicit key_t(const char *itemTag)
+	explicit key(const char *itemTag)
 		: m_item_tag(itemTag)
 	{
 	}
 
-	key_t(const key_t &) = delete;
-	key_t &operator=(const key_t &) = delete;
+	key(const key &) = delete;
+	key &operator=(const key &) = delete;
 
 	std::string m_item_tag;
 };
 
 template <typename Category, typename T>
-condition_t<Category> operator==(const key_t<Category> &key, const T &v)
+condition_t<Category> operator==(const key &key, const T &v)
 {
 	using category_type = Category;
 	using row_type = row_handle<category_type>;
@@ -483,7 +483,7 @@ condition_t<Category> operator==(const key_t<Category> &key, const T &v)
 }
 
 template <typename Category>
-inline condition_t<Category> operator==(const key_t<Category> &key, const char *value)
+inline condition_t<Category> operator==(const key &key, const char *value)
 {
 	using category_type = Category;
 	using row_type = row_handle<category_type>;
@@ -512,20 +512,20 @@ inline condition_t<Category> operator==(const key_t<Category> &key, const char *
 // }
 
 template <typename Category, typename T>
-condition_t<Category> operator!=(const key_t<Category> &key, const T &v)
+condition_t<Category> operator!=(const key &key, const T &v)
 {
 	return condition_t<Category>(new detail::not_condition_impl<Category>(operator==(key, v)));
 }
 
 template <typename Category>
-inline condition_t<Category> operator!=(const key_t<Category> &key, const char *v)
+inline condition_t<Category> operator!=(const key &key, const char *v)
 {
 	std::string value(v ? v : "");
 	return condition_t<Category>(new detail::not_condition_impl<Category>(operator==(key, value)));
 }
 
 template <typename Category, typename T>
-condition_t<Category> operator>(const key_t<Category> &key, const T &v)
+condition_t<Category> operator>(const key &key, const T &v)
 {
 	using category_type = Category;
 	using row_type = row_handle<category_type>;
@@ -540,7 +540,7 @@ condition_t<Category> operator>(const key_t<Category> &key, const T &v)
 }
 
 template <typename Category, typename T>
-condition_t<Category> operator>=(const key_t<Category> &key, const T &v)
+condition_t<Category> operator>=(const key &key, const T &v)
 {
 	using category_type = Category;
 	using row_type = row_handle<category_type>;
@@ -555,7 +555,7 @@ condition_t<Category> operator>=(const key_t<Category> &key, const T &v)
 }
 
 template <typename Category, typename T>
-condition_t<Category> operator<(const key_t<Category> &key, const T &v)
+condition_t<Category> operator<(const key &key, const T &v)
 {
 	using category_type = Category;
 	using row_type = row_handle<category_type>;
@@ -570,7 +570,7 @@ condition_t<Category> operator<(const key_t<Category> &key, const T &v)
 }
 
 template <typename Category, typename T>
-condition_t<Category> operator<=(const key_t<Category> &key, const T &v)
+condition_t<Category> operator<=(const key &key, const T &v)
 {
 	using category_type = Category;
 	using row_type = row_handle<category_type>;
@@ -585,13 +585,13 @@ condition_t<Category> operator<=(const key_t<Category> &key, const T &v)
 }
 
 template <typename Category>
-inline condition_t<Category> operator==(const key_t<Category> &key, const std::regex &rx)
+inline condition_t<Category> operator==(const key &key, const std::regex &rx)
 {
 	return condition_t<Category>(new detail::keyMatchescondition_impl<Category>(key.m_item_tag, rx));
 }
 
 template <typename Category>
-inline condition_t<Category> operator==(const key_t<Category> &key, const empty &)
+inline condition_t<Category> operator==(const key &key, const empty &)
 {
 	return condition_t<Category>(new detail::keyIsemptycondition_impl<Category>(key.m_item_tag));
 }
@@ -626,12 +626,10 @@ inline condition_t<Category> all()
 
 namespace literals
 {
-
-	// template<typename Category>
-	// inline key_t<Category> operator""_key(const char *text, size_t length)
-	// {
-	// 	return key<Category>(std::string(text, length));
-	// }
+	inline key operator""_key(const char *text, size_t length)
+	{
+		return key(std::string(text, length));
+	}
 
 	inline constexpr empty null = empty();
 

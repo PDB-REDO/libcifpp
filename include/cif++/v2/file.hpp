@@ -26,8 +26,10 @@
 
 #pragma once
 
-#include "datablock.hpp"
-#include "parser.hpp"
+#include <cif++/v2/forward_decl.hpp>
+
+#include <cif++/v2/datablock.hpp>
+#include <cif++/v2/parser.hpp>
 
 namespace cif::v2
 {
@@ -35,9 +37,9 @@ namespace cif::v2
 // --------------------------------------------------------------------
 
 template <
-	typename Alloc = std::allocator<void>,
-	typename Datablock = datablock_t<Alloc>,
-	typename Category = typename Datablock::category_type>
+	typename Alloc,
+	typename Datablock,
+	typename Category>
 class file_t
 {
   public:
@@ -56,7 +58,7 @@ class file_t
 	using iterator = datablock_list::iterator;
 	using const_iterator = datablock_list::const_iterator;
 
-	using parser_type = parser_t<file_t, datablock_type, category_type>;
+	using parser_type = parser_t<allocator_type, file_t, datablock_type, category_type>;
 
 	file_t() = default;
 

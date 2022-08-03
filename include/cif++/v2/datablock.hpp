@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <cif++/v2/forward_decl.hpp>
+
 #include <cif++/v2/category.hpp>
 
 namespace cif::v2
@@ -33,9 +35,7 @@ namespace cif::v2
 
 // --------------------------------------------------------------------
 
-template <
-	typename Alloc = std::allocator<void>,
-	typename Category = category_t<Alloc>>
+template <typename Alloc, typename Category>
 class datablock_t
 {
   public:
@@ -47,6 +47,8 @@ class datablock_t
 
 	using iterator = category_type_list::iterator;
 	using const_iterator = category_type_list::const_iterator;
+
+	using reference = typename category_type_list::reference;
 
 	datablock_t(std::string_view name, const allocator_type &alloc = allocator_type())
 		: m_categories(alloc)
@@ -81,11 +83,28 @@ class datablock_t
 
 	// --------------------------------------------------------------------
 
+	bool empty() const { return m_categories.empty(); }
+	size_t size() const { return m_categories.size(); }
+
+	reference front() { return m_categories.front(); }
+	reference back() { return m_categories.back(); }
+
+	iterator begin() { return m_categories.begin(); }
+	iterator end() { return m_categories.end(); }
+
+	const_iterator cbegin() { return m_categories.cbegin(); }
+	const_iterator cend() { return m_categories.cend(); }
+
+	const_iterator begin() const { return m_categories.begin(); }
+	const_iterator end() const { return m_categories.end(); }
+
+	// --------------------------------------------------------------------
+
 	category_type &operator[](std::string_view name)
 	{
 		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category_type &c)
 			{ return iequals(c.name(), name); });
-		
+
 		if (i != m_categories.end())
 			return *i;
 
@@ -133,7 +152,7 @@ class datablock_t
 			// 	cat.updateLinks();
 		}
 
-		return std::make_tuple(m_categories.begin(), is_new);		
+		return std::make_tuple(m_categories.begin(), is_new);
 	}
 
 	void write(std::ostream &os) const
@@ -185,4 +204,4 @@ class datablock_t
 
 using datablock = datablock_t<>;
 
-}
+} // namespace cif::v2
