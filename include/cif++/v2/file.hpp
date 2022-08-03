@@ -36,20 +36,10 @@ namespace cif::v2
 
 // --------------------------------------------------------------------
 
-template <
-	typename Alloc,
-	typename Datablock,
-	typename Category>
-class file_t
+class file
 {
   public:
-	using allocator_type = Alloc;
-
-	using datablock_type = Datablock;
-	using category_type = typename datablock_type::category_type;
-
-	using datablock_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<datablock_type>;
-	using datablock_list = std::list<datablock_type, datablock_allocator_type>;
+	using datablock_list = std::list<datablock>;
 
 	using value_type = datablock_list::value_type;
 	using reference = datablock_list::reference;
@@ -58,29 +48,21 @@ class file_t
 	using iterator = datablock_list::iterator;
 	using const_iterator = datablock_list::const_iterator;
 
-	using parser_type = parser_t<allocator_type, file_t, datablock_type, category_type>;
+	file() = default;
 
-	file_t() = default;
-
-	file_t(const allocator_type &a = allocator_type())
-		: m_datablocks(a)
-	{
-	}
-
-	file_t(std::istream &is, const allocator_type &alloc = allocator_type())
-		: m_datablocks(alloc)
+	file(std::istream &is)
 	{
 		load(is);
 	}
 
-	file_t(const file_t &) = default;
-	file_t(file_t &&) = default;
-	file_t &operator=(const file_t &) = default;
-	file_t &operator=(file_t &&) = default;
+	file(const file &) = default;
+	file(file &&) = default;
+	file &operator=(const file &) = default;
+	file &operator=(file &&) = default;
 
-	datablock_type &operator[](std::string_view name)
+	datablock &operator[](std::string_view name)
 	{
-		auto i = std::find_if(m_datablocks.begin(), m_datablocks.end(), [name](const datablock_type &c)
+		auto i = std::find_if(m_datablocks.begin(), m_datablocks.end(), [name](const datablock &c)
 			{ return iequals(c.name(), name); });
 		
 		if (i != m_datablocks.end())
@@ -90,10 +72,10 @@ class file_t
 		return m_datablocks.back();
 	}
 
-	const datablock_type &operator[](std::string_view name) const
+	const datablock &operator[](std::string_view name) const
 	{
-		static const datablock_type s_empty;
-		auto i = std::find_if(m_datablocks.begin(), m_datablocks.end(), [name](const datablock_type &c)
+		static const datablock s_empty;
+		auto i = std::find_if(m_datablocks.begin(), m_datablocks.end(), [name](const datablock &c)
 			{ return iequals(c.name(), name); });
 		return i == m_datablocks.end() ? s_empty : *i;
 	}
@@ -133,14 +115,12 @@ class file_t
 	reference front() { return m_datablocks.front(); }
 	reference back() { return m_datablocks.back(); }
 
-
-
 	void load(std::istream &is)
 	{
 		// auto saved = mValidator;
 		// setValidator(nullptr);
 
-		parser_type p(is, *this);
+		parser p(is, *this);
 		p.parse_file();
 
 		// if (saved != nullptr)
@@ -152,8 +132,7 @@ class file_t
 
   private:
 	datablock_list m_datablocks;
+	std::unique_ptr<Validator> m_validator;
 };
-
-using file = file_t<>;
 
 }

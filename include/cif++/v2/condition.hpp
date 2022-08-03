@@ -41,145 +41,120 @@ namespace cif::v2
 
 namespace detail
 {
-	template <typename Category>
 	struct condition_impl
 	{
-		using category_type = Category;
-		using row_type = row_handle<category_type>;
-
 		virtual ~condition_impl() {}
 
-		virtual void prepare(const Category &c) {}
-		virtual bool test(const Category &c, const row_type &r) const = 0;
+		virtual void prepare(const category &c) {}
+		virtual bool test(row_handle r) const = 0;
 		virtual void str(std::ostream &os) const = 0;
 	};
 
-	template <typename Category>
-	struct all_condition_impl : public condition_impl<Category>
+	struct all_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
-		virtual bool test(const Category &c, const row_type &r) const { return true; }
-		virtual void str(std::ostream &os) const { os << "*"; }
+		bool test(row_handle r) const override { return true; }
+		void str(std::ostream &os) const override { os << "*"; }
 	};
 
-	template <typename>
 	struct or_condition_impl;
-	template <typename>
 	struct and_condition_impl;
-	template <typename>
 	struct not_condition_impl;
 } // namespace detail
 
-template <typename Category>
-class condition_t
+class condition
 {
   public:
-	using category_type = Category;
-	using condition_impl = detail::condition_impl<category_type>;
-	using row_type = row_handle<category_type>;
+	using condition_impl = detail::condition_impl;
 
-	condition_t()
+	condition()
 		: m_impl(nullptr)
 	{
 	}
-	condition_t(condition_impl *impl)
+	condition(condition_impl *impl)
 		: m_impl(impl)
 	{
 	}
 
-	condition_t(const condition_t &) = delete;
+	condition(const condition &) = delete;
 
-	condition_t(condition_t &&rhs) noexcept
+	condition(condition &&rhs) noexcept
 		: m_impl(nullptr)
 	{
 		std::swap(m_impl, rhs.m_impl);
 	}
 
-	condition_t &operator=(const condition_t &) = delete;
+	condition &operator=(const condition &) = delete;
 
-	condition_t &operator=(condition_t &&rhs) noexcept
+	condition &operator=(condition &&rhs) noexcept
 	{
 		std::swap(m_impl, rhs.m_impl);
 		return *this;
 	}
 
-	~condition_t()
+	~condition()
 	{
 		delete m_impl;
 		m_impl = nullptr;
 	}
 
-	void prepare(const category_type &c)
+	void prepare(const category &c)
 	{
 		if (m_impl)
 			m_impl->prepare(c);
 		m_prepared = true;
 	}
 
-	bool operator()(const category_type &c, const row_type &r) const
+	bool operator()(row_handle r) const
 	{
 		assert(this->m_impl != nullptr);
 		assert(this->m_prepared);
-		return m_impl ? m_impl->test(c, r) : false;
+		return m_impl ? m_impl->test(r) : false;
 	}
 
 	bool empty() const { return m_impl == nullptr; }
 
-	template<typename C> friend condition_t operator||(condition_t<C> &&a, condition_t<C> &&b);
-	template<typename C> friend condition_t operator&&(condition_t<C> &&a, condition_t<C> &&b);
+	friend condition operator||(condition &&a, condition &&b);
+	friend condition operator&&(condition &&a, condition &&b);
 
-	template <typename>
 	friend struct detail::or_condition_impl;
-	template <typename>
 	friend struct detail::and_condition_impl;
-	template <typename>
 	friend struct detail::not_condition_impl;
 
-	void swap(condition_t &rhs)
+	void swap(condition &rhs)
 	{
 		std::swap(m_impl, rhs.m_impl);
 		std::swap(m_prepared, rhs.m_prepared);
 	}
 
-	template<typename C> friend std::ostream &operator<<(std::ostream &os, const condition_t<C> &cond);
+	friend std::ostream &operator<<(std::ostream &os, const condition &cond)
+	{
+		if (cond.m_impl)
+			cond.m_impl->str(os);
+		return os;
+	}
 
   private:
 	condition_impl *m_impl;
 	bool m_prepared = false;
 };
 
-template <typename Category>
-inline std::ostream &operator<<(std::ostream &os, const condition_t<Category> &cond)
-{
-	if (cond.m_impl)
-		cond.m_impl->str(os);
-	return os;
-}
-
 namespace detail
 {
-
-	template <typename Category>
-	struct keyIsemptycondition_impl : public condition_impl<Category>
+	struct key_is_empty_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
-		keyIsemptycondition_impl(const std::string &item_tag)
+		key_is_empty_condition_impl(const std::string &item_tag)
 			: m_item_tag(item_tag)
 		{
 		}
 
-		virtual void prepare(const Category &c);
+		void prepare(const category &c) override;
 
-		virtual bool test(const Category &c, const row_type &r) const
+		bool test(row_handle r) const override
 		{
 			return r[m_item_ix].empty();
 		}
 
-		virtual void str(std::ostream &os) const
+		void str(std::ostream &os) const override
 		{
 			os << m_item_tag << " IS NULL";
 		}
@@ -188,61 +163,53 @@ namespace detail
 		size_t m_item_ix = 0;
 	};
 
-	template <typename Category>
-	struct keyComparecondition_impl : public condition_impl<Category>
+	struct key_compare_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
 		template <typename COMP>
-		keyComparecondition_impl(const std::string &item_tag, COMP &&comp, const std::string &s)
+		key_compare_condition_impl(const std::string &item_tag, COMP &&comp, const std::string &s)
 			: m_item_tag(item_tag)
 			, m_compare(std::move(comp))
-			, mStr(s)
+			, m_str(s)
 		{
 		}
 
-		virtual void prepare(const Category &c);
+		void prepare(const category &c) override;
 
-		virtual bool test(const Category &c, const row_type &r) const
+		bool test(row_handle r) const override
 		{
-			return m_compare(c, r, m_icase);
+			return m_compare(r, m_icase);
 		}
 
-		virtual void str(std::ostream &os) const
+		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << (m_icase ? "^ " : " ") << mStr;
+			os << m_item_tag << (m_icase ? "^ " : " ") << m_str;
 		}
 
 		std::string m_item_tag;
 		size_t m_item_ix = 0;
 		bool m_icase = false;
-		std::function<bool(const Category &, const row_type &, bool)> m_compare;
-		std::string mStr;
+		std::function<bool(row_handle, bool)> m_compare;
+		std::string m_str;
 	};
 
-	template <typename Category>
-	struct keyMatchescondition_impl : public condition_impl<Category>
+	struct key_matches_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
-		keyMatchescondition_impl(const std::string &item_tag, const std::regex &rx)
+		key_matches_condition_impl(const std::string &item_tag, const std::regex &rx)
 			: m_item_tag(item_tag)
 			, m_item_ix(0)
 			, mRx(rx)
 		{
 		}
 
-		virtual void prepare(const Category &c);
+		void prepare(const category &c) override;
 
-		virtual bool test(const Category &c, const row_type &r) const
+		bool test(row_handle r) const override
 		{
 			std::string_view txt = r[m_item_ix].text();
 			return std::regex_match(txt.begin(), txt.end(), mRx);
 		}
 
-		virtual void str(std::ostream &os) const
+		void str(std::ostream &os) const override
 		{
 			os << m_item_tag << " =~ expression";
 		}
@@ -252,21 +219,40 @@ namespace detail
 		std::regex mRx;
 	};
 
-	template <typename Category, typename T>
-	struct AnyIscondition_impl : public condition_impl<Category>
+	template <typename T>
+	struct any_is_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
 		typedef T valueType;
 
-		AnyIscondition_impl(const valueType &value)
+		any_is_condition_impl(const valueType &value)
 			: mValue(value)
 		{
 		}
 
-		virtual bool test(const Category &c, const row_type &r) const;
-		virtual void str(std::ostream &os) const
+		bool test(row_handle r) const override
+		{
+			auto &c = r.cat();
+
+			bool result = false;
+			for (auto &f : get_category_fields(c))
+			{
+				try
+				{
+					if (r[f].compare(mValue) == 0)
+					{
+						result = true;
+						break;
+					}
+				}
+				catch (...)
+				{
+				}
+			}
+
+			return result;
+		}
+
+		void str(std::ostream &os) const override
 		{
 			os << "<any> == " << mValue;
 		}
@@ -274,19 +260,38 @@ namespace detail
 		valueType mValue;
 	};
 
-	template <typename Category>
-	struct AnyMatchescondition_impl : public condition_impl<Category>
+	struct any_matches_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
-		AnyMatchescondition_impl(const std::regex &rx)
+		any_matches_condition_impl(const std::regex &rx)
 			: mRx(rx)
 		{
 		}
 
-		virtual bool test(const Category &c, const row_type &r) const;
-		virtual void str(std::ostream &os) const
+		bool test(row_handle r) const override
+		{
+			auto &c = r.cat();
+
+			bool result = false;
+			for (auto &f : get_category_fields(c))
+			{
+				try
+				{
+					std::string_view txt = r[f].text();
+					if (std::regex_match(txt.begin(), txt.end(), mRx))
+					{
+						result = true;
+						break;
+					}
+				}
+				catch (...)
+				{
+				}
+			}
+
+			return result;
+		}
+
+		void str(std::ostream &os) const override
 		{
 			os << "<any> =~ expression";
 		}
@@ -294,13 +299,9 @@ namespace detail
 		std::regex mRx;
 	};
 
-	template <typename Category>
-	struct and_condition_impl : public condition_impl<Category>
+	struct and_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
-		and_condition_impl(condition_t<Category> &&a, condition_t<Category> &&b)
+		and_condition_impl(condition &&a, condition &&b)
 			: mA(nullptr)
 			, mB(nullptr)
 		{
@@ -314,18 +315,18 @@ namespace detail
 			delete mB;
 		}
 
-		virtual void prepare(const Category &c)
+		void prepare(const category &c) override
 		{
 			mA->prepare(c);
 			mB->prepare(c);
 		}
 
-		virtual bool test(const Category &c, const row_type &r) const
+		bool test(row_handle r) const override
 		{
-			return mA->test(c, r) and mB->test(c, r);
+			return mA->test(r) and mB->test(r);
 		}
 
-		virtual void str(std::ostream &os) const
+		void str(std::ostream &os) const override
 		{
 			os << '(';
 			mA->str(os);
@@ -334,17 +335,13 @@ namespace detail
 			os << ')';
 		}
 
-		base_type *mA;
-		base_type *mB;
+		condition_impl *mA;
+		condition_impl *mB;
 	};
 
-	template <typename Category>
-	struct or_condition_impl : public condition_impl<Category>
+	struct or_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
-		or_condition_impl(condition_t<Category> &&a, condition_t<Category> &&b)
+		or_condition_impl(condition &&a, condition &&b)
 			: mA(nullptr)
 			, mB(nullptr)
 		{
@@ -358,18 +355,18 @@ namespace detail
 			delete mB;
 		}
 
-		virtual void prepare(const Category &c)
+		void prepare(const category &c) override
 		{
 			mA->prepare(c);
 			mB->prepare(c);
 		}
 
-		virtual bool test(const Category &c, const row_type &r) const
+		bool test(row_handle r) const override
 		{
-			return mA->test(c, r) or mB->test(c, r);
+			return mA->test(r) or mB->test(r);
 		}
 
-		virtual void str(std::ostream &os) const
+		void str(std::ostream &os) const override
 		{
 			os << '(';
 			mA->str(os);
@@ -378,17 +375,13 @@ namespace detail
 			os << ')';
 		}
 
-		base_type *mA;
-		base_type *mB;
+		condition_impl *mA;
+		condition_impl *mB;
 	};
 
-	template <typename Category>
-	struct not_condition_impl : public condition_impl<Category>
+	struct not_condition_impl : public condition_impl
 	{
-		using base_type = condition_impl<Category>;
-		using row_type = base_type::row_type;
-
-		not_condition_impl(condition_t<Category> &&a)
+		not_condition_impl(condition &&a)
 			: mA(nullptr)
 		{
 			std::swap(mA, a.m_impl);
@@ -399,55 +392,53 @@ namespace detail
 			delete mA;
 		}
 
-		virtual void prepare(const Category &c)
+		void prepare(const category &c) override
 		{
 			mA->prepare(c);
 		}
 
-		virtual bool test(const Category &c, const row_type &r) const
+		bool test(row_handle r) const override
 		{
-			return not mA->test(c, r);
+			return not mA->test(r);
 		}
 
-		virtual void str(std::ostream &os) const
+		void str(std::ostream &os) const override
 		{
 			os << "NOT (";
 			mA->str(os);
 			os << ')';
 		}
 
-		base_type *mA;
+		condition_impl *mA;
 	};
 
 } // namespace detail
 
-template <typename Category>
-inline condition_t<Category> operator&&(condition_t<Category> &&a, condition_t<Category> &&b)
+inline condition operator&&(condition &&a, condition &&b)
 {
 	if (a.m_impl and b.m_impl)
-		return condition_t<Category>(new detail::and_condition_impl<Category>(std::move(a), std::move(b)));
+		return condition(new detail::and_condition_impl(std::move(a), std::move(b)));
 	if (a.m_impl)
-		return condition_t<Category>(std::move(a));
-	return condition_t<Category>(std::move(b));
+		return condition(std::move(a));
+	return condition(std::move(b));
 }
 
-template <typename Category>
-inline condition_t<Category> operator||(condition_t<Category> &&a, condition_t<Category> &&b)
+inline condition operator||(condition &&a, condition &&b)
 {
 	if (a.m_impl and b.m_impl)
-		return condition_t<Category>(new detail::or_condition_impl<Category>(std::move(a), std::move(b)));
+		return condition(new detail::or_condition_impl(std::move(a), std::move(b)));
 	if (a.m_impl)
-		return condition_t<Category>(std::move(a));
-	return condition_t<Category>(std::move(b));
+		return condition(std::move(a));
+	return condition(std::move(b));
 }
 
-struct empty
+struct empty_type
 {
 };
 
 /// \brief A helper to make it possible to have conditions like ("id"_key == cif::null)
 
-inline constexpr empty null = empty();
+inline constexpr empty_type null = empty_type();
 
 struct key
 {
@@ -467,161 +458,138 @@ struct key
 	std::string m_item_tag;
 };
 
-template <typename Category, typename T>
-condition_t<Category> operator==(const key &key, const T &v)
+template <typename T>
+condition operator==(const key &key, const T &v)
 {
-	using category_type = Category;
-	using row_type = row_handle<category_type>;
-
 	std::ostringstream s;
 	s << " == " << v;
 
-	return condition_t<Category>(new detail::keyComparecondition_impl<Category>(
-		key.m_item_tag, [tag = key.m_item_tag, v](const Category &c, const row_type &r, bool icase)
+	return condition(new detail::key_compare_condition_impl(
+		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) == 0; },
 		s.str()));
 }
 
-template <typename Category>
-inline condition_t<Category> operator==(const key &key, const char *value)
+inline condition operator==(const key &key, const char *value)
 {
-	using category_type = Category;
-	using row_type = row_handle<category_type>;
-
 	if (value != nullptr and *value != 0)
 	{
 		std::ostringstream s;
 		s << " == " << value;
 
-		return condition_t<Category>(new detail::keyComparecondition_impl<Category>(
-			key.m_item_tag, [tag = key.m_item_tag, value](const Category &c, const row_type &r, bool icase)
+		return condition(new detail::key_compare_condition_impl(
+			key.m_item_tag, [tag = key.m_item_tag, value](row_handle r, bool icase)
 			{ return r[tag].compare(value, icase) == 0; },
 			s.str()));
 	}
 	else
-		return condition_t(new detail::keyIsemptycondition_impl<Category>(key.m_item_tag));
+		return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
 }
 
 // inline condition_t operator==(const key& key, const detail::ItemReference& v)
 // {
 // 	if (v.empty())
-// 		return condition_t(new detail::keyIsemptycondition_impl(key.m_item_tag));
+// 		return condition_t(new detail::key_is_empty_condition_impl(key.m_item_tag));
 // 	else
-// 		return condition_t(new detail::keyComparecondition_impl(key.m_item_tag, [tag = key.m_item_tag, v](const Category& c, const row_type& r, bool icase)
+// 		return condition_t(new detail::key_compare_condition_impl(key.m_item_tag, [tag = key.m_item_tag, v](const category& c, const row& r, bool icase)
 // 			{ return r[tag].template compare<(v, icase) == 0; }));
 // }
 
-template <typename Category, typename T>
-condition_t<Category> operator!=(const key &key, const T &v)
+template <typename T>
+condition operator!=(const key &key, const T &v)
 {
-	return condition_t<Category>(new detail::not_condition_impl<Category>(operator==(key, v)));
+	return condition(new detail::not_condition_impl(operator==(key, v)));
 }
 
-template <typename Category>
-inline condition_t<Category> operator!=(const key &key, const char *v)
+inline condition operator!=(const key &key, const char *v)
 {
 	std::string value(v ? v : "");
-	return condition_t<Category>(new detail::not_condition_impl<Category>(operator==(key, value)));
+	return condition(new detail::not_condition_impl(operator==(key, value)));
 }
 
-template <typename Category, typename T>
-condition_t<Category> operator>(const key &key, const T &v)
+template <typename T>
+condition operator>(const key &key, const T &v)
 {
-	using category_type = Category;
-	using row_type = row_handle<category_type>;
-
 	std::ostringstream s;
 	s << " > " << v;
 
-	return condition_t<Category>(new detail::keyComparecondition_impl<Category>(
-		key.m_item_tag, [tag = key.m_item_tag, v](const Category &c, const row_type &r, bool icase)
+	return condition(new detail::key_compare_condition_impl(
+		key.m_item_tag, [tag = key.m_item_tag, v](const category &c, row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) > 0; },
 		s.str()));
 }
 
-template <typename Category, typename T>
-condition_t<Category> operator>=(const key &key, const T &v)
+template <typename T>
+condition operator>=(const key &key, const T &v)
 {
-	using category_type = Category;
-	using row_type = row_handle<category_type>;
-
 	std::ostringstream s;
 	s << " >= " << v;
 
-	return condition_t<Category>(new detail::keyComparecondition_impl<Category>(
-		key.m_item_tag, [tag = key.m_item_tag, v](const Category &c, const row_type &r, bool icase)
+	return condition(new detail::key_compare_condition_impl(
+		key.m_item_tag, [tag = key.m_item_tag, v](const category &c, row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) >= 0; },
 		s.str()));
 }
 
-template <typename Category, typename T>
-condition_t<Category> operator<(const key &key, const T &v)
+template <typename T>
+condition operator<(const key &key, const T &v)
 {
-	using category_type = Category;
-	using row_type = row_handle<category_type>;
-
 	std::ostringstream s;
 	s << " < " << v;
 
-	return condition_t<Category>(new detail::keyComparecondition_impl<Category>(
-		key.m_item_tag, [tag = key.m_item_tag, v](const Category &c, const row_type &r, bool icase)
+	return condition(new detail::key_compare_condition_impl(
+		key.m_item_tag, [tag = key.m_item_tag, v](const category &c, row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) < 0; },
 		s.str()));
 }
 
-template <typename Category, typename T>
-condition_t<Category> operator<=(const key &key, const T &v)
+template <typename T>
+condition operator<=(const key &key, const T &v)
 {
-	using category_type = Category;
-	using row_type = row_handle<category_type>;
-
 	std::ostringstream s;
 	s << " <= " << v;
 
-	return condition_t<Category>(new detail::keyComparecondition_impl<Category>(
-		key.m_item_tag, [tag = key.m_item_tag, v](const Category &c, const row_type &r, bool icase)
+	return condition(new detail::key_compare_condition_impl(
+		key.m_item_tag, [tag = key.m_item_tag, v](const category &c, row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) <= 0; },
 		s.str()));
 }
 
-template <typename Category>
-inline condition_t<Category> operator==(const key &key, const std::regex &rx)
+inline condition operator==(const key &key, const std::regex &rx)
 {
-	return condition_t<Category>(new detail::keyMatchescondition_impl<Category>(key.m_item_tag, rx));
+	return condition(new detail::key_matches_condition_impl(key.m_item_tag, rx));
 }
 
-template <typename Category>
-inline condition_t<Category> operator==(const key &key, const empty &)
+inline condition operator==(const key &key, const empty_type &)
 {
-	return condition_t<Category>(new detail::keyIsemptycondition_impl<Category>(key.m_item_tag));
+	return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
 }
 
-template <typename Category>
-struct any_t
+struct any_type
 {
 };
 
-template <typename Category, typename T>
-condition_t<Category> operator==(const any_t<Category> &, const T &v)
+inline constexpr any_type any = any_type{};
+
+template <typename T>
+condition operator==(const any_type &, const T &v)
 {
-	return condition_t<Category>(new detail::AnyIscondition_impl<Category, T>(v));
+	return condition(new detail::any_is_condition_impl<T>(v));
 }
 
-template <typename Category>
-condition_t<Category> operator==(any_t<Category> &, const std::regex &rx)
+inline condition operator==(const any_type &, const std::regex &rx)
 {
-	return condition_t<Category>(new detail::AnyMatchescondition_impl<Category>(rx));
+	return condition(new detail::any_matches_condition_impl(rx));
 }
 
-template <typename Category>
-inline condition_t<Category> all()
+inline condition all()
 {
-	return condition_t<Category>(new detail::all_condition_impl<Category>());
+	return condition(new detail::all_condition_impl());
 }
 
-// inline condition_t<Category> Not(condition_t<Category> &&cond)
+// inline condition_t<category> Not(condition_t<category> &&cond)
 // {
-// 	return condition_t<Category>(new detail::not_condition_impl<Category>(std::move(cond)));
+// 	return condition_t<category>(new detail::not_condition_impl(std::move(cond)));
 // }
 
 namespace literals
@@ -630,9 +598,6 @@ namespace literals
 	{
 		return key(std::string(text, length));
 	}
-
-	inline constexpr empty null = empty();
-
 } // namespace literals
 
 } // namespace cif::v2

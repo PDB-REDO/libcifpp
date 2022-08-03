@@ -35,47 +35,29 @@ namespace cif::v2
 
 // --------------------------------------------------------------------
 
-template <typename Alloc, typename Category>
-class datablock_t
+class datablock
 {
   public:
-	using category_type = Category;
-	using allocator_type = Alloc;
+	using category_list = std::list<category>;
 
-	using category_allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<category_type>;
-	using category_type_list = std::list<category_type, category_allocator_type>;
+	using iterator = category_list::iterator;
+	using const_iterator = category_list::const_iterator;
 
-	using iterator = category_type_list::iterator;
-	using const_iterator = category_type_list::const_iterator;
+	using reference = typename category_list::reference;
 
-	using reference = typename category_type_list::reference;
+	datablock() = default;
 
-	datablock_t(std::string_view name, const allocator_type &alloc = allocator_type())
-		: m_categories(alloc)
-		, m_name(name)
+	datablock(std::string_view name)
+		: m_name(name)
 	{
 	}
 
-	datablock_t(const datablock_t &) = default;
+	datablock(const datablock &) = default;
 
-	datablock_t(datablock_t &&) = default;
+	datablock(datablock &&) = default;
 
-	// template <typename Alloc2>
-	// datablock_t(const datablock_t &db, const Alloc2 &a)
-	// 	: m_categories(db, a)
-	// 	, m_name(db.m_name)
-	// {
-	// }
-
-	// template <typename Alloc2>
-	// datablock_t(datablock_t &&db, const Alloc2 &a)
-	// 	: base_type(std::move(db), a)
-	// 	, m_name(db.m_name)
-	// {
-	// }
-
-	datablock_t &operator=(const datablock_t &) = default;
-	datablock_t &operator=(datablock_t &&) = default;
+	datablock &operator=(const datablock &) = default;
+	datablock &operator=(datablock &&) = default;
 
 	// --------------------------------------------------------------------
 
@@ -100,9 +82,9 @@ class datablock_t
 
 	// --------------------------------------------------------------------
 
-	category_type &operator[](std::string_view name)
+	category &operator[](std::string_view name)
 	{
-		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category_type &c)
+		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category &c)
 			{ return iequals(c.name(), name); });
 
 		if (i != m_categories.end())
@@ -112,10 +94,10 @@ class datablock_t
 		return m_categories.back();
 	}
 
-	const category_type &operator[](std::string_view name) const
+	const category &operator[](std::string_view name) const
 	{
-		static const category_type s_empty;
-		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category_type &c)
+		static const category s_empty;
+		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category &c)
 			{ return iequals(c.name(), name); });
 		return i == m_categories.end() ? s_empty : *i;
 	}
@@ -155,53 +137,51 @@ class datablock_t
 		return std::make_tuple(m_categories.begin(), is_new);
 	}
 
-	void write(std::ostream &os) const
-	{
-		// std::shared_lock lock(mLock);
+	// void write(std::ostream &os) const
+	// {
+	// 	// std::shared_lock lock(mLock);
 
-		os << "data_" << m_name << std::endl
-		   << "# " << std::endl;
+	// 	os << "data_" << m_name << std::endl
+	// 	   << "# " << std::endl;
 
-		// mmcif support, sort of. First write the 'entry' Category
-		// and if it exists, _AND_ we have a Validator, write out the
-		// audit_conform record.
+	// 	// mmcif support, sort of. First write the 'entry' Category
+	// 	// and if it exists, _AND_ we have a Validator, write out the
+	// 	// audit_conform record.
 
-		for (auto &cat : m_categories)
-		{
-			if (cat.name() != "entry")
-				continue;
+	// 	for (auto &cat : m_categories)
+	// 	{
+	// 		if (cat.name() != "entry")
+	// 			continue;
 
-			cat.write(os);
+	// 		cat.write(os);
 
-			// if (mValidator != nullptr)
-			// {
-			// 	Category auditConform(*this, "audit_conform", nullptr);
-			// 	auditConform.emplace({{"dict_name", mValidator->dictName()},
-			// 		{"dict_version", mValidator->dictVersion()}});
-			// 	auditConform.write(os);
-			// }
+	// 		// if (mValidator != nullptr)
+	// 		// {
+	// 		// 	Category auditConform(*this, "audit_conform", nullptr);
+	// 		// 	auditConform.emplace({{"dict_name", mValidator->dictName()},
+	// 		// 		{"dict_version", mValidator->dictVersion()}});
+	// 		// 	auditConform.write(os);
+	// 		// }
 
-			break;
-		}
+	// 		break;
+	// 	}
 
-		for (auto &cat : m_categories)
-		{
-			if (cat.name() != "entry" and cat.name() != "audit_conform")
-				cat.write(os);
-		}
-	}
+	// 	for (auto &cat : m_categories)
+	// 	{
+	// 		if (cat.name() != "entry" and cat.name() != "audit_conform")
+	// 			cat.write(os);
+	// 	}
+	// }
 
-	friend std::ostream &operator<<(std::ostream &os, const datablock_t &db)
-	{
-		db.write(os);
-		return os;
-	}
+	// friend std::ostream &operator<<(std::ostream &os, const datablock &db)
+	// {
+	// 	db.write(os);
+	// 	return os;
+	// }
 
   private:
-	category_type_list m_categories;
+	category_list m_categories;
 	std::string m_name;
 };
-
-using datablock = datablock_t<>;
 
 } // namespace cif::v2

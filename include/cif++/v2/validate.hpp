@@ -166,7 +166,7 @@ class Validator
 	{
 	}
 
-	~Validator();
+	~Validator() = default;
 
 	Validator(const Validator &rhs) = delete;
 	Validator &operator=(const Validator &rhs) = delete;
@@ -175,7 +175,6 @@ class Validator
 	Validator &operator=(Validator &&rhs);
 
 	friend class dictionary_parser;
-	// friend class ValidatorFactory;
 
 	void addTypeValidator(ValidateType &&v);
 	const ValidateType *getValidatorForType(std::string_view typeCode) const;
@@ -189,11 +188,11 @@ class Validator
 
 	void reportError(const std::string &msg, bool fatal) const;
 
-	const std::string &dictName() const { return m_name; }
-	void dictName(const std::string &name) { m_name = name; }
+	const std::string &name() const { return m_name; }
+	void set_name(const std::string &name) { m_name = name; }
 
-	const std::string &dictVersion() const { return m_version; }
-	void dictVersion(const std::string &version) { m_version = version; }
+	const std::string &version() const { return m_version; }
+	void version(const std::string &version) { m_version = version; }
 
   private:
 	// name is fully qualified here:
@@ -201,7 +200,7 @@ class Validator
 
 	std::string m_name;
 	std::string m_version;
-	bool mStrict = false;
+	bool m_strict = false;
 	std::set<ValidateType> mTypeValidators;
 	std::set<ValidateCategory> mCategoryValidators;
 	std::vector<ValidateLink> mLinkValidators;

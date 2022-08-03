@@ -29,11 +29,14 @@
 #include <charconv>
 #include <cstring>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
 
 #include <cif++/CifUtils.hpp>
+
+#include <cif++/v2/forward_decl.hpp>
 
 namespace cif
 {
@@ -80,7 +83,7 @@ class item
 		auto r = cif::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, cif::chars_format::general);
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
-		
+
 		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
 		*r.ptr = 0;
 		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
@@ -138,13 +141,55 @@ class item
 };
 
 // --------------------------------------------------------------------
+/// \brief the internal storage for items in a category
+///
+/// Internal storage, strictly forward linked list with minimal space
+/// requirements. Strings of size 7 or shorter are stored internally.
+/// Typically, more than 99% of the strings in an mmCIF file are less
+/// than 8 bytes in length.
+
+struct item_value
+{
+	item_value(uint16_t column_ix, uint16_t length)
+		: m_next(nullptr)
+		, m_column_ix(column_ix)
+		, m_length(length)
+	{
+	}
+
+	item_value() = delete;
+	item_value(const item_value &) = delete;
+	item_value &operator=(const item_value &) = delete;
+
+	item_value *m_next;
+	uint16_t m_column_ix;
+	uint16_t m_length;
+	union
+	{
+		char m_local_data[8];
+		char *m_data;
+	};
+
+	static constexpr size_t kBufferSize = sizeof(m_local_data);
+
+	std::string_view text() const
+	{
+		return {m_length >= kBufferSize ? m_data : m_local_data, m_length};
+	}
+
+	const char *c_str() const
+	{
+		return m_length >= kBufferSize ? m_data : m_local_data;
+	}
+};
+
+static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes");
+
+// --------------------------------------------------------------------
 // Transient object to access stored data
 
-template <typename RowHandle>
 struct item_handle
 {
-	using row_handle_type = RowHandle;
-
   public:
 	// conversion helper class
 	template <typename T, typename = void>
@@ -157,29 +202,6 @@ struct item_handle
 		m_row_handle.assign(m_column, v.value(), false);
 		return *this;
 	}
-
-	// template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	// item_handle &operator=(const T &value)
-	// {
-	// 	this->operator=(std::to_string(value));
-	// 	return *this;
-	// }
-
-	// template <typename T>
-	// item_handle &operator=(const std::optional<T> &value)
-	// {
-	// 	if (value)
-	// 		this->operator=(*value);
-	// 	else
-	// 		this->operator=("?");
-	// 	return *this;
-	// }
-
-	// item_handle &operator=(std::string_view value)
-	// {
-	// 	m_row_handle.assign(m_column, value, false);
-	// 	return *this;
-	// }
 
 	template <typename... Ts>
 	void os(const Ts &...v)
@@ -199,7 +221,7 @@ struct item_handle
 	}
 
 	template <typename T>
-	auto value_or(const T &dv)
+	auto value_or(const T &dv) const
 	{
 		return empty() ? dv : this->as<T>();
 	}
@@ -244,21 +266,12 @@ struct item_handle
 	// 	return s_empty_result;
 	// }
 
-	std::string_view text() const
-	{
-		for (auto iv = m_row_handle.m_row->m_head; iv != nullptr; iv = iv->m_next)
-		{
-			if (iv->m_column_ix == m_column)
-				return iv->text();
-		}
-
-		return {};
-	}
+	std::string_view text() const;
 
 	// bool operator!=(const std::string &s) const { return s != c_str(); }
 	// bool operator==(const std::string &s) const { return s == c_str(); }
 
-	item_handle(uint16_t column, row_handle_type &row)
+	item_handle(uint16_t column, row_handle &row)
 		: m_column(column)
 		, m_row_handle(row)
 	{
@@ -266,17 +279,15 @@ struct item_handle
 
   private:
 	uint16_t m_column;
-	row_handle_type &m_row_handle;
-	// bool mConst = false;
+	row_handle &m_row_handle;
 
 	static constexpr const char *s_empty_result = "";
 };
 
 // So sad that the gcc implementation of from_chars does not support floats yet...
 
-template <typename Row>
 template <typename T>
-struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T>>>
+struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T>>>
 {
 	using value_type = std::remove_reference_t<std::remove_cv_t<T>>;
 
@@ -348,9 +359,8 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<
 	}
 };
 
-template <typename Row>
 template <typename T>
-struct item_handle<Row>::item_value_as<std::optional<T>>
+struct item_handle::item_value_as<std::optional<T>>
 {
 	static std::optional<T> convert(const item_handle &ref)
 	{
@@ -374,9 +384,8 @@ struct item_handle<Row>::item_value_as<std::optional<T>>
 	}
 };
 
-template <typename Row>
 template <typename T>
-struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, bool>>>
+struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, bool>>>
 {
 	static bool convert(const item_handle &ref)
 	{
@@ -394,9 +403,8 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, boo
 	}
 };
 
-template <typename Row>
 template <size_t N>
-struct item_handle<Row>::item_value_as<char[N]>
+struct item_handle::item_value_as<char[N]>
 {
 	// static std::string_view convert(const item_handle &ref)
 	// {
@@ -409,9 +417,8 @@ struct item_handle<Row>::item_value_as<char[N]>
 	}
 };
 
-template <typename Row>
 template <typename T>
-struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, const char *>>>
+struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, const char *>>>
 {
 	// static std::string_view convert(const item_handle &ref)
 	// {
@@ -424,14 +431,13 @@ struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, con
 	}
 };
 
-template <typename Row>
 template <typename T>
-struct item_handle<Row>::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::string>>>
+struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::string>>>
 {
 	static std::string convert(const item_handle &ref)
 	{
 		std::string_view txt = ref.text();
-		return { txt.data(), txt.size() };
+		return {txt.data(), txt.size()};
 	}
 
 	static int compare(const item_handle &ref, const std::string &value, bool icase)

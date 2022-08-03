@@ -27,37 +27,26 @@
 #pragma once
 
 #include <cif++/v2/item.hpp>
-#include <cif++/v2/condition.hpp>
 
 namespace cif::v2
 {
-
-template <typename>
-class row_handle;
 
 namespace detail
 {
 
 	// some helper classes to help create tuple result types
-	template <
-		typename Category,
-		typename... C>
+	template <typename... C>
 	struct get_row_result
 	{
-		using category_type = Category;
-		using row_type = category_type::row;
-		using row_handle_type = row_handle<category_type>;
-		using item_handle_type = item_handle<row_type>;
-
 		static constexpr size_t N = sizeof...(C);
 
-		get_row_result(const row_handle_type &r, std::array<size_t, N> &&columns)
+		get_row_result(const row_handle &r, std::array<size_t, N> &&columns)
 			: m_row(r)
 			, m_columns(std::move(columns))
 		{
 		}
 
-		const item_handle_type operator[](size_t ix) const
+		const item_handle operator[](size_t ix) const
 		{
 			return m_row[m_columns[ix]];
 		}
@@ -74,7 +63,7 @@ namespace detail
 			return std::tuple<Ts...>{m_row[m_columns[Is]].template as<Ts>()...};
 		}
 
-		const row_handle_type &m_row;
+		const row_handle &m_row;
 		std::array<size_t, N> m_columns;
 	};
 
@@ -112,21 +101,39 @@ auto tie(Ts &...v)
 }
 
 // --------------------------------------------------------------------
+/// \brief the row class, this one is not directly accessible from the outside
+
+class row
+{
+  public:
+	row() = default;
+
+  private:
+	friend class item_handle;
+
+	template <typename, typename...>
+	friend class iterator_impl;
+
+	friend class category;
+
+	void append(item_value *iv)
+	{
+		if (m_head == nullptr)
+			m_head = m_tail = iv;
+		else
+			m_tail = m_tail->m_next = iv;
+	}
+
+	row *m_next = nullptr;
+	item_value *m_head = nullptr, *m_tail = nullptr;
+};
+
+// --------------------------------------------------------------------
 /// \brief row_handle is the way to access data in rows
 
-template <typename Category>
 class row_handle
 {
   public:
-	using category_type = Category;
-	using row_type = std::conditional_t<std::is_const_v<category_type>, const typename category_type::row, typename category_type::row>;
-
-	using item_handle_type = item_handle<row_handle>;
-
-	template <typename>
-	friend class row_handle;
-
-	template <typename>
 	friend class item_handle;
 
 	row_handle() = default;
@@ -137,42 +144,40 @@ class row_handle
 	row_handle &operator=(const row_handle &) = default;
 	row_handle &operator=(row_handle &&) = default;
 
-	template <typename C2>
-	row_handle(const row_handle<C2> &rhs)
-		: m_cat(rhs.m_cat)
-		, m_row(rhs.m_row)
+	row_handle(const category &cat, const row &r)
+		: m_category(const_cast<category *>(&cat))
+		, m_row(const_cast<row *>(&r))
 	{
 	}
 
-	row_handle(category_type &cat, row_type &row)
-		: m_cat(&cat)
-		, m_row(&row)
+	const category &cat() const
 	{
+		return *m_category;
 	}
 
 	explicit operator bool() const
 	{
-		return m_cat != nullptr and m_row != nullptr;
+		return m_category != nullptr and m_row != nullptr;
 	}
 
-	item_handle_type operator[](uint32_t column_ix)
+	item_handle operator[](uint32_t column_ix)
 	{
-		return item_handle_type(column_ix, *this);
+		return item_handle(column_ix, *this);
 	}
 
-	const item_handle_type operator[](uint32_t column_ix) const
+	const item_handle operator[](uint32_t column_ix) const
 	{
-		return item_handle_type(column_ix, const_cast<row_handle &>(*this));
+		return item_handle(column_ix, const_cast<row_handle &>(*this));
 	}
 
-	item_handle_type operator[](std::string_view column_name)
+	item_handle operator[](std::string_view column_name)
 	{
-		return item_handle_type(add_column(column_name), *this);
+		return item_handle(add_column(column_name), *this);
 	}
 
-	const item_handle_type operator[](std::string_view column_name) const
+	const item_handle operator[](std::string_view column_name) const
 	{
-		return item_handle_type(get_column_ix(column_name), *this);
+		return item_handle(get_column_ix(column_name), const_cast<row_handle &>(*this));
 	}
 
 	template <typename... Ts, size_t N>
@@ -183,13 +188,13 @@ class row_handle
 		std::array<size_t, N> cix;
 		for (size_t i = 0; i < N; ++i)
 			cix[i] = get_column_ix(columns[i]);
-		return detail::get_row_result<category_type, Ts...>(*this, std::move(cix));
+		return detail::get_row_result<Ts...>(*this, std::move(cix));
 	}
 
 	template <typename... C>
 	auto get(C... columns) const
 	{
-		return detail::get_row_result<category_type, C...>(*this, {get_column_ix(columns)...});
+		return detail::get_row_result<C...>(*this, {get_column_ix(columns)...});
 	}
 
 	void assign(const std::vector<item> &values)
@@ -247,32 +252,23 @@ class row_handle
 
 	void assign(std::string_view name, std::string_view value, bool updateLinked, bool validate = true)
 	{
-		assign(m_cat->add_column(name), value, updateLinked, validate);
+		assign(add_column(name), value, updateLinked, validate);
 	}
 
-	void assign(size_t column, std::string_view value, bool updateLinked, bool validate = true)
-	{
-		m_cat->update_value(m_row, column, value, updateLinked, validate);	
-	}
+	void assign(size_t column, std::string_view value, bool updateLinked, bool validate = true);
 
   private:
-	uint16_t get_column_ix(std::string_view name) const
-	{
-		return m_cat->get_column_ix(name);
-	}
+	uint16_t get_column_ix(std::string_view name) const;
 
-	uint16_t add_column(std::string_view name)
-	{
-		return m_cat->add_column(name);
-	}
+	uint16_t add_column(std::string_view name);
 
 	void assign(const item &i, bool updateLinked)
 	{
 		assign(i.name(), i.value(), updateLinked);
 	}
 
-	category_type *m_cat = nullptr;
-	row_type *m_row = nullptr;
+	category *m_category = nullptr;
+	row *m_row = nullptr;
 };
 
 } // namespace cif::v2

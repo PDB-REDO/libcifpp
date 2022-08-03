@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,29 +24,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <string>
-#include <vector>
+#include <cif++/v2/category.hpp>
 
 namespace cif::v2
 {
 
-class category;
-class datablock;
-class file;
-class parser;
+void row_handle::assign(size_t column, std::string_view value, bool updateLinked, bool validate)
+{
+	m_category->update_value(m_row, column, value, updateLinked, validate);
+}
 
-class row;
-class row_handle;
+uint16_t row_handle::get_column_ix(std::string_view name) const
+{
+	return m_category->get_column_ix(name);
+}
 
-class item;
-class item_handle;
-
-// --------------------------------------------------------------------
-// let's make life easier
-
-std::vector<std::string> get_category_fields(const category &cat);
-
+uint16_t row_handle::add_column(std::string_view name)
+{
+	return m_category->add_column(name);
+}
 
 } // namespace cif::v2

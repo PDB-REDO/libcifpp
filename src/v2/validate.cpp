@@ -24,6 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cassert>
 #include <fstream>
 #include <iostream>
 
@@ -217,16 +218,12 @@ const ValidateItem *ValidateCategory::getValidatorForItem(std::string_view tag) 
 
 // --------------------------------------------------------------------
 
-Validator::Validator(std::string_view name, std::istream &is)
-	: mName(name)
-{
-	DictParser p(*this, is);
-	p.loadDictionary();
-}
-
-Validator::~Validator()
-{
-}
+// Validator::Validator(std::string_view name, std::istream &is)
+// 	: mName(name)
+// {
+// 	DictParser p(*this, is);
+// 	p.loadDictionary();
+// }
 
 void Validator::addTypeValidator(ValidateType &&v)
 {
@@ -343,7 +340,7 @@ std::vector<const ValidateLink *> Validator::getLinksForChild(std::string_view c
 
 void Validator::reportError(const std::string &msg, bool fatal) const
 {
-	if (mStrict or fatal)
+	if (m_strict or fatal)
 		throw ValidationError(msg);
 	else if (VERBOSE > 0)
 		std::cerr << msg << std::endl;
@@ -357,7 +354,7 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary_name)
 
 	for (auto &validator : mValidators)
 	{
-		if (iequals(validator.m_name, dictionary_name))
+		if (iequals(validator.name(), dictionary_name))
 			return validator;
 	}
 
@@ -422,12 +419,12 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary_name)
 			throw std::runtime_error("Dictionary not found or defined (" + dictionary.string() + ")");
 	}
 
-	assert(iequals(mValidators.back().m_name, dictionary_name));
+	assert(iequals(mValidators.back().name(), dictionary_name));
 
 	return mValidators.back();
 }
 
-void ValiatorFactory::construct_validator(std::string_view name, std::istream &is)
+void ValidatorFactory::construct_validator(std::string_view name, std::istream &is)
 {
 	mValidators.emplace_back(parse_dictionary(name, is));
 }

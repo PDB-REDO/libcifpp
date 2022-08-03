@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,29 +24,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <string>
-#include <vector>
+#include <cif++/v2/row.hpp>
 
 namespace cif::v2
 {
 
-class category;
-class datablock;
-class file;
-class parser;
+std::string_view item_handle::text() const
+{
+	for (auto iv = m_row_handle.m_row->m_head; iv != nullptr; iv = iv->m_next)
+	{
+		if (iv->m_column_ix == m_column)
+			return iv->text();
+	}
 
-class row;
-class row_handle;
+	return {};
+}
 
-class item;
-class item_handle;
-
-// --------------------------------------------------------------------
-// let's make life easier
-
-std::vector<std::string> get_category_fields(const category &cat);
-
-
-} // namespace cif::v2
+}

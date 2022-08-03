@@ -215,7 +215,11 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/Symmetry.cpp
 	${PROJECT_SOURCE_DIR}/src/TlsParser.cpp
 
+	${PROJECT_SOURCE_DIR}/src/v2/category.cpp
 	${PROJECT_SOURCE_DIR}/src/v2/dictionary_parser.cpp
+	${PROJECT_SOURCE_DIR}/src/v2/item.cpp
+	${PROJECT_SOURCE_DIR}/src/v2/parser.cpp
+	${PROJECT_SOURCE_DIR}/src/v2/row.cpp
 	${PROJECT_SOURCE_DIR}/src/v2/validate.cpp
 )
 

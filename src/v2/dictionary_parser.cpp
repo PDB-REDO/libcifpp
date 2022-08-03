@@ -34,23 +34,24 @@ namespace cif::v2
 
 using namespace literals;
 
-class dictionary_parser : public parser_t<>
+inline void replace_all(std::string &s, std::string_view pat, std::string_view rep)
+{
+	for (std::string::size_type i = s.find(pat); i != std::string::npos; i = s.find(pat, i))
+		s.replace(i, pat.size(), rep.data(), rep.size());
+}
+
+class dictionary_parser : public parser
 {
   public:
-	using base_type = parser_t<>;
-	using file_type = typename base_type::file_type;
-	using datablock_type = typename file_type::datablock_type;
-	using category_type = typename datablock_type::category_type;
-
-	dictionary_parser(Validator &validator, std::istream &is, file_type &f)
-		: base_type(is, f)
+	dictionary_parser(Validator &validator, std::istream &is, file &f)
+		: parser(is, f)
 		, m_validator(validator)
 	{
 	}
 
 	void load_dictionary()
 	{
-		std::unique_ptr<datablock_type> dict;
+		std::unique_ptr<datablock> dict;
 		auto savedDatablock = m_datablock;
 
 		try
@@ -65,7 +66,7 @@ class dictionary_parser : public parser_t<>
 
 					default:
 					{
-						dict.reset(new datablock_type(m_token_value)); // dummy datablock, for constructing the validator only
+						dict.reset(new datablock(m_token_value)); // dummy datablock, for constructing the validator only
 						m_datablock = dict.get();
 
 						match(CIFToken::DATA);
@@ -101,14 +102,14 @@ class dictionary_parser : public parser_t<>
 			link_items();
 
 		// store meta information
-		datablock_type::iterator info;
+		datablock::iterator info;
 		bool n;
 		std::tie(info, n) = m_datablock->emplace("dictionary");
 		if (n)
 		{
 			auto r = info->front();
-			m_validator.dictName(r["title"].as<std::string>());
-			m_validator.dictVersion(r["version"].as<std::string>());
+			m_validator.set_name(r["title"].as<std::string>());
+			m_validator.version(r["version"].as<std::string>());
 		}
 
 		m_datablock = savedDatablock;
@@ -129,8 +130,8 @@ class dictionary_parser : public parser_t<>
 
 		bool isCategorySaveFrame = m_token_value[0] != '_';
 
-		datablock_type dict(m_token_value);
-		datablock_type::iterator cat = dict.end();
+		datablock dict(m_token_value);
+		datablock::iterator cat = dict.end();
 
 		match(CIFToken::SAVE);
 		while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::Tag)
@@ -437,14 +438,14 @@ class dictionary_parser : public parser_t<>
 
 		auto &dict = *m_datablock;
 
-		for (auto &t : dict["item_type_list"])
+		for (auto t : dict["item_type_list"])
 		{
 			std::string code, primitiveCode, construct;
 			cif::v2::tie(code, primitiveCode, construct) = t.get("code", "primitive_code", "construct");
 
-			ba::replace_all(construct, "\\n", "\n");
-			ba::replace_all(construct, "\\t", "\t");
-			ba::replace_all(construct, "\\\n", "");
+			replace_all(construct, "\\n", "\n");
+			replace_all(construct, "\\t", "\t");
+			replace_all(construct, "\\\n", "");
 
 			try
 			{
@@ -455,7 +456,7 @@ class dictionary_parser : public parser_t<>
 			}
 			catch (const std::exception &)
 			{
-				std::throw_with_nested(CifParserError(t.lineNr(), "error in regular expression"));
+				std::throw_with_nested(parse_error(/*t.lineNr()*/ 0, "error in regular expression"));
 			}
 
 			// Do not replace an already defined type validator, this won't work with pdbx_v40
@@ -482,11 +483,12 @@ class dictionary_parser : public parser_t<>
 
 // --------------------------------------------------------------------
 
-Validator parse_dictionary(std::string_view name, std::istream &is);
+Validator parse_dictionary(std::string_view name, std::istream &is)
 {
 	Validator result(name);
 
-	dictionary_parser p(v, is, file{});
+	file f;
+	dictionary_parser p(result, is, f);
 	p.load_dictionary();
 
 	return result;
