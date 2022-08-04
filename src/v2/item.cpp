@@ -31,13 +31,21 @@ namespace cif::v2
 
 std::string_view item_handle::text() const
 {
-	for (auto iv = m_row_handle.m_row->m_head; iv != nullptr; iv = iv->m_next)
+	if (m_row_handle.m_row != nullptr)
 	{
-		if (iv->m_column_ix == m_column)
-			return iv->text();
+		for (auto iv = m_row_handle.m_row->m_head; iv != nullptr; iv = iv->m_next)
+		{
+			if (iv->m_column_ix == m_column)
+				return iv->text();
+		}
 	}
 
 	return {};
+}
+
+void item_handle::assign_value(const item &v)
+{
+	m_row_handle.assign(m_column, v.value(), false);
 }
 
 }

@@ -27,6 +27,7 @@
 #pragma once
 
 #include <filesystem>
+#include <mutex>
 
 // duh.. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86164
 // #include <regex>
@@ -43,19 +44,19 @@ namespace io = boost::iostreams;
 namespace cif::v2
 {
 
-struct ValidateCategory;
-class ValidatorFactory;
+struct category_validator;
+class validator_factory;
 
 // --------------------------------------------------------------------
 
-class ValidationError : public std::exception
+class validation_error : public std::exception
 {
   public:
-	ValidationError(const std::string &msg);
-	ValidationError(const std::string &cat, const std::string &item,
+	validation_error(const std::string &msg);
+	validation_error(const std::string &cat, const std::string &item,
 		const std::string &msg);
-	const char *what() const noexcept { return mMsg.c_str(); }
-	std::string mMsg;
+	const char *what() const noexcept { return m_msg.c_str(); }
+	std::string m_msg;
 };
 
 // --------------------------------------------------------------------
@@ -67,126 +68,120 @@ enum class DDL_PrimitiveType
 	Numb
 };
 
-DDL_PrimitiveType mapToPrimitiveType(std::string_view s);
+DDL_PrimitiveType map_to_primitive_type(std::string_view s);
 
-struct ValidateType
+struct type_validator
 {
-	std::string mName;
-	DDL_PrimitiveType mPrimitiveType;
+	std::string m_name;
+	DDL_PrimitiveType m_primitive_type;
 	// std::regex				mRx;
-	boost::regex mRx;
+	boost::regex m_rx;
 
-	bool operator<(const ValidateType &rhs) const
+	bool operator<(const type_validator &rhs) const
 	{
-		return icompare(mName, rhs.mName) < 0;
+		return icompare(m_name, rhs.m_name) < 0;
 	}
-
-	// compare values based on type
-	//	int compare(const std::string& a, const std::string& b) const
-	//	{
-	//		return compare(a.c_str(), b.c_str());
-	//	}
 
 	int compare(const char *a, const char *b) const;
 };
 
-struct ValidateItem
+struct item_validator
 {
-	std::string mTag;
-	bool mMandatory;
-	const ValidateType *mType;
-	cif::iset mEnums;
-	std::string mDefault;
-	bool mDefaultIsNull;
-	ValidateCategory *mCategory = nullptr;
+	std::string m_tag;
+	bool m_mandatory;
+	const type_validator *m_type;
+	cif::iset m_enums;
+	std::string m_default;
+	bool m_default_is_null;
+	category_validator *m_category = nullptr;
 
 	// ItemLinked is used for non-key links
-	struct ItemLinked
+	struct item_link
 	{
-		ValidateItem *mParent;
-		std::string mParentItem;
-		std::string mChildItem;
+		item_validator *m_parent;
+		std::string m_parent_item;
+		std::string m_child_item;
 	};
 
-	std::vector<ItemLinked> mLinked;
+	std::vector<item_link> mLinked;
 
-	bool operator<(const ValidateItem &rhs) const
+	bool operator<(const item_validator &rhs) const
 	{
-		return icompare(mTag, rhs.mTag) < 0;
+		return icompare(m_tag, rhs.m_tag) < 0;
 	}
 
-	bool operator==(const ValidateItem &rhs) const
+	bool operator==(const item_validator &rhs) const
 	{
-		return iequals(mTag, rhs.mTag);
+		return iequals(m_tag, rhs.m_tag);
 	}
 
-	void operator()(std::string value) const;
+	void operator()(std::string_view value) const;
 };
 
-struct ValidateCategory
+struct category_validator
 {
-	std::string mName;
-	std::vector<std::string> mKeys;
-	cif::iset mGroups;
-	cif::iset mMandatoryFields;
-	std::set<ValidateItem> mItemValidators;
+	std::string m_name;
+	std::vector<std::string> m_keys;
+	cif::iset m_groups;
+	cif::iset m_mandatory_fields;
+	std::set<item_validator> m_item_validators;
 
-	bool operator<(const ValidateCategory &rhs) const
+	bool operator<(const category_validator &rhs) const
 	{
-		return icompare(mName, rhs.mName) < 0;
+		return icompare(m_name, rhs.m_name) < 0;
 	}
 
-	void addItemValidator(ValidateItem &&v);
+	void addItemValidator(item_validator &&v);
 
-	const ValidateItem *getValidatorForItem(std::string_view tag) const;
+	const item_validator *get_validator_for_item(std::string_view tag) const;
 
-	const std::set<ValidateItem> &itemValidators() const
+	const std::set<item_validator> &item_validators() const
 	{
-		return mItemValidators;
+		return m_item_validators;
 	}
 };
 
-struct ValidateLink
+struct link_validator
 {
-	int mLinkGroupID;
-	std::string mParentCategory;
-	std::vector<std::string> mParentKeys;
-	std::string mChildCategory;
-	std::vector<std::string> mChildKeys;
-	std::string mLinkGroupLabel;
+	int m_link_group_id;
+	std::string m_parent_category;
+	std::vector<std::string> m_parent_keys;
+	std::string m_child_category;
+	std::vector<std::string> m_child_keys;
+	std::string m_link_group_label;
 };
 
 // --------------------------------------------------------------------
 
-class Validator
+class validator
 {
   public:
-	Validator(std::string_view name)
+	validator(std::string_view name)
 		: m_name(name)
 	{
 	}
 
-	~Validator() = default;
+	~validator() = default;
 
-	Validator(const Validator &rhs) = delete;
-	Validator &operator=(const Validator &rhs) = delete;
+	validator(const validator &rhs) = delete;
+	validator &operator=(const validator &rhs) = delete;
 
-	Validator(Validator &&rhs) = default;
-	Validator &operator=(Validator &&rhs) = default;
+	validator(validator &&rhs) = default;
+	validator &operator=(validator &&rhs) = default;
 
 	friend class dictionary_parser;
 
-	void addTypeValidator(ValidateType &&v);
-	const ValidateType *getValidatorForType(std::string_view typeCode) const;
+	void add_type_validator(type_validator &&v);
+	const type_validator *get_validator_for_type(std::string_view type_code) const;
 
-	void addCategoryValidator(ValidateCategory &&v);
-	const ValidateCategory *getValidatorForCategory(std::string_view category) const;
+	void add_category_validator(category_validator &&v);
+	const category_validator *get_validator_for_category(std::string_view category) const;
 
-	void addLinkValidator(ValidateLink &&v);
-	std::vector<const ValidateLink *> getLinksForParent(std::string_view category) const;
-	std::vector<const ValidateLink *> getLinksForChild(std::string_view category) const;
+	void add_link_validator(link_validator &&v);
+	std::vector<const link_validator *> get_links_for_parent(std::string_view category) const;
+	std::vector<const link_validator *> get_links_for_child(std::string_view category) const;
 
-	void reportError(const std::string &msg, bool fatal) const;
+	void report_error(const std::string &msg, bool fatal) const;
 
 	const std::string &name() const { return m_name; }
 	void set_name(const std::string &name) { m_name = name; }
@@ -196,37 +191,37 @@ class Validator
 
   private:
 	// name is fully qualified here:
-	ValidateItem *getValidatorForItem(std::string_view name) const;
+	item_validator *get_validator_for_item(std::string_view name) const;
 
 	std::string m_name;
 	std::string m_version;
 	bool m_strict = false;
-	std::set<ValidateType> mTypeValidators;
-	std::set<ValidateCategory> mCategoryValidators;
-	std::vector<ValidateLink> mLinkValidators;
+	std::set<type_validator> m_type_validators;
+	std::set<category_validator> m_category_validators;
+	std::vector<link_validator> m_link_validators;
 };
 
 // --------------------------------------------------------------------
-class ValidatorFactory
+class validator_factory
 {
   public:
-	static ValidatorFactory &instance()
+	static validator_factory &instance()
 	{
-		static ValidatorFactory s_instance;
+		static validator_factory s_instance;
 		return s_instance;
 	}
 
-	const Validator &operator[](std::string_view dictionary_name);
+	const validator &operator[](std::string_view dictionary_name);
 
   private:
 	void construct_validator(std::string_view name, std::istream &is);
 
 	// --------------------------------------------------------------------
 
-	ValidatorFactory() = default;
+	validator_factory() = default;
 
-	std::mutex mMutex;
-	std::list<Validator> mValidators;
+	std::mutex m_mutex;
+	std::list<validator> m_validators;
 };
 
 } // namespace cif::v2

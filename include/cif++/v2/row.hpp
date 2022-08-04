@@ -135,6 +135,7 @@ class row_handle
 {
   public:
 	friend class item_handle;
+	friend class category;
 
 	row_handle() = default;
 
@@ -261,6 +262,11 @@ class row_handle
 	uint16_t get_column_ix(std::string_view name) const;
 
 	uint16_t add_column(std::string_view name);
+
+	operator row*()
+	{
+		return m_row;
+	}
 
 	void assign(const item &i, bool updateLinked)
 	{

@@ -47,11 +47,11 @@ bool is_column_type_uchar(const category &cat, std::string_view col)
 	auto cv = cat.get_cat_validator();
 	if (cv)
 	{
-		auto iv = cv->getValidatorForItem(col);
-		if (iv != nullptr and iv->mType != nullptr)
+		auto iv = cv->get_validator_for_item(col);
+		if (iv != nullptr and iv->m_type != nullptr)
 		{
-			auto type = iv->mType;
-			result = type->mPrimitiveType == DDL_PrimitiveType::UChar;
+			auto type = iv->m_type;
+			result = type->m_primitive_type == DDL_PrimitiveType::UChar;
 		}
 	}
 

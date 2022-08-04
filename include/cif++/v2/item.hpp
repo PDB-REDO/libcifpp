@@ -199,7 +199,7 @@ struct item_handle
 	item_handle &operator=(const T &value)
 	{
 		item v{"", value};
-		m_row_handle.assign(m_column, v.value(), false);
+		assign_value(v);
 		return *this;
 	}
 
@@ -280,6 +280,8 @@ struct item_handle
   private:
 	uint16_t m_column;
 	row_handle &m_row_handle;
+
+	void assign_value(const item &value);
 
 	static constexpr const char *s_empty_result = "";
 };
@@ -426,6 +428,20 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, const ch
 	// }
 
 	static int compare(const item_handle &ref, const char *value, bool icase)
+	{
+		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
+	}
+};
+
+template <typename T>
+struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::string_view>>>
+{
+	// static std::string_view convert(const item_handle &ref)
+	// {
+	// 	return ref.text();
+	// }
+
+	static int compare(const item_handle &ref, const std::string_view &value, bool icase)
 	{
 		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
 	}

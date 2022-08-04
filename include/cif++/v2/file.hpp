@@ -60,6 +60,57 @@ class file
 	file &operator=(const file &) = default;
 	file &operator=(file &&) = default;
 
+	void set_validator(const validator *v)
+	{
+		m_validator = v;
+		for (auto &db : *this)
+			db.set_validator(v);
+	}
+
+	const validator *get_validator() const
+	{
+		return m_validator;
+	}
+
+	bool is_valid() const
+	{
+		if (m_validator == nullptr)
+			std::runtime_error("No validator loaded explicitly, cannot continue");
+
+		bool result = true;
+		for (auto &d : *this)
+			result = d.is_valid() and result;
+
+		return result;
+	}
+	
+	bool is_valid()
+	{
+		if (m_validator == nullptr)
+		{
+			if (VERBOSE > 0)
+				std::cerr << "No dictionary loaded explicitly, loading default" << std::endl;
+
+			load_dictionary();
+		}
+
+		bool result = true;
+		for (auto &d : *this)
+			result = d.is_valid() and result;
+
+		return result;
+	}
+	
+	void load_dictionary()
+	{
+		load_dictionary("mmcif_ddl");
+	}
+
+	void load_dictionary(std::string_view name)
+	{
+		set_validator(&validator_factory::instance()[name]);
+	}
+
 	datablock &operator[](std::string_view name)
 	{
 		auto i = std::find_if(m_datablocks.begin(), m_datablocks.end(), [name](const datablock &c)
@@ -112,27 +163,36 @@ class file
 	bool empty() const { return m_datablocks.empty(); }
 	size_t size() const { return m_datablocks.size(); }
 
+	iterator begin() { return m_datablocks.begin(); }
+	iterator end() { return m_datablocks.end(); }
+
+	const_iterator cbegin() { return m_datablocks.begin(); }
+	const_iterator cend() { return m_datablocks.end(); }
+
+	const_iterator begin() const { return m_datablocks.begin(); }
+	const_iterator end() const { return m_datablocks.end(); }
+
 	reference front() { return m_datablocks.front(); }
 	reference back() { return m_datablocks.back(); }
 
 	void load(std::istream &is)
 	{
-		// auto saved = mValidator;
-		// setValidator(nullptr);
+		auto saved = m_validator;
+		set_validator(nullptr);
 
 		parser p(is, *this);
 		p.parse_file();
 
-		// if (saved != nullptr)
-		// {
-		// 	setValidator(saved);
-		// 	(void)isValid();
-		// }
+		if (saved != nullptr)
+		{
+			set_validator(saved);
+			(void)is_valid();
+		}
 	}
 
   private:
 	datablock_list m_datablocks;
-	std::unique_ptr<Validator> m_validator;
+	const validator* m_validator = nullptr;
 };
 
 }

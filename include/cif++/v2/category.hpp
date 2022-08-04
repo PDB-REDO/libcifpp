@@ -32,6 +32,7 @@
 #include <cif++/v2/iterator.hpp>
 #include <cif++/v2/row.hpp>
 #include <cif++/v2/validate.hpp>
+
 namespace cif::v2
 {
 
@@ -127,17 +128,22 @@ class category
 			throw std::runtime_error("No Validator specified");
 
 		if (m_cat_validator == nullptr)
-			m_validator->reportError("undefined Category", true);
+			m_validator->report_error("undefined Category", true);
 
 		iset result;
-		for (auto &iv : m_cat_validator->mItemValidators)
-			result.insert(iv.mTag);
+		for (auto &iv : m_cat_validator->m_item_validators)
+			result.insert(iv.m_tag);
 
 		return result;
 	}
 
-	const Validator *get_validator() const { return m_validator; }
-	const ValidateCategory *get_cat_validator() const { return m_cat_validator; }
+	void set_validator(const validator *v, datablock &db);
+	void update_links(datablock &db);
+
+	const validator *get_validator() const { return m_validator; }
+	const category_validator *get_cat_validator() const { return m_cat_validator; }
+
+	bool is_valid() const;
 
 	// --------------------------------------------------------------------
 
@@ -379,6 +385,10 @@ class category
 	// 	insert_impl(pos, std::move(row));
 	// }
 
+	iterator erase(iterator pos);
+	size_t erase(condition &&cond);
+	size_t erase(condition &&cond, std::function<void(row_handle)> &&visit);
+
 	iterator emplace(std::initializer_list<item> items)
 	{
 		return this->emplace(items.begin(), items.end());
@@ -388,52 +398,52 @@ class category
 	iterator emplace(ItemIter b, ItemIter e)
 	{
 		// First, make sure all mandatory fields are supplied
-		// if (mCatValidator != nullptr and b != e)
-		// {
-		// 	for (auto &col : m_columns)
-		// 	{
-		// 		auto iv = mCatValidator->getValidatorForItem(col.mName);
+		if (m_cat_validator != nullptr and b != e)
+		{
+			for (const auto &[column, iv] : m_columns)
+			{
+				if (iv == nullptr)
+					continue;
 
-		// 		if (iv == nullptr)
-		// 			continue;
+				bool seen = false;
 
-		// 		bool seen = false;
+				for (auto v = b; v != e; ++v)
+				{
+					if (iequals(v->name(), column))
+					{
+						iv->operator()(v->value());
 
-		// 		for (auto v = b; v != e; ++v)
-		// 		{
-		// 			if (iequals(v->name(), col.mName))
-		// 			{
-		// 				seen = true;
-		// 				break;
-		// 			}
-		// 		}
+						seen = true;
+						break;
+					}
+				}
 
-		// 		if (not seen and iv->mMandatory)
-		// 			throw std::runtime_error("missing mandatory field " + col.mName + " for category " + mName);
-		// 	}
+				if (not seen and iv->m_mandatory)
+					throw std::runtime_error("missing mandatory field " + column + " for category " + m_name);
+			}
 
-		// 	if (mIndex != nullptr)
-		// 	{
-		// 		std::unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
-		// 		Row r(nr.get());
-		// 		auto keys = keyFields();
+			// if (mIndex != nullptr)
+			// {
+			// 	std::unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
+			// 	Row r(nr.get());
+			// 	auto keys = keyFields();
 
-		// 		for (auto v = b; v != e; ++v)
-		// 		{
-		// 			if (keys.count(v->name()))
-		// 				r.assign(v->name(), v->value(), true);
-		// 		}
+			// 	for (auto v = b; v != e; ++v)
+			// 	{
+			// 		if (keys.count(v->name()))
+			// 			r.assign(v->name(), v->value(), true);
+			// 	}
 
-		// 		auto test = mIndex->find(nr.get());
-		// 		if (test != nullptr)
-		// 		{
-		// 			if (VERBOSE > 1)
-		// 				std::cerr << "Not inserting new record in " << mName << " (duplicate Key)" << std::endl;
-		// 			result = test;
-		// 			isNew = false;
-		// 		}
-		// 	}
-		// }
+			// 	auto test = mIndex->find(nr.get());
+			// 	if (test != nullptr)
+			// 	{
+			// 		if (VERBOSE > 1)
+			// 			std::cerr << "Not inserting new record in " << mName << " (duplicate Key)" << std::endl;
+			// 		result = test;
+			// 		isNew = false;
+			// 	}
+			// }
+		}
 
 		row *r = this->create_row();
 
@@ -486,12 +496,12 @@ class category
 				break;
 		}
 
-		// if (VERBOSE > 0 and result == m_columns.size() and mCatValidator != nullptr) // validate the name, if it is known at all (since it was not found)
-		// {
-		// 	auto iv = mCatValidator->getValidatorForItem(name);
-		// 	if (iv == nullptr)
-		// 		std::cerr << "Invalid name used '" << name << "' is not a known column in " + mName << std::endl;
-		// }
+		if (VERBOSE > 0 and result == m_columns.size() and m_cat_validator != nullptr) // validate the name, if it is known at all (since it was not found)
+		{
+			auto iv = m_cat_validator->get_validator_for_item(column_name);
+			if (iv == nullptr)
+				std::cerr << "Invalid name used '" << name << "' is not a known column in " + m_name << std::endl;
+		}
 
 		return result;
 	}
@@ -504,14 +514,14 @@ class category
 
 		if (result == m_columns.size())
 		{
-			const ValidateItem *item_validator = nullptr;
+			const item_validator *item_validator = nullptr;
 
-			// if (mCatValidator != nullptr)
-			// {
-			// 	item_validator = mCatValidator->getValidatorForItem(column_name);
-			// 	if (item_validator == nullptr)
-			// 		m_validator->reportError("tag " + std::string(column_name) + " not allowed in category " + mName, false);
-			// }
+			if (m_cat_validator != nullptr)
+			{
+				item_validator = m_cat_validator->get_validator_for_item(column_name);
+				if (item_validator == nullptr)
+					m_validator->report_error("tag " + std::string(column_name) + " not allowed in category " + m_name, false);
+			}
 
 			m_columns.emplace_back(column_name, item_validator);
 		}
@@ -523,6 +533,9 @@ class category
 	void update_value(row *row, size_t column, std::string_view value, bool updateLinked, bool validate = true);
 
   private:
+	bool is_orphan(row_handle r) const;
+	void erase_orphans(condition &&cond);
+
 	using allocator_type = std::allocator<void>;
 
 	constexpr allocator_type get_allocator() const
@@ -645,13 +658,25 @@ class category
 	struct item_column
 	{
 		std::string m_name;
-		const ValidateItem *m_validator;
+		const item_validator *m_validator;
 
-		item_column(std::string_view name, const ValidateItem *validator)
+		item_column(std::string_view name, const item_validator *validator)
 			: m_name(name)
 			, m_validator(validator)
 		{
 		}
+	};
+
+	struct link
+	{
+		link(category *linked, const link_validator *v)
+			: linked(linked)
+			, v(v)
+		{
+		}
+
+		category *linked;
+		const link_validator *v;
 	};
 
 	// proxy methods for every insertion
@@ -661,8 +686,10 @@ class category
 
 	std::string m_name;
 	std::vector<item_column> m_columns;
-	const Validator *m_validator = nullptr;
-	const ValidateCategory *m_cat_validator = nullptr;
+	const validator *m_validator = nullptr;
+	const category_validator *m_cat_validator = nullptr;
+	std::vector<link> m_parent_links, m_child_links;
+	bool m_cascade = true;
 	row *m_head = nullptr, *m_tail = nullptr;
 };
 

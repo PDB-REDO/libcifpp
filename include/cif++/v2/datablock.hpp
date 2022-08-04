@@ -63,6 +63,31 @@ class datablock
 
 	const std::string &name() const { return m_name; }
 
+	void set_validator(const validator *v)
+	{
+		m_validator = v;
+
+		for (auto &cat : *this)
+			cat.set_validator(v, *this);
+	}
+
+	const validator *get_validator() const
+	{
+		return m_validator;
+	}
+
+	bool is_valid() const
+	{
+		if (m_validator == nullptr)
+			throw std::runtime_error("Validator not specified");
+
+		bool result = true;
+		for (auto &cat : *this)
+			result = cat.is_valid() and result;
+		
+		return result;
+	}
+
 	// --------------------------------------------------------------------
 
 	bool empty() const { return m_categories.empty(); }
@@ -100,6 +125,18 @@ class datablock
 		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category &c)
 			{ return iequals(c.name(), name); });
 		return i == m_categories.end() ? s_empty : *i;
+	}
+
+	category *get(std::string_view name)
+	{
+		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category &c)
+			{ return iequals(c.name(), name); });
+		return i == m_categories.end() ? nullptr : &*i;
+	}
+
+	const category *get(std::string_view name) const
+	{
+		return const_cast<datablock *>(this)->get(name);
 	}
 
 	std::tuple<iterator, bool> emplace(std::string_view name)
@@ -182,6 +219,7 @@ class datablock
   private:
 	category_list m_categories;
 	std::string m_name;
+	const validator *m_validator = nullptr;
 };
 
 } // namespace cif::v2

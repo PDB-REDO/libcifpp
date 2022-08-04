@@ -43,7 +43,7 @@ inline void replace_all(std::string &s, std::string_view pat, std::string_view r
 class dictionary_parser : public parser
 {
   public:
-	dictionary_parser(Validator &validator, std::istream &is, file &f)
+	dictionary_parser(validator &validator, std::istream &is, file &f)
 		: parser(is, f)
 		, m_validator(validator)
 	{
@@ -83,17 +83,17 @@ class dictionary_parser : public parser
 
 		// store all validators
 		for (auto &ic : mCategoryValidators)
-			m_validator.addCategoryValidator(std::move(ic));
+			m_validator.add_category_validator(std::move(ic));
 		mCategoryValidators.clear();
 
 		for (auto &iv : mItemValidators)
 		{
-			auto cv = m_validator.getValidatorForCategory(iv.first);
+			auto cv = m_validator.get_validator_for_category(iv.first);
 			if (cv == nullptr)
 				error("Undefined category '" + iv.first);
 
 			for (auto &v : iv.second)
-				const_cast<ValidateCategory *>(cv)->addItemValidator(std::move(v));
+				const_cast<category_validator *>(cv)->addItemValidator(std::move(v));
 		}
 
 		// check all item validators for having a typeValidator
@@ -145,15 +145,15 @@ class dictionary_parser : public parser
 				std::vector<std::string> tags;
 				while (m_lookahead == CIFToken::Tag)
 				{
-					std::string catName, itemName;
-					std::tie(catName, itemName) = splitTagName(m_token_value);
+					std::string catName, item_name;
+					std::tie(catName, item_name) = splitTagName(m_token_value);
 
 					if (cat == dict.end())
 						std::tie(cat, std::ignore) = dict.emplace(catName);
 					else if (not iequals(cat->name(), catName))
 						error("inconsistent categories in loop_");
 
-					tags.push_back(itemName);
+					tags.push_back(item_name);
 					match(CIFToken::Tag);
 				}
 
@@ -173,8 +173,8 @@ class dictionary_parser : public parser
 			}
 			else
 			{
-				std::string catName, itemName;
-				std::tie(catName, itemName) = splitTagName(m_token_value);
+				std::string catName, item_name;
+				std::tie(catName, item_name) = splitTagName(m_token_value);
 
 				if (cat == dict.end() or not iequals(cat->name(), catName))
 					std::tie(cat, std::ignore) = dict.emplace(catName);
@@ -183,7 +183,7 @@ class dictionary_parser : public parser
 
 				if (cat->empty())
 					cat->emplace({});
-				cat->back()[itemName] = m_token_value;
+				cat->back()[item_name] = m_token_value;
 
 				match(CIFToken::Value);
 			}
@@ -204,7 +204,7 @@ class dictionary_parser : public parser
 			for (auto g : dict["category_group"])
 				groups.insert(g["id"].as<std::string>());
 
-			mCategoryValidators.push_back(ValidateCategory{category, keys, groups});
+			mCategoryValidators.push_back(category_validator{category, keys, groups});
 		}
 		else
 		{
@@ -212,9 +212,9 @@ class dictionary_parser : public parser
 			std::string typeCode;
 			cif::v2::tie(typeCode) = dict["item_type"].front().get("code");
 
-			const ValidateType *tv = nullptr;
+			const type_validator *tv = nullptr;
 			if (not(typeCode.empty() or typeCode == "?"))
-				tv = m_validator.getValidatorForType(typeCode);
+				tv = m_validator.get_validator_for_type(typeCode);
 
 			iset ess;
 			for (auto e : dict["item_enumeration"])
@@ -240,10 +240,10 @@ class dictionary_parser : public parser
 
 				cif::v2::tie(tagName, category, mandatory) = i.get("name", "category_id", "mandatory_code");
 
-				std::string catName, itemName;
-				std::tie(catName, itemName) = splitTagName(tagName);
+				std::string catName, item_name;
+				std::tie(catName, item_name) = splitTagName(tagName);
 
-				if (catName.empty() or itemName.empty())
+				if (catName.empty() or item_name.empty())
 					error("Invalid tag name in _item.name " + tagName);
 
 				if (not iequals(category, catName) and not(category.empty() or category == "?"))
@@ -253,13 +253,13 @@ class dictionary_parser : public parser
 
 				auto &ivs = mItemValidators[category];
 
-				auto vi = find(ivs.begin(), ivs.end(), ValidateItem{itemName});
+				auto vi = find(ivs.begin(), ivs.end(), item_validator{item_name});
 				if (vi == ivs.end())
-					ivs.push_back(ValidateItem{itemName, iequals(mandatory, "yes"), tv, ess, defaultValue, defaultIsNull});
+					ivs.push_back(item_validator{item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, defaultIsNull});
 				else
 				{
 					// need to update the itemValidator?
-					if (vi->mMandatory != (iequals(mandatory, "yes")))
+					if (vi->m_mandatory != (iequals(mandatory, "yes")))
 					{
 						if (VERBOSE > 2)
 						{
@@ -268,24 +268,24 @@ class dictionary_parser : public parser
 							if (iequals(tagName, saveFrameName))
 								std::cerr << "choosing " << mandatory << std::endl;
 							else
-								std::cerr << "choosing " << (vi->mMandatory ? "Y" : "N") << std::endl;
+								std::cerr << "choosing " << (vi->m_mandatory ? "Y" : "N") << std::endl;
 						}
 
 						if (iequals(tagName, saveFrameName))
-							vi->mMandatory = (iequals(mandatory, "yes"));
+							vi->m_mandatory = (iequals(mandatory, "yes"));
 					}
 
-					if (vi->mType != nullptr and tv != nullptr and vi->mType != tv)
+					if (vi->m_type != nullptr and tv != nullptr and vi->m_type != tv)
 					{
 						if (VERBOSE > 1)
 							std::cerr << "inconsistent type for " << tagName << " in dictionary" << std::endl;
 					}
 
 					//				vi->mMandatory = (iequals(mandatory, "yes"));
-					if (vi->mType == nullptr)
-						vi->mType = tv;
+					if (vi->m_type == nullptr)
+						vi->m_type = tv;
 
-					vi->mEnums.insert(ess.begin(), ess.end());
+					vi->m_enums.insert(ess.begin(), ess.end());
 
 					// anything else yet?
 					// ...
@@ -349,15 +349,15 @@ class dictionary_parser : public parser
 			int link_group_id;
 			cif::v2::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
 
-			auto civ = m_validator.getValidatorForItem(child);
+			auto civ = m_validator.get_validator_for_item(child);
 			if (civ == nullptr)
 				error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
 
-			auto piv = m_validator.getValidatorForItem(parent);
+			auto piv = m_validator.get_validator_for_item(parent);
 			if (piv == nullptr)
 				error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 
-			key_type key{piv->mCategory->mName, civ->mCategory->mName, link_group_id};
+			key_type key{piv->m_category->m_name, civ->m_category->m_name, link_group_id};
 			if (not linkIndex.count(key))
 			{
 				linkIndex[key] = linkKeys.size();
@@ -365,7 +365,7 @@ class dictionary_parser : public parser
 			}
 
 			size_t ix = linkIndex.at(key);
-			addLink(ix, piv->mTag, civ->mTag);
+			addLink(ix, piv->m_tag, civ->m_tag);
 		}
 
 		// Only process inline linked items if the linked group list is absent
@@ -377,15 +377,15 @@ class dictionary_parser : public parser
 				std::string child, parent;
 				std::tie(child, parent) = li;
 
-				auto civ = m_validator.getValidatorForItem(child);
+				auto civ = m_validator.get_validator_for_item(child);
 				if (civ == nullptr)
 					error("in pdbx_item_linked_group_list, item '" + child + "' is not specified");
 
-				auto piv = m_validator.getValidatorForItem(parent);
+				auto piv = m_validator.get_validator_for_item(parent);
 				if (piv == nullptr)
 					error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 
-				key_type key{piv->mCategory->mName, civ->mCategory->mName, 0};
+				key_type key{piv->m_category->m_name, civ->m_category->m_name, 0};
 				if (not linkIndex.count(key))
 				{
 					linkIndex[key] = linkKeys.size();
@@ -393,7 +393,7 @@ class dictionary_parser : public parser
 				}
 
 				size_t ix = linkIndex.at(key);
-				addLink(ix, piv->mTag, civ->mTag);
+				addLink(ix, piv->m_tag, civ->m_tag);
 			}
 		}
 
@@ -402,29 +402,29 @@ class dictionary_parser : public parser
 		// now store the links in the validator
 		for (auto &kv : linkIndex)
 		{
-			ValidateLink link = {};
-			std::tie(link.mParentCategory, link.mChildCategory, link.mLinkGroupID) = kv.first;
+			link_validator link = {};
+			std::tie(link.m_parent_category, link.m_child_category, link.m_link_group_id) = kv.first;
 
-			std::tie(link.mParentKeys, link.mChildKeys) = linkKeys[kv.second];
+			std::tie(link.m_parent_keys, link.m_child_keys) = linkKeys[kv.second];
 
 			// look up the label
-			for (auto r : linkedGroup.find("category_id"_key == link.mChildCategory and "link_group_id"_key == link.mLinkGroupID))
+			for (auto r : linkedGroup.find("category_id"_key == link.m_child_category and "link_group_id"_key == link.m_link_group_id))
 			{
-				link.mLinkGroupLabel = r["label"].as<std::string>();
+				link.m_link_group_label = r["label"].as<std::string>();
 				break;
 			}
 
-			m_validator.addLinkValidator(std::move(link));
+			m_validator.add_link_validator(std::move(link));
 		}
 
 		// now make sure the itemType is specified for all itemValidators
 
-		for (auto &cv : m_validator.mCategoryValidators)
+		for (auto &cv : m_validator.m_category_validators)
 		{
-			for (auto &iv : cv.mItemValidators)
+			for (auto &iv : cv.m_item_validators)
 			{
-				if (iv.mType == nullptr and cif::VERBOSE >= 0)
-					std::cerr << "Missing item_type for " << iv.mTag << std::endl;
+				if (iv.m_type == nullptr and cif::VERBOSE >= 0)
+					std::cerr << "Missing item_type for " << iv.m_tag << std::endl;
 			}
 		}
 	}
@@ -449,10 +449,10 @@ class dictionary_parser : public parser
 
 			try
 			{
-				ValidateType v = {
-					code, mapToPrimitiveType(primitiveCode), boost::regex(construct, boost::regex::extended | boost::regex::optimize)};
+				type_validator v = {
+					code, map_to_primitive_type(primitiveCode), boost::regex(construct, boost::regex::extended | boost::regex::optimize)};
 
-				m_validator.addTypeValidator(std::move(v));
+				m_validator.add_type_validator(std::move(v));
 			}
 			catch (const std::exception &)
 			{
@@ -473,19 +473,19 @@ class dictionary_parser : public parser
 		return result;
 	}
 
-	Validator &m_validator;
+	validator &m_validator;
 	bool m_collected_item_types = false;
 
-	std::vector<ValidateCategory> mCategoryValidators;
-	std::map<std::string, std::vector<ValidateItem>> mItemValidators;
+	std::vector<category_validator> mCategoryValidators;
+	std::map<std::string, std::vector<item_validator>> mItemValidators;
 	std::set<std::tuple<std::string, std::string>> mLinkedItems;
 };
 
 // --------------------------------------------------------------------
 
-Validator parse_dictionary(std::string_view name, std::istream &is)
+validator parse_dictionary(std::string_view name, std::istream &is)
 {
-	Validator result(name);
+	validator result(name);
 
 	file f;
 	dictionary_parser p(result, is, f);

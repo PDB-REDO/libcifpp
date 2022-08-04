@@ -36,6 +36,7 @@
 // #include <cif++/CifParser.hpp>
 
 #include <cif++/v2/parser.hpp>
+#include <cif++/v2/dictionary_parser.hpp>
 
 namespace tt = boost::test_tools;
 
@@ -307,7 +308,7 @@ _test.name
 
 	// test.clear();
 
-	// auto n = test.erase(cif::Key("id") == 1, [](const cif::Row &r)
+	// auto n = test.erase(cif::v2::key("id") == 1, [](const cif::Row &r)
 	// 	{
     //     BOOST_CHECK_EQUAL(r["id"].as<int>(), 1);
     //     BOOST_CHECK_EQUAL(r["name"].as<std::string>(), "aap"); });
@@ -385,171 +386,172 @@ _test.value
 	BOOST_CHECK(test.find("value"_key == cif::v2::null).size() == 2);
 }
 
-// // --------------------------------------------------------------------
+// --------------------------------------------------------------------
 
-// BOOST_AUTO_TEST_CASE(d1)
-// {
-// 	const char dict[] = R"(
-// data_test_dict.dic
-//     _datablock.id	test_dict.dic
-//     _datablock.description
-// ;
-//     A test dictionary
-// ;
-//     _dictionary.title           test_dict.dic
-//     _dictionary.datablock_id    test_dict.dic
-//     _dictionary.version         1.0
+BOOST_AUTO_TEST_CASE(d1)
+{
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
 
-//      loop_
-//     _item_type_list.code
-//     _item_type_list.primitive_code
-//     _item_type_list.construct
-//     _item_type_list.detail
-//                code      char
-//                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
-// ;              code item types/single words ...
-// ;
-//                text      char
-//                '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
-// ;              text item types / multi-line text ...
-// ;
-//                int       numb
-//                '[+-]?[0-9]+'
-// ;              int item types are the subset of numbers that are the negative
-//                or positive integers.
-// ;
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+    _item_type_list.detail
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+;              code item types/single words ...
+;
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+;              text item types / multi-line text ...
+;
+               int       numb
+               '[+-]?[0-9]+'
+;              int item types are the subset of numbers that are the negative
+               or positive integers.
+;
 
-// save_cat_1
-//     _category.description     'A simple test category'
-//     _category.id              cat_1
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_1.id'
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
 
-//     save_
+    save_
 
-// save__cat_1.id
-//     _item.name                '_cat_1.id'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_aliases.dictionary  cif_core.dic
-//     _item_aliases.version     2.0.1
-//     _item_linked.child_name   '_cat_2.parent_id'
-//     _item_linked.parent_name  '_cat_1.id'
-//     _item_type.code           code
-//     save_
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_linked.child_name   '_cat_2.parent_id'
+    _item_linked.parent_name  '_cat_1.id'
+    _item_type.code           code
+    save_
 
-// save__cat_1.name
-//     _item.name                '_cat_1.name'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_aliases.dictionary  cif_core.dic
-//     _item_aliases.version     2.0.1
-//     _item_type.code           text
-//     save_
+save__cat_1.name
+    _item.name                '_cat_1.name'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           text
+    save_
 
-// save_cat_2
-//     _category.description     'A second simple test category'
-//     _category.id              cat_2
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_2.id'
-//     save_
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
 
-// save__cat_2.id
-//     _item.name                '_cat_2.id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_aliases.dictionary  cif_core.dic
-//     _item_aliases.version     2.0.1
-//     _item_type.code           int
-//     save_
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           int
+    save_
 
-// save__cat_2.parent_id
-//     _item.name                '_cat_2.parent_id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_aliases.dictionary  cif_core.dic
-//     _item_aliases.version     2.0.1
-//     _item_type.code           code
-//     save_
+save__cat_2.parent_id
+    _item.name                '_cat_2.parent_id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           code
+    save_
 
-// save__cat_2.desc
-//     _item.name                '_cat_2.desc'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_aliases.dictionary  cif_core.dic
-//     _item_aliases.version     2.0.1
-//     _item_type.code           text
-//     save_
-//     )";
+save__cat_2.desc
+    _item.name                '_cat_2.desc'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           text
+    save_
+    )";
 
-// 	struct membuf : public std::streambuf
-// 	{
-// 		membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
 
-// 	std::istream is_dict(&buffer);
+	std::istream is_dict(&buffer);
 
-// 	cif::Validator validator("test", is_dict);
+	auto validator = cif::v2::parse_dictionary("test", is_dict);
 
-// 	cif::File f;
-// 	f.setValidator(&validator);
+	cif::v2::file f;
+	f.set_validator(&validator);
 
-// 	// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
 
-// 	const char data[] = R"(
-// data_test
-// loop_
-// _cat_1.id
-// _cat_1.name
-// 1 Aap
-// 2 Noot
-// 3 Mies
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.name
+1 Aap
+2 Noot
+3 Mies
 
-// loop_
-// _cat_2.id
-// _cat_2.parent_id
-// _cat_2.desc
-// 1 1 'Een dier'
-// 2 1 'Een andere aap'
-// 3 2 'walnoot bijvoorbeeld'
-//     )";
+loop_
+_cat_2.id
+_cat_2.parent_id
+_cat_2.desc
+1 1 'Een dier'
+2 1 'Een andere aap'
+3 2 'walnoot bijvoorbeeld'
+    )";
 
-// 	struct data_membuf : public std::streambuf
-// 	{
-// 		data_membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
-// 	std::istream is_data(&data_buffer);
-// 	f.load(is_data);
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
 
-// 	auto &cat1 = f.front()["cat_1"];
-// 	auto &cat2 = f.front()["cat_2"];
+	auto &cat1 = f.front()["cat_1"];
+	auto &cat2 = f.front()["cat_2"];
 
-// 	BOOST_CHECK(cat1.size() == 3);
-// 	BOOST_CHECK(cat2.size() == 3);
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 3);
 
-// 	cat1.erase(cif::Key("id") == 1);
+	cat1.erase(cif::v2::key("id") == 1);
 
-// 	BOOST_CHECK(cat1.size() == 2);
-// 	BOOST_CHECK(cat2.size() == 1);
+	BOOST_CHECK(cat1.size() == 2);
+	BOOST_CHECK(cat2.size() == 1);
 
-// 	// BOOST_CHECK_THROW(cat2.emplace({
-// 	//     { "id", 4 },
-// 	//     { "parent_id", 4 },
-// 	//     { "desc", "moet fout gaan" }
-// 	// }), std::exception);
+	// BOOST_CHECK_THROW(cat2.emplace({
+	//     { "id", 4 },
+	//     { "parent_id", 4 },
+	//     { "desc", "moet fout gaan" }
+	// }), std::exception);
 
-// 	BOOST_CHECK_THROW(cat2.emplace({{"id", "vijf"}, // <- invalid value
-// 						  {"parent_id", 2},
-// 						  {"desc", "moet fout gaan"}}),
-// 		std::exception);
-// }
+	BOOST_CHECK_THROW(cat2.emplace({
+			{"id", "vijf"}, // <- invalid value
+			{"parent_id", 2},
+			{"desc", "moet fout gaan"}}),
+		std::exception);
+}
 
 // // --------------------------------------------------------------------
 
@@ -621,7 +623,7 @@ _test.value
 
 // 	std::istream is_dict(&buffer);
 
-// 	cif::Validator validator("test", is_dict);
+// 	cif::v2::validator validator("test", is_dict);
 
 // 	cif::File f;
 // 	f.setValidator(&validator);
@@ -653,11 +655,11 @@ _test.value
 
 // 	BOOST_CHECK(cat1.size() == 3);
 
-// 	cat1.erase(cif::Key("id") == "AAP");
+// 	cat1.erase(cif::v2::key("id") == "AAP");
 
 // 	BOOST_CHECK(cat1.size() == 3);
 
-// 	cat1.erase(cif::Key("id") == "noot");
+// 	cat1.erase(cif::v2::key("id") == "noot");
 
 // 	BOOST_CHECK(cat1.size() == 2);
 // }
@@ -769,7 +771,7 @@ _test.value
 
 // 	std::istream is_dict(&buffer);
 
-// 	cif::Validator validator("test", is_dict);
+// 	cif::v2::validator validator("test", is_dict);
 
 // 	cif::File f;
 // 	f.setValidator(&validator);
@@ -813,7 +815,7 @@ _test.value
 
 // 	// check a rename in parent and child
 
-// 	for (auto r : cat1.find(cif::Key("id") == 1))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 1))
 // 	{
 // 		r["id"] = 10;
 // 		break;
@@ -822,15 +824,15 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 3);
 // 	BOOST_CHECK(cat2.size() == 4);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 2);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 2);
 
 // 	// check a rename in parent and child, this time only one child should be renamed
 
-// 	for (auto r : cat1.find(cif::Key("id") == 2))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 2))
 // 	{
 // 		r["id"] = 20;
 // 		break;
@@ -839,25 +841,25 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 3);
 // 	BOOST_CHECK(cat2.size() == 4);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "noot").size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2 and cif::Key("name2") == "n2").size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "noot").size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20 and cif::Key("name2") == "n2").size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "noot").size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "n2").size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "noot").size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "n2").size() == 0);
 
 // 	// // --------------------------------------------------------------------
 
-// 	// cat1.erase(cif::Key("id") == 10);
+// 	// cat1.erase(cif::v2::key("id") == 10);
 
 // 	// BOOST_CHECK(cat1.size() == 2);
 // 	// BOOST_CHECK(cat2.size() == 2);
 
-// 	// cat1.erase(cif::Key("id") == 20);
+// 	// cat1.erase(cif::v2::key("id") == 20);
 
 // 	// BOOST_CHECK(cat1.size() == 1);
 // 	// BOOST_CHECK(cat2.size() == 1);
@@ -972,7 +974,7 @@ _test.value
 
 // 	std::istream is_dict(&buffer);
 
-// 	cif::Validator validator("test", is_dict);
+// 	cif::v2::validator validator("test", is_dict);
 
 // 	cif::File f;
 // 	f.setValidator(&validator);
@@ -1026,7 +1028,7 @@ _test.value
 
 // 	// check a rename in parent and child
 
-// 	for (auto r : cat1.find(cif::Key("id") == 1))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 1))
 // 	{
 // 		r["id"] = 10;
 // 		break;
@@ -1035,13 +1037,13 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 4);
 // 	BOOST_CHECK(cat2.size() == 13);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 2);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 2);
 
-// 	for (auto r : cat1.find(cif::Key("id") == 2))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 2))
 // 	{
 // 		r["id"] = 20;
 // 		break;
@@ -1050,13 +1052,13 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 4);
 // 	BOOST_CHECK(cat2.size() == 13);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 2);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 2);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 2);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 2);
 
-// 	for (auto r : cat1.find(cif::Key("id") == 3))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 3))
 // 	{
 // 		r["id"] = 30;
 // 		break;
@@ -1065,13 +1067,13 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 4);
 // 	BOOST_CHECK(cat2.size() == 13);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 3).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 30).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 3).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 30).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 3).size() == 2);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 30).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 3).size() == 2);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 30).size() == 1);
 
-// 	for (auto r : cat1.find(cif::Key("id") == 4))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 4))
 // 	{
 // 		r["id"] = 40;
 // 		break;
@@ -1080,11 +1082,11 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 4);
 // 	BOOST_CHECK(cat2.size() == 13);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 4).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 4).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 4).size() == 3);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 40).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 4).size() == 3);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 40).size() == 0);
 // }
 
 // // --------------------------------------------------------------------
@@ -1193,7 +1195,7 @@ _test.value
 
 // 	std::istream is_dict(&buffer);
 
-// 	cif::Validator validator("test", is_dict);
+// 	cif::v2::validator validator("test", is_dict);
 
 // 	cif::File f;
 // 	f.setValidator(&validator);
@@ -1241,7 +1243,7 @@ _test.value
 // 	// --------------------------------------------------------------------
 // 	// check iterate children
 
-// 	auto PR2set = cat1.find(cif::Key("id") == 2);
+// 	auto PR2set = cat1.find(cif::v2::key("id") == 2);
 // 	BOOST_ASSERT(PR2set.size() == 1);
 // 	auto PR2 = PR2set.front();
 // 	BOOST_CHECK(PR2["id"].as<int>() == 2);
@@ -1257,7 +1259,7 @@ _test.value
 
 // 	// check a rename in parent and child
 
-// 	for (auto r : cat1.find(cif::Key("id") == 1))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 1))
 // 	{
 // 		r["id"] = 10;
 // 		break;
@@ -1266,17 +1268,17 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 3);
 // 	BOOST_CHECK(cat2.size() == 7);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 1).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 10).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 1).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 1).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 1).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 10).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 10).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 10).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 1).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 1).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 10).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 10).size() == 1);
 
-// 	for (auto r : cat1.find(cif::Key("id") == 2))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 2))
 // 	{
 // 		r["id"] = 20;
 // 		break;
@@ -1285,17 +1287,17 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 3);
 // 	BOOST_CHECK(cat2.size() == 7);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 2).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 20).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 2).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 2).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 2).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 20).size() == 2);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 20).size() == 2);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 20).size() == 2);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 2).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 2).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 2);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 20).size() == 2);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 20).size() == 2);
 
-// 	for (auto r : cat1.find(cif::Key("id") == 3))
+// 	for (auto r : cat1.find(cif::v2::key("id") == 3))
 // 	{
 // 		r["id"] = 30;
 // 		break;
@@ -1304,27 +1306,27 @@ _test.value
 // 	BOOST_CHECK(cat1.size() == 3);
 // 	BOOST_CHECK(cat2.size() == 7);
 
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 3).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::Key("id") == 30).size() == 1);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 3).size() == 0);
+// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 30).size() == 1);
 
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 3).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 3).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 3).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id") == 30).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id2") == 30).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::Key("parent_id3") == 30).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 3).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 3).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 3).size() == 0);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 30).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 30).size() == 1);
+// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 30).size() == 1);
 
 // 	// test delete
 
-// 	cat1.erase(cif::Key("id") == 10);
+// 	cat1.erase(cif::v2::key("id") == 10);
 // 	BOOST_CHECK(cat1.size() == 2);
 // 	BOOST_CHECK(cat2.size() == 4);
 
-// 	cat1.erase(cif::Key("id") == 20);
+// 	cat1.erase(cif::v2::key("id") == 20);
 // 	BOOST_CHECK(cat1.size() == 1);
 // 	BOOST_CHECK(cat2.size() == 1);
 
-// 	cat1.erase(cif::Key("id") == 30);
+// 	cat1.erase(cif::v2::key("id") == 30);
 // 	BOOST_CHECK(cat1.size() == 0);
 // 	BOOST_CHECK(cat2.size() == 0);
 // }
@@ -1349,21 +1351,21 @@ _test.value
 
 // 	auto &db = f.front();
 
-// 	for (auto r : db["test"].find(cif::Key("id") == 1))
+// 	for (auto r : db["test"].find(cif::v2::key("id") == 1))
 // 	{
 // 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
 // 		BOOST_CHECK(id == 1);
 // 		BOOST_CHECK(name == "aap");
 // 	}
 
-// 	for (auto r : db["test"].find(cif::Key("id") == 4))
+// 	for (auto r : db["test"].find(cif::v2::key("id") == 4))
 // 	{
 // 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
 // 		BOOST_CHECK(id == 4);
 // 		BOOST_CHECK(name.empty());
 // 	}
 
-// 	for (auto r : db["test"].find(cif::Key("id") == 5))
+// 	for (auto r : db["test"].find(cif::v2::key("id") == 5))
 // 	{
 // 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
 // 		BOOST_CHECK(id == 5);
@@ -1456,7 +1458,7 @@ _test.value
 // 		}
 // 	}
 
-// 	const auto &[id, name] = db["test"].find1<int, std::string>(cif::Key("id") == 1, "id", "name");
+// 	const auto &[id, name] = db["test"].find1<int, std::string>(cif::v2::key("id") == 1, "id", "name");
 
 // 	BOOST_CHECK(id == 1);
 // 	BOOST_CHECK(name == "aap");
@@ -1621,7 +1623,7 @@ _test.value
 // 	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
 
 // 	std::istream is_dict(&buffer);
-// 	cif::Validator validator("test", is_dict);
+// 	cif::v2::validator validator("test", is_dict);
 
 // 	cif::File f;
 // 	f.setValidator(&validator);
