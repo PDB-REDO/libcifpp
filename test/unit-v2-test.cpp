@@ -553,1215 +553,1216 @@ _cat_2.desc
 		std::exception);
 }
 
-// // --------------------------------------------------------------------
-
-// BOOST_AUTO_TEST_CASE(d2)
-// {
-// 	const char dict[] = R"(
-// data_test_dict.dic
-//     _datablock.id	test_dict.dic
-//     _datablock.description
-// ;
-//     A test dictionary
-// ;
-//     _dictionary.title           test_dict.dic
-//     _dictionary.datablock_id    test_dict.dic
-//     _dictionary.version         1.0
-
-//      loop_
-//     _item_type_list.code
-//     _item_type_list.primitive_code
-//     _item_type_list.construct
-//     _item_type_list.detail
-//                code      char
-//                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
-// ;              code item types/single words ...
-// ;
-//                ucode     uchar
-//                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
-// ;              code item types/single words, case insensitive
-// ;
-//                text      char
-//                '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
-// ;              text item types / multi-line text ...
-// ;
-//                int       numb
-//                '[+-]?[0-9]+'
-// ;              int item types are the subset of numbers that are the negative
-//                or positive integers.
-// ;
-
-// save_cat_1
-//     _category.description     'A simple test category'
-//     _category.id              cat_1
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_1.id'
-//     save_
-
-// save__cat_1.id
-//     _item.name                '_cat_1.id'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_type.code           code
-//     save_
-
-// save__cat_1.c
-//     _item.name                '_cat_1.c'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_type.code           ucode
-//     save_
-// )";
-
-// 	struct membuf : public std::streambuf
-// 	{
-// 		membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-// 	std::istream is_dict(&buffer);
-
-// 	cif::v2::validator validator("test", is_dict);
-
-// 	cif::File f;
-// 	f.setValidator(&validator);
-
-// 	// --------------------------------------------------------------------
-
-// 	const char data[] = R"(
-// data_test
-// loop_
-// _cat_1.id
-// _cat_1.c
-// aap  Aap
-// noot Noot
-// mies Mies
-// )";
-
-// 	struct data_membuf : public std::streambuf
-// 	{
-// 		data_membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-// 	std::istream is_data(&data_buffer);
-// 	f.load(is_data);
-
-// 	auto &cat1 = f.front()["cat_1"];
-
-// 	BOOST_CHECK(cat1.size() == 3);
-
-// 	cat1.erase(cif::v2::key("id") == "AAP");
-
-// 	BOOST_CHECK(cat1.size() == 3);
-
-// 	cat1.erase(cif::v2::key("id") == "noot");
-
-// 	BOOST_CHECK(cat1.size() == 2);
-// }
-
-// // --------------------------------------------------------------------
-
-// BOOST_AUTO_TEST_CASE(d3)
-// {
-// 	const char dict[] = R"(
-// data_test_dict.dic
-//     _datablock.id	test_dict.dic
-//     _datablock.description
-// ;
-//     A test dictionary
-// ;
-//     _dictionary.title           test_dict.dic
-//     _dictionary.datablock_id    test_dict.dic
-//     _dictionary.version         1.0
-
-//      loop_
-//     _item_type_list.code
-//     _item_type_list.primitive_code
-//     _item_type_list.construct
-//                code      char
-//                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
-
-//                text      char
-//                '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
-
-//                int       numb
-//                '[+-]?[0-9]+'
-
-// save_cat_1
-//     _category.description     'A simple test category'
-//     _category.id              cat_1
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_1.id'
-
-//     save_
-
-// save__cat_1.id
-//     _item.name                '_cat_1.id'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_linked.child_name   '_cat_2.parent_id'
-//     _item_linked.parent_name  '_cat_1.id'
-//     _item_type.code           code
-//     save_
-
-// save__cat_1.name1
-//     _item.name                '_cat_1.name1'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_type.code           text
-//     save_
-
-// save__cat_1.name2
-//     _item.name                '_cat_1.name2'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      no
-//     _item_linked.child_name   '_cat_2.name2'
-//     _item_linked.parent_name  '_cat_1.name2'
-//     _item_type.code           text
-//     save_
-
-// save_cat_2
-//     _category.description     'A second simple test category'
-//     _category.id              cat_2
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_2.id'
-//     save_
-
-// save__cat_2.id
-//     _item.name                '_cat_2.id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save__cat_2.parent_id
-//     _item.name                '_cat_2.parent_id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           code
-//     save_
-
-// save__cat_2.name2
-//     _item.name                '_cat_2.name2'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      no
-//     _item_type.code           text
-//     save_
-
-// save__cat_2.desc
-//     _item.name                '_cat_2.desc'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           text
-//     save_
-//     )";
-
-// 	struct membuf : public std::streambuf
-// 	{
-// 		membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-// 	std::istream is_dict(&buffer);
-
-// 	cif::v2::validator validator("test", is_dict);
-
-// 	cif::File f;
-// 	f.setValidator(&validator);
-
-// 	// --------------------------------------------------------------------
-
-// 	const char data[] = R"(
-// data_test
-// loop_
-// _cat_1.id
-// _cat_1.name1
-// _cat_1.name2
-// 1 Aap   aap
-// 2 Noot  noot
-// 3 Mies  mies
-
-// loop_
-// _cat_2.id
-// _cat_2.parent_id
-// _cat_2.name2
-// _cat_2.desc
-// 1 1 aap   'Een dier'
-// 2 1 .     'Een andere aap'
-// 3 2 noot  'walnoot bijvoorbeeld'
-// 4 2 n2     hazelnoot
-//     )";
-
-// 	struct data_membuf : public std::streambuf
-// 	{
-// 		data_membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-// 	std::istream is_data(&data_buffer);
-// 	f.load(is_data);
-
-// 	auto &cat1 = f.front()["cat_1"];
-// 	auto &cat2 = f.front()["cat_2"];
-
-// 	// check a rename in parent and child
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 1))
-// 	{
-// 		r["id"] = 10;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 3);
-// 	BOOST_CHECK(cat2.size() == 4);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 2);
-
-// 	// check a rename in parent and child, this time only one child should be renamed
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 2))
-// 	{
-// 		r["id"] = 20;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 3);
-// 	BOOST_CHECK(cat2.size() == 4);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "noot").size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "n2").size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "noot").size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "n2").size() == 0);
-
-// 	// // --------------------------------------------------------------------
-
-// 	// cat1.erase(cif::v2::key("id") == 10);
-
-// 	// BOOST_CHECK(cat1.size() == 2);
-// 	// BOOST_CHECK(cat2.size() == 2);
-
-// 	// cat1.erase(cif::v2::key("id") == 20);
-
-// 	// BOOST_CHECK(cat1.size() == 1);
-// 	// BOOST_CHECK(cat2.size() == 1);
-// }
-
-// // --------------------------------------------------------------------
-
-// BOOST_AUTO_TEST_CASE(d4)
-// {
-// 	const char dict[] = R"(
-// data_test_dict.dic
-//     _datablock.id	test_dict.dic
-//     _datablock.description
-// ;
-//     A test dictionary
-// ;
-//     _dictionary.title           test_dict.dic
-//     _dictionary.datablock_id    test_dict.dic
-//     _dictionary.version         1.0
-
-//      loop_
-//     _item_type_list.code
-//     _item_type_list.primitive_code
-//     _item_type_list.construct
-//                code      char
-//                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
-
-//                text      char
-//                '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
-
-//                int       numb
-//                '[+-]?[0-9]+'
-
-// save_cat_1
-//     _category.description     'A simple test category'
-//     _category.id              cat_1
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_1.id'
-//     save_
-
-// save__cat_1.id
-//     _item.name                '_cat_1.id'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_linked.child_name   '_cat_2.parent_id'
-//     _item_linked.parent_name  '_cat_1.id'
-//     _item_type.code           int
-//     save_
-
-// save__cat_1.id2
-//     _item.name                '_cat_1.id2'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      no
-//     _item_linked.child_name   '_cat_2.parent_id2'
-//     _item_linked.parent_name  '_cat_1.id2'
-//     _item_type.code           code
-//     save_
-
-// save__cat_1.id3
-//     _item.name                '_cat_1.id3'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      no
-//     _item_linked.child_name   '_cat_2.parent_id3'
-//     _item_linked.parent_name  '_cat_1.id3'
-//     _item_type.code           text
-//     save_
-
-// save_cat_2
-//     _category.description     'A second simple test category'
-//     _category.id              cat_2
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_2.id'
-//     save_
-
-// save__cat_2.id
-//     _item.name                '_cat_2.id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save__cat_2.parent_id
-//     _item.name                '_cat_2.parent_id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save__cat_2.parent_id2
-//     _item.name                '_cat_2.parent_id2'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      no
-//     _item_type.code           code
-//     save_
-
-// save__cat_2.parent_id3
-//     _item.name                '_cat_2.parent_id3'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      no
-//     _item_type.code           code
-//     save_
-
-//     )";
-
-// 	struct membuf : public std::streambuf
-// 	{
-// 		membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-// 	std::istream is_dict(&buffer);
-
-// 	cif::v2::validator validator("test", is_dict);
-
-// 	cif::File f;
-// 	f.setValidator(&validator);
-
-// 	// --------------------------------------------------------------------
-
-// 	const char data[] = R"(
-// data_test
-// loop_
-// _cat_1.id
-// _cat_1.id2
-// _cat_1.id3
-// 1 aap   aap
-// 2 .     noot
-// 3 mies  .
-// 4 .     .
-
-// loop_
-// _cat_2.id
-// _cat_2.parent_id
-// _cat_2.parent_id2
-// _cat_2.parent_id3
-//  1 1 aap   aap
-//  2 1 .     x
-//  3 1 aap   .
-//  4 2 noot  noot
-//  5 2 .     noot
-//  6 2 noot  .
-//  7 2 .     .
-//  8 3 mies  mies
-//  9 3 .     mies
-// 10 3 mies  .
-// 11 4 roos  roos
-// 12 4 .     roos
-// 13 4 roos  .
-//     )";
-
-// 	struct data_membuf : public std::streambuf
-// 	{
-// 		data_membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-// 	std::istream is_data(&data_buffer);
-// 	f.load(is_data);
-
-// 	auto &cat1 = f.front()["cat_1"];
-// 	auto &cat2 = f.front()["cat_2"];
-
-// 	// check a rename in parent and child
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 1))
-// 	{
-// 		r["id"] = 10;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 4);
-// 	BOOST_CHECK(cat2.size() == 13);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 2);
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 2))
-// 	{
-// 		r["id"] = 20;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 4);
-// 	BOOST_CHECK(cat2.size() == 13);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 2);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 2);
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 3))
-// 	{
-// 		r["id"] = 30;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 4);
-// 	BOOST_CHECK(cat2.size() == 13);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 3).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 30).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 3).size() == 2);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 30).size() == 1);
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 4))
-// 	{
-// 		r["id"] = 40;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 4);
-// 	BOOST_CHECK(cat2.size() == 13);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 4).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 4).size() == 3);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 40).size() == 0);
-// }
-
-// // --------------------------------------------------------------------
-
-// BOOST_AUTO_TEST_CASE(d5)
-// {
-// 	const char dict[] = R"(
-// data_test_dict.dic
-//     _datablock.id	test_dict.dic
-//     _datablock.description
-// ;
-//     A test dictionary
-// ;
-//     _dictionary.title           test_dict.dic
-//     _dictionary.datablock_id    test_dict.dic
-//     _dictionary.version         1.0
-
-//      loop_
-//     _item_type_list.code
-//     _item_type_list.primitive_code
-//     _item_type_list.construct
-//                code      char
-//                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
-
-//                text      char
-//                '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
-
-//                int       numb
-//                '[+-]?[0-9]+'
-
-// save_cat_1
-//     _category.description     'A simple test category'
-//     _category.id              cat_1
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_1.id'
-//     save_
-
-// save__cat_1.id
-//     _item.name                '_cat_1.id'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save_cat_2
-//     _category.description     'A second simple test category'
-//     _category.id              cat_2
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_2.id'
-//     save_
-
-// save__cat_2.id
-//     _item.name                '_cat_2.id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save__cat_2.parent_id
-//     _item.name                '_cat_2.parent_id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save__cat_2.parent_id2
-//     _item.name                '_cat_2.parent_id2'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      no
-//     _item_type.code           code
-//     save_
-
-// save__cat_2.parent_id3
-//     _item.name                '_cat_2.parent_id3'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      no
-//     _item_type.code           code
-//     save_
-
-// loop_
-// _pdbx_item_linked_group_list.child_category_id
-// _pdbx_item_linked_group_list.link_group_id
-// _pdbx_item_linked_group_list.child_name
-// _pdbx_item_linked_group_list.parent_name
-// _pdbx_item_linked_group_list.parent_category_id
-// cat_2 1 '_cat_2.parent_id'  '_cat_1.id' cat_1
-// cat_2 2 '_cat_2.parent_id2' '_cat_1.id' cat_1
-// cat_2 3 '_cat_2.parent_id3' '_cat_1.id' cat_1
-
-// loop_
-// _pdbx_item_linked_group.category_id
-// _pdbx_item_linked_group.link_group_id
-// _pdbx_item_linked_group.label
-// cat_2 1 cat_2:cat_1:1
-// cat_2 2 cat_2:cat_1:2
-// cat_2 3 cat_2:cat_1:3
-//     )";
-
-// 	struct membuf : public std::streambuf
-// 	{
-// 		membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-// 	std::istream is_dict(&buffer);
-
-// 	cif::v2::validator validator("test", is_dict);
-
-// 	cif::File f;
-// 	f.setValidator(&validator);
-
-// 	// --------------------------------------------------------------------
-
-// 	const char data[] = R"(
-// data_test
-// loop_
-// _cat_1.id
-// 1
-// 2
-// 3
-
-// loop_
-// _cat_2.id
-// _cat_2.parent_id
-// _cat_2.parent_id2
-// _cat_2.parent_id3
-//  1 1 ? ?
-//  2 ? 1 ?
-//  3 ? ? 1
-//  4 2 2 ?
-//  5 2 ? 2
-//  6 ? 2 2
-//  7 3 3 3
-//     )";
-
-// 	// --------------------------------------------------------------------
-
-// 	struct data_membuf : public std::streambuf
-// 	{
-// 		data_membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-// 	std::istream is_data(&data_buffer);
-// 	f.load(is_data);
-
-// 	auto &cat1 = f.front()["cat_1"];
-// 	auto &cat2 = f.front()["cat_2"];
-
-// 	// --------------------------------------------------------------------
-// 	// check iterate children
-
-// 	auto PR2set = cat1.find(cif::v2::key("id") == 2);
-// 	BOOST_ASSERT(PR2set.size() == 1);
-// 	auto PR2 = PR2set.front();
-// 	BOOST_CHECK(PR2["id"].as<int>() == 2);
-
-// 	auto CR2set = cat1.getChildren(PR2, "cat_2");
-// 	BOOST_ASSERT(CR2set.size() == 3);
-
-// 	std::vector<int> CRids;
-// 	std::transform(CR2set.begin(), CR2set.end(), std::back_inserter(CRids), [](cif::Row r)
-// 		{ return r["id"].as<int>(); });
-// 	std::sort(CRids.begin(), CRids.end());
-// 	BOOST_CHECK(CRids == std::vector<int>({4, 5, 6}));
-
-// 	// check a rename in parent and child
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 1))
-// 	{
-// 		r["id"] = 10;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 3);
-// 	BOOST_CHECK(cat2.size() == 7);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 1).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 1).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 10).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 10).size() == 1);
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 2))
-// 	{
-// 		r["id"] = 20;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 3);
-// 	BOOST_CHECK(cat2.size() == 7);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 2).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 2).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 2);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 20).size() == 2);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 20).size() == 2);
-
-// 	for (auto r : cat1.find(cif::v2::key("id") == 3))
-// 	{
-// 		r["id"] = 30;
-// 		break;
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 3);
-// 	BOOST_CHECK(cat2.size() == 7);
-
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 3).size() == 0);
-// 	BOOST_CHECK(cat1.find(cif::v2::key("id") == 30).size() == 1);
-
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 3).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 3).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 3).size() == 0);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 30).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 30).size() == 1);
-// 	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 30).size() == 1);
-
-// 	// test delete
-
-// 	cat1.erase(cif::v2::key("id") == 10);
-// 	BOOST_CHECK(cat1.size() == 2);
-// 	BOOST_CHECK(cat2.size() == 4);
-
-// 	cat1.erase(cif::v2::key("id") == 20);
-// 	BOOST_CHECK(cat1.size() == 1);
-// 	BOOST_CHECK(cat2.size() == 1);
-
-// 	cat1.erase(cif::v2::key("id") == 30);
-// 	BOOST_CHECK(cat1.size() == 0);
-// 	BOOST_CHECK(cat2.size() == 0);
-// }
-
-// // --------------------------------------------------------------------
-
-// BOOST_AUTO_TEST_CASE(c1)
-// {
-// 	cif::VERBOSE = 1;
-
-// 	auto f = R"(data_TEST
-// #
-// loop_
-// _test.id
-// _test.name
-// 1 aap
-// 2 noot
-// 3 mies
-// 4 .
-// 5 ?
-//     )"_cf;
-
-// 	auto &db = f.front();
-
-// 	for (auto r : db["test"].find(cif::v2::key("id") == 1))
-// 	{
-// 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
-// 		BOOST_CHECK(id == 1);
-// 		BOOST_CHECK(name == "aap");
-// 	}
-
-// 	for (auto r : db["test"].find(cif::v2::key("id") == 4))
-// 	{
-// 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
-// 		BOOST_CHECK(id == 4);
-// 		BOOST_CHECK(name.empty());
-// 	}
-
-// 	for (auto r : db["test"].find(cif::v2::key("id") == 5))
-// 	{
-// 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
-// 		BOOST_CHECK(id == 5);
-// 		BOOST_CHECK(name.empty());
-// 	}
-
-// 	// optional
-
-// 	for (auto r : db["test"])
-// 	{
-// 		const auto &[id, name] = r.get<int, std::optional<std::string>>({"id", "name"});
-// 		switch (id)
-// 		{
-// 			case 1: BOOST_CHECK(name == "aap"); break;
-// 			case 2: BOOST_CHECK(name == "noot"); break;
-// 			case 3: BOOST_CHECK(name == "mies"); break;
-// 			case 4:
-// 			case 5: BOOST_CHECK(not name); break;
-// 			default:
-// 				BOOST_CHECK(false);
-// 		}
-// 	}
-// }
-
-// BOOST_AUTO_TEST_CASE(c2)
-// {
-// 	cif::VERBOSE = 1;
-
-// 	auto f = R"(data_TEST
-// #
-// loop_
-// _test.id
-// _test.name
-// 1 aap
-// 2 noot
-// 3 mies
-// 4 .
-// 5 ?
-//     )"_cf;
-
-// 	auto &db = f.front();
-
-// 	// query tests
-
-// 	for (const auto &[id, name] : db["test"].rows<int, std::optional<std::string>>("id", "name"))
-// 	{
-// 		switch (id)
-// 		{
-// 			case 1: BOOST_CHECK(name == "aap"); break;
-// 			case 2: BOOST_CHECK(name == "noot"); break;
-// 			case 3: BOOST_CHECK(name == "mies"); break;
-// 			case 4:
-// 			case 5: BOOST_CHECK(not name); break;
-// 			default:
-// 				BOOST_CHECK(false);
-// 		}
-// 	}
-// }
-
-// BOOST_AUTO_TEST_CASE(c3)
-// {
-// 	cif::VERBOSE = 1;
-
-// 	auto f = R"(data_TEST
-// #
-// loop_
-// _test.id
-// _test.name
-// 1 aap
-// 2 noot
-// 3 mies
-// 4 .
-// 5 ?
-//     )"_cf;
-
-// 	auto &db = f.front();
-
-// 	// query tests
-// 	for (const auto &[id, name] : db["test"].find<int, std::optional<std::string>>(cif::All(), "id", "name"))
-// 	{
-// 		switch (id)
-// 		{
-// 			case 1: BOOST_CHECK(name == "aap"); break;
-// 			case 2: BOOST_CHECK(name == "noot"); break;
-// 			case 3: BOOST_CHECK(name == "mies"); break;
-// 			case 4:
-// 			case 5: BOOST_CHECK(not name); break;
-// 			default:
-// 				BOOST_CHECK(false);
-// 		}
-// 	}
-
-// 	const auto &[id, name] = db["test"].find1<int, std::string>(cif::v2::key("id") == 1, "id", "name");
-
-// 	BOOST_CHECK(id == 1);
-// 	BOOST_CHECK(name == "aap");
-// }
-
-// // --------------------------------------------------------------------
-// // rename test
-
-// BOOST_AUTO_TEST_CASE(r1)
-// {
-// 	/*
-// 	    Rationale:
-
-// 	    The pdbx_mmcif dictionary contains inconsistent child-parent relations. E.g. atom_site is parent
-// 	    of pdbx_nonpoly_scheme which itself is a parent of pdbx_entity_nonpoly. If I want to rename a residue
-// 	    I cannot update pdbx_nonpoly_scheme since changing a parent changes children, but not vice versa.
-
-// 	    But if I change the comp_id in atom_site, the pdbx_nonpoly_scheme is update, that's good, and then
-// 	    pdbx_entity_nonpoly is updated and that's bad.
-
-// 	    The idea is now that if we update a parent and a child that must change as well, we first check
-// 	    if there are more parents of this child that will not change. In that case we have to split the
-// 	    child into two, one with the new value and one with the old. We then of course have to split all
-// 	    children of this split row that are direct children.
-// 	*/
-
-// 	const char dict[] = R"(
-// data_test_dict.dic
-//     _datablock.id	test_dict.dic
-//     _datablock.description
-// ;
-//     A test dictionary
-// ;
-//     _dictionary.title           test_dict.dic
-//     _dictionary.datablock_id    test_dict.dic
-//     _dictionary.version         1.0
-
-//      loop_
-//     _item_type_list.code
-//     _item_type_list.primitive_code
-//     _item_type_list.construct
-//                code      char
-//                '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
-
-//                text      char
-//                '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
-
-//                int       numb
-//                '[+-]?[0-9]+'
-
-// save_cat_1
-//     _category.description     'A simple test category'
-//     _category.id              cat_1
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_1.id'
-//     save_
-
-// save__cat_1.id
-//     _item.name                '_cat_1.id'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_linked.child_name   '_cat_2.parent_id'
-//     _item_linked.parent_name  '_cat_1.id'
-//     _item_type.code           int
-//     save_
-
-// save__cat_1.name
-//     _item.name                '_cat_1.name'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_type.code           code
-//     save_
-
-// save__cat_1.desc
-//     _item.name                '_cat_1.desc'
-//     _item.category_id         cat_1
-//     _item.mandatory_code      yes
-//     _item_type.code           text
-//     save_
-
-// save_cat_2
-//     _category.description     'A second simple test category'
-//     _category.id              cat_2
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_2.id'
-//     save_
-
-// save__cat_2.id
-//     _item.name                '_cat_2.id'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save__cat_2.name
-//     _item.name                '_cat_2.name'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           code
-//     save_
-
-// save__cat_2.num
-//     _item.name                '_cat_2.num'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save__cat_2.desc
-//     _item.name                '_cat_2.desc'
-//     _item.category_id         cat_2
-//     _item.mandatory_code      yes
-//     _item_type.code           text
-//     save_
-
-// save_cat_3
-//     _category.description     'A third simple test category'
-//     _category.id              cat_3
-//     _category.mandatory_code  no
-//     _category_key.name        '_cat_3.id'
-//     save_
-
-// save__cat_3.id
-//     _item.name                '_cat_3.id'
-//     _item.category_id         cat_3
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// save__cat_3.name
-//     _item.name                '_cat_3.name'
-//     _item.category_id         cat_3
-//     _item.mandatory_code      yes
-//     _item_type.code           code
-//     save_
-
-// save__cat_3.num
-//     _item.name                '_cat_3.num'
-//     _item.category_id         cat_3
-//     _item.mandatory_code      yes
-//     _item_type.code           int
-//     save_
-
-// loop_
-// _pdbx_item_linked_group_list.child_category_id
-// _pdbx_item_linked_group_list.link_group_id
-// _pdbx_item_linked_group_list.child_name
-// _pdbx_item_linked_group_list.parent_name
-// _pdbx_item_linked_group_list.parent_category_id
-// cat_1 1 '_cat_1.name' '_cat_2.name' cat_2
-// cat_2 1 '_cat_2.name' '_cat_3.name' cat_3
-// cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
-
-//     )";
-
-// 	struct membuf : public std::streambuf
-// 	{
-// 		membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-// 	std::istream is_dict(&buffer);
-// 	cif::v2::validator validator("test", is_dict);
-
-// 	cif::File f;
-// 	f.setValidator(&validator);
-
-// 	// --------------------------------------------------------------------
-
-// 	const char data[] = R"(
-// data_test
-// loop_
-// _cat_1.id
-// _cat_1.name
-// _cat_1.desc
-// 1 aap  Aap
-// 2 noot Noot
-// 3 mies Mies
-
-// loop_
-// _cat_2.id
-// _cat_2.name
-// _cat_2.num
-// _cat_2.desc
-// 1 aap  1 'Een dier'
-// 2 aap  2 'Een andere aap'
-// 3 noot 1 'walnoot bijvoorbeeld'
-
-// loop_
-// _cat_3.id
-// _cat_3.name
-// _cat_3.num
-// 1 aap 1
-// 2 aap 2
-//     )";
-
-// 	using namespace cif::literals;
-
-// 	struct data_membuf : public std::streambuf
-// 	{
-// 		data_membuf(char *text, size_t length)
-// 		{
-// 			this->setg(text, text, text + length);
-// 		}
-// 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-// 	std::istream is_data(&data_buffer);
-// 	f.load(is_data);
-
-// 	auto &cat1 = f.front()["cat_1"];
-// 	auto &cat2 = f.front()["cat_2"];
-// 	auto &cat3 = f.front()["cat_3"];
-
-// 	cat3.update_value("name"_key == "aap" and "num"_key == 1, "name", "aapje");
-
-// 	BOOST_CHECK(cat3.size() == 2);
-
-// 	{
-// 		int id, num;
-// 		std::string name;
-// 		cif::tie(id, name, num) = cat3.front().get("id", "name", "num");
-// 		BOOST_CHECK(id == 1);
-// 		BOOST_CHECK(num == 1);
-// 		BOOST_CHECK(name == "aapje");
-
-// 		cif::tie(id, name, num) = cat3.back().get("id", "name", "num");
-// 		BOOST_CHECK(id == 2);
-// 		BOOST_CHECK(num == 2);
-// 		BOOST_CHECK(name == "aap");
-// 	}
-
-// 	int i = 0;
-// 	for (const auto &[id, name, num, desc] : cat2.rows<int, std::string, int, std::string>("id", "name", "num", "desc"))
-// 	{
-// 		switch (++i)
-// 		{
-// 			case 1:
-// 				BOOST_CHECK(id == 1);
-// 				BOOST_CHECK(num == 1);
-// 				BOOST_CHECK(name == "aapje");
-// 				BOOST_CHECK(desc == "Een dier");
-// 				break;
-
-// 			case 2:
-// 				BOOST_CHECK(id == 2);
-// 				BOOST_CHECK(num == 2);
-// 				BOOST_CHECK(name == "aap");
-// 				BOOST_CHECK(desc == "Een andere aap");
-// 				break;
-
-// 			case 3:
-// 				BOOST_CHECK(id == 3);
-// 				BOOST_CHECK(num == 1);
-// 				BOOST_CHECK(name == "noot");
-// 				BOOST_CHECK(desc == "walnoot bijvoorbeeld");
-// 				break;
-
-// 			default:
-// 				BOOST_FAIL("Unexpected record");
-// 		}
-// 	}
-
-// 	BOOST_CHECK(cat1.size() == 4);
-// 	i = 0;
-// 	for (const auto &[id, name, desc] : cat1.rows<int, std::string, std::string>("id", "name", "desc"))
-// 	{
-// 		switch (++i)
-// 		{
-// 			case 1:
-// 				BOOST_CHECK(id == 1);
-// 				BOOST_CHECK(name == "aapje");
-// 				BOOST_CHECK(desc == "Aap");
-// 				break;
-
-// 			case 2:
-// 				BOOST_CHECK(id == 2);
-// 				BOOST_CHECK(name == "noot");
-// 				BOOST_CHECK(desc == "Noot");
-// 				break;
-
-// 			case 3:
-// 				BOOST_CHECK(id == 3);
-// 				BOOST_CHECK(name == "mies");
-// 				BOOST_CHECK(desc == "Mies");
-// 				break;
-
-// 			case 4:
-// 				BOOST_CHECK(id == 4);
-// 				BOOST_CHECK(name == "aap");
-// 				BOOST_CHECK(desc == "Aap");
-// 				break;
-
-// 			default:
-// 				BOOST_FAIL("Unexpected record");
-// 		}
-// 	}
-
-// 	f.save(std::cout);
-// }
-
-// // --------------------------------------------------------------------
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(d2)
+{
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+    _item_type_list.detail
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+;              code item types/single words ...
+;
+               ucode     uchar
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+;              code item types/single words, case insensitive
+;
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+;              text item types / multi-line text ...
+;
+               int       numb
+               '[+-]?[0-9]+'
+;              int item types are the subset of numbers that are the negative
+               or positive integers.
+;
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_1.c
+    _item.name                '_cat_1.c'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           ucode
+    save_
+)";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::v2::parse_dictionary("test", is_dict);
+
+	cif::v2::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.c
+aap  Aap
+noot Noot
+mies Mies
+)";
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	auto &cat1 = f.front()["cat_1"];
+
+	BOOST_CHECK(cat1.size() == 3);
+
+	cat1.erase(cif::v2::key("id") == "AAP");
+
+	BOOST_CHECK(cat1.size() == 3);
+
+	cat1.erase(cif::v2::key("id") == "noot");
+
+	BOOST_CHECK(cat1.size() == 2);
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(d3)
+{
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+
+               int       numb
+               '[+-]?[0-9]+'
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_linked.child_name   '_cat_2.parent_id'
+    _item_linked.parent_name  '_cat_1.id'
+    _item_type.code           code
+    save_
+
+save__cat_1.name1
+    _item.name                '_cat_1.name1'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           text
+    save_
+
+save__cat_1.name2
+    _item.name                '_cat_1.name2'
+    _item.category_id         cat_1
+    _item.mandatory_code      no
+    _item_linked.child_name   '_cat_2.name2'
+    _item_linked.parent_name  '_cat_1.name2'
+    _item_type.code           text
+    save_
+
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
+
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.parent_id
+    _item.name                '_cat_2.parent_id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_2.name2
+    _item.name                '_cat_2.name2'
+    _item.category_id         cat_2
+    _item.mandatory_code      no
+    _item_type.code           text
+    save_
+
+save__cat_2.desc
+    _item.name                '_cat_2.desc'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           text
+    save_
+    )";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::v2::parse_dictionary("test", is_dict);
+
+	cif::v2::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.name1
+_cat_1.name2
+1 Aap   aap
+2 Noot  noot
+3 Mies  mies
+
+loop_
+_cat_2.id
+_cat_2.parent_id
+_cat_2.name2
+_cat_2.desc
+1 1 aap   'Een dier'
+2 1 .     'Een andere aap'
+3 2 noot  'walnoot bijvoorbeeld'
+4 2 n2     hazelnoot
+    )";
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	auto &cat1 = f.front()["cat_1"];
+	auto &cat2 = f.front()["cat_2"];
+
+	// check a rename in parent and child
+
+	for (auto r : cat1.find(cif::v2::key("id") == 1))
+	{
+		r["id"] = 10;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 4);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 2);
+
+	// check a rename in parent and child, this time only one child should be renamed
+
+	for (auto r : cat1.find(cif::v2::key("id") == 2))
+	{
+		r["id"] = 20;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 4);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 1);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "noot").size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "n2").size() == 1);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "noot").size() == 1);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "n2").size() == 0);
+
+	// --------------------------------------------------------------------
+
+	cat1.erase(cif::v2::key("id") == 10);
+
+	BOOST_CHECK(cat1.size() == 2);
+	BOOST_CHECK(cat2.size() == 2);
+
+	cat1.erase(cif::v2::key("id") == 20);
+
+	BOOST_CHECK(cat1.size() == 1);
+	BOOST_CHECK(cat2.size() == 1);
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(d4)
+{
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+
+               int       numb
+               '[+-]?[0-9]+'
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_linked.child_name   '_cat_2.parent_id'
+    _item_linked.parent_name  '_cat_1.id'
+    _item_type.code           int
+    save_
+
+save__cat_1.id2
+    _item.name                '_cat_1.id2'
+    _item.category_id         cat_1
+    _item.mandatory_code      no
+    _item_linked.child_name   '_cat_2.parent_id2'
+    _item_linked.parent_name  '_cat_1.id2'
+    _item_type.code           code
+    save_
+
+save__cat_1.id3
+    _item.name                '_cat_1.id3'
+    _item.category_id         cat_1
+    _item.mandatory_code      no
+    _item_linked.child_name   '_cat_2.parent_id3'
+    _item_linked.parent_name  '_cat_1.id3'
+    _item_type.code           text
+    save_
+
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
+
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.parent_id
+    _item.name                '_cat_2.parent_id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.parent_id2
+    _item.name                '_cat_2.parent_id2'
+    _item.category_id         cat_2
+    _item.mandatory_code      no
+    _item_type.code           code
+    save_
+
+save__cat_2.parent_id3
+    _item.name                '_cat_2.parent_id3'
+    _item.category_id         cat_2
+    _item.mandatory_code      no
+    _item_type.code           code
+    save_
+
+    )";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::v2::parse_dictionary("test", is_dict);
+
+	cif::v2::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.id2
+_cat_1.id3
+1 aap   aap
+2 .     noot
+3 mies  .
+4 .     .
+
+loop_
+_cat_2.id
+_cat_2.parent_id
+_cat_2.parent_id2
+_cat_2.parent_id3
+ 1 1 aap   aap
+ 2 1 .     x
+ 3 1 aap   .
+ 4 2 noot  noot
+ 5 2 .     noot
+ 6 2 noot  .
+ 7 2 .     .
+ 8 3 mies  mies
+ 9 3 .     mies
+10 3 mies  .
+11 4 roos  roos
+12 4 .     roos
+13 4 roos  .
+    )";
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	auto &cat1 = f.front()["cat_1"];
+	auto &cat2 = f.front()["cat_2"];
+
+	// check a rename in parent and child
+
+	for (auto r : cat1.find(cif::v2::key("id") == 1))
+	{
+		r["id"] = 10;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK(cat2.size() == 13);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 1);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 2);
+
+	for (auto r : cat1.find(cif::v2::key("id") == 2))
+	{
+		r["id"] = 20;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK(cat2.size() == 13);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 2);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 2);
+
+	for (auto r : cat1.find(cif::v2::key("id") == 3))
+	{
+		r["id"] = 30;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK(cat2.size() == 13);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 3).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 30).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 3).size() == 2);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 30).size() == 1);
+
+	for (auto r : cat1.find(cif::v2::key("id") == 4))
+	{
+		r["id"] = 40;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK(cat2.size() == 13);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 4).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 4).size() == 3);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 40).size() == 0);
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(d5)
+{
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+
+               int       numb
+               '[+-]?[0-9]+'
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
+
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.parent_id
+    _item.name                '_cat_2.parent_id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.parent_id2
+    _item.name                '_cat_2.parent_id2'
+    _item.category_id         cat_2
+    _item.mandatory_code      no
+    _item_type.code           code
+    save_
+
+save__cat_2.parent_id3
+    _item.name                '_cat_2.parent_id3'
+    _item.category_id         cat_2
+    _item.mandatory_code      no
+    _item_type.code           code
+    save_
+
+loop_
+_pdbx_item_linked_group_list.child_category_id
+_pdbx_item_linked_group_list.link_group_id
+_pdbx_item_linked_group_list.child_name
+_pdbx_item_linked_group_list.parent_name
+_pdbx_item_linked_group_list.parent_category_id
+cat_2 1 '_cat_2.parent_id'  '_cat_1.id' cat_1
+cat_2 2 '_cat_2.parent_id2' '_cat_1.id' cat_1
+cat_2 3 '_cat_2.parent_id3' '_cat_1.id' cat_1
+
+loop_
+_pdbx_item_linked_group.category_id
+_pdbx_item_linked_group.link_group_id
+_pdbx_item_linked_group.label
+cat_2 1 cat_2:cat_1:1
+cat_2 2 cat_2:cat_1:2
+cat_2 3 cat_2:cat_1:3
+    )";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::v2::parse_dictionary("test", is_dict);
+
+	cif::v2::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+1
+2
+3
+
+loop_
+_cat_2.id
+_cat_2.parent_id
+_cat_2.parent_id2
+_cat_2.parent_id3
+ 1 1 ? ?
+ 2 ? 1 ?
+ 3 ? ? 1
+ 4 2 2 ?
+ 5 2 ? 2
+ 6 ? 2 2
+ 7 3 3 3
+    )";
+
+	// --------------------------------------------------------------------
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	auto &cat1 = f.front()["cat_1"];
+	auto &cat2 = f.front()["cat_2"];
+
+	// --------------------------------------------------------------------
+	// check iterate children
+
+	auto PR2set = cat1.find(cif::v2::key("id") == 2);
+	BOOST_ASSERT(PR2set.size() == 1);
+	auto PR2 = PR2set.front();
+	BOOST_CHECK(PR2["id"].as<int>() == 2);
+
+	auto CR2set = cat1.get_children(PR2, cat2);
+	BOOST_ASSERT(CR2set.size() == 3);
+
+	std::vector<int> CRids;
+	std::transform(CR2set.begin(), CR2set.end(), std::back_inserter(CRids), [](cif::v2::row_handle r)
+		{ return r["id"].as<int>(); });
+	std::sort(CRids.begin(), CRids.end());
+	BOOST_CHECK(CRids == std::vector<int>({4, 5, 6}));
+
+	// check a rename in parent and child
+
+	for (auto r : cat1.find(cif::v2::key("id") == 1))
+	{
+		r["id"] = 10;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 7);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 1).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 1).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 1);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 10).size() == 1);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 10).size() == 1);
+
+	for (auto r : cat1.find(cif::v2::key("id") == 2))
+	{
+		r["id"] = 20;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 7);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 2).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 2).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 2);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 20).size() == 2);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 20).size() == 2);
+
+	for (auto r : cat1.find(cif::v2::key("id") == 3))
+	{
+		r["id"] = 30;
+		break;
+	}
+
+	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK(cat2.size() == 7);
+
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 3).size() == 0);
+	BOOST_CHECK(cat1.find(cif::v2::key("id") == 30).size() == 1);
+
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 3).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 3).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 3).size() == 0);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 30).size() == 1);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 30).size() == 1);
+	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 30).size() == 1);
+
+	// test delete
+
+	cat1.erase(cif::v2::key("id") == 10);
+	BOOST_CHECK(cat1.size() == 2);
+	BOOST_CHECK(cat2.size() == 4);
+
+	cat1.erase(cif::v2::key("id") == 20);
+	BOOST_CHECK(cat1.size() == 1);
+	BOOST_CHECK(cat2.size() == 1);
+
+	cat1.erase(cif::v2::key("id") == 30);
+	BOOST_CHECK(cat1.size() == 0);
+	BOOST_CHECK(cat2.size() == 0);
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(c1)
+{
+	cif::VERBOSE = 1;
+
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+4 .
+5 ?
+    )"_cf;
+
+	auto &db = f.front();
+
+	for (auto r : db["test"].find(cif::v2::key("id") == 1))
+	{
+		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		BOOST_CHECK(id == 1);
+		BOOST_CHECK(name == "aap");
+	}
+
+	for (auto r : db["test"].find(cif::v2::key("id") == 4))
+	{
+		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		BOOST_CHECK(id == 4);
+		BOOST_CHECK(name.empty());
+	}
+
+	for (auto r : db["test"].find(cif::v2::key("id") == 5))
+	{
+		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		BOOST_CHECK(id == 5);
+		BOOST_CHECK(name.empty());
+	}
+
+	// optional
+
+	for (auto r : db["test"])
+	{
+		const auto &[id, name] = r.get<int, std::optional<std::string>>({"id", "name"});
+		switch (id)
+		{
+			case 1: BOOST_CHECK(name == "aap"); break;
+			case 2: BOOST_CHECK(name == "noot"); break;
+			case 3: BOOST_CHECK(name == "mies"); break;
+			case 4:
+			case 5: BOOST_CHECK(not name); break;
+			default:
+				BOOST_CHECK(false);
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE(c2)
+{
+	cif::VERBOSE = 1;
+
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+4 .
+5 ?
+    )"_cf;
+
+	auto &db = f.front();
+
+	// query tests
+
+	for (const auto &[id, name] : db["test"].rows<int, std::optional<std::string>>("id", "name"))
+	{
+		switch (id)
+		{
+			case 1: BOOST_CHECK(name == "aap"); break;
+			case 2: BOOST_CHECK(name == "noot"); break;
+			case 3: BOOST_CHECK(name == "mies"); break;
+			case 4:
+			case 5: BOOST_CHECK(not name); break;
+			default:
+				BOOST_CHECK(false);
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE(c3)
+{
+	cif::VERBOSE = 1;
+
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+4 .
+5 ?
+    )"_cf;
+
+	auto &db = f.front();
+
+	// query tests
+	for (const auto &[id, name] : db["test"].find<int, std::optional<std::string>>(cif::v2::all(), "id", "name"))
+	{
+		switch (id)
+		{
+			case 1: BOOST_CHECK(name == "aap"); break;
+			case 2: BOOST_CHECK(name == "noot"); break;
+			case 3: BOOST_CHECK(name == "mies"); break;
+			case 4:
+			case 5: BOOST_CHECK(not name); break;
+			default:
+				BOOST_CHECK(false);
+		}
+	}
+
+	const auto &[id, name] = db["test"].find1<int, std::string>(cif::v2::key("id") == 1, "id", "name");
+
+	BOOST_CHECK(id == 1);
+	BOOST_CHECK(name == "aap");
+}
+
+// --------------------------------------------------------------------
+// rename test
+
+BOOST_AUTO_TEST_CASE(r1)
+{
+	/*
+	    Rationale:
+
+	    The pdbx_mmcif dictionary contains inconsistent child-parent relations. E.g. atom_site is parent
+	    of pdbx_nonpoly_scheme which itself is a parent of pdbx_entity_nonpoly. If I want to rename a residue
+	    I cannot update pdbx_nonpoly_scheme since changing a parent changes children, but not vice versa.
+
+	    But if I change the comp_id in atom_site, the pdbx_nonpoly_scheme is update, that's good, and then
+	    pdbx_entity_nonpoly is updated and that's bad.
+
+	    The idea is now that if we update a parent and a child that must change as well, we first check
+	    if there are more parents of this child that will not change. In that case we have to split the
+	    child into two, one with the new value and one with the old. We then of course have to split all
+	    children of this split row that are direct children.
+	*/
+
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+
+               int       numb
+               '[+-]?[0-9]+'
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_linked.child_name   '_cat_2.parent_id'
+    _item_linked.parent_name  '_cat_1.id'
+    _item_type.code           int
+    save_
+
+save__cat_1.name
+    _item.name                '_cat_1.name'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_1.desc
+    _item.name                '_cat_1.desc'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           text
+    save_
+
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
+
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.name
+    _item.name                '_cat_2.name'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_2.num
+    _item.name                '_cat_2.num'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.desc
+    _item.name                '_cat_2.desc'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           text
+    save_
+
+save_cat_3
+    _category.description     'A third simple test category'
+    _category.id              cat_3
+    _category.mandatory_code  no
+    _category_key.name        '_cat_3.id'
+    save_
+
+save__cat_3.id
+    _item.name                '_cat_3.id'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_3.name
+    _item.name                '_cat_3.name'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_3.num
+    _item.name                '_cat_3.num'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+loop_
+_pdbx_item_linked_group_list.child_category_id
+_pdbx_item_linked_group_list.link_group_id
+_pdbx_item_linked_group_list.child_name
+_pdbx_item_linked_group_list.parent_name
+_pdbx_item_linked_group_list.parent_category_id
+cat_1 1 '_cat_1.name' '_cat_2.name' cat_2
+cat_2 1 '_cat_2.name' '_cat_3.name' cat_3
+cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
+
+    )";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::v2::parse_dictionary("test", is_dict);
+
+	cif::v2::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.name
+_cat_1.desc
+1 aap  Aap
+2 noot Noot
+3 mies Mies
+
+loop_
+_cat_2.id
+_cat_2.name
+_cat_2.num
+_cat_2.desc
+1 aap  1 'Een dier'
+2 aap  2 'Een andere aap'
+3 noot 1 'walnoot bijvoorbeeld'
+
+loop_
+_cat_3.id
+_cat_3.name
+_cat_3.num
+1 aap 1
+2 aap 2
+    )";
+
+	using namespace cif::v2::literals;
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	auto &cat1 = f.front()["cat_1"];
+	auto &cat2 = f.front()["cat_2"];
+	auto &cat3 = f.front()["cat_3"];
+
+	cat3.update_value("name"_key == "aap" and "num"_key == 1, "name", "aapje");
+
+	BOOST_CHECK(cat3.size() == 2);
+
+	{
+		int id, num;
+		std::string name;
+		cif::v2::tie(id, name, num) = cat3.front().get("id", "name", "num");
+		BOOST_CHECK(id == 1);
+		BOOST_CHECK(num == 1);
+		BOOST_CHECK(name == "aapje");
+
+		cif::v2::tie(id, name, num) = cat3.back().get("id", "name", "num");
+		BOOST_CHECK(id == 2);
+		BOOST_CHECK(num == 2);
+		BOOST_CHECK(name == "aap");
+	}
+
+	int i = 0;
+	for (const auto &[id, name, num, desc] : cat2.rows<int, std::string, int, std::string>("id", "name", "num", "desc"))
+	{
+		switch (++i)
+		{
+			case 1:
+				BOOST_CHECK(id == 1);
+				BOOST_CHECK(num == 1);
+				BOOST_CHECK(name == "aapje");
+				BOOST_CHECK(desc == "Een dier");
+				break;
+
+			case 2:
+				BOOST_CHECK(id == 2);
+				BOOST_CHECK(num == 2);
+				BOOST_CHECK(name == "aap");
+				BOOST_CHECK(desc == "Een andere aap");
+				break;
+
+			case 3:
+				BOOST_CHECK(id == 3);
+				BOOST_CHECK(num == 1);
+				BOOST_CHECK(name == "noot");
+				BOOST_CHECK(desc == "walnoot bijvoorbeeld");
+				break;
+
+			default:
+				BOOST_FAIL("Unexpected record");
+		}
+	}
+
+	BOOST_CHECK(cat1.size() == 4);
+	i = 0;
+	for (const auto &[id, name, desc] : cat1.rows<int, std::string, std::string>("id", "name", "desc"))
+	{
+		switch (++i)
+		{
+			case 1:
+				BOOST_CHECK(id == 1);
+				BOOST_CHECK(name == "aapje");
+				BOOST_CHECK(desc == "Aap");
+				break;
+
+			case 2:
+				BOOST_CHECK(id == 2);
+				BOOST_CHECK(name == "noot");
+				BOOST_CHECK(desc == "Noot");
+				break;
+
+			case 3:
+				BOOST_CHECK(id == 3);
+				BOOST_CHECK(name == "mies");
+				BOOST_CHECK(desc == "Mies");
+				break;
+
+			case 4:
+				BOOST_CHECK(id == 4);
+				BOOST_CHECK(name == "aap");
+				BOOST_CHECK(desc == "Aap");
+				break;
+
+			default:
+				BOOST_FAIL("Unexpected record");
+		}
+	}
+
+	// f.save(std::cout);
+}
+
+// --------------------------------------------------------------------
 
 // BOOST_AUTO_TEST_CASE(bondmap_1)
 // {
@@ -1929,195 +1930,101 @@ _cat_2.desc
 // 	BOOST_CHECK(mmcif::BondMap::atomIDsForCompound("UN_").empty() == false);
 // }
 
-// BOOST_AUTO_TEST_CASE(reading_file_1)
-// {
-// 	std::istringstream is("Hello, world!");
+BOOST_AUTO_TEST_CASE(reading_file_1)
+{
+	std::istringstream is("Hello, world!");
 
-// 	cif::File file;
-// 	BOOST_CHECK_THROW(file.load(is), std::runtime_error);
-// }
+	cif::v2::file file;
+	BOOST_CHECK_THROW(file.load(is), std::runtime_error);
+}
 
-// // 3d tests
+BOOST_AUTO_TEST_CASE(parser_test_1)
+{
+	auto data1 = R"(
+data_QM
+_test.text ??
+)"_cf;
 
-// using namespace mmcif;
+	auto &db1 = data1.front();
+	auto &test1 = db1["test"];
 
-// BOOST_AUTO_TEST_CASE(t1)
-// {
-// 	// std::random_device rnd;
-// 	// std::mt19937 gen(rnd());
-// 	// std::uniform_real_distribution<float> dis(0, 1);
+	BOOST_CHECK_EQUAL(test1.size(), 1);
 
-// 	// Quaternion q{ dis(gen), dis(gen), dis(gen), dis(gen) };
-// 	// q = Normalize(q);
+	for (auto r : test1)
+	{
+		const auto &[text] = r.get<std::string>({"text"});
+		BOOST_CHECK_EQUAL(text, "??");
+	}
 
-// 	// Quaternion q{ 0.1, 0.2, 0.3, 0.4 };
-// 	Quaternion q{0.5, 0.5, 0.5, 0.5};
-// 	q = Normalize(q);
+	std::stringstream ss;
+	data1.save(ss);
 
-// 	const auto &&[angle0, axis0] = QuaternionToAngleAxis(q);
+	auto data2 = cif::File(ss);
 
-// 	std::vector<Point> p1{
-// 		{16.979, 13.301, 44.555},
-// 		{18.150, 13.525, 43.680},
-// 		{18.656, 14.966, 43.784},
-// 		{17.890, 15.889, 44.078},
-// 		{17.678, 13.270, 42.255},
-// 		{16.248, 13.734, 42.347},
-// 		{15.762, 13.216, 43.724}};
+	auto &db2 = data2.front();
+	auto &test2 = db2["test"];
 
-// 	auto p2 = p1;
+	BOOST_CHECK_EQUAL(test2.size(), 1);
 
-// 	CenterPoints(p1);
+	for (auto r : test2)
+	{
+		const auto &[text] = r.get<std::string>({"text"});
+		BOOST_CHECK_EQUAL(text, "??");
+	}
+}
 
-// 	for (auto &p : p2)
-// 		p.rotate(q);
+BOOST_AUTO_TEST_CASE(output_test_1)
+{
+	auto data1 = R"(
+data_Q
+loop_
+_test.text
+"stop_the_crap"
+'and stop_ this too'
+'data_dinges'
+'blablaglobal_bla'
+boo.data_.whatever
+)"_cf;
 
-// 	CenterPoints(p2);
+	auto &db1 = data1.front();
+	auto &test1 = db1["test"];
 
-// 	auto q2 = AlignPoints(p1, p2);
+	struct T {
+		const char *s;
+		bool q;
+	} kS[] = {
+		{ "stop_the_crap", false },
+		{ "and stop_ this too", false },
+		{ "data_dinges", false },
+		{ "blablaglobal_bla", false },
+		{ "boo.data_.whatever", true }
+	};
 
-// 	const auto &&[angle, axis] = QuaternionToAngleAxis(q2);
+	BOOST_CHECK_EQUAL(test1.size(), sizeof(kS) / sizeof(T));
 
-// 	BOOST_TEST(std::fmod(360 + angle, 360) == std::fmod(360 - angle0, 360), tt::tolerance(0.01));
+	size_t i = 0;
+	for (auto r : test1)
+	{
+		const auto &[text] = r.get<std::string>({"text"});
+		BOOST_CHECK_EQUAL(text, kS[i].s);
+		BOOST_CHECK_EQUAL(cif::isUnquotedString(kS[i].s), kS[i].q);
+		++i;
+	}
 
-// 	for (auto &p : p1)
-// 		p.rotate(q2);
+	std::stringstream ss;
+	data1.save(ss);
 
-// 	float rmsd = RMSd(p1, p2);
+	auto data2 = cif::File(ss);
 
-// 	BOOST_TEST(rmsd < 1e-5);
+	auto &db2 = data2.front();
+	auto &test2 = db2["test"];
 
-// 	// std::cout << "rmsd: " << RMSd(p1, p2) << std::endl;
-// }
+	BOOST_CHECK_EQUAL(test2.size(), sizeof(kS) / sizeof(T));
 
-// BOOST_AUTO_TEST_CASE(t2)
-// {
-// 	Point p[] = {
-// 		{ 1, 1, 0 },
-// 		{ 2, 1, 0 },
-// 		{ 1, 2, 0 }
-// 	};
-
-// 	Point xp = mmcif::CrossProduct(p[1] - p[0], p[2] - p[0]);
-
-// 	Quaternion q = ConstructFromAngleAxis(45, xp); //mmcif::Normalize(Quaternion{45 * mmcif::kPI / 180, xp.mX, xp.mY, xp.mZ});
-
-// 	auto &&[angle, axis] = mmcif::QuaternionToAngleAxis(q);
-
-// 	BOOST_TEST(angle == 45, tt::tolerance(0.01));
-// }
-
-// BOOST_AUTO_TEST_CASE(t3)
-// {
-// 	Point p[] = {
-// 		{ 1, 1, 0 },
-// 		{ 2, 1, 0 },
-// 		{ 1, 2, 0 }
-// 	};
-
-// 	Point xp = mmcif::CrossProduct(p[1] - p[0], p[2] - p[0]);
-
-// 	Quaternion q = ConstructFromAngleAxis(45, xp); //mmcif::Normalize(Quaternion{45 * mmcif::kPI / 180, xp.mX, xp.mY, xp.mZ});
-
-// 	Point v = p[1];
-// 	v -= p[0];
-// 	v.rotate(q);
-// 	v += p[0];
-
-// 	std::cout << v << std::endl;
-
-// 	double a = mmcif::Angle(v, p[0], p[1]);
-
-// 	BOOST_TEST(a == 45, tt::tolerance(0.01));
-// }
-
-// BOOST_AUTO_TEST_CASE(parser_test_1)
-// {
-// 	auto data1 = R"(
-// data_QM
-// _test.text ??
-// )"_cf;
-
-// 	auto &db1 = data1.front();
-// 	auto &test1 = db1["test"];
-
-// 	BOOST_CHECK_EQUAL(test1.size(), 1);
-
-// 	for (auto r : test1)
-// 	{
-// 		const auto &[text] = r.get<std::string>({"text"});
-// 		BOOST_CHECK_EQUAL(text, "??");
-// 	}
-
-// 	std::stringstream ss;
-// 	data1.save(ss);
-
-// 	auto data2 = cif::File(ss);
-
-// 	auto &db2 = data2.front();
-// 	auto &test2 = db2["test"];
-
-// 	BOOST_CHECK_EQUAL(test2.size(), 1);
-
-// 	for (auto r : test2)
-// 	{
-// 		const auto &[text] = r.get<std::string>({"text"});
-// 		BOOST_CHECK_EQUAL(text, "??");
-// 	}
-// }
-
-// BOOST_AUTO_TEST_CASE(output_test_1)
-// {
-// 	auto data1 = R"(
-// data_Q
-// loop_
-// _test.text
-// "stop_the_crap"
-// 'and stop_ this too'
-// 'data_dinges'
-// 'blablaglobal_bla'
-// boo.data_.whatever
-// )"_cf;
-
-// 	auto &db1 = data1.front();
-// 	auto &test1 = db1["test"];
-
-// 	struct T {
-// 		const char *s;
-// 		bool q;
-// 	} kS[] = {
-// 		{ "stop_the_crap", false },
-// 		{ "and stop_ this too", false },
-// 		{ "data_dinges", false },
-// 		{ "blablaglobal_bla", false },
-// 		{ "boo.data_.whatever", true }
-// 	};
-
-// 	BOOST_CHECK_EQUAL(test1.size(), sizeof(kS) / sizeof(T));
-
-// 	size_t i = 0;
-// 	for (auto r : test1)
-// 	{
-// 		const auto &[text] = r.get<std::string>({"text"});
-// 		BOOST_CHECK_EQUAL(text, kS[i].s);
-// 		BOOST_CHECK_EQUAL(cif::isUnquotedString(kS[i].s), kS[i].q);
-// 		++i;
-// 	}
-
-// 	std::stringstream ss;
-// 	data1.save(ss);
-
-// 	auto data2 = cif::File(ss);
-
-// 	auto &db2 = data2.front();
-// 	auto &test2 = db2["test"];
-
-// 	BOOST_CHECK_EQUAL(test2.size(), sizeof(kS) / sizeof(T));
-
-// 	i = 0;
-// 	for (auto r : test2)
-// 	{
-// 		const auto &[text] = r.get<std::string>({"text"});
-// 		BOOST_CHECK_EQUAL(text, kS[i++].s);
-// 	}
-// }
+	i = 0;
+	for (auto r : test2)
+	{
+		const auto &[text] = r.get<std::string>({"text"});
+		BOOST_CHECK_EQUAL(text, kS[i++].s);
+	}
+}

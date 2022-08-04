@@ -82,7 +82,7 @@ struct type_validator
 		return icompare(m_name, rhs.m_name) < 0;
 	}
 
-	int compare(const char *a, const char *b) const;
+	int compare(std::string_view a, std::string_view b) const;
 };
 
 struct item_validator

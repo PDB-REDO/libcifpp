@@ -54,88 +54,25 @@ class category
 
 	category() = default;
 
-	category(std::string_view name)
-		: m_name(name)
-	{
-	}
+	category(std::string_view name);
 
-	category(const category &rhs)
-		: m_name(rhs.m_name)
-		, m_columns(rhs.m_columns)
-	{
-		for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
-			insert_impl(end(), clone_row(*r));
-	}
+	category(const category &rhs);
 
-	category(category &&rhs)
-		: m_name(std::move(rhs.m_name))
-		, m_columns(std::move(rhs.m_columns))
-		, m_head(rhs.m_head)
-		, m_tail(rhs.m_tail)
-	{
-		rhs.m_head = nullptr;
-		rhs.m_tail = nullptr;
-	}
+	category(category &&rhs);
 
-	category &operator=(const category &rhs)
-	{
-		if (this != &rhs)
-		{
-			if (not empty())
-				clear();
+	category &operator=(const category &rhs);
 
-			m_name = rhs.m_name;
-			m_columns = rhs.m_columns;
+	category &operator=(category &&rhs);
 
-			for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
-				insert_impl(cend(), clone_row(*r));
-		}
-
-		return *this;
-	}
-
-	category &operator=(category &&rhs)
-	{
-		if (this != &rhs)
-		{
-			if (not empty())
-				clear();
-
-			m_name = std::move(rhs.m_name);
-			m_columns = std::move(rhs.m_columns);
-
-			m_head = rhs.m_head;
-			m_tail = rhs.m_tail;
-
-			rhs.m_head = rhs.m_tail = nullptr;
-		}
-
-		return *this;
-	}
-
-	~category()
-	{
-		clear();
-	}
+	~category();
 
 	// --------------------------------------------------------------------
 
 	const std::string &name() const { return m_name; }
 
-	iset fields() const
-	{
-		if (m_validator == nullptr)
-			throw std::runtime_error("No Validator specified");
+	iset fields() const;
 
-		if (m_cat_validator == nullptr)
-			m_validator->report_error("undefined Category", true);
-
-		iset result;
-		for (auto &iv : m_cat_validator->m_item_validators)
-			result.insert(iv.m_tag);
-
-		return result;
-	}
+	std::set<uint16_t> key_field_indices() const;
 
 	void set_validator(const validator *v, datablock &db);
 	void update_links(datablock &db);
@@ -374,6 +311,20 @@ class category
 	}
 
 	// --------------------------------------------------------------------
+	
+	bool has_children(row_handle r) const;
+	bool has_parents(row_handle r) const;
+
+	std::vector<row_handle> get_children(row_handle r, category &childCat);
+	// std::vector<row_handle> getChildren(row_handle r, const char *childCat);
+
+	std::vector<row_handle> get_parents(row_handle r, category &parentCat);
+	// std::vector<row_handle> getParents(row_handle r, const char *parentCat);
+
+	std::vector<row_handle> get_linked(row_handle r, category &cat);
+	// std::vector<row_handle> getLinked(row_handle r, const char *cat);
+
+	// --------------------------------------------------------------------
 
 	// void insert(const_iterator pos, const row &row)
 	// {
@@ -500,7 +451,7 @@ class category
 		{
 			auto iv = m_cat_validator->get_validator_for_item(column_name);
 			if (iv == nullptr)
-				std::cerr << "Invalid name used '" << name << "' is not a known column in " + m_name << std::endl;
+				std::cerr << "Invalid name used '" << column_name << "' is not a known column in " + m_name << std::endl;
 		}
 
 		return result;
@@ -690,6 +641,7 @@ class category
 	const category_validator *m_cat_validator = nullptr;
 	std::vector<link> m_parent_links, m_child_links;
 	bool m_cascade = true;
+	class category_index* m_index = nullptr;
 	row *m_head = nullptr, *m_tail = nullptr;
 };
 

@@ -604,11 +604,6 @@ inline condition all()
 	return condition(new detail::all_condition_impl());
 }
 
-// inline condition_t<category> Not(condition_t<category> &&cond)
-// {
-// 	return condition_t<category>(new detail::not_condition_impl(std::move(cond)));
-// }
-
 namespace literals
 {
 	inline key operator""_key(const char *text, size_t length)

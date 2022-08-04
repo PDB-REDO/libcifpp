@@ -110,6 +110,7 @@ class row
 
   private:
 	friend class item_handle;
+	friend class category_index;
 
 	template <typename, typename...>
 	friend class iterator_impl;
@@ -136,6 +137,7 @@ class row_handle
   public:
 	friend class item_handle;
 	friend class category;
+	friend class category_index;
 
 	row_handle() = default;
 
@@ -257,6 +259,9 @@ class row_handle
 	}
 
 	void assign(size_t column, std::string_view value, bool updateLinked, bool validate = true);
+
+	bool operator==(const row_handle &rhs) const { return m_category == rhs.m_category and m_row == rhs.m_row; }
+	bool operator!=(const row_handle &rhs) const { return m_category != rhs.m_category or m_row != rhs.m_row; }
 
   private:
 	uint16_t get_column_ix(std::string_view name) const;

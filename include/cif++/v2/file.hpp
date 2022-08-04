@@ -36,17 +36,9 @@ namespace cif::v2
 
 // --------------------------------------------------------------------
 
-class file
+class file : public std::list<datablock>
 {
   public:
-	using datablock_list = std::list<datablock>;
-
-	using value_type = datablock_list::value_type;
-	using reference = datablock_list::reference;
-	using pointer = datablock_list::pointer;
-
-	using iterator = datablock_list::iterator;
-	using const_iterator = datablock_list::const_iterator;
 
 	file() = default;
 
@@ -113,39 +105,39 @@ class file
 
 	datablock &operator[](std::string_view name)
 	{
-		auto i = std::find_if(m_datablocks.begin(), m_datablocks.end(), [name](const datablock &c)
+		auto i = std::find_if(begin(), end(), [name](const datablock &c)
 			{ return iequals(c.name(), name); });
 		
-		if (i != m_datablocks.end())
+		if (i != end())
 			return *i;
 
-		m_datablocks.emplace_back(name);
-		return m_datablocks.back();
+		emplace_back(name);
+		return back();
 	}
 
 	const datablock &operator[](std::string_view name) const
 	{
 		static const datablock s_empty;
-		auto i = std::find_if(m_datablocks.begin(), m_datablocks.end(), [name](const datablock &c)
+		auto i = std::find_if(begin(), end(), [name](const datablock &c)
 			{ return iequals(c.name(), name); });
-		return i == m_datablocks.end() ? s_empty : *i;
+		return i == end() ? s_empty : *i;
 	}
 
 	std::tuple<iterator, bool> emplace(std::string_view name)
 	{
 		bool is_new = true;
 
-		auto i = m_datablocks.begin();
-		while (i != m_datablocks.end())
+		auto i = begin();
+		while (i != end())
 		{
 			if (iequals(name, i->name()))
 			{
 				is_new = false;
 
-				if (i != m_datablocks.begin())
+				if (i != begin())
 				{
 					auto n = std::next(i);
-					m_datablocks.splice(m_datablocks.begin(), m_datablocks, i, n);
+					splice(begin(), *this, i, n);
 				}
 
 				break;
@@ -155,25 +147,13 @@ class file
 		}
 
 		if (is_new)
-			m_datablocks.emplace(m_datablocks.begin(), name);
+		{
+			auto &db = emplace_front(name);
+			db.set_validator(m_validator);
+		}
 
-		return std::make_tuple(m_datablocks.begin(), is_new);		
+		return std::make_tuple(begin(), is_new);		
 	}
-
-	bool empty() const { return m_datablocks.empty(); }
-	size_t size() const { return m_datablocks.size(); }
-
-	iterator begin() { return m_datablocks.begin(); }
-	iterator end() { return m_datablocks.end(); }
-
-	const_iterator cbegin() { return m_datablocks.begin(); }
-	const_iterator cend() { return m_datablocks.end(); }
-
-	const_iterator begin() const { return m_datablocks.begin(); }
-	const_iterator end() const { return m_datablocks.end(); }
-
-	reference front() { return m_datablocks.front(); }
-	reference back() { return m_datablocks.back(); }
 
 	void load(std::istream &is)
 	{
@@ -191,7 +171,6 @@ class file
 	}
 
   private:
-	datablock_list m_datablocks;
 	const validator* m_validator = nullptr;
 };
 

@@ -31,6 +31,8 @@
 #include <cif++/v2/dictionary_parser.hpp>
 #include <cif++/v2/validate.hpp>
 
+#include <cif++/CifUtils.hpp>
+
 namespace cif
 {
 extern int VERBOSE;
@@ -69,25 +71,27 @@ DDL_PrimitiveType map_to_primitive_type(std::string_view s)
 
 // --------------------------------------------------------------------
 
-int type_validator::compare(const char *a, const char *b) const
+int type_validator::compare(std::string_view a, std::string_view b) const
 {
 	int result = 0;
 
-	if (*a == 0)
-		result = *b == 0 ? 0 : -1;
-	else if (*b == 0)
-		result = *a == 0 ? 0 : +1;
+	if (a.empty())
+		result = b.empty() ? 0 : -1;
+	else if (b.empty())
+		result = a.empty() ? 0 : +1;
 	else
 	{
-		try
+		switch (m_primitive_type)
 		{
-			switch (m_primitive_type)
+			case DDL_PrimitiveType::Numb:
 			{
-				case DDL_PrimitiveType::Numb:
-				{
-					double da = strtod(a, nullptr);
-					double db = strtod(b, nullptr);
+				double da, db;
 
+				auto ra = cif::from_chars(a.begin(), a.end(), da);
+				auto rb = cif::from_chars(b.begin(), b.end(), db);
+
+				if (ra.ec == std::errc() and rb.ec == std::errc())
+				{
 					auto d = da - db;
 					if (std::abs(d) > std::numeric_limits<double>::epsilon())
 					{
@@ -96,63 +100,63 @@ int type_validator::compare(const char *a, const char *b) const
 						else if (d < 0)
 							result = -1;
 					}
-					break;
 				}
+				else if (ra.ec == std::errc())
+					result = 1;
+				else
+					result = -1;
+				break;
+			}
 
-				case DDL_PrimitiveType::UChar:
-				case DDL_PrimitiveType::Char:
+			case DDL_PrimitiveType::UChar:
+			case DDL_PrimitiveType::Char:
+			{
+				// CIF is guaranteed to have ascii only, therefore this primitive code will do
+				// also, we're collapsing spaces
+
+				auto ai = a.begin(), bi = b.begin();
+				for (;;)
 				{
-					// CIF is guaranteed to have ascii only, therefore this primitive code will do
-					// also, we're collapsing spaces
-
-					auto ai = a, bi = b;
-					for (;;)
+					if (ai == a.end())
 					{
-						if (*ai == 0)
-						{
-							if (*bi != 0)
-								result = -1;
-							break;
-						}
-						else if (*bi == 0)
-						{
-							result = 1;
-							break;
-						}
-
-						char ca = *ai;
-						char cb = *bi;
-
-						if (m_primitive_type == DDL_PrimitiveType::UChar)
-						{
-							ca = tolower(ca);
-							cb = tolower(cb);
-						}
-
-						result = ca - cb;
-
-						if (result != 0)
-							break;
-
-						if (ca == ' ')
-						{
-							while (ai[1] == ' ')
-								++ai;
-							while (bi[1] == ' ')
-								++bi;
-						}
-
-						++ai;
-						++bi;
+						if (bi != b.end())
+							result = -1;
+						break;
+					}
+					else if (bi == b.end())
+					{
+						result = 1;
+						break;
 					}
 
-					break;
+					char ca = *ai;
+					char cb = *bi;
+
+					if (m_primitive_type == DDL_PrimitiveType::UChar)
+					{
+						ca = tolower(ca);
+						cb = tolower(cb);
+					}
+
+					result = ca - cb;
+
+					if (result != 0)
+						break;
+
+					if (ca == ' ')
+					{
+						while (ai[1] == ' ')
+							++ai;
+						while (bi[1] == ' ')
+							++bi;
+					}
+
+					++ai;
+					++bi;
 				}
+
+				break;
 			}
-		}
-		catch (const std::invalid_argument &ex)
-		{
-			result = 1;
 		}
 	}
 

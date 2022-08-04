@@ -89,7 +89,7 @@ class iterator_impl
 	template <typename IRowType>
 	iterator_impl(iterator_impl<IRowType, Ts...> &rhs)
 		: m_category(rhs.m_category)
-		, m_current(rhs.m_current)
+		, m_current(const_cast<row_type *>(rhs.m_current))
 		, m_value(rhs.m_value)
 		, m_column_ix(rhs.m_column_ix)
 	{
@@ -274,7 +274,7 @@ class conditional_iterator_proxy
 		using value_type = conditional_iterator_proxy::value_type;
 		using difference_type = std::ptrdiff_t;
 		using pointer = value_type *;
-		using reference = row_handle;
+		using reference = value_type;
 
 		conditional_iterator_impl(CategoryType &cat, row_iterator pos, const condition &cond, const std::array<size_t, N> &cix);
 		conditional_iterator_impl(const conditional_iterator_impl &i) = default;

@@ -45,7 +45,7 @@ std::string_view item_handle::text() const
 
 void item_handle::assign_value(const item &v)
 {
-	m_row_handle.assign(m_column, v.value(), false);
+	m_row_handle.assign(m_column, v.value(), true);
 }
 
 }

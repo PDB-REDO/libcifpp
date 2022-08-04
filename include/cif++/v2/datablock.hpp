@@ -35,16 +35,9 @@ namespace cif::v2
 
 // --------------------------------------------------------------------
 
-class datablock
+class datablock : public std::list<category>
 {
   public:
-	using category_list = std::list<category>;
-
-	using iterator = category_list::iterator;
-	using const_iterator = category_list::const_iterator;
-
-	using reference = typename category_list::reference;
-
 	datablock() = default;
 
 	datablock(std::string_view name)
@@ -90,48 +83,31 @@ class datablock
 
 	// --------------------------------------------------------------------
 
-	bool empty() const { return m_categories.empty(); }
-	size_t size() const { return m_categories.size(); }
-
-	reference front() { return m_categories.front(); }
-	reference back() { return m_categories.back(); }
-
-	iterator begin() { return m_categories.begin(); }
-	iterator end() { return m_categories.end(); }
-
-	const_iterator cbegin() { return m_categories.cbegin(); }
-	const_iterator cend() { return m_categories.cend(); }
-
-	const_iterator begin() const { return m_categories.begin(); }
-	const_iterator end() const { return m_categories.end(); }
-
-	// --------------------------------------------------------------------
-
 	category &operator[](std::string_view name)
 	{
-		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category &c)
+		auto i = std::find_if(begin(), end(), [name](const category &c)
 			{ return iequals(c.name(), name); });
 
-		if (i != m_categories.end())
+		if (i != end())
 			return *i;
 
-		m_categories.emplace_back(name);
-		return m_categories.back();
+		emplace_back(name);
+		return back();
 	}
 
 	const category &operator[](std::string_view name) const
 	{
 		static const category s_empty;
-		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category &c)
+		auto i = std::find_if(begin(), end(), [name](const category &c)
 			{ return iequals(c.name(), name); });
-		return i == m_categories.end() ? s_empty : *i;
+		return i == end() ? s_empty : *i;
 	}
 
 	category *get(std::string_view name)
 	{
-		auto i = std::find_if(m_categories.begin(), m_categories.end(), [name](const category &c)
+		auto i = std::find_if(begin(), end(), [name](const category &c)
 			{ return iequals(c.name(), name); });
-		return i == m_categories.end() ? nullptr : &*i;
+		return i == end() ? nullptr : &*i;
 	}
 
 	const category *get(std::string_view name) const
@@ -143,17 +119,17 @@ class datablock
 	{
 		bool is_new = true;
 
-		auto i = m_categories.begin();
-		while (i != m_categories.end())
+		auto i = begin();
+		while (i != end())
 		{
 			if (iequals(name, i->name()))
 			{
 				is_new = false;
 
-				if (i != m_categories.begin())
+				if (i != begin())
 				{
 					auto n = std::next(i);
-					m_categories.splice(m_categories.begin(), m_categories, i, n);
+					splice(begin(), *this, i, n);
 				}
 
 				break;
@@ -164,14 +140,11 @@ class datablock
 
 		if (is_new)
 		{
-			m_categories.emplace(m_categories.begin(), name);
-			// m_categories.emplace(begin(), *this, std::string(name), mValidator);
-
-			// for (auto &cat : mCategories)
-			// 	cat.updateLinks();
+			auto &c = emplace_front(name);
+			c.set_validator(m_validator, *this);
 		}
 
-		return std::make_tuple(m_categories.begin(), is_new);
+		return std::make_tuple(begin(), is_new);
 	}
 
 	// void write(std::ostream &os) const
@@ -217,7 +190,6 @@ class datablock
 	// }
 
   private:
-	category_list m_categories;
 	std::string m_name;
 	const validator *m_validator = nullptr;
 };
