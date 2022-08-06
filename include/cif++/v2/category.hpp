@@ -33,6 +33,13 @@
 #include <cif++/v2/row.hpp>
 #include <cif++/v2/validate.hpp>
 
+// TODO: implement all of:
+// https://en.cppreference.com/w/cpp/named_req/Container
+// https://en.cppreference.com/w/cpp/named_req/SequenceContainer
+// https://en.cppreference.com/w/cpp/named_req/AssociativeContainer ?
+// and more?
+
+
 namespace cif::v2
 {
 
@@ -348,54 +355,6 @@ class category
 	template <typename ItemIter>
 	iterator emplace(ItemIter b, ItemIter e)
 	{
-		// First, make sure all mandatory fields are supplied
-		if (m_cat_validator != nullptr and b != e)
-		{
-			for (const auto &[column, iv] : m_columns)
-			{
-				if (iv == nullptr)
-					continue;
-
-				bool seen = false;
-
-				for (auto v = b; v != e; ++v)
-				{
-					if (iequals(v->name(), column))
-					{
-						iv->operator()(v->value());
-
-						seen = true;
-						break;
-					}
-				}
-
-				if (not seen and iv->m_mandatory)
-					throw std::runtime_error("missing mandatory field " + column + " for category " + m_name);
-			}
-
-			// if (mIndex != nullptr)
-			// {
-			// 	std::unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
-			// 	Row r(nr.get());
-			// 	auto keys = keyFields();
-
-			// 	for (auto v = b; v != e; ++v)
-			// 	{
-			// 		if (keys.count(v->name()))
-			// 			r.assign(v->name(), v->value(), true);
-			// 	}
-
-			// 	auto test = mIndex->find(nr.get());
-			// 	if (test != nullptr)
-			// 	{
-			// 		if (VERBOSE > 1)
-			// 			std::cerr << "Not inserting new record in " << mName << " (duplicate Key)" << std::endl;
-			// 		result = test;
-			// 		isNew = false;
-			// 	}
-			// }
-		}
-
 		row *r = this->create_row();
 
 		try
@@ -414,11 +373,6 @@ class category
 		}
 
 		return insert_impl(cend(), r);
-
-		// result = r;
-
-		// if (mIndex != nullptr)
-		// 	mIndex->insert(nr);
 	}
 
 	void clear()

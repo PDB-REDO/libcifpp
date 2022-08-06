@@ -1310,6 +1310,59 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 	if (n == nullptr)
 		throw std::runtime_error("Invalid pointer passed to insert");
 
+	// First, make sure all mandatory fields are supplied
+	if (m_cat_validator != nullptr)
+	{
+		for (uint16_t ix = 0; ix < static_cast<uint16_t>(m_columns.size()); ++ix)
+		{
+			const auto &[column, iv] = m_columns[ix];
+
+			if (iv == nullptr)
+				continue;
+
+			bool seen = false;
+
+			for (auto i = n->m_head; i != nullptr; i = i->m_next)
+			{
+				if (i->m_column_ix == ix)
+				{
+					iv->operator()(i->text());
+
+					seen = true;
+					break;
+				}
+			}
+
+			if (not seen and iv->m_mandatory)
+				throw std::runtime_error("missing mandatory field " + column + " for category " + m_name);
+		}
+
+		// if (m_index != nullptr)
+		// {
+		// 	std::unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
+		// 	Row r(nr.get());
+		// 	auto keys = keyFields();
+
+		// 	for (auto v = b; v != e; ++v)
+		// 	{
+		// 		if (keys.count(v->name()))
+		// 			r.assign(v->name(), v->value(), true);
+		// 	}
+
+		// 	auto test = m_index->find(nr.get());
+		// 	if (test != nullptr)
+		// 	{
+		// 		if (VERBOSE > 1)
+		// 			std::cerr << "Not inserting new record in " << mName << " (duplicate Key)" << std::endl;
+		// 		result = test;
+		// 		isNew = false;
+		// 	}
+		// }
+	}
+
+	if (m_index != nullptr)
+		m_index->insert(n);
+
 	// insert at end, most often this is the case
 	if (pos.m_current == nullptr)
 	{
@@ -1327,6 +1380,10 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 		else
 			n = n->m_next = m_head->m_next;
 	}
+
+
+
+
 
 	return iterator(*this, n);
 }
