@@ -248,7 +248,7 @@ namespace detail
 
 		bool test(row_handle r) const override
 		{
-			auto &c = r.cat();
+			auto &c = r.get_category();
 
 			bool result = false;
 			for (auto &f : get_category_fields(c))
@@ -286,7 +286,7 @@ namespace detail
 
 		bool test(row_handle r) const override
 		{
-			auto &c = r.cat();
+			auto &c = r.get_category();
 
 			bool result = false;
 			for (auto &f : get_category_fields(c))

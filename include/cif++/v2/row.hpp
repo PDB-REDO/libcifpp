@@ -130,7 +130,7 @@ class row
 };
 
 // --------------------------------------------------------------------
-/// \brief row_handle is the way to access data in rows
+/// \brief row_handle is the way to access data stored in rows
 
 class row_handle
 {
@@ -153,7 +153,7 @@ class row_handle
 	{
 	}
 
-	const category &cat() const
+	const category &get_category() const
 	{
 		return *m_category;
 	}
@@ -202,55 +202,8 @@ class row_handle
 
 	void assign(const std::vector<item> &values)
 	{
-		// std::map<std::string, std::tuple<size_t, std::string, std::string>> changed;
-
 		for (auto &value : values)
-		{
 			assign(value, true);
-
-			// auto columnIx = cat->add_column(value.name());
-			// auto &col = cat->m_columns[columnIx];
-			// std::string tag = col.mValidator ? col.mValidator->mTag : std::to_string(columnIx);
-
-			// changed[tag] = std::make_tuple(columnIx, operator[](columnIx).c_str(), value.value());
-
-			// assign(columnIx, value.value(), true);
-		}
-
-		// // see if we need to update any child categories that depend on these values
-		// // auto iv = col.mValidator;
-		// if (mCascade)
-		// {
-		// 	for (auto &&[childCat, linked] : cat->mChildLinks)
-		// 	{
-		// 		Condition cond;
-		// 		std::string childTag;
-
-		// 		std::vector<Item> newValues;
-
-		// 		for (size_t ix = 0; ix < linked->mParentKeys.size(); ++ix)
-		// 		{
-		// 			std::string pk = linked->mParentKeys[ix];
-		// 			std::string ck = linked->mChildKeys[ix];
-
-		// 			if (changed.count(pk) > 0)
-		// 			{
-		// 				childTag = ck;
-		// 				cond = std::move(cond) && (Key(ck) == std::get<1>(changed[pk]));
-		// 				newValues.emplace_back(ck, std::get<2>(changed[pk]));
-		// 			}
-		// 			else
-		// 			{
-		// 				const char *value = (*this)[pk].c_str();
-		// 				cond = std::move(cond) && (Key(ck) == value);
-		// 			}
-		// 		}
-
-		// 		auto rows = childCat->find(std::move(cond));
-		// 		for (auto &cr : rows)
-		// 			cr.assign(newValues);
-		// 	}
-		// }
 	}
 
 	void assign(std::string_view name, std::string_view value, bool updateLinked, bool validate = true)
@@ -280,6 +233,32 @@ class row_handle
 
 	category *m_category = nullptr;
 	row *m_row = nullptr;
+};
+
+// --------------------------------------------------------------------
+
+class row_initializer
+{
+  public:
+	friend class category;
+
+	row_initializer() = default;
+	row_initializer(const row_initializer &) = default;
+	row_initializer(row_initializer &&) = default;
+	row_initializer &operator=(const row_initializer &) = default;
+	row_initializer &operator=(row_initializer &&) = default;
+
+	row_initializer(std::initializer_list<item> items)
+		: m_items(items) {}
+
+	template <typename ItemIter, std::enable_if_t<std::is_same_v<typename ItemIter::value_type, item>, int> = 0>
+	row_initializer(ItemIter b, ItemIter e)
+		: m_items(b, e)
+	{
+	}
+
+  private:
+	std::vector<item> m_items;
 };
 
 } // namespace cif::v2

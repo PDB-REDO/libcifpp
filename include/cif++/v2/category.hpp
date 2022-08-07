@@ -36,7 +36,6 @@
 // TODO: implement all of:
 // https://en.cppreference.com/w/cpp/named_req/Container
 // https://en.cppreference.com/w/cpp/named_req/SequenceContainer
-// https://en.cppreference.com/w/cpp/named_req/AssociativeContainer ?
 // and more?
 
 
@@ -333,12 +332,12 @@ class category
 
 	// --------------------------------------------------------------------
 
-	// void insert(const_iterator pos, const row &row)
+	// void insert(const_iterator pos, const row_initializer &row)
 	// {
 	// 	insert_impl(pos, row);
 	// }
 
-	// void insert(const_iterator pos, row &&row)
+	// void insert(const_iterator pos, row_initializer &&row)
 	// {
 	// 	insert_impl(pos, std::move(row));
 	// }
@@ -347,9 +346,9 @@ class category
 	size_t erase(condition &&cond);
 	size_t erase(condition &&cond, std::function<void(row_handle)> &&visit);
 
-	iterator emplace(std::initializer_list<item> items)
+	iterator emplace(row_initializer &&ri)
 	{
-		return this->emplace(items.begin(), items.end());
+		return this->emplace(ri.m_items.begin(), ri.m_items.end());
 	}
 
 	template <typename ItemIter>
@@ -586,7 +585,6 @@ class category
 
 	// proxy methods for every insertion
 	iterator insert_impl(const_iterator pos, row *n);
-
 	iterator erase_impl(const_iterator pos);
 
 	std::string m_name;

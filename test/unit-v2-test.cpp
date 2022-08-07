@@ -662,6 +662,23 @@ mies Mies
 	cat1.erase(cif::v2::key("id") == "noot");
 
 	BOOST_CHECK(cat1.size() == 2);
+
+	// should fail with duplicate key:
+	BOOST_CHECK_THROW(cat1.emplace({
+		{"id", "aap"},
+		{"c", "2e-aap"}
+	}), std::exception);
+
+	cat1.erase(cif::v2::key("id") == "aap");
+
+	BOOST_CHECK(cat1.size() == 1);
+
+	cat1.emplace({
+		{"id", "aap"},
+		{"c", "2e-aap"}
+	});
+
+	BOOST_CHECK(cat1.size() == 2);
 }
 
 // --------------------------------------------------------------------
