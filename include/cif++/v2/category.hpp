@@ -410,6 +410,14 @@ class category
 		return result;
 	}
 
+	std::string_view get_column_name(uint16_t ix) const
+	{
+		if (ix >= m_columns.size())
+			throw std::out_of_range("column index is out of range");
+		
+		return m_columns[ix].m_name;
+	}
+
 	uint16_t add_column(std::string_view column_name)
 	{
 		using namespace std::literals;

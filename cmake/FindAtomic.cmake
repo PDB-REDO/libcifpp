@@ -12,8 +12,6 @@ include(CheckCXXSourceRuns)
 
 cmake_push_check_state()
 
-# set(CMAKE_CXX_STANDARD 17)
-
 check_include_file_cxx("atomic" _CXX_ATOMIC_HAVE_HEADER)
 mark_as_advanced(_CXX_ATOMIC_HAVE_HEADER)
 

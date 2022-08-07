@@ -39,9 +39,25 @@ uint16_t row_handle::get_column_ix(std::string_view name) const
 	return m_category->get_column_ix(name);
 }
 
+std::string_view row_handle::get_column_name(uint16_t ix) const
+{
+	return m_category->get_column_name(ix);
+}
+
 uint16_t row_handle::add_column(std::string_view name)
 {
 	return m_category->add_column(name);
+}
+
+// --------------------------------------------------------------------
+
+row_initializer::row_initializer(row_handle rh)
+{
+	row *r = rh;
+	auto &cat = *rh.m_category;
+
+	for (auto i = r->m_head; i != nullptr; i = i->m_next)
+		m_items.emplace_back(cat.get_column_name(i->m_column_ix), i->text());
 }
 
 } // namespace cif::v2

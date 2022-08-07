@@ -1310,82 +1310,86 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 	if (n == nullptr)
 		throw std::runtime_error("Invalid pointer passed to insert");
 
-	// First, make sure all mandatory fields are supplied
-	if (m_cat_validator != nullptr)
+	try
 	{
-		for (uint16_t ix = 0; ix < static_cast<uint16_t>(m_columns.size()); ++ix)
+		// First, make sure all mandatory fields are supplied
+		if (m_cat_validator != nullptr)
 		{
-			const auto &[column, iv] = m_columns[ix];
-
-			if (iv == nullptr)
-				continue;
-
-			bool seen = false;
-
-			for (auto i = n->m_head; i != nullptr; i = i->m_next)
+			for (uint16_t ix = 0; ix < static_cast<uint16_t>(m_columns.size()); ++ix)
 			{
-				if (i->m_column_ix == ix)
-				{
-					iv->operator()(i->text());
+				const auto &[column, iv] = m_columns[ix];
 
-					seen = true;
-					break;
+				if (iv == nullptr)
+					continue;
+
+				bool seen = false;
+
+				for (auto i = n->m_head; i != nullptr; i = i->m_next)
+				{
+					if (i->m_column_ix == ix)
+					{
+						iv->operator()(i->text());
+
+						seen = true;
+						break;
+					}
 				}
+
+				if (not seen and iv->m_mandatory)
+					throw std::runtime_error("missing mandatory field " + column + " for category " + m_name);
 			}
 
-			if (not seen and iv->m_mandatory)
-				throw std::runtime_error("missing mandatory field " + column + " for category " + m_name);
+			// if (m_index != nullptr)
+			// {
+			// 	std::unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
+			// 	Row r(nr.get());
+			// 	auto keys = keyFields();
+
+			// 	for (auto v = b; v != e; ++v)
+			// 	{
+			// 		if (keys.count(v->name()))
+			// 			r.assign(v->name(), v->value(), true);
+			// 	}
+
+			// 	auto test = m_index->find(nr.get());
+			// 	if (test != nullptr)
+			// 	{
+			// 		if (VERBOSE > 1)
+			// 			std::cerr << "Not inserting new record in " << mName << " (duplicate Key)" << std::endl;
+			// 		result = test;
+			// 		isNew = false;
+			// 	}
+			// }
 		}
 
-		// if (m_index != nullptr)
-		// {
-		// 	std::unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
-		// 	Row r(nr.get());
-		// 	auto keys = keyFields();
+		if (m_index != nullptr)
+			m_index->insert(n);
 
-		// 	for (auto v = b; v != e; ++v)
-		// 	{
-		// 		if (keys.count(v->name()))
-		// 			r.assign(v->name(), v->value(), true);
-		// 	}
-
-		// 	auto test = m_index->find(nr.get());
-		// 	if (test != nullptr)
-		// 	{
-		// 		if (VERBOSE > 1)
-		// 			std::cerr << "Not inserting new record in " << mName << " (duplicate Key)" << std::endl;
-		// 		result = test;
-		// 		isNew = false;
-		// 	}
-		// }
-	}
-
-	if (m_index != nullptr)
-		m_index->insert(n);
-
-	// insert at end, most often this is the case
-	if (pos.m_current == nullptr)
-	{
-		if (m_head == nullptr)
-			m_tail = m_head = n;
+		// insert at end, most often this is the case
+		if (pos.m_current == nullptr)
+		{
+			if (m_head == nullptr)
+				m_tail = m_head = n;
+			else
+				m_tail = m_tail->m_next = n;
+		}
 		else
-			m_tail = m_tail->m_next = n;
+		{
+			assert(m_head != nullptr);
+
+			if (pos.m_current == m_head)
+				m_head = n->m_next = m_head;
+			else
+				n = n->m_next = m_head->m_next;
+		}
+
+		return iterator(*this, n);
 	}
-	else
+	catch(const std::exception& e)
 	{
-		assert(m_head != nullptr);
-
-		if (pos.m_current == m_head)
-			m_head = n->m_next = m_head;
-		else
-			n = n->m_next = m_head->m_next;
+		delete_row(n);
+		throw;
 	}
-
-
-
-
-
-	return iterator(*this, n);
 }
 
 category::iterator category::erase_impl(const_iterator pos)

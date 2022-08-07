@@ -130,6 +130,32 @@ BOOST_AUTO_TEST_CASE(cc_2)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(item_1)
+{
+	using namespace cif::v2;
+
+	item i1("1", "1");
+	item i2("2", 2.0);
+	item i3("3", '3');
+
+	item ci1(i1);
+	item ci2(i2);
+	item ci3(i3);
+
+	BOOST_CHECK_EQUAL(i1.value(), ci1.value());
+	BOOST_CHECK_EQUAL(i2.value(), ci2.value());
+	BOOST_CHECK_EQUAL(i3.value(), ci3.value());
+
+	item mi1(std::move(i1));
+	item mi2(std::move(i2));
+	item mi3(std::move(i3));
+
+	BOOST_CHECK_EQUAL(i1.value(), mi1.value());
+	BOOST_CHECK_EQUAL(i2.value(), mi2.value());
+	BOOST_CHECK_EQUAL(i3.value(), mi3.value());
+
+}
+
 
 
 // --------------------------------------------------------------------
@@ -241,6 +267,27 @@ BOOST_AUTO_TEST_CASE(c_2)
 
 	BOOST_CHECK(not c.empty());
 	BOOST_CHECK_EQUAL(c.size(), 3);
+}
+
+BOOST_AUTO_TEST_CASE(c_3)
+{
+	std::tuple<int,const char*> D[] = {
+		{1, "aap"},
+		{2, "noot"},
+		{3, "mies"}
+	};
+
+	cif::v2::category c("foo");
+
+	for (const auto &[id, s] : D)
+		c.emplace({ {"id", id}, { "s", s} });
+
+	cif::v2::category c2("bar");
+
+	for (auto r : c)
+		c2.emplace(r);
+	
+	// BOOST_CHECK(c == c2);
 }
 
 BOOST_AUTO_TEST_CASE(ci_1)
