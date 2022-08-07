@@ -1053,7 +1053,7 @@ Polymer::Polymer(const Structure &s, const std::string &entityID, const std::str
 	{
 		int seqID;
 		std::string compoundID, authSeqID;
-		cif::tie(seqID, authSeqID, compoundID) = r.get("seq_id", "auth_seq_num", "mon_id");
+		cif::tie(seqID, authSeqID, compoundID) = r.get("seq_id", "pdb_seq_num", "mon_id");
 
 		size_t index = size();
 

@@ -1,3 +1,8 @@
+Version 4.2.2
+- Fix in loading an mmcif::Structure, the mapping between
+  atom_site and pdbx_poly_seq_scheme should be on auth_seq_id
+  to pdb_seq_num and not auth_seq_num of course... duh
+
 Version 4.2.1
 - Improved REMARK 3 parser (for TLS in large molecules)
 

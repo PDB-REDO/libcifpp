@@ -3672,10 +3672,10 @@ std::tuple<int,int> WriteCoordinate(std::ostream& pdbFile, const Datablock& db)
 		std::string chainID, resName, iCode;
 		int resSeq;
 		
-		if (r["auth_seq_num"].empty())
+		if (r["pdb_seq_num"].empty())
 			continue;
 		
-		cif::tie(chainID, resName, resSeq, iCode) = r.get("pdb_strand_id", "pdb_mon_id", "auth_seq_num", "pdb_ins_code");
+		cif::tie(chainID, resName, resSeq, iCode) = r.get("pdb_strand_id", "pdb_mon_id", "pdb_seq_num", "pdb_ins_code");
 		
 		last_resseq_for_chain_map[chainID] = make_tuple(resName, resSeq, iCode);
 //		res2chain_map[make_tuple(resName, resSeq, iCode)] = chainID;

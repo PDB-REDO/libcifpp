@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 4.2.1 LANGUAGES CXX)
+project(cifpp VERSION 4.2.2 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
