@@ -88,6 +88,12 @@ class category
 
 	bool is_valid() const;
 
+	bool operator==(const category &rhs) const;
+	bool operator!=(const category &rhs) const
+	{
+		return not operator==(rhs);
+	}
+
 	// --------------------------------------------------------------------
 
 	reference front()

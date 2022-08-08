@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE(c_3)
 	for (auto r : c)
 		c2.emplace(r);
 	
-	// BOOST_CHECK(c == c2);
+	BOOST_CHECK(c == c2);
 }
 
 BOOST_AUTO_TEST_CASE(ci_1)
