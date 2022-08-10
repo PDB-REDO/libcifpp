@@ -167,7 +167,10 @@ void toUpper(std::string &s)
 void replace_all(std::string &s, std::string_view what, std::string_view with)
 {
 	for (std::string::size_type p = s.find(what); p != std::string::npos; p = s.find(what, p))
+	{
 		s.replace(p, what.length(), with);
+		p += with.length();
+	}
 }
 
 bool icontains(std::string_view s, std::string_view q)

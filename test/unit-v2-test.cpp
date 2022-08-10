@@ -2160,3 +2160,20 @@ BOOST_AUTO_TEST_CASE(split_test)
 	
 	BOOST_CHECK(v == t);
 }
+
+BOOST_AUTO_TEST_CASE(join_test)
+{
+	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{"aap"}, ", "), "aap");
+	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{"aap", "noot"}, ", "), "aap, noot");
+	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{"aap", "noot", "mies"}, ", "), "aap, noot, mies");
+}
+
+BOOST_AUTO_TEST_CASE(replace_all_test)
+{
+	std::string s("aap, noot, mies");
+	cif::replace_all(s, ", ", ",");
+	BOOST_CHECK_EQUAL(s, "aap,noot,mies");
+
+	cif::replace_all(s, ",", ", ");
+	BOOST_CHECK_EQUAL(s, "aap, noot, mies");
+}

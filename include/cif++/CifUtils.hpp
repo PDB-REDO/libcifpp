@@ -90,11 +90,12 @@ std::string join(IterType b, IterType e, std::string_view sep)
 		for (;;)
 		{
 			s << *ai;
-			ai = ni;
-			ni = std::next(ai);
 
 			if (ni == e)
 				break;
+
+			ai = ni;
+			ni = std::next(ai);
 
 			s << sep;
 		}

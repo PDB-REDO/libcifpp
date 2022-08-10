@@ -29,8 +29,6 @@
 #include <map>
 #include <set>
 
-#include <boost/format.hpp>
-
 #include <cif++/AtomType.hpp>
 #include <cif++/Compound.hpp>
 #include <cif++/PDB2CifRemark3.hpp>
