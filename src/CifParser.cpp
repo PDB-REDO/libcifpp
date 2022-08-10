@@ -26,13 +26,9 @@
 
 #include <set>
 
-#include <boost/algorithm/string.hpp>
-
 #include <cif++/Cif++.hpp>
 #include <cif++/CifParser.hpp>
 #include <cif++/CifValidator.hpp>
-
-namespace ba = boost::algorithm;
 
 extern int VERBOSE;
 
@@ -1300,9 +1296,9 @@ bool DictParser::collectItemTypes()
 		std::string code, primitiveCode, construct;
 		cif::tie(code, primitiveCode, construct) = t.get("code", "primitive_code", "construct");
 
-		ba::replace_all(construct, "\\n", "\n");
-		ba::replace_all(construct, "\\t", "\t");
-		ba::replace_all(construct, "\\\n", "");
+		cif::replace_all(construct, "\\n", "\n");
+		cif::replace_all(construct, "\\t", "\t");
+		cif::replace_all(construct, "\\\n", "");
 
 		try
 		{

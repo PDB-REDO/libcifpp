@@ -72,7 +72,124 @@ bool iequals(const char *a, const char *b);
 int icompare(const char *a, const char *b);
 
 void toLower(std::string &s);
-std::string toLowerCopy(const std::string &s);
+std::string toLowerCopy(std::string_view s);
+
+void toUpper(std::string &s);
+// std::string toUpperCopy(const std::string &s);
+
+template <typename IterType>
+std::string join(IterType b, IterType e, std::string_view sep)
+{
+	std::ostringstream s;
+
+	if (b != e)
+	{
+		auto ai = b;
+		auto ni = std::next(ai);
+
+		for (;;)
+		{
+			s << *ai;
+			ai = ni;
+			ni = std::next(ai);
+
+			if (ni == e)
+				break;
+
+			s << sep;
+		}
+	}
+
+	return s.str();
+}
+
+template <typename V>
+std::string join(const V &arr, std::string_view sep)
+{
+	return join(arr.begin(), arr.end(), sep);
+}
+
+template<typename StringType = std::string_view>
+std::vector<StringType> split(std::string_view s, std::string_view separators, bool suppress_empty = false)
+{
+	std::vector<StringType> result;
+
+	auto b = s.begin();
+	auto e = b;
+
+	while (e != s.end())
+	{
+		if (separators.find(*e) != std::string_view::npos)
+		{
+			if (e > b or not suppress_empty)
+				result.emplace_back(b, e - b);
+			b = e = e + 1;
+			continue;
+		}
+
+		++e;
+	}
+
+	if (e > b or not suppress_empty)
+		result.emplace_back(b, e - b);
+
+	return result;
+}
+
+void replace_all(std::string &s, std::string_view what, std::string_view with = {});
+
+#if defined(__cpp_lib_starts_ends_with)
+
+inline bool starts_with(std::string s, std::string_view with)
+{
+	return s.starts_with(with);
+}
+
+inline bool ends_with(std::string_view s, std::string_view with)
+{
+	return s.ends_with(with);
+}
+
+#else
+
+inline bool starts_with(std::string s, std::string_view with)
+{
+	return s.compare(0, with.length(), with) == 0;
+}
+
+inline bool ends_with(std::string_view s, std::string_view with)
+{
+	return s.length() >= with.length() and s.compare(s.length() - with.length(), with.length(), with) == 0;
+}
+
+#endif
+
+#if defined(__cpp_lib_string_contains)
+
+inline bool contains(std::string_view s, std::string_view q)
+{
+	return s.contains(q);
+}
+
+#else
+
+inline bool contains(std::string_view s, std::string_view q)
+{
+	return s.find(q) != std::string_view::npos;
+}
+
+#endif
+
+bool icontains(std::string_view s, std::string_view q);
+
+void trim_left(std::string &s);
+void trim_right(std::string &s);
+void trim(std::string &s);
+
+std::string trim_left_copy(std::string_view s);
+std::string trim_right_copy(std::string_view s);
+std::string trim_copy(std::string_view s);
+
 
 // To make life easier, we also define iless and iset using iequals
 

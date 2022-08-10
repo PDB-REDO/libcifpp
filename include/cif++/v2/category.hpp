@@ -394,6 +394,34 @@ class category
 	}
 
 	// --------------------------------------------------------------------
+	/// \brief generate a new, unique ID. Pass it an ID generating function
+	/// based on a sequence number. This function will be called until the
+	/// result is unique in the context of this category
+	std::string get_unique_id(std::function<std::string(int)> generator = cif::cifIdForNumber);
+	std::string get_unique_id(const std::string &prefix)
+	{
+		return get_unique_id([prefix](int nr)
+			{ return prefix + std::to_string(nr + 1); });
+	}
+
+	// --------------------------------------------------------------------
+
+	/// \brief Rename a single column in the rows that match \a cond to value \a value
+	/// making sure the linked categories are updated according to the link.
+	/// That means, child categories are updated if the links are absolute
+	/// and unique. If they are not, the child category rows are split.
+
+	void update_value(condition &&cond, std::string_view tag, std::string_view value)
+	{
+		auto rs = find(std::move(cond));
+		std::vector<row_handle> rows;
+		std::copy(rs.begin(), rs.end(), std::back_inserter(rows));
+		update_value(rows, tag, value);
+	}
+
+	void update_value(const std::vector<row_handle> &rows, std::string_view tag, std::string_view value);
+
+	// --------------------------------------------------------------------
 	/// \brief Return the index number for \a column_name
 
 	uint16_t get_column_ix(std::string_view column_name) const
@@ -573,6 +601,8 @@ class category
 		}
 	}
 
+	row_handle create_copy(row_handle r);
+
 	struct item_column
 	{
 		std::string m_name;
@@ -607,6 +637,7 @@ class category
 	const category_validator *m_cat_validator = nullptr;
 	std::vector<link> m_parent_links, m_child_links;
 	bool m_cascade = true;
+	uint32_t m_last_unique_num = 0;
 	class category_index* m_index = nullptr;
 	row *m_head = nullptr, *m_tail = nullptr;
 };

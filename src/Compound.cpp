@@ -29,8 +29,6 @@
 #include <numeric>
 #include <shared_mutex>
 
-#include <boost/algorithm/string.hpp>
-
 #include <filesystem>
 #include <fstream>
 
@@ -40,7 +38,6 @@
 #include <cif++/Compound.hpp>
 #include <cif++/Point.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
 namespace mmcif
@@ -126,7 +123,7 @@ Compound::Compound(cif::Datablock &db)
 		chemComp.front().get("id", "name", "type", "formula", "formula_weight", "pdbx_formal_charge");
 
 	// The name should not contain newline characters since that triggers validation errors later on
-	ba::replace_all(mName, "\n", "");
+	cif::replace_all(mName, "\n", "");
 
 	mGroup = "non-polymer";
 
@@ -286,7 +283,7 @@ class CompoundFactoryImpl : public std::enable_shared_from_this<CompoundFactoryI
 	{
 		std::shared_lock lock(mMutex);
 
-		ba::to_upper(id);
+		cif::toUpper(id);
 
 		Compound *result = nullptr;
 
@@ -554,7 +551,7 @@ CCP4CompoundFactoryImpl::CCP4CompoundFactoryImpl(const fs::path &clibd_mon, std:
 	{
 		if (std::regex_match(group, peptideRx))
 			mKnownPeptides.insert(threeLetterCode);
-		else if (ba::iequals(group, "DNA") or ba::iequals(group, "RNA"))
+		else if (cif::iequals(group, "DNA") or cif::iequals(group, "RNA"))
 			mKnownBases.insert(threeLetterCode);
 	}
 }
@@ -576,10 +573,10 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 		cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
 			row.get("name", "group", "number_atoms_all", "number_atoms_nh");
 
-		fs::path resFile = mCLIBD_MON / ba::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
+		fs::path resFile = mCLIBD_MON / cif::toLowerCopy(id.substr(0, 1)) / (id + ".cif");
 
 		if (not fs::exists(resFile) and (id == "COM" or id == "CON" or "PRN")) // seriously...
-			resFile = mCLIBD_MON / ba::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");
+			resFile = mCLIBD_MON / cif::toLowerCopy(id.substr(0, 1)) / (id + '_' + id + ".cif");
 
 		if (fs::exists(resFile))
 		{

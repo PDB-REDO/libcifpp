@@ -30,7 +30,6 @@
 #include <system_error>
 #include <iomanip>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 
@@ -42,13 +41,13 @@
 #include <cif++/Point.hpp>
 #include <cif++/Symmetry.hpp>
 
-namespace ba = boost::algorithm;
-
 using cif::Category;
 using cif::Datablock;
 using cif::iequals;
 using cif::Key;
 using cif::Row;
+using cif::toLower;
+using cif::toLowerCopy;
 using mmcif::CompoundFactory;
 
 // --------------------------------------------------------------------
@@ -205,7 +204,7 @@ std::string PDBRecord::vS(size_t columnFirst, size_t columnLast)
 	if (columnFirst < mVlen + 7)
 	{
 		result = std::string{mValue + columnFirst - 7, mValue + columnLast - 7 + 1};
-		ba::trim(result);
+		cif::trim(result);
 	}
 
 	return result;
@@ -429,7 +428,7 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 		}
 	}
 
-	ba::trim(value);
+	cif::trim(value);
 
 	return std::make_tuple(id, value);
 }
@@ -949,7 +948,7 @@ class PDBFileParser
 
 	std::string pdb2cifAuth(std::string author)
 	{
-		ba::trim(author);
+		cif::trim(author);
 
 		const std::regex rx(R"(((?:[A-Z]+\.)+)(.+))");
 		std::smatch m;
@@ -1135,13 +1134,13 @@ void PDBFileParser::PreParseInput(std::istream &is)
 	if (lookahead.back() == '\r')
 		lookahead.pop_back();
 
-	//	if (ba::starts_with(lookahead, "HEADER") == false)
+	//	if (cif::starts_with(lookahead, "HEADER") == false)
 	//		throw std::runtime_error("This does not look like a PDB file, should start with a HEADER line");
 
 	auto contNr = [&lookahead](int offset, int len) -> int
 	{
 		std::string cs = lookahead.substr(offset, len);
-		ba::trim(cs);
+		cif::trim(cs);
 		int result;
 
 		try
@@ -1177,7 +1176,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 		std::string type = lookahead.substr(0, 6);
 		std::string value;
 		if (lookahead.length() > 6)
-			value = ba::trim_right_copy(lookahead.substr(6));
+			value = cif::trim_right_copy(lookahead.substr(6));
 
 		uint32_t curLineNr = lineNr;
 		getline(is, lookahead);
@@ -1185,7 +1184,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 
 		if (kSupportedRecords.count(type) == 0)
 		{
-			ba::trim(type);
+			cif::trim(type);
 
 			if (type != "END") // special case
 				dropped.insert(type);
@@ -1207,7 +1206,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			int n = 2;
 			while (lookahead.substr(0, 6) == type and contNr(7, 3) == n)
 			{
-				value += ba::trim_right_copy(lookahead.substr(10));
+				value += cif::trim_right_copy(lookahead.substr(10));
 				getline(is, lookahead);
 				++lineNr;
 				++n;
@@ -1219,7 +1218,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			value += '\n';
 			while (lookahead.substr(0, 6) == type and contNr(7, 3) == n)
 			{
-				value += ba::trim_right_copy(lookahead.substr(10));
+				value += cif::trim_right_copy(lookahead.substr(10));
 				value += '\n';
 				getline(is, lookahead);
 				++lineNr;
@@ -1245,7 +1244,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			int n = 2;
 			while (lookahead.substr(0, 6) == type and contNr(7, 3) == n)
 			{
-				value += ba::trim_right_copy(lookahead.substr(13));
+				value += cif::trim_right_copy(lookahead.substr(13));
 				getline(is, lookahead);
 				++lineNr;
 				++n;
@@ -1266,7 +1265,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			int n = 2;
 			while (lookahead.substr(0, 6) == type and contNr(7, 3) == n)
 			{
-				value += ba::trim_copy(lookahead.substr(10));
+				value += cif::trim_copy(lookahead.substr(10));
 				value += '\n';
 				getline(is, lookahead);
 				++lineNr;
@@ -1297,7 +1296,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 					       stoi(lookahead.substr(7, 3)) == compNr and
 					       contNr(16, 2) == n)
 					{
-						value += ba::trim_right_copy(lookahead.substr(19));
+						value += cif::trim_right_copy(lookahead.substr(19));
 						;
 						getline(is, lookahead);
 						++lineNr;
@@ -1323,7 +1322,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			int n = 2;
 			while (lookahead.substr(0, 6) == type and contNr(8, 2) == n)
 			{
-				value += ba::trim_right_copy(lookahead.substr(16));
+				value += cif::trim_right_copy(lookahead.substr(16));
 				;
 				getline(is, lookahead);
 				++lineNr;
@@ -1333,19 +1332,19 @@ void PDBFileParser::PreParseInput(std::istream &is)
 		else if (type == "SITE  ")
 		{
 			std::string siteName = value.substr(5, 3);
-			ba::trim_right(value);
+			cif::trim_right(value);
 			size_t n = value.length() - 12;
 			value += std::string(11 - (n % 11), ' ');
 
 			while (lookahead.substr(0, 6) == type and lookahead.substr(11, 3) == siteName)
 			{
 				std::string s = lookahead.substr(18);
-				ba::trim_right(s);
+				cif::trim_right(s);
 				s += std::string(11 - (s.length() % 11), ' ');
 				value += s;
 
 				// TODO: improve this... either use numRes or don't lump together all text
-				//				value += " " + ba::trim_right_copy();
+				//				value += " " + cif::trim_right_copy();
 				getline(is, lookahead);
 				++lineNr;
 			}
@@ -1364,10 +1363,10 @@ void PDBFileParser::PreParseInput(std::istream &is)
 					std::string k = value.substr(4, i - 4);
 					std::string v = value.substr(i + 1);
 
-					ba::trim(k);
+					cif::trim(k);
 					while (k.find("  ") != std::string::npos)
-						ba::replace_all(k, "  ", " ");
-					ba::trim(v);
+						cif::replace_all(k, "  ", " ");
+					cif::trim(v);
 
 					if (iequals(v, "NONE") or iequals(v, "N/A") or iequals(v, "NAN"))
 						mRemark200[k] = ".";
@@ -1386,7 +1385,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 
 		last = cur;
 
-		ba::trim(type);
+		cif::trim(type);
 
 		if (type == "LINK" or type == "LINKR")
 		{
@@ -1421,7 +1420,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 	if (not dropped.empty())
 	{
 		if (cif::VERBOSE >= 0)
-			std::cerr << "Dropped unsupported records: " << ba::join(dropped, ", ") << std::endl;
+			std::cerr << "Dropped unsupported records: " << cif::join(dropped, ", ") << std::endl;
 	}
 
 	if (mData == nullptr)
@@ -1456,10 +1455,9 @@ void PDBFileParser::Match(const std::string &expected, bool throwIfMissing)
 
 std::vector<std::string> PDBFileParser::SplitCSV(const std::string &value)
 {
-	std::vector<std::string> vs;
-	ba::split(vs, value, ba::is_any_of(","));
+	auto vs = cif::split<std::string>(value, ",");
 	for (auto &v : vs)
-		ba::trim(v);
+		cif::trim(v);
 	return vs;
 }
 
@@ -1484,12 +1482,12 @@ void PDBFileParser::ParseTitle()
 		keywords = vS(11, 50);
 		mOriginalDate = pdb2cifDate(vS(51, 59));
 
-		ba::trim(keywords);
+		cif::trim(keywords);
 
 		GetNextRecord();
 	}
 
-	ba::trim(mStructureID);
+	cif::trim(mStructureID);
 	if (mStructureID.empty())
 		mStructureID = "nohd";
 
@@ -1514,12 +1512,12 @@ void PDBFileParser::ParseTitle()
 		cat = getCategory("pdbx_database_PDB_obs");
 
 		std::string value = mRec->vS(32);
-		for (auto i = make_split_iterator(value, ba::token_finder(ba::is_any_of(" "), ba::token_compress_on)); not i.eof(); ++i)
+		for (auto i : cif::split<std::string>(value, " ", true))
 		{
 			cat->emplace({{"id", "OBSLTE"},
 			              {"date", date},
 			              {"replace_pdb_id", old},
-			              {"pdb_id", std::string(i->begin(), i->end())}});
+			              {"pdb_id", i}});
 		}
 
 		GetNextRecord();
@@ -1596,12 +1594,9 @@ void PDBFileParser::ParseTitle()
 			}
 			else if (key == "CHAIN")
 			{
-				std::vector<std::string> chains;
-
-				ba::split(chains, val, ba::is_any_of(","));
-				for (auto &c : chains)
+				for (auto c : cif::split<std::string>(val, ","))
 				{
-					ba::trim(c);
+					cif::trim(c);
 					mCompounds.back().mChains.insert(c[0]);
 				}
 			}
@@ -1698,16 +1693,14 @@ void PDBFileParser::ParseTitle()
 
 		cat = getCategory("exptl");
 
-		std::vector<std::string> crystals;
-		ba::split(crystals, mRemark200["NUMBER OF CRYSTALS USED"], ba::is_any_of("; "));
+		auto crystals = cif::split<std::string>(mRemark200["NUMBER OF CRYSTALS USED"], "; ");
 		if (crystals.empty())
 			crystals.push_back("");
 		auto ci = crystals.begin();
 
-		for (auto si = ba::make_split_iterator(mExpMethod, ba::token_finder(ba::is_any_of(";"), ba::token_compress_on)); not si.eof(); ++si, ++ci)
+		for (auto expMethod : cif::split<std::string>(mExpMethod, ";"))
 		{
-			std::string expMethod(si->begin(), si->end());
-			ba::trim(expMethod);
+			cif::trim(expMethod);
 
 			if (expMethod.empty())
 				continue;
@@ -1743,10 +1736,8 @@ void PDBFileParser::ParseTitle()
 		cat = getCategory("audit_author");
 
 		value = {mRec->vS(11)};
-		for (auto si = ba::make_split_iterator(value, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not si.eof(); ++si)
+		for (auto author : cif::split<std::string>(value, ",", true))
 		{
-			std::string author(si->begin(), si->end());
-
 			cat->emplace({{"name", pdb2cifAuth(author)},
 			              {"pdbx_ordinal", n}});
 			++n;
@@ -1788,7 +1779,7 @@ void PDBFileParser::ParseTitle()
 
 		revdats.push_back({revNum, date, modType == 0 ? mOriginalDate : "", modID, modType});
 
-		ba::split(revdats.back().types, detail, ba::is_any_of(" "));
+		revdats.back().types = cif::split<std::string>(detail, " ");
 
 		if (firstRevDat)
 		{
@@ -1849,7 +1840,7 @@ void PDBFileParser::ParseCitation(const std::string &id)
 	{
 		if (not s.empty())
 			s += ' ';
-		s += ba::trim_copy(p);
+		s += cif::trim_copy(p);
 	};
 
 	while (mRec->is(rec) and (id == "primary" or vC(12) == ' '))
@@ -1867,7 +1858,7 @@ void PDBFileParser::ParseCitation(const std::string &id)
 			{
 				extend(pubname, vS(20, 47));
 				if (vS(50, 51) == "V.")
-					volume = ba::trim_copy(vS(52, 55));
+					volume = cif::trim_copy(vS(52, 55));
 				pageFirst = vS(57, 61);
 				year = vI(63, 66);
 			}
@@ -1910,10 +1901,8 @@ void PDBFileParser::ParseCitation(const std::string &id)
 	if (not auth.empty())
 	{
 		cat = getCategory("citation_author");
-		for (auto si = ba::make_split_iterator(auth, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not si.eof(); ++si)
+		for (auto author : cif::split<std::string>(auth, ",", true))
 		{
-			std::string author(si->begin(), si->end());
-
 			cat->emplace({{"citation_id", id},
 			              {"name", pdb2cifAuth(author)},
 			              {"ordinal", mCitationAuthorNr}});
@@ -1925,10 +1914,8 @@ void PDBFileParser::ParseCitation(const std::string &id)
 	if (not edit.empty())
 	{
 		cat = getCategory("citation_editor");
-		for (auto si = ba::make_split_iterator(edit, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not si.eof(); ++si)
+		for (auto editor : cif::split<std::string>(edit, ",", true))
 		{
-			std::string editor(si->begin(), si->end());
-
 			cat->emplace({{"citation_id", id},
 			              {"name", pdb2cifAuth(editor)},
 			              {"ordinal", mCitationEditorNr}});
@@ -1942,7 +1929,7 @@ void PDBFileParser::ParseRemarks()
 {
 	std::string sequenceDetails, compoundDetails, sourceDetails;
 
-	while (ba::starts_with(mRec->mName, "REMARK"))
+	while (cif::starts_with(mRec->mName, "REMARK"))
 	{
 		int remarkNr = vI(8, 10);
 
@@ -2004,7 +1991,7 @@ void PDBFileParser::ParseRemarks()
 					{
 						std::string r = mRec->vS(12);
 
-						if (ba::starts_with(r, "REMARK: "))
+						if (cif::starts_with(r, "REMARK: "))
 						{
 							mRemark200["REMARK"] = r.substr(8);
 							remark = true;
@@ -2041,7 +2028,7 @@ void PDBFileParser::ParseRemarks()
 								densityPercentSol = m[1].str();
 							else if (std::regex_match(r, m, rx2))
 								density_Matthews = m[1].str();
-							else if (ba::starts_with(r, "CRYSTALLIZATION CONDITIONS: "))
+							else if (cif::starts_with(r, "CRYSTALLIZATION CONDITIONS: "))
 								conditions = r.substr(28);
 						}
 						else
@@ -2064,18 +2051,16 @@ void PDBFileParser::ParseRemarks()
 
 					std::string temp, ph, method;
 
-					for (auto i = make_split_iterator(conditions, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not i.eof(); ++i)
+					for (auto s : cif::split<std::string>(conditions, ",", true))
 					{
-						std::string s(i->begin(), i->end());
-
-						ba::trim(s);
+						cif::trim(s);
 
 						if (std::regex_search(s, m, rx3))
 							temp = m[1].str();
 						if (std::regex_search(s, m, rx4))
 							ph = m[1].str();
 						if (s.length() < 60 and
-						    (ba::icontains(s, "drop") or ba::icontains(s, "vapor") or ba::icontains(s, "batch")))
+						    (cif::icontains(s, "drop") or cif::icontains(s, "vapor") or cif::icontains(s, "batch")))
 						{
 							if (not method.empty())
 								method = method + ", " + s;
@@ -2159,7 +2144,7 @@ void PDBFileParser::ParseRemarks()
 								models[1] = stoi(m[2].str());
 							}
 							else
-								headerSeen = ba::contains(line, "RES C SSSEQI");
+								headerSeen = cif::contains(line, "RES C SSSEQI");
 							continue;
 						}
 
@@ -2197,7 +2182,7 @@ void PDBFileParser::ParseRemarks()
 								models[1] = stoi(m[2].str());
 							}
 							else
-								headerSeen = ba::contains(line, "RES CSSEQI  ATOMS");
+								headerSeen = cif::contains(line, "RES CSSEQI  ATOMS");
 							continue;
 						}
 
@@ -2209,10 +2194,8 @@ void PDBFileParser::ParseRemarks()
 						int seq = vI(21, 24);
 						char iCode = vC(25);
 
-						std::vector<std::string> atoms;
 						std::string atomStr = mRec->vS(29);
-						for (auto i = make_split_iterator(atomStr, ba::token_finder(ba::is_any_of(" "), ba::token_compress_on)); not i.eof(); ++i)
-							atoms.push_back({i->begin(), i->end()});
+						auto atoms = cif::split<std::string>(atomStr, " ", true);
 
 						for (int modelNr = models[0]; modelNr <= models[1]; ++modelNr)
 							mUnobs.push_back({modelNr, res, chain, seq, iCode, atoms});
@@ -2252,7 +2235,7 @@ void PDBFileParser::ParseRemarks()
 						{
 							case eStart:
 							{
-								if (line.empty() or not ba::starts_with(line, "SUBTOPIC: "))
+								if (line.empty() or not cif::starts_with(line, "SUBTOPIC: "))
 									continue;
 
 								std::string subtopic = line.substr(10);
@@ -2384,7 +2367,7 @@ void PDBFileParser::ParseRemarks()
 							{
 								if (not headerSeen)
 								{
-									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,2(A3,1X,A1,I4,A1,1X,A4,3X),1X,F6.3)")
+									if (cif::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,2(A3,1X,A1,I4,A1,1X,A4,3X),1X,F6.3)")
 										throw std::runtime_error("Unexpected format in REMARK 500");
 
 									headerSeen = line == "M RES CSSEQI ATM1   RES CSSEQI ATM2   DEVIATION";
@@ -2438,7 +2421,7 @@ void PDBFileParser::ParseRemarks()
 							case eCBA:
 								if (not headerSeen)
 								{
-									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,A3,1X,A1,I4,A1,3(1X,A4,2X),12X,F5.1)")
+									if (cif::starts_with(line, "FORMAT: ") and line != "FORMAT: (10X,I3,1X,A3,1X,A1,I4,A1,3(1X,A4,2X),12X,F5.1)")
 										throw std::runtime_error("Unexpected format in REMARK 500");
 
 									headerSeen = line == "M RES CSSEQI ATM1   ATM2   ATM3";
@@ -2486,7 +2469,7 @@ void PDBFileParser::ParseRemarks()
 							case eTA:
 								if (not headerSeen)
 								{
-									if (ba::starts_with(line, "FORMAT: ") and line != "FORMAT:(10X,I3,1X,A3,1X,A1,I4,A1,4X,F7.2,3X,F7.2)")
+									if (cif::starts_with(line, "FORMAT: ") and line != "FORMAT:(10X,I3,1X,A3,1X,A1,I4,A1,4X,F7.2,3X,F7.2)")
 										throw std::runtime_error("Unexpected format in REMARK 500");
 
 									headerSeen = line == "M RES CSSEQI        PSI       PHI";
@@ -2607,7 +2590,7 @@ void PDBFileParser::ParseRemarks()
 						if (not headerSeen)
 						{
 							std::string line = vS(12);
-							headerSeen = ba::contains(line, "RES C SSEQI");
+							headerSeen = cif::contains(line, "RES C SSEQI");
 							continue;
 						}
 
@@ -2818,20 +2801,17 @@ void PDBFileParser::ParseRemark200()
 		int nr = 0;
 		std::string result;
 
-		for (auto i = make_split_iterator(mRemark200[name],
-		                                  ba::token_finder(ba::is_any_of(";"), ba::token_compress_off));
-		     not i.eof(); ++i)
+		for (auto s : cif::split<std::string>(mRemark200[name], ";"))
 		{
 			if (++nr != diffrnNr)
 				continue;
 
-			result.assign(i->begin(), i->end());
-			;
-			ba::trim(result);
+			cif::trim(s);
 
-			if (result == "NULL")
-				result.clear();
+			if (s == "NULL")
+				s.clear();
 
+			result = std::move(s);
 			break;
 		}
 
@@ -2903,7 +2883,7 @@ void PDBFileParser::ParseRemark200()
 		if (ambientTemp.empty())
 			break;
 
-		if (ba::ends_with(ambientTemp, "K"))
+		if (cif::ends_with(ambientTemp, "K"))
 			ambientTemp.erase(ambientTemp.length() - 1, 1);
 
 		getCategory("diffrn")->emplace({{"id", diffrnNr},
@@ -2938,9 +2918,8 @@ void PDBFileParser::ParseRemark200()
 			{"pdbx_diffrn_protocol", rm200("DIFFRACTION PROTOCOL", diffrnNr)},
 			{"pdbx_scattering_type", scatteringType}});
 
-		std::vector<std::string> wavelengths;
 		std::string wl = rm200("WAVELENGTH OR RANGE (A)", diffrnNr);
-		ba::split(wavelengths, wl, ba::is_any_of(", -"), ba::token_compress_on);
+		auto wavelengths = cif::split<std::string>(wl, ", -", true);
 
 		diffrnWaveLengths.insert(wavelengths.begin(), wavelengths.end());
 
@@ -2955,7 +2934,7 @@ void PDBFileParser::ParseRemark200()
 				{"pdbx_synchrotron_beamline", rm200("BEAMLINE", diffrnNr)},
 
 				{"pdbx_wavelength", wavelengths.size() == 1 ? wavelengths[0] : ""},
-				{"pdbx_wavelength_list", wavelengths.size() == 1 ? "" : ba::join(wavelengths, ", ")},
+				{"pdbx_wavelength_list", wavelengths.size() == 1 ? "" : cif::join(wavelengths, ", ")},
 			});
 		}
 		else if (inRM200({"X-RAY GENERATOR MODEL", "RADIATION SOURCE", "BEAMLINE", "WAVELENGTH OR RANGE (A)"}))
@@ -2966,7 +2945,7 @@ void PDBFileParser::ParseRemark200()
 				{"type", rm200("X-RAY GENERATOR MODEL", diffrnNr)},
 
 				{"pdbx_wavelength", wavelengths.size() == 1 ? wavelengths[0] : ""},
-				{"pdbx_wavelength_list", wavelengths.size() == 1 ? "" : ba::join(wavelengths, ", ")},
+				{"pdbx_wavelength_list", wavelengths.size() == 1 ? "" : cif::join(wavelengths, ", ")},
 			});
 		}
 	}
@@ -2974,7 +2953,7 @@ void PDBFileParser::ParseRemark200()
 	int wavelengthNr = 1;
 	for (auto wl : diffrnWaveLengths)
 	{
-		if (ba::ends_with(wl, "A"))
+		if (cif::ends_with(wl, "A"))
 			wl.erase(wl.length() - 1, 1);
 
 		getCategory("diffrn_radiation_wavelength")->emplace({{"id", wavelengthNr++},
@@ -3090,12 +3069,8 @@ void PDBFileParser::ParseRemark350()
 
 					std::string value = m[1].str();
 
-					for (auto i = make_split_iterator(value,
-					                                  ba::token_finder(ba::is_any_of(", "), ba::token_compress_on));
-					     not i.eof(); ++i)
+					for (auto chain : cif::split<std::string>(value, ", ", true))
 					{
-						std::string chain = boost::copy_range<std::string>(*i);
-
 						if (chain.empty()) // happens when we have a AND CHAIN line
 						{
 							state = eAnd;
@@ -3118,12 +3093,9 @@ void PDBFileParser::ParseRemark350()
 					state = eApply;
 
 					std::string value = m[1].str();
-					for (auto i = make_split_iterator(value,
-					                                  ba::token_finder(ba::is_any_of(", "), ba::token_compress_on));
-					     not i.eof(); ++i)
-					{
-						std::string chain = boost::copy_range<std::string>(*i);
 
+					for (auto chain : cif::split<std::string>(value, ", ", true))
+					{
 						if (chain.empty()) // happens when we have another AND CHAIN line
 						{
 							state = eAnd;
@@ -3183,7 +3155,7 @@ void PDBFileParser::ParseRemark350()
 							std::string oligomer = values["AUTHOR DETERMINED BIOLOGICAL UNIT"];
 							if (oligomer.empty())
 								oligomer = values["SOFTWARE DETERMINED QUATERNARY STRUCTURE"];
-							ba::to_lower(oligomer);
+							toLower(oligomer);
 
 							int count = 0;
 							std::smatch m2;
@@ -3192,7 +3164,7 @@ void PDBFileParser::ParseRemark350()
 							{
 								count = stoi(m2[1].str());
 							}
-							else if (ba::ends_with(oligomer, "meric"))
+							else if (cif::ends_with(oligomer, "meric"))
 							{
 								std::string cs = oligomer.substr(0, oligomer.length() - 5);
 								if (cs == "mono")
@@ -3278,8 +3250,8 @@ void PDBFileParser::ParseRemark350()
 						throw std::runtime_error("Invalid REMARK 350");
 
 					getCategory("pdbx_struct_assembly_gen")->emplace({{"assembly_id", biomolecule},
-					{"oper_expression", ba::join(operExpression, ",")},
-					{"asym_id_list", ba::join(asymIdList, ",")}});
+					{"oper_expression", cif::join(operExpression, ",")},
+					{"asym_id_list", cif::join(asymIdList, ",")}});
 
 					biomolecule = stoi(m[1].str());
 					asymIdList.clear();
@@ -3294,8 +3266,8 @@ void PDBFileParser::ParseRemark350()
 	if (not operExpression.empty())
 	{
 		getCategory("pdbx_struct_assembly_gen")->emplace({{"assembly_id", biomolecule},
-		{"oper_expression", ba::join(operExpression, ",")},
-		{"asym_id_list", ba::join(asymIdList, ",")}});
+		{"oper_expression", cif::join(operExpression, ",")},
+		{"asym_id_list", cif::join(asymIdList, ",")}});
 	}
 
 	mRec = saved;
@@ -3306,7 +3278,7 @@ void PDBFileParser::ParsePrimaryStructure()
 	// First locate the DBREF record. Might be missing
 	DBREF cur = {mStructureID};
 
-	while (ba::starts_with(mRec->mName, "DBREF"))
+	while (cif::starts_with(mRec->mName, "DBREF"))
 	{
 		if (mRec->is("DBREF ")) //	 1 -  6       Record name   "DBREF "
 		{
@@ -3405,9 +3377,8 @@ void PDBFileParser::ParsePrimaryStructure()
 
 		auto &chain = GetChainForID(chainID, numRes);
 
-		for (auto si = ba::make_split_iterator(monomers, ba::token_finder(ba::is_any_of(" "), ba::token_compress_on)); not si.eof(); ++si)
+		for (auto monID : cif::split<std::string>(monomers, " ", true))
 		{
-			std::string monID(si->begin(), si->end());
 			if (monID.empty())
 				continue;
 
@@ -4159,7 +4130,7 @@ void PDBFileParser::ConstructEntities()
 		{"pdbx_seq_one_letter_code", seq},
 		{"pdbx_seq_one_letter_code_can", seqCan},
 		{"nstd_monomer", (nstdMonomer ? "yes" : "no")},
-		{"pdbx_strand_id", ba::join(chains, ",")},
+		{"pdbx_strand_id", cif::join(chains, ",")},
 		{"nstd_linkage", nonstandardLinkage ? "yes" : "no"},
 		{"type", type}});
 	}
@@ -4168,8 +4139,8 @@ void PDBFileParser::ConstructEntities()
 	{
 		getCategory("struct")->emplace({
 			{"entry_id", mStructureID},
-			{"title", ba::join(structTitle, ", ")},
-			{"pdbx_descriptor", ba::join(structDescription, ", ")},
+			{"title", cif::join(structTitle, ", ")},
+			{"pdbx_descriptor", cif::join(structDescription, ", ")},
 			{"pdbx_model_type_details", mModelTypeDetails}
 		});
 	}
@@ -4308,7 +4279,7 @@ void PDBFileParser::ConstructEntities()
 		int seqNr = ++ndbSeqNum[std::make_tuple(hetID, asymID)];
 
 		std::string iCode{het.iCode};
-		ba::trim(iCode);
+		cif::trim(iCode);
 		if (iCode.empty())
 			iCode = {'.'};
 
@@ -4622,7 +4593,7 @@ void PDBFileParser::ConstructSugarTrees(int &asymNr)
 				});
 
 				std::string iCode{si->iCode};
-				ba::trim(iCode);
+				cif::trim(iCode);
 				if (iCode.empty())
 					iCode = {'.'};
 
@@ -4793,7 +4764,7 @@ void PDBFileParser::ParseSecondaryStructure()
 		//	70             AChar         prevICode      Registration.  Insertion code in
 		//	                                            previous strand.
 
-		std::string sheetID = ba::trim_copy(vS(12, 14));
+		std::string sheetID = cif::trim_copy(vS(12, 14));
 		if (sheetsSeen.count(sheetID) == 0)
 		{
 			sheetsSeen.insert(sheetID);
@@ -5317,7 +5288,7 @@ void PDBFileParser::ParseCoordinateTransformation()
 {
 	std::string m[3][3], v[3];
 
-	if (ba::starts_with(mRec->mName, "ORIGX"))
+	if (cif::starts_with(mRec->mName, "ORIGX"))
 	{
 		for (std::string n : {"1", "2", "3"})
 		{
@@ -5349,7 +5320,7 @@ void PDBFileParser::ParseCoordinateTransformation()
 		});
 	}
 
-	if (ba::starts_with(mRec->mName, "SCALE"))
+	if (cif::starts_with(mRec->mName, "SCALE"))
 	{
 		for (std::string n : {"1", "2", "3"})
 		{
@@ -5381,7 +5352,7 @@ void PDBFileParser::ParseCoordinateTransformation()
 		});
 	}
 
-	while (ba::starts_with(mRec->mName, "MTRIX1"))
+	while (cif::starts_with(mRec->mName, "MTRIX1"))
 	{
 		int serial = 0, igiven = 0;
 

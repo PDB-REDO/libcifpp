@@ -6,10 +6,10 @@
 # modification, are permitted provided that the following conditions are met:
 
 # 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer
+# list of conditions and the following disclaimer
 # 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
 
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -46,7 +46,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
 # Building shared libraries?
@@ -57,6 +57,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Optionally build a version to be installed inside CCP4
 option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
+
 if(BUILD_FOR_CCP4)
 	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
 		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
@@ -79,6 +80,7 @@ if(EXISTS "$ENV{CCP4}")
 	set(CCP4 $ENV{CCP4})
 	set(CLIBD ${CCP4}/lib/data)
 endif()
+
 if(CCP4 AND NOT CLIBD)
 	set(CLIBD ${CCP4}/lib/data)
 endif()
@@ -97,13 +99,12 @@ else()
 endif()
 
 # set(CMAKE_DEBUG_POSTFIX d)
-
 if(MSVC)
-    # make msvc standards compliant...
-    add_compile_options(/permissive-)
+	# make msvc standards compliant...
+	add_compile_options(/permissive-)
 
 	macro(get_WIN32_WINNT version)
-		if (WIN32 AND CMAKE_SYSTEM_VERSION)
+		if(WIN32 AND CMAKE_SYSTEM_VERSION)
 			set(ver ${CMAKE_SYSTEM_VERSION})
 			string(REPLACE "." "" ver ${ver})
 			string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
@@ -129,7 +130,6 @@ if(UNIX AND NOT APPLE AND NOT BUILD_FOR_CCP4 AND CMAKE_INSTALL_PREFIX_INITIALIZE
 endif()
 
 # Optionally use mrc to create resources
-
 if(WIN32 AND BUILD_SHARED_LIBS)
 	message("Not using resources when building shared libraries for Windows")
 else()
@@ -150,17 +150,12 @@ else()
 endif()
 
 # Libraries
-
 set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-find_package(Boost 1.70.0 REQUIRED COMPONENTS system iostreams regex program_options)
-
-if(NOT MSVC AND Boost_USE_STATIC_LIBS)
-	find_package(ZLIB REQUIRED)
-	list(APPEND CIFPP_REQUIRED_LIBRARIES ZLIB::ZLIB)
-endif()
+find_package(Boost 1.70.0 REQUIRED COMPONENTS system regex program_options)
+find_package(gzstream REQUIRED)
 
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
@@ -175,21 +170,21 @@ write_version_header("LibCIFPP")
 # SymOp data table
 if(CIFPP_RECREATE_SYMOP_DATA)
 	# The tool to create the table
-
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
 	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} ${CIFPP_REQUIRED_LIBRARIES})
+
 	if(Boost_INCLUDE_DIR)
 		target_include_directories(symop-map-generator PUBLIC ${Boost_INCLUDE_DIR})
 	endif()
 
 	set($ENV{CLIBD} ${CLIBD})
-	
+
 	add_custom_command(
 		OUTPUT ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
 		COMMAND $<TARGET_FILE:symop-map-generator> ${CLIBD}/syminfo.lib ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
-		)
-	
+	)
+
 	add_custom_target(
 		OUTPUT ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
 		DEPENDS symop-map-generator "$ENV{CLIBD}/syminfo.lib"
@@ -197,8 +192,7 @@ if(CIFPP_RECREATE_SYMOP_DATA)
 endif()
 
 # Sources
-
-set(project_sources 
+set(project_sources
 	${PROJECT_SOURCE_DIR}/src/AtomType.cpp
 	${PROJECT_SOURCE_DIR}/src/BondMap.cpp
 	${PROJECT_SOURCE_DIR}/src/Cif++.cpp
@@ -224,7 +218,7 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/v2/validate.cpp
 )
 
-set(project_headers 
+set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/AtomType.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/BondMap.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/Cif++.hpp
@@ -249,7 +243,7 @@ target_include_directories(cifpp
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-	${Boost_INCLUDE_DIR}
+	${Boost_INCLUDE_DIR} ${gzstream_INCLUDE_DIR}
 )
 
 target_include_directories(cifpp
@@ -257,21 +251,21 @@ target_include_directories(cifpp
 	${CMAKE_BINARY_DIR}
 )
 
-target_link_libraries(cifpp PUBLIC Threads::Threads Boost::regex Boost::iostreams ${CIFPP_REQUIRED_LIBRARIES})
-# target_link_libraries(cifpp PRIVATE)
+target_link_libraries(cifpp PUBLIC Threads::Threads Boost::regex gzstream::gzstream ${CIFPP_REQUIRED_LIBRARIES})
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
-endif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+# target_link_libraries(cifpp PRIVATE)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
+endif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
 option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
+
 if(CIFPP_DOWNLOAD_CCD)
 	# download the components.cif file from CCD
 	set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
 
-	if (NOT EXISTS ${COMPONENTS_CIF})
-
-		if (NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
+	if(NOT EXISTS ${COMPONENTS_CIF})
+		if(NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
 			file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 		endif()
 
@@ -301,8 +295,8 @@ endif()
 generate_export_header(cifpp
 	EXPORT_FILE_NAME cif++/Cif++Export.hpp)
 
-set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} )
-set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} )
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
 set(SHARE_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/libcifpp)
 
 set(CIFPP_DATA_DIR "${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}" CACHE STRING "The directory containing the provided data files")
@@ -310,7 +304,6 @@ set(CIFPP_DATA_DIR "${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}" CACHE STRING "
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
 
 # Install rules
-
 install(TARGETS cifpp
 	EXPORT cifppTargets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -357,8 +350,8 @@ configure_package_config_file(Config.cmake.in
 )
 
 install(FILES
-		"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
-		"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 	COMPONENT Devel
 )
@@ -370,21 +363,20 @@ set_target_properties(cifpp PROPERTIES
 	INTERFACE_cifpp_MAJOR_VERSION ${cifpp_MAJOR_VERSION})
 
 set_property(TARGET cifpp APPEND PROPERTY
-  COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
+	COMPATIBLE_INTERFACE_STRING cifpp_MAJOR_VERSION
 )
 
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY AnyNewerVersion
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+	VERSION ${PROJECT_VERSION}
+	COMPATIBILITY AnyNewerVersion
 )
 
 # pkgconfig support
-
-set(prefix      ${CMAKE_INSTALL_PREFIX})
+set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
-set(includedir  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libcifpp.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc.in @ONLY)
@@ -393,12 +385,11 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Unit tests
-
 option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
-
 	list(APPEND CIFPP_tests
+
 		# pdb2cif
 		rename-compound
 		structure
@@ -414,10 +405,10 @@ if(CIFPP_BUILD_TESTS)
 
 		target_include_directories(${CIFPP_TEST} PRIVATE
 			${CMAKE_CURRENT_SOURCE_DIR}/include
-			${CMAKE_CURRENT_BINARY_DIR}  # for config.h
+			${CMAKE_CURRENT_BINARY_DIR} # for config.h
 		)
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp )
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp)
 
 		if(CIFPP_USE_RSRC)
 			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
@@ -436,14 +427,12 @@ if(CIFPP_BUILD_TESTS)
 
 		add_test(NAME ${CIFPP_TEST}
 			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_SOURCE_DIR}/test)
-
 	endforeach()
 endif()
 
 message("Will install in ${CMAKE_INSTALL_PREFIX}")
 
 # Optionally install the update scripts for CCD and dictionary files
-
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	set(CIFPP_CRON_DIR "$ENV{DESTDIR}/etc/cron.weekly")
 
@@ -468,4 +457,3 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 endif()
-

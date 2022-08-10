@@ -452,8 +452,9 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::str
 {
 	static std::string convert(const item_handle &ref)
 	{
-		std::string_view txt = ref.text();
-		return {txt.data(), txt.size()};
+		if (ref.empty())
+			return {};
+		return {ref.text().data(), ref.text().size()};
 	}
 
 	static int compare(const item_handle &ref, const std::string &value, bool icase)

@@ -34,32 +34,6 @@
 namespace cif::v2
 {
 
-template <typename V>
-std::string join(const V &arr, std::string_view sep)
-{
-	std::ostringstream s;
-
-	if (not arr.empty())
-	{
-		auto ai = arr.begin();
-		auto ni = std::next(ai);
-
-		for (;;)
-		{
-			s << *ai;
-			ai = ni;
-			ni = std::next(ai);
-
-			if (ni == arr.end())
-				break;
-
-			s << sep;
-		}
-	}
-
-	return s.str();
-}
-
 // --------------------------------------------------------------------
 
 class row_comparator
@@ -1013,8 +987,13 @@ category::iterator category::erase(iterator pos)
 			for (size_t ix = 0; ix < link->m_parent_keys.size(); ++ix)
 			{
 				std::string_view value = rh[link->m_parent_keys[ix]].text();
-				// cond = std::move(cond) and (key(link->m_child_keys[ix]) == value or key(link->m_child_keys[ix]) == null);
-				cond = std::move(cond) and (key(link->m_child_keys[ix]) == value);
+
+				auto childKey = link->m_child_keys[ix];
+				
+				if (childCat->m_cat_validator and childCat->m_cat_validator->m_mandatory_fields.contains(childKey))
+					cond = std::move(cond) and key(childKey) == value;
+				else
+					cond = std::move(cond) and (key(childKey) == value or key(childKey) == null);
 			}
 
 			childCat->erase_orphans(std::move(cond));
@@ -1133,6 +1112,164 @@ void category::erase_orphans(condition &&cond)
 		erase(iterator(*this, r));
 }
 
+std::string category::get_unique_id(std::function<std::string(int)> generator)
+{
+	using namespace cif::v2::literals;
+
+	std::string id_tag = "id";
+	if (m_cat_validator != nullptr and m_cat_validator->m_keys.size() == 1)
+		id_tag = m_cat_validator->m_keys.front();
+
+	// calling size() often is a waste of resources
+	if (m_last_unique_num == 0)
+		m_last_unique_num = size();
+
+	for (;;)
+	{
+		std::string result = generator(static_cast<int>(m_last_unique_num++));
+
+		if (exists(key(id_tag) == result))
+			continue;
+
+		return result;
+	}
+}
+
+void category::update_value(const std::vector<row_handle> &rows, std::string_view tag, std::string_view value)
+{
+	using namespace std::literals;
+
+	if (rows.empty())
+		return;
+
+	auto colIx = get_column_ix(tag);
+	if (colIx >= m_columns.size())
+		throw std::runtime_error("Invalid column " + std::string{ value } + " for " + m_name);
+
+	auto &col = m_columns[colIx];
+
+	// check the value
+	if (col.m_validator)
+		(*col.m_validator)(value);
+
+	// first some sanity checks, what was the old value and is it the same for all rows?
+	std::string_view oldValue = rows.front()[tag].text();
+	for (auto row : rows)
+	{
+		if (oldValue != row[tag].text())
+			throw std::runtime_error("Inconsistent old values in update_value");
+	}
+
+	if (oldValue == value) // no need to do anything
+		return;
+
+	// update rows, but do not cascade
+	for (auto row : rows)
+		row.assign(colIx, value, false);
+
+	// see if we need to update any child categories that depend on this value
+	for (auto parent : rows)
+	{
+		for (auto &&[childCat, linked] : m_child_links)
+		{
+			if (std::find(linked->m_parent_keys.begin(), linked->m_parent_keys.end(), tag) == linked->m_parent_keys.end())
+				continue;
+
+			condition cond;
+			std::string childTag;
+
+			for (size_t ix = 0; ix < linked->m_parent_keys.size(); ++ix)
+			{
+				std::string pk = linked->m_parent_keys[ix];
+				std::string ck = linked->m_child_keys[ix];
+
+				// TODO: add code to *NOT* test mandatory fields for Empty
+
+				if (pk == tag)
+				{
+					childTag = ck;
+					cond = std::move(cond) && key(ck) == oldValue;
+				}
+				else
+					cond = std::move(cond) && key(ck) == parent[pk].text();
+			}
+
+			auto children = childCat->find(std::move(cond));
+			if (children.empty())
+				continue;
+
+			std::vector<row_handle> child_rows;
+			std::copy(children.begin(), children.end(), std::back_inserter(child_rows));
+
+			// now be careful. If we search back from child to parent and still find a valid parent row
+			// we cannot simply rename the child but will have to create a new child. Unless that new
+			// child already exists of course.
+
+			std::vector<row_handle> process;
+
+			for (auto child : child_rows)
+			{
+				condition cond_c;
+
+				for (size_t ix = 0; ix < linked->m_parent_keys.size(); ++ix)
+				{
+					std::string pk = linked->m_parent_keys[ix];
+					std::string ck = linked->m_child_keys[ix];
+
+					// TODO: add code to *NOT* test mandatory fields for Empty
+
+					cond_c = std::move(cond_c) && key(pk) == child[ck].text();
+				}
+
+				auto parents = find(std::move(cond_c));
+				if (parents.empty())
+				{
+					process.push_back(child);
+					continue;
+				}
+
+				// oops, we need to split this child, unless a row already exists for the new value
+				condition check;
+
+				for (size_t ix = 0; ix < linked->m_parent_keys.size(); ++ix)
+				{
+					std::string pk = linked->m_parent_keys[ix];
+					std::string ck = linked->m_child_keys[ix];
+
+					// TODO: add code to *NOT* test mandatory fields for Empty
+
+					if (pk == tag)
+						check = std::move(check) && key(ck) == value;
+					else
+						check = std::move(check) && key(ck) == parent[pk].text();
+				}
+
+				if (childCat->exists(std::move(check))) // phew..., narrow escape
+					continue;
+
+				// create the actual copy, if we can...
+				if (childCat->m_cat_validator != nullptr and childCat->m_cat_validator->m_keys.size() == 1)
+				{
+					auto copy = childCat->create_copy(child);
+					if (copy != child)
+					{
+						process.push_back(child);
+						continue;
+					}
+				}
+
+				// cannot update this...
+				if (cif::VERBOSE > 0)
+					std::cerr << "Cannot update child " << childCat->m_name << "." << childTag << " with value " << value << std::endl;
+			}
+
+			// finally, update the children
+			if (not process.empty())
+				childCat->update_value(std::move(process), childTag, value);
+		}
+	}
+}
+
 void category::update_value(row *row, size_t column, std::string_view value, bool updateLinked, bool validate)
 {
 	auto &col = m_columns[column];
@@ -1235,7 +1372,7 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 				std::string pk = linked->m_parent_keys[ix];
 				std::string ck = linked->m_child_keys[ix];
 
-				// TODO add code to *NOT* test mandatory fields for Empty
+				// TODO: add code to *NOT* test mandatory fields for Empty
 
 				if (pk == iv->m_tag)
 				{
@@ -1272,7 +1409,7 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 				std::string pk = linked->m_parent_keys[ix];
 				std::string ck = linked->m_child_keys[ix];
 
-				// TODO add code to *NOT* test mandatory fields for Empty
+				// TODO: add code to *NOT* test mandatory fields for Empty
 
 				if (pk == iv->m_tag)
 					cond_n = std::move(cond_n) and key(ck) == value;
@@ -1299,6 +1436,40 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 				cr.assign(childTag, value, false);
 		}
 	}
+}
+
+row_handle category::create_copy(row_handle r)
+{
+	// copy the values
+	std::vector<item> items;
+
+	for (item_value *iv = r.m_row->m_head; iv != nullptr; iv = iv->m_next)
+		items.emplace_back(m_columns[iv->m_column_ix].m_name, iv->text());
+
+	if (m_cat_validator and m_cat_validator->m_keys.size() == 1)
+	{
+		auto key = m_cat_validator->m_keys.front();
+		auto kv = m_cat_validator->get_validator_for_item(key);
+
+		for (auto &item : items)
+		{
+			if (item.name() != key)
+				continue;
+
+			if (kv->m_type->m_primitive_type == DDL_PrimitiveType::Numb)
+				item.value(get_unique_id(""));
+			else
+				item.value(get_unique_id(m_name + "_id_"));
+			break;
+		}
+	}
+
+	return emplace(items.begin(), items.end());
+
+	// auto &&[result, inserted] = emplace(items.begin(), items.end());
+	// // assert(inserted);
+
+	// return result;
 }
 
 // proxy methods for every insertion

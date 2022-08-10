@@ -599,8 +599,6 @@ class File : public cif::File
 	void load(const std::filesystem::path &p) override;
 	void save(const std::filesystem::path &p) override;
 
-	void load(std::istream &is) override;
-
 	using cif::File::load;
 	using cif::File::save;
 

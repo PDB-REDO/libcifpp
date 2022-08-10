@@ -38,9 +38,8 @@
 
 #include <filesystem>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
+#include <gzstream/gzstream.hpp>
+
 #include <boost/logic/tribool.hpp>
 
 #include <cif++/Cif++.hpp>
@@ -48,8 +47,6 @@
 #include <cif++/CifUtils.hpp>
 #include <cif++/CifValidator.hpp>
 
-namespace ba = boost::algorithm;
-namespace io = boost::iostreams;
 namespace fs = std::filesystem;
 
 namespace cif
@@ -622,10 +619,10 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 	while (catA_i != catA.end() and catB_i != catB.end())
 	{
 		std::string nA = *catA_i;
-		ba::to_lower(nA);
+		toLower(nA);
 
 		std::string nB = *catB_i;
-		ba::to_lower(nB);
+		toLower(nB);
 
 		int d = nA.compare(nB);
 		if (d > 0)
@@ -654,11 +651,11 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 		{
 			std::cerr << "compare of datablocks failed" << std::endl;
 			if (not missingA.empty())
-				std::cerr << "Categories missing in A: " << ba::join(missingA, ", ") << std::endl
+				std::cerr << "Categories missing in A: " << cif::join(missingA, ", ") << std::endl
 						  << std::endl;
 
 			if (not missingB.empty())
-				std::cerr << "Categories missing in B: " << ba::join(missingB, ", ") << std::endl
+				std::cerr << "Categories missing in B: " << cif::join(missingB, ", ") << std::endl
 						  << std::endl;
 
 			result = false;
@@ -673,10 +670,10 @@ bool operator==(const cif::Datablock &dbA, const cif::Datablock &dbB)
 	while (catA_i != catA.end() and catB_i != catB.end())
 	{
 		std::string nA = *catA_i;
-		ba::to_lower(nA);
+		toLower(nA);
 
 		std::string nB = *catB_i;
-		ba::to_lower(nB);
+		toLower(nB);
 
 		int d = nA.compare(nB);
 		if (d > 0)
@@ -2156,7 +2153,7 @@ bool Category::isValid()
 
 	if (not mandatory.empty())
 	{
-		mValidator->reportError("In Category " + mName + " the following mandatory fields are missing: " + ba::join(mandatory, ", "), false);
+		mValidator->reportError("In Category " + mName + " the following mandatory fields are missing: " + cif::join(mandatory, ", "), false);
 		result = false;
 	}
 
@@ -2447,12 +2444,12 @@ namespace detail
 	{
 		if (value.find('\n') != std::string::npos or width == 0 or value.length() > 132) // write as text field
 		{
-			ba::replace_all(value, "\n;", "\n\\;");
+			cif::replace_all(value, "\n;", "\n\\;");
 
 			if (offset > 0)
 				os << std::endl;
 			os << ';' << value;
-			if (not ba::ends_with(value, "\n"))
+			if (not cif::ends_with(value, "\n"))
 				os << std::endl;
 			os << ';' << std::endl;
 			offset = 0;
@@ -3451,48 +3448,50 @@ void File::load(const std::filesystem::path &p)
 {
 	fs::path path(p);
 
-	std::ifstream inFile(p, std::ios_base::in | std::ios_base::binary);
-	if (not inFile.is_open())
-		throw std::runtime_error("Could not open file: " + path.string());
-
-	io::filtering_stream<io::input> in;
-	std::string ext;
-
 	if (path.extension() == ".gz")
 	{
-		in.push(io::gzip_decompressor());
-		ext = path.stem().extension().string();
-	}
+		gzstream::ifstream in(p);
 
-	in.push(inFile);
-
-	try
-	{
-		load(in);
+		try
+		{
+			load(in);
+		}
+		catch (const std::exception &ex)
+		{
+			if (cif::VERBOSE >= 0)
+				std::cerr << "Error loading file " << path << std::endl;
+			throw;
+		}
 	}
-	catch (const std::exception &ex)
+	else
 	{
-		if (cif::VERBOSE >= 0)
-			std::cerr << "Error loading file " << path << std::endl;
-		throw;
+		std::ifstream inFile(p, std::ios_base::in | std::ios_base::binary);
+
+		try
+		{
+			load(inFile);
+		}
+		catch (const std::exception &ex)
+		{
+			if (cif::VERBOSE >= 0)
+				std::cerr << "Error loading file " << path << std::endl;
+			throw;
+		}
 	}
 }
 
 void File::save(const std::filesystem::path &p)
 {
-	fs::path path(p);
-
-	std::ofstream outFile(p, std::ios_base::out | std::ios_base::binary);
-	io::filtering_stream<io::output> out;
-
-	if (path.extension() == ".gz")
+	if (p.extension() == ".gz")
 	{
-		out.push(io::gzip_compressor());
-		path = path.stem();
+		gzstream::ofstream outFile(p);
+		save(outFile);
 	}
-
-	out.push(outFile);
-	save(out);
+	else
+	{
+		std::ofstream outFile(p, std::ios_base::out | std::ios_base::binary);
+		save(outFile);
+	}
 }
 
 void File::load(std::istream &is)
@@ -3534,14 +3533,16 @@ void File::load(const char *data, std::size_t length)
 		membuf(char *data, size_t length) { this->setg(data, data, data + length); }
 	} buffer(const_cast<char *>(data), length);
 
-	std::istream is(&buffer);
-
-	io::filtering_stream<io::input> in;
 	if (gzipped)
-		in.push(io::gzip_decompressor());
-	in.push(is);
-
-	load(is);
+	{
+		gzstream::istream is(&buffer);
+		load(is);
+	}
+	else
+	{
+		std::istream is(&buffer);
+		load(is);
+	}
 }
 
 void File::save(std::ostream &os)

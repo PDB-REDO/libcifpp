@@ -28,6 +28,8 @@
 #include <fstream>
 #include <iostream>
 
+#include <gzstream/gzstream.hpp>
+
 #include <cif++/v2/dictionary_parser.hpp>
 #include <cif++/v2/validate.hpp>
 
@@ -407,13 +409,10 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 
 		if (std::filesystem::exists(p, ec) and not ec)
 		{
-			std::ifstream file(p, std::ios::binary);
-			if (not file.is_open())
-				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
+			gzstream::ifstream in(p);
 
-			io::filtering_stream<io::input> in;
-			in.push(io::gzip_decompressor());
-			in.push(file);
+			if (not in.is_open())
+				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
 
 			construct_validator(dictionary_name, in);
 		}

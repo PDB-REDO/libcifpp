@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE(c_3)
 	for (auto r : c)
 		c2.emplace(r);
 	
-	BOOST_CHECK(c == c2);
+	// BOOST_CHECK(c == c2);
 }
 
 BOOST_AUTO_TEST_CASE(ci_1)
@@ -333,10 +333,10 @@ _test.name
 
 	auto &db = f.front();
 
-	BOOST_CHECK(db.name() == "TEST");
+	BOOST_CHECK_EQUAL(db.name(), "TEST");
 
 	auto &test = db["test"];
-	BOOST_CHECK(test.size() == 3);
+	BOOST_CHECK_EQUAL(test.size(), 3);
 
 	const char *ts[] = {"aap", "noot", "mies"};
 
@@ -382,27 +382,27 @@ _test.value
 
 	auto &db = f.front();
 
-	BOOST_CHECK(db.name() == "TEST");
+	BOOST_CHECK_EQUAL(db.name(), "TEST");
 
 	auto &test = db["test"];
-	BOOST_CHECK(test.size() == 3);
+	BOOST_CHECK_EQUAL(test.size(), 3);
 
 	int n = 0;
 	for (auto r : test.find(cif::v2::key("name") == "aap"))
 	{
-		BOOST_CHECK(++n == 1);
-		BOOST_CHECK(r["id"].as<int>() == 1);
-		BOOST_CHECK(r["name"].as<std::string>() == "aap");
-		BOOST_CHECK(r["value"].as<float>() == 1.0);
+		BOOST_CHECK_EQUAL(++n, 1);
+		BOOST_CHECK_EQUAL(r["id"].as<int>(), 1);
+		BOOST_CHECK_EQUAL(r["name"].as<std::string>(), "aap");
+		BOOST_CHECK_EQUAL(r["value"].as<float>(), 1.0);
 	}
 
 	auto t = test.find(cif::v2::key("id") == 1);
 	BOOST_CHECK(not t.empty());
-	BOOST_CHECK(t.front()["name"].as<std::string>() == "aap");
+	BOOST_CHECK_EQUAL(t.front()["name"].as<std::string>(), "aap");
 
 	auto t2 = test.find(cif::v2::key("value") == 1.2);
 	BOOST_CHECK(not t2.empty());
-	BOOST_CHECK(t2.front()["name"].as<std::string>() == "mies");
+	BOOST_CHECK_EQUAL(t2.front()["name"].as<std::string>(), "mies");
 }
 
 BOOST_AUTO_TEST_CASE(ut3)
@@ -424,13 +424,13 @@ _test.value
 
 	auto &db = f.front();
 
-	BOOST_CHECK(db.name() == "TEST");
+	BOOST_CHECK_EQUAL(db.name(), "TEST");
 
 	auto &test = db["test"];
-	BOOST_CHECK(test.size() == 5);
+	BOOST_CHECK_EQUAL(test.size(), 5);
 
 	BOOST_CHECK(test.exists("value"_key == cif::v2::null));
-	BOOST_CHECK(test.find("value"_key == cif::v2::null).size() == 2);
+	BOOST_CHECK_EQUAL(test.find("value"_key == cif::v2::null).size(), 2);
 }
 
 // --------------------------------------------------------------------
@@ -579,13 +579,13 @@ _cat_2.desc
 	auto &cat1 = f.front()["cat_1"];
 	auto &cat2 = f.front()["cat_2"];
 
-	BOOST_CHECK(cat1.size() == 3);
-	BOOST_CHECK(cat2.size() == 3);
+	BOOST_CHECK_EQUAL(cat1.size(), 3);
+	BOOST_CHECK_EQUAL(cat2.size(), 3);
 
 	cat1.erase(cif::v2::key("id") == 1);
 
-	BOOST_CHECK(cat1.size() == 2);
-	BOOST_CHECK(cat2.size() == 1);
+	BOOST_CHECK_EQUAL(cat1.size(), 2);
+	BOOST_CHECK_EQUAL(cat2.size(), 1);
 
 	// BOOST_CHECK_THROW(cat2.emplace({
 	//     { "id", 4 },
@@ -700,15 +700,15 @@ mies Mies
 
 	auto &cat1 = f.front()["cat_1"];
 
-	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK_EQUAL(cat1.size(), 3);
 
 	cat1.erase(cif::v2::key("id") == "AAP");
 
-	BOOST_CHECK(cat1.size() == 3);
+	BOOST_CHECK_EQUAL(cat1.size(), 3);
 
 	cat1.erase(cif::v2::key("id") == "noot");
 
-	BOOST_CHECK(cat1.size() == 2);
+	BOOST_CHECK_EQUAL(cat1.size(), 2);
 
 	// should fail with duplicate key:
 	BOOST_CHECK_THROW(cat1.emplace({
@@ -718,14 +718,14 @@ mies Mies
 
 	cat1.erase(cif::v2::key("id") == "aap");
 
-	BOOST_CHECK(cat1.size() == 1);
+	BOOST_CHECK_EQUAL(cat1.size(), 1);
 
 	cat1.emplace({
 		{"id", "aap"},
 		{"c", "2e-aap"}
 	});
 
-	BOOST_CHECK(cat1.size() == 2);
+	BOOST_CHECK_EQUAL(cat1.size(), 2);
 }
 
 // --------------------------------------------------------------------
@@ -885,14 +885,14 @@ _cat_2.desc
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 3);
-	BOOST_CHECK(cat2.size() == 4);
+	BOOST_CHECK_EQUAL(cat1.size(), 3);
+	BOOST_CHECK_EQUAL(cat2.size(), 4);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 1).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 10).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 2);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 1).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 10).size(), 2);
 
 	// check a rename in parent and child, this time only one child should be renamed
 
@@ -902,31 +902,31 @@ _cat_2.desc
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 3);
-	BOOST_CHECK(cat2.size() == 4);
+	BOOST_CHECK_EQUAL(cat1.size(), 3);
+	BOOST_CHECK_EQUAL(cat2.size(), 4);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 2).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 20).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 1);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 2).size(), 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 20).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "noot").size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "n2").size() == 1);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "noot").size() == 1);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "n2").size() == 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "noot").size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 2 and cif::v2::key("name2") == "n2").size(), 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "noot").size(), 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 20 and cif::v2::key("name2") == "n2").size(), 0);
 
 	// --------------------------------------------------------------------
 
 	cat1.erase(cif::v2::key("id") == 10);
 
-	BOOST_CHECK(cat1.size() == 2);
-	BOOST_CHECK(cat2.size() == 2);
+	BOOST_CHECK_EQUAL(cat1.size(), 2);
+	BOOST_CHECK_EQUAL(cat2.size(), 2);
 
 	cat1.erase(cif::v2::key("id") == 20);
 
-	BOOST_CHECK(cat1.size() == 1);
-	BOOST_CHECK(cat2.size() == 1);
+	BOOST_CHECK_EQUAL(cat1.size(), 1);
+	BOOST_CHECK_EQUAL(cat2.size(), 1);
 }
 
 // --------------------------------------------------------------------
@@ -1098,14 +1098,14 @@ _cat_2.parent_id3
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 4);
-	BOOST_CHECK(cat2.size() == 13);
+	BOOST_CHECK_EQUAL(cat1.size(), 4);
+	BOOST_CHECK_EQUAL(cat2.size(), 13);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 1).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 10).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 1);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 2);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 1).size(), 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 10).size(), 2);
 
 	for (auto r : cat1.find(cif::v2::key("id") == 2))
 	{
@@ -1113,14 +1113,14 @@ _cat_2.parent_id3
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 4);
-	BOOST_CHECK(cat2.size() == 13);
+	BOOST_CHECK_EQUAL(cat1.size(), 4);
+	BOOST_CHECK_EQUAL(cat2.size(), 13);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 2).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 20).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 2);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 2);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 2).size(), 2);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 20).size(), 2);
 
 	for (auto r : cat1.find(cif::v2::key("id") == 3))
 	{
@@ -1128,14 +1128,14 @@ _cat_2.parent_id3
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 4);
-	BOOST_CHECK(cat2.size() == 13);
+	BOOST_CHECK_EQUAL(cat1.size(), 4);
+	BOOST_CHECK_EQUAL(cat2.size(), 13);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 3).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 30).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 3).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 30).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 3).size() == 2);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 30).size() == 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 3).size(), 2);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 30).size(), 1);
 
 	for (auto r : cat1.find(cif::v2::key("id") == 4))
 	{
@@ -1143,14 +1143,14 @@ _cat_2.parent_id3
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 4);
-	BOOST_CHECK(cat2.size() == 13);
+	BOOST_CHECK_EQUAL(cat1.size(), 4);
+	BOOST_CHECK_EQUAL(cat2.size(), 13);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 4).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 4).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 10).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 4).size() == 3);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 40).size() == 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 4).size(), 3);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 40).size(), 0);
 }
 
 // --------------------------------------------------------------------
@@ -1310,7 +1310,7 @@ _cat_2.parent_id3
 	auto PR2set = cat1.find(cif::v2::key("id") == 2);
 	BOOST_ASSERT(PR2set.size() == 1);
 	auto PR2 = PR2set.front();
-	BOOST_CHECK(PR2["id"].as<int>() == 2);
+	BOOST_CHECK_EQUAL(PR2["id"].as<int>(), 2);
 
 	auto CR2set = cat1.get_children(PR2, cat2);
 	BOOST_ASSERT(CR2set.size() == 3);
@@ -1329,18 +1329,18 @@ _cat_2.parent_id3
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 3);
-	BOOST_CHECK(cat2.size() == 7);
+	BOOST_CHECK_EQUAL(cat1.size(), 3);
+	BOOST_CHECK_EQUAL(cat2.size(), 7);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 1).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 10).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 1).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 10).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 1).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 1).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 1).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 10).size() == 1);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 10).size() == 1);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 10).size() == 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 1).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id2") == 1).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id3") == 1).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 10).size(), 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id2") == 10).size(), 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id3") == 10).size(), 1);
 
 	for (auto r : cat1.find(cif::v2::key("id") == 2))
 	{
@@ -1348,18 +1348,18 @@ _cat_2.parent_id3
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 3);
-	BOOST_CHECK(cat2.size() == 7);
+	BOOST_CHECK_EQUAL(cat1.size(), 3);
+	BOOST_CHECK_EQUAL(cat2.size(), 7);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 2).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 20).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 2).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 20).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 2).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 2).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 2).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 20).size() == 2);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 20).size() == 2);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 20).size() == 2);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 2).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id2") == 2).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id3") == 2).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 20).size(), 2);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id2") == 20).size(), 2);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id3") == 20).size(), 2);
 
 	for (auto r : cat1.find(cif::v2::key("id") == 3))
 	{
@@ -1367,32 +1367,32 @@ _cat_2.parent_id3
 		break;
 	}
 
-	BOOST_CHECK(cat1.size() == 3);
-	BOOST_CHECK(cat2.size() == 7);
+	BOOST_CHECK_EQUAL(cat1.size(), 3);
+	BOOST_CHECK_EQUAL(cat2.size(), 7);
 
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 3).size() == 0);
-	BOOST_CHECK(cat1.find(cif::v2::key("id") == 30).size() == 1);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 3).size(), 0);
+	BOOST_CHECK_EQUAL(cat1.find(cif::v2::key("id") == 30).size(), 1);
 
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 3).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 3).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 3).size() == 0);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id") == 30).size() == 1);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id2") == 30).size() == 1);
-	BOOST_CHECK(cat2.find(cif::v2::key("parent_id3") == 30).size() == 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 3).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id2") == 3).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id3") == 3).size(), 0);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id") == 30).size(), 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id2") == 30).size(), 1);
+	BOOST_CHECK_EQUAL(cat2.find(cif::v2::key("parent_id3") == 30).size(), 1);
 
 	// test delete
 
 	cat1.erase(cif::v2::key("id") == 10);
-	BOOST_CHECK(cat1.size() == 2);
-	BOOST_CHECK(cat2.size() == 4);
+	BOOST_CHECK_EQUAL(cat1.size(), 2);
+	BOOST_CHECK_EQUAL(cat2.size(), 4);
 
 	cat1.erase(cif::v2::key("id") == 20);
-	BOOST_CHECK(cat1.size() == 1);
-	BOOST_CHECK(cat2.size() == 1);
+	BOOST_CHECK_EQUAL(cat1.size(), 1);
+	BOOST_CHECK_EQUAL(cat2.size(), 1);
 
 	cat1.erase(cif::v2::key("id") == 30);
-	BOOST_CHECK(cat1.size() == 0);
-	BOOST_CHECK(cat2.size() == 0);
+	BOOST_CHECK_EQUAL(cat1.size(), 0);
+	BOOST_CHECK_EQUAL(cat2.size(), 0);
 }
 
 // --------------------------------------------------------------------
@@ -1418,21 +1418,21 @@ _test.name
 	for (auto r : db["test"].find(cif::v2::key("id") == 1))
 	{
 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
-		BOOST_CHECK(id == 1);
-		BOOST_CHECK(name == "aap");
+		BOOST_CHECK_EQUAL(id, 1);
+		BOOST_CHECK_EQUAL(name, "aap");
 	}
 
 	for (auto r : db["test"].find(cif::v2::key("id") == 4))
 	{
 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
-		BOOST_CHECK(id == 4);
+		BOOST_CHECK_EQUAL(id, 4);
 		BOOST_CHECK(name.empty());
 	}
 
 	for (auto r : db["test"].find(cif::v2::key("id") == 5))
 	{
 		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
-		BOOST_CHECK(id == 5);
+		BOOST_CHECK_EQUAL(id, 5);
 		BOOST_CHECK(name.empty());
 	}
 
@@ -1524,8 +1524,8 @@ _test.name
 
 	const auto &[id, name] = db["test"].find1<int, std::string>(cif::v2::key("id") == 1, "id", "name");
 
-	BOOST_CHECK(id == 1);
-	BOOST_CHECK(name == "aap");
+	BOOST_CHECK_EQUAL(id, 1);
+	BOOST_CHECK_EQUAL(name, "aap");
 }
 
 // --------------------------------------------------------------------
@@ -1739,24 +1739,22 @@ _cat_3.num
 	auto &cat2 = f.front()["cat_2"];
 	auto &cat3 = f.front()["cat_3"];
 
-// TODO: enable test
-	// cat3.update_value("name"_key == "aap" and "num"_key == 1, "name", "aapje");
+	cat3.update_value("name"_key == "aap" and "num"_key == 1, "name", "aapje");
 
-
-	BOOST_CHECK(cat3.size() == 2);
+	BOOST_CHECK_EQUAL(cat3.size(), 2);
 
 	{
 		int id, num;
 		std::string name;
 		cif::v2::tie(id, name, num) = cat3.front().get("id", "name", "num");
-		BOOST_CHECK(id == 1);
-		BOOST_CHECK(num == 1);
-		BOOST_CHECK(name == "aapje");
+		BOOST_CHECK_EQUAL(id, 1);
+		BOOST_CHECK_EQUAL(num, 1);
+		BOOST_CHECK_EQUAL(name, "aapje");
 
 		cif::v2::tie(id, name, num) = cat3.back().get("id", "name", "num");
-		BOOST_CHECK(id == 2);
-		BOOST_CHECK(num == 2);
-		BOOST_CHECK(name == "aap");
+		BOOST_CHECK_EQUAL(id, 2);
+		BOOST_CHECK_EQUAL(num, 2);
+		BOOST_CHECK_EQUAL(name, "aap");
 	}
 
 	int i = 0;
@@ -1765,24 +1763,24 @@ _cat_3.num
 		switch (++i)
 		{
 			case 1:
-				BOOST_CHECK(id == 1);
-				BOOST_CHECK(num == 1);
-				BOOST_CHECK(name == "aapje");
-				BOOST_CHECK(desc == "Een dier");
+				BOOST_CHECK_EQUAL(id, 1);
+				BOOST_CHECK_EQUAL(num, 1);
+				BOOST_CHECK_EQUAL(name, "aapje");
+				BOOST_CHECK_EQUAL(desc, "Een dier");
 				break;
 
 			case 2:
-				BOOST_CHECK(id == 2);
-				BOOST_CHECK(num == 2);
-				BOOST_CHECK(name == "aap");
-				BOOST_CHECK(desc == "Een andere aap");
+				BOOST_CHECK_EQUAL(id, 2);
+				BOOST_CHECK_EQUAL(num, 2);
+				BOOST_CHECK_EQUAL(name, "aap");
+				BOOST_CHECK_EQUAL(desc, "Een andere aap");
 				break;
 
 			case 3:
-				BOOST_CHECK(id == 3);
-				BOOST_CHECK(num == 1);
-				BOOST_CHECK(name == "noot");
-				BOOST_CHECK(desc == "walnoot bijvoorbeeld");
+				BOOST_CHECK_EQUAL(id, 3);
+				BOOST_CHECK_EQUAL(num, 1);
+				BOOST_CHECK_EQUAL(name, "noot");
+				BOOST_CHECK_EQUAL(desc, "walnoot bijvoorbeeld");
 				break;
 
 			default:
@@ -1790,34 +1788,34 @@ _cat_3.num
 		}
 	}
 
-	BOOST_CHECK(cat1.size() == 4);
+	BOOST_CHECK_EQUAL(cat1.size(), 4);
 	i = 0;
 	for (const auto &[id, name, desc] : cat1.rows<int, std::string, std::string>("id", "name", "desc"))
 	{
 		switch (++i)
 		{
 			case 1:
-				BOOST_CHECK(id == 1);
-				BOOST_CHECK(name == "aapje");
-				BOOST_CHECK(desc == "Aap");
+				BOOST_CHECK_EQUAL(id, 1);
+				BOOST_CHECK_EQUAL(name, "aapje");
+				BOOST_CHECK_EQUAL(desc, "Aap");
 				break;
 
 			case 2:
-				BOOST_CHECK(id == 2);
-				BOOST_CHECK(name == "noot");
-				BOOST_CHECK(desc == "Noot");
+				BOOST_CHECK_EQUAL(id, 2);
+				BOOST_CHECK_EQUAL(name, "noot");
+				BOOST_CHECK_EQUAL(desc, "Noot");
 				break;
 
 			case 3:
-				BOOST_CHECK(id == 3);
-				BOOST_CHECK(name == "mies");
-				BOOST_CHECK(desc == "Mies");
+				BOOST_CHECK_EQUAL(id, 3);
+				BOOST_CHECK_EQUAL(name, "mies");
+				BOOST_CHECK_EQUAL(desc, "Mies");
 				break;
 
 			case 4:
-				BOOST_CHECK(id == 4);
-				BOOST_CHECK(name == "aap");
-				BOOST_CHECK(desc == "Aap");
+				BOOST_CHECK_EQUAL(id, 4);
+				BOOST_CHECK_EQUAL(name, "aap");
+				BOOST_CHECK_EQUAL(desc, "Aap");
 				break;
 
 			default:
@@ -2094,3 +2092,71 @@ BOOST_AUTO_TEST_CASE(reading_file_1)
 // 		BOOST_CHECK_EQUAL(text, kS[i++].s);
 // 	}
 // }
+
+
+BOOST_AUTO_TEST_CASE(trim_test)
+{
+	BOOST_CHECK_EQUAL(cif::trim_copy("aap"), "aap");
+	BOOST_CHECK_EQUAL(cif::trim_copy(" aap"), "aap");
+	BOOST_CHECK_EQUAL(cif::trim_copy(" aap "), "aap");
+	BOOST_CHECK_EQUAL(cif::trim_copy("aap "), "aap");
+	BOOST_CHECK_EQUAL(cif::trim_copy("	 aap	"), "aap");
+
+	BOOST_CHECK_EQUAL(cif::trim_left_copy("aap"), "aap");
+	BOOST_CHECK_EQUAL(cif::trim_left_copy(" aap"), "aap");
+	BOOST_CHECK_EQUAL(cif::trim_left_copy(" aap "), "aap ");
+	BOOST_CHECK_EQUAL(cif::trim_left_copy("aap "), "aap ");
+	BOOST_CHECK_EQUAL(cif::trim_left_copy("aap	"), "aap	");
+
+	BOOST_CHECK_EQUAL(cif::trim_right_copy("aap"), "aap");
+	BOOST_CHECK_EQUAL(cif::trim_right_copy(" aap"), " aap");
+	BOOST_CHECK_EQUAL(cif::trim_right_copy(" aap "), " aap");
+	BOOST_CHECK_EQUAL(cif::trim_right_copy("aap "), "aap");
+	BOOST_CHECK_EQUAL(cif::trim_right_copy("	 aap	"), "	 aap");
+
+	std::string s;
+
+	s = "aap"; 			cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
+	s = " aap"; 		cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
+	s = " aap "; 		cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
+	s = "aap "; 		cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
+	s = "	 aap	"; 	cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
+
+	s = "aap"; 			cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap"); 
+	s = " aap"; 		cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap"); 
+	s = " aap "; 		cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap "); 
+	s = "aap "; 		cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap "); 
+	s = "aap	"; 		cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap	"); 
+
+	s = "aap"; 			cif::trim_right(s); BOOST_CHECK_EQUAL(s, "aap"); 
+	s = " aap"; 		cif::trim_right(s); BOOST_CHECK_EQUAL(s, " aap"); 
+	s = " aap "; 		cif::trim_right(s); BOOST_CHECK_EQUAL(s, " aap"); 
+	s = "aap "; 		cif::trim_right(s); BOOST_CHECK_EQUAL(s, "aap"); 
+	s = "	 aap	"; 	cif::trim_right(s); BOOST_CHECK_EQUAL(s, "	 aap"); 
+
+}
+
+BOOST_AUTO_TEST_CASE(split_test)
+{
+	std::vector<std::string_view> v, t;
+
+	v = cif::split<>("aap;noot;mies", ";");
+	t = std::vector<std::string_view>{ "aap", "noot", "mies" };
+	
+	BOOST_CHECK(v == t);
+
+	v = cif::split("aap;noot,mies", ";,");
+	// t = std::vector<std::string>{ "aap", "noot", "mies" };
+	
+	BOOST_CHECK(v == t);
+
+	v = cif::split(";aap;noot,mies;", ";,");
+	t = std::vector<std::string_view>{ "", "aap", "noot", "mies", "" };
+	
+	BOOST_CHECK(v == t);
+
+	v = cif::split(";aap;noot,mies;", ";,", true);
+	t = std::vector<std::string_view>{ "aap", "noot", "mies" };
+	
+	BOOST_CHECK(v == t);
+}

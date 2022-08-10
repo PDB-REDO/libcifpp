@@ -29,15 +29,12 @@
 #include <map>
 #include <set>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 
 #include <cif++/AtomType.hpp>
 #include <cif++/Compound.hpp>
 #include <cif++/PDB2CifRemark3.hpp>
 #include <cif++/CifUtils.hpp>
-
-namespace ba = boost::algorithm;
 
 using cif::Datablock;
 using cif::Category;
@@ -992,7 +989,7 @@ std::string Remark3Parser::nextLine()
 			while (mRec->is("REMARK   3") and mRec->mVlen > valueIndent)
 			{
 				std::string v(mRec->mValue + 4, mRec->mValue + mRec->mVlen);
-				if (not ba::starts_with(v, indent))
+				if (not cif::starts_with(v, indent))
 					break;
 
 				mLine += ' ';
@@ -1146,7 +1143,7 @@ void Remark3Parser::storeCapture(const char* category, std::initializer_list<con
 		++capture;
 
 		std::string value = mM[capture].str();
-		ba::trim(value);
+		cif::trim(value);
 
 		if (iequals(value, "NULL") or iequals(value, "NONE") or iequals(value, "Inf") or iequals(value, "+Inf") or iequals(value, std::string(value.length(), '*')))
 			continue;
@@ -1253,7 +1250,7 @@ void Remark3Parser::storeRefineLsRestr(const char* type, std::initializer_list<c
 		++capture;
 
 		std::string value = mM[capture].str();
-		ba::trim(value);
+		cif::trim(value);
 		if (value.empty() or iequals(value, "NULL") or iequals(value, "Inf") or iequals(value, "+Inf") or iequals(value, std::string(value.length(), '*')))
 			continue;
 
@@ -1284,7 +1281,7 @@ void Remark3Parser::updateRefineLsRestr(const char* type, std::initializer_list<
 				++capture;
 
 				std::string value = mM[capture].str();
-				ba::trim(value);
+				cif::trim(value);
 				if (iequals(value, "NULL") or iequals(value, std::string(value.length(), '*')))
 					value.clear();
 
@@ -1385,32 +1382,29 @@ bool Remark3Parser::parse(const std::string& expMethod, PDBRecord* r, cif::Datab
 		}
 	};
 
-	for (auto p = make_split_iterator(line, ba::first_finder(", "));
-		not p.eof(); ++p)
+	for (auto program : cif::split<std::string>(line, ", ", true))
 	{
-		std::string program(p->begin(), p->end());
-
-		if (ba::starts_with(program, "BUSTER"))
+		if (cif::starts_with(program, "BUSTER"))
 			tryParser(new BUSTER_TNT_Remark3Parser(program, expMethod, r, db));
-		else if (ba::starts_with(program, "CNS") or ba::starts_with(program, "CNX"))
+		else if (cif::starts_with(program, "CNS") or cif::starts_with(program, "CNX"))
 			tryParser(new CNS_Remark3Parser(program, expMethod, r, db));
-		else if (ba::starts_with(program, "PHENIX"))
+		else if (cif::starts_with(program, "PHENIX"))
 			tryParser(new PHENIX_Remark3Parser(program, expMethod, r, db));
-		else if (ba::starts_with(program, "NUCLSQ"))
+		else if (cif::starts_with(program, "NUCLSQ"))
 			tryParser(new NUCLSQ_Remark3Parser(program, expMethod, r, db));
-		else if (ba::starts_with(program, "PROLSQ"))
+		else if (cif::starts_with(program, "PROLSQ"))
 			tryParser(new PROLSQ_Remark3Parser(program, expMethod, r, db));
-		else if (ba::starts_with(program, "REFMAC"))
+		else if (cif::starts_with(program, "REFMAC"))
 		{
 			// simply try both and take the best
 			tryParser(new REFMAC_Remark3Parser(program, expMethod, r, db));
 			tryParser(new REFMAC5_Remark3Parser(program, expMethod, r, db));
 		}
-		else if (ba::starts_with(program, "SHELXL"))
+		else if (cif::starts_with(program, "SHELXL"))
 			tryParser(new SHELXL_Remark3Parser(program, expMethod, r, db));
-		else if (ba::starts_with(program, "TNT"))
+		else if (cif::starts_with(program, "TNT"))
 			tryParser(new TNT_Remark3Parser(program, expMethod, r, db));
-		else if (ba::starts_with(program, "X-PLOR"))
+		else if (cif::starts_with(program, "X-PLOR"))
 			tryParser(new XPLOR_Remark3Parser(program, expMethod, r, db));
 		else if (cif::VERBOSE > 0)
 			std::cerr << "Skipping unknown program (" << program << ") in REMARK 3" << std::endl;

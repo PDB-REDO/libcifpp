@@ -30,12 +30,8 @@
 #include <numeric>
 #include <thread>
 
-#include <boost/algorithm/string.hpp>
-
 #include <cif++/Secondary.hpp>
 #include <cif++/Structure.hpp>
-
-namespace ba = boost::algorithm;
 
 // --------------------------------------------------------------------
 
@@ -106,7 +102,7 @@ const ResidueInfo kResidueInfo[] = {
 
 ResidueType MapResidue(std::string inName)
 {
-	ba::trim(inName);
+	cif::trim(inName);
 
 	ResidueType result = kUnknownResidue;
 

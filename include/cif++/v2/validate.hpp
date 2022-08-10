@@ -31,15 +31,9 @@
 
 // duh.. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86164
 // #include <regex>
-
-// TODO: get rid of boost::iostreams
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/regex.hpp>
 
 #include <cif++/CifUtils.hpp>
-
-namespace io = boost::iostreams;
 
 namespace cif::v2
 {

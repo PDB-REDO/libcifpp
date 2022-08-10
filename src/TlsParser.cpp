@@ -24,11 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/algorithm/string.hpp>
-
 #include <cif++/TlsParser.hpp>
-
-namespace ba = boost::algorithm;
 
 namespace cif
 {
@@ -1830,7 +1826,7 @@ TLSSelectionPtr ParseSelectionDetails(const std::string& program, const std::str
 
 	TLSSelectionPtr result;
 
-	if (ba::icontains(program, "buster"))
+	if (cif::icontains(program, "buster"))
 	{
 		result = buster.Parse(selection);
 
@@ -1848,7 +1844,7 @@ TLSSelectionPtr ParseSelectionDetails(const std::string& program, const std::str
 			result = phenix.Parse(selection);
 		}
 	}
-	else if (ba::icontains(program, "phenix"))
+	else if (cif::icontains(program, "phenix"))
 	{
 		result = phenix.Parse(selection);
 

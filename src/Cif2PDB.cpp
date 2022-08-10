@@ -30,74 +30,75 @@
 #include <cmath>
 #include <iomanip>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
-
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/concepts.hpp>    // output_filter
-#include <boost/iostreams/operations.hpp>  // put
 
 #include <cif++/Cif2PDB.hpp>
 #include <cif++/AtomType.hpp>
 #include <cif++/Compound.hpp>
-
-namespace ba = boost::algorithm;
-namespace io = boost::iostreams;
 
 using cif::Datablock;
 using cif::Category;
 using cif::Row;
 
 // --------------------------------------------------------------------
-// FillOutLineFilter is used to make sure all lines in PDB files
-// are at filled out with spaces to be as much as 80 characters wide.
-
-class FillOutLineFilter : public io::output_filter
+class FillOutStreamBuf : public std::streambuf
 {
- public:
-	FillOutLineFilter()
-		: mLineCount(0), mColumnCount(0) {}
-	
-    template<typename Sink>
-    bool put(Sink& dest, int c)
-    {
-    	bool result = true;
-    	
-    	if (c == '\n')
-    	{
-    		for (int i = mColumnCount; result and i < 80; ++i)
-    			result = io::put(dest, ' ');
-    	}
-    	
-    	if (result)
-    		result = io::put(dest, c);
-    	
-    	if (result)
-    	{
-    		if (c == '\n')
-    		{
-    			mColumnCount = 0;
-    			++mLineCount;
-    		}
-    		else
-    			++mColumnCount;
-    	}
-    	
-    	return result;
-    }
+  public:
+	using base_type = std::streambuf;
+	using int_type = base_type::int_type;
+	using char_type = base_type::char_type;
+	using traits_type = base_type::traits_type;
 
-    template<typename Sink>
-    void close(Sink&)
-    {
-    	mLineCount = 0;
-    	mColumnCount = 0;
-    }
-    
-    int GetLineCount() const 		{ return mLineCount; }
-	
+	FillOutStreamBuf(std::ostream &os)
+		: mOS(os)
+		, mUpstream(os.rdbuf())
+	{
+	}
+
+	~FillOutStreamBuf()
+	{
+		mOS.rdbuf(mUpstream);
+	}
+
+	virtual int_type
+	overflow(int_type ic = traits_type::eof())
+	{
+		char ch = traits_type::to_char_type(ic);
+
+		int_type result = ic;
+
+		if (ch == '\n')
+		{
+			for (int i = mColumnCount; result != traits_type::eof() and i < 80; ++i)
+				result = mUpstream->sputc(' ');
+		}
+
+		if (result != traits_type::eof())
+			result = mUpstream->sputc(ch);
+
+		if (result != traits_type::eof())
+		{
+			if (ch == '\n')
+			{
+				mColumnCount = 0;
+				++mLineCount;
+			}
+			else
+				++mColumnCount;
+		}
+
+		return result;
+	}
+
+	std::streambuf *getUpstream() const { return mUpstream; }
+
+	int GetLineCount() const { return mLineCount; }
+
   private:
-	int	mLineCount;
-	int mColumnCount;
+	std::ostream &mOS;
+	std::streambuf *mUpstream;
+	int mLineCount = 0;
+	int mColumnCount = 0;
 };
 
 // --------------------------------------------------------------------
@@ -198,8 +199,8 @@ std::string cifSoftware(const Datablock& db, SoftwareType sw)
 			result = r["name"].as<std::string>() + " " + r["version"].as<std::string>();
 		}
 
-		ba::trim(result);
-		ba::to_upper(result);
+		cif::trim(result);
+		cif::toUpper(result);
 		
 		if (result.empty())
 			result = "NULL";
@@ -249,7 +250,7 @@ size_t WriteContinuedLine(std::ostream& pdbFile, std::string header, int& count,
 
 	for (auto& line: lines)
 	{
-		// ba::to_upper(line);
+		// cif::toUpper(line);
 
 		pdbFile << header;
 		
@@ -302,13 +303,13 @@ size_t WriteCitation(std::ostream& pdbFile, const Datablock& db, Row r, int refe
 		authors.push_back(cif2pdbAuth(r1["name"].as<std::string>()));
 
 	if (not authors.empty())
-		result += WriteOneContinuedLine(pdbFile, s1 + "AUTH", 2, ba::join(authors, ","), 19);
+		result += WriteOneContinuedLine(pdbFile, s1 + "AUTH", 2, cif::join(authors, ","), 19);
 	
 	result += WriteOneContinuedLine(pdbFile, s1 + "TITL", 2, title, 19);
 	
 	if (not pubname.empty())
 	{
-		ba::to_upper(pubname);
+		cif::toUpper(pubname);
 	
 		const std::string kRefHeader = s1 + "REF %2.2d %-28.28s  %2.2s%4.4d %5.5d %4.4d";
 		pdbFile << (boost::format(kRefHeader)
@@ -410,7 +411,7 @@ void WriteHeaderLines(std::ostream& pdbFile, const Datablock& db)
 	for (auto r: db["struct"])
 	{
 		std::string title = r["title"].as<std::string>();
-		ba::trim(title);
+		cif::trim(title);
 		WriteOneContinuedLine(pdbFile, "TITLE   ", 2, title);
 		break;
 	}
@@ -438,7 +439,7 @@ void WriteHeaderLines(std::ostream& pdbFile, const Datablock& db)
 		if (not poly.empty())
 		{
 			std::string chains = poly.front()["pdbx_strand_id"].as<std::string>();
-			ba::replace_all(chains, ",", ", ");
+			cif::replace_all(chains, ",", ", ");
 			cmpnd.push_back("CHAIN: " + chains);
 		}
 
@@ -469,7 +470,7 @@ void WriteHeaderLines(std::ostream& pdbFile, const Datablock& db)
 			cmpnd.push_back("OTHER_DETAILS: " + details);
 	}
 
-	WriteOneContinuedLine(pdbFile, "COMPND ", 3, ba::join(cmpnd, ";\n"));
+	WriteOneContinuedLine(pdbFile, "COMPND ", 3, cif::join(cmpnd, ";\n"));
 
 	// SOURCE
 	
@@ -550,7 +551,7 @@ void WriteHeaderLines(std::ostream& pdbFile, const Datablock& db)
 		}
 	}
 
-	WriteOneContinuedLine(pdbFile, "SOURCE ", 3, ba::join(source, ";\n"));
+	WriteOneContinuedLine(pdbFile, "SOURCE ", 3, cif::join(source, ";\n"));
 	
 	// KEYWDS
 	
@@ -575,7 +576,7 @@ void WriteHeaderLines(std::ostream& pdbFile, const Datablock& db)
 		for (auto r: dbexpt)
 			method.push_back(r["method"].as<std::string>());
 		if (not method.empty())
-			WriteOneContinuedLine(pdbFile, "EXPDTA  ", 2, ba::join(method, "; "));
+			WriteOneContinuedLine(pdbFile, "EXPDTA  ", 2, cif::join(method, "; "));
 	}
 	
 	// NUMMDL
@@ -589,7 +590,7 @@ void WriteHeaderLines(std::ostream& pdbFile, const Datablock& db)
 	for (auto r: db["audit_author"])
 		authors.push_back(cif2pdbAuth(r["name"].as<std::string>()));
 	if (not authors.empty())
-		WriteOneContinuedLine(pdbFile, "AUTHOR  ", 2, ba::join(authors, ","));
+		WriteOneContinuedLine(pdbFile, "AUTHOR  ", 2, cif::join(authors, ","));
 }
 
 void WriteTitle(std::ostream& pdbFile, const Datablock& db)
@@ -1378,7 +1379,7 @@ void WriteRemark3Refmac(std::ostream& pdbFile, const Datablock& db)
 				
 				pdbFile << RM3("") << std::endl
 						<< RM3(" NCS GROUP NUMBER               : ") << ens_id << std::endl
-						<< RM3("    CHAIN NAMES                    : ") << ba::join(chains, " ") << std::endl
+						<< RM3("    CHAIN NAMES                    : ") << cif::join(chains, " ") << std::endl
 						<< RM3("    NUMBER OF COMPONENTS NCS GROUP : ") << component_ids.size() << std::endl
 						<< RM3("      COMPONENT C  SSSEQI  TO  C   SSSEQI   CODE") << std::endl;
 				
@@ -1397,12 +1398,12 @@ void WriteRemark3Refmac(std::ostream& pdbFile, const Datablock& db)
 				for (auto l: db["refine_ls_restr_ncs"].find(cif::Key("pdbx_ens_id") == ens_id))
 				{
 					std::string type = l["pdbx_type"].as<std::string>();
-					ba::to_upper(type);
+					cif::toUpper(type);
 					
 					std::string unit;
-					if (ba::ends_with(type, "POSITIONAL"))
+					if (cif::ends_with(type, "POSITIONAL"))
 						unit = "    (A): ";
-					else if (ba::ends_with(type, "THERMAL"))
+					else if (cif::ends_with(type, "THERMAL"))
 						unit = " (A**2): ";
 					else
 						unit = "       : ";
@@ -1729,7 +1730,7 @@ void WriteRemark3Phenix(std::ostream& pdbFile, const Datablock& db)
 //				
 //				pdbFile << RM3("") << std::endl
 //						<< RM3(" NCS GROUP NUMBER               : ") << ens_id << std::endl
-//						<< RM3("    CHAIN NAMES                    : ") << ba::join(chains, " ") << std::endl
+//						<< RM3("    CHAIN NAMES                    : ") << cif::join(chains, " ") << std::endl
 //						<< RM3("    NUMBER OF COMPONENTS NCS GROUP : ") << component_ids.size() << std::endl
 //						<< RM3("      COMPONENT C  SSSEQI  TO  C   SSSEQI   CODE") << std::endl;
 //				
@@ -1748,12 +1749,12 @@ void WriteRemark3Phenix(std::ostream& pdbFile, const Datablock& db)
 //				for (auto l: db["refine_ls_restr_ncs"].find(cif::Key("pdbx_ens_id") == ens_id))
 //				{
 //					std::string type = l["pdbx_type"];
-//					ba::to_upper(type);
+//					cif::toUpper(type);
 //					
 //					std::string unit;
-//					if (ba::ends_with(type, "POSITIONAL"))
+//					if (cif::ends_with(type, "POSITIONAL"))
 //						unit = "    (A): ";
-//					else if (ba::ends_with(type, "THERMAL"))
+//					else if (cif::ends_with(type, "THERMAL"))
 //						unit = " (A**2): ";
 //					else
 //						unit = "       : ";
@@ -2369,7 +2370,7 @@ void WriteRemark280(std::ostream& pdbFile, const Datablock& db)
 				std::string v = exptl_crystal_grow[c].as<std::string>();
 				if (not v.empty())
 				{
-					ba::to_upper(v);
+					cif::toUpper(v);
 					
 					switch (i)
 					{
@@ -2385,7 +2386,7 @@ void WriteRemark280(std::ostream& pdbFile, const Datablock& db)
 				}
 			}
 
-			WriteOneContinuedLine(pdbFile, "REMARK 280", 0, "CRYSTALLIZATION CONDITIONS: " + (conditions.empty() ? "NULL" : ba::join(conditions, ", ")));
+			WriteOneContinuedLine(pdbFile, "REMARK 280", 0, "CRYSTALLIZATION CONDITIONS: " + (conditions.empty() ? "NULL" : cif::join(conditions, ", ")));
 
 			break;
 		}
@@ -2420,7 +2421,7 @@ void WriteRemark350(std::ostream& pdbFile, const Datablock& db)
 	// write out the mandatory REMARK 300 first
 	
 	pdbFile << RM<300>("") << std::endl
-			<< RM<300>("BIOMOLECULE: ") << ba::join(biomolecules, ", ") << std::endl
+			<< RM<300>("BIOMOLECULE: ") << cif::join(biomolecules, ", ") << std::endl
 			<< RM<300>("SEE REMARK 350 FOR THE AUTHOR PROVIDED AND/OR PROGRAM") << std::endl
 			<< RM<300>("GENERATED ASSEMBLY INFORMATION FOR THE STRUCTURE IN") << std::endl
 			<< RM<300>("THIS ENTRY. THE REMARK MAY ALSO PROVIDE INFORMATION ON") << std::endl
@@ -2451,7 +2452,7 @@ void WriteRemark350(std::ostream& pdbFile, const Datablock& db)
 		pdbFile << RM("") << std::endl
 			 	<< RM("BIOMOLECULE: ") << id << std::endl;
 		
-		ba::to_upper(oligomer);
+		cif::toUpper(oligomer);
 		
 		if (detail == "author_defined_assembly" or detail == "author_and_software_defined_assembly")
 			pdbFile << RM("AUTHOR DETERMINED BIOLOGICAL UNIT: ") << oligomer << std::endl;
@@ -2479,20 +2480,16 @@ void WriteRemark350(std::ostream& pdbFile, const Datablock& db)
 		
 		auto gen = db["pdbx_struct_assembly_gen"][cif::Key("assembly_id") == id];
 		
-		std::vector<std::string> asyms;
 		std::string asym_id_list, oper_id_list;
 		cif::tie(asym_id_list, oper_id_list) = gen.get("asym_id_list", "oper_expression");
 		
-		ba::split(asyms, asym_id_list, ba::is_any_of(","));
+		auto asyms = cif::split<std::string>(asym_id_list, ",");
 		
 		std::vector<std::string> chains = MapAsymIDs2ChainIDs(asyms, db);
-		pdbFile << RM("APPLY THE FOLLOWING TO CHAINS: ") << ba::join(chains, ", ") << std::endl; 
-		
+		pdbFile << RM("APPLY THE FOLLOWING TO CHAINS: ") << cif::join(chains, ", ") << std::endl; 
 
-		for (auto i = make_split_iterator(oper_id_list, ba::token_finder(ba::is_any_of(","), ba::token_compress_on)); not i.eof(); ++i)
+		for (auto oper_id : cif::split<std::string>(oper_id_list, ",", true))
 		{
-			std::string oper_id{ i->begin(), i->end() };
-
 			auto r = db["pdbx_struct_oper_list"][cif::Key("id") == oper_id];
 			
 			pdbFile << RM("  BIOMT1 ", -3) <<	Fs(r, "id")
@@ -2666,7 +2663,7 @@ void WriteRemark800(std::ostream& pdbFile, const Datablock& db)
 		std::string ident, code, desc;
 		cif::tie(ident, code, desc) = r.get("id", "pdbx_evidence_code", "details");
 
-		ba::to_upper(code);
+		cif::toUpper(code);
 
 		for (auto l: { "SITE_IDENTIFIER: " + ident, "EVIDENCE_CODE: " + code, "SITE_DESCRIPTION: " + desc })
 		{
@@ -2780,7 +2777,7 @@ int WritePrimaryStructure(std::ostream& pdbFile, const Datablock& db)
 		 			"pdbx_seq_db_name", "pdbx_seq_db_accession_code", "db_mon_id", "pdbx_seq_db_seq_num",
 		 			"details");
 		
-		ba::to_upper(conflict);
+		cif::toUpper(conflict);
 		
 		pdbFile << (boost::format(
 					"SEQADV %4.4s %3.3s %1.1s %4.4s%1.1s %-4.4s %-9.9s %3.3s %5.5s %-21.21s")
@@ -2823,14 +2820,12 @@ int WritePrimaryStructure(std::ostream& pdbFile, const Datablock& db)
 			if (t > 13)
 				t = 13;
 			
-			auto r = boost::make_iterator_range(seq.begin(), seq.begin() + t);
-			
 			pdbFile << (boost::format(
 						"SEQRES %3.3d %c %4.4d  %-51.51s          ")
 						% n++
 						% chainID
 						% seqresl[chainID]
-						% ba::join(r, " ")).str()
+						% cif::join(seq.begin(), seq.begin() + t, " ")).str()
 						<< std::endl;
 			
 			++numSeq;
@@ -2966,7 +2961,7 @@ int WriteHeterogen(std::ostream& pdbFile, const Datablock& db)
 	}
 	
 	if (cif::VERBOSE > 1 and not missingHetNames.empty())
-		std::cerr << "Missing het name(s) for " << ba::join(missingHetNames, ", ") << std::endl;
+		std::cerr << "Missing het name(s) for " << cif::join(missingHetNames, ", ") << std::endl;
 	
 	boost::format kHET("HET    %3.3s  %1.1s%4.4d%1.1s  %5.5d");
 	for (auto h: hets)
@@ -2985,7 +2980,7 @@ int WriteHeterogen(std::ostream& pdbFile, const Datablock& db)
 		if (id == water_comp_id)
 			continue;
 
-		ba::to_upper(name);
+		cif::toUpper(name);
 		
 		int c = 1;
 		
@@ -3723,46 +3718,35 @@ std::tuple<int,int> WriteCoordinate(std::ostream& pdbFile, const Datablock& db)
 
 void WritePDBFile(std::ostream& pdbFile, const Datablock &db)
 {
-	io::filtering_ostream out;
-	out.push(FillOutLineFilter());
-	out.push(pdbFile);
+	FillOutStreamBuf fb(pdbFile);
 
-	auto filter = out.component<FillOutLineFilter>(0);
-	assert(filter);
-	
 	int numRemark = 0, numHet = 0, numHelix = 0, numSheet = 0, numTurn = 0, numSite = 0, numXform = 0, numCoord = 0, numTer = 0, numConect = 0, numSeq = 0;
 	
-								WriteTitle(out, db);
+								WriteTitle(pdbFile, db);
 	
-	int savedLineCount = filter->GetLineCount();
-//	numRemark = 				WriteRemarks(out, db);
-								WriteRemarks(out, db);
-	numRemark = filter->GetLineCount() - savedLineCount;
+	int savedLineCount = fb.GetLineCount();
+//	numRemark = 				WriteRemarks(pdbFile, db);
+								WriteRemarks(pdbFile, db);
+	numRemark = fb.GetLineCount() - savedLineCount;
 
-	numSeq = 					WritePrimaryStructure(out, db);
-	numHet = 					WriteHeterogen(out, db);
-	std::tie(numHelix, numSheet) =	WriteSecondaryStructure(out, db);
-								WriteConnectivity(out, db);
-	numSite =					WriteMiscellaneousFeatures(out, db);
-								WriteCrystallographic(out, db);
-	numXform =					WriteCoordinateTransformation(out, db);
-	std::tie(numCoord, numTer) =		WriteCoordinate(out, db);
+	numSeq = 					WritePrimaryStructure(pdbFile, db);
+	numHet = 					WriteHeterogen(pdbFile, db);
+	std::tie(numHelix, numSheet) =	WriteSecondaryStructure(pdbFile, db);
+								WriteConnectivity(pdbFile, db);
+	numSite =					WriteMiscellaneousFeatures(pdbFile, db);
+								WriteCrystallographic(pdbFile, db);
+	numXform =					WriteCoordinateTransformation(pdbFile, db);
+	std::tie(numCoord, numTer) =		WriteCoordinate(pdbFile, db);
 
 	boost::format kMASTER("MASTER    %5.5d    0%5.5d%5.5d%5.5d%5.5d%5.5d%5.5d%5.5d%5.5d%5.5d%5.5d");
 	
-	out	<< (kMASTER % numRemark % numHet % numHelix % numSheet % numTurn % numSite % numXform % numCoord % numTer % numConect % numSeq) << std::endl
-		<< "END" << std::endl;
+	pdbFile	<< (kMASTER % numRemark % numHet % numHelix % numSheet % numTurn % numSite % numXform % numCoord % numTer % numConect % numSeq) << std::endl
+			<< "END" << std::endl;
 }
 
 void WritePDBHeaderLines(std::ostream& os, const Datablock &db)
 {
-	// io::filtering_ostream out;
-	// out.push(FillOutLineFilter());
-	// out.push(os);
-
-	// auto filter = out.component<FillOutLineFilter>(0);
-	// assert(filter);
-
+	FillOutStreamBuf fb(os);
 	WriteHeaderLines(os, db);
 }
 
@@ -3847,7 +3831,7 @@ std::string GetPDBCOMPNDLine(const Datablock &db, std::string::size_type truncat
 		if (not poly.empty())
 		{
 			std::string chains = poly.front()["pdbx_strand_id"].as<std::string>();
-			ba::replace_all(chains, ",", ", ");
+			cif::replace_all(chains, ",", ", ");
 			cmpnd.push_back("CHAIN: " + chains);
 		}
 
@@ -3878,7 +3862,7 @@ std::string GetPDBCOMPNDLine(const Datablock &db, std::string::size_type truncat
 			cmpnd.push_back("OTHER_DETAILS: " + details);
 	}
 
-	return FixStringLength("COMPND    " + ba::join(cmpnd, "; "), truncate_at);
+	return FixStringLength("COMPND    " + cif::join(cmpnd, "; "), truncate_at);
 }
 
 std::string GetPDBSOURCELine(const Datablock &db, std::string::size_type truncate_at)
@@ -3961,7 +3945,7 @@ std::string GetPDBSOURCELine(const Datablock &db, std::string::size_type truncat
 		}
 	}
 
-	return FixStringLength("SOURCE    " + ba::join(source, "; "), truncate_at);
+	return FixStringLength("SOURCE    " + cif::join(source, "; "), truncate_at);
 }
 
 std::string GetPDBAUTHORLine(const Datablock &db, std::string::size_type truncate_at)
@@ -3971,5 +3955,5 @@ std::string GetPDBAUTHORLine(const Datablock &db, std::string::size_type truncat
 	for (auto r: db["audit_author"])
 		author.push_back(cif2pdbAuth(r["name"].as<std::string>()));
 
-	return FixStringLength("AUTHOR    " + ba::join(author, "; "), truncate_at);
+	return FixStringLength("AUTHOR    " + cif::join(author, "; "), truncate_at);
 }

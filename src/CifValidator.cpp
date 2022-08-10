@@ -27,17 +27,13 @@
 #include <fstream>
 #include <filesystem>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
+#include <gzstream/gzstream.hpp>
 
 #include <cif++/Cif++.hpp>
 #include <cif++/CifParser.hpp>
 #include <cif++/CifValidator.hpp>
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
-namespace io = boost::iostreams;
 
 extern int VERBOSE;
 
@@ -416,15 +412,11 @@ const Validator &ValidatorFactory::operator[](std::string_view dictionary)
 
 		if (fs::exists(p, ec) and not ec)
 		{
-			std::ifstream file(p, std::ios::binary);
+			gzstream::ifstream file(p);
 			if (not file.is_open())
 				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
 
-			io::filtering_stream<io::input> in;
-			in.push(io::gzip_decompressor());
-			in.push(file);
-
-			mValidators.emplace_back(dictionary, in);
+			mValidators.emplace_back(dictionary, file);
 		}
 		else
 			throw std::runtime_error("Dictionary not found or defined (" + dict_name.string() + ")");

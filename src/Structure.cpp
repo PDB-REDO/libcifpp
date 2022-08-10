@@ -31,9 +31,7 @@
 #include <iomanip>
 #include <numeric>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
+#include <gzstream/gzstream.hpp>
 
 #if __cpp_lib_format
 #include <format>
@@ -47,8 +45,6 @@
 // #include <cif++/AtomShape.hpp>
 
 namespace fs = std::filesystem;
-namespace ba = boost::algorithm;
-namespace io = boost::iostreams;
 
 extern int cif::VERBOSE;
 
@@ -1289,81 +1285,27 @@ float Branch::weight() const
 
 void File::load(const std::filesystem::path &path)
 {
-	std::ifstream inFile(path, std::ios_base::in | std::ios_base::binary);
-	if (not inFile.is_open())
-		throw std::runtime_error("No such file: " + path.string());
-
-	io::filtering_stream<io::input> in;
 	std::string ext = path.extension().string();
 
-	if (path.extension() == ".gz")
+	if (ext == ".gz")
 	{
-		in.push(io::gzip_decompressor());
+		gzstream::ifstream in(path);
+
 		ext = path.stem().extension().string();
-	}
 
-	in.push(inFile);
-
-	try
-	{
-		// OK, we've got the file, now create a protein
-		if (ext == ".cif")
-			load(in);
-		else if (ext == ".pdb" or ext == ".ent")
+		if (ext == ".pdb" or ext == ".ent")
 			ReadPDBFile(in, *this);
 		else
-		{
-			try
-			{
-				if (cif::VERBOSE > 0)
-					std::cerr << "unrecognized file extension, trying cif" << std::endl;
-
-				cif::File::load(in);
-			}
-			catch (const cif::CifParserError &e)
-			{
-				if (cif::VERBOSE > 0)
-					std::cerr << "Not cif, trying plain old PDB" << std::endl;
-
-				// pffft...
-				in.reset();
-
-				if (inFile.is_open())
-					inFile.seekg(0);
-				else
-					inFile.open(path, std::ios_base::in | std::ios::binary);
-
-				if (path.extension() == ".gz")
-					in.push(io::gzip_decompressor());
-
-				in.push(inFile);
-
-				ReadPDBFile(in, *this);
-			}
-		}
+			cif::File::load(in);
 	}
-	catch (const std::exception &ex)
+	else
 	{
-		if (cif::VERBOSE >= 0)
-			std::cerr << "Error trying to load file " << path << std::endl;
-		throw;
-	}
+		std::ifstream in(path, std::ios_base::binary);
 
-	// validate, otherwise lots of functionality won't work
-	loadDictionary("mmcif_pdbx_v50");
-	if (not isValid() and cif::VERBOSE >= 0)
-		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
-}
-
-void File::load(std::istream &is)
-{
-	try
-	{
-		cif::File::load(is);
-	}
-	catch (const cif::CifParserError &e)
-	{
-		ReadPDBFile(is, *this);
+		if (ext == ".pdb" or ext == ".ent")
+			ReadPDBFile(in, *this);
+		else
+			cif::File::load(in);
 	}
 
 	// validate, otherwise lots of functionality won't work
@@ -1376,21 +1318,20 @@ void File::save(const std::filesystem::path &path)
 {
 	fs::path file = path.filename();
 
-	std::ofstream outFile(path, std::ios_base::out | std::ios_base::binary);
-	io::filtering_stream<io::output> out;
+	std::unique_ptr<std::ostream> outFile;
 
 	if (file.extension() == ".gz")
 	{
-		out.push(io::gzip_compressor());
+		outFile.reset(new gzstream::ofstream(path));
 		file.replace_extension("");
 	}
-
-	out.push(outFile);
+	else
+		outFile.reset(new std::ofstream(path, std::ios_base::out | std::ios_base::binary));
 
 	if (file.extension() == ".pdb")
-		WritePDBFile(out, data());
+		WritePDBFile(*outFile, data());
 	else
-		cif::File::save(out);
+		cif::File::save(*outFile);
 }
 
 // --------------------------------------------------------------------

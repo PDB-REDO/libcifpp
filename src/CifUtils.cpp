@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -25,6 +25,7 @@
  */
 
 #include <atomic>
+#include <cassert>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -42,13 +43,10 @@
 #include <termios.h>
 #endif
 
-#include <boost/algorithm/string.hpp>
-
 #include <cif++/CifUtils.hpp>
 
 #include "revision.hpp"
 
-namespace ba = boost::algorithm;
 namespace fs = std::filesystem;
 
 // --------------------------------------------------------------------
@@ -96,7 +94,7 @@ bool iequals(std::string_view a, std::string_view b)
 	bool result = a.length() == b.length();
 	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end(); ++ai, ++bi)
 		result = kCharToLowerMap[uint8_t(*ai)] == kCharToLowerMap[uint8_t(*bi)];
-		// result = tolower(*ai) == tolower(*bi);
+	// result = tolower(*ai) == tolower(*bi);
 	return result;
 }
 
@@ -152,12 +150,97 @@ void toLower(std::string &s)
 		c = tolower(c);
 }
 
-std::string toLowerCopy(const std::string &s)
+std::string toLowerCopy(std::string_view s)
 {
 	std::string result(s);
 	for (auto &c : result)
 		c = tolower(c);
 	return result;
+}
+
+void toUpper(std::string &s)
+{
+	for (auto &c : s)
+		c = toupper(c);
+}
+
+void replace_all(std::string &s, std::string_view what, std::string_view with)
+{
+	for (std::string::size_type p = s.find(what); p != std::string::npos; p = s.find(what, p))
+		s.replace(p, what.length(), with);
+}
+
+bool icontains(std::string_view s, std::string_view q)
+{
+	return contains(toLowerCopy(s), toLowerCopy(q));
+}
+
+void trim_right(std::string &s)
+{
+	auto e = s.end();
+	while (e != s.begin())
+	{
+		auto pe = std::prev(e);
+		if (not std::isspace(*pe))
+			break;
+		e = pe;
+	}
+
+	if (e != s.end())
+		s.erase(e, s.end());
+}
+
+std::string trim_right_copy(std::string_view s)
+{
+	auto e = s.end();
+	while (e != s.begin())
+	{
+		auto pe = std::prev(e);
+		if (not std::isspace(*pe))
+			break;
+		e = pe;
+	}
+
+	return {s.begin(), e};
+}
+
+std::string trim_left_copy(std::string_view s)
+{
+	auto b = s.begin();
+	while (b != s.end())
+	{
+		if (not std::isspace(*b))
+			break;
+
+		b = std::next(b);
+	}
+
+	return {b, s.end()};
+}
+
+void trim_left(std::string &s)
+{
+	auto b = s.begin();
+	while (b != s.end())
+	{
+		if (not std::isspace(*b))
+			break;
+
+		b = std::next(b);
+	}
+
+	s.erase(s.begin(), b);
+}
+
+void trim(std::string &s)
+{
+	trim_right(s);
+	trim_left(s);
+}
+
+std::string trim_copy(std::string_view s)
+{
+	return trim_left_copy(trim_right_copy(s));
 }
 
 // --------------------------------------------------------------------
@@ -181,7 +264,7 @@ std::tuple<std::string, std::string> splitTagName(std::string_view tag)
 std::string cifIdForNumber(int number)
 {
 	std::string result;
-	
+
 	if (number >= 26 * 26 * 26)
 		result = 'L' + std::to_string(number);
 	else
@@ -192,17 +275,17 @@ std::string cifIdForNumber(int number)
 			result += char('A' - 1 + v);
 			number %= (26 * 26);
 		}
-		
+
 		if (number >= 26)
 		{
 			int v = number / 26;
 			result += char('A' - 1 + v);
 			number %= 26;
 		}
-		
+
 		result += char('A' + number);
 	}
-	
+
 	assert(not result.empty());
 	return result;
 }
@@ -433,11 +516,8 @@ std::vector<std::string> wrapLine(const std::string &text, size_t width)
 
 std::vector<std::string> wordWrap(const std::string &text, size_t width)
 {
-	std::vector<std::string> paragraphs;
-	ba::split(paragraphs, text, ba::is_any_of("\n"));
-
 	std::vector<std::string> result;
-	for (auto &p : paragraphs)
+	for (auto p : cif::split<std::string>(text, "\n"))
 	{
 		if (p.empty())
 		{
@@ -482,12 +562,15 @@ std::string GetExecutablePath()
 
 	// convert from utf16 to utf8
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv1;
-    std::string u8str = conv1.to_bytes(ws);
+	std::string u8str = conv1.to_bytes(ws);
 
 	return u8str;
 }
 
 #else
+
+#include <limits.h>
+
 uint32_t get_terminal_width()
 {
 	uint32_t result = 80;
@@ -786,9 +869,9 @@ struct rsrc_imp
 
 #if _MSC_VER
 
-extern "C" const mrsrc::rsrc_imp* gResourceIndexDefault[1] = {};
-extern "C" const char* gResourceDataDefault[1] = {};
-extern "C" const char* gResourceNameDefault[1] = {};
+extern "C" const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
+extern "C" const char *gResourceDataDefault[1] = {};
+extern "C" const char *gResourceNameDefault[1] = {};
 
 extern "C" const mrsrc::rsrc_imp gResourceIndex[];
 extern "C" const char gResourceData[];
@@ -1250,12 +1333,14 @@ class ResourcePool
 					result.reset(file.release());
 			}
 		}
-		catch (...) {}
+		catch (...)
+		{
+		}
 
 		return result;
 	}
 
-	std::map<std::string,std::filesystem::path> mLocalResources;
+	std::map<std::string, std::filesystem::path> mLocalResources;
 	std::deque<fs::path> mDirs;
 };
 
@@ -1301,7 +1386,7 @@ std::unique_ptr<std::istream> ResourcePool::load(fs::path name)
 			result.reset(new mrsrc::istream(rsrc));
 	}
 
-	return result;	
+	return result;
 }
 
 // --------------------------------------------------------------------
