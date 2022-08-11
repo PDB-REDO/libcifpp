@@ -63,7 +63,7 @@ class Atom
   private:
 	struct AtomImpl : public std::enable_shared_from_this<AtomImpl>
 	{
-		AtomImpl(cif::v2::datablock &db, const std::string &id, cif::v2::row_handle row);
+		AtomImpl(cif::datablock &db, const std::string &id, cif::row_handle row);
 
 		// constructor for a symmetry copy of an atom
 		AtomImpl(const AtomImpl &impl, const Point &loc, const std::string &sym_op);
@@ -85,7 +85,7 @@ class Atom
 		const std::string get_property(const std::string_view name) const;
 		void set_property(const std::string_view name, const std::string &value);
 
-		const cif::v2::datablock &mDb;
+		const cif::datablock &mDb;
 		std::string mID;
 		AtomType mType;
 
@@ -98,7 +98,7 @@ class Atom
 
 		Point mLocation;
 		int mRefcount;
-		cif::v2::row_handle mRow;
+		cif::row_handle mRow;
 
 		// mutable std::vector<std::tuple<std::string, cif::detail::ItemReference>> mCachedRefs;
 
@@ -123,7 +123,7 @@ class Atom
 	{
 	}
 
-	Atom(cif::v2::datablock &db, cif::v2::row_handle &row);
+	Atom(cif::datablock &db, cif::row_handle &row);
 
 	// a special constructor to create symmetry copies
 	Atom(const Atom &rhs, const Point &symmmetry_location, const std::string &symmetry_operation);
@@ -180,8 +180,8 @@ class Atom
 	void translateRotateAndTranslate(Point t1, Quaternion q, Point t2);
 
 	// for direct access to underlying data, be careful!
-	const cif::v2::row_handle getRow() const { return impl().mRow; }
-	const cif::v2::row_handle getRowAniso() const;
+	const cif::row_handle getRow() const { return impl().mRow; }
+	const cif::row_handle getRowAniso() const;
 
 	bool isSymmetryCopy() const { return impl().mSymmetryCopy; }
 	std::string symmetry() const { return impl().mSymmetryOperator; }
@@ -513,7 +513,7 @@ class Polymer : public std::vector<Monomer>
 	Structure *mStructure;
 	std::string mEntityID;
 	std::string mAsymID;
-	// cif::v2::row_handleSet mPolySeq;
+	// cif::row_handleSet mPolySeq;
 };
 
 // --------------------------------------------------------------------
@@ -578,7 +578,7 @@ class Branch : public std::vector<Sugar>
 // file is a reference to the data stored in e.g. the cif file.
 // This object is not copyable.
 
-class File : public cif::v2::file
+class File : public cif::file
 {
   public:
 	File() {}
@@ -599,10 +599,10 @@ class File : public cif::v2::file
 	// void load(const std::filesystem::path &p) override;
 	// void save(const std::filesystem::path &p) override;
 
-	// using cif::v2::file::load;
-	// using cif::v2::file::save;
+	// using cif::file::load;
+	// using cif::file::save;
 
-	cif::v2::datablock &data() { return front(); }
+	cif::datablock &data() { return front(); }
 };
 
 // --------------------------------------------------------------------
@@ -622,12 +622,12 @@ inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
 class Structure
 {
   public:
-	Structure(cif::v2::file &p, size_t modelNr = 1, StructureOpenOptions options = {})
+	Structure(cif::file &p, size_t modelNr = 1, StructureOpenOptions options = {})
 		: Structure(p.front(), modelNr, options)
 	{
 	}
 
-	Structure(cif::v2::datablock &db, size_t modelNr = 1, StructureOpenOptions options = {});
+	Structure(cif::datablock &db, size_t modelNr = 1, StructureOpenOptions options = {});
 
 	Structure(Structure &&s) = default;
 
@@ -756,12 +756,12 @@ class Structure
 	/// This method creates new atom records filled with info from the info.
 	///
 	/// \param entity_id	The entity ID of the new nonpoly
-	/// \param atoms		The array of sets of cif::v2::item data containing the data for the atoms.
+	/// \param atoms		The array of sets of cif::item data containing the data for the atoms.
 	/// \return				The newly create asym ID
-	std::string createNonpoly(const std::string &entity_id, std::vector<std::vector<cif::v2::item>> &atom_info);
+	std::string createNonpoly(const std::string &entity_id, std::vector<std::vector<cif::item>> &atom_info);
 
 	/// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a nag_atom_info
-	Branch &createBranch(std::vector<std::vector<cif::v2::item>> &nag_atom_info);
+	Branch &createBranch(std::vector<std::vector<cif::item>> &nag_atom_info);
 
 	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms constructed from \a atom_info
 	///
@@ -769,7 +769,7 @@ class Structure
 	/// \param atom_info    Array containing the info for the atoms to construct for the new sugar
 	/// \param link_sugar   The sugar to link to, note: this is the sugar number (1 based)
 	/// \param link_atom    The atom id of the atom linked in the sugar
-	Branch &extendBranch(const std::string &asym_id, std::vector<std::vector<cif::v2::item>> &atom_info,
+	Branch &extendBranch(const std::string &asym_id, std::vector<std::vector<cif::item>> &atom_info,
 		int link_sugar, const std::string &link_atom);
 
 	/// \brief Remove \a branch
@@ -797,12 +797,12 @@ class Structure
 	void cleanupEmptyCategories();
 
 	/// \brief Direct access to underlying data
-	cif::v2::category &category(std::string_view name) const
+	cif::category &category(std::string_view name) const
 	{
 		return mDb[name];
 	}
 
-	cif::v2::datablock &datablock() const
+	cif::datablock &datablock() const
 	{
 		return mDb;
 	}
@@ -832,7 +832,7 @@ class Structure
 	void removeAtom(Atom &a, bool removeFromResidue);
 	void removeSugar(Sugar &sugar);
 
-	cif::v2::datablock &mDb;
+	cif::datablock &mDb;
 	size_t mModelNr;
 	AtomView mAtoms;
 	std::vector<size_t> mAtomIndex;

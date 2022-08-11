@@ -28,9 +28,9 @@
 
 #include <cif++/cif/validate.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 validator parse_dictionary(std::string_view name, std::istream &is);
 
-} // namespace cif::v2
+} // namespace cif

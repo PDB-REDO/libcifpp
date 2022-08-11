@@ -28,7 +28,7 @@
 
 #include <cif++/cif/row.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -466,4 +466,4 @@ void conditional_iterator_proxy<Category, Ts...>::swap(conditional_iterator_prox
 	std::swap(mCix, rhs.mCix);
 }
 
-} // namespace cif::v2
+} // namespace cif

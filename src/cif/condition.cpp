@@ -27,7 +27,7 @@
 #include <cif++/cif/category.hpp>
 #include <cif++/cif/condition.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 iset get_category_fields(const category &cat)
@@ -58,4 +58,4 @@ bool is_column_type_uchar(const category &cat, std::string_view col)
 	return result;
 }
 
-} // namespace cif::v2
+} // namespace cif

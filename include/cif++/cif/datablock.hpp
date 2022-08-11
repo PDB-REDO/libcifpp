@@ -30,7 +30,7 @@
 
 #include <cif++/cif/category.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -86,4 +86,4 @@ class datablock : public std::list<category>
 	const validator *m_validator = nullptr;
 };
 
-} // namespace cif::v2
+} // namespace cif

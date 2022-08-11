@@ -38,7 +38,7 @@
 
 #include <cif++/cif/forward_decl.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -458,4 +458,4 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::str
 	}
 };
 
-} // namespace cif::v2
+} // namespace cif

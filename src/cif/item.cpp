@@ -26,7 +26,7 @@
 
 #include <cif++/cif/row.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 std::string_view item_handle::text() const

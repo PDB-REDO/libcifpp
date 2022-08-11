@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-namespace cif::v2
+namespace cif
 {
 
 class category;
@@ -43,4 +43,4 @@ class row_handle;
 class item;
 class item_handle;
 
-} // namespace cif::v2
+} // namespace cif

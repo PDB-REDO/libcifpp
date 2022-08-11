@@ -29,7 +29,7 @@
 #include <cif++/cif/datablock.hpp>
 #include <cif++/cif/parser.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -83,4 +83,4 @@ class file : public std::list<datablock>
 	const validator *m_validator = nullptr;
 };
 
-} // namespace cif::v2
+} // namespace cif

@@ -33,7 +33,7 @@
 
 #include <cif++/cif/row.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -612,4 +612,4 @@ namespace literals
 	}
 } // namespace literals
 
-} // namespace cif::v2
+} // namespace cif

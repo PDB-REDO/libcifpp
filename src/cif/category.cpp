@@ -34,7 +34,7 @@
 // is inconsistent. It all depends whether a link is satified if a field taking part in the
 // set of linked items is null at one side and not null in the other.
 
-namespace cif::v2
+namespace cif
 {
 
 const uint32_t kMaxLineLength = 132;
@@ -1119,7 +1119,7 @@ void category::erase_orphans(condition &&cond)
 
 std::string category::get_unique_id(std::function<std::string(int)> generator)
 {
-	using namespace cif::v2::literals;
+	using namespace cif::literals;
 
 	std::string id_tag = "id";
 	if (m_cat_validator != nullptr and m_cat_validator->m_keys.size() == 1)
@@ -1875,4 +1875,4 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 	os << "# " << '\n';
 }
 
-} // namespace cif::v2
+} // namespace cif

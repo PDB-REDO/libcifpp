@@ -28,7 +28,7 @@
 
 #include <cif++/cif/row.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -284,4 +284,4 @@ class parser : public sac_parser
 	row_handle m_row;
 };
 
-} // namespace cif::v2
+} // namespace cif

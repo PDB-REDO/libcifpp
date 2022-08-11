@@ -38,7 +38,7 @@
 // https://en.cppreference.com/w/cpp/named_req/SequenceContainer
 // and more?
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -660,4 +660,4 @@ class category
 	row *m_head = nullptr, *m_tail = nullptr;
 };
 
-} // namespace cif::v2
+} // namespace cif

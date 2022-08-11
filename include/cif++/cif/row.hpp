@@ -28,7 +28,7 @@
 
 #include <cif++/cif/item.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 namespace detail
@@ -266,4 +266,4 @@ class row_initializer
 	std::vector<item> m_items;
 };
 
-} // namespace cif::v2
+} // namespace cif

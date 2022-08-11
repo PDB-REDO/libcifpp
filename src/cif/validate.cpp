@@ -40,7 +40,7 @@ namespace cif
 extern int VERBOSE;
 }
 
-namespace cif::v2
+namespace cif
 {
 
 using cif::VERBOSE;
@@ -430,4 +430,4 @@ void validator_factory::construct_validator(std::string_view name, std::istream 
 	parse_dictionary(name, is);
 }
 
-} // namespace cif::v2
+} // namespace cif

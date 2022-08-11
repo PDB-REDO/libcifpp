@@ -26,7 +26,7 @@
 
 #include <cif++/cif/datablock.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 void datablock::set_validator(const validator *v)

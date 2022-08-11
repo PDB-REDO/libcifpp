@@ -26,7 +26,7 @@
 
 #include <cif++/cif/category.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 void row_handle::assign(size_t column, std::string_view value, bool updateLinked, bool validate)
@@ -60,4 +60,4 @@ row_initializer::row_initializer(row_handle rh)
 		m_items.emplace_back(cat.get_column_name(i->m_column_ix), i->text());
 }
 
-} // namespace cif::v2
+} // namespace cif

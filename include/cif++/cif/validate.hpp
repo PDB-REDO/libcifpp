@@ -35,11 +35,10 @@
 
 #include <cif++/utilities.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 struct category_validator;
-class validator_factory;
 
 // --------------------------------------------------------------------
 
@@ -68,7 +67,7 @@ struct type_validator
 {
 	std::string m_name;
 	DDL_PrimitiveType m_primitive_type;
-	// std::regex				mRx;
+	// std::regex m_rx;
 	boost::regex m_rx;
 
 	bool operator<(const type_validator &rhs) const
@@ -218,4 +217,4 @@ class validator_factory
 	std::list<validator> m_validators;
 };
 
-} // namespace cif::v2
+} // namespace cif

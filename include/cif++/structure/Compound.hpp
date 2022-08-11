@@ -130,8 +130,8 @@ class Compound
 	friend class CCDCompoundFactoryImpl;
 	friend class CCP4CompoundFactoryImpl;
 
-	Compound(cif::v2::datablock &db);
-	Compound(cif::v2::datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group);
+	Compound(cif::datablock &db);
+	Compound(cif::datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group);
 
 	std::string mID;
 	std::string mName;

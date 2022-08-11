@@ -29,7 +29,7 @@
 #include <cif++/cif/file.hpp>
 #include <cif++/cif/parser.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 using namespace literals;
@@ -194,7 +194,7 @@ class dictionary_parser : public parser
 		if (isCategorySaveFrame)
 		{
 			std::string category;
-			cif::v2::tie(category) = dict["category"].front().get("id");
+			cif::tie(category) = dict["category"].front().get("id");
 
 			std::vector<std::string> keys;
 			for (auto k : dict["category_key"])
@@ -210,7 +210,7 @@ class dictionary_parser : public parser
 		{
 			// if the type code is missing, this must be a pointer, just skip it
 			std::string typeCode;
-			cif::v2::tie(typeCode) = dict["item_type"].front().get("code");
+			cif::tie(typeCode) = dict["item_type"].front().get("code");
 
 			const type_validator *tv = nullptr;
 			if (not(typeCode.empty() or typeCode == "?"))
@@ -221,7 +221,7 @@ class dictionary_parser : public parser
 				ess.insert(e["value"].as<std::string>());
 
 			std::string defaultValue;
-			cif::v2::tie(defaultValue) = dict["item_default"].front().get("value");
+			cif::tie(defaultValue) = dict["item_default"].front().get("value");
 			bool defaultIsNull = false;
 			if (defaultValue.empty())
 			{
@@ -238,7 +238,7 @@ class dictionary_parser : public parser
 			{
 				std::string tagName, category, mandatory;
 
-				cif::v2::tie(tagName, category, mandatory) = i.get("name", "category_id", "mandatory_code");
+				cif::tie(tagName, category, mandatory) = i.get("name", "category_id", "mandatory_code");
 
 				std::string catName, item_name;
 				std::tie(catName, item_name) = splitTagName(tagName);
@@ -297,7 +297,7 @@ class dictionary_parser : public parser
 			{
 				std::string childTagName, parentTagName;
 
-				cif::v2::tie(childTagName, parentTagName) = i.get("child_name", "parent_name");
+				cif::tie(childTagName, parentTagName) = i.get("child_name", "parent_name");
 
 				mLinkedItems.emplace(childTagName, parentTagName);
 			}
@@ -347,7 +347,7 @@ class dictionary_parser : public parser
 		{
 			std::string child, parent;
 			int link_group_id;
-			cif::v2::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
+			cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
 
 			auto civ = m_validator.get_validator_for_item(child);
 			if (civ == nullptr)
@@ -441,7 +441,7 @@ class dictionary_parser : public parser
 		for (auto t : dict["item_type_list"])
 		{
 			std::string code, primitiveCode, construct;
-			cif::v2::tie(code, primitiveCode, construct) = t.get("code", "primitive_code", "construct");
+			cif::tie(code, primitiveCode, construct) = t.get("code", "primitive_code", "construct");
 
 			replace_all(construct, "\\n", "\n");
 			replace_all(construct, "\\t", "\t");
@@ -494,4 +494,4 @@ validator parse_dictionary(std::string_view name, std::istream &is)
 	return result;
 }
 
-} // namespace cif::v2
+} // namespace cif

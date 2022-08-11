@@ -28,7 +28,7 @@
 
 #include <memory>
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -76,4 +76,4 @@ class list
 };
 
 
-} // namespace cif::v2
+} // namespace cif

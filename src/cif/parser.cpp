@@ -41,7 +41,7 @@ namespace cif
 extern int VERBOSE;
 }
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -817,4 +817,4 @@ void parser::produce_item(const std::string &category, const std::string &item, 
 	m_row[item] = m_token_value;
 }
 
-} // namespace cif::v2
+} // namespace cif

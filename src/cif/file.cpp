@@ -28,7 +28,7 @@
 
 #include <cif++/cif/file.hpp>
 
-namespace cif::v2
+namespace cif
 {
 
 // --------------------------------------------------------------------
@@ -165,4 +165,4 @@ void file::save(std::ostream &os) const
 		db.write(os);
 }
 
-} // namespace cif::v2
+} // namespace cif
