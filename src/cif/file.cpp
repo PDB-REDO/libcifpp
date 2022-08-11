@@ -130,6 +130,20 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 	return std::make_tuple(begin(), is_new);
 }
 
+void file::load(const std::filesystem::path &p)
+{
+	if (p.extension() == ".gz")
+	{
+		gzstream::ifstream in(p);
+		load(in);
+	}
+	else
+	{
+		std::ifstream in(p, std::ios::binary);
+		load(in);
+	}
+}
+
 void file::load(std::istream &is)
 {
 	auto saved = m_validator;

@@ -420,8 +420,6 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 			throw std::runtime_error("Dictionary not found or defined (" + dictionary.string() + ")");
 	}
 
-	assert(iequals(m_validators.back().name(), dictionary_name));
-
 	return m_validators.back();
 }
 
