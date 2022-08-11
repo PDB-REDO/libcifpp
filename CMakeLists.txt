@@ -193,50 +193,63 @@ endif()
 
 # Sources
 set(project_sources
-	${PROJECT_SOURCE_DIR}/src/AtomType.cpp
-	${PROJECT_SOURCE_DIR}/src/BondMap.cpp
-	${PROJECT_SOURCE_DIR}/src/Cif++.cpp
-	${PROJECT_SOURCE_DIR}/src/Cif2PDB.cpp
-	${PROJECT_SOURCE_DIR}/src/CifParser.cpp
-	${PROJECT_SOURCE_DIR}/src/CifUtils.cpp
-	${PROJECT_SOURCE_DIR}/src/CifValidator.cpp
-	${PROJECT_SOURCE_DIR}/src/Compound.cpp
-	${PROJECT_SOURCE_DIR}/src/PDB2Cif.cpp
-	${PROJECT_SOURCE_DIR}/src/PDB2CifRemark3.cpp
-	${PROJECT_SOURCE_DIR}/src/Point.cpp
-	${PROJECT_SOURCE_DIR}/src/Secondary.cpp
-	${PROJECT_SOURCE_DIR}/src/Structure.cpp
-	${PROJECT_SOURCE_DIR}/src/Symmetry.cpp
-	${PROJECT_SOURCE_DIR}/src/TlsParser.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/category.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/condition.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/datablock.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/dictionary_parser.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/item.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/parser.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/row.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/validate.cpp
 
-	${PROJECT_SOURCE_DIR}/src/v2/category.cpp
-	${PROJECT_SOURCE_DIR}/src/v2/condition.cpp
-	${PROJECT_SOURCE_DIR}/src/v2/dictionary_parser.cpp
-	${PROJECT_SOURCE_DIR}/src/v2/item.cpp
-	${PROJECT_SOURCE_DIR}/src/v2/parser.cpp
-	${PROJECT_SOURCE_DIR}/src/v2/row.cpp
-	${PROJECT_SOURCE_DIR}/src/v2/validate.cpp
+	# ${PROJECT_SOURCE_DIR}/src/pdb/Cif2PDB.cpp
+	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2Cif.cpp
+	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2CifRemark3.cpp
+
+	# ${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
+	# ${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
+	# ${PROJECT_SOURCE_DIR}/src/structure/Compound.cpp
+	# ${PROJECT_SOURCE_DIR}/src/structure/Secondary.cpp
+	# ${PROJECT_SOURCE_DIR}/src/structure/Structure.cpp
+	# ${PROJECT_SOURCE_DIR}/src/structure/Symmetry.cpp
+	# ${PROJECT_SOURCE_DIR}/src/structure/TlsParser.cpp
+	
+	${PROJECT_SOURCE_DIR}/src/utilities.cpp
+	${PROJECT_SOURCE_DIR}/src/point.cpp
 )
 
 set(project_headers
-	${PROJECT_SOURCE_DIR}/include/cif++/AtomType.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/BondMap.hpp
+
+	${PROJECT_SOURCE_DIR}/include/cif++/cif.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/utilities.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/item.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/datablock.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/file.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/writer.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/validate.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/list.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/iterator.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/parser.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/forward_decl.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/dictionary_parser.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/condition.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/category.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/cif/row.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/structure/AtomType.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/structure/BondMap.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/structure/TlsParser.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/structure/Symmetry.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/structure/Structure.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/structure/Secondary.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/structure/Compound.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb/PDB2Cif.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb/PDB2CifRemark3.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb/Cif2PDB.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/Cif++.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Cif2PDB.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/CifParser.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/CifUtils.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/CifValidator.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Compound.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/PDB2Cif.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/PDB2CifRemark3.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Point.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Secondary.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Structure.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Symmetry.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/TlsParser.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/point.hpp
 )
 
-add_library(cifpp ${project_sources} ${project_headers} ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp)
+add_library(cifpp ${project_sources} ${project_headers} ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp)
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
@@ -391,10 +404,10 @@ if(CIFPP_BUILD_TESTS)
 	list(APPEND CIFPP_tests
 
 		# pdb2cif
-		rename-compound
-		structure
-		sugar
-		unit
+		# rename-compound
+		# structure
+		# sugar
+		# unit
 		unit-v2)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)

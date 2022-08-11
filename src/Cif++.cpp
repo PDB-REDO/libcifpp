@@ -44,7 +44,7 @@
 
 #include <cif++/Cif++.hpp>
 #include <cif++/CifParser.hpp>
-#include <cif++/CifUtils.hpp>
+#include <cif++/utilities.hpp>
 #include <cif++/CifValidator.hpp>
 
 namespace fs = std::filesystem;

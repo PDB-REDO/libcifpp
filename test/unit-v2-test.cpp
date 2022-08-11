@@ -31,12 +31,12 @@
 
 // #include <cif++/DistanceMap.hpp>
 // #include <cif++/BondMap.hpp>
-#include <cif++/Cif++-v2.hpp>
+#include <cif++/cif.hpp>
 // #include <cif++/CifValidator.hpp>
 // #include <cif++/CifParser.hpp>
 
-#include <cif++/v2/parser.hpp>
-#include <cif++/v2/dictionary_parser.hpp>
+#include <cif++/cif/parser.hpp>
+#include <cif++/cif/dictionary_parser.hpp>
 
 namespace tt = boost::test_tools;
 
@@ -2176,4 +2176,8 @@ BOOST_AUTO_TEST_CASE(replace_all_test)
 
 	cif::replace_all(s, ",", ", ");
 	BOOST_CHECK_EQUAL(s, "aap, noot, mies");
+
+	cif::replace_all(s, ", ", ", ");
+	BOOST_CHECK_EQUAL(s, "aap, noot, mies");
 }
+
