@@ -197,6 +197,7 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/cif/condition.cpp
 	${PROJECT_SOURCE_DIR}/src/cif/datablock.cpp
 	${PROJECT_SOURCE_DIR}/src/cif/dictionary_parser.cpp
+	${PROJECT_SOURCE_DIR}/src/cif/file.cpp
 	${PROJECT_SOURCE_DIR}/src/cif/item.cpp
 	${PROJECT_SOURCE_DIR}/src/cif/parser.cpp
 	${PROJECT_SOURCE_DIR}/src/cif/row.cpp

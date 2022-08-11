@@ -1626,7 +1626,7 @@ namespace detail
 		if (value.find('\n') != std::string::npos or width == 0 or value.length() > 132) // write as text field
 		{
 			if (offset > 0)
-				os << std::endl;
+				os << '\n';
 			os << ';';
 			
 			char pc = 0;
@@ -1639,8 +1639,8 @@ namespace detail
 			}
 			
 			if (value.back() != '\n')
-				os << std::endl;
-			os << ';' << std::endl;
+				os << '\n';
+			os << ';' << '\n';
 			offset = 0;
 		}
 		else if (sac_parser::is_unquoted_string(value))
@@ -1690,9 +1690,9 @@ namespace detail
 			if (not done)
 			{
 				if (offset > 0)
-					os << std::endl;
-				os << ';' << value << std::endl
-				   << ';' << std::endl;
+					os << '\n';
+				os << ';' << value << '\n'
+				   << ';' << '\n';
 				offset = 0;
 			}
 		}
@@ -1749,14 +1749,14 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 	if (needLoop)
 	{
-		os << "loop_" << std::endl;
+		os << "loop_" << '\n';
 
 		std::vector<size_t> columnWidths;
 
 		for (auto cix : order)
 		{
 			auto &col = m_columns[cix];
-			os << '_' << m_name << '.' << col.m_name << ' ' << std::endl;
+			os << '_' << m_name << '.' << col.m_name << ' ' << '\n';
 			columnWidths.push_back(2);
 		}
 
@@ -1809,7 +1809,7 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 				if (offset + l > 132 and offset > 0)
 				{
-					os << std::endl;
+					os << '\n';
 					offset = 0;
 				}
 
@@ -1817,13 +1817,13 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 				if (offset > 132)
 				{
-					os << std::endl;
+					os << '\n';
 					offset = 0;
 				}
 			}
 
 			if (offset > 0)
-				os << std::endl;
+				os << '\n';
 		}
 	}
 	else
@@ -1863,16 +1863,16 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 			size_t offset = l;
 			if (s.length() + l >= kMaxLineLength)
 			{
-				os << std::endl;
+				os << '\n';
 				offset = 0;
 			}
 
 			if (detail::write_value(os, s, offset, 1) != 0)
-				os << std::endl;
+				os << '\n';
 		}
 	}
 
-	os << "# " << std::endl;
+	os << "# " << '\n';
 }
 
 } // namespace cif::v2

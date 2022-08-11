@@ -195,7 +195,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else
 					m_bol = (ch == '\n');
 				break;
-
+			
 			case State::Comment:
 				if (ch == '\n')
 				{
@@ -214,9 +214,16 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::TextField + 1;
 				else if (ch == kEOF)
 					error("unterminated textfield");
+				// else if (ch == '\\')
+				// 	state = State::Esc;
 				else if (not is_any_print(ch))
 					warning("invalid character in text field '" + std::string({static_cast<char>(ch)}) + "' (" + std::to_string((int)ch) + ")");
 				break;
+
+			// case State::Esc:
+			// 	if (ch == '\n')
+
+			// 	break;
 
 			case State::TextField + 1:
 				if (is_text_lead(ch) or ch == ' ' or ch == '\t')

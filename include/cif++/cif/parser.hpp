@@ -44,6 +44,8 @@ class parse_error : public std::runtime_error
 
 // --------------------------------------------------------------------
 
+// TODO: Need to implement support for transformed long lines
+
 class sac_parser
 {
   public:
@@ -228,6 +230,7 @@ class sac_parser
 	{
 		Start,
 		White,
+		Esc,
 		Comment,
 		QuestionMark,
 		Dot,

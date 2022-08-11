@@ -26,8 +26,6 @@
 
 #pragma once
 
-#include <cif++/cif/forward_decl.hpp>
-
 #include <cif++/cif/datablock.hpp>
 #include <cif++/cif/parser.hpp>
 
@@ -39,7 +37,6 @@ namespace cif::v2
 class file : public std::list<datablock>
 {
   public:
-
 	file() = default;
 
 	file(std::istream &is)
@@ -52,126 +49,38 @@ class file : public std::list<datablock>
 	file &operator=(const file &) = default;
 	file &operator=(file &&) = default;
 
-	void set_validator(const validator *v)
-	{
-		m_validator = v;
-		for (auto &db : *this)
-			db.set_validator(v);
-	}
+	void set_validator(const validator *v);
 
 	const validator *get_validator() const
 	{
 		return m_validator;
 	}
 
-	bool is_valid() const
+	bool is_valid() const;
+	bool is_valid();
+
+	void load_dictionary();
+	void load_dictionary(std::string_view name);
+
+	datablock &operator[](std::string_view name);
+	const datablock &operator[](std::string_view name) const;
+
+	std::tuple<iterator, bool> emplace(std::string_view name);
+
+	void load(const std::filesystem::path &p);
+	void load(std::istream &is);
+
+	void save(const std::filesystem::path &p) const;
+	void save(std::ostream &os) const;
+
+	friend std::ostream &operator<<(std::ostream &os, const file &f)
 	{
-		if (m_validator == nullptr)
-			std::runtime_error("No validator loaded explicitly, cannot continue");
-
-		bool result = true;
-		for (auto &d : *this)
-			result = d.is_valid() and result;
-
-		return result;
-	}
-	
-	bool is_valid()
-	{
-		if (m_validator == nullptr)
-		{
-			if (VERBOSE > 0)
-				std::cerr << "No dictionary loaded explicitly, loading default" << std::endl;
-
-			load_dictionary();
-		}
-
-		bool result = true;
-		for (auto &d : *this)
-			result = d.is_valid() and result;
-
-		return result;
-	}
-	
-	void load_dictionary()
-	{
-		load_dictionary("mmcif_ddl");
-	}
-
-	void load_dictionary(std::string_view name)
-	{
-		set_validator(&validator_factory::instance()[name]);
-	}
-
-	datablock &operator[](std::string_view name)
-	{
-		auto i = std::find_if(begin(), end(), [name](const datablock &c)
-			{ return iequals(c.name(), name); });
-		
-		if (i != end())
-			return *i;
-
-		emplace_back(name);
-		return back();
-	}
-
-	const datablock &operator[](std::string_view name) const
-	{
-		static const datablock s_empty;
-		auto i = std::find_if(begin(), end(), [name](const datablock &c)
-			{ return iequals(c.name(), name); });
-		return i == end() ? s_empty : *i;
-	}
-
-	std::tuple<iterator, bool> emplace(std::string_view name)
-	{
-		bool is_new = true;
-
-		auto i = begin();
-		while (i != end())
-		{
-			if (iequals(name, i->name()))
-			{
-				is_new = false;
-
-				if (i != begin())
-				{
-					auto n = std::next(i);
-					splice(begin(), *this, i, n);
-				}
-
-				break;
-			}
-
-			++i;
-		}
-
-		if (is_new)
-		{
-			auto &db = emplace_front(name);
-			db.set_validator(m_validator);
-		}
-
-		return std::make_tuple(begin(), is_new);		
-	}
-
-	void load(std::istream &is)
-	{
-		auto saved = m_validator;
-		set_validator(nullptr);
-
-		parser p(is, *this);
-		p.parse_file();
-
-		if (saved != nullptr)
-		{
-			set_validator(saved);
-			(void)is_valid();
-		}
+		f.save(os);
+		return os;
 	}
 
   private:
-	const validator* m_validator = nullptr;
+	const validator *m_validator = nullptr;
 };
 
-}
+} // namespace cif::v2
