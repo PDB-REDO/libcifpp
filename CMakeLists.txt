@@ -29,8 +29,6 @@ project(cifpp VERSION 5.0.0 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-enable_testing()
-
 include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
@@ -155,7 +153,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 find_package(Boost 1.70.0 REQUIRED COMPONENTS system regex program_options)
-find_package(gzstream REQUIRED)
+find_package(gxrio REQUIRED)
 
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
@@ -214,7 +212,6 @@ set(project_sources
 	# ${PROJECT_SOURCE_DIR}/src/structure/Structure.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Symmetry.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/TlsParser.cpp
-	
 	${PROJECT_SOURCE_DIR}/src/utilities.cpp
 	${PROJECT_SOURCE_DIR}/src/point.cpp
 )
@@ -257,7 +254,7 @@ target_include_directories(cifpp
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-	${Boost_INCLUDE_DIR} ${gzstream_INCLUDE_DIR}
+	${Boost_INCLUDE_DIR}
 )
 
 target_include_directories(cifpp
@@ -265,7 +262,7 @@ target_include_directories(cifpp
 	${CMAKE_BINARY_DIR}
 )
 
-target_link_libraries(cifpp PUBLIC Threads::Threads Boost::regex gzstream::gzstream ${CIFPP_REQUIRED_LIBRARIES})
+target_link_libraries(cifpp PUBLIC Threads::Threads Boost::regex gxrio::gxrio ${CIFPP_REQUIRED_LIBRARIES})
 
 # target_link_libraries(cifpp PRIVATE)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -402,6 +399,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc DESTINATION ${CMAKE_INSTAL
 option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 
 if(CIFPP_BUILD_TESTS)
+	enable_testing()
+
 	list(APPEND CIFPP_tests
 
 		# pdb2cif
