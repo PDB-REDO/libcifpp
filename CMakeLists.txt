@@ -184,18 +184,17 @@ if(CIFPP_RECREATE_SYMOP_DATA)
 	# The tool to create the table
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
-	target_link_libraries(symop-map-generator Threads::Threads
-		Boost::regex Boost::program_options ${CIFPP_REQUIRED_LIBRARIES})
+	target_link_libraries(symop-map-generator Threads::Threads ${CIFPP_REQUIRED_LIBRARIES})
 
 	set($ENV{CLIBD} ${CLIBD})
 
 	add_custom_command(
-		OUTPUT ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
-		COMMAND $<TARGET_FILE:symop-map-generator> ${CLIBD}/syminfo.lib ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
+		OUTPUT ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp
+		COMMAND $<TARGET_FILE:symop-map-generator> ${CLIBD}/syminfo.lib ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp
 	)
 
 	add_custom_target(
-		OUTPUT ${CMAKE_SOURCE_DIR}/src/SymOpTable_data.hpp
+		OUTPUT ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp
 		DEPENDS symop-map-generator "$ENV{CLIBD}/syminfo.lib"
 	)
 endif()
@@ -418,7 +417,7 @@ if(CIFPP_BUILD_TESTS)
 
 	list(APPEND CIFPP_tests
 
-		# pdb2cif
+		pdb2cif
 		# rename-compound
 		# structure
 		# sugar
