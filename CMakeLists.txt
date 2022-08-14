@@ -96,7 +96,6 @@ else()
 	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
 
-# set(CMAKE_DEBUG_POSTFIX d)
 if(MSVC)
 	# make msvc standards compliant...
 	add_compile_options(/permissive-)
@@ -148,11 +147,26 @@ else()
 endif()
 
 # Libraries
+
+# Start by finding out if std:regex is usable. Note that the current
+# implementation in GCC is not acceptable, it crashes on long lines.
+try_run(STD_REGEX_RUNNING STD_REGEX_COMPILING
+	${CMAKE_CURRENT_BINARY_DIR}/test ${CMAKE_SOURCE_DIR}/cmake/test-rx.cpp)
+
+if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
+	message(WARNING "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
+
+	set(NEED_BOOST_REGEX ON)
+endif()
+
 set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-find_package(Boost 1.70.0 REQUIRED COMPONENTS system regex program_options)
+if(NEED_BOOST_REGEX)
+	find_package(Boost 1.70.0 REQUIRED COMPONENTS system regex)
+endif()
+
 find_package(gxrio REQUIRED)
 
 include(FindFilesystem)
@@ -170,11 +184,8 @@ if(CIFPP_RECREATE_SYMOP_DATA)
 	# The tool to create the table
 	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
-	target_link_libraries(symop-map-generator Threads::Threads ${Boost_LIBRARIES} ${CIFPP_REQUIRED_LIBRARIES})
-
-	if(Boost_INCLUDE_DIR)
-		target_include_directories(symop-map-generator PUBLIC ${Boost_INCLUDE_DIR})
-	endif()
+	target_link_libraries(symop-map-generator Threads::Threads
+		Boost::regex Boost::program_options ${CIFPP_REQUIRED_LIBRARIES})
 
 	set($ENV{CLIBD} ${CLIBD})
 
@@ -249,6 +260,10 @@ set(project_headers
 
 add_library(cifpp ${project_sources} ${project_headers} ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp)
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+if(NEED_BOOST_REGEX)
+	target_compile_definitions(cifpp PUBLIC USE_BOOST_REGEX=1)
+endif()
 
 target_include_directories(cifpp
 	PUBLIC

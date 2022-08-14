@@ -27,11 +27,8 @@
 #pragma once
 
 #include <filesystem>
+#include <list>
 #include <mutex>
-
-// duh.. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86164
-// #include <regex>
-#include <boost/regex.hpp>
 
 #include <cif++/utilities.hpp>
 
@@ -63,12 +60,36 @@ enum class DDL_PrimitiveType
 
 DDL_PrimitiveType map_to_primitive_type(std::string_view s);
 
+struct regex_impl;
+
 struct type_validator
 {
 	std::string m_name;
 	DDL_PrimitiveType m_primitive_type;
-	// std::regex m_rx;
-	boost::regex m_rx;
+	regex_impl *m_rx;
+
+	type_validator() = delete;
+	type_validator(std::string_view name, DDL_PrimitiveType type, std::string_view rx);
+
+	type_validator(const type_validator &) = delete;
+	type_validator(type_validator &&rhs)
+		: m_name(std::move(rhs.m_name))
+		, m_primitive_type(rhs.m_primitive_type)
+	{
+		m_rx = std::exchange(rhs.m_rx, nullptr);
+	}
+
+	type_validator &operator=(const type_validator &) = delete;
+	type_validator &operator=(type_validator &&rhs)
+	{
+		m_name = std::move(rhs.m_name);
+		m_primitive_type = rhs.m_primitive_type;
+		m_rx = std::exchange(rhs.m_rx, nullptr);
+
+		return *this;
+	}
+
+	~type_validator();
 
 	bool operator<(const type_validator &rhs) const
 	{

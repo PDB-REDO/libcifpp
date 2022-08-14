@@ -450,7 +450,7 @@ class dictionary_parser : public parser
 			try
 			{
 				type_validator v = {
-					code, map_to_primitive_type(primitiveCode), boost::regex(construct, boost::regex::extended | boost::regex::optimize)};
+					code, map_to_primitive_type(primitiveCode), construct};
 
 				m_validator.add_type_validator(std::move(v));
 			}

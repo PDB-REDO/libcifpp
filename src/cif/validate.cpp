@@ -28,7 +28,20 @@
 #include <fstream>
 #include <iostream>
 
-#include <gzstream/gzstream.hpp>
+// The validator depends on regular expressions. Unfortunately,
+// the implementation of std::regex in g++ is buggy and crashes
+// on reading the pdbx dictionary. Therefore, in case g++ is used
+// the code will use boost::regex instead. 
+
+#if USE_BOOST_REGEX
+#include <boost/regex.hpp>
+using boost::regex;
+#else
+#include <regex>
+using std::regex;
+#endif
+
+#include <gxrio.hpp>
 
 #include <cif++/cif/dictionary_parser.hpp>
 #include <cif++/cif/validate.hpp>
@@ -37,13 +50,14 @@
 
 namespace cif
 {
-extern int VERBOSE;
-}
 
-namespace cif
+struct regex_impl : public regex
 {
-
-using cif::VERBOSE;
+	regex_impl(std::string_view rx)
+		: regex(rx.begin(), rx.end(), regex::extended | regex::optimize)
+	{
+	}
+};
 
 validation_error::validation_error(const std::string &msg)
 	: m_msg(msg)
@@ -72,6 +86,18 @@ DDL_PrimitiveType map_to_primitive_type(std::string_view s)
 }
 
 // --------------------------------------------------------------------
+
+type_validator::type_validator(std::string_view name, DDL_PrimitiveType type, std::string_view rx)
+	: m_name(name)
+	, m_primitive_type(type)
+	, m_rx(new regex_impl(rx))
+{
+}
+
+type_validator::~type_validator()
+{
+	delete m_rx;
+}
 
 int type_validator::compare(std::string_view a, std::string_view b) const
 {
@@ -191,7 +217,7 @@ void item_validator::operator()(std::string_view value) const
 {
 	if (not value.empty() and value != "?" and value != ".")
 	{
-		if (m_type != nullptr and not regex_match(value.begin(), value.end(), m_type->m_rx))
+		if (m_type != nullptr and not regex_match(value.begin(), value.end(), *m_type->m_rx))
 			throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{value} + "' does not match type expression for type " + m_type->m_name);
 
 		if (not m_enums.empty())
@@ -240,7 +266,7 @@ const type_validator *validator::get_validator_for_type(std::string_view typeCod
 {
 	const type_validator *result = nullptr;
 
-	auto i = m_type_validators.find(type_validator{std::string(typeCode), DDL_PrimitiveType::Char, boost::regex()});
+	auto i = m_type_validators.find(type_validator{std::string(typeCode), DDL_PrimitiveType::Char, {}});
 	if (i != m_type_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
@@ -409,7 +435,7 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 
 		if (std::filesystem::exists(p, ec) and not ec)
 		{
-			gzstream::ifstream in(p);
+			gxrio::ifstream in(p);
 
 			if (not in.is_open())
 				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
