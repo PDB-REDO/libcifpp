@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <array>
+
 #include <cif++/cif/forward_decl.hpp>
 
 #include <cif++/cif/condition.hpp>

@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <map>
+
 #include <cif++/cif/row.hpp>
 
 namespace cif
@@ -63,7 +65,7 @@ class sac_parser
 		kAnyPrintMask = 1 << 3
 	};
 
-	static constexpr bool is_white(int ch)
+	static bool is_white(int ch)
 	{
 		return std::isspace(ch) or ch == '#';
 	}

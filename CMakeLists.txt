@@ -260,17 +260,20 @@ add_library(cifpp::cifpp ALIAS cifpp)
 
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# if(NEED_BOOST_REGEX)
-target_compile_definitions(cifpp PUBLIC USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
+if(BOOST_REGEX_STANDALONE)
+	target_compile_definitions(cifpp PUBLIC USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
+endif()
 
-# endif()
 target_include_directories(cifpp
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(cifpp PUBLIC Threads::Threads gxrio::gxrio ${CIFPP_REQUIRED_LIBRARIES} PRIVATE Boost::regex)
+target_link_libraries(cifpp PUBLIC Threads::Threads gxrio::gxrio ${CIFPP_REQUIRED_LIBRARIES})
+if(BOOST_REGEX_STANDALONE)
+	target_link_libraries(cifpp PRIVATE Boost::regex)
+endif()
 
 # target_link_libraries(cifpp PRIVATE)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -409,6 +412,8 @@ option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
 if(CIFPP_BUILD_TESTS)
 	enable_testing()
 
+	find_package(Boost REQUIRED)
+
 	list(APPEND CIFPP_tests
 
 		# pdb2cif
@@ -424,7 +429,7 @@ if(CIFPP_BUILD_TESTS)
 
 		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
 
 		if(CIFPP_USE_RSRC)
 			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)

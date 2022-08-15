@@ -30,6 +30,7 @@
 #include <cmath>
 #include <filesystem>
 #include <set>
+#include <sstream>
 #include <vector>
 
 #ifndef STDOUT_FILENO
