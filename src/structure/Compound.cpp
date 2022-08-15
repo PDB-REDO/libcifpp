@@ -32,11 +32,11 @@
 #include <filesystem>
 #include <fstream>
 
-#include <cif++/Cif++.hpp>
-#include <cif++/CifParser.hpp>
+#include <cif++/cif.hpp>
+// #include <cif++/CifParser.hpp>
 #include <cif++/utilities.hpp>
-#include <cif++/Compound.hpp>
-#include <cif++/Point.hpp>
+#include <cif++/structure/Compound.hpp>
+#include <cif++/point.hpp>
 
 namespace fs = std::filesystem;
 
@@ -112,14 +112,14 @@ struct CompoundBondLess
 // --------------------------------------------------------------------
 // Compound
 
-Compound::Compound(cif::Datablock &db)
+Compound::Compound(cif::v2::datablock &db)
 {
 	auto &chemComp = db["chem_comp"];
 
 	if (chemComp.size() != 1)
 		throw std::runtime_error("Invalid compound file, chem_comp should contain a single row");
 
-	cif::tie(mID, mName, mType, mFormula, mFormulaWeight, mFormalCharge) =
+	cif::v2::tie(mID, mName, mType, mFormula, mFormulaWeight, mFormalCharge) =
 		chemComp.front().get("id", "name", "type", "formula", "formula_weight", "pdbx_formal_charge");
 
 	// The name should not contain newline characters since that triggers validation errors later on
@@ -132,7 +132,7 @@ Compound::Compound(cif::Datablock &db)
 	{
 		CompoundAtom atom;
 		std::string typeSymbol;
-		cif::tie(atom.id, typeSymbol, atom.charge, atom.aromatic, atom.leavingAtom, atom.stereoConfig, atom.x, atom.y, atom.z) =
+		cif::v2::tie(atom.id, typeSymbol, atom.charge, atom.aromatic, atom.leavingAtom, atom.stereoConfig, atom.x, atom.y, atom.z) =
 			row.get("atom_id", "type_symbol", "charge", "pdbx_aromatic_flag", "pdbx_leaving_atom_flag", "pdbx_stereo_config",
 				"model_Cartn_x", "model_Cartn_y", "model_Cartn_z");
 		atom.typeSymbol = AtomTypeTraits(typeSymbol).type();
@@ -144,13 +144,13 @@ Compound::Compound(cif::Datablock &db)
 	{
 		CompoundBond bond;
 		std::string valueOrder;
-		cif::tie(bond.atomID[0], bond.atomID[1], valueOrder, bond.aromatic, bond.stereoConfig) = row.get("atom_id_1", "atom_id_2", "value_order", "pdbx_aromatic_flag", "pdbx_stereo_config");
+		cif::v2::tie(bond.atomID[0], bond.atomID[1], valueOrder, bond.aromatic, bond.stereoConfig) = row.get("atom_id_1", "atom_id_2", "value_order", "pdbx_aromatic_flag", "pdbx_stereo_config");
 		bond.type = from_string(valueOrder);
 		mBonds.push_back(std::move(bond));
 	}
 }
 
-Compound::Compound(cif::Datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group)
+Compound::Compound(cif::v2::datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group)
 	: mID(id)
 	, mName(name)
 	, mType(type)
@@ -161,7 +161,7 @@ Compound::Compound(cif::Datablock &db, const std::string &id, const std::string 
 	{
 		CompoundAtom atom;
 		std::string typeSymbol;
-		cif::tie(atom.id, typeSymbol, atom.charge, atom.x, atom.y, atom.z) =
+		cif::v2::tie(atom.id, typeSymbol, atom.charge, atom.x, atom.y, atom.z) =
 			row.get("atom_id", "type_symbol", "charge", "x", "y", "z");
 		atom.typeSymbol = AtomTypeTraits(typeSymbol).type();
 
@@ -176,7 +176,7 @@ Compound::Compound(cif::Datablock &db, const std::string &id, const std::string 
 	{
 		CompoundBond bond;
 		std::string btype;
-		cif::tie(bond.atomID[0], bond.atomID[1], btype, bond.aromatic) = row.get("atom_id_1", "atom_id_2", "type", "aromatic");
+		cif::v2::tie(bond.atomID[0], bond.atomID[1], btype, bond.aromatic) = row.get("atom_id_1", "atom_id_2", "type", "aromatic");
 
 		using cif::iequals;
 
@@ -446,7 +446,7 @@ class CCDCompoundFactoryImpl : public CompoundFactoryImpl
 
 	Compound *create(const std::string &id) override;
 
-	cif::DatablockIndex mIndex;
+	cif::v2::datablockIndex mIndex;
 	fs::path mCompoundsFile;
 };
 
@@ -562,7 +562,7 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 
 	auto &cat = mFile["comp_list"]["chem_comp"];
 
-	auto rs = cat.find(cif::Key("three_letter_code") == id);
+	auto rs = cat.find(cif::v2::key("three_letter_code") == id);
 
 	if (rs.size() == 1)
 	{
@@ -570,7 +570,7 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 
 		std::string name, group;
 		uint32_t numberAtomsAll, numberAtomsNh;
-		cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
+		cif::v2::tie(name, group, numberAtomsAll, numberAtomsNh) =
 			row.get("name", "group", "number_atoms_all", "number_atoms_nh");
 
 		fs::path resFile = mCLIBD_MON / cif::toLowerCopy(id.substr(0, 1)) / (id + ".cif");

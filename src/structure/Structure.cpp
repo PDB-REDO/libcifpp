@@ -31,7 +31,7 @@
 #include <iomanip>
 #include <numeric>
 
-#include <gzstream/gzstream.hpp>
+#include <zstream/zstream.hpp>
 
 #if __cpp_lib_format
 #include <format>
@@ -1285,28 +1285,16 @@ float Branch::weight() const
 
 void File::load(const std::filesystem::path &path)
 {
-	std::string ext = path.extension().string();
+	zstream::ifstream in(path);
 
-	if (ext == ".gz")
-	{
-		gzstream::ifstream in(path);
-
+	auto ext = path.extension().string();
+	if (ext == ".gz" or ext = ".xz")
 		ext = path.stem().extension().string();
 
-		if (ext == ".pdb" or ext == ".ent")
-			ReadPDBFile(in, *this);
-		else
-			cif::File::load(in);
-	}
+	if (ext == ".pdb" or ext == ".ent")
+		ReadPDBFile(in, *this);
 	else
-	{
-		std::ifstream in(path, std::ios_base::binary);
-
-		if (ext == ".pdb" or ext == ".ent")
-			ReadPDBFile(in, *this);
-		else
-			cif::File::load(in);
-	}
+		cif::File::load(in);
 
 	// validate, otherwise lots of functionality won't work
 	loadDictionary("mmcif_pdbx_v50");
@@ -1316,22 +1304,16 @@ void File::load(const std::filesystem::path &path)
 
 void File::save(const std::filesystem::path &path)
 {
-	fs::path file = path.filename();
+	zstream::ostream outFile(path);
 
-	std::unique_ptr<std::ostream> outFile;
+	auto ext = path.extension().string();
+	if (ext == ".gz" or ext = ".xz")
+		ext = path.stem().extension().string();
 
-	if (file.extension() == ".gz")
-	{
-		outFile.reset(new gzstream::ofstream(path));
-		file.replace_extension("");
-	}
+	if (ext == ".pdb" or ext == ".ent")
+		WritePDBFile(outFile, data());
 	else
-		outFile.reset(new std::ofstream(path, std::ios_base::out | std::ios_base::binary));
-
-	if (file.extension() == ".pdb")
-		WritePDBFile(*outFile, data());
-	else
-		cif::File::save(*outFile);
+		cif::File::save(outFile);
 }
 
 // --------------------------------------------------------------------

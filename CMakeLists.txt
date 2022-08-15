@@ -215,8 +215,8 @@ set(project_sources
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2Cif.cpp
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2CifRemark3.cpp
 
-	# ${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
-	# ${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
+	${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
+	${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Compound.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Secondary.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Structure.cpp
@@ -261,14 +261,13 @@ add_library(cifpp ${project_sources} ${project_headers} ${CMAKE_SOURCE_DIR}/src/
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(NEED_BOOST_REGEX)
-	target_compile_definitions(cifpp PUBLIC USE_BOOST_REGEX=1)
+	target_compile_definitions(cifpp PUBLIC USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
 endif()
 
 target_include_directories(cifpp
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-	${Boost_INCLUDE_DIR}
 )
 
 target_include_directories(cifpp

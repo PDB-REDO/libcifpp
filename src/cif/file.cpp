@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gzstream/gzstream.hpp>
+#include <zstream/zstream.hpp>
 
 #include <cif++/cif/file.hpp>
 
@@ -161,16 +161,8 @@ void file::load(std::istream &is)
 
 void file::save(const std::filesystem::path &p) const
 {
-	if (p.extension() == ".gz")
-	{
-		gzstream::ofstream outFile(p);
-		save(outFile);
-	}
-	else
-	{
-		std::ofstream outFile(p, std::ios_base::binary);
-		save(outFile);
-	}
+	zstream::ofstream outFile(p);
+	save(outFile);
 }
 
 void file::save(std::ostream &os) const

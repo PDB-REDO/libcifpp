@@ -28,10 +28,10 @@
 #include <fstream>
 #include <mutex>
 
-#include <cif++/BondMap.hpp>
-#include <cif++/Cif++.hpp>
+#include <cif++/cif.hpp>
+#include <cif++/structure/BondMap.hpp>
+#include <cif++/structure/Compound.hpp>
 #include <cif++/utilities.hpp>
-#include <cif++/Compound.hpp>
 
 namespace mmcif
 {
@@ -233,7 +233,7 @@ BondMap::BondMap(const Structure &p)
 		link[b].insert(a);
 	};
 
-	cif::Datablock &db = p.datablock();
+	cif::v2::datablock &db = p.datablock();
 
 	// collect all compounds first
 	std::set<std::string> compounds;
@@ -266,7 +266,7 @@ BondMap::BondMap(const Structure &p)
 
 	std::string lastAsymID, lastAuthSeqID;
 	int lastSeqID = 0;
-	for (const auto &[asymID, seqID, authSeqID] : db["pdbx_poly_seq_scheme"].rows<std::string,int,std::string>("asym_id", "seq_id", "pdb_seq_num"))
+	for (const auto &[asymID, seqID, authSeqID] : db["pdbx_poly_seq_scheme"].rows<std::string, int, std::string>("asym_id", "seq_id", "pdb_seq_num"))
 	{
 		if (asymID != lastAsymID) // first in a new sequece
 		{
@@ -298,7 +298,7 @@ BondMap::BondMap(const Structure &p)
 		int seqId1 = 0, seqId2 = 0;
 		std::string authSeqId1, authSeqId2;
 
-		cif::tie(asym1, asym2, atomId1, atomId2, seqId1, seqId2, authSeqId1, authSeqId2) =
+		cif::v2::tie(asym1, asym2, atomId1, atomId2, seqId1, seqId2, authSeqId1, authSeqId2) =
 			l.get("ptnr1_label_asym_id", "ptnr2_label_asym_id",
 				"ptnr1_label_atom_id", "ptnr2_label_atom_id",
 				"ptnr1_label_seq_id", "ptnr2_label_seq_id",
@@ -341,11 +341,11 @@ BondMap::BondMap(const Structure &p)
 		};
 
 		// loop over poly_seq_scheme
-		for (auto r : db["pdbx_poly_seq_scheme"].find(cif::Key("mon_id") == c))
+		for (auto r : db["pdbx_poly_seq_scheme"].find(cif::v2::key("mon_id") == c))
 		{
 			std::string asymID;
 			int seqID;
-			cif::tie(asymID, seqID) = r.get("asym_id", "seq_id");
+			cif::v2::tie(asymID, seqID) = r.get("asym_id", "seq_id");
 
 			std::vector<Atom> rAtoms;
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
@@ -363,10 +363,10 @@ BondMap::BondMap(const Structure &p)
 		}
 
 		// loop over pdbx_nonpoly_scheme
-		for (auto r : db["pdbx_nonpoly_scheme"].find(cif::Key("mon_id") == c))
+		for (auto r : db["pdbx_nonpoly_scheme"].find(cif::v2::key("mon_id") == c))
 		{
 			std::string asymID;
-			cif::tie(asymID) = r.get("asym_id");
+			cif::v2::tie(asymID) = r.get("asym_id");
 
 			std::vector<Atom> rAtoms;
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),
@@ -389,7 +389,7 @@ BondMap::BondMap(const Structure &p)
 		}
 
 		// loop over pdbx_branch_scheme
-		for (const auto &[asym_id, pdb_seq_num] : db["pdbx_branch_scheme"].find<std::string,std::string>(cif::Key("mon_id") == c, "asym_id", "pdb_seq_num"))
+		for (const auto &[asym_id, pdb_seq_num] : db["pdbx_branch_scheme"].find<std::string, std::string>(cif::v2::key("mon_id") == c, "asym_id", "pdb_seq_num"))
 		{
 			std::vector<Atom> rAtoms;
 			copy_if(atoms.begin(), atoms.end(), back_inserter(rAtoms),

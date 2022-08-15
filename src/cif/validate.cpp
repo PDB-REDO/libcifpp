@@ -435,7 +435,7 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 
 		if (std::filesystem::exists(p, ec) and not ec)
 		{
-			gxrio::ifstream in(p);
+			gzstream::ifstream in(p);
 
 			if (not in.is_open())
 				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");

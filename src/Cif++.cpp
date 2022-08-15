@@ -38,7 +38,7 @@
 
 #include <filesystem>
 
-#include <gzstream/gzstream.hpp>
+#include <zstream/zstream.hpp>
 
 #include <boost/logic/tribool.hpp>
 
@@ -3448,50 +3448,24 @@ void File::load(const std::filesystem::path &p)
 {
 	fs::path path(p);
 
-	if (path.extension() == ".gz")
-	{
-		gzstream::ifstream in(p);
+	zstream::ifstream in(p);
 
-		try
-		{
-			load(in);
-		}
-		catch (const std::exception &ex)
-		{
-			if (cif::VERBOSE >= 0)
-				std::cerr << "Error loading file " << path << std::endl;
-			throw;
-		}
+	try
+	{
+		load(in);
 	}
-	else
+	catch (const std::exception &ex)
 	{
-		std::ifstream inFile(p, std::ios_base::in | std::ios_base::binary);
-
-		try
-		{
-			load(inFile);
-		}
-		catch (const std::exception &ex)
-		{
-			if (cif::VERBOSE >= 0)
-				std::cerr << "Error loading file " << path << std::endl;
-			throw;
-		}
+		if (cif::VERBOSE >= 0)
+			std::cerr << "Error loading file " << path << std::endl;
+		throw;
 	}
 }
 
 void File::save(const std::filesystem::path &p)
 {
-	if (p.extension() == ".gz")
-	{
-		gzstream::ofstream outFile(p);
-		save(outFile);
-	}
-	else
-	{
-		std::ofstream outFile(p, std::ios_base::out | std::ios_base::binary);
-		save(outFile);
-	}
+	zstream::ofstream outFile(p);
+	save(outFile);
 }
 
 void File::load(std::istream &is)
@@ -3526,23 +3500,13 @@ void File::load(std::istream &is, const std::string &datablock)
 
 void File::load(const char *data, std::size_t length)
 {
-	bool gzipped = length > 2 and data[0] == static_cast<char>(0x1f) and data[1] == static_cast<char>(0x8b);
-
 	struct membuf : public std::streambuf
 	{
 		membuf(char *data, size_t length) { this->setg(data, data, data + length); }
 	} buffer(const_cast<char *>(data), length);
 
-	if (gzipped)
-	{
-		gzstream::istream is(&buffer);
-		load(is);
-	}
-	else
-	{
-		std::istream is(&buffer);
-		load(is);
-	}
+	zstream::istream is(&buffer);
+	load(is);
 }
 
 void File::save(std::ostream &os)

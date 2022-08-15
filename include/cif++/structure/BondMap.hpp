@@ -30,7 +30,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include <cif++/Structure.hpp>
+#include <cif++/structure/Structure.hpp>
 
 namespace mmcif
 {
