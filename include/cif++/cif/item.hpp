@@ -73,7 +73,6 @@ class item
 	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
-		, m_value(std::to_string(value))
 	{
 		auto r = cif::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, cif::chars_format::general);
 		if (r.ec != std::errc())
@@ -87,7 +86,6 @@ class item
 	template <typename T, std::enable_if_t<std::is_integral_v<T>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
-		, m_value(std::to_string(value))
 	{
 		auto r = std::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value);
 		if (r.ec != std::errc())
