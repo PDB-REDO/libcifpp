@@ -31,7 +31,7 @@
 #include <mutex>
 #include <utility>
 
-#include <cif++/utilities.hpp>
+#include <cif++/text.hpp>
 
 namespace cif
 {

@@ -70,7 +70,20 @@ bool file::is_valid()
 
 void file::load_dictionary()
 {
-	load_dictionary("mmcif_ddl");
+	if (not empty())
+	{
+		auto *audit_conform = front().get("audit_conform");
+		if (audit_conform and not audit_conform->empty())
+		{
+			std::string name;
+			cif::tie(name) = audit_conform->front().get("name");
+
+			load_dictionary(name);
+		}
+	}
+
+	if (not m_validator)
+		load_dictionary("mmcif_ddl");
 }
 
 void file::load_dictionary(std::string_view name)

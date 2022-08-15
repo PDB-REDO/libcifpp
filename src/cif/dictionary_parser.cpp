@@ -146,7 +146,7 @@ class dictionary_parser : public parser
 				while (m_lookahead == CIFToken::Tag)
 				{
 					std::string catName, item_name;
-					std::tie(catName, item_name) = splitTagName(m_token_value);
+					std::tie(catName, item_name) = split_tag_name(m_token_value);
 
 					if (cat == dict.end())
 						std::tie(cat, std::ignore) = dict.emplace(catName);
@@ -174,7 +174,7 @@ class dictionary_parser : public parser
 			else
 			{
 				std::string catName, item_name;
-				std::tie(catName, item_name) = splitTagName(m_token_value);
+				std::tie(catName, item_name) = split_tag_name(m_token_value);
 
 				if (cat == dict.end() or not iequals(cat->name(), catName))
 					std::tie(cat, std::ignore) = dict.emplace(catName);
@@ -198,7 +198,7 @@ class dictionary_parser : public parser
 
 			std::vector<std::string> keys;
 			for (auto k : dict["category_key"])
-				keys.push_back(std::get<1>(splitTagName(k["name"].as<std::string>())));
+				keys.push_back(std::get<1>(split_tag_name(k["name"].as<std::string>())));
 
 			iset groups;
 			for (auto g : dict["category_group"])
@@ -241,7 +241,7 @@ class dictionary_parser : public parser
 				cif::tie(tagName, category, mandatory) = i.get("name", "category_id", "mandatory_code");
 
 				std::string catName, item_name;
-				std::tie(catName, item_name) = splitTagName(tagName);
+				std::tie(catName, item_name) = split_tag_name(tagName);
 
 				if (catName.empty() or item_name.empty())
 					error("Invalid tag name in _item.name " + tagName);

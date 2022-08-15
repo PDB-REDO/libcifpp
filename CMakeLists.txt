@@ -212,16 +212,17 @@ set(project_sources
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2Cif.cpp
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2CifRemark3.cpp
 
-	# ${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
+	${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
-	# ${PROJECT_SOURCE_DIR}/src/structure/Compound.cpp
-	# ${PROJECT_SOURCE_DIR}/src/structure/Secondary.cpp
+	${PROJECT_SOURCE_DIR}/src/structure/Compound.cpp
+	${PROJECT_SOURCE_DIR}/src/structure/DSSP.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Structure.cpp
-	# ${PROJECT_SOURCE_DIR}/src/structure/Symmetry.cpp
-	# ${PROJECT_SOURCE_DIR}/src/structure/TlsParser.cpp
-	${PROJECT_SOURCE_DIR}/src/utilities.cpp
+	${PROJECT_SOURCE_DIR}/src/structure/Symmetry.cpp
+	${PROJECT_SOURCE_DIR}/src/structure/TlsParser.cpp
 
 	# ${PROJECT_SOURCE_DIR}/src/point.cpp
+	${PROJECT_SOURCE_DIR}/src/text.cpp
+	${PROJECT_SOURCE_DIR}/src/utilities.cpp
 )
 
 set(project_headers
@@ -246,7 +247,7 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/TlsParser.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/Symmetry.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/Structure.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/structure/Secondary.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/structure/DSSP.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/Compound.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/PDB2Cif.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/PDB2CifRemark3.hpp
@@ -421,6 +422,7 @@ if(CIFPP_BUILD_TESTS)
 		# structure
 		# sugar
 		# unit
+		dssp
 		unit-v2)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)

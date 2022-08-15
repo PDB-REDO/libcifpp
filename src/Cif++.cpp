@@ -550,7 +550,7 @@ void Datablock::write(std::ostream &os, const std::vector<std::string> &order)
 	for (auto &o : order)
 	{
 		std::string cat, Item;
-		std::tie(cat, Item) = splitTagName(o);
+		std::tie(cat, Item) = split_tag_name(o);
 		if (find_if(catOrder.rbegin(), catOrder.rend(), [cat](const std::string &s) -> bool
 				{ return iequals(cat, s); }) == catOrder.rend())
 			catOrder.push_back(cat);
@@ -566,7 +566,7 @@ void Datablock::write(std::ostream &os, const std::vector<std::string> &order)
 		for (auto &o : order)
 		{
 			std::string catName, Item;
-			std::tie(catName, Item) = splitTagName(o);
+			std::tie(catName, Item) = split_tag_name(o);
 
 			if (catName == c)
 				items.push_back(Item);

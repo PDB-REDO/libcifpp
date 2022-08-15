@@ -868,7 +868,7 @@ bool category::has_parents(row_handle r) const
 	return result;	
 }
 
-std::vector<row_handle> category::get_children(row_handle r, category &childCat)
+std::vector<row_handle> category::get_children(row_handle r, const category &childCat) const
 {
 	assert(m_validator != nullptr);
 	assert(m_cat_validator != nullptr);
@@ -884,10 +884,13 @@ std::vector<row_handle> category::get_children(row_handle r, category &childCat)
 
 		for (size_t ix = 0; ix < link->m_parent_keys.size(); ++ix)
 		{
-			std::string_view value = r[link->m_parent_keys[ix]].text();
-
-			// cond = std::move(cond) and (key(link->m_child_keys[ix]) == value or key(link->m_child_keys[ix]) == null);
-			cond = std::move(cond) and (key(link->m_child_keys[ix]) == value);
+			if (r[link->m_parent_keys[ix]].empty())
+				cond = std::move(cond) and key(link->m_child_keys[ix]) == null;
+			else
+			{
+				std::string_view value = r[link->m_parent_keys[ix]].text();
+				cond = std::move(cond) and key(link->m_child_keys[ix]) == value;
+			}	
 		}
 
 		for (auto child: childCat.find(std::move(cond)))
@@ -900,7 +903,7 @@ std::vector<row_handle> category::get_children(row_handle r, category &childCat)
 	return result;	
 }
 
-std::vector<row_handle> category::get_parents(row_handle r, category &parentCat)
+std::vector<row_handle> category::get_parents(row_handle r, const category &parentCat) const
 {
 	assert(m_validator != nullptr);
 	assert(m_cat_validator != nullptr);
@@ -931,7 +934,7 @@ std::vector<row_handle> category::get_parents(row_handle r, category &parentCat)
 	return result;	
 }
 
-std::vector<row_handle> category::get_linked(row_handle r, category &cat)
+std::vector<row_handle> category::get_linked(row_handle r, const category &cat) const
 {
 	std::vector<row_handle> result = get_children(r, cat);
 	if (result.empty())

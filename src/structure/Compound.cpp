@@ -33,10 +33,9 @@
 #include <fstream>
 
 #include <cif++/cif.hpp>
-// #include <cif++/CifParser.hpp>
 #include <cif++/utilities.hpp>
 #include <cif++/structure/Compound.hpp>
-#include <cif++/point.hpp>
+// #include <cif++/point.hpp>
 
 namespace fs = std::filesystem;
 
@@ -112,14 +111,14 @@ struct CompoundBondLess
 // --------------------------------------------------------------------
 // Compound
 
-Compound::Compound(cif::v2::datablock &db)
+Compound::Compound(cif::datablock &db)
 {
 	auto &chemComp = db["chem_comp"];
 
 	if (chemComp.size() != 1)
 		throw std::runtime_error("Invalid compound file, chem_comp should contain a single row");
 
-	cif::v2::tie(mID, mName, mType, mFormula, mFormulaWeight, mFormalCharge) =
+	cif::tie(mID, mName, mType, mFormula, mFormulaWeight, mFormalCharge) =
 		chemComp.front().get("id", "name", "type", "formula", "formula_weight", "pdbx_formal_charge");
 
 	// The name should not contain newline characters since that triggers validation errors later on
@@ -132,7 +131,7 @@ Compound::Compound(cif::v2::datablock &db)
 	{
 		CompoundAtom atom;
 		std::string typeSymbol;
-		cif::v2::tie(atom.id, typeSymbol, atom.charge, atom.aromatic, atom.leavingAtom, atom.stereoConfig, atom.x, atom.y, atom.z) =
+		cif::tie(atom.id, typeSymbol, atom.charge, atom.aromatic, atom.leavingAtom, atom.stereoConfig, atom.x, atom.y, atom.z) =
 			row.get("atom_id", "type_symbol", "charge", "pdbx_aromatic_flag", "pdbx_leaving_atom_flag", "pdbx_stereo_config",
 				"model_Cartn_x", "model_Cartn_y", "model_Cartn_z");
 		atom.typeSymbol = AtomTypeTraits(typeSymbol).type();
@@ -144,13 +143,13 @@ Compound::Compound(cif::v2::datablock &db)
 	{
 		CompoundBond bond;
 		std::string valueOrder;
-		cif::v2::tie(bond.atomID[0], bond.atomID[1], valueOrder, bond.aromatic, bond.stereoConfig) = row.get("atom_id_1", "atom_id_2", "value_order", "pdbx_aromatic_flag", "pdbx_stereo_config");
+		cif::tie(bond.atomID[0], bond.atomID[1], valueOrder, bond.aromatic, bond.stereoConfig) = row.get("atom_id_1", "atom_id_2", "value_order", "pdbx_aromatic_flag", "pdbx_stereo_config");
 		bond.type = from_string(valueOrder);
 		mBonds.push_back(std::move(bond));
 	}
 }
 
-Compound::Compound(cif::v2::datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group)
+Compound::Compound(cif::datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group)
 	: mID(id)
 	, mName(name)
 	, mType(type)
@@ -161,7 +160,7 @@ Compound::Compound(cif::v2::datablock &db, const std::string &id, const std::str
 	{
 		CompoundAtom atom;
 		std::string typeSymbol;
-		cif::v2::tie(atom.id, typeSymbol, atom.charge, atom.x, atom.y, atom.z) =
+		cif::tie(atom.id, typeSymbol, atom.charge, atom.x, atom.y, atom.z) =
 			row.get("atom_id", "type_symbol", "charge", "x", "y", "z");
 		atom.typeSymbol = AtomTypeTraits(typeSymbol).type();
 
@@ -176,7 +175,7 @@ Compound::Compound(cif::v2::datablock &db, const std::string &id, const std::str
 	{
 		CompoundBond bond;
 		std::string btype;
-		cif::v2::tie(bond.atomID[0], bond.atomID[1], btype, bond.aromatic) = row.get("atom_id_1", "atom_id_2", "type", "aromatic");
+		cif::tie(bond.atomID[0], bond.atomID[1], btype, bond.aromatic) = row.get("atom_id_1", "atom_id_2", "type", "aromatic");
 
 		using cif::iequals;
 
@@ -283,7 +282,7 @@ class CompoundFactoryImpl : public std::enable_shared_from_this<CompoundFactoryI
 	{
 		std::shared_lock lock(mMutex);
 
-		cif::toUpper(id);
+		cif::to_upper(id);
 
 		Compound *result = nullptr;
 
@@ -368,12 +367,12 @@ CompoundFactoryImpl::CompoundFactoryImpl(std::shared_ptr<CompoundFactoryImpl> ne
 CompoundFactoryImpl::CompoundFactoryImpl(const fs::path &file, std::shared_ptr<CompoundFactoryImpl> next)
 	: mNext(next)
 {
-	cif::File cifFile(file);
+	cif::file cifFile(file);
 
-	auto compList = cifFile.get("comp_list");
-	if (compList) // So this is a CCP4 restraints file, special handling
+	auto &compList = cifFile["comp_list"];
+	if (not compList.empty()) // So this is a CCP4 restraints file, special handling
 	{
-		auto &chemComp = (*compList)["chem_comp"];
+		auto &chemComp = compList["chem_comp"];
 
 		for (const auto &[id, name, group] : chemComp.rows<std::string, std::string, std::string>("id", "name", "group"))
 		{
@@ -417,9 +416,9 @@ CompoundFactoryImpl::CompoundFactoryImpl(const fs::path &file, std::shared_ptr<C
 	else
 	{
 		// A CCD components file, validate it first
-		cifFile.loadDictionary("mmcif_pdbx_v50");
+		cifFile.load_dictionary("mmcif_pdbx_v50");
 
-		if (not cifFile.isValid())
+		if (not cifFile.is_valid())
 			throw std::runtime_error("Invalid compound file");
 
 		for (auto &db : cifFile)
@@ -446,7 +445,7 @@ class CCDCompoundFactoryImpl : public CompoundFactoryImpl
 
 	Compound *create(const std::string &id) override;
 
-	cif::v2::datablockIndex mIndex;
+	cif::parser::datablock_index mIndex;
 	fs::path mCompoundsFile;
 };
 
@@ -458,14 +457,14 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 
 	if (mCompoundsFile.empty())
 	{
-		ccd = cif::loadResource("components.cif");
+		ccd = cif::load_resource("components.cif");
 		if (not ccd)
 			throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data.");
 	}
 	else
 		ccd.reset(new std::ifstream(mCompoundsFile));
 
-	cif::File file;
+	cif::file file;
 
 	if (mIndex.empty())
 	{
@@ -476,8 +475,8 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 			std::cout.flush();
 		}
 
-		cif::Parser parser(*ccd, file, false);
-		mIndex = parser.indexDatablocks();
+		cif::parser parser(*ccd, file);
+		mIndex = parser.index_datablocks();
 
 		if (cif::VERBOSE > 1)
 			std::cout << " done" << std::endl;
@@ -485,7 +484,7 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 		// reload the resource, perhaps this should be improved...
 		if (mCompoundsFile.empty())
 		{
-			ccd = cif::loadResource("components.cif");
+			ccd = cif::load_resource("components.cif");
 			if (not ccd)
 				throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data.");
 		}
@@ -499,16 +498,16 @@ Compound *CCDCompoundFactoryImpl::create(const std::string &id)
 		std::cout.flush();
 	}
 
-	cif::Parser parser(*ccd, file, false);
-	parser.parseSingleDatablock(id, mIndex);
+	cif::parser parser(*ccd, file);
+	parser.parse_single_datablock(id, mIndex);
 
 	if (cif::VERBOSE > 1)
 		std::cout << " done" << std::endl;
 
 	if (not file.empty())
 	{
-		auto &db = file.firstDatablock();
-		if (db.getName() == id)
+		auto &db = file.front();
+		if (db.name() == id)
 		{
 			result = new Compound(db);
 
@@ -534,7 +533,7 @@ class CCP4CompoundFactoryImpl : public CompoundFactoryImpl
 	Compound *create(const std::string &id) override;
 
   private:
-	cif::File mFile;
+	cif::file mFile;
 	fs::path mCLIBD_MON;
 };
 
@@ -562,7 +561,7 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 
 	auto &cat = mFile["comp_list"]["chem_comp"];
 
-	auto rs = cat.find(cif::v2::key("three_letter_code") == id);
+	auto rs = cat.find(cif::key("three_letter_code") == id);
 
 	if (rs.size() == 1)
 	{
@@ -570,17 +569,17 @@ Compound *CCP4CompoundFactoryImpl::create(const std::string &id)
 
 		std::string name, group;
 		uint32_t numberAtomsAll, numberAtomsNh;
-		cif::v2::tie(name, group, numberAtomsAll, numberAtomsNh) =
+		cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
 			row.get("name", "group", "number_atoms_all", "number_atoms_nh");
 
-		fs::path resFile = mCLIBD_MON / cif::toLowerCopy(id.substr(0, 1)) / (id + ".cif");
+		fs::path resFile = mCLIBD_MON / cif::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
 
 		if (not fs::exists(resFile) and (id == "COM" or id == "CON" or "PRN")) // seriously...
-			resFile = mCLIBD_MON / cif::toLowerCopy(id.substr(0, 1)) / (id + '_' + id + ".cif");
+			resFile = mCLIBD_MON / cif::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");
 
 		if (fs::exists(resFile))
 		{
-			cif::File cf(resFile.string());
+			cif::file cf(resFile.string());
 
 			// locate the datablock
 			auto &db = cf["comp_" + id];
@@ -639,7 +638,7 @@ void CompoundFactory::init(bool useThreadLocalInstanceOnly)
 CompoundFactory::CompoundFactory()
 	: mImpl(nullptr)
 {
-	auto ccd = cif::loadResource("components.cif");
+	auto ccd = cif::load_resource("components.cif");
 	if (ccd)
 		mImpl.reset(new CCDCompoundFactoryImpl(mImpl));
 	else if (cif::VERBOSE > 0)

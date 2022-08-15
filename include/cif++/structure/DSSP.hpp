@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,67 +28,72 @@
 
 #pragma once
 
-#include <vector>
+#include <cif++/cif.hpp>
 
 namespace mmcif
 {
-	
-class Structure;
-class Monomer;
 
 struct Res;
 
 extern const float
-	kCouplingConstant, kMinHBondEnergy, kMaxHBondEnergy;
+	kCouplingConstant,
+	kMinHBondEnergy, kMaxHBondEnergy;
 
 enum SecondaryStructureType : char
 {
-	ssLoop			= ' ',
-	ssAlphahelix	= 'H',
-	ssBetabridge	= 'B',
-	ssStrand		= 'E',
-	ssHelix_3		= 'G',
-	ssHelix_5		= 'I',
-	ssHelix_PPII	= 'P',
-	ssTurn			= 'T',
-	ssBend			= 'S'
+	ssLoop = ' ',
+	ssAlphahelix = 'H',
+	ssBetabridge = 'B',
+	ssStrand = 'E',
+	ssHelix_3 = 'G',
+	ssHelix_5 = 'I',
+	ssHelix_PPII = 'P',
+	ssTurn = 'T',
+	ssBend = 'S'
 };
 
 enum class HelixType
 {
-	rh_3_10, rh_alpha, rh_pi, rh_pp
+	rh_3_10,
+	rh_alpha,
+	rh_pi,
+	rh_pp
 };
 
 enum class Helix
 {
-	None, Start, End, StartAndEnd, Middle
+	None,
+	Start,
+	End,
+	StartAndEnd,
+	Middle
 };
 
-//struct HBond
+// struct HBond
 //{
 //	std::string 				labelAsymID;
 //	int							labelSeqID;
 //	double						energy;
-//};
+// };
 //
-//struct BridgePartner
+// struct BridgePartner
 //{
 //	std::string					labelAsymID;
 //	int							labelSeqID;
 //	int							ladder;
 //	bool						parallel;
-//};
+// };
 
 struct SecondaryStructure
 {
-	SecondaryStructureType		type;
-//	HBond						donor[2], acceptor[2];
-//	BridgePartner				beta[2];
-//	int							sheet;
-//	bool						bend;
+	SecondaryStructureType type;
+	//	HBond						donor[2], acceptor[2];
+	//	BridgePartner				beta[2];
+	//	int							sheet;
+	//	bool						bend;
 };
 
-//void CalculateSecondaryStructure(Structure& s);
+// void CalculateSecondaryStructure(Structure& s);
 
 const size_t
 	kHistogramSize = 30;
@@ -108,26 +113,23 @@ struct DSSP_Statistics
 
 enum class ChainBreak
 {
-	None, NewChain, Gap
+	None,
+	NewChain,
+	Gap
 };
 
 class DSSP
 {
   public:
-	DSSP(const Structure& s, int min_poly_proline_stretch_length, bool calculateSurfaceAccessibility);
+	DSSP(const cif::datablock &db, int model_nr, int min_poly_proline_stretch_length, bool calculateSurfaceAccessibility);
 	~DSSP();
-	
-	DSSP(const DSSP&) = delete;
-	DSSP& operator=(const DSSP&) = delete;
-	
-	SecondaryStructureType operator()(const std::string& inAsymID, int inSeqID) const;
-	SecondaryStructureType operator()(const Monomer& m) const;
-	
-	double accessibility(const std::string& inAsymID, int inSeqID) const;
-	double accessibility(const Monomer& m) const;
 
-	bool isAlphaHelixEndBeforeStart(const Monomer& m) const;
-	bool isAlphaHelixEndBeforeStart(const std::string& inAsymID, int inSeqID) const;
+	DSSP(const DSSP &) = delete;
+	DSSP &operator=(const DSSP &) = delete;
+
+	SecondaryStructureType operator()(const std::string &inAsymID, int inSeqID) const;
+	double accessibility(const std::string &inAsymID, int inSeqID) const;
+	bool isAlphaHelixEndBeforeStart(const std::string &inAsymID, int inSeqID) const;
 
 	DSSP_Statistics GetStatistics() const;
 
@@ -149,16 +151,17 @@ class DSSP
 		{
 		}
 
-		ResidueInfo& operator=(const ResidueInfo &rhs)
+		ResidueInfo &operator=(const ResidueInfo &rhs)
 		{
 			mImpl = rhs.mImpl;
 			return *this;
 		}
 
-		explicit operator bool() const		{ return not empty(); }
-		bool empty() const					{ return mImpl == nullptr; }
+		explicit operator bool() const { return not empty(); }
+		bool empty() const { return mImpl == nullptr; }
 
-		const Monomer& residue() const;
+		std::string asym_id() const;
+		int seq_id() const;
 		std::string alt_id() const;
 
 		/// \brief return 0 if not a break, ' ' in case of a new chain and '*' in case of a broken chain
@@ -168,7 +171,7 @@ class DSSP
 		int nr() const;
 
 		SecondaryStructureType ss() const;
-		
+
 		int ssBridgeNr() const;
 
 		Helix helix(HelixType helixType) const;
@@ -178,13 +181,13 @@ class DSSP
 		double accessibility() const;
 
 		/// \brief returns resinfo, ladder and parallel
-		std::tuple<ResidueInfo,int,bool> bridgePartner(int i) const;
+		std::tuple<ResidueInfo, int, bool> bridgePartner(int i) const;
 
 		int sheet() const;
 
 		/// \brief return resinfo and the energy of the bond
-		std::tuple<ResidueInfo,double> acceptor(int i) const;
-		std::tuple<ResidueInfo,double> donor(int i) const;
+		std::tuple<ResidueInfo, double> acceptor(int i) const;
+		std::tuple<ResidueInfo, double> donor(int i) const;
 
 		/// \brief Simple compare equals
 		bool operator==(const ResidueInfo &rhs) const
@@ -196,9 +199,12 @@ class DSSP
 		friend bool TestBond(ResidueInfo const &a, ResidueInfo const &b);
 
 	  private:
-		ResidueInfo(Res* res) : mImpl(res) {}
+		ResidueInfo(Res *res)
+			: mImpl(res)
+		{
+		}
 
-		Res* mImpl;
+		Res *mImpl;
 	};
 
 	class iterator
@@ -207,17 +213,17 @@ class DSSP
 		using iterator_category = std::bidirectional_iterator_tag;
 		using value_type = ResidueInfo;
 		using difference_type = std::ptrdiff_t;
-		using pointer = value_type*;
-		using reference = value_type&;
+		using pointer = value_type *;
+		using reference = value_type &;
 
-		iterator(const iterator& i);
-		iterator(Res* res);
-		iterator& operator=(const iterator& i);
+		iterator(const iterator &i);
+		iterator(Res *res);
+		iterator &operator=(const iterator &i);
 
-		reference operator*()		{ return mCurrent; }
-		pointer operator->()		{ return &mCurrent; }
+		reference operator*() { return mCurrent; }
+		pointer operator->() { return &mCurrent; }
 
-		iterator& operator++();
+		iterator &operator++();
 		iterator operator++(int)
 		{
 			auto tmp(*this);
@@ -225,7 +231,7 @@ class DSSP
 			return tmp;
 		}
 
-		iterator& operator--();
+		iterator &operator--();
 		iterator operator--(int)
 		{
 			auto tmp(*this);
@@ -233,21 +239,20 @@ class DSSP
 			return tmp;
 		}
 
-		bool operator==(const iterator& rhs) const		{ return mCurrent.mImpl == rhs.mCurrent.mImpl; }
-		bool operator!=(const iterator& rhs) const		{ return mCurrent.mImpl != rhs.mCurrent.mImpl; }
+		bool operator==(const iterator &rhs) const { return mCurrent.mImpl == rhs.mCurrent.mImpl; }
+		bool operator!=(const iterator &rhs) const { return mCurrent.mImpl != rhs.mCurrent.mImpl; }
 
 	  private:
-		ResidueInfo	mCurrent;
+		ResidueInfo mCurrent;
 	};
 
 	iterator begin() const;
 	iterator end() const;
 
-	bool empty() const		{ return begin() == end(); }
+	bool empty() const { return begin() == end(); }
 
   private:
-	struct DSSPImpl* mImpl;
+	struct DSSPImpl *mImpl;
 };
 
-
-}
+} // namespace mmcif

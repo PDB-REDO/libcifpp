@@ -69,10 +69,10 @@ bool init_unit_test()
 	// 	gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
 
 	// // do this now, avoids the need for installing
-	// cif::addFileResource("mmcif_pdbx_v50.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
+	// cif::add_file_resource("mmcif_pdbx_v50.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
 
 	// // initialize CCD location
-	// cif::addFileResource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
+	// cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
 
 	return true;
 }
@@ -153,10 +153,7 @@ BOOST_AUTO_TEST_CASE(item_1)
 	BOOST_CHECK_EQUAL(i1.value(), mi1.value());
 	BOOST_CHECK_EQUAL(i2.value(), mi2.value());
 	BOOST_CHECK_EQUAL(i3.value(), mi3.value());
-
 }
-
-
 
 // --------------------------------------------------------------------
 
@@ -309,7 +306,39 @@ BOOST_AUTO_TEST_CASE(ci_1)
 	BOOST_CHECK(i1 == i3);
 	BOOST_CHECK(i1 == i4);
 	BOOST_CHECK(i1 == i5);
+}
 
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(get_1)
+{
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+4 ?
+5 .
+    )"_cf;
+
+	for (auto r : f.front()["test"])
+	{
+		int id;
+		std::optional<std::string> name;
+
+		cif::tie(id, name) = r.get("id", "name");
+
+		switch (id)
+		{
+			case 1: BOOST_CHECK_EQUAL(*name, "aap"); break;
+			case 2: BOOST_CHECK_EQUAL(*name, "noot"); break;
+			case 3: BOOST_CHECK_EQUAL(*name, "mies"); break;
+			default: BOOST_CHECK(name.has_value() == false);
+		}
+	}
 }
 
 // --------------------------------------------------------------------

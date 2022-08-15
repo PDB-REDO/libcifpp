@@ -24,6 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cassert>
 #include <random>
 #include <valarray>
 
@@ -270,264 +271,264 @@ Matrix Cofactors(const M1& m)
 	return cf;
 }
 
-// --------------------------------------------------------------------
+// // --------------------------------------------------------------------
 
-Quaternion Normalize(Quaternion q)
-{
-	std::valarray<double> t(4);
+// Quaternion Normalize(Quaternion q)
+// {
+// 	std::valarray<double> t(4);
 	
-	t[0] = q.R_component_1();
-	t[1] = q.R_component_2();
-	t[2] = q.R_component_3();
-	t[3] = q.R_component_4();
+// 	t[0] = q.R_component_1();
+// 	t[1] = q.R_component_2();
+// 	t[2] = q.R_component_3();
+// 	t[3] = q.R_component_4();
 	
-	t *= t;
+// 	t *= t;
 	
-	double length = std::sqrt(t.sum());
+// 	double length = std::sqrt(t.sum());
 
-	if (length > 0.001)
-		q /= static_cast<Quaternion::value_type>(length);
-	else
-		q = Quaternion(1, 0, 0, 0);
+// 	if (length > 0.001)
+// 		q /= static_cast<Quaternion::value_type>(length);
+// 	else
+// 		q = Quaternion(1, 0, 0, 0);
 
-	return q;
-}
+// 	return q;
+// }
 
-// --------------------------------------------------------------------
+// // --------------------------------------------------------------------
 
-Quaternion ConstructFromAngleAxis(float angle, Point axis)
-{
-	auto q = std::cos((angle * mmcif::kPI / 180) / 2);
-	auto s = std::sqrt(1 - q * q);
+// Quaternion ConstructFromAngleAxis(float angle, Point axis)
+// {
+// 	auto q = std::cos((angle * mmcif::kPI / 180) / 2);
+// 	auto s = std::sqrt(1 - q * q);
 
-	axis.normalize();
+// 	axis.normalize();
 
-	return Normalize(Quaternion{
-		static_cast<float>(q),
-		static_cast<float>(s * axis.mX),
-		static_cast<float>(s * axis.mY),
-		static_cast<float>(s * axis.mZ)});
-}
+// 	return Normalize(Quaternion{
+// 		static_cast<float>(q),
+// 		static_cast<float>(s * axis.mX),
+// 		static_cast<float>(s * axis.mY),
+// 		static_cast<float>(s * axis.mZ)});
+// }
 
-std::tuple<double,Point> QuaternionToAngleAxis(Quaternion q)
-{
-	if (q.R_component_1() > 1)
-		q = Normalize(q);
+// std::tuple<double,Point> QuaternionToAngleAxis(Quaternion q)
+// {
+// 	if (q.R_component_1() > 1)
+// 		q = Normalize(q);
 
-	// angle:
-	double angle = 2 * std::acos(q.R_component_1());
-	angle = angle * 180 / kPI;
+// 	// angle:
+// 	double angle = 2 * std::acos(q.R_component_1());
+// 	angle = angle * 180 / kPI;
 
-	// axis:
-	float s = std::sqrt(1 - q.R_component_1() * q.R_component_1());
-	if (s < 0.001)
-		s = 1;
+// 	// axis:
+// 	float s = std::sqrt(1 - q.R_component_1() * q.R_component_1());
+// 	if (s < 0.001)
+// 		s = 1;
 	
-	Point axis(q.R_component_2() / s, q.R_component_3() / s, q.R_component_4() / s);
+// 	Point axis(q.R_component_2() / s, q.R_component_3() / s, q.R_component_4() / s);
 
-	return std::make_tuple(angle, axis);
-}
+// 	return std::make_tuple(angle, axis);
+// }
 
-Point CenterPoints(std::vector<Point>& Points)
-{
-	Point t;
+// Point CenterPoints(std::vector<Point>& Points)
+// {
+// 	Point t;
 	
-	for (Point& pt : Points)
-	{
-		t.mX += pt.mX;
-		t.mY += pt.mY;
-		t.mZ += pt.mZ;
-	}
+// 	for (Point& pt : Points)
+// 	{
+// 		t.mX += pt.mX;
+// 		t.mY += pt.mY;
+// 		t.mZ += pt.mZ;
+// 	}
 	
-	t.mX /= Points.size();
-	t.mY /= Points.size();
-	t.mZ /= Points.size();
+// 	t.mX /= Points.size();
+// 	t.mY /= Points.size();
+// 	t.mZ /= Points.size();
 	
-	for (Point& pt : Points)
-	{
-		pt.mX -= t.mX;
-		pt.mY -= t.mY;
-		pt.mZ -= t.mZ;
-	}
+// 	for (Point& pt : Points)
+// 	{
+// 		pt.mX -= t.mX;
+// 		pt.mY -= t.mY;
+// 		pt.mZ -= t.mZ;
+// 	}
 	
-	return t;
-}
+// 	return t;
+// }
 
-Point Centroid(const std::vector<Point>& pts)
-{
-	Point result;
+// Point Centroid(const std::vector<Point>& pts)
+// {
+// 	Point result;
 	
-	for (auto &pt : pts)
-		result += pt;
+// 	for (auto &pt : pts)
+// 		result += pt;
 	
-	result /= static_cast<float>(pts.size());
+// 	result /= static_cast<float>(pts.size());
 	
-	return result;
-}
+// 	return result;
+// }
 
-double RMSd(const std::vector<Point>& a, const std::vector<Point>& b)
-{
-	double sum = 0;
-	for (uint32_t i = 0; i < a.size(); ++i)
-	{
-		std::valarray<double> d(3);
+// double RMSd(const std::vector<Point>& a, const std::vector<Point>& b)
+// {
+// 	double sum = 0;
+// 	for (uint32_t i = 0; i < a.size(); ++i)
+// 	{
+// 		std::valarray<double> d(3);
 		
-		d[0] = b[i].mX - a[i].mX;
-		d[1] = b[i].mY - a[i].mY;
-		d[2] = b[i].mZ - a[i].mZ;
+// 		d[0] = b[i].mX - a[i].mX;
+// 		d[1] = b[i].mY - a[i].mY;
+// 		d[2] = b[i].mZ - a[i].mZ;
 
-		d *= d;
+// 		d *= d;
 		
-		sum += d.sum();
-	}
+// 		sum += d.sum();
+// 	}
 	
-	return std::sqrt(sum / a.size());
-}
+// 	return std::sqrt(sum / a.size());
+// }
 
-// The next function returns the largest solution for a quartic equation
-// based on Ferrari's algorithm.
-// A depressed quartic is of the form:
-//
-//   x^4 + ax^2 + bx + c = 0
-//
-// (since I'm too lazy to find out a better way, I've implemented the
-//  routine using complex values to avoid nan's as a result of taking
-//  sqrt of a negative number)
-double LargestDepressedQuarticSolution(double a, double b, double c)
-{
-	std::complex<double> P = - (a * a) / 12 - c;
-	std::complex<double> Q = - (a * a * a) / 108 + (a * c) / 3 - (b * b) / 8;
-	std::complex<double> R = - Q / 2.0 + std::sqrt((Q * Q) / 4.0 + (P * P * P) / 27.0);
+// // The next function returns the largest solution for a quartic equation
+// // based on Ferrari's algorithm.
+// // A depressed quartic is of the form:
+// //
+// //   x^4 + ax^2 + bx + c = 0
+// //
+// // (since I'm too lazy to find out a better way, I've implemented the
+// //  routine using complex values to avoid nan's as a result of taking
+// //  sqrt of a negative number)
+// double LargestDepressedQuarticSolution(double a, double b, double c)
+// {
+// 	std::complex<double> P = - (a * a) / 12 - c;
+// 	std::complex<double> Q = - (a * a * a) / 108 + (a * c) / 3 - (b * b) / 8;
+// 	std::complex<double> R = - Q / 2.0 + std::sqrt((Q * Q) / 4.0 + (P * P * P) / 27.0);
 	
-	std::complex<double> U = std::pow(R, 1 / 3.0);
+// 	std::complex<double> U = std::pow(R, 1 / 3.0);
 	
-	std::complex<double> y;
-	if (U == 0.0)
-		y = -5.0 * a / 6.0 + U - std::pow(Q, 1.0 / 3.0);
-	else
-		y = -5.0 * a / 6.0 + U - P / (3.0 * U);
+// 	std::complex<double> y;
+// 	if (U == 0.0)
+// 		y = -5.0 * a / 6.0 + U - std::pow(Q, 1.0 / 3.0);
+// 	else
+// 		y = -5.0 * a / 6.0 + U - P / (3.0 * U);
 
-	std::complex<double> W = std::sqrt(a + 2.0 * y);
+// 	std::complex<double> W = std::sqrt(a + 2.0 * y);
 	
-	// And to get the final result:
-	// result = (±W + std::sqrt(-(3 * alpha + 2 * y ± 2 * beta / W))) / 2;
-	// We want the largest result, so:
+// 	// And to get the final result:
+// 	// result = (±W + std::sqrt(-(3 * alpha + 2 * y ± 2 * beta / W))) / 2;
+// 	// We want the largest result, so:
 
-	std::valarray<double> t(4);
+// 	std::valarray<double> t(4);
 
-	t[0] = (( W + std::sqrt(-(3.0 * a + 2.0 * y + 2.0 * b / W))) / 2.0).real();
-	t[1] = (( W + std::sqrt(-(3.0 * a + 2.0 * y - 2.0 * b / W))) / 2.0).real();
-	t[2] = ((-W + std::sqrt(-(3.0 * a + 2.0 * y + 2.0 * b / W))) / 2.0).real();
-	t[3] = ((-W + std::sqrt(-(3.0 * a + 2.0 * y - 2.0 * b / W))) / 2.0).real();
+// 	t[0] = (( W + std::sqrt(-(3.0 * a + 2.0 * y + 2.0 * b / W))) / 2.0).real();
+// 	t[1] = (( W + std::sqrt(-(3.0 * a + 2.0 * y - 2.0 * b / W))) / 2.0).real();
+// 	t[2] = ((-W + std::sqrt(-(3.0 * a + 2.0 * y + 2.0 * b / W))) / 2.0).real();
+// 	t[3] = ((-W + std::sqrt(-(3.0 * a + 2.0 * y - 2.0 * b / W))) / 2.0).real();
 
-	return t.max();
-}
+// 	return t.max();
+// }
 
-Quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& pb)
-{
-	// First calculate M, a 3x3 Matrix containing the sums of products of the coordinates of A and B
-	Matrix M(3, 3, 0);
+// Quaternion AlignPoints(const std::vector<Point>& pa, const std::vector<Point>& pb)
+// {
+// 	// First calculate M, a 3x3 Matrix containing the sums of products of the coordinates of A and B
+// 	Matrix M(3, 3, 0);
 
-	for (uint32_t i = 0; i < pa.size(); ++i)
-	{
-		const Point& a = pa[i];
-		const Point& b = pb[i];
+// 	for (uint32_t i = 0; i < pa.size(); ++i)
+// 	{
+// 		const Point& a = pa[i];
+// 		const Point& b = pb[i];
 		
-		M(0, 0) += a.mX * b.mX;	M(0, 1) += a.mX * b.mY;	M(0, 2) += a.mX * b.mZ;
-		M(1, 0) += a.mY * b.mX;	M(1, 1) += a.mY * b.mY;	M(1, 2) += a.mY * b.mZ;
-		M(2, 0) += a.mZ * b.mX;	M(2, 1) += a.mZ * b.mY;	M(2, 2) += a.mZ * b.mZ;
-	}
+// 		M(0, 0) += a.mX * b.mX;	M(0, 1) += a.mX * b.mY;	M(0, 2) += a.mX * b.mZ;
+// 		M(1, 0) += a.mY * b.mX;	M(1, 1) += a.mY * b.mY;	M(1, 2) += a.mY * b.mZ;
+// 		M(2, 0) += a.mZ * b.mX;	M(2, 1) += a.mZ * b.mY;	M(2, 2) += a.mZ * b.mZ;
+// 	}
 	
-	// Now calculate N, a symmetric 4x4 Matrix
-	SymmetricMatrix N(4);
+// 	// Now calculate N, a symmetric 4x4 Matrix
+// 	SymmetricMatrix N(4);
 	
-	N(0, 0) =  M(0, 0) + M(1, 1) + M(2, 2);
-	N(0, 1) =  M(1, 2) - M(2, 1);
-	N(0, 2) =  M(2, 0) - M(0, 2);
-	N(0, 3) =  M(0, 1) - M(1, 0);
+// 	N(0, 0) =  M(0, 0) + M(1, 1) + M(2, 2);
+// 	N(0, 1) =  M(1, 2) - M(2, 1);
+// 	N(0, 2) =  M(2, 0) - M(0, 2);
+// 	N(0, 3) =  M(0, 1) - M(1, 0);
 	
-	N(1, 1) =  M(0, 0) - M(1, 1) - M(2, 2);
-	N(1, 2) =  M(0, 1) + M(1, 0);
-	N(1, 3) =  M(0, 2) + M(2, 0);
+// 	N(1, 1) =  M(0, 0) - M(1, 1) - M(2, 2);
+// 	N(1, 2) =  M(0, 1) + M(1, 0);
+// 	N(1, 3) =  M(0, 2) + M(2, 0);
 	
-	N(2, 2) = -M(0, 0) + M(1, 1) - M(2, 2);
-	N(2, 3) =  M(1, 2) + M(2, 1);
+// 	N(2, 2) = -M(0, 0) + M(1, 1) - M(2, 2);
+// 	N(2, 3) =  M(1, 2) + M(2, 1);
 	
-	N(3, 3) = -M(0, 0) - M(1, 1) + M(2, 2);
+// 	N(3, 3) = -M(0, 0) - M(1, 1) + M(2, 2);
 
-	// det(N - λI) = 0
-	// find the largest λ (λm)
-	//
-	// Aλ4 + Bλ3 + Cλ2 + Dλ + E = 0
-	// A = 1
-	// B = 0
-	// and so this is a so-called depressed quartic
-	// solve it using Ferrari's algorithm
+// 	// det(N - λI) = 0
+// 	// find the largest λ (λm)
+// 	//
+// 	// Aλ4 + Bλ3 + Cλ2 + Dλ + E = 0
+// 	// A = 1
+// 	// B = 0
+// 	// and so this is a so-called depressed quartic
+// 	// solve it using Ferrari's algorithm
 	
-	double C = -2 * (
-		M(0, 0) * M(0, 0) + M(0, 1) * M(0, 1) + M(0, 2) * M(0, 2) +
-		M(1, 0) * M(1, 0) + M(1, 1) * M(1, 1) + M(1, 2) * M(1, 2) +
-		M(2, 0) * M(2, 0) + M(2, 1) * M(2, 1) + M(2, 2) * M(2, 2));
+// 	double C = -2 * (
+// 		M(0, 0) * M(0, 0) + M(0, 1) * M(0, 1) + M(0, 2) * M(0, 2) +
+// 		M(1, 0) * M(1, 0) + M(1, 1) * M(1, 1) + M(1, 2) * M(1, 2) +
+// 		M(2, 0) * M(2, 0) + M(2, 1) * M(2, 1) + M(2, 2) * M(2, 2));
 	
-	double D = 8 * (M(0, 0) * M(1, 2) * M(2, 1) +
-					M(1, 1) * M(2, 0) * M(0, 2) +
-					M(2, 2) * M(0, 1) * M(1, 0)) -
-			   8 * (M(0, 0) * M(1, 1) * M(2, 2) +
-					M(1, 2) * M(2, 0) * M(0, 1) +
-					M(2, 1) * M(1, 0) * M(0, 2));
+// 	double D = 8 * (M(0, 0) * M(1, 2) * M(2, 1) +
+// 					M(1, 1) * M(2, 0) * M(0, 2) +
+// 					M(2, 2) * M(0, 1) * M(1, 0)) -
+// 			   8 * (M(0, 0) * M(1, 1) * M(2, 2) +
+// 					M(1, 2) * M(2, 0) * M(0, 1) +
+// 					M(2, 1) * M(1, 0) * M(0, 2));
 	
-	// E is the determinant of N:
-	double E = 
-		(N(0,0) * N(1,1) - N(0,1) * N(0,1)) * (N(2,2) * N(3,3) - N(2,3) * N(2,3)) +
-		(N(0,1) * N(0,2) - N(0,0) * N(2,1)) * (N(2,1) * N(3,3) - N(2,3) * N(1,3)) +
-		(N(0,0) * N(1,3) - N(0,1) * N(0,3)) * (N(2,1) * N(2,3) - N(2,2) * N(1,3)) +
-		(N(0,1) * N(2,1) - N(1,1) * N(0,2)) * (N(0,2) * N(3,3) - N(2,3) * N(0,3)) +
-		(N(1,1) * N(0,3) - N(0,1) * N(1,3)) * (N(0,2) * N(2,3) - N(2,2) * N(0,3)) +
-		(N(0,2) * N(1,3) - N(2,1) * N(0,3)) * (N(0,2) * N(1,3) - N(2,1) * N(0,3));
+// 	// E is the determinant of N:
+// 	double E = 
+// 		(N(0,0) * N(1,1) - N(0,1) * N(0,1)) * (N(2,2) * N(3,3) - N(2,3) * N(2,3)) +
+// 		(N(0,1) * N(0,2) - N(0,0) * N(2,1)) * (N(2,1) * N(3,3) - N(2,3) * N(1,3)) +
+// 		(N(0,0) * N(1,3) - N(0,1) * N(0,3)) * (N(2,1) * N(2,3) - N(2,2) * N(1,3)) +
+// 		(N(0,1) * N(2,1) - N(1,1) * N(0,2)) * (N(0,2) * N(3,3) - N(2,3) * N(0,3)) +
+// 		(N(1,1) * N(0,3) - N(0,1) * N(1,3)) * (N(0,2) * N(2,3) - N(2,2) * N(0,3)) +
+// 		(N(0,2) * N(1,3) - N(2,1) * N(0,3)) * (N(0,2) * N(1,3) - N(2,1) * N(0,3));
 	
-	// solve quartic
-	double lambda = LargestDepressedQuarticSolution(C, D, E);
+// 	// solve quartic
+// 	double lambda = LargestDepressedQuarticSolution(C, D, E);
 	
-	// calculate t = (N - λI)
-	Matrix t = N - IdentityMatrix(4) * lambda;
+// 	// calculate t = (N - λI)
+// 	Matrix t = N - IdentityMatrix(4) * lambda;
 	
-	// calculate a Matrix of cofactors for t
-	Matrix cf = Cofactors(t);
+// 	// calculate a Matrix of cofactors for t
+// 	Matrix cf = Cofactors(t);
 
-	int maxR = 0;
-	for (int r = 1; r < 4; ++r)
-	{
-		if (std::abs(cf(r, 0)) > std::abs(cf(maxR, 0)))
-			maxR = r;
-	}
+// 	int maxR = 0;
+// 	for (int r = 1; r < 4; ++r)
+// 	{
+// 		if (std::abs(cf(r, 0)) > std::abs(cf(maxR, 0)))
+// 			maxR = r;
+// 	}
 	
-	Quaternion q(cf(maxR, 0), cf(maxR, 1), cf(maxR, 2), cf(maxR, 3));
-	q = Normalize(q);
+// 	Quaternion q(cf(maxR, 0), cf(maxR, 1), cf(maxR, 2), cf(maxR, 3));
+// 	q = Normalize(q);
 	
-	return q;
-}
+// 	return q;
+// }
 
-// --------------------------------------------------------------------
+// // --------------------------------------------------------------------
 
-Point Nudge(Point p, float offset)
-{
-	static std::random_device rd;
-	static std::mt19937_64 rng(rd());
+// Point Nudge(Point p, float offset)
+// {
+// 	static std::random_device rd;
+// 	static std::mt19937_64 rng(rd());
 
-	std::uniform_real_distribution<> randomAngle(0, 2 * kPI);
-	std::normal_distribution<> randomOffset(0, offset);
+// 	std::uniform_real_distribution<> randomAngle(0, 2 * kPI);
+// 	std::normal_distribution<> randomOffset(0, offset);
 
-	float theta = static_cast<float>(randomAngle(rng));
-	float phi1 = static_cast<float>(randomAngle(rng) - kPI);
-	float phi2 = static_cast<float>(randomAngle(rng) - kPI);
+// 	float theta = static_cast<float>(randomAngle(rng));
+// 	float phi1 = static_cast<float>(randomAngle(rng) - kPI);
+// 	float phi2 = static_cast<float>(randomAngle(rng) - kPI);
 		
-	Quaternion q = boost::math::spherical(1.0f, theta, phi1, phi2);
+// 	Quaternion q = boost::math::spherical(1.0f, theta, phi1, phi2);
 
-	Point r{ 0, 0, 1 };
-	r.rotate(q);
-	r *= static_cast<float>(randomOffset(rng));
+// 	Point r{ 0, 0, 1 };
+// 	r.rotate(q);
+// 	r *= static_cast<float>(randomOffset(rng));
 	
-	return p + r;
-}
+// 	return p + r;
+// }
 
 }

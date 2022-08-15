@@ -30,7 +30,7 @@
 #include <string>
 #include <tuple>
 
-#include <cif++/Cif++.hpp>
+#include <cif++/cif.hpp>
 
 namespace cif
 {
@@ -47,8 +47,8 @@ struct TLSResidue;
 struct TLSSelection
 {
 	virtual ~TLSSelection() {}
-	virtual void CollectResidues(cif::Datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel = 0) const = 0;
-	std::vector<std::tuple<std::string,int,int>> GetRanges(cif::Datablock& db, bool pdbNamespace) const;
+	virtual void CollectResidues(cif::datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel = 0) const = 0;
+	std::vector<std::tuple<std::string,int,int>> GetRanges(cif::datablock& db, bool pdbNamespace) const;
 };
 
 // Low level: get the selections

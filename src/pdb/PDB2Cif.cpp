@@ -46,8 +46,8 @@ using cif::Datablock;
 using cif::iequals;
 using cif::Key;
 using cif::Row;
-using cif::toLower;
-using cif::toLowerCopy;
+using cif::to_lower;
+using cif::to_lower_copy;
 using mmcif::CompoundFactory;
 
 // --------------------------------------------------------------------
@@ -3155,7 +3155,7 @@ void PDBFileParser::ParseRemark350()
 							std::string oligomer = values["AUTHOR DETERMINED BIOLOGICAL UNIT"];
 							if (oligomer.empty())
 								oligomer = values["SOFTWARE DETERMINED QUATERNARY STRUCTURE"];
-							toLower(oligomer);
+							to_lower(oligomer);
 
 							int count = 0;
 							std::smatch m2;

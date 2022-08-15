@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <list>
+
 #include <cif++/cif/datablock.hpp>
 #include <cif++/cif/parser.hpp>
 
@@ -39,7 +41,12 @@ class file : public std::list<datablock>
   public:
 	file() = default;
 
-	file(std::istream &is)
+	explicit file(const std::filesystem::path &p)
+	{
+		load(p);
+	}
+
+	explicit file(std::istream &is)
 	{
 		load(is);
 	}

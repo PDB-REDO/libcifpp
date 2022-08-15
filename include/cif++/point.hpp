@@ -26,18 +26,18 @@
 
 #pragma once
 
+#include <cmath>
 #include <functional>
 
 #if HAVE_LIBCLIPPER
 #include <clipper/core/coords.h>
 #endif
 
-#include <boost/math/quaternion.hpp>
-
 namespace mmcif
 {
 
-typedef boost::math::quaternion<float> Quaternion;
+struct Quaternion {};
+
 
 const double
 	kPI = 3.141592653589793238462643383279502884;
@@ -180,15 +180,15 @@ struct PointF
 		return length;
 	}
 
-	void rotate(const boost::math::quaternion<FType> &q)
+	void rotate(const Quaternion &q)
 	{
-		boost::math::quaternion<FType> p(0, mX, mY, mZ);
+		// boost::math::quaternion<FType> p(0, mX, mY, mZ);
 
-		p = q * p * boost::math::conj(q);
+		// p = q * p * boost::math::conj(q);
 
-		mX = p.R_component_2();
-		mY = p.R_component_3();
-		mZ = p.R_component_4();
+		// mX = p.R_component_2();
+		// mY = p.R_component_3();
+		// mZ = p.R_component_4();
 	}
 
 #if HAVE_LIBCLIPPER

@@ -2135,7 +2135,7 @@
 // 	// generate a new, unique ID. Pass it an ID generating function based on
 // 	// a sequence number. This function will be called until the result is
 // 	// unique in the context of this category
-// 	std::string getUniqueID(std::function<std::string(int)> generator = cif::cifIdForNumber);
+// 	std::string getUniqueID(std::function<std::string(int)> generator = cif::cif_id_for_number);
 // 	std::string getUniqueID(const std::string &prefix)
 // 	{
 // 		return getUniqueID([prefix](int nr)

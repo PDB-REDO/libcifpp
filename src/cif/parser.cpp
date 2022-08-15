@@ -372,7 +372,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 			case State::Value:
 				if (ch == '_')
 				{
-					std::string s = toLowerCopy(m_token_value);
+					std::string s = to_lower_copy(m_token_value);
 
 					if (s == "global_")
 						result = CIFToken::GLOBAL;
@@ -713,7 +713,7 @@ void sac_parser::parse_datablock()
 				while (m_lookahead == CIFToken::Tag)
 				{
 					std::string catName, itemName;
-					std::tie(catName, itemName) = splitTagName(m_token_value);
+					std::tie(catName, itemName) = split_tag_name(m_token_value);
 
 					if (cat.empty())
 					{
@@ -746,7 +746,7 @@ void sac_parser::parse_datablock()
 			case CIFToken::Tag:
 			{
 				std::string catName, itemName;
-				std::tie(catName, itemName) = splitTagName(m_token_value);
+				std::tie(catName, itemName) = split_tag_name(m_token_value);
 
 				if (not iequals(cat, catName))
 				{

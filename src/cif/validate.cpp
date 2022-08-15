@@ -297,7 +297,7 @@ item_validator *validator::get_validator_for_item(std::string_view tag) const
 	item_validator *result = nullptr;
 
 	std::string cat, item;
-	std::tie(cat, item) = splitTagName(tag);
+	std::tie(cat, item) = split_tag_name(tag);
 
 	auto *cv = get_validator_for_category(cat);
 	if (cv != nullptr)
@@ -393,10 +393,10 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 	// too bad clang version 10 did not have a constructor for std::filesystem::path that accepts a std::string_view
 	std::filesystem::path dictionary(dictionary_name.data(), dictionary_name.data() + dictionary_name.length());
 
-	auto data = loadResource(dictionary_name);
+	auto data = load_resource(dictionary_name);
 
 	if (not data and dictionary.extension().string() != ".dic")
-		data = loadResource(dictionary.parent_path() / (dictionary.filename().string() + ".dic"));
+		data = load_resource(dictionary.parent_path() / (dictionary.filename().string() + ".dic"));
 
 	if (data)
 		construct_validator(dictionary_name, *data);
@@ -451,7 +451,7 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 
 void validator_factory::construct_validator(std::string_view name, std::istream &is)
 {
-	parse_dictionary(name, is);
+	m_validators.emplace_back(parse_dictionary(name, is));
 }
 
 } // namespace cif

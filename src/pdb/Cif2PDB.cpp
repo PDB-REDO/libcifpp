@@ -200,7 +200,7 @@ std::string cifSoftware(const Datablock& db, SoftwareType sw)
 		}
 
 		cif::trim(result);
-		cif::toUpper(result);
+		cif::to_upper(result);
 		
 		if (result.empty())
 			result = "NULL";
@@ -246,11 +246,11 @@ size_t WriteContinuedLine(std::ostream& pdbFile, std::string header, int& count,
 
 	std::string::size_type maxLength = 80 - lStart - 1;
 
-	std::vector<std::string> lines = cif::wordWrap(text, maxLength);
+	std::vector<std::string> lines = cif::word_wrap(text, maxLength);
 
 	for (auto& line: lines)
 	{
-		// cif::toUpper(line);
+		// cif::to_upper(line);
 
 		pdbFile << header;
 		
@@ -309,7 +309,7 @@ size_t WriteCitation(std::ostream& pdbFile, const Datablock& db, Row r, int refe
 	
 	if (not pubname.empty())
 	{
-		cif::toUpper(pubname);
+		cif::to_upper(pubname);
 	
 		const std::string kRefHeader = s1 + "REF %2.2d %-28.28s  %2.2s%4.4d %5.5d %4.4d";
 		pdbFile << (boost::format(kRefHeader)
@@ -1398,7 +1398,7 @@ void WriteRemark3Refmac(std::ostream& pdbFile, const Datablock& db)
 				for (auto l: db["refine_ls_restr_ncs"].find(cif::Key("pdbx_ens_id") == ens_id))
 				{
 					std::string type = l["pdbx_type"].as<std::string>();
-					cif::toUpper(type);
+					cif::to_upper(type);
 					
 					std::string unit;
 					if (cif::ends_with(type, "POSITIONAL"))
@@ -1749,7 +1749,7 @@ void WriteRemark3Phenix(std::ostream& pdbFile, const Datablock& db)
 //				for (auto l: db["refine_ls_restr_ncs"].find(cif::Key("pdbx_ens_id") == ens_id))
 //				{
 //					std::string type = l["pdbx_type"];
-//					cif::toUpper(type);
+//					cif::to_upper(type);
 //					
 //					std::string unit;
 //					if (cif::ends_with(type, "POSITIONAL"))
@@ -2158,11 +2158,11 @@ void WriteRemark3(std::ostream& pdbFile, const Datablock& db)
 				<< RM3("REFINEMENT.") << std::endl;
 		
 		int l = 0;
-		for (auto s: cif::wordWrap(program, 52))
+		for (auto s: cif::word_wrap(program, 52))
 			pdbFile << RM3(++l == 1 ? "  PROGRAM     : " : "                ") << s << std::endl;
 
 		l = 0;
-		for (auto s: cif::wordWrap(authors, 52))
+		for (auto s: cif::word_wrap(authors, 52))
 			pdbFile << RM3(++l == 1 ? "  AUTHORS     : " : "                ") << s << std::endl;
 	}
 	
@@ -2370,7 +2370,7 @@ void WriteRemark280(std::ostream& pdbFile, const Datablock& db)
 				std::string v = exptl_crystal_grow[c].as<std::string>();
 				if (not v.empty())
 				{
-					cif::toUpper(v);
+					cif::to_upper(v);
 					
 					switch (i)
 					{
@@ -2452,7 +2452,7 @@ void WriteRemark350(std::ostream& pdbFile, const Datablock& db)
 		pdbFile << RM("") << std::endl
 			 	<< RM("BIOMOLECULE: ") << id << std::endl;
 		
-		cif::toUpper(oligomer);
+		cif::to_upper(oligomer);
 		
 		if (detail == "author_defined_assembly" or detail == "author_and_software_defined_assembly")
 			pdbFile << RM("AUTHOR DETERMINED BIOLOGICAL UNIT: ") << oligomer << std::endl;
@@ -2663,11 +2663,11 @@ void WriteRemark800(std::ostream& pdbFile, const Datablock& db)
 		std::string ident, code, desc;
 		cif::tie(ident, code, desc) = r.get("id", "pdbx_evidence_code", "details");
 
-		cif::toUpper(code);
+		cif::to_upper(code);
 
 		for (auto l: { "SITE_IDENTIFIER: " + ident, "EVIDENCE_CODE: " + code, "SITE_DESCRIPTION: " + desc })
 		{
-			for (auto s: cif::wordWrap(l, 69))
+			for (auto s: cif::word_wrap(l, 69))
 				pdbFile << "REMARK 800 " << s << std::endl;
 		};
 	}
@@ -2777,7 +2777,7 @@ int WritePrimaryStructure(std::ostream& pdbFile, const Datablock& db)
 		 			"pdbx_seq_db_name", "pdbx_seq_db_accession_code", "db_mon_id", "pdbx_seq_db_seq_num",
 		 			"details");
 		
-		cif::toUpper(conflict);
+		cif::to_upper(conflict);
 		
 		pdbFile << (boost::format(
 					"SEQADV %4.4s %3.3s %1.1s %4.4s%1.1s %-4.4s %-9.9s %3.3s %5.5s %-21.21s")
@@ -2980,7 +2980,7 @@ int WriteHeterogen(std::ostream& pdbFile, const Datablock& db)
 		if (id == water_comp_id)
 			continue;
 
-		cif::toUpper(name);
+		cif::to_upper(name);
 		
 		int c = 1;
 		

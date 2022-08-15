@@ -30,8 +30,8 @@
 #include <numeric>
 #include <thread>
 
-#include <cif++/Secondary.hpp>
-#include <cif++/Structure.hpp>
+#include <cif++/point.hpp>
+#include <cif++/structure/DSSP.hpp>
 
 // --------------------------------------------------------------------
 
@@ -77,33 +77,30 @@ struct ResidueInfo
 };
 
 const ResidueInfo kResidueInfo[] = {
-	{ kUnknownResidue,	'X', "UNK" },
-	{ kAlanine,			'A', "ALA" },
-	{ kArginine,		'R', "ARG" },
-	{ kAsparagine,		'N', "ASN" },
-	{ kAsparticAcid,	'D', "ASP" },
-	{ kCysteine,		'C', "CYS" },
-	{ kGlutamicAcid,	'E', "GLU" },
-	{ kGlutamine,		'Q', "GLN" },
-	{ kGlycine,			'G', "GLY" },
-	{ kHistidine,		'H', "HIS" },
-	{ kIsoleucine,		'I', "ILE" },
-	{ kLeucine,			'L', "LEU" },
-	{ kLysine,			'K', "LYS" },
-	{ kMethionine,		'M', "MET" },
-	{ kPhenylalanine,	'F', "PHE" },
-	{ kProline,			'P', "PRO" },
-	{ kSerine,			'S', "SER" },
-	{ kThreonine,		'T', "THR" },
-	{ kTryptophan,		'W', "TRP" },
-	{ kTyrosine,		'Y', "TYR" },
-	{ kValine,			'V', "VAL" }
-};
+	{kUnknownResidue, 'X', "UNK"},
+	{kAlanine, 'A', "ALA"},
+	{kArginine, 'R', "ARG"},
+	{kAsparagine, 'N', "ASN"},
+	{kAsparticAcid, 'D', "ASP"},
+	{kCysteine, 'C', "CYS"},
+	{kGlutamicAcid, 'E', "GLU"},
+	{kGlutamine, 'Q', "GLN"},
+	{kGlycine, 'G', "GLY"},
+	{kHistidine, 'H', "HIS"},
+	{kIsoleucine, 'I', "ILE"},
+	{kLeucine, 'L', "LEU"},
+	{kLysine, 'K', "LYS"},
+	{kMethionine, 'M', "MET"},
+	{kPhenylalanine, 'F', "PHE"},
+	{kProline, 'P', "PRO"},
+	{kSerine, 'S', "SER"},
+	{kThreonine, 'T', "THR"},
+	{kTryptophan, 'W', "TRP"},
+	{kTyrosine, 'Y', "TYR"},
+	{kValine, 'V', "VAL"}};
 
-ResidueType MapResidue(std::string inName)
+ResidueType MapResidue(std::string_view inName)
 {
-	cif::trim(inName);
-
 	ResidueType result = kUnknownResidue;
 
 	for (auto &ri : kResidueInfo)
@@ -170,11 +167,8 @@ const float
 
 struct Res
 {
-	Res(const Monomer &m, int nr, ChainBreak brk)
-		: mM(m)
-		, mNumber(nr)
-		, mType(MapResidue(m.compoundID()))
-		, mChainBreak(brk)
+	Res(int model_nr, const std::vector<cif::row_handle> &atoms)
+		: mChainBreak(ChainBreak::None)
 	{
 		// update the box containing all atoms
 		mBox[0].mX = mBox[0].mY = mBox[0].mZ = std::numeric_limits<float>::max();
@@ -182,34 +176,64 @@ struct Res
 
 		mH = mmcif::Point{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
 
-		for (auto &a : mM.unique_atoms())
+		int seen = 0;
+
+		for (auto atom : atoms)
 		{
-			if (a.labelAtomID() == "CA")
+			std::string asymID, compID, atomID, type;
+			std::optional<std::string> altID;
+			int seqID;
+			std::optional<int> model;
+			float x, y, z;
+
+			cif::tie(asymID, compID, atomID, altID, type, seqID, model, x, y, z) =
+				atom.get("label_asym_id", "label_comp_id", "label_atom_id", "label_alt_id", "type_symbol", "label_seq_id",
+					"pdbx_PDB_model_num", "Cartn_x", "Cartn_y", "Cartn_z");
+
+			if (model and model != model_nr)
+				continue;
+
+			if (seen == 0)
 			{
-				mCAlpha = a.location();
+				mAsymID = asymID;
+				mCompoundID = compID;
+				mSeqID = seqID;
+				if (altID)
+					mAltID = *altID;
+			}
+
+			if (atomID == "CA")
+			{
+				seen |= 1;
+				mCAlpha = {x, y, z};
 				ExtendBox(mCAlpha, kRadiusCA + 2 * kRadiusWater);
 			}
-			else if (a.labelAtomID() == "C")
+			else if (atomID == "C")
 			{
-				mC = a.location();
+				seen |= 2;
+				mC = {x, y, z};
 				ExtendBox(mC, kRadiusC + 2 * kRadiusWater);
 			}
-			else if (a.labelAtomID() == "N")
+			else if (atomID == "N")
 			{
-				mH = mN = a.location();
+				seen |= 4;
+				mN = {x, y, z};
 				ExtendBox(mN, kRadiusN + 2 * kRadiusWater);
 			}
-			else if (a.labelAtomID() == "O")
+			else if (atomID == "O")
 			{
-				mO = a.location();
+				seen |= 8;
+				mO = {x, y, z};
 				ExtendBox(mO, kRadiusO + 2 * kRadiusWater);
 			}
-			else if (a.type() != AtomType::H)
+			else if (type != "H")
 			{
-				mSideChain.push_back(a.location());
-				ExtendBox(a.location(), kRadiusSideAtom + 2 * kRadiusWater);
+				mSideChain.emplace_back(x, y, z);
+				ExtendBox(mSideChain.back(), kRadiusSideAtom + 2 * kRadiusWater);
 			}
 		}
+
+		mComplete = seen == (1 | 2 | 4 | 8);
 
 		mRadius = mBox[1].mX - mBox[0].mX;
 		if (mRadius < mBox[1].mY - mBox[0].mY)
@@ -331,10 +355,14 @@ struct Res
 	Res *mNext = nullptr;
 	Res *mPrev = nullptr;
 
-	const Monomer &mM;
-	std::string mAltID;
+	// const Monomer &mM;
 
+	std::string mAsymID;
+	int mSeqID;
+	std::string mCompoundID;
+	std::string mAltID;
 	int mNumber;
+	bool mComplete = false;
 
 	Point mCAlpha, mC, mN, mO, mH;
 	Point mBox[2] = {};
@@ -342,6 +370,8 @@ struct Res
 	Point mCenter;
 	std::vector<Point> mSideChain;
 	double mAccessibility = 0;
+
+	double mKappa = 360, mPhi = 360, mPsi = 360;
 
 	ResidueType mType;
 	uint8_t mSSBridgeNr = 0;
@@ -593,7 +623,7 @@ void CalculateHBondEnergies(std::vector<Res> &inResidues)
 
 bool NoChainBreak(const Res *a, const Res *b)
 {
-	bool result = a->mM.asymID() == b->mM.asymID();
+	bool result = a->mAsymID == b->mAsymID;
 	for (auto r = a; result and r != b; r = r->mNext)
 	{
 		auto next = r->mNext;
@@ -707,9 +737,9 @@ void CalculateBetaSheets(std::vector<Res> &inResidues, DSSP_Statistics &stats)
 
 				bridge.type = type;
 				bridge.i.push_back(i);
-				bridge.chainI = ri.mM.asymID();
+				bridge.chainI = ri.mAsymID;
 				bridge.j.push_back(j);
-				bridge.chainJ = rj.mM.asymID();
+				bridge.chainJ = rj.mAsymID;
 
 				bridges.push_back(bridge);
 			}
@@ -924,7 +954,7 @@ void CalculateAlphaHelices(std::vector<Res> &inResidues, DSSP_Statistics &stats,
 
 	for (auto &r : inResidues)
 	{
-		double kappa = r.mM.kappa();
+		double kappa = r.mKappa;
 		r.SetBend(kappa != 360 and kappa > 70);
 	}
 
@@ -991,10 +1021,10 @@ void CalculateAlphaHelices(std::vector<Res> &inResidues, DSSP_Statistics &stats,
 	size_t helixLength = 0;
 	for (auto r : inResidues)
 	{
-		if (r.mM.asymID() != asym)
+		if (r.mAsymID != asym)
 		{
 			helixLength = 0;
-			asym = r.mM.asymID();
+			asym = r.mAsymID;
 		}
 
 		if (r.GetSecondaryStructure() == ssAlphahelix)
@@ -1026,8 +1056,8 @@ void CalculatePPHelices(std::vector<Res> &inResidues, DSSP_Statistics &stats, in
 
 	for (uint32_t i = 1; i + 1 < inResidues.size(); ++i)
 	{
-		phi[i] = inResidues[i].mM.phi();
-		psi[i] = inResidues[i].mM.psi();
+		phi[i] = inResidues[i].mPhi;
+		psi[i] = inResidues[i].mPsi;
 	}
 
 	for (uint32_t i = 1; i + 3 < inResidues.size(); ++i)
@@ -1148,10 +1178,9 @@ void CalculatePPHelices(std::vector<Res> &inResidues, DSSP_Statistics &stats, in
 
 struct DSSPImpl
 {
-	DSSPImpl(const Structure &s, int min_poly_proline_stretch_length);
+	DSSPImpl(const cif::datablock &db, int model_nr, int min_poly_proline_stretch_length);
 
-	const Structure &mStructure;
-	const std::list<Polymer> &mPolymers;
+	const cif::datablock &mDB;
 	std::vector<Res> mResidues;
 	std::vector<std::pair<Res *, Res *>> mSSBonds;
 
@@ -1160,7 +1189,7 @@ struct DSSPImpl
 	auto findRes(const std::string &asymID, int seqID)
 	{
 		return std::find_if(mResidues.begin(), mResidues.end(), [&](auto &r)
-			{ return r.mM.asymID() == asymID and r.mM.seqID() == seqID; });
+			{ return r.mAsymID == asymID and r.mSeqID == seqID; });
 	}
 
 	void calculateSurface();
@@ -1171,68 +1200,100 @@ struct DSSPImpl
 
 // --------------------------------------------------------------------
 
-DSSPImpl::DSSPImpl(const Structure &s, int min_poly_proline_stretch_length)
-	: mStructure(s)
-	, mPolymers(mStructure.polymers())
+DSSPImpl::DSSPImpl(const cif::datablock &db, int model_nr, int min_poly_proline_stretch_length)
+	: mDB(db)
 	, m_min_poly_proline_stretch_length(min_poly_proline_stretch_length)
 {
-	size_t nRes = accumulate(mPolymers.begin(), mPolymers.end(),
-		0ULL, [](size_t s, auto &p)
-		{ return s + p.size(); });
-
-	mStats.nrOfChains = static_cast<uint32_t>(mPolymers.size());
-
-	mResidues.reserve(nRes);
 	int resNumber = 0;
 
-	for (auto &p : mPolymers)
+	auto &pdbx_poly_seq_scheme = mDB["pdbx_poly_seq_scheme"];
+	auto &atom_site = mDB["atom_site"];
+
+	for (auto r : pdbx_poly_seq_scheme)
 	{
 		ChainBreak brk = ChainBreak::NewChain;
 
-		for (auto &m : p)
+		Res residue(model_nr, pdbx_poly_seq_scheme.get_children(r, atom_site));
+
+		if (not residue.mComplete)
+			continue;
+
+		++resNumber;
+
+		if (not mResidues.empty())
 		{
-			if (not m.isComplete())
-				continue;
+			if (mResidues.back().mAsymID != residue.mAsymID)
+				++mStats.nrOfChains;
 
-			++resNumber;
-
-			if (not mResidues.empty() and
-				Distance(mResidues.back().mC, m.atomByID("N").location()) > kMaxPeptideBondLength)
+			if (Distance(mResidues.back().mC, residue.mN) > kMaxPeptideBondLength)
 			{
-				if (mResidues.back().mM.asymID() == m.asymID())
+				if (mResidues.back().mAsymID == residue.mAsymID)
 				{
 					++mStats.nrOfChains;
 					brk = ChainBreak::Gap;
 				}
 				++resNumber;
 			}
-
-			mResidues.emplace_back(m, resNumber, brk);
-
-			brk = ChainBreak::None;
 		}
+
+		residue.mChainBreak = brk;
+		residue.mNumber = resNumber;
+
+		mResidues.emplace_back(std::move(residue));
+
+		brk = ChainBreak::None;
 	}
 
 	mStats.nrOfResidues = static_cast<uint32_t>(mResidues.size());
 
 	for (size_t i = 0; i + 1 < mResidues.size(); ++i)
 	{
-		mResidues[i].mNext = &mResidues[i + 1];
-		mResidues[i + 1].mPrev = &mResidues[i];
+		auto &cur = mResidues[i];
+
+		cur.mNext = &mResidues[i + 1];
+		mResidues[i + 1].mPrev = &cur;
 
 		mResidues[i + 1].assignHydrogen();
+
+		if (i >= 2 and i + 2 < mResidues.size())
+		{
+			auto &prevPrev = mResidues[i - 2];
+			auto &nextNext = mResidues[i + 2];
+
+			if (prevPrev.mSeqID + 4 == nextNext.mSeqID)
+			{
+				double ckap = CosinusAngle(
+					cur.mCAlpha,
+					prevPrev.mCAlpha,
+					nextNext.mCAlpha,
+					cur.mCAlpha);
+				double skap = std::sqrt(1 - ckap * ckap);
+				cur.mKappa = std::atan2(skap, ckap) * 180 / kPI;
+			}
+		}
+
+		if (i > 0 and mResidues[i - 1].mSeqID + 1 == cur.mSeqID)
+		{
+			auto &prev = mResidues[i - 1];
+			cur.mPhi = DihedralAngle(prev.mC, cur.mN, cur.mCAlpha, cur.mC);
+		}
+
+		if (i + 1)
+		{
+			auto &next = mResidues[i + 1];
+			if (cur.mSeqID + 1 == next.mSeqID)
+				cur.mPsi = DihedralAngle(cur.mN, cur.mCAlpha, cur.mC, next.mN);
+		}
 	}
 }
 
 void DSSPImpl::calculateSecondaryStructure()
 {
-	auto &db = mStructure.datablock();
-	for (auto r : db["struct_conn"].find(cif::Key("conn_type_id") == "disulf"))
-	{
-		std::string asym1, asym2;
-		int seq1, seq2;
-		cif::tie(asym1, seq1, asym2, seq2) = r.get("ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr2_label_asym_id", "ptnr2_label_seq_id");
+	using namespace cif::literals;
 
+	for (auto [asym1, seq1, asym2, seq2] : mDB["struct_conn"].find<std::string, int, std::string, int>("conn_type_id"_key == "disulf",
+			 "ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr2_label_asym_id", "ptnr2_label_seq_id"))
+	{
 		auto r1 = findRes(asym1, seq1);
 		if (r1 == mResidues.end())
 		{
@@ -1263,8 +1324,6 @@ void DSSPImpl::calculateSecondaryStructure()
 	{
 		for (auto &r : mResidues)
 		{
-			auto &m = r.mM;
-
 			char helix[5] = {};
 			for (HelixType helixType : {HelixType::rh_3_10, HelixType::rh_alpha, HelixType::rh_pi, HelixType::rh_pp})
 			{
@@ -1278,7 +1337,7 @@ void DSSPImpl::calculateSecondaryStructure()
 				}
 			}
 
-			auto id = m.asymID() + ':' + std::to_string(m.seqID()) + '/' + m.compoundID();
+			auto id = r.mAsymID + ':' + std::to_string(r.mSeqID) + '/' + r.mCompoundID;
 
 			std::cerr << id << std::string(12 - id.length(), ' ')
 					  << char(r.mSecondaryStructure) << ' '
@@ -1297,11 +1356,11 @@ void DSSPImpl::calculateSecondaryStructure()
 		if (a == b)
 		{
 			if (cif::VERBOSE > 0)
-				std::cerr << "In the SS bonds list, the residue " << a->mM << " is bonded to itself" << std::endl;
+				std::cerr << "In the SS bonds list, the residue " << a->mAsymID << ':' << a->mSeqID << " is bonded to itself" << std::endl;
 			continue;
 		}
 
-		if (a->mM.asymID() == b->mM.asymID() and NoChainBreak(a, b))
+		if (a->mAsymID == b->mAsymID and NoChainBreak(a, b))
 			++mStats.nrOfIntraChainSSBridges;
 
 		a->mSSBridgeNr = b->mSSBridgeNr = ++ssBondNr;
@@ -1332,9 +1391,14 @@ void DSSPImpl::calculateSurface()
 
 // --------------------------------------------------------------------
 
-const Monomer &DSSP::ResidueInfo::residue() const
+std::string DSSP::ResidueInfo::asym_id() const
 {
-	return mImpl->mM;
+	return mImpl->mAsymID;
+}
+
+int DSSP::ResidueInfo::seq_id() const
+{
+	return mImpl->mSeqID;
 }
 
 std::string DSSP::ResidueInfo::alt_id() const
@@ -1435,8 +1499,8 @@ DSSP::iterator &DSSP::iterator::operator--()
 
 // --------------------------------------------------------------------
 
-DSSP::DSSP(const Structure &s, int min_poly_proline_stretch, bool calculateSurfaceAccessibility)
-	: mImpl(new DSSPImpl(s, min_poly_proline_stretch))
+DSSP::DSSP(const cif::datablock &db, int model_nr, int min_poly_proline_stretch, bool calculateSurfaceAccessibility)
+	: mImpl(new DSSPImpl(db, model_nr, min_poly_proline_stretch))
 {
 	if (calculateSurfaceAccessibility)
 	{
@@ -1476,17 +1540,12 @@ SecondaryStructureType DSSP::operator()(const std::string &inAsymID, int inSeqID
 	SecondaryStructureType result = ssLoop;
 	auto i = find_if(mImpl->mResidues.begin(), mImpl->mResidues.end(),
 		[&](auto &r)
-		{ return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
+		{ return r.mAsymID == inAsymID and r.mSeqID == inSeqID; });
 	if (i != mImpl->mResidues.end())
 		result = i->mSecondaryStructure;
 	else if (cif::VERBOSE > 0)
 		std::cerr << "Could not find secondary structure for " << inAsymID << ':' << inSeqID << std::endl;
 	return result;
-}
-
-SecondaryStructureType DSSP::operator()(const Monomer &m) const
-{
-	return operator()(m.asymID(), m.seqID());
 }
 
 double DSSP::accessibility(const std::string &inAsymID, int inSeqID) const
@@ -1494,7 +1553,7 @@ double DSSP::accessibility(const std::string &inAsymID, int inSeqID) const
 	SecondaryStructureType result = ssLoop;
 	auto i = find_if(mImpl->mResidues.begin(), mImpl->mResidues.end(),
 		[&](auto &r)
-		{ return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
+		{ return r.mAsymID == inAsymID and r.mSeqID == inSeqID; });
 	if (i != mImpl->mResidues.end())
 		result = i->mSecondaryStructure;
 	else if (cif::VERBOSE > 0)
@@ -1502,21 +1561,11 @@ double DSSP::accessibility(const std::string &inAsymID, int inSeqID) const
 	return result;
 }
 
-double DSSP::accessibility(const Monomer &m) const
-{
-	return accessibility(m.asymID(), m.seqID());
-}
-
-bool DSSP::isAlphaHelixEndBeforeStart(const Monomer &m) const
-{
-	return isAlphaHelixEndBeforeStart(m.asymID(), m.seqID());
-}
-
 bool DSSP::isAlphaHelixEndBeforeStart(const std::string &inAsymID, int inSeqID) const
 {
 	auto i = find_if(mImpl->mResidues.begin(), mImpl->mResidues.end(),
 		[&](auto &r)
-		{ return r.mM.asymID() == inAsymID and r.mM.seqID() == inSeqID; });
+		{ return r.mAsymID == inAsymID and r.mSeqID == inSeqID; });
 
 	bool result = false;
 

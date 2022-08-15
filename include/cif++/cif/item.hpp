@@ -34,12 +34,14 @@
 #include <memory>
 #include <optional>
 
-#include <cif++/utilities.hpp>
+#include <cif++/text.hpp>
 
 #include <cif++/cif/forward_decl.hpp>
 
 namespace cif
 {
+
+extern int VERBOSE;
 
 // --------------------------------------------------------------------
 /// \brief item is a transient class that is used to pass data into rows
@@ -282,7 +284,7 @@ struct item_handle
 // So sad that the gcc implementation of from_chars does not support floats yet...
 
 template <typename T>
-struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T>>>
+struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> and not std::is_same_v<T, bool>>>
 {
 	using value_type = std::remove_reference_t<std::remove_cv_t<T>>;
 

@@ -27,10 +27,10 @@
 #include <atomic>
 #include <mutex>
 
-#include <cif++/Symmetry.hpp>
+#include <cif++/structure/Symmetry.hpp>
 #include <cif++/utilities.hpp>
 
-#include "SymOpTable_data.hpp"
+#include "./SymOpTable_data.hpp"
 
 namespace mmcif
 {

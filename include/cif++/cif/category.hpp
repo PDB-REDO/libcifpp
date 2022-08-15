@@ -328,13 +328,13 @@ class category
 	bool has_children(row_handle r) const;
 	bool has_parents(row_handle r) const;
 
-	std::vector<row_handle> get_children(row_handle r, category &childCat);
+	std::vector<row_handle> get_children(row_handle r, const category &childCat) const;
 	// std::vector<row_handle> getChildren(row_handle r, const char *childCat);
 
-	std::vector<row_handle> get_parents(row_handle r, category &parentCat);
+	std::vector<row_handle> get_parents(row_handle r, const category &parentCat) const;
 	// std::vector<row_handle> getParents(row_handle r, const char *parentCat);
 
-	std::vector<row_handle> get_linked(row_handle r, category &cat);
+	std::vector<row_handle> get_linked(row_handle r, const category &cat) const;
 	// std::vector<row_handle> getLinked(row_handle r, const char *cat);
 
 	// --------------------------------------------------------------------
@@ -398,7 +398,7 @@ class category
 	/// \brief generate a new, unique ID. Pass it an ID generating function
 	/// based on a sequence number. This function will be called until the
 	/// result is unique in the context of this category
-	std::string get_unique_id(std::function<std::string(int)> generator = cif::cifIdForNumber);
+	std::string get_unique_id(std::function<std::string(int)> generator = cif::cif_id_for_number);
 	std::string get_unique_id(const std::string &prefix)
 	{
 		return get_unique_id([prefix](int nr)
