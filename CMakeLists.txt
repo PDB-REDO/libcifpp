@@ -156,16 +156,13 @@ try_run(STD_REGEX_RUNNING STD_REGEX_COMPILING
 if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 	message(WARNING "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
 
-	set(NEED_BOOST_REGEX ON)
+	set(BOOST_REGEX_STANDALONE ON)
+	add_subdirectory(regex)
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
-
-if(NEED_BOOST_REGEX)
-	find_package(Boost 1.70.0 REQUIRED COMPONENTS system regex)
-endif()
 
 find_package(gxrio REQUIRED)
 
@@ -215,15 +212,16 @@ set(project_sources
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2Cif.cpp
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2CifRemark3.cpp
 
-	${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
-	${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
+	# ${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
+	# ${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Compound.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Secondary.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Structure.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Symmetry.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/TlsParser.cpp
 	${PROJECT_SOURCE_DIR}/src/utilities.cpp
-	${PROJECT_SOURCE_DIR}/src/point.cpp
+
+	# ${PROJECT_SOURCE_DIR}/src/point.cpp
 )
 
 set(project_headers
@@ -258,24 +256,21 @@ set(project_headers
 )
 
 add_library(cifpp ${project_sources} ${project_headers} ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp)
+add_library(cifpp::cifpp ALIAS cifpp)
+
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-if(NEED_BOOST_REGEX)
-	target_compile_definitions(cifpp PUBLIC USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
-endif()
+# if(NEED_BOOST_REGEX)
+target_compile_definitions(cifpp PUBLIC USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
 
+# endif()
 target_include_directories(cifpp
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_include_directories(cifpp
-	PRIVATE
-	${CMAKE_BINARY_DIR}
-)
-
-target_link_libraries(cifpp PUBLIC Threads::Threads Boost::regex gxrio::gxrio ${CIFPP_REQUIRED_LIBRARIES})
+target_link_libraries(cifpp PUBLIC Threads::Threads gxrio::gxrio ${CIFPP_REQUIRED_LIBRARIES} PRIVATE Boost::regex)
 
 # target_link_libraries(cifpp PRIVATE)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -416,7 +411,7 @@ if(CIFPP_BUILD_TESTS)
 
 	list(APPEND CIFPP_tests
 
-		pdb2cif
+		# pdb2cif
 		# rename-compound
 		# structure
 		# sugar
@@ -429,12 +424,7 @@ if(CIFPP_BUILD_TESTS)
 
 		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
-		target_include_directories(${CIFPP_TEST} PRIVATE
-			${CMAKE_CURRENT_SOURCE_DIR}/include
-			${CMAKE_CURRENT_BINARY_DIR} # for config.h
-		)
-
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp)
 
 		if(CIFPP_USE_RSRC)
 			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)

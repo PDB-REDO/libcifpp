@@ -38,7 +38,7 @@
 
 #include <filesystem>
 
-#include <zstream/zstream.hpp>
+#include <gxrio.hpp>
 
 #include <boost/logic/tribool.hpp>
 
@@ -3448,7 +3448,7 @@ void File::load(const std::filesystem::path &p)
 {
 	fs::path path(p);
 
-	zstream::ifstream in(p);
+	gxrio::ifstream in(p);
 
 	try
 	{
@@ -3464,7 +3464,7 @@ void File::load(const std::filesystem::path &p)
 
 void File::save(const std::filesystem::path &p)
 {
-	zstream::ofstream outFile(p);
+	gxrio::ofstream outFile(p);
 	save(outFile);
 }
 
@@ -3505,7 +3505,7 @@ void File::load(const char *data, std::size_t length)
 		membuf(char *data, size_t length) { this->setg(data, data, data + length); }
 	} buffer(const_cast<char *>(data), length);
 
-	zstream::istream is(&buffer);
+	gxrio::istream is(&buffer);
 	load(is);
 }
 

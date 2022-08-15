@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <zstream/zstream.hpp>
+#include <gxrio.hpp>
 
 #include <cif++/cif/file.hpp>
 
@@ -132,16 +132,8 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 
 void file::load(const std::filesystem::path &p)
 {
-	if (p.extension() == ".gz")
-	{
-		gzstream::ifstream in(p);
-		load(in);
-	}
-	else
-	{
-		std::ifstream in(p, std::ios::binary);
-		load(in);
-	}
+	gxrio::ifstream in(p);
+	load(in);
 }
 
 void file::load(std::istream &is)
@@ -161,7 +153,7 @@ void file::load(std::istream &is)
 
 void file::save(const std::filesystem::path &p) const
 {
-	zstream::ofstream outFile(p);
+	gxrio::ofstream outFile(p);
 	save(outFile);
 }
 

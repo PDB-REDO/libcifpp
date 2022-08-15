@@ -2,8 +2,7 @@
 
 include(CMakeFindDependencyMacro)
 find_dependency(Threads)
-find_dependency(Boost 1.70.0 REQUIRED COMPONENTS system regex)
-find_dependency(gzstream)
+find_dependency(gxrio)
 
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/cifppTargets.cmake")
 

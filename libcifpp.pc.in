@@ -8,5 +8,5 @@ Name: libcifpp
 Description: C++ library for the manipulation of mmCIF files.
 Version: @PACKAGE_VERSION@
 
-Libs: -L${libdir} -lcifpp -lboost_regex -lz
+Libs: -L${libdir} -lcifpp -lz
 Cflags: -I${includedir} -pthread

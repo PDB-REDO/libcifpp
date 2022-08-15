@@ -31,7 +31,7 @@
 #include <iomanip>
 #include <numeric>
 
-#include <zstream/zstream.hpp>
+#include <gxrio.hpp>
 
 #if __cpp_lib_format
 #include <format>
@@ -1285,7 +1285,7 @@ float Branch::weight() const
 
 void File::load(const std::filesystem::path &path)
 {
-	zstream::ifstream in(path);
+	gxrio::ifstream in(path);
 
 	auto ext = path.extension().string();
 	if (ext == ".gz" or ext = ".xz")
@@ -1304,7 +1304,7 @@ void File::load(const std::filesystem::path &path)
 
 void File::save(const std::filesystem::path &path)
 {
-	zstream::ostream outFile(path);
+	gxrio::ostream outFile(path);
 
 	auto ext = path.extension().string();
 	if (ext == ".gz" or ext = ".xz")
