@@ -163,6 +163,21 @@ class DSSP
 		std::string asym_id() const;
 		int seq_id() const;
 		std::string alt_id() const;
+		std::string compound_id() const;
+
+		std::string auth_asym_id() const;
+		int auth_seq_id() const;
+
+		std::string pdb_strand_id() const;
+		int pdb_seq_num() const;
+		std::string pdb_ins_code() const;
+
+		float alpha() const;
+		float kappa() const;
+		float phi() const;
+		float psi() const;
+		float tco() const;
+		std::tuple<float,float,float> ca_location() const;
 
 		/// \brief return 0 if not a break, ' ' in case of a new chain and '*' in case of a broken chain
 		ChainBreak chainBreak() const;

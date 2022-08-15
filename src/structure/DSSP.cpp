@@ -167,8 +167,13 @@ const float
 
 struct Res
 {
-	Res(int model_nr, const std::vector<cif::row_handle> &atoms)
-		: mChainBreak(ChainBreak::None)
+	Res(int model_nr,
+		std::string_view pdb_strand_id, int pdb_seq_num, std::string_view pdb_ins_code,
+		const std::vector<cif::row_handle> &atoms)
+		: mPDBStrandID(pdb_strand_id)
+		, mPDBSeqNum(pdb_seq_num)
+		, mPDBInsCode(pdb_ins_code)
+		, mChainBreak(ChainBreak::None)
 	{
 		// update the box containing all atoms
 		mBox[0].mX = mBox[0].mY = mBox[0].mZ = std::numeric_limits<float>::max();
@@ -180,15 +185,16 @@ struct Res
 
 		for (auto atom : atoms)
 		{
-			std::string asymID, compID, atomID, type;
+			std::string asymID, compID, atomID, type, authAsymID;
 			std::optional<std::string> altID;
-			int seqID;
+			int seqID, authSeqID;
 			std::optional<int> model;
 			float x, y, z;
 
-			cif::tie(asymID, compID, atomID, altID, type, seqID, model, x, y, z) =
+			cif::tie(asymID, compID, atomID, altID, type, seqID, model, x, y, z, authAsymID, authSeqID) =
 				atom.get("label_asym_id", "label_comp_id", "label_atom_id", "label_alt_id", "type_symbol", "label_seq_id",
-					"pdbx_PDB_model_num", "Cartn_x", "Cartn_y", "Cartn_z");
+					"pdbx_PDB_model_num", "Cartn_x", "Cartn_y", "Cartn_z",
+					"auth_asym_id", "auth_seq_id");
 
 			if (model and model != model_nr)
 				continue;
@@ -198,6 +204,10 @@ struct Res
 				mAsymID = asymID;
 				mCompoundID = compID;
 				mSeqID = seqID;
+
+				mAuthSeqID = authSeqID;
+				mAuthAsymID = authAsymID;
+
 				if (altID)
 					mAltID = *altID;
 			}
@@ -217,7 +227,7 @@ struct Res
 			else if (atomID == "N")
 			{
 				seen |= 4;
-				mN = {x, y, z};
+				mH = mN = {x, y, z};
 				ExtendBox(mN, kRadiusN + 2 * kRadiusWater);
 			}
 			else if (atomID == "O")
@@ -364,6 +374,13 @@ struct Res
 	int mNumber;
 	bool mComplete = false;
 
+	std::string mAuthAsymID;
+	int mAuthSeqID;
+
+	std::string mPDBStrandID;
+	int mPDBSeqNum;
+	std::string mPDBInsCode;
+
 	Point mCAlpha, mC, mN, mO, mH;
 	Point mBox[2] = {};
 	float mRadius;
@@ -371,7 +388,7 @@ struct Res
 	std::vector<Point> mSideChain;
 	double mAccessibility = 0;
 
-	double mKappa = 360, mPhi = 360, mPsi = 360;
+	double mAlpha = 360, mKappa = 360, mPhi = 360, mPsi = 360, mTCO = 0;
 
 	ResidueType mType;
 	uint8_t mSSBridgeNr = 0;
@@ -1211,9 +1228,14 @@ DSSPImpl::DSSPImpl(const cif::datablock &db, int model_nr, int min_poly_proline_
 
 	for (auto r : pdbx_poly_seq_scheme)
 	{
+		std::string pdb_strand_id, pdb_ins_code;
+		int pdb_seq_num;
+
+		cif::tie(pdb_strand_id, pdb_seq_num, pdb_ins_code) = r.get("pdb_strand_id", "pdb_seq_num", "pdb_ins_code");
+
 		ChainBreak brk = ChainBreak::NewChain;
 
-		Res residue(model_nr, pdbx_poly_seq_scheme.get_children(r, atom_site));
+		Res residue(model_nr, pdb_strand_id, pdb_seq_num, pdb_ins_code, pdbx_poly_seq_scheme.get_children(r, atom_site));
 
 		if (not residue.mComplete)
 			continue;
@@ -1283,6 +1305,22 @@ DSSPImpl::DSSPImpl(const cif::datablock &db, int model_nr, int min_poly_proline_
 			auto &next = mResidues[i + 1];
 			if (cur.mSeqID + 1 == next.mSeqID)
 				cur.mPsi = DihedralAngle(cur.mN, cur.mCAlpha, cur.mC, next.mN);
+		}
+
+		if (i >= 1 and i + 2 < mResidues.size())
+		{
+			auto &prev = mResidues[i - 1];
+			auto &next = mResidues[i + 1];
+			auto &nextNext = mResidues[i + 2];
+
+			cur.mAlpha = DihedralAngle(prev.mCAlpha, cur.mCAlpha, next.mCAlpha, nextNext.mCAlpha);
+		}
+
+		if (i > 0)
+		{
+			auto &prev = mResidues[i - 1];
+			if (prev.mSeqID + 1 == cur.mSeqID)
+				cur.mTCO = CosinusAngle(cur.mC, cur.mO, prev.mC, prev.mO);
 		}
 	}
 }
@@ -1396,6 +1434,11 @@ std::string DSSP::ResidueInfo::asym_id() const
 	return mImpl->mAsymID;
 }
 
+std::string DSSP::ResidueInfo::compound_id() const
+{
+	return mImpl->mCompoundID;
+}
+
 int DSSP::ResidueInfo::seq_id() const
 {
 	return mImpl->mSeqID;
@@ -1404,6 +1447,61 @@ int DSSP::ResidueInfo::seq_id() const
 std::string DSSP::ResidueInfo::alt_id() const
 {
 	return mImpl->mAltID;
+}
+
+std::string DSSP::ResidueInfo::auth_asym_id() const
+{
+	return mImpl->mAuthAsymID;
+}
+
+int DSSP::ResidueInfo::auth_seq_id() const
+{
+	return mImpl->mAuthSeqID;
+}
+
+std::string DSSP::ResidueInfo::pdb_strand_id() const
+{
+	return mImpl->mPDBStrandID;
+}
+
+int DSSP::ResidueInfo::pdb_seq_num() const
+{
+	return mImpl->mPDBSeqNum;
+}
+
+std::string DSSP::ResidueInfo::pdb_ins_code() const
+{
+	return mImpl->mPDBInsCode;
+}
+
+float DSSP::ResidueInfo::alpha() const
+{
+	return mImpl->mAlpha;
+}
+
+float DSSP::ResidueInfo::kappa() const
+{
+	return mImpl->mKappa;
+}
+
+float DSSP::ResidueInfo::phi() const
+{
+	return mImpl->mPhi;
+}
+
+float DSSP::ResidueInfo::psi() const
+{
+	return mImpl->mPsi;
+}
+
+float DSSP::ResidueInfo::tco() const
+{
+	return mImpl->mTCO;
+}
+
+std::tuple<float,float,float> DSSP::ResidueInfo::ca_location() const
+{
+	return { mImpl->mCAlpha.mX, mImpl->mCAlpha.mY, mImpl->mCAlpha.mZ };
 }
 
 ChainBreak DSSP::ResidueInfo::chainBreak() const
