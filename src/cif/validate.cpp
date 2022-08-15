@@ -90,7 +90,7 @@ DDL_PrimitiveType map_to_primitive_type(std::string_view s)
 type_validator::type_validator(std::string_view name, DDL_PrimitiveType type, std::string_view rx)
 	: m_name(name)
 	, m_primitive_type(type)
-	, m_rx(new regex_impl(rx))
+	, m_rx(new regex_impl(rx.empty() ? ".+" : rx))	/// Empty regular expressions are not allowed, in libcpp's std::regex (POSIX?)
 {
 }
 
