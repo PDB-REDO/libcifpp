@@ -273,9 +273,14 @@ target_include_directories(cifpp
 )
 
 target_link_libraries(cifpp PUBLIC Threads::Threads gxrio::gxrio ${CIFPP_REQUIRED_LIBRARIES})
+
 if(BOOST_REGEX_STANDALONE)
-	target_link_libraries(cifpp PRIVATE Boost::regex)
+	target_include_directories(cifpp PRIVATE regex/include)
 endif()
+
+# if(BOOST_REGEX_STANDALONE)
+# 	target_link_libraries(cifpp PRIVATE Boost::regex)
+# endif()
 
 # target_link_libraries(cifpp PRIVATE)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
