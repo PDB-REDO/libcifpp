@@ -212,8 +212,6 @@ set(project_sources
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2Cif.cpp
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2CifRemark3.cpp
 
-	${PROJECT_SOURCE_DIR}/src/dssp/DSSP.cpp
-
 	${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
 	${PROJECT_SOURCE_DIR}/src/structure/Compound.cpp
@@ -243,7 +241,6 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/cif/condition.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/cif/category.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/cif/row.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/dssp/DSSP.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/AtomType.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/BondMap.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/TlsParser.hpp
@@ -428,7 +425,6 @@ if(CIFPP_BUILD_TESTS)
 		# structure
 		# sugar
 		# unit
-		dssp
 		unit-v2)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
