@@ -1364,12 +1364,9 @@ DSSP_impl::DSSP_impl(const cif::datablock &db, int model_nr, int min_poly_prolin
 		cur.mNext = &next;
 	}
 
-	for (size_t i = 0; i + 1 < mResidues.size(); ++i)
+	for (size_t i = 0; i < mResidues.size(); ++i)
 	{
 		auto &cur = mResidues[i];
-		auto &next = mResidues[i + 1];
-
-		next.assignHydrogen();
 
 		if (i >= 2 and i + 2 < mResidues.size())
 		{
@@ -1388,8 +1385,13 @@ DSSP_impl::DSSP_impl(const cif::datablock &db, int model_nr, int min_poly_prolin
 			}
 		}
 
-		if (NoChainBreak(cur, next))
-			cur.mPsi = dihedral_angle(cur.mN, cur.mCAlpha, cur.mC, next.mN);
+		if (i + 1 < mResidues.size())
+		{
+			auto &next = mResidues[i + 1];
+			next.assignHydrogen();
+			if (NoChainBreak(cur, next))
+				cur.mPsi = dihedral_angle(cur.mN, cur.mCAlpha, cur.mC, next.mN);
+		}
 
 		if (i > 0)
 		{
@@ -1404,6 +1406,7 @@ DSSP_impl::DSSP_impl(const cif::datablock &db, int model_nr, int min_poly_prolin
 		if (i >= 1 and i + 2 < mResidues.size())
 		{
 			auto &prev = mResidues[i - 1];
+			auto &next = mResidues[i + 1];
 			auto &nextNext = mResidues[i + 2];
 
 			if (NoChainBreak(prev, nextNext))

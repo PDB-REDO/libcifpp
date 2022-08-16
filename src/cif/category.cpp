@@ -1065,8 +1065,20 @@ size_t category::erase(condition &&cond, std::function<void(row_handle)> &&visit
 
 void category::clear()
 {
-	while (m_head != nullptr)
-		erase(begin());
+	auto i = m_head;
+	while (i != nullptr)
+	{
+		auto t = i;
+		i = i->m_next;
+		delete_row(t);
+	}
+
+	m_head = m_tail = nullptr;
+
+	delete m_index;
+
+	if (m_validator != nullptr)
+		m_index = new category_index(this);
 }
 
 void category::erase_orphans(condition &&cond)
