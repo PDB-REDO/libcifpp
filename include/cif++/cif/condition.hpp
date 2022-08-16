@@ -77,7 +77,8 @@ class condition
 		: m_impl(nullptr)
 	{
 	}
-	condition(condition_impl *impl)
+
+	explicit condition(condition_impl *impl)
 		: m_impl(impl)
 	{
 	}
@@ -118,6 +119,7 @@ class condition
 		return m_impl ? m_impl->test(r) : false;
 	}
 
+	explicit operator bool() { return not empty(); }
 	bool empty() const { return m_impl == nullptr; }
 
 	friend condition operator||(condition &&a, condition &&b);

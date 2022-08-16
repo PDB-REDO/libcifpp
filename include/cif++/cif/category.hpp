@@ -381,18 +381,7 @@ class category
 		return insert_impl(cend(), r);
 	}
 
-	void clear()
-	{
-		auto i = m_head;
-		while (i != nullptr)
-		{
-			auto t = i;
-			i = i->m_next;
-			delete_row(t);
-		}
-
-		m_head = m_tail = nullptr;
-	}
+	void clear();
 
 	// --------------------------------------------------------------------
 	/// \brief generate a new, unique ID. Pass it an ID generating function
@@ -497,7 +486,6 @@ class category
 	void update_value(row *row, size_t column, std::string_view value, bool updateLinked, bool validate = true);
 
   private:
-	bool is_orphan(row_handle r) const;
 	void erase_orphans(condition &&cond);
 
 	using allocator_type = std::allocator<void>;
@@ -580,44 +568,9 @@ class category
 		return p;
 	}
 
-	row *clone_row(const row &r)
-	{
-		row *result = create_row();
+	row *clone_row(const row &r);
 
-		try
-		{
-			for (auto i = r.m_head; i != nullptr; i = i->m_next)
-			{
-				item_value *v = create_item(i->m_column_ix, i->text());
-				result->append(v);
-			}
-		}
-		catch (...)
-		{
-			delete_row(result);
-			throw;
-		}
-
-		return result;
-	}
-
-	void delete_row(row *r)
-	{
-		if (r != nullptr)
-		{
-			auto i = r->m_head;
-			while (i != nullptr)
-			{
-				auto t = i;
-				i = i->m_next;
-				delete_item(t);
-			}
-
-			row_allocator_type ra(get_allocator());
-			row_allocator_traits::destroy(ra, r);
-			row_allocator_traits::deallocate(ra, r, 1);
-		}
-	}
+	void delete_row(row *r);
 
 	row_handle create_copy(row_handle r);
 
@@ -648,6 +601,11 @@ class category
 	// proxy methods for every insertion
 	iterator insert_impl(const_iterator pos, row *n);
 	iterator erase_impl(const_iterator pos);
+
+	// --------------------------------------------------------------------
+
+	condition get_parents_condition(row_handle rh, const category &parentCat) const;
+	condition get_children_condition(row_handle rh, const category &childCat) const;
 
 	// --------------------------------------------------------------------
 

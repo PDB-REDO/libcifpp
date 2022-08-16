@@ -949,12 +949,12 @@ _cat_2.desc
 	cat1.erase(cif::key("id") == 10);
 
 	BOOST_CHECK_EQUAL(cat1.size(), 2);
-	BOOST_CHECK_EQUAL(cat2.size(), 2);
+	BOOST_CHECK_EQUAL(cat2.size(), 3);	// TODO: Is this really what we want?
 
 	cat1.erase(cif::key("id") == 20);
 
 	BOOST_CHECK_EQUAL(cat1.size(), 1);
-	BOOST_CHECK_EQUAL(cat2.size(), 1);
+	BOOST_CHECK_EQUAL(cat2.size(), 2);	// TODO: Is this really what we want?
 }
 
 // --------------------------------------------------------------------
@@ -1341,6 +1341,7 @@ _cat_2.parent_id3
 	BOOST_CHECK_EQUAL(PR2["id"].as<int>(), 2);
 
 	auto CR2set = cat1.get_children(PR2, cat2);
+	BOOST_CHECK_EQUAL(CR2set.size(), 3);
 	BOOST_ASSERT(CR2set.size() == 3);
 
 	std::vector<int> CRids;

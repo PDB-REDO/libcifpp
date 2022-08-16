@@ -1537,21 +1537,19 @@ std::string cif2pdbDate(const std::string &d)
 	};
 
 	std::smatch m;
-	std::string result;
+	std::ostringstream os;
 
 	if (std::regex_match(d, m, rx))
 	{
 		int year = std::stoi(m[1].str());
 		int month = std::stoi(m[2].str());
 
-		std::ostringstream os;
-
 		if (m[3].matched)
 			os << std::setw(2) << std::setfill('0') << stoi(m[3].str()) << '-';
-		os << kMonths[month - 1] << std::setw(2) << std::setfill('0') << (year % 100);
+		os << kMonths[month - 1] << '-' << std::setw(2) << std::setfill('0') << (year % 100);
 	}
 
-	return result;
+	return os.str();
 }
 
 std::string cif2pdbAuth(std::string name)
@@ -1616,7 +1614,7 @@ std::string DSSP_impl::GetPDBHEADERLine()
 
 	std::copy(id.begin(), id.end(), header + 62);
 
-	return header;
+	return FixStringLength(header);
 }
 
 std::string DSSP_impl::GetPDBCOMPNDLine()

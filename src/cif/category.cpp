@@ -371,6 +371,8 @@ category_index::entry *category_index::insert(entry *h, row *v)
 
 void category_index::erase(row *k)
 {
+	assert(find(k) == k);
+
 	m_root = erase(m_root, k);
 	if (m_root != nullptr)
 		m_root->m_red = false;
@@ -813,102 +815,12 @@ bool category::is_valid() const
 
 // --------------------------------------------------------------------
 
-bool category::has_children(row_handle r) const
+condition category::get_parents_condition(row_handle rh, const category &parentCat) const
 {
-	assert(m_validator != nullptr);
-	assert(m_cat_validator != nullptr);
+	if (m_validator == nullptr or m_cat_validator == nullptr)
+		throw std::runtime_error("No validator known for category " + m_name);
 
-	bool result = false;
-
-	for (auto &&[childCat, link] : m_child_links)
-	{
-		condition cond;
-
-		for (size_t ix = 0; ix < link->m_parent_keys.size(); ++ix)
-		{
-			std::string_view value = r[link->m_parent_keys[ix]].text();
-
-			// cond = std::move(cond) and (key(link->m_child_keys[ix]) == value or key(link->m_child_keys[ix]) == null);
-			cond = std::move(cond) and (key(link->m_child_keys[ix]) == value);
-		}
-
-		result = not childCat->find(std::move(cond)).empty();
-
-		if (result)
-			break;
-	}
-
-	return result;
-}
-
-bool category::has_parents(row_handle r) const
-{
-	assert(m_validator != nullptr);
-	assert(m_cat_validator != nullptr);
-
-	bool result = false;
-
-	for (auto &&[parentCat, link] : m_parent_links)
-	{
-		condition cond;
-
-		for (size_t ix = 0; ix < link->m_child_keys.size(); ++ix)
-		{
-			std::string_view value = r[link->m_child_keys[ix]].text();
-
-			cond = std::move(cond) and (key(link->m_parent_keys[ix]) == value);
-		}
-
-		result = not parentCat->find(std::move(cond)).empty();
-
-		if (result)
-			break;
-	}
-
-	return result;	
-}
-
-std::vector<row_handle> category::get_children(row_handle r, const category &childCat) const
-{
-	assert(m_validator != nullptr);
-	assert(m_cat_validator != nullptr);
-
-	std::vector<row_handle> result;
-
-	for (auto &link : m_validator->get_links_for_parent(m_name))
-	{
-		if (link->m_child_category != childCat.m_name)
-			continue;
-
-		condition cond;
-
-		for (size_t ix = 0; ix < link->m_parent_keys.size(); ++ix)
-		{
-			if (r[link->m_parent_keys[ix]].empty())
-				cond = std::move(cond) and key(link->m_child_keys[ix]) == null;
-			else
-			{
-				std::string_view value = r[link->m_parent_keys[ix]].text();
-				cond = std::move(cond) and key(link->m_child_keys[ix]) == value;
-			}	
-		}
-
-		for (auto child: childCat.find(std::move(cond)))
-		{
-			if (std::find(result.begin(), result.end(), child) == result.end())
-				result.push_back(child);
-		}
-	}
-
-	return result;	
-}
-
-std::vector<row_handle> category::get_parents(row_handle r, const category &parentCat) const
-{
-	assert(m_validator != nullptr);
-	assert(m_cat_validator != nullptr);
-
-	std::vector<row_handle> result;
+	condition result;
 
 	for (auto &link : m_validator->get_links_for_child(m_name))
 	{
@@ -919,19 +831,121 @@ std::vector<row_handle> category::get_parents(row_handle r, const category &pare
 
 		for (size_t ix = 0; ix < link->m_child_keys.size(); ++ix)
 		{
-			std::string_view value = r[link->m_child_keys[ix]].text();
+			auto childValue = rh[link->m_child_keys[ix]];
 
-			cond = std::move(cond) and (key(link->m_parent_keys[ix]) == value);
+			if (childValue.empty())
+				cond = std::move(cond) and key(link->m_parent_keys[ix]) == null;
+			else
+				cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.text();
 		}
 
-		for (auto parent: parentCat.find(std::move(cond)))
-		{
-			if (std::find(result.begin(), result.end(), parent) == result.end())
-				result.push_back(parent);
-		}
+		if (result)
+			result = std::move(result) or std::move(cond);
+		else
+			result = std::move(cond);
 	}
 
-	return result;	
+	return result;
+}
+
+condition category::get_children_condition(row_handle rh, const category &childCat) const
+{
+	if (m_validator == nullptr or m_cat_validator == nullptr)
+		throw std::runtime_error("No validator known for category " + m_name);
+
+	condition result;
+
+	for (auto &link : m_validator->get_links_for_parent(m_name))
+	{
+		if (link->m_child_category != childCat.m_name)
+			continue;
+
+		condition cond;
+
+		for (size_t ix = 0; ix < link->m_parent_keys.size(); ++ix)
+		{
+			auto childKey = link->m_child_keys[ix];
+			auto parentKey = link->m_parent_keys[ix];
+
+			auto parentValue = rh[parentKey];
+
+			if (parentValue.empty())
+				cond = std::move(cond) and key(childKey) == null;
+			else
+				cond = std::move(cond) and key(childKey) == parentValue.text();
+		}
+
+		if (result)
+			result = std::move(result) or std::move(cond);
+		else
+			result = std::move(cond);
+	}
+
+	return result;
+}
+
+bool category::has_children(row_handle r) const
+{
+	bool result = false;
+
+	for (auto &&[childCat, link] : m_child_links)
+	{
+		if (not childCat->exists(get_children_condition(r, *childCat)))
+			continue;
+
+		result = true;
+		break;
+	}
+
+	return result;
+}
+
+bool category::has_parents(row_handle r) const
+{
+	bool result = false;
+
+	for (auto &&[parentCat, link] : m_parent_links)
+	{
+		if (not parentCat->exists(get_parents_condition(r, *parentCat)))
+			continue;
+
+		result = true;
+		break;
+	}
+
+	return result;
+}
+
+std::vector<row_handle> category::get_children(row_handle r, const category &childCat) const
+{
+	if (m_validator == nullptr or m_cat_validator == nullptr)
+		throw std::runtime_error("No validator known for category " + m_name);
+
+	std::vector<row_handle> result;
+
+	for (auto child : childCat.find(get_children_condition(r, childCat)))
+	{
+		if (std::find(result.begin(), result.end(), child) == result.end())
+			result.push_back(child);
+	}
+
+	return result;
+}
+
+std::vector<row_handle> category::get_parents(row_handle r, const category &parentCat) const
+{
+	assert(m_validator != nullptr);
+	assert(m_cat_validator != nullptr);
+
+	std::vector<row_handle> result;
+
+	for (auto parent : parentCat.find(get_parents_condition(r, parentCat)))
+	{
+		if (std::find(result.begin(), result.end(), parent) == result.end())
+			result.push_back(parent);
+	}
+
+	return result;
 }
 
 std::vector<row_handle> category::get_linked(row_handle r, const category &cat) const
@@ -979,7 +993,7 @@ category::iterator category::erase(iterator pos)
 	}
 
 	// links are created based on the _pdbx_item_linked_group_list entries
-	// in mmcif_pdbx_v50.dic dictionary.
+	// in mmcif_pdbx.dic dictionary.
 	//
 	// For each link group in _pdbx_item_linked_group_list
 	// a std::set of keys from one category is mapped to another.
@@ -989,23 +1003,7 @@ category::iterator category::erase(iterator pos)
 	if (m_validator != nullptr)
 	{
 		for (auto &&[childCat, link] : m_child_links)
-		{
-			condition cond;
-
-			for (size_t ix = 0; ix < link->m_parent_keys.size(); ++ix)
-			{
-				std::string_view value = rh[link->m_parent_keys[ix]].text();
-
-				auto childKey = link->m_child_keys[ix];
-				
-				if (childCat->m_cat_validator and childCat->m_cat_validator->m_mandatory_fields.contains(childKey))
-					cond = std::move(cond) and key(childKey) == value;
-				else
-					cond = std::move(cond) and (key(childKey) == value or key(childKey) == null);
-			}
-
-			childCat->erase_orphans(std::move(cond));
-		}
+			childCat->erase_orphans(get_children_condition(rh, *childCat));
 	}
 
 	delete_row(r);
@@ -1065,36 +1063,10 @@ size_t category::erase(condition &&cond, std::function<void(row_handle)> &&visit
 	return result;
 }
 
-bool category::is_orphan(row_handle r) const
+void category::clear()
 {
-	// be safe
-	if (m_cat_validator == nullptr)
-		return false;
-
-	bool isOrphan = true;
-	for (auto &&[parentCat, link] : m_parent_links)
-	{
-		condition cond;
-		for (size_t ix = 0; ix < link->m_child_keys.size(); ++ix)
-		{
-			std::string_view value = r[link->m_child_keys[ix]].text();
-			cond = std::move(cond) and (key(link->m_parent_keys[ix]) == value);
-		}
-
-		// if (VERBOSE > 2)
-		// 	std::cerr << "Check condition '" << cond << "' in parent category " << link->mParentcategory << " for child cat " << m_name << std::endl;
-
-		if (parentCat->exists(std::move(cond)))
-		{
-			if (VERBOSE > 2)
-				std::cerr << "Not removing because row has a parent in category " << link->m_parent_category << std::endl;
-
-			isOrphan = false;
-			break;
-		}
-	}
-
-	return isOrphan;
+	while (m_head != nullptr)
+		erase(begin());
 }
 
 void category::erase_orphans(condition &&cond)
@@ -1105,7 +1077,7 @@ void category::erase_orphans(condition &&cond)
 
 	for (auto r : *this)
 	{
-		if (cond(r) and is_orphan(r))
+		if (cond(r) and not has_parents(r))
 		{
 			if (VERBOSE > 1)
 				std::cerr << "Removing orphaned record: " << std::endl
@@ -1191,8 +1163,6 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 				std::string pk = linked->m_parent_keys[ix];
 				std::string ck = linked->m_child_keys[ix];
 
-				// TODO: add code to *NOT* test mandatory fields for Empty
-
 				if (pk == tag)
 				{
 					childTag = ck;
@@ -1224,8 +1194,6 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 					std::string pk = linked->m_parent_keys[ix];
 					std::string ck = linked->m_child_keys[ix];
 
-					// TODO: add code to *NOT* test mandatory fields for Empty
-
 					cond_c = std::move(cond_c) && key(pk) == child[ck].text();
 				}
 
@@ -1243,8 +1211,6 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 				{
 					std::string pk = linked->m_parent_keys[ix];
 					std::string ck = linked->m_child_keys[ix];
-
-					// TODO: add code to *NOT* test mandatory fields for Empty
 
 					if (pk == tag)
 						check = std::move(check) && key(ck) == value;
@@ -1273,7 +1239,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 
 			// finally, update the children
 			if (not process.empty())
-				childCat->update_value(std::move(process), childTag, value);
+				childCat->update_value(process, childTag, value);
 		}
 	}
 }
@@ -1408,7 +1374,7 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 			// }
 
 			// Now, suppose there are already rows in child that conform to the new value,
-			// we then skip this renam
+			// we then skip this rename
 
 			condition cond_n;
 
@@ -1416,8 +1382,6 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 			{
 				std::string pk = linked->m_parent_keys[ix];
 				std::string ck = linked->m_child_keys[ix];
-
-				// TODO: add code to *NOT* test mandatory fields for Empty
 
 				if (pk == iv->m_tag)
 					cond_n = std::move(cond_n) and key(ck) == value;
@@ -1427,7 +1391,7 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 					if (pk_value.empty())
 						cond_n = std::move(cond_n) and key(ck) == null;
 					else
-						cond_n = std::move(cond_n) and ((key(ck) == pk_value) or key(ck) == null);
+						cond_n = std::move(cond_n) and key(ck) == pk_value;
 				}
 			}
 
@@ -1443,6 +1407,45 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 			for (auto cr : rows)
 				cr.assign(childTag, value, false);
 		}
+	}
+}
+
+row *category::clone_row(const row &r)
+{
+	row *result = create_row();
+
+	try
+	{
+		for (auto i = r.m_head; i != nullptr; i = i->m_next)
+		{
+			item_value *v = create_item(i->m_column_ix, i->text());
+			result->append(v);
+		}
+	}
+	catch (...)
+	{
+		delete_row(result);
+		throw;
+	}
+
+	return result;
+}
+
+void category::delete_row(row *r)
+{
+	if (r != nullptr)
+	{
+		auto i = r->m_head;
+		while (i != nullptr)
+		{
+			auto t = i;
+			i = i->m_next;
+			delete_item(t);
+		}
+
+		row_allocator_type ra(get_allocator());
+		row_allocator_traits::destroy(ra, r);
+		row_allocator_traits::deallocate(ra, r, 1);
 	}
 }
 
@@ -1564,7 +1567,7 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 
 		return iterator(*this, n);
 	}
-	catch(const std::exception& e)
+	catch (const std::exception &e)
 	{
 		delete_row(n);
 		throw;
@@ -1620,7 +1623,6 @@ category::iterator category::erase_impl(const_iterator pos)
 	// return iterator(*this, cur);
 }
 
-
 namespace detail
 {
 
@@ -1631,7 +1633,7 @@ namespace detail
 			if (offset > 0)
 				os << '\n';
 			os << ';';
-			
+
 			char pc = 0;
 			for (auto ch : value)
 			{
@@ -1640,7 +1642,7 @@ namespace detail
 				os << ch;
 				pc = ch;
 			}
-			
+
 			if (value.back() != '\n')
 				os << '\n';
 			os << ';' << '\n';
@@ -1664,7 +1666,7 @@ namespace detail
 		else
 		{
 			bool done = false;
-			for (char q : {'\'', '"'})
+			for (char q : { '\'', '"' })
 			{
 				auto p = value.find(q); // see if we can use the quote character
 				while (p != std::string::npos and sac_parser::is_non_blank(value[p + 1]) and value[p + 1] != q)
@@ -1704,7 +1706,6 @@ namespace detail
 	}
 
 } // namespace detail
-
 
 std::vector<std::string> category::get_tag_order() const
 {
