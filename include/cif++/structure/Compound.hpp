@@ -46,7 +46,7 @@ class Compound;
 struct CompoundAtom;
 class CompoundFactoryImpl;
 
-/// \brief The bond type as defined in the CCD, possible values taken from the mmcif_pdbx_v50 file
+/// \brief The bond type as defined in the CCD, possible values taken from the mmcif_pdbx file
 enum class BondType
 {
 	sing, // 'single bond'

@@ -43,7 +43,7 @@ fetch_dictionary () {
 
 # fetch the dictionaries
 
-fetch_dictionary "/var/cache/libcifpp/mmcif_pdbx_v50.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
+fetch_dictionary "/var/cache/libcifpp/mmcif_pdbx.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
 fetch_dictionary "/var/cache/libcifpp/components.cif" "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
 
 # this one is not compressed

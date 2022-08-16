@@ -8,7 +8,6 @@ namespace fs = std::filesystem;
 int main()
 {
 	cif::file file;
-	file.load_dictionary("mmcif_pdbx_v50");
 	file.load("1cbs.cif.gz");
 
 	auto& db = file.front();

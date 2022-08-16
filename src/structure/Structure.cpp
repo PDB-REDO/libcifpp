@@ -1297,7 +1297,7 @@ void File::load(const std::filesystem::path &path)
 		cif::File::load(in);
 
 	// validate, otherwise lots of functionality won't work
-	loadDictionary("mmcif_pdbx_v50");
+	loadDictionary("mmcif_pdbx");
 	if (not isValid() and cif::VERBOSE >= 0)
 		std::cerr << "Invalid mmCIF file" << (cif::VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
 }

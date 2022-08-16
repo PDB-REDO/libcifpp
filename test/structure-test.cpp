@@ -61,7 +61,7 @@ bool init_unit_test()
 		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
 
 	// do this now, avoids the need for installing
-	cif::add_file_resource("mmcif_pdbx_v50.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
+	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
 
 	// initialize CCD location
 	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(create_nonpoly_1)
     cif::VERBOSE = 1;
 
 	mmcif::File file;
-	file.loadDictionary("mmcif_pdbx_v50.dic");
+	file.loadDictionary("mmcif_pdbx.dic");
 	file.emplace("TEST");	// create a datablock
 	
 	mmcif::Structure structure(file);
@@ -180,7 +180,7 @@ _struct_asym.details                       ?
 #
 )"_cf;
 
-	expected.loadDictionary("mmcif_pdbx_v50.dic");
+	expected.loadDictionary("mmcif_pdbx.dic");
 
 	if (not (expected.firstDatablock() == structure.datablock()))
 	{
@@ -280,7 +280,7 @@ _struct_asym.details                       ?
 #
 )"_cf;
 
-	data.loadDictionary("mmcif_pdbx_v50.dic");
+	data.loadDictionary("mmcif_pdbx.dic");
 
 	mmcif::Structure s(data);
 

@@ -67,7 +67,7 @@ bool init_unit_test()
 		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
 
 	// do this now, avoids the need for installing
-	cif::add_file_resource("mmcif_pdbx_v50.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
+	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
 
 	// initialize CCD location
 	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
@@ -295,7 +295,6 @@ save__cat_2.desc
 	cif::Validator validator("test", is_dict);
 
 	cif::File f;
-	f.setValidator(&validator);
 
 	// --------------------------------------------------------------------
 
@@ -327,6 +326,7 @@ _cat_2.desc
 
 	std::istream is_data(&data_buffer);
 	f.load(is_data);
+	f.setValidator(&validator);
 
 	auto &cat1 = f.firstDatablock()["cat_1"];
 	auto &cat2 = f.firstDatablock()["cat_2"];

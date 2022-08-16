@@ -1798,7 +1798,7 @@ auto Category::erase(iterator pos) -> iterator
 	}
 
 	// links are created based on the _pdbx_item_linked_group_list entries
-	// in mmcif_pdbx_v50.dic dictionary.
+	// in mmcif_pdbx.dic dictionary.
 	//
 	// For each link group in _pdbx_item_linked_group_list
 	// a std::set of keys from one category is mapped to another.

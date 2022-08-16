@@ -6055,9 +6055,10 @@ void ReadPDBFile(std::istream &pdbFile, cif::File &cifFile)
 {
 	PDBFileParser p;
 
-	cifFile.loadDictionary("mmcif_pdbx_v50");
-
 	p.Parse(pdbFile, cifFile);
+
+	cifFile.loadDictionary("mmcif_pdbx");
+
 
 	if (not cifFile.isValid() and cif::VERBOSE >= 0)
 		std::cerr << "Resulting mmCIF file is not valid!" << std::endl;

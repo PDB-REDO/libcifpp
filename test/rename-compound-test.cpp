@@ -19,8 +19,8 @@ int main(int argc, char* argv[])
 		if (std::filesystem::exists(testdir / ".." / "data" / "ccd-subset.cif"))
 			cif::add_file_resource("components.cif", testdir / ".." / "data" / "ccd-subset.cif");
 
-		if (std::filesystem::exists(testdir / ".." / "rsrc" / "mmcif_pdbx_v50.dic"))
-			cif::add_file_resource("mmcif_pdbx_v50.dic", testdir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
+		if (std::filesystem::exists(testdir / ".." / "rsrc" / "mmcif_pdbx.dic"))
+			cif::add_file_resource("mmcif_pdbx.dic", testdir / ".." / "rsrc" / "mmcif_pdbx.dic");
 
 		mmcif::CompoundFactory::instance().pushDictionary(testdir / "REA.cif");
 		mmcif::CompoundFactory::instance().pushDictionary(testdir / "RXA.cif");

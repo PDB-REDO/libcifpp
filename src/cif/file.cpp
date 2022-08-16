@@ -61,7 +61,8 @@ bool file::is_valid()
 		load_dictionary();
 	}
 
-	bool result = true;
+	bool result = not empty();
+
 	for (auto &d : *this)
 		result = d.is_valid() and result;
 
@@ -76,9 +77,10 @@ void file::load_dictionary()
 		if (audit_conform and not audit_conform->empty())
 		{
 			std::string name;
-			cif::tie(name) = audit_conform->front().get("name");
+			cif::tie(name) = audit_conform->front().get("dict_name");
 
-			load_dictionary(name);
+			if (not name.empty())
+				load_dictionary(name);
 		}
 	}
 
@@ -158,10 +160,9 @@ void file::load(std::istream &is)
 	p.parse_file();
 
 	if (saved != nullptr)
-	{
 		set_validator(saved);
-		(void)is_valid();
-	}
+	else
+		load_dictionary();
 }
 
 void file::save(const std::filesystem::path &p) const

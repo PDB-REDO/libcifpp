@@ -362,7 +362,7 @@ install(
 
 install(FILES
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
 	${COMPONENTS_CIF}
 	DESTINATION ${SHARE_INSTALL_DIR}
 )
@@ -435,7 +435,7 @@ if(CIFPP_BUILD_TESTS)
 		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
 
 		if(CIFPP_USE_RSRC)
-			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx_v50.dic)
+			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx.dic)
 		endif()
 
 		if(MSVC)

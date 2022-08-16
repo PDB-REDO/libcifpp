@@ -64,7 +64,7 @@ bool init_unit_test()
 		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
 
 	// do this now, avoids the need for installing
-	cif::add_file_resource("mmcif_pdbx_v50.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx_v50.dic");
+	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
 
 	// initialize CCD location
 	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
@@ -76,12 +76,9 @@ bool init_unit_test()
 
 BOOST_AUTO_TEST_CASE(dssp_1)
 {
-	// using namespace mmcif;
-
 	cif::file f(gTestDir / "1cbs.cif");
-	f.load_dictionary("mmcif_pdbx_v50");
 
-	BOOST_CHECK(f.is_valid());
+	BOOST_ASSERT(f.is_valid());
 
 	std::ifstream t(gTestDir / "1cbs-dssp-test.tsv");
 
