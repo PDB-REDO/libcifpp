@@ -24,43 +24,40 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Calculate DSSP-like secondary structure information
+/// \file DSSP.hpp
+/// Calculate DSSP-like secondary structure information.
 
 #pragma once
 
 #include <cif++/cif.hpp>
 
-namespace mmcif
+namespace dssp
 {
 
-struct Res;
+struct residue;
 
-extern const float
-	kCouplingConstant,
-	kMinHBondEnergy, kMaxHBondEnergy;
-
-enum SecondaryStructureType : char
+enum class structure_type : char
 {
-	ssLoop = ' ',
-	ssAlphahelix = 'H',
-	ssBetabridge = 'B',
-	ssStrand = 'E',
-	ssHelix_3 = 'G',
-	ssHelix_5 = 'I',
-	ssHelix_PPII = 'P',
-	ssTurn = 'T',
-	ssBend = 'S'
+	Loop = ' ',
+	Alphahelix = 'H',
+	Betabridge = 'B',
+	Strand = 'E',
+	Helix_3 = 'G',
+	Helix_5 = 'I',
+	Helix_PPII = 'P',
+	Turn = 'T',
+	Bend = 'S'
 };
 
-enum class HelixType
+enum class helix_type
 {
-	rh_3_10,
-	rh_alpha,
-	rh_pi,
-	rh_pp
+	_3_10,
+	alpha,
+	pi,
+	pp
 };
 
-enum class Helix
+enum class helix_position_type
 {
 	None,
 	Start,
@@ -69,49 +66,30 @@ enum class Helix
 	Middle
 };
 
-// struct HBond
-//{
-//	std::string 				labelAsymID;
-//	int							labelSeqID;
-//	double						energy;
-// };
-//
-// struct BridgePartner
-//{
-//	std::string					labelAsymID;
-//	int							labelSeqID;
-//	int							ladder;
-//	bool						parallel;
-// };
-
-struct SecondaryStructure
-{
-	SecondaryStructureType type;
-	//	HBond						donor[2], acceptor[2];
-	//	BridgePartner				beta[2];
-	//	int							sheet;
-	//	bool						bend;
-};
-
-// void CalculateSecondaryStructure(Structure& s);
-
 const size_t
 	kHistogramSize = 30;
 
-struct DSSP_Statistics
+struct statistics
 {
-	uint32_t nrOfResidues, nrOfChains, nrOfSSBridges, nrOfIntraChainSSBridges, nrOfHBonds;
-	uint32_t nrOfHBondsInAntiparallelBridges, nrOfHBondsInParallelBridges;
-	uint32_t nrOfHBondsPerDistance[11] = {};
-	double accessibleSurface = 0;
+	struct
+	{
+		uint32_t residues, chains, SS_bridges, intra_chain_SS_bridges, H_bonds;
+		uint32_t H_bonds_in_antiparallel_bridges, H_bonds_in_parallel_bridges;
+		uint32_t H_Bonds_per_distance[11];
+	} count;
 
-	uint32_t residuesPerAlphaHelixHistogram[kHistogramSize] = {};
-	uint32_t parallelBridgesPerLadderHistogram[kHistogramSize] = {};
-	uint32_t antiparallelBridgesPerLadderHistogram[kHistogramSize] = {};
-	uint32_t laddersPerSheetHistogram[kHistogramSize] = {};
+	double accessible_surface;
+
+	struct
+	{
+		uint32_t residues_per_alpha_helix[kHistogramSize];
+		uint32_t parallel_bridges_per_ladder[kHistogramSize];
+		uint32_t antiparallel_bridges_per_ladder[kHistogramSize];
+		uint32_t ladders_per_sheet[kHistogramSize];
+	} histogram;
 };
 
-enum class ChainBreak
+enum class chain_break_type
 {
 	None,
 	NewChain,
@@ -127,38 +105,22 @@ class DSSP
 	DSSP(const DSSP &) = delete;
 	DSSP &operator=(const DSSP &) = delete;
 
-	SecondaryStructureType operator()(const std::string &inAsymID, int inSeqID) const;
-	double accessibility(const std::string &inAsymID, int inSeqID) const;
-	bool isAlphaHelixEndBeforeStart(const std::string &inAsymID, int inSeqID) const;
-
-	DSSP_Statistics GetStatistics() const;
+	statistics get_statistics() const;
 
 	class iterator;
-	using res_iterator = typename std::vector<Res>::iterator;
+	using res_iterator = typename std::vector<residue>::iterator;
 
-	class ResidueInfo
+	class residue_info
 	{
 	  public:
 		friend class iterator;
 
-		ResidueInfo()
-			: mImpl(nullptr)
-		{
-		}
-
-		ResidueInfo(const ResidueInfo &rhs)
-			: mImpl(rhs.mImpl)
-		{
-		}
-
-		ResidueInfo &operator=(const ResidueInfo &rhs)
-		{
-			mImpl = rhs.mImpl;
-			return *this;
-		}
+		residue_info() = default;
+		residue_info(const residue_info &rhs) = default;
+		residue_info &operator=(const residue_info &rhs) = default;
 
 		explicit operator bool() const { return not empty(); }
-		bool empty() const { return mImpl == nullptr; }
+		bool empty() const { return m_impl == nullptr; }
 
 		std::string asym_id() const;
 		int seq_id() const;
@@ -177,66 +139,67 @@ class DSSP
 		float phi() const;
 		float psi() const;
 		float tco() const;
-		std::tuple<float,float,float> ca_location() const;
+		std::tuple<float, float, float> ca_location() const;
 
-		/// \brief return 0 if not a break, ' ' in case of a new chain and '*' in case of a broken chain
-		ChainBreak chainBreak() const;
+		chain_break_type chain_break() const;
 
 		/// \brief the internal number in DSSP
 		int nr() const;
 
-		SecondaryStructureType ss() const;
+		structure_type type() const;
 
 		int ssBridgeNr() const;
 
-		Helix helix(HelixType helixType) const;
+		helix_position_type helix(helix_type helixType) const;
+
+		bool is_alpha_helix_end_before_start() const;
 
 		bool bend() const;
 
 		double accessibility() const;
 
 		/// \brief returns resinfo, ladder and parallel
-		std::tuple<ResidueInfo, int, bool> bridgePartner(int i) const;
+		std::tuple<residue_info, int, bool> bridge_partner(int i) const;
 
 		int sheet() const;
 
 		/// \brief return resinfo and the energy of the bond
-		std::tuple<ResidueInfo, double> acceptor(int i) const;
-		std::tuple<ResidueInfo, double> donor(int i) const;
+		std::tuple<residue_info, double> acceptor(int i) const;
+		std::tuple<residue_info, double> donor(int i) const;
 
 		/// \brief Simple compare equals
-		bool operator==(const ResidueInfo &rhs) const
+		bool operator==(const residue_info &rhs) const
 		{
-			return mImpl == rhs.mImpl;
+			return m_impl == rhs.m_impl;
 		}
 
 		/// \brief Returns \result true if there is a bond between two residues
-		friend bool TestBond(ResidueInfo const &a, ResidueInfo const &b);
+		friend bool test_bond(residue_info const &a, residue_info const &b);
 
 	  private:
-		ResidueInfo(Res *res)
-			: mImpl(res)
+		residue_info(residue *res)
+			: m_impl(res)
 		{
 		}
 
-		Res *mImpl;
+		residue *m_impl = nullptr;
 	};
 
 	class iterator
 	{
 	  public:
 		using iterator_category = std::bidirectional_iterator_tag;
-		using value_type = ResidueInfo;
+		using value_type = residue_info;
 		using difference_type = std::ptrdiff_t;
 		using pointer = value_type *;
 		using reference = value_type &;
 
-		iterator(const iterator &i);
-		iterator(Res *res);
-		iterator &operator=(const iterator &i);
+		iterator(const iterator &i) = default;
+		iterator(residue *res);
+		iterator &operator=(const iterator &i) = default;
 
-		reference operator*() { return mCurrent; }
-		pointer operator->() { return &mCurrent; }
+		reference operator*() { return m_current; }
+		pointer operator->() { return &m_current; }
 
 		iterator &operator++();
 		iterator operator++(int)
@@ -254,20 +217,33 @@ class DSSP
 			return tmp;
 		}
 
-		bool operator==(const iterator &rhs) const { return mCurrent.mImpl == rhs.mCurrent.mImpl; }
-		bool operator!=(const iterator &rhs) const { return mCurrent.mImpl != rhs.mCurrent.mImpl; }
+		bool operator==(const iterator &rhs) const { return m_current.m_impl == rhs.m_current.m_impl; }
+		bool operator!=(const iterator &rhs) const { return m_current.m_impl != rhs.m_current.m_impl; }
 
 	  private:
-		ResidueInfo mCurrent;
+		residue_info m_current;
 	};
+
+	using value_type = residue_info;
+
+	// To access residue info by key, i.e. LabelAsymID and LabelSeqID
+	using key_type = std::tuple<std::string,int>;
 
 	iterator begin() const;
 	iterator end() const;
 
+	residue_info operator[](const key_type &key) const;
+
 	bool empty() const { return begin() == end(); }
 
+	// convenience method, when creating old style DSSP files
+
+	enum class pdb_record_type { HEADER, COMPND, SOURCE, AUTHOR };
+
+	std::string get_pdb_header_line(pdb_record_type pdb_record) const;
+
   private:
-	struct DSSPImpl *mImpl;
+	struct DSSP_impl *m_impl;
 };
 
-} // namespace mmcif
+} // namespace dssp

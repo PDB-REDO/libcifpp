@@ -31,7 +31,7 @@
 #include <stdexcept>
 
 #include <cif++/cif.hpp>
-#include <cif++/structure/DSSP.hpp>
+#include <cif++/dssp/DSSP.hpp>
 
 namespace tt = boost::test_tools;
 
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(dssp_1)
 
 	std::ifstream t(gTestDir / "1cbs-dssp-test.tsv");
 
-	mmcif::DSSP dssp(f.front(), 1, 3, true);
+	dssp::DSSP dssp(f.front(), 1, 3, true);
 
 	for (auto residue : dssp)
 	{
@@ -109,6 +109,6 @@ BOOST_AUTO_TEST_CASE(dssp_1)
 
 		BOOST_CHECK_EQUAL(residue.asym_id(), asymID);
 		BOOST_CHECK_EQUAL(residue.seq_id(), seqID);
-		BOOST_CHECK_EQUAL((char)residue.ss(), secstr.front());
+		BOOST_CHECK_EQUAL((char)residue.type(), secstr.front());
 	}
 }

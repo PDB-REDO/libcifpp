@@ -212,10 +212,11 @@ set(project_sources
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2Cif.cpp
 	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2CifRemark3.cpp
 
+	${PROJECT_SOURCE_DIR}/src/dssp/DSSP.cpp
+
 	${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
 	${PROJECT_SOURCE_DIR}/src/structure/Compound.cpp
-	${PROJECT_SOURCE_DIR}/src/structure/DSSP.cpp
 	# ${PROJECT_SOURCE_DIR}/src/structure/Structure.cpp
 	${PROJECT_SOURCE_DIR}/src/structure/Symmetry.cpp
 	${PROJECT_SOURCE_DIR}/src/structure/TlsParser.cpp
@@ -242,12 +243,12 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/cif/condition.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/cif/category.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/cif/row.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/dssp/DSSP.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/AtomType.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/BondMap.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/TlsParser.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/Symmetry.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/Structure.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/structure/DSSP.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/structure/Compound.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/PDB2Cif.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/PDB2CifRemark3.hpp
