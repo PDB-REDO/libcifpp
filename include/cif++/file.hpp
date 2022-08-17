@@ -51,6 +51,20 @@ class file : public std::list<datablock>
 		load(is);
 	}
 
+	explicit file(const char *data, size_t length)
+	{
+		struct membuf : public std::streambuf
+		{
+			membuf(char *text, size_t length)
+			{
+				this->setg(text, text, text + length);
+			}
+		} buffer(const_cast<char *>(data), length);
+
+		std::istream is(&buffer);
+		load(is);
+	}
+
 	file(const file &) = default;
 	file(file &&) = default;
 	file &operator=(const file &) = default;

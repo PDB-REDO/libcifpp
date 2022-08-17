@@ -234,6 +234,15 @@ struct item_handle
 		return item_value_as<T>::compare(*this, value, true) == 0;
 	}
 
+	// We may not have C++20 yet...
+
+	template <typename T>
+	bool operator!=(const T &value) const
+	{
+		// TODO: icase or not icase?
+		return item_value_as<T>::compare(*this, value, true) != 0;
+	}
+
 	// empty means either null or unknown
 	bool empty() const
 	{
