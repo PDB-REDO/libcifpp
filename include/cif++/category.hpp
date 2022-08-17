@@ -329,13 +329,8 @@ class category
 	bool has_parents(row_handle r) const;
 
 	std::vector<row_handle> get_children(row_handle r, const category &childCat) const;
-	// std::vector<row_handle> getChildren(row_handle r, const char *childCat);
-
 	std::vector<row_handle> get_parents(row_handle r, const category &parentCat) const;
-	// std::vector<row_handle> getParents(row_handle r, const char *parentCat);
-
 	std::vector<row_handle> get_linked(row_handle r, const category &cat) const;
-	// std::vector<row_handle> getLinked(row_handle r, const char *cat);
 
 	// --------------------------------------------------------------------
 
@@ -464,6 +459,10 @@ class category
 
 		return result;
 	}
+
+	// --------------------------------------------------------------------
+	
+	void reorder_by_index();
 
 	// --------------------------------------------------------------------
 

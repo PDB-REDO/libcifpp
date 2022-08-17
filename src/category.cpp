@@ -1638,6 +1638,12 @@ category::iterator category::erase_impl(const_iterator pos)
 	// return iterator(*this, cur);
 }
 
+void category::reorder_by_index()
+{
+	if (m_index)
+		std::tie(m_head, m_tail) = m_index->reorder();
+}
+
 namespace detail
 {
 

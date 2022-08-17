@@ -2264,3 +2264,119 @@ BOOST_AUTO_TEST_CASE(replace_all_test)
 	BOOST_CHECK_EQUAL(s, "aap, noot, mies");
 }
 
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(reorder_test)
+{
+
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+    _item_type_list.detail
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+;              code item types/single words ...
+;
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+;              text item types / multi-line text ...
+;
+               int       numb
+               '[+-]?[0-9]+'
+;              int item types are the subset of numbers that are the negative
+               or positive integers.
+;
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           code
+    save_
+
+save__cat_1.name
+    _item.name                '_cat_1.name'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           text
+    save_
+    )";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::parse_dictionary("test", is_dict);
+
+	cif::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.name
+2 Noot
+1 Aap
+3 Mies
+    )";
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	BOOST_ASSERT(f.is_valid());
+
+	auto &cat1 = f.front()["cat_1"];
+	cat1.reorder_by_index();
+
+	int n = 1;
+
+	const char *ts[] = {"Aap", "Noot", "Mies"};
+
+	for (const auto &[id, name] : cat1.rows<int,std::string>("id", "name"))
+	{
+		BOOST_CHECK_EQUAL(id, n);
+		BOOST_CHECK_EQUAL(name, ts[n - 1]);
+		++n;
+	}
+}
