@@ -34,9 +34,14 @@
 #include <memory>
 #include <optional>
 
+#include <cif++/forward_decl.hpp>
 #include <cif++/text.hpp>
 
-#include <cif++/forward_decl.hpp>
+/// \file item.hpp
+/// This file contains the declaration of \class item but
+/// also the \class item_value and \class item_handle
+/// These handle the storage of and access to the data
+/// for a single data field. 
 
 namespace cif
 {
@@ -45,12 +50,15 @@ extern int VERBOSE;
 
 // --------------------------------------------------------------------
 /// \brief item is a transient class that is used to pass data into rows
-///        but it also takes care of formatting data
+///        but it also takes care of formatting data. 
 class item
 {
   public:
+	/// \brief Default constructor, empty item
 	item() = default;
 
+	/// \brief constructor for an item with name \a name and as
+	/// content a single character string with content \a value
 	item(std::string_view name, char value)
 		: m_name(name)
 		, m_value(m_buffer, 1)
@@ -59,6 +67,9 @@ class item
 		m_buffer[1] = 0;
 	}
 
+	/// \brief constructor for an item with name \a name and as
+	/// content a the formatted floating point value \a value with
+	/// precision \a precision
 	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 	item(std::string_view name, const T &value, int precision)
 		: m_name(name)
@@ -72,6 +83,9 @@ class item
 		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
 	}
 
+	/// \brief constructor for an item with name \a name and as
+	/// content a formatted floating point value \a value with
+	/// so-called general formatting
 	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
@@ -85,6 +99,8 @@ class item
 		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
 	}
 
+	/// \brief constructor for an item with name \a name and as
+	/// content a the formatted integral value \a value
 	template <typename T, std::enable_if_t<std::is_integral_v<T>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
@@ -98,6 +114,8 @@ class item
 		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
 	}
 
+	/// \brief constructor for an item with name \a name and as
+	/// content value \a value
 	item(const std::string_view name, const std::string_view value)
 		: m_name(name)
 		, m_value(value)
@@ -115,7 +133,8 @@ class item
 	std::string_view name() const { return m_name; }
 	std::string_view value() const { return m_value; }
 
-	void value(const std::string &v) { m_value = v; }
+	/// \brief replace the content of the stored value with \a v
+	void value(std::string_view v) { m_value = v; }
 
 	/// \brief empty means either null or unknown
 	bool empty() const { return m_value.empty(); }
@@ -126,8 +145,8 @@ class item
 	/// \brief returns true if the field contains '?'
 	bool is_unknown() const { return m_value == "?"; }
 
+	/// \brief the length of the value string
 	size_t length() const { return m_value.length(); }
-	// const char *c_str() const { return m_value.c_str(); }
 
   private:
 	std::string_view m_name;
@@ -145,6 +164,7 @@ class item
 
 struct item_value
 {
+	/// \brief constructor
 	item_value(uint16_t column_ix, uint16_t length)
 		: m_next(nullptr)
 		, m_column_ix(column_ix)
@@ -167,14 +187,11 @@ struct item_value
 
 	static constexpr size_t kBufferSize = sizeof(m_local_data);
 
+	// By using std::string_view instead of c_str we obain a
+	// nice performance gain since we avoid many calls to strlen.
 	std::string_view text() const
 	{
-		return {m_length >= kBufferSize ? m_data : m_local_data, m_length};
-	}
-
-	const char *c_str() const
-	{
-		return m_length >= kBufferSize ? m_data : m_local_data;
+		return { m_length >= kBufferSize ? m_data : m_local_data, m_length };
 	}
 };
 
@@ -182,6 +199,9 @@ static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes")
 
 // --------------------------------------------------------------------
 // Transient object to access stored data
+
+/// \brief This is \class item_handle, it is used to access
+/// the data stored in \class item_value.
 
 struct item_handle
 {
@@ -193,7 +213,7 @@ struct item_handle
 	template <typename T>
 	item_handle &operator=(const T &value)
 	{
-		item v{"", value};
+		item v{ "", value };
 		assign_value(v);
 		return *this;
 	}
@@ -266,17 +286,6 @@ struct item_handle
 		return txt.length() == 1 and txt.front() == '?';
 	}
 
-	// const char *c_str() const
-	// {
-	// 	for (auto iv = m_row_handle.m_head; iv != nullptr; iv = iv->m_next)
-	// 	{
-	// 		if (iv->m_column_ix == m_column)
-	// 			return iv->m_text;
-	// 	}
-
-	// 	return s_empty_result;
-	// }
-
 	std::string_view text() const;
 
 	// bool operator!=(const std::string &s) const { return s != c_str(); }
@@ -293,8 +302,6 @@ struct item_handle
 	row_handle &m_row_handle;
 
 	void assign_value(const item &value);
-
-	static constexpr const char *s_empty_result = "";
 };
 
 // So sad that the gcc implementation of from_chars does not support floats yet...
@@ -465,7 +472,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::str
 	{
 		if (ref.empty())
 			return {};
-		return {ref.text().data(), ref.text().size()};
+		return { ref.text().data(), ref.text().size() };
 	}
 
 	static int compare(const item_handle &ref, const std::string &value, bool icase)

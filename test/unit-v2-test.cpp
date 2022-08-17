@@ -31,8 +31,8 @@
 
 #include <cif++.hpp>
 
-#include <cif++/parser.hpp>
 #include <cif++/dictionary_parser.hpp>
+#include <cif++/parser.hpp>
 
 namespace tt = boost::test_tools;
 
@@ -78,23 +78,23 @@ bool init_unit_test()
 BOOST_AUTO_TEST_CASE(cc_1)
 {
 	std::tuple<std::string_view, float, char> tests[] = {
-		{"1.0", 1.0, 0},
-		{"1.0e10", 1.0e10, 0},
-		{"-1.1e10", -1.1e10, 0},
-		{"-.2e11", -.2e11, 0},
-		{"1.3e-10", 1.3e-10, 0},
+		{ "1.0", 1.0, 0 },
+		{ "1.0e10", 1.0e10, 0 },
+		{ "-1.1e10", -1.1e10, 0 },
+		{ "-.2e11", -.2e11, 0 },
+		{ "1.3e-10", 1.3e-10, 0 },
 
-		{"1.0 ", 1.0, ' '},
-		{"1.0e10 ", 1.0e10, ' '},
-		{"-1.1e10 ", -1.1e10, ' '},
-		{"-.2e11 ", -.2e11, ' '},
-		{"1.3e-10 ", 1.3e-10, ' '},
+		{ "1.0 ", 1.0, ' ' },
+		{ "1.0e10 ", 1.0e10, ' ' },
+		{ "-1.1e10 ", -1.1e10, ' ' },
+		{ "-.2e11 ", -.2e11, ' ' },
+		{ "1.3e-10 ", 1.3e-10, ' ' },
 
-		{"3.0", 3.0, 0},
-		{"3.0 ", 3.0, ' '},
+		{ "3.0", 3.0, 0 },
+		{ "3.0 ", 3.0, ' ' },
 
-		{"3.000000", 3.0, 0},
-		{"3.000000 ", 3.0, ' '},
+		{ "3.000000", 3.0, 0 },
+		{ "3.000000 ", 3.0, ' ' },
 	};
 
 	for (const auto &[txt, val, ch] : tests)
@@ -157,9 +157,9 @@ BOOST_AUTO_TEST_CASE(r_1)
 {
 	cif::category c("foo");
 	c.emplace({
-		{"f-1", 1},
-		{"f-2", "two"},
-		{"f-3", 3.0, 3},
+		{ "f-1", 1 },
+		{ "f-2", "two" },
+		{ "f-3", 3.0, 3 },
 	});
 
 	auto row = c.front();
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(r_1)
 	BOOST_CHECK_EQUAL(row["f-2"].compare("two"), 0);
 	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0); // This fails when running in valgrind... sigh
 
-	const auto &[f1, f2, f3] = row.get<int,std::string,float>("f-1", "f-2", "f-3");
+	const auto &[f1, f2, f3] = row.get<int, std::string, float>("f-1", "f-2", "f-3");
 
 	BOOST_CHECK_EQUAL(f1, 1);
 	BOOST_CHECK_EQUAL(f2, "two");
@@ -194,8 +194,8 @@ BOOST_AUTO_TEST_CASE(r_2)
 
 	for (size_t i = 1; i < 256; ++i)
 	{
-		c.emplace({{"id", i},
-			{"txt", std::string(i, 'x')}});
+		c.emplace({ { "id", i },
+			{ "txt", std::string(i, 'x') } });
 	}
 }
 
@@ -203,13 +203,13 @@ BOOST_AUTO_TEST_CASE(c_1)
 {
 	cif::category c("foo");
 
-	c.emplace({{"id", 1}, {"s", "aap"}});
-	c.emplace({{"id", 2}, {"s", "noot"}});
-	c.emplace({{"id", 3}, {"s", "mies"}});
+	c.emplace({ { "id", 1 }, { "s", "aap" } });
+	c.emplace({ { "id", 2 }, { "s", "noot" } });
+	c.emplace({ { "id", 3 }, { "s", "mies" } });
 
 	int n = 1;
 
-	const char *ts[] = {"aap", "noot", "mies"};
+	const char *ts[] = { "aap", "noot", "mies" };
 
 	for (auto r : c)
 	{
@@ -244,16 +244,16 @@ BOOST_AUTO_TEST_CASE(c_1)
 
 BOOST_AUTO_TEST_CASE(c_2)
 {
-	std::tuple<int,const char*> D[] = {
-		{1, "aap"},
-		{2, "noot"},
-		{3, "mies"}
+	std::tuple<int, const char *> D[] = {
+		{ 1, "aap" },
+		{ 2, "noot" },
+		{ 3, "mies" }
 	};
 
 	cif::category c("foo");
 
 	for (const auto &[id, s] : D)
-		c.emplace({ {"id", id}, { "s", s} });
+		c.emplace({ { "id", id }, { "s", s } });
 
 	BOOST_CHECK(not c.empty());
 	BOOST_CHECK_EQUAL(c.size(), 3);
@@ -284,22 +284,22 @@ BOOST_AUTO_TEST_CASE(c_2)
 
 BOOST_AUTO_TEST_CASE(c_3)
 {
-	std::tuple<int,const char*> D[] = {
-		{1, "aap"},
-		{2, "noot"},
-		{3, "mies"}
+	std::tuple<int, const char *> D[] = {
+		{ 1, "aap" },
+		{ 2, "noot" },
+		{ 3, "mies" }
 	};
 
 	cif::category c("foo");
 
 	for (const auto &[id, s] : D)
-		c.emplace({ {"id", id}, { "s", s} });
+		c.emplace({ { "id", id }, { "s", s } });
 
 	cif::category c2("bar");
 
 	for (auto r : c)
 		c2.emplace(r);
-	
+
 	// BOOST_CHECK(c == c2);
 }
 
@@ -307,9 +307,9 @@ BOOST_AUTO_TEST_CASE(ci_1)
 {
 	cif::category c("foo");
 
-	c.emplace({{"id", 1}, {"s", "aap"}});
-	c.emplace({{"id", 2}, {"s", "noot"}});
-	c.emplace({{"id", 3}, {"s", "mies"}});
+	c.emplace({ { "id", 1 }, { "s", "aap" } });
+	c.emplace({ { "id", 2 }, { "s", "noot" } });
+	c.emplace({ { "id", 3 }, { "s", "mies" } });
 
 	cif::category::iterator i1 = c.begin();
 	cif::category::const_iterator i2 = c.cbegin();
@@ -322,6 +322,37 @@ BOOST_AUTO_TEST_CASE(ci_1)
 	BOOST_CHECK(i1 == i3);
 	BOOST_CHECK(i1 == i4);
 	BOOST_CHECK(i1 == i5);
+}
+
+BOOST_AUTO_TEST_CASE(os_1)
+{
+	using namespace cif::literals;
+	using namespace std::literals;
+
+	std::tuple<int, const char *> D[] = {
+		{ 1, "aap" },
+		{ 2, "noot" },
+		{ 3, "mies" }
+	};
+
+	cif::category c("foo");
+
+	for (const auto &[id, s] : D)
+		c.emplace({ { "id", id }, { "s", s } });
+
+	for (auto rh : c)
+	{
+		rh["o"].os(1, ',', 2, ": ", rh.get<std::string>("s"));
+	}
+
+	for (const auto &[id, s] : D)
+	{
+		auto rh = c.find1("id"_key == id);
+
+		BOOST_CHECK_EQUAL(rh.get<int>("id"), id);
+		BOOST_CHECK_EQUAL(rh.get<std::string>("s"), s);
+		BOOST_CHECK_EQUAL(rh.get<std::string>("o"), "1,2: "s + s);
+	}
 }
 
 // --------------------------------------------------------------------
@@ -383,7 +414,7 @@ _test.name
 	auto &test = db["test"];
 	BOOST_CHECK_EQUAL(test.size(), 3);
 
-	const char *ts[] = {"aap", "noot", "mies"};
+	const char *ts[] = { "aap", "noot", "mies" };
 
 	int n = 1;
 	for (const auto &[i, s] : test.rows<int, std::string>("id", "name"))
@@ -405,6 +436,20 @@ _test.name
 
 	test.clear();
 	BOOST_CHECK(test.empty());
+
+	// fill again.
+
+	test.emplace({ { "id", "1" }, { "name", "aap" } });
+	test.emplace({ { "id", "2" }, { "name", "noot" } });
+	test.emplace({ { "id", "3" }, { "name", "mies" } });
+
+	n = 1;
+	for (const auto &[i, s] : test.rows<int, std::string>("id", "name"))
+	{
+		BOOST_CHECK_EQUAL(i, n);
+		BOOST_CHECK_EQUAL(s.compare(ts[n - 1]), 0);
+		++n;
+	}
 }
 
 // --------------------------------------------------------------------
@@ -637,10 +682,9 @@ _cat_2.desc
 	//     { "desc", "moet fout gaan" }
 	// }), std::exception);
 
-	BOOST_CHECK_THROW(cat2.emplace({
-			{"id", "vijf"}, // <- invalid value
-			{"parent_id", 2},
-			{"desc", "moet fout gaan"}}),
+	BOOST_CHECK_THROW(cat2.emplace({ { "id", "vijf" }, // <- invalid value
+						  { "parent_id", 2 },
+						  { "desc", "moet fout gaan" } }),
 		std::exception);
 }
 
@@ -755,19 +799,16 @@ mies Mies
 	BOOST_CHECK_EQUAL(cat1.size(), 2);
 
 	// should fail with duplicate key:
-	BOOST_CHECK_THROW(cat1.emplace({
-		{"id", "aap"},
-		{"c", "2e-aap"}
-	}), std::exception);
+	BOOST_CHECK_THROW(cat1.emplace({ { "id", "aap" },
+						  { "c", "2e-aap" } }),
+		std::exception);
 
 	cat1.erase(cif::key("id") == "aap");
 
 	BOOST_CHECK_EQUAL(cat1.size(), 1);
 
-	cat1.emplace({
-		{"id", "aap"},
-		{"c", "2e-aap"}
-	});
+	cat1.emplace({ { "id", "aap" },
+		{ "c", "2e-aap" } });
 
 	BOOST_CHECK_EQUAL(cat1.size(), 2);
 }
@@ -965,12 +1006,12 @@ _cat_2.desc
 	cat1.erase(cif::key("id") == 10);
 
 	BOOST_CHECK_EQUAL(cat1.size(), 2);
-	BOOST_CHECK_EQUAL(cat2.size(), 3);	// TODO: Is this really what we want?
+	BOOST_CHECK_EQUAL(cat2.size(), 3); // TODO: Is this really what we want?
 
 	cat1.erase(cif::key("id") == 20);
 
 	BOOST_CHECK_EQUAL(cat1.size(), 1);
-	BOOST_CHECK_EQUAL(cat2.size(), 2);	// TODO: Is this really what we want?
+	BOOST_CHECK_EQUAL(cat2.size(), 2); // TODO: Is this really what we want?
 }
 
 // --------------------------------------------------------------------
@@ -1364,7 +1405,7 @@ _cat_2.parent_id3
 	std::transform(CR2set.begin(), CR2set.end(), std::back_inserter(CRids), [](cif::row_handle r)
 		{ return r["id"].as<int>(); });
 	std::sort(CRids.begin(), CRids.end());
-	BOOST_CHECK(CRids == std::vector<int>({4, 5, 6}));
+	BOOST_CHECK(CRids == std::vector<int>({ 4, 5, 6 }));
 
 	// check a rename in parent and child
 
@@ -2098,7 +2139,8 @@ boo.data_.whatever
 	auto &db1 = data1.front();
 	auto &test1 = db1["test"];
 
-	struct T {
+	struct T
+	{
 		const char *s;
 		bool q;
 	} kS[] = {
@@ -2154,13 +2196,15 @@ There it was!
 	auto &db1 = data1.front();
 	auto &test1 = db1["test"];
 
-	struct T {
+	struct T
+	{
 		const char *s;
 		bool q;
 	} kS[] = {
 		{ "A very, very loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong line", false },
 		{ R"(A line with a newline, look:
-There it was!)", false}
+There it was!)",
+			false }
 	};
 
 	BOOST_CHECK_EQUAL(test1.size(), sizeof(kS) / sizeof(T));
@@ -2192,7 +2236,6 @@ There it was!)", false}
 	}
 }
 
-
 BOOST_AUTO_TEST_CASE(trim_test)
 {
 	BOOST_CHECK_EQUAL(cif::trim_copy("aap"), "aap");
@@ -2215,24 +2258,53 @@ BOOST_AUTO_TEST_CASE(trim_test)
 
 	std::string s;
 
-	s = "aap"; 			cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
-	s = " aap"; 		cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
-	s = " aap "; 		cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
-	s = "aap "; 		cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
-	s = "	 aap	"; 	cif::trim(s); 		BOOST_CHECK_EQUAL(s, "aap"); 
+	s = "aap";
+	cif::trim(s);
+	BOOST_CHECK_EQUAL(s, "aap");
+	s = " aap";
+	cif::trim(s);
+	BOOST_CHECK_EQUAL(s, "aap");
+	s = " aap ";
+	cif::trim(s);
+	BOOST_CHECK_EQUAL(s, "aap");
+	s = "aap ";
+	cif::trim(s);
+	BOOST_CHECK_EQUAL(s, "aap");
+	s = "	 aap	";
+	cif::trim(s);
+	BOOST_CHECK_EQUAL(s, "aap");
 
-	s = "aap"; 			cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap"); 
-	s = " aap"; 		cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap"); 
-	s = " aap "; 		cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap "); 
-	s = "aap "; 		cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap "); 
-	s = "aap	"; 		cif::trim_left(s); 	BOOST_CHECK_EQUAL(s, "aap	"); 
+	s = "aap";
+	cif::trim_left(s);
+	BOOST_CHECK_EQUAL(s, "aap");
+	s = " aap";
+	cif::trim_left(s);
+	BOOST_CHECK_EQUAL(s, "aap");
+	s = " aap ";
+	cif::trim_left(s);
+	BOOST_CHECK_EQUAL(s, "aap ");
+	s = "aap ";
+	cif::trim_left(s);
+	BOOST_CHECK_EQUAL(s, "aap ");
+	s = "aap	";
+	cif::trim_left(s);
+	BOOST_CHECK_EQUAL(s, "aap	");
 
-	s = "aap"; 			cif::trim_right(s); BOOST_CHECK_EQUAL(s, "aap"); 
-	s = " aap"; 		cif::trim_right(s); BOOST_CHECK_EQUAL(s, " aap"); 
-	s = " aap "; 		cif::trim_right(s); BOOST_CHECK_EQUAL(s, " aap"); 
-	s = "aap "; 		cif::trim_right(s); BOOST_CHECK_EQUAL(s, "aap"); 
-	s = "	 aap	"; 	cif::trim_right(s); BOOST_CHECK_EQUAL(s, "	 aap"); 
-
+	s = "aap";
+	cif::trim_right(s);
+	BOOST_CHECK_EQUAL(s, "aap");
+	s = " aap";
+	cif::trim_right(s);
+	BOOST_CHECK_EQUAL(s, " aap");
+	s = " aap ";
+	cif::trim_right(s);
+	BOOST_CHECK_EQUAL(s, " aap");
+	s = "aap ";
+	cif::trim_right(s);
+	BOOST_CHECK_EQUAL(s, "aap");
+	s = "	 aap	";
+	cif::trim_right(s);
+	BOOST_CHECK_EQUAL(s, "	 aap");
 }
 
 BOOST_AUTO_TEST_CASE(split_test)
@@ -2241,30 +2313,30 @@ BOOST_AUTO_TEST_CASE(split_test)
 
 	v = cif::split<>("aap;noot;mies", ";");
 	t = std::vector<std::string_view>{ "aap", "noot", "mies" };
-	
+
 	BOOST_CHECK(v == t);
 
 	v = cif::split("aap;noot,mies", ";,");
 	// t = std::vector<std::string>{ "aap", "noot", "mies" };
-	
+
 	BOOST_CHECK(v == t);
 
 	v = cif::split(";aap;noot,mies;", ";,");
 	t = std::vector<std::string_view>{ "", "aap", "noot", "mies", "" };
-	
+
 	BOOST_CHECK(v == t);
 
 	v = cif::split(";aap;noot,mies;", ";,", true);
 	t = std::vector<std::string_view>{ "aap", "noot", "mies" };
-	
+
 	BOOST_CHECK(v == t);
 }
 
 BOOST_AUTO_TEST_CASE(join_test)
 {
-	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{"aap"}, ", "), "aap");
-	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{"aap", "noot"}, ", "), "aap, noot");
-	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{"aap", "noot", "mies"}, ", "), "aap, noot, mies");
+	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{ "aap" }, ", "), "aap");
+	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{ "aap", "noot" }, ", "), "aap, noot");
+	BOOST_CHECK_EQUAL(cif::join(std::vector<std::string>{ "aap", "noot", "mies" }, ", "), "aap, noot, mies");
 }
 
 BOOST_AUTO_TEST_CASE(replace_all_test)
@@ -2387,9 +2459,9 @@ _cat_1.name
 
 	int n = 1;
 
-	const char *ts[] = {"Aap", "Noot", "Mies"};
+	const char *ts[] = { "Aap", "Noot", "Mies" };
 
-	for (const auto &[id, name] : cat1.rows<int,std::string>("id", "name"))
+	for (const auto &[id, name] : cat1.rows<int, std::string>("id", "name"))
 	{
 		BOOST_CHECK_EQUAL(id, n);
 		BOOST_CHECK_EQUAL(name, ts[n - 1]);

@@ -1291,22 +1291,22 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 
 	auto &col = m_columns[column];
 
-	const char *oldValue = nullptr;
+	std::string_view oldValue;
 	for (auto iv = row->m_head; iv != nullptr; iv = iv->m_next)
 	{
 		assert(iv != iv->m_next and (iv->m_next == nullptr or iv != iv->m_next->m_next));
 
 		if (iv->m_column_ix == column)
 		{
-			oldValue = iv->c_str();
+			oldValue = iv->text();
 			break;
 		}
 	}
 
-	if (oldValue != nullptr and value == oldValue) // no need to update
+	if (value == oldValue) // no need to update
 		return;
 
-	std::string oldStrValue = oldValue ? oldValue : "";
+	std::string oldStrValue{ oldValue };
 
 	// check the value
 	if (col.m_validator and validate)
