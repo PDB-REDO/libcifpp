@@ -193,8 +193,7 @@ class dictionary_parser : public parser
 
 		if (isCategorySaveFrame)
 		{
-			std::string category;
-			cif::tie(category) = dict["category"].front().get("id");
+			std::string category = dict["category"].front().get<std::string>("id");
 
 			std::vector<std::string> keys;
 			for (auto k : dict["category_key"])
@@ -204,13 +203,12 @@ class dictionary_parser : public parser
 			for (auto g : dict["category_group"])
 				groups.insert(g["id"].as<std::string>());
 
-			mCategoryValidators.push_back(category_validator{category, keys, groups});
+			mCategoryValidators.push_back(category_validator{ category, keys, groups });
 		}
 		else
 		{
 			// if the type code is missing, this must be a pointer, just skip it
-			std::string typeCode;
-			cif::tie(typeCode) = dict["item_type"].front().get("code");
+			std::string typeCode = dict["item_type"].front().get<std::string>("code");
 
 			const type_validator *tv = nullptr;
 			if (not(typeCode.empty() or typeCode == "?"))
@@ -220,8 +218,7 @@ class dictionary_parser : public parser
 			for (auto e : dict["item_enumeration"])
 				ess.insert(e["value"].as<std::string>());
 
-			std::string defaultValue;
-			cif::tie(defaultValue) = dict["item_default"].front().get("value");
+			std::string defaultValue = dict["item_default"].front().get<std::string>("value");
 			bool defaultIsNull = false;
 			if (defaultValue.empty())
 			{
@@ -237,25 +234,24 @@ class dictionary_parser : public parser
 			for (auto i : dict["item"])
 			{
 				std::string tagName, category, mandatory;
-
 				cif::tie(tagName, category, mandatory) = i.get("name", "category_id", "mandatory_code");
 
-				std::string catName, item_name;
-				std::tie(catName, item_name) = split_tag_name(tagName);
+				std::string cat_name, item_name;
+				std::tie(cat_name, item_name) = split_tag_name(tagName);
 
-				if (catName.empty() or item_name.empty())
+				if (cat_name.empty() or item_name.empty())
 					error("Invalid tag name in _item.name " + tagName);
 
-				if (not iequals(category, catName) and not(category.empty() or category == "?"))
+				if (not iequals(category, cat_name) and not(category.empty() or category == "?"))
 					error("specified category id does match the implicit category name for tag '" + tagName + '\'');
 				else
-					category = catName;
+					category = cat_name;
 
 				auto &ivs = mItemValidators[category];
 
-				auto vi = find(ivs.begin(), ivs.end(), item_validator{item_name});
+				auto vi = find(ivs.begin(), ivs.end(), item_validator{ item_name });
 				if (vi == ivs.end())
-					ivs.push_back(item_validator{item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, defaultIsNull});
+					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, defaultIsNull });
 				else
 				{
 					// need to update the itemValidator?
@@ -295,11 +291,7 @@ class dictionary_parser : public parser
 			// collect the dict from our dataBlock and construct validators
 			for (auto i : dict["item_linked"])
 			{
-				std::string childTagName, parentTagName;
-
-				cif::tie(childTagName, parentTagName) = i.get("child_name", "parent_name");
-
-				mLinkedItems.emplace(childTagName, parentTagName);
+				mLinkedItems.emplace(i.get<std::string,std::string>("child_name", "parent_name"));
 			}
 		}
 	}
@@ -357,7 +349,7 @@ class dictionary_parser : public parser
 			if (piv == nullptr)
 				error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 
-			key_type key{piv->m_category->m_name, civ->m_category->m_name, link_group_id};
+			key_type key{ piv->m_category->m_name, civ->m_category->m_name, link_group_id };
 			if (not linkIndex.count(key))
 			{
 				linkIndex[key] = linkKeys.size();
@@ -385,7 +377,7 @@ class dictionary_parser : public parser
 				if (piv == nullptr)
 					error("in pdbx_item_linked_group_list, item '" + parent + "' is not specified");
 
-				key_type key{piv->m_category->m_name, civ->m_category->m_name, 0};
+				key_type key{ piv->m_category->m_name, civ->m_category->m_name, 0 };
 				if (not linkIndex.count(key))
 				{
 					linkIndex[key] = linkKeys.size();
@@ -450,7 +442,8 @@ class dictionary_parser : public parser
 			try
 			{
 				type_validator v = {
-					code, map_to_primitive_type(primitiveCode), construct};
+					code, map_to_primitive_type(primitiveCode), construct
+				};
 
 				m_validator.add_type_validator(std::move(v));
 			}

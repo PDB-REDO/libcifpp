@@ -60,7 +60,7 @@ namespace detail
 		template <typename... Ts, std::size_t... Is>
 		std::tuple<Ts...> get(std::index_sequence<Is...>) const
 		{
-			return std::tuple<Ts...>{m_row[m_columns[Is]].template as<Ts>()...};
+			return std::tuple<Ts...>{ m_row[m_columns[Is]].template as<Ts>()... };
 		}
 
 		const row_handle &m_row;
@@ -185,21 +185,33 @@ class row_handle
 		return item_handle(get_column_ix(column_name), const_cast<row_handle &>(*this));
 	}
 
-	template <typename... Ts, size_t N>
-	std::tuple<Ts...> get(char const *const (&columns)[N]) const
-	{
-		static_assert(sizeof...(Ts) == N, "Number of columns should be equal to number of types to return");
+	// template <typename... Ts, size_t N>
+	// std::tuple<Ts...> get(char const *const (&columns)[N]) const
+	// {
+	// 	static_assert(sizeof...(Ts) == N, "Number of columns should be equal to number of types to return");
 
-		std::array<size_t, N> cix;
-		for (size_t i = 0; i < N; ++i)
-			cix[i] = get_column_ix(columns[i]);
-		return detail::get_row_result<Ts...>(*this, std::move(cix));
-	}
+	// 	std::array<size_t, N> cix;
+	// 	for (size_t i = 0; i < N; ++i)
+	// 		cix[i] = get_column_ix(columns[i]);
+	// 	return detail::get_row_result<Ts...>(*this, std::move(cix));
+	// }
 
 	template <typename... C>
 	auto get(C... columns) const
 	{
-		return detail::get_row_result<C...>(*this, {get_column_ix(columns)...});
+		return detail::get_row_result<C...>(*this, { get_column_ix(columns)... });
+	}
+
+	template <typename... Ts, typename... C, std::enable_if_t<sizeof...(Ts) == sizeof...(C), int> = 0>
+	std::tuple<Ts...> get(C... columns) const
+	{
+		return detail::get_row_result<Ts...>(*this, { get_column_ix(columns)... });
+	}
+
+	template<typename T>
+	T get(const char *column)
+	{
+		return operator[](get_column_ix(column)).template as<T>();
 	}
 
 	void assign(const std::vector<item> &values)
@@ -224,7 +236,7 @@ class row_handle
 
 	uint16_t add_column(std::string_view name);
 
-	operator row*()
+	operator row *()
 	{
 		return m_row;
 	}
@@ -252,7 +264,9 @@ class row_initializer
 	row_initializer &operator=(row_initializer &&) = default;
 
 	row_initializer(std::initializer_list<item> items)
-		: m_items(items) {}
+		: m_items(items)
+	{
+	}
 
 	template <typename ItemIter, std::enable_if_t<std::is_same_v<typename ItemIter::value_type, item>, int> = 0>
 	row_initializer(ItemIter b, ItemIter e)

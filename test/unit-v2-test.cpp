@@ -166,6 +166,26 @@ BOOST_AUTO_TEST_CASE(r_1)
 	BOOST_CHECK_EQUAL(row["f-1"].compare(1), 0);
 	BOOST_CHECK_EQUAL(row["f-2"].compare("two"), 0);
 	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0); // This fails when running in valgrind... sigh
+
+	const auto &[f1, f2, f3] = row.get<int,std::string,float>("f-1", "f-2", "f-3");
+
+	BOOST_CHECK_EQUAL(f1, 1);
+	BOOST_CHECK_EQUAL(f2, "two");
+	BOOST_CHECK_EQUAL(f3, 3.0); // This fails when running in valgrind... sigh
+
+	BOOST_CHECK_EQUAL(row.get<int>("f-1"), 1);
+	BOOST_CHECK_EQUAL(row.get<std::string>("f-2"), "two");
+	BOOST_CHECK_EQUAL(row.get<float>("f-3"), 3.0);
+
+	int f_1;
+	std::string f_2;
+	float f_3;
+
+	cif::tie(f_1, f_2, f_3) = row.get("f-1", "f-2", "f-3");
+
+	BOOST_CHECK_EQUAL(f_1, 1);
+	BOOST_CHECK_EQUAL(f_2, "two");
+	BOOST_CHECK_EQUAL(f_3, 3.0); // This fails when running in valgrind... sigh
 }
 
 BOOST_AUTO_TEST_CASE(r_2)
@@ -1442,21 +1462,21 @@ _test.name
 
 	for (auto r : db["test"].find(cif::key("id") == 1))
 	{
-		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		const auto &[id, name] = r.get<int, std::string>("id", "name");
 		BOOST_CHECK_EQUAL(id, 1);
 		BOOST_CHECK_EQUAL(name, "aap");
 	}
 
 	for (auto r : db["test"].find(cif::key("id") == 4))
 	{
-		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		const auto &[id, name] = r.get<int, std::string>("id", "name");
 		BOOST_CHECK_EQUAL(id, 4);
 		BOOST_CHECK(name.empty());
 	}
 
 	for (auto r : db["test"].find(cif::key("id") == 5))
 	{
-		const auto &[id, name] = r.get<int, std::string>({"id", "name"});
+		const auto &[id, name] = r.get<int, std::string>("id", "name");
 		BOOST_CHECK_EQUAL(id, 5);
 		BOOST_CHECK(name.empty());
 	}
@@ -1465,7 +1485,7 @@ _test.name
 
 	for (auto r : db["test"])
 	{
-		const auto &[id, name] = r.get<int, std::optional<std::string>>({"id", "name"});
+		const auto &[id, name] = r.get<int, std::optional<std::string>>("id", "name");
 		switch (id)
 		{
 			case 1: BOOST_CHECK(name == "aap"); break;
@@ -2041,7 +2061,7 @@ _test.text ??
 
 	for (auto r : test1)
 	{
-		const auto &[text] = r.get<std::string>({"text"});
+		auto text = r.get<std::string>("text");
 		BOOST_CHECK_EQUAL(text, "??");
 	}
 
@@ -2057,7 +2077,7 @@ _test.text ??
 
 	for (auto r : test2)
 	{
-		const auto &[text] = r.get<std::string>({"text"});
+		auto text = r.get<std::string>("text");
 		BOOST_CHECK_EQUAL(text, "??");
 	}
 }
@@ -2094,7 +2114,7 @@ boo.data_.whatever
 	size_t i = 0;
 	for (auto r : test1)
 	{
-		const auto &[text] = r.get<std::string>({"text"});
+		auto text = r.get<std::string>("text");
 		BOOST_CHECK_EQUAL(text, kS[i].s);
 		BOOST_CHECK_EQUAL(cif::sac_parser::is_unquoted_string(kS[i].s), kS[i].q);
 		++i;
@@ -2113,7 +2133,7 @@ boo.data_.whatever
 	i = 0;
 	for (auto r : test2)
 	{
-		const auto &[text] = r.get<std::string>({"text"});
+		auto text = r.get<std::string>("text");
 		BOOST_CHECK_EQUAL(text, kS[i++].s);
 	}
 }
@@ -2148,7 +2168,7 @@ There it was!)", false}
 	size_t i = 0;
 	for (auto r : test1)
 	{
-		const auto &[text] = r.get<std::string>({"text"});
+		auto text = r.get<std::string>("text");
 		BOOST_CHECK_EQUAL(text, kS[i].s);
 		BOOST_CHECK_EQUAL(cif::sac_parser::is_unquoted_string(kS[i].s), kS[i].q);
 		++i;
@@ -2167,7 +2187,7 @@ There it was!)", false}
 	i = 0;
 	for (auto r : test2)
 	{
-		const auto &[text] = r.get<std::string>({"text"});
+		auto text = r.get<std::string>("text");
 		BOOST_CHECK_EQUAL(text, kS[i++].s);
 	}
 }
@@ -2563,8 +2583,6 @@ _cat_1.name
 
 	std::stringstream ss;
 	ss << f;
-
-std::cout << f << std::endl;
 
 	cif::file f2(ss);
 

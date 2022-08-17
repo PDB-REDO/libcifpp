@@ -85,8 +85,7 @@ void file::load_dictionary()
 		auto *audit_conform = front().get("audit_conform");
 		if (audit_conform and not audit_conform->empty())
 		{
-			std::string name;
-			cif::tie(name) = audit_conform->front().get("dict_name");
+			std::string name = audit_conform->front().get<std::string>("dict_name");
 
 			if (not name.empty())
 			{
