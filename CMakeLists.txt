@@ -151,7 +151,7 @@ endif()
 # Start by finding out if std:regex is usable. Note that the current
 # implementation in GCC is not acceptable, it crashes on long lines.
 try_run(STD_REGEX_RUNNING STD_REGEX_COMPILING
-	${CMAKE_CURRENT_BINARY_DIR}/test ${CMAKE_SOURCE_DIR}/cmake/test-rx.cpp)
+	${CMAKE_CURRENT_BINARY_DIR}/test ${PROJECT_SOURCE_DIR}/cmake/test-rx.cpp)
 
 if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 	message(WARNING "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
@@ -214,8 +214,6 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/condition.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/category.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/row.hpp
-
-	# ${PROJECT_SOURCE_DIR}/include/cif++/point.hpp
 )
 
 add_library(cifpp ${project_sources} ${project_headers})
@@ -261,7 +259,7 @@ if(CIFPP_DOWNLOAD_CCD)
 				SHOW_PROGRESS)
 			add_custom_command(OUTPUT ${COMPONENTS_CIF}
 				COMMAND ${GUNZIP} ${COMPONENTS_CIF}.gz
-				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/data/)
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 		else()
 			file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
 				SHOW_PROGRESS)
@@ -385,7 +383,7 @@ if(CIFPP_BUILD_TESTS)
 		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
 
 		if(CIFPP_USE_RSRC)
-			mrc_target_resources(${CIFPP_TEST} ${CMAKE_SOURCE_DIR}/rsrc/mmcif_pdbx.dic)
+			mrc_target_resources(${CIFPP_TEST} ${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic)
 		endif()
 
 		if(MSVC)
@@ -397,10 +395,10 @@ if(CIFPP_BUILD_TESTS)
 
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch
-			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_SOURCE_DIR}/test)
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${PROJECT_SOURCE_DIR}/test)
 
 		add_test(NAME ${CIFPP_TEST}
-			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_SOURCE_DIR}/test)
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${PROJECT_SOURCE_DIR}/test)
 	endforeach()
 endif()
 
@@ -410,7 +408,7 @@ message("Will install in ${CMAKE_INSTALL_PREFIX}")
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	set(CIFPP_CRON_DIR "$ENV{DESTDIR}/etc/cron.weekly")
 
-	configure_file(${CMAKE_SOURCE_DIR}/tools/update-libcifpp-data.in update-libcifpp-data @ONLY)
+	configure_file(${PROJECT_SOURCE_DIR}/tools/update-libcifpp-data.in update-libcifpp-data @ONLY)
 	install(
 		FILES ${CMAKE_CURRENT_BINARY_DIR}/update-libcifpp-data
 		DESTINATION ${CIFPP_CRON_DIR}
