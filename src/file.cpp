@@ -69,6 +69,15 @@ bool file::is_valid()
 	return result;
 }
 
+void file::validate_links() const
+{
+	if (m_validator == nullptr)
+		std::runtime_error("No validator loaded explicitly, cannot continue");
+
+	for (auto &db : *this)
+		db.validate_links();
+}
+
 void file::load_dictionary()
 {
 	if (not empty())
@@ -80,7 +89,17 @@ void file::load_dictionary()
 			cif::tie(name) = audit_conform->front().get("dict_name");
 
 			if (not name.empty())
-				load_dictionary(name);
+			{
+				try
+				{
+					load_dictionary(name);
+				}
+				catch (const std::exception &ex)
+				{
+					if (VERBOSE)
+						std::cerr << "Failed to load dictionary " << std::quoted(name) << ": " << ex.what() << std::endl;
+				}
+			}
 		}
 	}
 

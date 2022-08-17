@@ -103,9 +103,9 @@ class dictionary_parser : public parser
 
 		// store meta information
 		datablock::iterator info;
-		bool n;
-		std::tie(info, n) = m_datablock->emplace("dictionary");
-		if (n)
+		bool is_new;
+		std::tie(info, is_new) = m_datablock->emplace("dictionary");
+		if (not is_new and not info->empty())
 		{
 			auto r = info->front();
 			m_validator.set_name(r["title"].as<std::string>());

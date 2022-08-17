@@ -88,6 +88,7 @@ class category
 	const category_validator *get_cat_validator() const { return m_cat_validator; }
 
 	bool is_valid() const;
+	void validate_links() const;
 
 	bool operator==(const category &rhs) const;
 	bool operator!=(const category &rhs) const

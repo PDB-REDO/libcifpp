@@ -79,6 +79,7 @@ class file : public std::list<datablock>
 
 	bool is_valid() const;
 	bool is_valid();
+	void validate_links() const;
 
 	void load_dictionary();
 	void load_dictionary(std::string_view name);

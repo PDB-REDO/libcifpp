@@ -54,6 +54,12 @@ bool datablock::is_valid() const
 	return result;
 }
 
+void datablock::validate_links() const
+{
+	for (auto &cat : *this)
+		cat.validate_links();
+}
+
 // --------------------------------------------------------------------
 
 category &datablock::operator[](std::string_view name)
@@ -167,16 +173,17 @@ void datablock::write(std::ostream &os) const
 
 		cat.write(os);
 
-		if (m_validator != nullptr)
-		{
-			category auditConform("audit_conform");
-			auditConform.emplace({
-				{"dict_name", m_validator->name()},
-				{"dict_version", m_validator->version()}});
-			auditConform.write(os);
-		}
-
 		break;
+	}
+
+	// If the dictionary declares an audit_conform category, put it in
+	if (m_validator != nullptr and m_validator->get_validator_for_category("audit_conform") != nullptr)
+	{
+		category auditConform("audit_conform");
+		auditConform.emplace({
+			{"dict_name", m_validator->name()},
+			{"dict_version", m_validator->version()}});
+		auditConform.write(os);
 	}
 
 	for (auto &cat : *this)

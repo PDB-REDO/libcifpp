@@ -29,11 +29,7 @@
 
 #include <stdexcept>
 
-// #include <cif++/DistanceMap.hpp>
-// #include <cif++/BondMap.hpp>
 #include <cif++.hpp>
-// #include <cif++Validator.hpp>
-// #include <cif++Parser.hpp>
 
 #include <cif++/parser.hpp>
 #include <cif++/dictionary_parser.hpp>
@@ -62,17 +58,17 @@ cif::file operator""_cf(const char *text, size_t length)
 
 bool init_unit_test()
 {
-	// cif::VERBOSE = 1;
+	cif::VERBOSE = 1;
 
-	// // not a test, just initialize test dir
-	// if (boost::unit_test::framework::master_test_suite().argc == 2)
-	// 	gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
+	// not a test, just initialize test dir
+	if (boost::unit_test::framework::master_test_suite().argc == 2)
+		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
 
-	// // do this now, avoids the need for installing
-	// cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
+	// do this now, avoids the need for installing
+	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
 
-	// // initialize CCD location
-	// cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
+	// initialize CCD location
+	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
 
 	return true;
 }
@@ -2379,4 +2375,203 @@ _cat_1.name
 		BOOST_CHECK_EQUAL(name, ts[n - 1]);
 		++n;
 	}
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(audit_conform_test)
+{
+
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+    _item_type_list.detail
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+;              code item types/single words ...
+;
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+;              text item types / multi-line text ...
+;
+               int       numb
+               '[+-]?[0-9]+'
+;              int item types are the subset of numbers that are the negative
+               or positive integers.
+;
+
+
+###################
+## AUDIT_CONFORM ##
+###################
+
+save_audit_conform
+    _category.description
+;              Data items in the AUDIT_CONFORM category describe the
+               dictionary versions against which the data names appearing in
+               the current data block are conformant.
+;
+    _category.id                  audit_conform
+    _category.mandatory_code      no
+    loop_
+    _category_key.name          '_audit_conform.dict_name'
+                                '_audit_conform.dict_version'
+    loop_
+    _category_group.id           'inclusive_group'
+                                 'audit_group'
+    loop_
+    _category_examples.detail
+    _category_examples.case
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    Example 1 - any file conforming to the current CIF core dictionary.
+;
+;
+    _audit_conform.dict_name         cif_core.dic
+    _audit_conform.dict_version      2.3.1
+    _audit_conform.dict_location
+                         ftp://ftp.iucr.org/pub/cif_core.2.3.1.dic
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     save_
+
+save__audit_conform.dict_location
+    _item_description.description
+;              A file name or uniform resource locator (URL) for the
+               dictionary to which the current data block conforms.
+;
+    _item.name                  '_audit_conform.dict_location'
+    _item.category_id             audit_conform
+    _item.mandatory_code          no
+    _item_aliases.alias_name    '_audit_conform_dict_location'
+    _item_aliases.dictionary      cif_core.dic
+    _item_aliases.version         2.0.1
+    _item_type.code               text
+     save_
+
+save__audit_conform.dict_name
+    _item_description.description
+;              The string identifying the highest-level dictionary defining
+               data names used in this file.
+;
+    _item.name                  '_audit_conform.dict_name'
+    _item.category_id             audit_conform
+    _item.mandatory_code          yes
+    _item_aliases.alias_name    '_audit_conform_dict_name'
+    _item_aliases.dictionary      cif_core.dic
+    _item_aliases.version         2.0.1
+    _item_type.code               text
+     save_
+
+save__audit_conform.dict_version
+    _item_description.description
+;              The version number of the dictionary to which the current
+               data block conforms.
+;
+    _item.name                  '_audit_conform.dict_version'
+    _item.category_id             audit_conform
+    _item.mandatory_code          yes
+    _item_aliases.alias_name    '_audit_conform_dict_version'
+    _item_aliases.dictionary      cif_core.dic
+    _item_aliases.version         2.0.1
+    _item_type.code               text
+     save_
+
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           code
+    save_
+
+save__cat_1.name
+    _item.name                '_cat_1.name'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           text
+    save_
+    )";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::parse_dictionary("test_dict.dic", is_dict);
+
+	cif::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+#
+_audit_conform.dict_name test_dict.dic
+_audit_conform.dict_version 1.0
+#
+loop_
+_cat_1.id
+_cat_1.name
+2 Noot
+1 Aap
+3 Mies
+    )";
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	BOOST_ASSERT(f.is_valid());
+
+	std::stringstream ss;
+	ss << f;
+
+std::cout << f << std::endl;
+
+	cif::file f2(ss);
+
+	f2.set_validator(&validator);
+	BOOST_ASSERT(f2.is_valid());
+
+	auto &audit_conform = f2.front()["audit_conform"];
+	BOOST_CHECK_EQUAL(audit_conform.front()["dict_name"].as<std::string>(), "test_dict.dic");
+	BOOST_CHECK_EQUAL(audit_conform.front()["dict_version"].as<float>(), 1.0);
 }

@@ -812,6 +812,36 @@ bool category::is_valid() const
 	return result;
 }
 
+void category::validate_links() const
+{
+	if (not m_validator)
+		return;
+
+	for (auto &link : m_parent_links)
+	{
+		auto parent = link.linked;
+
+		if (parent == nullptr)
+			continue;
+
+		size_t missing = 0;
+		for (auto r : *this)
+		{
+			auto cond = get_parents_condition(r, *parent);
+			if (not cond)
+				continue;
+			if (not parent->exists(std::move(cond)))
+				++missing;
+		}
+
+		if (missing)
+		{
+			std::cerr << "Links for " << link.v->m_link_group_label << " are incomplete" << std::endl
+					  << "  There are " << missing << " items in " << m_name << " that don't have matching parent items in " << parent->m_name << std::endl;
+		}
+	}
+}
+
 // --------------------------------------------------------------------
 
 condition category::get_parents_condition(row_handle rh, const category &parentCat) const
@@ -833,9 +863,9 @@ condition category::get_parents_condition(row_handle rh, const category &parentC
 			auto childValue = rh[link->m_child_keys[ix]];
 
 			if (childValue.empty())
-				cond = std::move(cond) and key(link->m_parent_keys[ix]) == null;
-			else
-				cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.text();
+				continue;
+
+			cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.text();
 		}
 
 		if (result)
