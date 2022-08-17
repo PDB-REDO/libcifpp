@@ -124,8 +124,26 @@ std::vector<std::string> datablock::get_tag_order() const
 {
 	std::vector<std::string> result;
 
+	// for entry and audit_conform on top
+
+	auto ci = find_if(begin(), end(), [](const category &cat) { return cat.name() == "entry"; });
+	if (ci != end())
+	{
+		auto cto = ci->get_tag_order();
+		result.insert(result.end(), cto.begin(), cto.end());
+	}
+
+	ci = find_if(begin(), end(), [](const category &cat) { return cat.name() == "audit_conform"; });
+	if (ci != end())
+	{
+		auto cto = ci->get_tag_order();
+		result.insert(result.end(), cto.begin(), cto.end());
+	}
+
 	for (auto &cat : *this)
 	{
+		if (cat.name() == "entry" or cat.name() == "audit_conform")
+			continue;
 		auto cto = cat.get_tag_order();
 		result.insert(result.end(), cto.begin(), cto.end());
 	}
@@ -165,6 +183,51 @@ void datablock::write(std::ostream &os) const
 	{
 		if (cat.name() != "entry" and cat.name() != "audit_conform")
 			cat.write(os);
+	}
+}
+
+void datablock::write(std::ostream &os, const std::vector<std::string> &tag_order)
+{
+	os << "data_" << m_name << std::endl
+	   << "# " << std::endl;
+
+	std::vector<std::string> cat_order;
+	for (auto &o : tag_order)
+	{
+		std::string cat_name, item_name;
+		std::tie(cat_name, item_name) = split_tag_name(o);
+		if (find_if(cat_order.rbegin(), cat_order.rend(), [cat_name](const std::string &s) -> bool
+				{ return iequals(cat_name, s); }) == cat_order.rend())
+			cat_order.push_back(cat_name);
+	}
+
+	for (auto &c : cat_order)
+	{
+		auto cat = get(c);
+		if (cat == nullptr)
+			continue;
+
+		std::vector<std::string> items;
+		for (auto &o : tag_order)
+		{
+			std::string cat_name, item_name;
+			std::tie(cat_name, item_name) = split_tag_name(o);
+
+			if (cat_name == c)
+				items.push_back(item_name);
+		}
+
+		cat->write(os, items);
+	}
+
+	// for any Category we missed in the catOrder
+	for (auto &cat : *this)
+	{
+		if (find_if(cat_order.begin(), cat_order.end(), [&](const std::string &s) -> bool
+				{ return iequals(cat.name(), s); }) != cat_order.end())
+			continue;
+
+		cat.write(os);
 	}
 }
 

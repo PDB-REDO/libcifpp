@@ -74,6 +74,7 @@ class datablock : public std::list<category>
 
 	std::vector<std::string> get_tag_order() const;
 	void write(std::ostream &os) const;
+	void write(std::ostream &os, const std::vector<std::string> &tag_order);
 
 	friend std::ostream &operator<<(std::ostream &os, const datablock &db)
 	{
