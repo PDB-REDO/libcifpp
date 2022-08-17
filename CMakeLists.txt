@@ -156,6 +156,13 @@ try_run(STD_REGEX_RUNNING STD_REGEX_COMPILING
 if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 	message(WARNING "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
 
+	# Test to see if the submodule was loaded
+	find_file(HAVE_BOOST_REGEX_HPP regex.hpp PATHS ${PROJECT_SOURCE_DIR}/regex/include/boost NO_DEFAULT_PATH)
+
+	if (NOT HAVE_BOOST_REGEX_HPP)
+		message(FATAL_ERROR "The submodule regex was not loaded, please run git submodule update --init ")
+	endif()
+
 	set(BOOST_REGEX_STANDALONE ON)
 	add_subdirectory(regex)
 endif()
