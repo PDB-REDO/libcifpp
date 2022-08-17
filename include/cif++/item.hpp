@@ -38,10 +38,8 @@
 #include <cif++/text.hpp>
 
 /// \file item.hpp
-/// This file contains the declaration of \class item but
-/// also the \class item_value and \class item_handle
-/// These handle the storage of and access to the data
-/// for a single data field. 
+/// This file contains the declaration of item but also the item_value and item_handle
+/// These handle the storage of and access to the data for a single data field. 
 
 namespace cif
 {
@@ -200,8 +198,7 @@ static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes")
 // --------------------------------------------------------------------
 // Transient object to access stored data
 
-/// \brief This is \class item_handle, it is used to access
-/// the data stored in \class item_value.
+/// \brief This is item_handle, it is used to access the data stored in item_value.
 
 struct item_handle
 {
@@ -255,12 +252,10 @@ struct item_handle
 	}
 
 	// We may not have C++20 yet...
-
 	template <typename T>
 	bool operator!=(const T &value) const
 	{
-		// TODO: icase or not icase?
-		return item_value_as<T>::compare(*this, value, true) != 0;
+		return not operator==(value);
 	}
 
 	// empty means either null or unknown
@@ -426,11 +421,6 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, bool>>>
 template <size_t N>
 struct item_handle::item_value_as<char[N]>
 {
-	// static std::string_view convert(const item_handle &ref)
-	// {
-	// 	return ref.text();
-	// }
-
 	static int compare(const item_handle &ref, const char (&value)[N], bool icase)
 	{
 		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
@@ -440,11 +430,6 @@ struct item_handle::item_value_as<char[N]>
 template <typename T>
 struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, const char *>>>
 {
-	// static std::string_view convert(const item_handle &ref)
-	// {
-	// 	return ref.text();
-	// }
-
 	static int compare(const item_handle &ref, const char *value, bool icase)
 	{
 		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
@@ -454,11 +439,6 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, const ch
 template <typename T>
 struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::string_view>>>
 {
-	// static std::string_view convert(const item_handle &ref)
-	// {
-	// 	return ref.text();
-	// }
-
 	static int compare(const item_handle &ref, const std::string_view &value, bool icase)
 	{
 		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
