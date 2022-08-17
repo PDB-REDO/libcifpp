@@ -26,14 +26,6 @@
 
 #pragma once
 
-#include <cif++/Cif++.hpp>
-
-void WritePDBFile(std::ostream &os, const cif::Datablock &data);
-
-/// \brief Just the HEADER, COMPND, SOURCE and AUTHOR lines
-void WritePDBHeaderLines(std::ostream &os, const cif::Datablock &data);
-
-std::string GetPDBHEADERLine(const cif::Datablock &data, std::string::size_type truncate_at = 127);
-std::string GetPDBCOMPNDLine(const cif::Datablock &data, std::string::size_type truncate_at = 127);
-std::string GetPDBSOURCELine(const cif::Datablock &data, std::string::size_type truncate_at = 127);
-std::string GetPDBAUTHORLine(const cif::Datablock &data, std::string::size_type truncate_at = 127);
+#include <cif++/utilities.hpp>
+#include <cif++/file.hpp>
+#include <cif++/parser.hpp>

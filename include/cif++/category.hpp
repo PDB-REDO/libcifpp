@@ -28,12 +28,12 @@
 
 #include <array>
 
-#include <cif++/cif/forward_decl.hpp>
+#include <cif++/forward_decl.hpp>
 
-#include <cif++/cif/condition.hpp>
-#include <cif++/cif/iterator.hpp>
-#include <cif++/cif/row.hpp>
-#include <cif++/cif/validate.hpp>
+#include <cif++/condition.hpp>
+#include <cif++/iterator.hpp>
+#include <cif++/row.hpp>
+#include <cif++/validate.hpp>
 
 // TODO: implement all of:
 // https://en.cppreference.com/w/cpp/named_req/Container

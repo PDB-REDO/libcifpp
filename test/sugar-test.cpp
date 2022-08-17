@@ -29,7 +29,7 @@
 
 #include <stdexcept>
 
-#include <cif++/cif.hpp>
+#include <cif++.hpp>
 #include <cif++/structure/Structure.hpp>
 
 // --------------------------------------------------------------------

@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,34 +24,28 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <vector>
-#include <string>
-#include <tuple>
-
-#include <cif++/cif.hpp>
+#include <cif++/row.hpp>
 
 namespace cif
 {
-	
-extern const int
-	kResidueNrWildcard,
-	kNoSeqNum;
 
-struct TLSSelection;
-typedef std::unique_ptr<TLSSelection> TLSSelectionPtr;
-
-struct TLSResidue;
-
-struct TLSSelection
+std::string_view item_handle::text() const
 {
-	virtual ~TLSSelection() {}
-	virtual void CollectResidues(cif::datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel = 0) const = 0;
-	std::vector<std::tuple<std::string,int,int>> GetRanges(cif::datablock& db, bool pdbNamespace) const;
-};
+	if (m_row_handle.m_row != nullptr)
+	{
+		for (auto iv = m_row_handle.m_row->m_head; iv != nullptr; iv = iv->m_next)
+		{
+			if (iv->m_column_ix == m_column)
+				return iv->text();
+		}
+	}
 
-// Low level: get the selections
-TLSSelectionPtr ParseSelectionDetails(const std::string& program, const std::string& selection);
+	return {};
+}
+
+void item_handle::assign_value(const item &v)
+{
+	m_row_handle.assign(m_column, v.value(), true);
+}
 
 }

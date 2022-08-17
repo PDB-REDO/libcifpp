@@ -26,7 +26,7 @@
 
 #include <gxrio.hpp>
 
-#include <cif++/cif/file.hpp>
+#include <cif++/file.hpp>
 
 namespace cif
 {

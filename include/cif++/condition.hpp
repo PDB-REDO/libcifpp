@@ -31,7 +31,7 @@
 #include <iostream>
 #include <regex>
 
-#include <cif++/cif/row.hpp>
+#include <cif++/row.hpp>
 
 namespace cif
 {

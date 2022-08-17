@@ -36,7 +36,7 @@
 
 #include <cif++/text.hpp>
 
-#include <cif++/cif/forward_decl.hpp>
+#include <cif++/forward_decl.hpp>
 
 namespace cif
 {

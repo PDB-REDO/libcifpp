@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <cif++/cif/item.hpp>
+#include <cif++/item.hpp>
 
 namespace cif
 {

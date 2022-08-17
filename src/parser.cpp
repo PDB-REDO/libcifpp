@@ -32,9 +32,9 @@
 
 #include <cif++/utilities.hpp>
 
-#include <cif++/cif/forward_decl.hpp>
-#include <cif++/cif/parser.hpp>
-#include <cif++/cif/file.hpp>
+#include <cif++/forward_decl.hpp>
+#include <cif++/parser.hpp>
+#include <cif++/file.hpp>
 
 namespace cif
 {

@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,50 +24,40 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <cif++/category.hpp>
 
-#include <cif++/PDB2Cif.hpp>
+namespace cif
+{
+
+void row_handle::assign(size_t column, std::string_view value, bool updateLinked, bool validate)
+{
+	m_category->update_value(m_row, column, value, updateLinked, validate);
+}
+
+uint16_t row_handle::get_column_ix(std::string_view name) const
+{
+	return m_category->get_column_ix(name);
+}
+
+std::string_view row_handle::get_column_name(uint16_t ix) const
+{
+	return m_category->get_column_name(ix);
+}
+
+uint16_t row_handle::add_column(std::string_view name)
+{
+	return m_category->add_column(name);
+}
 
 // --------------------------------------------------------------------
 
-struct TemplateLine;
-
-class Remark3Parser
+row_initializer::row_initializer(row_handle rh)
 {
-  public:
-	virtual ~Remark3Parser() {}
+	row *r = rh;
+	auto &cat = *rh.m_category;
 
-	static bool parse(const std::string& expMethod, PDBRecord* r, cif::Datablock& db);
+	for (auto i = r->m_head; i != nullptr; i = i->m_next)
+		m_items.emplace_back(cat.get_column_name(i->m_column_ix), i->text());
+}
 
-	virtual std::string program();
-	virtual std::string version();
-
-  protected:
-
-	Remark3Parser(const std::string& name, const std::string& expMethod, PDBRecord* r, cif::Datablock& db,
-			const TemplateLine templatelines[], uint32_t templateLineCount, std::regex programVersion);
-
-	virtual float parse();
-	std::string nextLine();
-
-	bool match(const char* expr, int nextState);
-	void storeCapture(const char* category, std::initializer_list<const char*> items, bool createNew = false);
-	void storeRefineLsRestr(const char* type, std::initializer_list<const char*> values);
-	void updateRefineLsRestr(const char* type, std::initializer_list<const char*> values);
-
-	virtual void fixup() {}
-
-	std::string		mName;
-	std::string		mExpMethod;
-	PDBRecord*		mRec;
-	cif::Datablock	mDb;
-	std::string		mLine;
-	std::smatch		mM;
-	uint32_t			mState;
-
-	const TemplateLine*	mTemplate;
-	uint32_t				mTemplateCount;
-	std::regex			mProgramVersion;
-};
-
-
+} // namespace cif

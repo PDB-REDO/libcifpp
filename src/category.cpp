@@ -26,9 +26,9 @@
 
 #include <numeric>
 
-#include <cif++/cif/category.hpp>
-#include <cif++/cif/datablock.hpp>
-#include <cif++/cif/parser.hpp>
+#include <cif++/category.hpp>
+#include <cif++/datablock.hpp>
+#include <cif++/parser.hpp>
 
 // TODO: Find out what the rules are exactly for linked items, the current implementation
 // is inconsistent. It all depends whether a link is satified if a field taking part in the
@@ -539,7 +539,7 @@ category::category(const category &rhs)
 	for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
 		insert_impl(end(), clone_row(*r));
 
-	if (m_validator != nullptr)
+	if (m_cat_validator != nullptr)
 		m_index = new category_index(this);
 }
 
@@ -585,7 +585,7 @@ category &category::operator=(const category &rhs)
 		m_parent_links = rhs.m_parent_links;
 		m_child_links = rhs.m_child_links;
 
-		if (m_validator != nullptr)
+		if (m_cat_validator != nullptr)
 			m_index = new category_index(this);
 	}
 
@@ -620,7 +620,6 @@ category &category::operator=(category &&rhs)
 category::~category()
 {
 	clear();
-	delete m_index;
 }
 
 // --------------------------------------------------------------------
@@ -1076,9 +1075,7 @@ void category::clear()
 	m_head = m_tail = nullptr;
 
 	delete m_index;
-
-	if (m_validator != nullptr)
-		m_index = new category_index(this);
+	m_index = nullptr;
 }
 
 void category::erase_orphans(condition &&cond)
@@ -1145,7 +1142,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 		(*col.m_validator)(value);
 
 	// first some sanity checks, what was the old value and is it the same for all rows?
-	std::string_view oldValue = rows.front()[tag].text();
+	std::string oldValue{ rows.front()[tag].text() };
 	for (auto row : rows)
 	{
 		if (oldValue != row[tag].text())
@@ -1258,6 +1255,10 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 
 void category::update_value(row *row, size_t column, std::string_view value, bool updateLinked, bool validate)
 {
+	// make sure we have an index, if possible
+	if (m_index == nullptr and m_cat_validator != nullptr)
+		m_index = new category_index(this);
+
 	auto &col = m_columns[column];
 
 	const char *oldValue = nullptr;
@@ -1285,7 +1286,6 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 	// before updating
 
 	bool reinsert = false;
-
 	if (updateLinked and // an update of an Item's value
 		m_index != nullptr and key_field_indices().count(column))
 	{
@@ -1498,6 +1498,9 @@ row_handle category::create_copy(row_handle r)
 // proxy methods for every insertion
 category::iterator category::insert_impl(const_iterator pos, row *n)
 {
+	if (m_index == nullptr and m_cat_validator != nullptr)
+		m_index = new category_index(this);
+
 	assert(n != nullptr);
 	assert(n->m_next == nullptr);
 

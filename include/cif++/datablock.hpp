@@ -26,9 +26,9 @@
 
 #pragma once
 
-#include <cif++/cif/forward_decl.hpp>
+#include <cif++/forward_decl.hpp>
 
-#include <cif++/cif/category.hpp>
+#include <cif++/category.hpp>
 
 namespace cif
 {

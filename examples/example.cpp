@@ -1,7 +1,7 @@
 #include <iostream>
 #include <filesystem>
 
-#include <cif++/cif.hpp>
+#include <cif++.hpp>
 
 namespace fs = std::filesystem;
 

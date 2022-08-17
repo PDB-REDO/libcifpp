@@ -26,6 +26,11 @@
 
 #pragma once
 
-#include <cif++/utilities.hpp>
-#include <cif++/cif/file.hpp>
-#include <cif++/cif/parser.hpp>
+#include <cif++/validate.hpp>
+
+namespace cif
+{
+
+validator parse_dictionary(std::string_view name, std::istream &is);
+
+} // namespace cif

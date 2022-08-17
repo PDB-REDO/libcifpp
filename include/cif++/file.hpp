@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,35 +26,68 @@
 
 #pragma once
 
-#include <cif++/Cif++.hpp>
+#include <list>
+
+#include <cif++/datablock.hpp>
+#include <cif++/parser.hpp>
+
+namespace cif
+{
 
 // --------------------------------------------------------------------
 
-struct PDBRecord
+class file : public std::list<datablock>
 {
-	PDBRecord *mNext;
-	uint32_t mLineNr;
-	char mName[11];
-	size_t mVlen;
-	char mValue[1];
+  public:
+	file() = default;
 
-	PDBRecord(uint32_t lineNr, const std::string &name, const std::string &value);
-	~PDBRecord();
+	explicit file(const std::filesystem::path &p)
+	{
+		load(p);
+	}
 
-	void *operator new(size_t);
-	void *operator new(size_t size, size_t vLen);
+	explicit file(std::istream &is)
+	{
+		load(is);
+	}
 
-	void operator delete(void *p);
-	void operator delete(void *p, size_t vLen);
+	file(const file &) = default;
+	file(file &&) = default;
+	file &operator=(const file &) = default;
+	file &operator=(file &&) = default;
 
-	bool is(const char *name) const;
+	void set_validator(const validator *v);
 
-	char vC(size_t column);
-	std::string vS(size_t columnFirst, size_t columnLast = std::numeric_limits<size_t>::max());
-	int vI(int columnFirst, int columnLast);
-	std::string vF(size_t columnFirst, size_t columnLast);
+	const validator *get_validator() const
+	{
+		return m_validator;
+	}
+
+	bool is_valid() const;
+	bool is_valid();
+
+	void load_dictionary();
+	void load_dictionary(std::string_view name);
+
+	datablock &operator[](std::string_view name);
+	const datablock &operator[](std::string_view name) const;
+
+	std::tuple<iterator, bool> emplace(std::string_view name);
+
+	void load(const std::filesystem::path &p);
+	void load(std::istream &is);
+
+	void save(const std::filesystem::path &p) const;
+	void save(std::ostream &os) const;
+
+	friend std::ostream &operator<<(std::ostream &os, const file &f)
+	{
+		f.save(os);
+		return os;
+	}
+
+  private:
+	const validator *m_validator = nullptr;
 };
 
-// --------------------------------------------------------------------
-
-void ReadPDBFile(std::istream &pdbFile, cif::File &cifFile);
+} // namespace cif

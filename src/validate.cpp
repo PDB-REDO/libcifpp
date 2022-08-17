@@ -43,8 +43,8 @@ using std::regex;
 
 #include <gxrio.hpp>
 
-#include <cif++/cif/dictionary_parser.hpp>
-#include <cif++/cif/validate.hpp>
+#include <cif++/dictionary_parser.hpp>
+#include <cif++/validate.hpp>
 
 #include <cif++/utilities.hpp>
 

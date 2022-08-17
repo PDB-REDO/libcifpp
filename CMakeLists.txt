@@ -159,7 +159,7 @@ if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 	# Test to see if the submodule was loaded
 	find_file(HAVE_BOOST_REGEX_HPP regex.hpp PATHS ${PROJECT_SOURCE_DIR}/regex/include/boost NO_DEFAULT_PATH)
 
-	if (NOT HAVE_BOOST_REGEX_HPP)
+	if(NOT HAVE_BOOST_REGEX_HPP)
 		message(FATAL_ERROR "The submodule regex was not loaded, please run git submodule update --init ")
 	endif()
 
@@ -183,85 +183,42 @@ list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 include(VersionString)
 write_version_header("LibCIFPP")
 
-# SymOp data table
-if(CIFPP_RECREATE_SYMOP_DATA)
-	# The tool to create the table
-	add_executable(symop-map-generator "${CMAKE_SOURCE_DIR}/tools/symop-map-generator.cpp")
-
-	target_link_libraries(symop-map-generator Threads::Threads ${CIFPP_REQUIRED_LIBRARIES})
-
-	set($ENV{CLIBD} ${CLIBD})
-
-	add_custom_command(
-		OUTPUT ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp
-		COMMAND $<TARGET_FILE:symop-map-generator> ${CLIBD}/syminfo.lib ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp
-	)
-
-	add_custom_target(
-		OUTPUT ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp
-		DEPENDS symop-map-generator "$ENV{CLIBD}/syminfo.lib"
-	)
-endif()
-
 # Sources
 set(project_sources
-	${PROJECT_SOURCE_DIR}/src/cif/category.cpp
-	${PROJECT_SOURCE_DIR}/src/cif/condition.cpp
-	${PROJECT_SOURCE_DIR}/src/cif/datablock.cpp
-	${PROJECT_SOURCE_DIR}/src/cif/dictionary_parser.cpp
-	${PROJECT_SOURCE_DIR}/src/cif/file.cpp
-	${PROJECT_SOURCE_DIR}/src/cif/item.cpp
-	${PROJECT_SOURCE_DIR}/src/cif/parser.cpp
-	${PROJECT_SOURCE_DIR}/src/cif/row.cpp
-	${PROJECT_SOURCE_DIR}/src/cif/validate.cpp
-
-	# ${PROJECT_SOURCE_DIR}/src/pdb/Cif2PDB.cpp
-	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2Cif.cpp
-	# ${PROJECT_SOURCE_DIR}/src/pdb/PDB2CifRemark3.cpp
-
-	${PROJECT_SOURCE_DIR}/src/structure/AtomType.cpp
-	# ${PROJECT_SOURCE_DIR}/src/structure/BondMap.cpp
-	${PROJECT_SOURCE_DIR}/src/structure/Compound.cpp
-	# ${PROJECT_SOURCE_DIR}/src/structure/Structure.cpp
-	${PROJECT_SOURCE_DIR}/src/structure/Symmetry.cpp
-	${PROJECT_SOURCE_DIR}/src/structure/TlsParser.cpp
-
-	# ${PROJECT_SOURCE_DIR}/src/point.cpp
+	${PROJECT_SOURCE_DIR}/src/category.cpp
+	${PROJECT_SOURCE_DIR}/src/condition.cpp
+	${PROJECT_SOURCE_DIR}/src/datablock.cpp
+	${PROJECT_SOURCE_DIR}/src/dictionary_parser.cpp
+	${PROJECT_SOURCE_DIR}/src/file.cpp
+	${PROJECT_SOURCE_DIR}/src/item.cpp
+	${PROJECT_SOURCE_DIR}/src/parser.cpp
+	${PROJECT_SOURCE_DIR}/src/row.cpp
+	${PROJECT_SOURCE_DIR}/src/validate.cpp
 	${PROJECT_SOURCE_DIR}/src/text.cpp
 	${PROJECT_SOURCE_DIR}/src/utilities.cpp
 )
 
 set(project_headers
 
-	${PROJECT_SOURCE_DIR}/include/cif++/cif.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/utilities.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/item.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/datablock.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/file.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/writer.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/validate.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/list.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/iterator.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/parser.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/forward_decl.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/dictionary_parser.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/condition.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/category.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/cif/row.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/structure/AtomType.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/structure/BondMap.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/structure/TlsParser.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/structure/Symmetry.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/structure/Structure.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/structure/Compound.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/pdb/PDB2Cif.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/pdb/PDB2CifRemark3.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/pdb/Cif2PDB.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/Cif++.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/point.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/item.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/datablock.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/file.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/validate.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/list.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/iterator.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/parser.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/forward_decl.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/dictionary_parser.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/condition.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/category.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/row.hpp
+
+	# ${PROJECT_SOURCE_DIR}/include/cif++/point.hpp
 )
 
-add_library(cifpp ${project_sources} ${project_headers} ${CMAKE_SOURCE_DIR}/src/structure/SymOpTable_data.hpp)
+add_library(cifpp ${project_sources} ${project_headers})
 add_library(cifpp::cifpp ALIAS cifpp)
 
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -282,11 +239,6 @@ if(BOOST_REGEX_STANDALONE)
 	target_include_directories(cifpp PRIVATE regex/include)
 endif()
 
-# if(BOOST_REGEX_STANDALONE)
-# 	target_link_libraries(cifpp PRIVATE Boost::regex)
-# endif()
-
-# target_link_libraries(cifpp PRIVATE)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -325,8 +277,8 @@ if(UNIX)
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 endif()
 
-generate_export_header(cifpp
-	EXPORT_FILE_NAME cif++/Cif++Export.hpp)
+# generate_export_header(cifpp
+# 	EXPORT_FILE_NAME cif++/Cif++Export.hpp)
 
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
@@ -363,20 +315,16 @@ install(
 	COMPONENT Devel
 )
 
-install(
-	FILES "${CMAKE_CURRENT_BINARY_DIR}/cif++/Cif++Export.hpp"
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cif++
-	COMPONENT Devel
-)
-
 install(FILES
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
 	${COMPONENTS_CIF}
 	DESTINATION ${SHARE_INSTALL_DIR}
 )
 
-configure_package_config_file(Config.cmake.in
+configure_package_config_file(
+	${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR SHARE_INSTALL_DIR
@@ -426,12 +374,6 @@ if(CIFPP_BUILD_TESTS)
 	find_package(Boost REQUIRED)
 
 	list(APPEND CIFPP_tests
-
-		# pdb2cif
-		# rename-compound
-		# structure
-		# sugar
-		# unit
 		unit-v2)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)

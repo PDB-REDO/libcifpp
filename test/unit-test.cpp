@@ -32,9 +32,9 @@
 
 // #include <cif++/DistanceMap.hpp>
 #include <cif++/BondMap.hpp>
-#include <cif++/Cif++.hpp>
-#include <cif++/CifValidator.hpp>
-#include <cif++/CifParser.hpp>
+#include <cif++++.hpp>
+#include <cif++Validator.hpp>
+#include <cif++Parser.hpp>
 
 namespace tt = boost::test_tools;
 

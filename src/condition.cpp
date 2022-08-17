@@ -24,70 +24,38 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <list>
-
-#include <cif++/cif/datablock.hpp>
-#include <cif++/cif/parser.hpp>
+#include <cif++/category.hpp>
+#include <cif++/condition.hpp>
 
 namespace cif
 {
 
-// --------------------------------------------------------------------
-
-class file : public std::list<datablock>
+iset get_category_fields(const category &cat)
 {
-  public:
-	file() = default;
+	return cat.fields();
+}
 
-	explicit file(const std::filesystem::path &p)
+uint16_t get_column_ix(const category &cat, std::string_view col)
+{
+	return cat.get_column_ix(col);
+}
+
+bool is_column_type_uchar(const category &cat, std::string_view col)
+{
+	bool result = false;
+
+	auto cv = cat.get_cat_validator();
+	if (cv)
 	{
-		load(p);
+		auto iv = cv->get_validator_for_item(col);
+		if (iv != nullptr and iv->m_type != nullptr)
+		{
+			auto type = iv->m_type;
+			result = type->m_primitive_type == DDL_PrimitiveType::UChar;
+		}
 	}
 
-	explicit file(std::istream &is)
-	{
-		load(is);
-	}
-
-	file(const file &) = default;
-	file(file &&) = default;
-	file &operator=(const file &) = default;
-	file &operator=(file &&) = default;
-
-	void set_validator(const validator *v);
-
-	const validator *get_validator() const
-	{
-		return m_validator;
-	}
-
-	bool is_valid() const;
-	bool is_valid();
-
-	void load_dictionary();
-	void load_dictionary(std::string_view name);
-
-	datablock &operator[](std::string_view name);
-	const datablock &operator[](std::string_view name) const;
-
-	std::tuple<iterator, bool> emplace(std::string_view name);
-
-	void load(const std::filesystem::path &p);
-	void load(std::istream &is);
-
-	void save(const std::filesystem::path &p) const;
-	void save(std::ostream &os) const;
-
-	friend std::ostream &operator<<(std::ostream &os, const file &f)
-	{
-		f.save(os);
-		return os;
-	}
-
-  private:
-	const validator *m_validator = nullptr;
-};
+	return result;
+}
 
 } // namespace cif
