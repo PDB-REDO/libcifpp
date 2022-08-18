@@ -160,6 +160,11 @@ class row_handle
 		return *m_category;
 	}
 
+	bool empty() const
+	{
+		return m_category == nullptr or m_row == nullptr;
+	}
+
 	explicit operator bool() const
 	{
 		return m_category != nullptr and m_row != nullptr;
@@ -184,17 +189,6 @@ class row_handle
 	{
 		return item_handle(get_column_ix(column_name), const_cast<row_handle &>(*this));
 	}
-
-	// template <typename... Ts, size_t N>
-	// std::tuple<Ts...> get(char const *const (&columns)[N]) const
-	// {
-	// 	static_assert(sizeof...(Ts) == N, "Number of columns should be equal to number of types to return");
-
-	// 	std::array<size_t, N> cix;
-	// 	for (size_t i = 0; i < N; ++i)
-	// 		cix[i] = get_column_ix(columns[i]);
-	// 	return detail::get_row_result<Ts...>(*this, std::move(cix));
-	// }
 
 	template <typename... C>
 	auto get(C... columns) const

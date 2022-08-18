@@ -56,6 +56,11 @@ class datablock : public std::list<category>
 
 	const std::string &name() const { return m_name; }
 
+	void set_name(std::string_view name)
+	{
+		m_name = name;
+	}
+
 	void set_validator(const validator *v);
 
 	const validator *get_validator() const;

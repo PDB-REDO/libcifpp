@@ -236,13 +236,7 @@ class category
 	{
 		auto h = find(pos, std::forward<condition>(cond));
 
-		if (h.empty())
-			throw std::runtime_error("No hits found");
-
-		if (h.size() != 1)
-			throw std::runtime_error("Hit not unique");
-
-		return *h.begin();
+		return h.size() != 1 ? row_handle{} : *h.begin();
 	}
 
 	const row_handle find1(condition &&cond) const
@@ -254,13 +248,7 @@ class category
 	{
 		auto h = find(pos, std::forward<condition>(cond));
 
-		if (h.empty())
-			throw std::runtime_error("No hits found");
-
-		if (h.size() != 1)
-			throw std::runtime_error("Hit not unique");
-
-		return *h.begin();
+		return h.size() != 1 ? row_handle{} : *h.begin();
 	}
 
 	template <typename T>
@@ -346,6 +334,11 @@ class category
 	// }
 
 	iterator erase(iterator pos);
+	void erase(row_handle rh)
+	{
+		erase(iterator(*this, rh.m_row));
+	}
+
 	size_t erase(condition &&cond);
 	size_t erase(condition &&cond, std::function<void(row_handle)> &&visit);
 
@@ -461,6 +454,11 @@ class category
 		return result;
 	}
 
+	bool has_column(std::string_view name) const
+	{
+		return get_column_ix(name) < m_columns.size();
+	}
+
 	// --------------------------------------------------------------------
 	
 	void reorder_by_index();
@@ -486,7 +484,7 @@ class category
 	void update_value(row *row, size_t column, std::string_view value, bool updateLinked, bool validate = true);
 
   private:
-	void erase_orphans(condition &&cond);
+	void erase_orphans(condition &&cond, category &parent);
 
 	using allocator_type = std::allocator<void>;
 

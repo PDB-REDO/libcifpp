@@ -533,7 +533,7 @@ condition operator>(const key &key, const T &v)
 	s << " > " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](const category &c, row_handle r, bool icase)
+		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) > 0; },
 		s.str()));
 }
@@ -545,7 +545,7 @@ condition operator>=(const key &key, const T &v)
 	s << " >= " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](const category &c, row_handle r, bool icase)
+		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) >= 0; },
 		s.str()));
 }
@@ -557,7 +557,7 @@ condition operator<(const key &key, const T &v)
 	s << " < " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](const category &c, row_handle r, bool icase)
+		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) < 0; },
 		s.str()));
 }
@@ -569,7 +569,7 @@ condition operator<=(const key &key, const T &v)
 	s << " <= " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](const category &c, row_handle r, bool icase)
+		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
 		{ return r[tag].template compare<T>(v, icase) <= 0; },
 		s.str()));
 }
@@ -582,6 +582,11 @@ inline condition operator==(const key &key, const std::regex &rx)
 inline condition operator==(const key &key, const empty_type &)
 {
 	return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
+}
+
+inline condition operator !(condition &&rhs)
+{
+	return condition(new detail::not_condition_impl(std::move(rhs)));
 }
 
 struct any_type

@@ -1032,7 +1032,7 @@ category::iterator category::erase(iterator pos)
 	if (m_validator != nullptr)
 	{
 		for (auto &&[childCat, link] : m_child_links)
-			childCat->erase_orphans(get_children_condition(rh, *childCat));
+			childCat->erase_orphans(get_children_condition(rh, *childCat), *this);
 	}
 
 	delete_row(r);
@@ -1108,7 +1108,7 @@ void category::clear()
 	m_index = nullptr;
 }
 
-void category::erase_orphans(condition &&cond)
+void category::erase_orphans(condition &&cond, category &parent)
 {
 	std::vector<row *> remove;
 
@@ -1116,15 +1116,18 @@ void category::erase_orphans(condition &&cond)
 
 	for (auto r : *this)
 	{
-		if (cond(r) and not has_parents(r))
-		{
-			if (VERBOSE > 1)
-				std::cerr << "Removing orphaned record: " << std::endl
-						  << r << std::endl
-						  << std::endl;
+		if (not cond(r))
+			continue;
+		
+		if (parent.exists(get_parents_condition(r, parent)))
+			continue;
 
-			remove.push_back(r);
-		}
+		if (VERBOSE > 1)
+			std::cerr << "Removing orphaned record: " << std::endl
+						<< r << std::endl
+						<< std::endl;
+		
+		remove.emplace_back(r.m_row);
 	}
 
 	for (auto r : remove)
