@@ -35,7 +35,6 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(Dart)
-include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -274,9 +273,6 @@ if(UNIX)
 	set(CIFPP_CACHE_DIR "/var/cache/libcifpp" CACHE STRING "The cache directory to use")
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 endif()
-
-# generate_export_header(cifpp
-# 	EXPORT_FILE_NAME cif++/Cif++Export.hpp)
 
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})

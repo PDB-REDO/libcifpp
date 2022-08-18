@@ -24,14 +24,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cassert>
+
 #include <cif++/row.hpp>
 
 namespace cif
 {
 
+const item_handle item_handle::s_null_item;
+row_handle s_null_row_handle;
+
+item_handle::item_handle()
+	: m_column(std::numeric_limits<uint16_t>::max())
+	, m_row_handle(s_null_row_handle)
+{
+}
+
 std::string_view item_handle::text() const
 {
-	if (m_row_handle.m_row != nullptr)
+	if (not m_row_handle.empty())
 	{
 		for (auto iv = m_row_handle.m_row->m_head; iv != nullptr; iv = iv->m_next)
 		{
@@ -45,6 +56,7 @@ std::string_view item_handle::text() const
 
 void item_handle::assign_value(const item &v)
 {
+	assert(not m_row_handle.empty());
 	m_row_handle.assign(m_column, v.value(), true);
 }
 

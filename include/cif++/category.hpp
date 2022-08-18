@@ -262,13 +262,7 @@ class category
 	{
 		auto h = find<T>(pos, std::forward<condition>(cond), column);
 
-		if (h.empty())
-			throw std::runtime_error("No hits found");
-
-		if (h.size() != 1)
-			throw std::runtime_error("Hit not unique");
-
-		return std::get<0>(*h.begin());
+		return h.size() == 1 ? std::get<0>(*h.begin()) : T{};
 	}
 
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
@@ -285,13 +279,7 @@ class category
 		static_assert(sizeof...(Ts) == sizeof...(Cs), "The number of column titles should be equal to the number of types to return");
 		auto h = find<Ts...>(pos, std::forward<condition>(cond), std::forward<Cs>(columns)...);
 
-		if (h.empty())
-			throw std::runtime_error("No hits found");
-
-		if (h.size() != 1)
-			throw std::runtime_error("Hit not unique");
-
-		return *h.begin();
+		return h.size() == 1 ? *h.begin() : std::tuple<Ts...>{};
 	}
 
 	bool exists(condition &&cond) const

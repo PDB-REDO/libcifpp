@@ -292,7 +292,11 @@ struct item_handle
 	{
 	}
 
+	static const item_handle s_null_item;
+
   private:
+	item_handle();
+
 	uint16_t m_column;
 	row_handle &m_row_handle;
 
@@ -421,6 +425,13 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, bool>>>
 template <size_t N>
 struct item_handle::item_value_as<char[N]>
 {
+	static std::string convert(const item_handle &ref)
+	{
+		if (ref.empty())
+			return {};
+		return { ref.text().data(), ref.text().size() };
+	}
+
 	static int compare(const item_handle &ref, const char (&value)[N], bool icase)
 	{
 		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
@@ -430,6 +441,13 @@ struct item_handle::item_value_as<char[N]>
 template <typename T>
 struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, const char *>>>
 {
+	static std::string convert(const item_handle &ref)
+	{
+		if (ref.empty())
+			return {};
+		return { ref.text().data(), ref.text().size() };
+	}
+
 	static int compare(const item_handle &ref, const char *value, bool icase)
 	{
 		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);
@@ -439,6 +457,13 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, const ch
 template <typename T>
 struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::string_view>>>
 {
+	static std::string convert(const item_handle &ref)
+	{
+		if (ref.empty())
+			return {};
+		return { ref.text().data(), ref.text().size() };
+	}
+
 	static int compare(const item_handle &ref, const std::string_view &value, bool icase)
 	{
 		return icase ? cif::icompare(ref.text(), value) : ref.text().compare(value);

@@ -172,22 +172,22 @@ class row_handle
 
 	item_handle operator[](uint32_t column_ix)
 	{
-		return item_handle(column_ix, *this);
+		return empty() ? item_handle::s_null_item : item_handle(column_ix, *this);
 	}
 
 	const item_handle operator[](uint32_t column_ix) const
 	{
-		return item_handle(column_ix, const_cast<row_handle &>(*this));
+		return empty() ? item_handle::s_null_item : item_handle(column_ix, const_cast<row_handle &>(*this));
 	}
 
 	item_handle operator[](std::string_view column_name)
 	{
-		return item_handle(add_column(column_name), *this);
+		return empty() ? item_handle::s_null_item : item_handle(add_column(column_name), *this);
 	}
 
 	const item_handle operator[](std::string_view column_name) const
 	{
-		return item_handle(get_column_ix(column_name), const_cast<row_handle &>(*this));
+		return empty() ? item_handle::s_null_item : item_handle(get_column_ix(column_name), const_cast<row_handle &>(*this));
 	}
 
 	template <typename... C>
@@ -202,7 +202,7 @@ class row_handle
 		return detail::get_row_result<Ts...>(*this, { get_column_ix(columns)... });
 	}
 
-	template<typename T>
+	template <typename T>
 	T get(const char *column)
 	{
 		return operator[](get_column_ix(column)).template as<T>();
