@@ -66,7 +66,6 @@ if(BUILD_FOR_CCP4)
 		list(APPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
 
-		# This is the only option:
 		if(WIN32)
 			set(BUILD_SHARED_LIBS ON)
 		endif()
@@ -91,44 +90,16 @@ if(MSVC)
 	add_definitions(-D_WIN32_WINNT=${ver})
 endif()
 
-# Optionally use mrc to create resources
-if(WIN32 AND BUILD_SHARED_LIBS)
-	message("Not using resources when building shared libraries for Windows")
-else()
-	find_package(Mrc)
-
-	if(MRC_FOUND)
-		option(CIFPP_USE_RSRC "Use mrc to create resources" ON)
-	else()
-		message(WARNING "Not using resources since mrc was not found")
-	endif()
-
-	if(CIFPP_USE_RSRC STREQUAL "ON")
-		set(CIFPP_USE_RSRC 1)
-
-		message("Using resources compiled with ${MRC}")
-		add_compile_definitions(CIFPP_USE_RSRC)
-	endif()
-endif()
-
 # Libraries
 
 # Start by finding out if std:regex is usable. Note that the current
 # implementation in GCC is not acceptable, it crashes on long lines.
 check_cxx_source_compiles("
 #include <iostream>
-
-int a =
-#ifdef __GLIBCXX__
-	1;
-#else
-	clearlynotanumber;
+#ifndef __GLIBCXX__
+#error
 #endif
-
-int main(int argc, char *argv[])
-{
-	return 0;
-}" GXX_LIBSTDCPP)
+int main(int argc, char *argv[]) { return 0; }" GXX_LIBSTDCPP)
 
 if(GXX_LIBSTDCPP)
 	message(STATUS "Testing for known regex bug, since you're using GNU libstdc++")
