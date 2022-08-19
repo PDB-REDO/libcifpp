@@ -34,7 +34,10 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
-include(Dart)
+include(CheckCXXSourceCompiles)
+
+# include(Dart)
+include(AddGitSubmodule)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -67,32 +70,7 @@ if(BUILD_FOR_CCP4)
 		if(WIN32)
 			set(BUILD_SHARED_LIBS ON)
 		endif()
-	endif("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
-
-	add_definitions(-DCCP4=1)
-endif()
-
-# Check if CCP4 is available
-if(EXISTS "$ENV{CCP4}")
-	set(CCP4 $ENV{CCP4})
-	set(CLIBD ${CCP4}/lib/data)
-endif()
-
-if(CCP4 AND NOT CLIBD)
-	set(CLIBD ${CCP4}/lib/data)
-endif()
-
-# When CCP4 is sourced in the environment, we can recreate the symmetry operations table
-if(EXISTS "${CCP4}")
-	if(CIFPP_RECREATE_SYMOP_DATA AND NOT EXISTS "${CLIBD}/syminfo.lib")
-		message(WARNING "Symop data table recreation requested, but file syminfo.lib was not found in ${CLIBD}")
-		set(CIFPP_RECREATE_SYMOP_DATA OFF)
-	else()
-		option(CIFPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 	endif()
-else()
-	set(CIFPP_RECREATE_SYMOP_DATA OFF)
-	message("Not trying to recreate SymOpTable_data.hpp since CCP4 is not defined")
 endif()
 
 if(MSVC)
@@ -111,18 +89,6 @@ if(MSVC)
 
 	get_WIN32_WINNT(ver)
 	add_definitions(-D_WIN32_WINNT=${ver})
-
-	# On Windows, do not install in the system location
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND NOT BUILD_FOR_CCP4)
-		message(STATUS "The library and auxiliary files will be installed in $ENV{LOCALAPPDATA}/${PROJECT_NAME}")
-		set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/${PROJECT_NAME}" CACHE PATH "..." FORCE)
-	endif()
-endif()
-
-if(UNIX AND NOT APPLE AND NOT BUILD_FOR_CCP4 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	# On Linux, install in the $HOME/.local folder by default
-	message(STATUS "The library and auxiliary files will be installed in $ENV{HOME}/.local")
-	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "..." FORCE)
 endif()
 
 # Optionally use mrc to create resources
@@ -132,7 +98,7 @@ else()
 	find_package(Mrc)
 
 	if(MRC_FOUND)
-		option(USE_RSRC "Use mrc to create resources" ON)
+		option(CIFPP_USE_RSRC "Use mrc to create resources" ON)
 	else()
 		message(WARNING "Not using resources since mrc was not found")
 	endif()
@@ -149,21 +115,33 @@ endif()
 
 # Start by finding out if std:regex is usable. Note that the current
 # implementation in GCC is not acceptable, it crashes on long lines.
-try_run(STD_REGEX_RUNNING STD_REGEX_COMPILING
-	${CMAKE_CURRENT_BINARY_DIR}/test ${PROJECT_SOURCE_DIR}/cmake/test-rx.cpp)
+check_cxx_source_compiles("
+#include <iostream>
 
-if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
-	message(WARNING "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
+int a =
+#ifdef __GLIBCXX__
+	1;
+#else
+	clearlynotanumber;
+#endif
 
-	# Test to see if the submodule was loaded
-	find_file(HAVE_BOOST_REGEX_HPP regex.hpp PATHS ${PROJECT_SOURCE_DIR}/regex/include/boost NO_DEFAULT_PATH)
+int main(int argc, char *argv[])
+{
+	return 0;
+}" GXX_LIBSTDCPP)
 
-	if(NOT HAVE_BOOST_REGEX_HPP)
-		message(FATAL_ERROR "The submodule regex was not loaded, please run git submodule update --init ")
+if(GXX_LIBSTDCPP)
+	message(STATUS "Testing for known regex bug, since you're using GNU libstdc++")
+
+	try_run(STD_REGEX_RUNNING STD_REGEX_COMPILING
+		${CMAKE_CURRENT_BINARY_DIR}/test ${PROJECT_SOURCE_DIR}/cmake/test-rx.cpp)
+
+	if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
+		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
+
+		set(BOOST_REGEX_STANDALONE ON)
+		add_git_submodule(regex EXCLUDE_FROM_ALL)
 	endif()
-
-	set(BOOST_REGEX_STANDALONE ON)
-	add_subdirectory(regex)
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD)
