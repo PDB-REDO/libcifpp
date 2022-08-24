@@ -72,7 +72,10 @@ class item
 	item(std::string_view name, const T &value, int precision)
 		: m_name(name)
 	{
-		auto r = cif::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, cif::chars_format::fixed, precision);
+		using namespace std;
+		using namespace cif;
+
+		auto r = to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, chars_format::fixed, precision);
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
 
@@ -88,7 +91,10 @@ class item
 	item(const std::string_view name, const T &value)
 		: m_name(name)
 	{
-		auto r = cif::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, cif::chars_format::general);
+		using namespace std;
+		using namespace cif;
+
+		auto r = to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, chars_format::general);
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
 
@@ -303,7 +309,7 @@ struct item_handle
 	void assign_value(const item &value);
 };
 
-// So sad that the gcc implementation of from_chars does not support floats yet...
+// So sad that older gcc implementations of from_chars did not support floats yet...
 
 template <typename T>
 struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> and not std::is_same_v<T, bool>>>
@@ -316,12 +322,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 
 		value_type result = {};
 
-		std::from_chars_result r;
-
-		if constexpr (std::is_floating_point_v<T>)
-			r = cif::from_chars(txt.data(), txt.data() + txt.size(), result);
-		else
-			r = std::from_chars(txt.data(), txt.data() + txt.size(), result);
+		std::from_chars_result r = selected_charconv<value_type>::from_chars(txt.data(), txt.data() + txt.size(), result);
 
 		if (r.ec != std::errc())
 		{
@@ -350,12 +351,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 		{
 			value_type v = {};
 
-			std::from_chars_result r;
-
-			if constexpr (std::is_floating_point_v<T>)
-				r = cif::from_chars(txt.data(), txt.data() + txt.size(), v);
-			else
-				r = std::from_chars(txt.data(), txt.data() + txt.size(), v);
+			std::from_chars_result r = selected_charconv<value_type>::from_chars(txt.data(), txt.data() + txt.size(), v);
 
 			if (r.ec != std::errc())
 			{

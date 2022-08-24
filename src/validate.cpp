@@ -31,7 +31,7 @@
 // The validator depends on regular expressions. Unfortunately,
 // the implementation of std::regex in g++ is buggy and crashes
 // on reading the pdbx dictionary. Therefore, in case g++ is used
-// the code will use boost::regex instead. 
+// the code will use boost::regex instead.
 
 #if USE_BOOST_REGEX
 #include <boost/regex.hpp>
@@ -90,7 +90,7 @@ DDL_PrimitiveType map_to_primitive_type(std::string_view s)
 type_validator::type_validator(std::string_view name, DDL_PrimitiveType type, std::string_view rx)
 	: m_name(name)
 	, m_primitive_type(type)
-	, m_rx(new regex_impl(rx.empty() ? ".+" : rx))	/// Empty regular expressions are not allowed, in libcpp's std::regex (POSIX?)
+	, m_rx(new regex_impl(rx.empty() ? ".+" : rx)) /// Empty regular expressions are not allowed, in libcpp's std::regex (POSIX?)
 {
 }
 
@@ -98,6 +98,24 @@ type_validator::~type_validator()
 {
 	delete m_rx;
 }
+
+template <typename T>
+struct my_from_chars
+{
+	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
+	{
+		return cif::from_chars(a, b, d);
+	}
+};
+
+template <typename T>
+struct std_from_chars
+{
+	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
+	{
+		return std::from_chars(a, b, d);
+	}
+};
 
 int type_validator::compare(std::string_view a, std::string_view b) const
 {
@@ -115,8 +133,13 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 			{
 				double da, db;
 
-				auto ra = cif::from_chars(a.begin(), a.end(), da);
-				auto rb = cif::from_chars(b.begin(), b.end(), db);
+				using namespace cif;
+				using namespace std;
+
+				std::from_chars_result ra, rb;
+
+				ra = selected_charconv<double>::from_chars(a.begin(), a.end(), da);
+				rb = selected_charconv<double>::from_chars(b.begin(), b.end(), db);
 
 				if (ra.ec == std::errc() and rb.ec == std::errc())
 				{
@@ -218,12 +241,12 @@ void item_validator::operator()(std::string_view value) const
 	if (not value.empty() and value != "?" and value != ".")
 	{
 		if (m_type != nullptr and not regex_match(value.begin(), value.end(), *m_type->m_rx))
-			throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{value} + "' does not match type expression for type " + m_type->m_name);
+			throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{ value } + "' does not match type expression for type " + m_type->m_name);
 
 		if (not m_enums.empty())
 		{
-			if (m_enums.count(std::string{value}) == 0)
-				throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{value} + "' is not in the list of allowed values");
+			if (m_enums.count(std::string{ value }) == 0)
+				throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{ value } + "' is not in the list of allowed values");
 		}
 	}
 }
@@ -245,7 +268,7 @@ void category_validator::addItemValidator(item_validator &&v)
 const item_validator *category_validator::get_validator_for_item(std::string_view tag) const
 {
 	const item_validator *result = nullptr;
-	auto i = m_item_validators.find(item_validator{std::string(tag)});
+	auto i = m_item_validators.find(item_validator{ std::string(tag) });
 	if (i != m_item_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
@@ -266,7 +289,7 @@ const type_validator *validator::get_validator_for_type(std::string_view typeCod
 {
 	const type_validator *result = nullptr;
 
-	auto i = m_type_validators.find(type_validator{std::string(typeCode), DDL_PrimitiveType::Char, {}});
+	auto i = m_type_validators.find(type_validator{ std::string(typeCode), DDL_PrimitiveType::Char, {} });
 	if (i != m_type_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
@@ -284,7 +307,7 @@ void validator::add_category_validator(category_validator &&v)
 const category_validator *validator::get_validator_for_category(std::string_view category) const
 {
 	const category_validator *result = nullptr;
-	auto i = m_category_validators.find(category_validator{std::string(category)});
+	auto i = m_category_validators.find(category_validator{ std::string(category) });
 	if (i != m_category_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)

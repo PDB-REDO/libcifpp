@@ -94,6 +94,7 @@ endif()
 
 # Start by finding out if std:regex is usable. Note that the current
 # implementation in GCC is not acceptable, it crashes on long lines.
+# The implementation in libc++ (clang) and MSVC seem to be OK.
 check_cxx_source_compiles("
 #include <iostream>
 #ifndef __GLIBCXX__
@@ -119,7 +120,7 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-find_package(gxrio REQUIRED)
+add_git_submodule(gxrio EXCLUDE_FROM_ALL)
 
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
@@ -315,9 +316,9 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Unit tests
-option(CIFPP_BUILD_TESTS "Build test exectuables" OFF)
+option(ENABLE_TESTING "Build test exectuables" OFF)
 
-if(CIFPP_BUILD_TESTS)
+if(ENABLE_TESTING)
 	enable_testing()
 
 	find_package(Boost REQUIRED)

@@ -1,3 +1,6 @@
 [submodule "regex"]
 	path = regex
 	url = https://github.com/boostorg/regex
+[submodule "gxrio"]
+	path = gxrio
+	url = https://github.com/mhekkel/gxrio.git
