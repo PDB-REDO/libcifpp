@@ -823,8 +823,8 @@ class ResourcePool
   public:
 	static ResourcePool &instance()
 	{
-		static std::unique_ptr<ResourcePool> sInstance(new ResourcePool);
-		return *sInstance;
+		static std::unique_ptr<ResourcePool> s_instance(new ResourcePool);
+		return *s_instance;
 	}
 
 	void pushDir(fs::path dir)

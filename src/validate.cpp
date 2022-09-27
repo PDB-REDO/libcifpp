@@ -222,8 +222,8 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 ////		cerr << "replacing parent in " << mCategory->m_name << " from " << mParent->mCategory->m_name << " to " << parent->mCategory->m_name << endl;
 ////	mParent = parent;
 //
-//	if (mType == nullptr and parent != nullptr)
-//		mType = parent->mType;
+//	if (m_type == nullptr and parent != nullptr)
+//		m_type = parent->m_type;
 //
 //	if (parent != nullptr)
 //	{

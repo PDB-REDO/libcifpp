@@ -58,6 +58,17 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Optionally build a version to be installed inside CCP4
 option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
 
+# Lots of code depend on the availability of the components.cif file
+option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
+
+# An optional cron script can be installed to keep the data files up-to-date
+if(UNIX)
+	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
+endif()
+
+# Unit tests
+option(ENABLE_TESTING "Build test exectuables" OFF)
+
 if(BUILD_FOR_CCP4)
 	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
 		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
@@ -145,10 +156,13 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/validate.cpp
 	${PROJECT_SOURCE_DIR}/src/text.cpp
 	${PROJECT_SOURCE_DIR}/src/utilities.cpp
+
+	${PROJECT_SOURCE_DIR}/src/atom_type.cpp
+	${PROJECT_SOURCE_DIR}/src/compound.cpp
+	${PROJECT_SOURCE_DIR}/src/point.cpp
 )
 
 set(project_headers
-
 	${PROJECT_SOURCE_DIR}/include/cif++.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/utilities.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/item.hpp
@@ -163,6 +177,10 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/condition.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/category.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/row.hpp
+
+	${PROJECT_SOURCE_DIR}/include/cif++/atom_type.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/compound.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/point.hpp
 )
 
 add_library(cifpp ${project_sources} ${project_headers})
@@ -189,8 +207,6 @@ endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-
-option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
 
 if(CIFPP_DOWNLOAD_CCD)
 	# download the components.cif file from CCD
@@ -219,7 +235,6 @@ if(CIFPP_DOWNLOAD_CCD)
 endif()
 
 if(UNIX)
-	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
 	set(CIFPP_CACHE_DIR "/var/cache/libcifpp" CACHE STRING "The cache directory to use")
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 endif()
@@ -315,16 +330,12 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc
 	INPUT ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc.in)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
-# Unit tests
-option(ENABLE_TESTING "Build test exectuables" OFF)
-
 if(ENABLE_TESTING)
 	enable_testing()
 
-	find_package(Boost REQUIRED)
+	find_package(Boost REQUIRED headers)
 
-	list(APPEND CIFPP_tests
-		unit-v2)
+	list(APPEND CIFPP_tests unit-v2 unit-3d)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")
@@ -332,7 +343,7 @@ if(ENABLE_TESTING)
 
 		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::headers)
 
 		if(CIFPP_USE_RSRC)
 			mrc_target_resources(${CIFPP_TEST} ${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic)

@@ -176,8 +176,11 @@ void datablock::write(std::ostream &os) const
 		break;
 	}
 
-	// If the dictionary declares an audit_conform category, put it in
-	if (m_validator != nullptr and m_validator->get_validator_for_category("audit_conform") != nullptr)
+	// If the dictionary declares an audit_conform category, put it in,
+	// but only if it does not exist already!
+	if (get("audit_conform"))
+		get("audit_conform")->write(os);
+	else if (m_validator != nullptr and m_validator->get_validator_for_category("audit_conform") != nullptr)
 	{
 		category auditConform("audit_conform");
 		auditConform.emplace({
