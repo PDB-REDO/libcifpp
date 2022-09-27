@@ -66,6 +66,19 @@ if(UNIX)
 	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
 endif()
 
+# When CCP4 is sourced in the environment, we can recreate the symmetry operations table
+if(EXISTS "$ENV{CCP4}")
+	if(EXISTS "$ENV{CLIBD}/syminfo.lib")
+		option(PDBXPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
+	else()
+		set(PDBXPP_RECREATE_SYMOP_DATA OFF)
+		message(WARNING "Symop data table recreation requested, but file syminfo.lib was not found in $ENV{CLIBD}")
+	endif()
+else()
+	set(PDBXPP_RECREATE_SYMOP_DATA OFF)
+	message("Not trying to recreate symop_table_data.hpp since CCP4 is not defined")
+endif()
+
 # Unit tests
 option(ENABLE_TESTING "Build test exectuables" OFF)
 
@@ -143,6 +156,22 @@ list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 include(VersionString)
 write_version_header("LibCIFPP")
 
+# SymOp data table
+if(PDBXPP_RECREATE_SYMOP_DATA)
+	# The tool to create the table
+	add_executable(symop-map-generator "${PROJECT_SOURCE_DIR}/tools/symop-map-generator.cpp")
+
+	add_custom_command(
+		OUTPUT ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
+		COMMAND $<TARGET_FILE:symop-map-generator> $ENV{CLIBD}/syminfo.lib ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
+	)
+
+	add_custom_target(
+		OUTPUT ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
+		DEPENDS symop-map-generator "$ENV{CLIBD}/syminfo.lib"
+	)
+endif()
+
 # Sources
 set(project_sources
 	${PROJECT_SOURCE_DIR}/src/category.cpp
@@ -160,6 +189,7 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/atom_type.cpp
 	${PROJECT_SOURCE_DIR}/src/compound.cpp
 	${PROJECT_SOURCE_DIR}/src/point.cpp
+	${PROJECT_SOURCE_DIR}/src/symmetry.cpp
 )
 
 set(project_headers
@@ -181,9 +211,10 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/atom_type.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/compound.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/point.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/symmetry.hpp
 )
 
-add_library(cifpp ${project_sources} ${project_headers})
+add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
 add_library(cifpp::cifpp ALIAS cifpp)
 
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)

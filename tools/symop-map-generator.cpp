@@ -358,12 +358,12 @@ int main(int argc, char* const argv[])
 // and $CLIBD/syminfo.lib using symop-map-generator,
 // part of the PDB-REDO suite of programs.
 
-#include <cif++/structure/Symmetry.hpp>
+#include <cif++/symmetry.hpp>
 
-namespace mmcif
+namespace cif
 {
 
-const Spacegroup kSpaceGroups[] =
+const space_group kSpaceGroups[] =
 {
 )";
 
@@ -397,9 +397,9 @@ const Spacegroup kSpaceGroups[] =
 out << R"(
 };
 
-const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(Spacegroup);
+const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(space_group);
 
-const SymopDataBlock kSymopNrTable[] = {
+const symop_datablock kSymopNrTable[] = {
 )" << std::endl;
 
 		int spacegroupNr = 0;
@@ -421,7 +421,7 @@ const SymopDataBlock kSymopNrTable[] = {
 
 		out << R"(};
 
-const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(SymopDataBlock);
+const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(symop_datablock);
 
 } // namespace mmcif
 )" << std::endl;
