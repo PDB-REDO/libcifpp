@@ -524,6 +524,37 @@ _test.value
 
 // --------------------------------------------------------------------
 
+BOOST_AUTO_TEST_CASE(sw_1)
+{
+	using namespace cif::literals;
+
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+_test.value
+1 aap   1.0
+2 noot  1.1
+3 mies  1.2
+    )"_cf;
+
+	auto &db = f.front();
+	auto &test = db["test"];
+
+	swap(test.front()["name"], test.back()["name"]);
+
+	BOOST_CHECK_EQUAL(test.find1<std::string>("id"_key == 1, "name"), "mies");
+	BOOST_CHECK_EQUAL(test.find1<std::string>("id"_key == 3, "name"), "aap");
+
+	swap(test.front()["name"], test.back()["name"]);
+
+	BOOST_CHECK_EQUAL(test.find1<std::string>("id"_key == 1, "name"), "aap");
+	BOOST_CHECK_EQUAL(test.find1<std::string>("id"_key == 3, "name"), "mies");
+}
+
+// --------------------------------------------------------------------
+
 BOOST_AUTO_TEST_CASE(d1)
 {
 	const char dict[] = R"(
@@ -2017,7 +2048,7 @@ _cat_3.num
 
 // 	for (const auto &[compound, seqnr] : std::initializer_list<std::tuple<std::string, int>>{{"PRO", 1}, {"ASN", 2}, {"PHE", 3}})
 // 	{
-// 		auto &res = structure.getResidue("A", compound, seqnr, "");
+// 		auto &res = structure.get_residue("A", compound, seqnr, "");
 // 		auto atoms = res.atoms();
 
 // 		auto dc = components.get(compound);

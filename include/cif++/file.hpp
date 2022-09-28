@@ -84,6 +84,8 @@ class file : public std::list<datablock>
 	void load_dictionary();
 	void load_dictionary(std::string_view name);
 
+	bool contains(std::string_view name) const;
+
 	datablock &operator[](std::string_view name);
 	const datablock &operator[](std::string_view name) const;
 

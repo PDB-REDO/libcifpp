@@ -300,6 +300,11 @@ struct item_handle
 
 	static const item_handle s_null_item;
 
+	friend void swap(item_handle a, item_handle b)
+	{
+		a.swap(b);
+	}
+
   private:
 	item_handle();
 
@@ -318,21 +323,24 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 
 	static value_type convert(const item_handle &ref)
 	{
-		auto txt = ref.text();
-
 		value_type result = {};
 
-		std::from_chars_result r = selected_charconv<value_type>::from_chars(txt.data(), txt.data() + txt.size(), result);
-
-		if (r.ec != std::errc())
+		if (not ref.empty())
 		{
-			result = {};
-			if (cif::VERBOSE)
+			auto txt = ref.text();
+
+			std::from_chars_result r = selected_charconv<value_type>::from_chars(txt.data(), txt.data() + txt.size(), result);
+
+			if (r.ec != std::errc())
 			{
-				if (r.ec == std::errc::invalid_argument)
-					std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
-				else if (r.ec == std::errc::result_out_of_range)
-					std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
+				result = {};
+				if (cif::VERBOSE)
+				{
+					if (r.ec == std::errc::invalid_argument)
+						std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
+					else if (r.ec == std::errc::result_out_of_range)
+						std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
+				}
 			}
 		}
 

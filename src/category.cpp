@@ -1328,46 +1328,18 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 	}
 
 	// first remove old value with cix
-
-	if (row->m_head == nullptr)
-		; // nothing to do
-	else if (row->m_head->m_column_ix == column)
+	for (auto iv = row->m_head; iv != nullptr; iv = iv->m_next)
 	{
-		auto iv = row->m_head;
-		row->m_head = iv->m_next;
-		iv->m_next = nullptr;
+		if (iv->m_column_ix != column)
+			continue;
+
+		row->remove(iv);
 		delete_item(iv);
-	}
-	else
-	{
-		for (auto iv = row->m_head; iv->m_next != nullptr; iv = iv->m_next)
-		{
-			if (iv->m_next->m_column_ix != column)
-				continue;
-
-			auto nv = iv->m_next;
-			iv->m_next = nv->m_next;
-			nv->m_next = nullptr;
-			delete_item(nv);
-
-			break;
-		}
+		break;
 	}
 
 	if (not value.empty())
-	{
-		auto nv = create_item(column, value);
-
-		if (row->m_head == nullptr)
-			row->m_head = nv;
-		else
-		{
-			auto iv = row->m_head;
-			while (iv->m_next != nullptr)
-				iv = iv->m_next;
-			iv->m_next = nv;
-		}
-	}
+		row->append(create_item(column, value));
 
 	if (reinsert)
 		m_index->insert(row);
@@ -1671,6 +1643,87 @@ category::iterator category::erase_impl(const_iterator pos)
 	// return iterator(*this, cur);
 }
 
+void category::swap_item(size_t column_ix, row_handle &a, row_handle &b)
+{
+	assert(this == a.m_category);
+	assert(this == b.m_category);
+
+	item_value *va = nullptr, *vb = nullptr;
+
+	auto ra = a.m_row;
+	auto rb = b.m_row;
+
+	if (ra->m_head != nullptr and ra->m_head->m_column_ix == column_ix)
+	{
+		va = ra->m_head;
+		ra->m_head = va->m_next;
+		va->m_next = nullptr;
+
+		if (ra->m_tail == va)
+			ra->m_tail = ra->m_head;
+	}
+	else
+	{
+		for (auto v = ra->m_head; v->m_next != nullptr; v = v->m_next)
+		{
+			if (v->m_next->m_column_ix != column_ix)
+				continue;
+			
+			va = v->m_next;
+			v->m_next = va->m_next;
+			va->m_next = nullptr;
+
+			if (ra->m_tail == va)
+				ra->m_tail = v;
+
+			break;
+		}
+	}
+
+	if (rb->m_head != nullptr and rb->m_head->m_column_ix == column_ix)
+	{
+		vb = rb->m_head;
+		rb->m_head = vb->m_next;
+		vb->m_next = nullptr;
+
+		if (rb->m_tail == vb)
+			rb->m_tail = rb->m_head;
+	}
+	else
+	{
+		for (auto v = rb->m_head; v->m_next != nullptr; v = v->m_next)
+		{
+			if (v->m_next->m_column_ix != column_ix)
+				continue;
+			
+			vb = v->m_next;
+			v->m_next = vb->m_next;
+			vb->m_next = nullptr;
+
+			if (rb->m_tail = vb)
+				rb->m_tail = v;
+
+			break;
+		}
+	}
+
+	if (ra->m_head == nullptr)
+		ra->m_head = ra->m_tail = vb;
+	else
+	{
+		ra->m_tail->m_next = vb;
+		ra->m_tail = vb;
+	}
+
+	if (rb->m_head == nullptr)
+		rb->m_head = rb->m_tail = va;
+	else
+	{
+		rb->m_tail->m_next = va;
+		rb->m_tail = va;
+	}
+}
+
 void category::reorder_by_index()
 {
 	if (m_index)
@@ -1931,6 +1984,102 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 	}
 
 	os << "# " << '\n';
+}
+
+bool category::operator==(const category &rhs) const
+{
+	auto &a = *this;
+	auto &b = rhs;
+
+	using namespace std::placeholders; 
+	
+//	set<std::string> tagsA(a.fields()), tagsB(b.fields());
+//	
+//	if (tagsA != tagsB)
+//		std::cout << "Unequal number of fields" << std::endl;
+
+	auto validator = a.get_validator();
+	auto catValidator = validator->get_validator_for_category(a.name());
+	if (catValidator == nullptr)
+		throw std::runtime_error("missing cat validator");
+	
+	typedef std::function<int(std::string_view,std::string_view)> compType;
+	std::vector<std::tuple<std::string,compType>> tags;
+	auto keys = catValidator->m_keys;
+	std::vector<size_t> keyIx;
+	
+	for (auto& tag: a.fields())
+	{
+		auto iv = catValidator->get_validator_for_item(tag);
+		if (iv == nullptr)
+			throw std::runtime_error("missing item validator");
+		auto tv = iv->m_type;
+		if (tv == nullptr)
+			throw std::runtime_error("missing type validator");
+		tags.push_back(std::make_tuple(tag, std::bind(&cif::type_validator::compare, tv, std::placeholders::_1, std::placeholders::_2)));
+		
+		auto pred = [tag](const std::string& s) -> bool { return cif::iequals(tag, s) == 0; };
+		if (find_if(keys.begin(), keys.end(), pred) == keys.end())
+			keyIx.push_back(tags.size() - 1);
+	}
+	
+	// a.reorderByIndex();
+	// b.reorderByIndex();
+	
+	auto rowEqual = [&](const row_handle& a, const row_handle& b)
+	{
+		int d = 0;
+
+		for (auto kix: keyIx)
+		{
+			std::string tag;
+			compType compare;
+			
+			std::tie(tag, compare) = tags[kix];
+
+			d = compare(a[tag].text(), b[tag].text());
+
+			if (d != 0)
+				break;
+		}
+		
+		return d == 0;
+	};
+
+	auto ai = a.begin(), bi = b.begin();
+	while (ai != a.end() or bi != b.end())
+	{
+		if (ai == a.end() or bi == b.end())
+			return false;
+		
+		auto ra = *ai, rb = *bi;
+		
+		if (not rowEqual(ra, rb))
+			return false;
+		
+		std::vector<std::string> missingA, missingB, different;
+		
+		for (auto& tt: tags)
+		{
+			std::string tag;
+			compType compare;
+			
+			std::tie(tag, compare) = tt;
+			
+			// make it an option to compare unapplicable to empty or something
+			
+			auto ta = ra[tag].text();	if (ta == "." or ta == "?") ta = "";
+			auto tb = rb[tag].text();	if (tb == "." or tb == "?") tb = "";
+			
+			if (compare(ta, tb) != 0)
+				return false;
+		}
+		
+		++ai;
+		++bi;
+	}
+
+	return true;
 }
 
 } // namespace cif

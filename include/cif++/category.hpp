@@ -595,6 +595,10 @@ class category
 
 	// --------------------------------------------------------------------
 
+	void swap_item(size_t column_ix, row_handle &a, row_handle &b);
+
+	// --------------------------------------------------------------------
+	
 	std::string m_name;
 	std::vector<item_column> m_columns;
 	const validator *m_validator = nullptr;

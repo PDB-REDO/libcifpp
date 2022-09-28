@@ -338,44 +338,44 @@ void ProgressImpl::PrintDone()
 }
 
 Progress::Progress(int64_t inMax, const std::string &inAction)
-	: mImpl(nullptr)
+	: m_impl(nullptr)
 {
 	if (isatty(STDOUT_FILENO))
-		mImpl = new ProgressImpl(inMax, inAction);
+		m_impl = new ProgressImpl(inMax, inAction);
 }
 
 Progress::~Progress()
 {
-	if (mImpl != nullptr)
-		mImpl->Stop();
+	if (m_impl != nullptr)
+		m_impl->Stop();
 
-	delete mImpl;
+	delete m_impl;
 }
 
 void Progress::consumed(int64_t inConsumed)
 {
-	if (mImpl != nullptr and
-		(mImpl->mConsumed += inConsumed) >= mImpl->mMax)
+	if (m_impl != nullptr and
+		(m_impl->mConsumed += inConsumed) >= m_impl->mMax)
 	{
-		mImpl->Stop();
+		m_impl->Stop();
 	}
 }
 
 void Progress::progress(int64_t inProgress)
 {
-	if (mImpl != nullptr and
-		(mImpl->mConsumed = inProgress) >= mImpl->mMax)
+	if (m_impl != nullptr and
+		(m_impl->mConsumed = inProgress) >= m_impl->mMax)
 	{
-		mImpl->Stop();
+		m_impl->Stop();
 	}
 }
 
 void Progress::message(const std::string &inMessage)
 {
-	if (mImpl != nullptr)
+	if (m_impl != nullptr)
 	{
-		std::unique_lock lock(mImpl->mMutex);
-		mImpl->mMessage = inMessage;
+		std::unique_lock lock(m_impl->mMutex);
+		m_impl->mMessage = inMessage;
 	}
 }
 

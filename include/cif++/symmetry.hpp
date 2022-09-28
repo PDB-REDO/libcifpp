@@ -50,8 +50,8 @@ struct space_group
 	int nr;
 };
 
-// extern const Spacegroup kSpaceGroups[];
-// extern const std::size_t kNrOfSpaceGroups;
+extern const space_group kSpaceGroups[];
+extern const std::size_t kNrOfSpaceGroups;
 
 // --------------------------------------------------------------------
 
@@ -134,8 +134,8 @@ struct symop_datablock
 
 static_assert(sizeof(symop_datablock) == sizeof(uint64_t), "Size of symop_data is wrong");
 
-// extern const symop_data_block kSymopNrTable[];
-// extern const std::size_t kSymopNrTableSize;
+extern const symop_datablock kSymopNrTable[];
+extern const std::size_t kSymopNrTableSize;
 
 // --------------------------------------------------------------------
 

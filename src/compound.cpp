@@ -194,7 +194,7 @@ compound::compound(cif::datablock &db, const std::string &id, const std::string 
 	}
 }
 
-compound_atom compound::get_atom_by_id(const std::string &atom_id) const
+compound_atom compound::get_atom_by_atom_id(const std::string &atom_id) const
 {
 	compound_atom result = {};
 	for (auto &a : m_atoms)
@@ -367,9 +367,9 @@ compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_p
 {
 	cif::file cifFile(file);
 
-	auto &compList = cifFile["comp_list"];
-	if (not compList.empty()) // So this is a CCP4 restraints file, special handling
+	if (cifFile.contains("comp_list")) // So this is a CCP4 restraints file, special handling
 	{
+		auto &compList = cifFile["comp_list"];
 		auto &chemComp = compList["chem_comp"];
 
 		for (const auto &[id, name, group] : chemComp.rows<std::string, std::string, std::string>("id", "name", "group"))
@@ -726,7 +726,7 @@ const compound *compound_factory::create(std::string id)
 {
 	// static bool warned = false;
 
-	// if (mImpl and warned == false)
+	// if (m_impl and warned == false)
 	// {
 	// 	std::cerr << "Warning: no compound information library was found, resulting data may be incorrect or incomplete" << std::endl;
 	// 	warned = true;

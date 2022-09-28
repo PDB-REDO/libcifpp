@@ -53,6 +53,11 @@ uint16_t row_handle::add_column(std::string_view name)
 	return m_category->add_column(name);
 }
 
+void row_handle::swap(size_t column, row_handle &b)
+{
+	m_category->swap_item(column, *this, b);
+}
+
 // --------------------------------------------------------------------
 
 row_initializer::row_initializer(row_handle rh)

@@ -88,6 +88,10 @@ class datablock : public std::list<category>
 		return os;
 	}
 
+	// --------------------------------------------------------------------
+	
+	bool operator==(const datablock &rhs) const;
+
   private:
 	std::string m_name;
 	const validator *m_validator = nullptr;

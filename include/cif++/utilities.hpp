@@ -170,7 +170,7 @@ class Progress
 	Progress(const Progress &) = delete;
 	Progress &operator=(const Progress &) = delete;
 
-	struct ProgressImpl *mImpl;
+	struct ProgressImpl *m_impl;
 };
 
 // --------------------------------------------------------------------

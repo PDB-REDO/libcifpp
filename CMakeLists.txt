@@ -190,6 +190,8 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/compound.cpp
 	${PROJECT_SOURCE_DIR}/src/point.cpp
 	${PROJECT_SOURCE_DIR}/src/symmetry.cpp
+
+	${PROJECT_SOURCE_DIR}/src/model.cpp
 )
 
 set(project_headers
@@ -212,6 +214,8 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/compound.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/point.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/symmetry.hpp
+
+	${PROJECT_SOURCE_DIR}/include/cif++/model.hpp
 )
 
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
@@ -366,7 +370,7 @@ if(ENABLE_TESTING)
 
 	find_package(Boost REQUIRED headers)
 
-	list(APPEND CIFPP_tests unit-v2 unit-3d)
+	list(APPEND CIFPP_tests unit-v2 unit-3d format model rename-compound sugar)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")

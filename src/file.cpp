@@ -111,6 +111,11 @@ void file::load_dictionary(std::string_view name)
 	set_validator(&validator_factory::instance()[name]);
 }
 
+bool file::contains(std::string_view name) const
+{
+	return std::find_if(begin(), end(), [name](const datablock &db) { return db.name() == name; }) != end();
+}
+
 datablock &file::operator[](std::string_view name)
 {
 	auto i = std::find_if(begin(), end(), [name](const datablock &c)

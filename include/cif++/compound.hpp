@@ -111,7 +111,7 @@ class compound
 	const std::vector<compound_atom> &atoms() const { return m_atoms; }
 	const std::vector<compound_bond> &bonds() const { return m_bonds; }
 
-	compound_atom get_atom_by_id(const std::string &atom_id) const;
+	compound_atom get_atom_by_atom_id(const std::string &atom_id) const;
 
 	bool atoms_bonded(const std::string &atomId_1, const std::string &atomId_2) const;
 	// float atomBondValue(const std::string &atomId_1, const std::string &atomId_2) const;

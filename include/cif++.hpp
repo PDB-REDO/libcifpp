@@ -29,6 +29,10 @@
 #include <cif++/utilities.hpp>
 #include <cif++/file.hpp>
 #include <cif++/parser.hpp>
+#include <cif++/format.hpp>
 
 #include <cif++/compound.hpp>
 #include <cif++/point.hpp>
+#include <cif++/symmetry.hpp>
+
+#include <cif++/model.hpp>

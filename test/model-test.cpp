@@ -1,0 +1,358 @@
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ * 
+ * Copyright (c) 2021 NKI/AVL, Netherlands Cancer Institute
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#define BOOST_TEST_ALTERNATIVE_INIT_API
+#include <boost/test/included/unit_test.hpp>
+
+#include <stdexcept>
+
+#include <cif++.hpp>
+
+// --------------------------------------------------------------------
+
+cif::file operator""_cf(const char* text, size_t length)
+{
+    struct membuf : public std::streambuf
+    {
+        membuf(char* text, size_t length)
+        {
+            this->setg(text, text, text + length);
+        }
+    } buffer(const_cast<char*>(text), length);
+
+    std::istream is(&buffer);
+    return cif::file(is);
+}
+
+// --------------------------------------------------------------------
+
+std::filesystem::path gTestDir = std::filesystem::current_path();
+
+bool init_unit_test()
+{
+    cif::VERBOSE = 1;
+
+	// not a test, just initialize test dir
+	if (boost::unit_test::framework::master_test_suite().argc == 2)
+		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
+
+	// do this now, avoids the need for installing
+	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
+
+	// initialize CCD location
+	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
+
+	cif::compound_factory::instance().push_dictionary(gTestDir / "HEM.cif");
+
+	return true;
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(create_nonpoly_1)
+{
+    cif::VERBOSE = 1;
+
+	cif::file file;
+	file.load_dictionary("mmcif_pdbx.dic");
+	file.emplace("TEST");	// create a datablock
+	
+	cif::mm::structure structure(file);
+
+	std::string entity_id = structure.create_non_poly_entity("HEM");
+
+	auto atoms = R"(
+data_HEM
+loop_
+_atom_site.group_PDB
+_atom_site.type_symbol
+_atom_site.label_atom_id
+_atom_site.label_alt_id
+_atom_site.pdbx_PDB_ins_code
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.occupancy
+_atom_site.B_iso_or_equiv
+_atom_site.pdbx_formal_charge
+HETATM C  CHA . ? -5.248  39.769 -0.250  1.00 7.67  ?
+HETATM C  CHB . ? -3.774  36.790 3.280   1.00 7.05  ?
+HETATM C  CHC . ? -2.879  33.328 0.013   1.00 7.69  ?
+HETATM C  CHD . ? -4.342  36.262 -3.536  1.00 8.00  ?
+# that's enough to test with
+)"_cf;
+
+	auto &hem_data = atoms["HEM"];
+	auto &atom_site = hem_data["atom_site"];
+
+	auto hem_atoms = atom_site.rows();
+	std::vector<cif::mm::atom> atom_data;
+	for (auto hem_atom: hem_atoms)
+		atom_data.emplace_back(hem_data, hem_atom);
+
+	structure.create_non_poly(entity_id, atom_data);
+
+	auto expected = R"(
+data_TEST
+# 
+_pdbx_nonpoly_scheme.asym_id         A 
+_pdbx_nonpoly_scheme.ndb_seq_num     1 
+_pdbx_nonpoly_scheme.entity_id       1 
+_pdbx_nonpoly_scheme.mon_id          HEM 
+_pdbx_nonpoly_scheme.pdb_seq_num     1 
+_pdbx_nonpoly_scheme.auth_seq_num    1 
+_pdbx_nonpoly_scheme.pdb_mon_id      HEM 
+_pdbx_nonpoly_scheme.auth_mon_id     HEM 
+_pdbx_nonpoly_scheme.pdb_strand_id   A 
+_pdbx_nonpoly_scheme.pdb_ins_code    . 
+#
+loop_
+_atom_site.id
+_atom_site.auth_asym_id
+_atom_site.label_alt_id
+_atom_site.label_asym_id
+_atom_site.label_atom_id
+_atom_site.label_comp_id
+_atom_site.label_entity_id
+_atom_site.label_seq_id
+_atom_site.type_symbol
+_atom_site.group_PDB
+_atom_site.pdbx_PDB_ins_code
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.occupancy
+_atom_site.B_iso_or_equiv
+_atom_site.pdbx_formal_charge
+_atom_site.auth_seq_id
+_atom_site.auth_comp_id
+_atom_site.auth_atom_id
+_atom_site.pdbx_PDB_model_num
+1 A ? A CHA HEM 1 . C HETATM ? -5.248 39.769 -0.250 1.00 7.67 ? 1 HEM CHA 1
+2 A ? A CHB HEM 1 . C HETATM ? -3.774 36.790 3.280  1.00 7.05 ? 1 HEM CHB 1
+3 A ? A CHC HEM 1 . C HETATM ? -2.879 33.328 0.013  1.00 7.69 ? 1 HEM CHC 1
+4 A ? A CHD HEM 1 . C HETATM ? -4.342 36.262 -3.536 1.00 8.00 ? 1 HEM CHD 1
+#
+_chem_comp.id               HEM
+_chem_comp.type             NON-POLYMER
+_chem_comp.name             'PROTOPORPHYRIN IX CONTAINING FE'
+_chem_comp.formula          'C34 H32 Fe N4 O4'
+_chem_comp.formula_weight   616.487000
+#
+_pdbx_entity_nonpoly.entity_id   1
+_pdbx_entity_nonpoly.name        'PROTOPORPHYRIN IX CONTAINING FE'
+_pdbx_entity_nonpoly.comp_id     HEM
+#
+_entity.id                 1
+_entity.type               non-polymer
+_entity.pdbx_description   'PROTOPORPHYRIN IX CONTAINING FE'
+_entity.formula_weight     616.487000
+#
+_struct_asym.id                            A
+_struct_asym.entity_id                     1
+_struct_asym.pdbx_blank_PDB_chainid_flag   N
+_struct_asym.pdbx_modified                 N
+_struct_asym.details                       ?
+#
+)"_cf;
+
+	expected.load_dictionary("mmcif_pdbx.dic");
+
+	if (not (expected.front() == structure.get_datablock()))
+	{
+		BOOST_TEST(false);
+		std::cout << expected.front() << std::endl
+				<< std::endl
+				<< structure.get_datablock() << std::endl;
+	}
+}
+
+// // --------------------------------------------------------------------
+
+// BOOST_AUTO_TEST_CASE(test_load_1)
+// {
+// 	cif::file cf(gTestDir / "5v3g.cif.gz");
+// 	cif::mm::structure s(cf);
+
+// 	for (auto &poly : s.polymers())
+// 	{
+// 		std::cout << std::string(80, '=') << std::endl;
+// 		for (auto &res : poly)
+// 		{
+// 			std::cout << res << std::endl;
+
+// 			for (auto &atom : res.atoms())
+// 				std::cout << "  " << atom << std::endl;
+// 		}
+// 	}
+// }
+
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(test_atom_id)
+{
+	auto data = R"(
+data_TEST
+# 
+_pdbx_nonpoly_scheme.asym_id         A 
+_pdbx_nonpoly_scheme.ndb_seq_num     1 
+_pdbx_nonpoly_scheme.entity_id       1 
+_pdbx_nonpoly_scheme.mon_id          HEM 
+_pdbx_nonpoly_scheme.pdb_seq_num     1 
+_pdbx_nonpoly_scheme.auth_seq_num    1 
+_pdbx_nonpoly_scheme.pdb_mon_id      HEM 
+_pdbx_nonpoly_scheme.auth_mon_id     HEM 
+_pdbx_nonpoly_scheme.pdb_strand_id   A 
+_pdbx_nonpoly_scheme.pdb_ins_code    . 
+#
+loop_
+_atom_site.id
+_atom_site.auth_asym_id
+_atom_site.label_alt_id
+_atom_site.label_asym_id
+_atom_site.label_atom_id
+_atom_site.label_comp_id
+_atom_site.label_entity_id
+_atom_site.label_seq_id
+_atom_site.type_symbol
+_atom_site.group_PDB
+_atom_site.pdbx_PDB_ins_code
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.occupancy
+_atom_site.B_iso_or_equiv
+_atom_site.pdbx_formal_charge
+_atom_site.auth_seq_id
+_atom_site.auth_comp_id
+_atom_site.auth_atom_id
+_atom_site.pdbx_PDB_model_num
+1 A ? A CHA HEM 1 . C HETATM ? -5.248 39.769 -0.250 1.00 7.67 ? 1 HEM CHA 1
+3 A ? A CHB HEM 1 . C HETATM ? -3.774 36.790 3.280  1.00 7.05 ? 1 HEM CHB 1
+2 A ? A CHC HEM 1 . C HETATM ? -2.879 33.328 0.013  1.00 7.69 ? 1 HEM CHC 1
+4 A ? A CHD HEM 1 . C HETATM ? -4.342 36.262 -3.536 1.00 8.00 ? 1 HEM CHD 1
+#
+_chem_comp.id               HEM
+_chem_comp.type             NON-POLYMER
+_chem_comp.name             'PROTOPORPHYRIN IX CONTAINING FE'
+_chem_comp.formula          'C34 H32 Fe N4 O4'
+_chem_comp.formula_weight   616.487000
+#
+_pdbx_entity_nonpoly.entity_id   1
+_pdbx_entity_nonpoly.name        'PROTOPORPHYRIN IX CONTAINING FE'
+_pdbx_entity_nonpoly.comp_id     HEM
+#
+_entity.id                 1
+_entity.type               non-polymer
+_entity.pdbx_description   'PROTOPORPHYRIN IX CONTAINING FE'
+_entity.formula_weight     616.487000
+#
+_struct_asym.id                            A
+_struct_asym.entity_id                     1
+_struct_asym.pdbx_blank_PDB_chainid_flag   N
+_struct_asym.pdbx_modified                 N
+_struct_asym.details                       ?
+#
+)"_cf;
+
+	data.load_dictionary("mmcif_pdbx.dic");
+
+	cif::mm::structure s(data);
+
+	BOOST_CHECK_EQUAL(s.get_atom_by_id("1").get_label_atom_id(), "CHA");
+	BOOST_CHECK_EQUAL(s.get_atom_by_id("2").get_label_atom_id(), "CHC");
+	BOOST_CHECK_EQUAL(s.get_atom_by_id("3").get_label_atom_id(), "CHB");
+	BOOST_CHECK_EQUAL(s.get_atom_by_id("4").get_label_atom_id(), "CHD");
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(atom_numbers_1)
+{
+	const std::filesystem::path test1(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(test1.string());
+	cif::mm::structure structure(file);
+
+	auto &db = file.front();
+
+	auto &atoms = structure.atoms();
+	auto ai = atoms.begin();
+
+	for (const auto &[id, label_asym_id, label_seq_id, label_atom_id, auth_seq_id, label_comp_id] :
+		db["atom_site"].rows<std::string,std::string,int,std::string,std::string,std::string>("id", "label_asym_id", "label_seq_id", "label_atom_id", "auth_seq_id", "label_comp_id"))
+	{
+		auto atom = structure.get_atom_by_id(id);
+
+		BOOST_CHECK_EQUAL(atom.get_label_asym_id(), label_asym_id);
+		BOOST_CHECK_EQUAL(atom.get_label_seq_id(), label_seq_id);
+		BOOST_CHECK_EQUAL(atom.get_label_atom_id(), label_atom_id);
+		BOOST_CHECK_EQUAL(atom.get_auth_seq_id(), auth_seq_id);
+		BOOST_CHECK_EQUAL(atom.get_label_comp_id(), label_comp_id);
+
+		BOOST_ASSERT(ai != atoms.end());
+
+		BOOST_CHECK_EQUAL(ai->id(), id);
+		++ai;
+	}
+
+	BOOST_ASSERT(ai == atoms.end());
+}
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(test_load_1)
+{
+	using namespace cif::literals;
+
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(example.string());
+
+	auto &db = file.front();
+
+	cif::mm::structure s(file);
+
+	BOOST_CHECK(s.polymers().size() == 1);
+
+	auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
+
+	for (auto &poly : s.polymers())
+	{
+		BOOST_CHECK_EQUAL(poly.size(), pdbx_poly_seq_scheme.find("asym_id"_key == poly.get_asym_id()).size());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(remove_residue_1)
+{
+	using namespace cif::literals;
+
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+	s.remove_residue(s.get_residue("B"));
+
+	BOOST_CHECK_NO_THROW(s.validate_atoms());
+}

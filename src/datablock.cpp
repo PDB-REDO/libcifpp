@@ -241,4 +241,71 @@ void datablock::write(std::ostream &os, const std::vector<std::string> &tag_orde
 	}
 }
 
+bool datablock::operator==(const datablock &rhs) const
+{
+	auto &dbA = *this;
+	auto &dbB = rhs;
+
+	std::vector<std::string> catA, catB;
+
+	for (auto &cat : dbA)
+	{
+		if (not cat.empty())
+			catA.push_back(cat.name());
+	}
+	std::sort(catA.begin(), catA.end());
+
+	for (auto &cat : dbB)
+	{
+		if (not cat.empty())
+			catB.push_back(cat.name());
+	}
+	std::sort(catB.begin(), catB.end());
+
+	// loop over categories twice, to group output
+	// First iteration is to list missing categories.
+
+	std::vector<std::string> missingA, missingB;
+
+	auto catA_i = catA.begin(), catB_i = catB.begin();
+
+	while (catA_i != catA.end() and catB_i != catB.end())
+	{
+		if (not iequals(*catA_i, *catB_i))
+			return false;
+
+		++catA_i, ++catB_i;
+	}
+
+	if (catA_i != catA.end() or catB_i != catB.end())
+		return false;
+
+	// Second loop, now compare category values
+	catA_i = catA.begin(), catB_i = catB.begin();
+
+	while (catA_i != catA.end() and catB_i != catB.end())
+	{
+		std::string nA = *catA_i;
+		to_lower(nA);
+
+		std::string nB = *catB_i;
+		to_lower(nB);
+
+		int d = nA.compare(nB);
+		if (d > 0)
+			++catB_i;
+		else if (d < 0)
+			++catA_i;
+		else
+		{
+			if (not (*dbA.get(*catA_i) == *dbB.get(*catB_i)))
+				return false;
+			++catA_i;
+			++catB_i;
+		}
+	}
+
+	return true;
+}
+
 } // namespace cif::cif

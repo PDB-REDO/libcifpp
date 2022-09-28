@@ -126,6 +126,35 @@ class row
 			m_tail = m_tail->m_next = iv;
 	}
 
+	void remove(item_value *iv)
+	{
+		if (iv == m_head)
+		{
+			if (m_tail == m_head)
+			{
+				assert(iv->m_next == nullptr);
+				m_head = m_tail = nullptr;
+			}
+			else
+				m_head = m_head->m_next;
+		}
+		else
+		{
+			for (auto v = m_head; v->m_next != nullptr; v = v->m_next)
+			{
+				if (v->m_next != iv)
+					continue;
+
+				v->m_next = iv->m_next;
+				iv->m_next = nullptr;
+
+				if (m_tail == iv)
+					m_tail = v;
+				break;
+			}
+		}
+	}
+
 	row *m_next = nullptr;
 	item_value *m_head = nullptr, *m_tail = nullptr;
 };
@@ -239,6 +268,8 @@ class row_handle
 	{
 		assign(i.name(), i.value(), updateLinked);
 	}
+
+	void swap(size_t column, row_handle &r);
 
 	category *m_category = nullptr;
 	row *m_row = nullptr;

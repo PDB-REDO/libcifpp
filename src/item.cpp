@@ -60,4 +60,11 @@ void item_handle::assign_value(const item &v)
 	m_row_handle.assign(m_column, v.value(), true);
 }
 
+void item_handle::swap(item_handle &b)
+{
+	assert(m_column == b.m_column);
+	// assert(&m_row_handle.m_category == &b.m_row_handle.m_category);
+	m_row_handle.swap(m_column, b.m_row_handle);
+}
+
 }
