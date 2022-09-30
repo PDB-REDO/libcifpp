@@ -38,9 +38,7 @@
 #include <sstream>
 #include <thread>
 
-#if defined(_MSC_VER)
-#define TERM_WIDTH 80
-#else
+#if not defined(_MSC_VER)
 #include <sys/ioctl.h>
 #include <termios.h>
 #endif
@@ -82,7 +80,9 @@ namespace cif
 
 uint32_t get_terminal_width()
 {
-	return TERM_WIDTH;
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    ::GetConsoleScreenBufferInfo(::GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return csbi.srWindow.Right - csbi.srWindow.Left + 1;
 }
 
 std::string GetExecutablePath()

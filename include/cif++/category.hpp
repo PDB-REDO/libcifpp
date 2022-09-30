@@ -456,7 +456,7 @@ class category
 	std::vector<std::string> get_tag_order() const;
 
 	void write(std::ostream &os) const;
-	void write(std::ostream &os, const std::vector<std::string> &order);
+	void write(std::ostream &os, const std::vector<std::string> &order, bool addMissingColumns = true);
 
   private:
 	void write(std::ostream &os, const std::vector<uint16_t> &order, bool includeEmptyColumns) const;

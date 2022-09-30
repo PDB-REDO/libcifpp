@@ -29,6 +29,7 @@
 #include <cif++/category.hpp>
 #include <cif++/datablock.hpp>
 #include <cif++/parser.hpp>
+#include <cif++/utilities.hpp>
 
 // TODO: Find out what the rules are exactly for linked items, the current implementation
 // is inconsistent. It all depends whether a link is satified if a field taking part in the
@@ -825,19 +826,35 @@ void category::validate_links() const
 			continue;
 
 		size_t missing = 0;
+		category first_missing_rows(name());
+
 		for (auto r : *this)
 		{
 			auto cond = get_parents_condition(r, *parent);
 			if (not cond)
 				continue;
 			if (not parent->exists(std::move(cond)))
+			{
 				++missing;
+				if (VERBOSE and first_missing_rows.size() < 5)
+					first_missing_rows.emplace(r);
+			}
 		}
 
 		if (missing)
 		{
 			std::cerr << "Links for " << link.v->m_link_group_label << " are incomplete" << std::endl
 					  << "  There are " << missing << " items in " << m_name << " that don't have matching parent items in " << parent->m_name << std::endl;
+			
+			if (VERBOSE)
+			{
+				std::cerr << "showing first " << first_missing_rows.size() <<  " rows" << std::endl
+						  << std::endl;
+
+				first_missing_rows.write(std::cerr, link.v->m_child_keys, false);
+
+				std::cerr << std::endl;
+			}
 		}
 	}
 }
@@ -1829,7 +1846,7 @@ void category::write(std::ostream &os) const
 	write(os, order, false);
 }
 
-void category::write(std::ostream &os, const std::vector<std::string> &columns)
+void category::write(std::ostream &os, const std::vector<std::string> &columns, bool addMissingColumns)
 {
 	// make sure all columns are present
 	for (auto &c : columns)
@@ -1841,10 +1858,13 @@ void category::write(std::ostream &os, const std::vector<std::string> &columns)
 	for (auto &c : columns)
 		order.push_back(get_column_ix(c));
 
-	for (size_t i = 0; i < m_columns.size(); ++i)
+	if (addMissingColumns)
 	{
-		if (std::find(order.begin(), order.end(), i) == order.end())
-			order.push_back(i);
+		for (size_t i = 0; i < m_columns.size(); ++i)
+		{
+			if (std::find(order.begin(), order.end(), i) == order.end())
+				order.push_back(i);
+		}
 	}
 
 	write(os, order, true);
@@ -1862,13 +1882,13 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 	{
 		os << "loop_" << '\n';
 
-		std::vector<size_t> columnWidths;
+		std::vector<size_t> columnWidths(m_columns.size());
 
 		for (auto cix : order)
 		{
 			auto &col = m_columns[cix];
 			os << '_' << m_name << '.' << col.m_name << ' ' << '\n';
-			columnWidths.push_back(2);
+			columnWidths[cix] = 2;
 		}
 
 		for (auto r = m_head; r != nullptr; r = r->m_next)
