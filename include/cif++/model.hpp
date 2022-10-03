@@ -82,7 +82,7 @@ class atom
 
 		// bool getAnisoU(float anisou[6]) const;
 
-		int charge() const;
+		int get_charge() const;
 
 		void moveTo(const point &p)
 		{
@@ -304,7 +304,7 @@ class atom
 
 	// const compound &compound() const;
 	// bool is_water() const { return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
-	int get_charge() const;
+	int get_charge() const { return impl().get_charge(); }
 
 	// float uIso() const;
 	// bool getAnisoU(float anisou[6]) const { return impl().getAnisoU(anisou); }

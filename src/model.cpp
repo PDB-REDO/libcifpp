@@ -90,20 +90,20 @@ void atom::atom_impl::prefetch()
 // 	return result;
 // }
 
-// int atom::atom_impl::charge() const
-// {
-// 	auto formalCharge = mRow["pdbx_formal_charge"].as<std::optional<int>>();
+int atom::atom_impl::get_charge() const
+{
+	auto formalCharge = m_row["pdbx_formal_charge"].as<std::optional<int>>();
 
-// 	if (not formalCharge.has_value())
-// 	{
-// 		auto c = compound();
+	if (not formalCharge.has_value())
+	{
+		auto c = cif::compound_factory::instance().create(get_property("label_comp_id"));
 
-// 		if (c != nullptr and c->atoms().size() == 1)
-// 			formalCharge = c->atoms().front().charge;
-// 	}
+		if (c != nullptr and c->atoms().size() == 1)
+			formalCharge = c->atoms().front().charge;
+	}
 
-// 	return formalCharge.value_or(0);
-// }
+	return formalCharge.value_or(0);
+}
 
 // const Compound *atom::atom_impl::compound() const
 // {
@@ -194,11 +194,6 @@ void atom::atom_impl::prefetch()
 // 	}
 
 // 	return *result;
-// }
-
-// int atom::charge() const
-// {
-// 	return impl().charge();
 // }
 
 // float atom::occupancy() const
