@@ -28,6 +28,8 @@
 
 #include <numeric>
 
+#include <cif++/atom_type.hpp>
+
 #if __cpp_lib_format
 #include <format>
 #endif
@@ -80,7 +82,7 @@ class atom
 
 		// bool getAnisoU(float anisou[6]) const;
 
-		// int charge() const;
+		int charge() const;
 
 		void moveTo(const point &p)
 		{
@@ -117,6 +119,20 @@ class atom
 		int get_property_int(std::string_view name) const
 		{
 			int result = 0;
+			if (not m_row[name].empty())
+			{
+				auto s = get_property(name);
+
+				std::from_chars_result r = std::from_chars(s.data(), s.data() + s.length(), result);
+				if (r.ec != std::errc() and VERBOSE > 0)
+					std::cerr << "Error converting " << s << " to number for property " << name << std::endl;
+			}
+			return result;
+		}
+
+		float get_property_float(std::string_view name) const
+		{
+			float result = 0;
 			if (not m_row[name].empty())
 			{
 				auto s = get_property(name);
@@ -214,6 +230,13 @@ class atom
 		return m_impl->get_property_int(name);
 	}
 
+	float get_property_float(std::string_view name) const
+	{
+		if (not m_impl)
+			throw std::logic_error("Error trying to fetch a property from an uninitialized atom");
+		return m_impl->get_property_float(name);
+	}
+
 	void set_property(const std::string_view name, const std::string &value)
 	{
 		if (not m_impl)
@@ -228,7 +251,8 @@ class atom
 	}
 
 	const std::string &id() const { return impl().m_id; }
-	// AtomType type() const { return impl().mType; }
+
+	cif::atom_type get_type() const { return atom_type_traits(get_property("type_symbol")).type(); }
 
 	point get_location() const { return impl().m_location; }
 	void set_location(point p)
@@ -280,7 +304,7 @@ class atom
 
 	// const compound &compound() const;
 	// bool isWater() const { return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
-	// int charge() const;
+	int get_charge() const;
 
 	// float uIso() const;
 	// bool getAnisoU(float anisou[6]) const { return impl().getAnisoU(anisou); }
@@ -297,6 +321,7 @@ class atom
 
 	std::string get_auth_asym_id() const { return get_property("auth_asym_id"); }
 	std::string get_auth_seq_id() const { return get_property("auth_seq_id"); }
+	std::string get_auth_atom_id() const { return get_property("auth_atom_id"); }
 	std::string get_pdb_ins_code() const { return get_property("pdbx_PDB_ins_code"); }
 
 	// const std::string &labelAtomID() const { return impl().mAtomID; }
@@ -457,6 +482,11 @@ class residue
 	}
 	const std::string get_auth_seq_id() const { return m_auth_seq_id; }
 
+	std::string get_pdb_ins_code() const
+	{
+		return m_atoms.empty() ? "" : m_atoms.front().get_pdb_ins_code();
+	}
+
 	const std::string &get_compound_id() const { return m_compound_id; }
 	void set_compound_id(const std::string &id) { m_compound_id = id; }
 
@@ -476,8 +506,8 @@ class residue
 
 	void add_atom(atom &atom);
 
-	// /// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
-	// std::vector<atom> unique_atoms() const;
+	/// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
+	std::vector<atom> unique_atoms() const;
 
 	// /// \brief The alt ID used for the unique atoms
 	// std::string unique_alt_id() const;
@@ -773,12 +803,12 @@ class structure
 	const std::list<polymer> &polymers() const { return m_polymers; }
 	std::list<polymer> &polymers() { return m_polymers; }
 
-	// polymer &getPolymerByAsymID(const std::string &asymID);
+	polymer &get_polymer_by_asym_id(const std::string &asymID);
 
-	// const polymer &getPolymerByAsymID(const std::string &asymID) const
-	// {
-	// 	return const_cast<structure *>(this)->getPolymerByAsymID(asymID);
-	// }
+	const polymer &get_polymer_by_asym_id(const std::string &asymID) const
+	{
+		return const_cast<structure *>(this)->get_polymer_by_asym_id(asymID);
+	}
 
 	const std::list<branch> &branches() const { return m_branches; }
 	std::list<branch> &branches() { return m_branches; }
@@ -797,8 +827,8 @@ class structure
 	// /// \brief Return the atom closest to point \a p
 	// atom getAtomByPosition(point p) const;
 
-	// /// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
-	// atom getAtomByPositionAndType(point p, std::string_view type, std::string_view res_type) const;
+	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
+	atom get_atom_by_position_and_type(point p, std::string_view type, std::string_view res_type) const;
 
 	/// \brief Get a non-poly residue for an asym with id \a asymID
 	residue &get_residue(const std::string &asymID)
@@ -917,11 +947,11 @@ class structure
 
 	void cleanup_empty_categories();
 
-	// /// \brief Direct access to underlying data
-	// category &category(std::string_view name) const
-	// {
-	// 	return m_db[name];
-	// }
+	/// \brief Direct access to underlying data
+	category &get_category(std::string_view name) const
+	{
+		return m_db[name];
+	}
 
 	datablock &get_datablock() const
 	{

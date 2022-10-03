@@ -393,37 +393,37 @@ void residue::add_atom(atom &atom)
 	m_atoms.push_back(atom);
 }
 
-// std::vector<atom> residue::unique_atoms() const
-// {
-// 	if (m_structure == nullptr)
-// 		throw std::runtime_error("Invalid residue object");
+std::vector<atom> residue::unique_atoms() const
+{
+	// if (m_structure == nullptr)
+	// 	throw std::runtime_error("Invalid residue object");
 
-// 	std::vector<atom> result;
-// 	std::string firstAlt;
+	std::vector<atom> result;
+	std::string firstAlt;
 
-// 	for (auto &atom : m_atoms)
-// 	{
-// 		auto alt = atom.get_label_alt_id();
-// 		if (alt.empty())
-// 		{
-// 			result.push_back(atom);
-// 			continue;
-// 		}
+	for (auto &atom : m_atoms)
+	{
+		auto alt = atom.get_label_alt_id();
+		if (alt.empty())
+		{
+			result.push_back(atom);
+			continue;
+		}
 
-// 		if (firstAlt.empty())
-// 			firstAlt = alt;
-// 		else if (alt != firstAlt)
-// 		{
-// 			if (VERBOSE > 0)
-// 				std::cerr << "skipping alternate atom " << atom << std::endl;
-// 			continue;
-// 		}
+		if (firstAlt.empty())
+			firstAlt = alt;
+		else if (alt != firstAlt)
+		{
+			if (VERBOSE > 0)
+				std::cerr << "skipping alternate atom " << atom << std::endl;
+			continue;
+		}
 
-// 		result.push_back(atom);
-// 	}
+		result.push_back(atom);
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
 // std::set<std::string> residue::getAlternateIDs() const
 // {
@@ -1489,47 +1489,47 @@ atom structure::get_atom_by_id(const std::string &id) const
 // 	return {};
 // }
 
-// atom structure::getAtomByPositionAndType(point p, std::string_view type, std::string_view res_type) const
-// {
-// 	double distance = std::numeric_limits<double>::max();
-// 	size_t index = std::numeric_limits<size_t>::max();
+atom structure::get_atom_by_position_and_type(point p, std::string_view type, std::string_view res_type) const
+{
+	double dist = std::numeric_limits<double>::max();
+	size_t index = std::numeric_limits<size_t>::max();
 
-// 	for (size_t i = 0; i < m_atoms.size(); ++i)
-// 	{
-// 		auto &a = m_atoms.at(i);
+	for (size_t i = 0; i < m_atoms.size(); ++i)
+	{
+		auto &a = m_atoms.at(i);
 
-// 		if (a.labelCompID() != res_type)
-// 			continue;
+		if (a.get_label_comp_id() != res_type)
+			continue;
 
-// 		if (a.get_label_atom_id() != type)
-// 			continue;
+		if (a.get_label_atom_id() != type)
+			continue;
 
-// 		auto d = Distance(a.location(), p);
-// 		if (d < distance)
-// 		{
-// 			distance = d;
-// 			index = i;
-// 		}
-// 	}
+		auto d = distance(a.get_location(), p);
+		if (dist > d)
+		{
+			dist = d;
+			index = i;
+		}
+	}
 
-// 	if (index < m_atoms.size())
-// 		return m_atoms.at(index);
+	if (index < m_atoms.size())
+		return m_atoms.at(index);
 
-// 	return {};
-// }
+	return {};
+}
 
-// polymer &structure::getPolymerByAsym_id(const std::string &asym_id)
-// {
-// 	for (auto &poly : m_polymers)
-// 	{
-// 		if (poly.get_asym_id() != asym_id)
-// 			continue;
+polymer &structure::get_polymer_by_asym_id(const std::string &asym_id)
+{
+	for (auto &poly : m_polymers)
+	{
+		if (poly.get_asym_id() != asym_id)
+			continue;
 
-// 		return poly;
-// 	}
+		return poly;
+	}
 
-// 	throw std::runtime_error("polymer with asym id " + asym_id + " not found");
-// }
+	throw std::runtime_error("polymer with asym id " + asym_id + " not found");
+}
 
 residue &structure::get_residue(const std::string &asym_id, int seqID, const std::string &authSeqID)
 {

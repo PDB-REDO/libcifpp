@@ -885,10 +885,7 @@ condition category::get_parents_condition(row_handle rh, const category &parentC
 			cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.text();
 		}
 
-		if (result)
-			result = std::move(result) or std::move(cond);
-		else
-			result = std::move(cond);
+		result = std::move(result) or std::move(cond);
 	}
 
 	return result;

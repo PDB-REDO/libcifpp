@@ -286,14 +286,17 @@ class category
 	{
 		bool result = false;
 
-		cond.prepare(*this);
-
-		for (auto r : *this)
+		if (cond)
 		{
-			if (cond(r))
+			cond.prepare(*this);
+
+			for (auto r : *this)
 			{
-				result = true;
-				break;
+				if (cond(r))
+				{
+					result = true;
+					break;
+				}
 			}
 		}
 

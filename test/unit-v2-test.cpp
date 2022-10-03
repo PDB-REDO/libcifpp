@@ -1514,6 +1514,170 @@ _cat_2.parent_id3
 
 // --------------------------------------------------------------------
 
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(d6)
+{
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+
+               int       numb
+               '[+-]?[0-9]+'
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  yes
+    _category_key.name        '_cat_1.id'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_1.id_2
+    _item.name                '_cat_1.id_2'
+    _item.category_id         cat_1
+    _item.mandatory_code      no
+    _item_type.code           int
+    save_
+
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
+
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.parent_id
+    _item.name                '_cat_2.parent_id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.parent_id_2
+    _item.name                '_cat_2.parent_id_2'
+    _item.category_id         cat_2
+    _item.mandatory_code      no
+    _item_type.code           code
+    save_
+
+loop_
+_pdbx_item_linked_group_list.child_category_id
+_pdbx_item_linked_group_list.link_group_id
+_pdbx_item_linked_group_list.child_name
+_pdbx_item_linked_group_list.parent_name
+_pdbx_item_linked_group_list.parent_category_id
+cat_2 1 '_cat_2.parent_id'  '_cat_1.id' cat_1
+cat_2 1 '_cat_2.parent_id_2' '_cat_1.id_2' cat_1
+
+loop_
+_pdbx_item_linked_group.category_id
+_pdbx_item_linked_group.link_group_id
+_pdbx_item_linked_group.label
+cat_2 1 cat_2:cat_1:1
+    )";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::parse_dictionary("test", is_dict);
+
+	cif::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.id_2
+1 1
+2 2
+3 ?
+
+loop_
+_cat_2.id
+_cat_2.parent_id
+_cat_2.parent_id_2
+ 0 1 1
+ 1 1 ?
+ 2 ? 1
+ 3 ? ?
+ 4 2 2
+ 5 3 1
+ 6 3 ?
+    )";
+
+	// --------------------------------------------------------------------
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	auto &cat1 = f.front()["cat_1"];
+	auto &cat2 = f.front()["cat_2"];
+
+	// f.front().validate_links();
+	// BOOST_CHECK(not );
+
+	using namespace cif::literals;
+
+	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 0)));
+	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 1)));
+	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 2)));
+	BOOST_CHECK(not	cat2.has_parents(cat2.find1("id"_key == 3)));
+	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 4)));
+	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 5)));
+	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 6)));
+}
+
+// --------------------------------------------------------------------
+
 BOOST_AUTO_TEST_CASE(c1)
 {
 	cif::VERBOSE = 1;
