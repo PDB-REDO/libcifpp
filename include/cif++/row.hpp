@@ -277,7 +277,7 @@ class row_handle
 
 // --------------------------------------------------------------------
 
-class row_initializer
+class row_initializer : public std::vector<item>
 {
   public:
 	friend class category;
@@ -289,20 +289,17 @@ class row_initializer
 	row_initializer &operator=(row_initializer &&) = default;
 
 	row_initializer(std::initializer_list<item> items)
-		: m_items(items)
+		: std::vector<item>(items)
 	{
 	}
 
 	template <typename ItemIter, std::enable_if_t<std::is_same_v<typename ItemIter::value_type, item>, int> = 0>
 	row_initializer(ItemIter b, ItemIter e)
-		: m_items(b, e)
+		: std::vector<item>(b, e)
 	{
 	}
 
 	row_initializer(row_handle rh);
-
-  private:
-	std::vector<item> m_items;
 };
 
 } // namespace cif

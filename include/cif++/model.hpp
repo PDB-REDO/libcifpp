@@ -34,19 +34,6 @@
 #include <format>
 #endif
 
-/*
-    To modify a structure, you will have to use actions.
-
-    The currently supported actions are:
-
-//	- Move atom to new location
-    - Remove atom
-//	- Add new atom that was formerly missing
-//	- Add alternate residue
-    -
-
-*/
-
 namespace cif::mm
 {
 
@@ -63,10 +50,9 @@ class atom
   private:
 	struct atom_impl : public std::enable_shared_from_this<atom_impl>
 	{
-		atom_impl(datablock &db, std::string_view id, row_handle row)
+		atom_impl(datablock &db, std::string_view id)
 			: m_db(db)
 			, m_id(id)
-			, m_row(row)
 		{
 			prefetch();
 		}
@@ -84,95 +70,18 @@ class atom
 
 		int get_charge() const;
 
-		void moveTo(const point &p)
-		{
-			if (m_symop != "1_555")
-				throw std::runtime_error("Moving symmetry copy");
-
-#if __cpp_lib_format
-			m_row.assign("Cartn_x", std::format("{:.3f}", p.getX()), false, false);
-			m_row.assign("Cartn_y", std::format("{:.3f}", p.getY()), false, false);
-			m_row.assign("Cartn_z", std::format("{:.3f}", p.getZ()), false, false);
-#else
-			m_row.assign("Cartn_x", format("%.3f", p.m_x).str(), false, false);
-			m_row.assign("Cartn_y", format("%.3f", p.m_y).str(), false, false);
-			m_row.assign("Cartn_z", format("%.3f", p.m_z).str(), false, false);
-#endif
-			m_location = p;
-		}
+		void moveTo(const point &p);
 
 		// const compound *compound() const;
 
-		std::string get_property(std::string_view name) const
-		{
-			return m_row[name].as<std::string>();
-			// 	for (auto &&[tag, ref] : mCachedRefs)
-			// 	{
-			// 		if (tag == name)
-			// 			return ref.as<std::string>();
-			// 	}
+		std::string get_property(std::string_view name) const;
+		int get_property_int(std::string_view name) const;
+		float get_property_float(std::string_view name) const;
 
-			// 	mCachedRefs.emplace_back(name, const_cast<Row &>(mRow)[name]);
-			// return std::get<1>(mCachedRefs.back()).as<std::string>();
-		}
-
-		int get_property_int(std::string_view name) const
-		{
-			int result = 0;
-			if (not m_row[name].empty())
-			{
-				auto s = get_property(name);
-
-				std::from_chars_result r = std::from_chars(s.data(), s.data() + s.length(), result);
-				if (r.ec != std::errc() and VERBOSE > 0)
-					std::cerr << "Error converting " << s << " to number for property " << name << std::endl;
-			}
-			return result;
-		}
-
-		float get_property_float(std::string_view name) const
-		{
-			float result = 0;
-			if (not m_row[name].empty())
-			{
-				auto s = get_property(name);
-
-				std::from_chars_result r = std::from_chars(s.data(), s.data() + s.length(), result);
-				if (r.ec != std::errc() and VERBOSE > 0)
-					std::cerr << "Error converting " << s << " to number for property " << name << std::endl;
-			}
-			return result;
-		}
-
-		void set_property(const std::string_view name, const std::string &value)
-		{
-			m_row.assign(name, value, true, true);
-		}
-
-		// const datablock &m_db;
-		// std::string mID;
-		// atom_type mType;
-
-		// std::string mAtomID;
-		// std::string mCompID;
-		// std::string m_asym_id;
-		// int m_seq_id;
-		// std::string mAltID;
-		// std::string m_auth_seq_id;
-
-		// point mLocation;
-		// row_handle mRow;
-
-		// // mutable std::vector<std::tuple<std::string, detail::ItemReference>> mCachedRefs;
-
-		// mutable const compound *mcompound = nullptr;
-
-		// bool mSymmetryCopy = false;
-		// bool mClone = false;
+		void set_property(const std::string_view name, const std::string &value);
 
 		const datablock &m_db;
 		std::string m_id;
-		row_handle m_row;
 		point m_location;
 		std::string m_symop = "1_555";
 	};
@@ -190,10 +99,10 @@ class atom
 	{
 	}
 
-	atom(datablock &db, row_handle &row)
-		: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>(), row))
-	{
-	}
+	// atom(datablock &db, row_handle &row)
+	// 	: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>(), row))
+	// {
+	// }
 
 	// a special constructor to create symmetry copies
 	atom(const atom &rhs, const point &symmmetry_location, const std::string &symmetry_operation)
@@ -897,10 +806,10 @@ class structure
 	/// \param entity_id	The entity ID of the new nonpoly
 	/// \param atoms		The array of sets of item data containing the data for the atoms.
 	/// \return				The newly create asym ID
-	std::string create_non_poly(const std::string &entity_id, std::vector<std::vector<item>> &atom_info);
+	std::string create_non_poly(const std::string &entity_id, std::vector<row_initializer> atoms);
 
-	/// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a nag_atom_info
-	branch &create_branch(std::vector<std::vector<item>> &nag_atom_info);
+	/// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a atoms
+	branch &create_branch(std::vector<row_initializer> atoms);
 
 	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms constructed from \a atom_info
 	///
@@ -908,7 +817,7 @@ class structure
 	/// \param atom_info    Array containing the info for the atoms to construct for the new sugar
 	/// \param link_sugar   The sugar to link to, note: this is the sugar number (1 based)
 	/// \param link_atom    The atom id of the atom linked in the sugar
-	branch &extend_branch(const std::string &asym_id, std::vector<std::vector<item>> &atom_info,
+	branch &extend_branch(const std::string &asym_id, std::vector<row_initializer> atom_info,
 		int link_sugar, const std::string &link_atom);
 
 	/// \brief Remove \a branch

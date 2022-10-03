@@ -29,8 +29,7 @@
 
 #include <stdexcept>
 
-#include <cif++/cif.hpp>
-#include <cif++/structure/Structure.hpp>
+#include <cif++.hpp>
 
 // --------------------------------------------------------------------
 
@@ -66,7 +65,7 @@ bool init_unit_test()
 	// initialize CCD location
 	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
 
-	mmcif::CompoundFactory::instance().pushDictionary(gTestDir / "HEM.cif");
+	cif::compound_factory::instance().push_dictionary(gTestDir / "HEM.cif");
 
 	return true;
 }
@@ -78,10 +77,10 @@ BOOST_AUTO_TEST_CASE(sugar_name_1)
 	using namespace cif::literals;
 
 	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
-	mmcif::file file(example.string());
-	mmcif::Structure s(file);
+	cif::file file(example.string());
+	cif::mm::structure s(file);
 
-	auto &db = s.datablock();
+	auto &db = s.get_datablock();
 	auto &entity = db["entity"];
 
 	auto &branches = s.branches();
@@ -90,7 +89,7 @@ BOOST_AUTO_TEST_CASE(sugar_name_1)
 
 	for (auto &branch : branches)
 	{
-		auto entityID = branch.front().entityID();
+		auto entityID = branch.front().get_entity_id();
 
 		auto name = entity.find1<std::string>("id"_key == entityID, "pdbx_description");
 		BOOST_CHECK_EQUAL(branch.name(), name);
@@ -104,20 +103,20 @@ BOOST_AUTO_TEST_CASE(create_sugar_1)
 	using namespace cif::literals;
 
 	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
-	mmcif::file file(example.string());
-	mmcif::Structure s(file);
+	cif::file file(example.string());
+	cif::mm::structure s(file);
 
 	// collect atoms from asym L first
-	auto &NAG = s.getResidue("L");
+	auto &NAG = s.get_residue("L");
 	auto nagAtoms = NAG.atoms();
 
-	std::vector<std::vector<cif::Item>> ai;
+	std::vector<cif::row_initializer> ai;
 
-	auto &db = s.datablock();
+	auto &db = s.get_datablock();
 	auto &as = db["atom_site"];
 
 	for (auto r : as.find("label_asym_id"_key == "L"))
-		ai.emplace_back(r.begin(), r.end());
+		ai.emplace_back(r);
 
 	s.remove_residue(NAG);
 
@@ -136,36 +135,36 @@ BOOST_AUTO_TEST_CASE(create_sugar_2)
 	using namespace cif::literals;
 
 	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
-	mmcif::file file(example.string());
-	mmcif::Structure s(file);
+	cif::file file(example.string());
+	cif::mm::structure s(file);
 
 	// Get branch for H
-	auto &bH = s.getBranchByAsymID("H");
+	auto &bH = s.get_branch_by_asym_id("H");
 
 	BOOST_CHECK_EQUAL(bH.size(), 2);
 
-	std::vector<std::vector<cif::Item>> ai[2];
+	std::vector<cif::row_initializer> ai[2];
 
-	auto &db = s.datablock();
+	auto &db = s.get_datablock();
 	auto &as = db["atom_site"];
 
 	for (size_t i = 0; i < 2; ++i)
 	{
 		for (auto r : as.find("label_asym_id"_key == "H" and "auth_seq_id"_key == i + 1))
-			ai[i].emplace_back(r.begin(), r.end());
+			ai[i].emplace_back(r);
 	}
 
 	s.remove_branch(bH);
 
 	auto &bN = s.create_branch(ai[0]);
-	s.extend_branch(bN.asymID(), ai[1], 1, "O4");
+	s.extend_branch(bN.get_asym_id(), ai[1], 1, "O4");
 
 	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose-(1-4)-2-acetamido-2-deoxy-beta-D-glucopyranose");
 	BOOST_CHECK_EQUAL(bN.size(), 2);
 
 	file.save(gTestDir / "test-create_sugar_2.cif");
 
-	BOOST_CHECK_NO_THROW(mmcif::Structure s2(file));
+	BOOST_CHECK_NO_THROW(cif::mm::structure s2(file));
 }
 
 // --------------------------------------------------------------------
@@ -175,11 +174,11 @@ BOOST_AUTO_TEST_CASE(delete_sugar_1)
 	using namespace cif::literals;
 
 	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
-	mmcif::file file(example.string());
-	mmcif::Structure s(file);
+	cif::file file(example.string());
+	cif::mm::structure s(file);
 
 	// Get branch for H
-	auto &bG = s.getBranchByAsymID("G");
+	auto &bG = s.get_branch_by_asym_id("G");
 
 	BOOST_CHECK_EQUAL(bG.size(), 4);
 
@@ -187,12 +186,12 @@ BOOST_AUTO_TEST_CASE(delete_sugar_1)
 
 	BOOST_CHECK_EQUAL(bG.size(), 1);
 
-	auto &bN = s.getBranchByAsymID("G");
+	auto &bN = s.get_branch_by_asym_id("G");
 
 	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
 	BOOST_CHECK_EQUAL(bN.size(), 1);
 
 	file.save(gTestDir / "test-create_sugar_3.cif");
 
-	BOOST_CHECK_NO_THROW(mmcif::Structure s2(file));
+	BOOST_CHECK_NO_THROW(cif::mm::structure s2(file));
 }

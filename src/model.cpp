@@ -47,7 +47,7 @@ namespace cif::mm
 atom::atom_impl::atom_impl(const atom_impl &impl, const point &loc, const std::string &sym_op)
 	: m_db(impl.m_db)
 	, m_id(impl.m_id)
-	, m_row(impl.m_row)
+	// , m_row(impl.m_row)
 	, m_location(loc)
 	, m_symop(sym_op)
 {
@@ -55,7 +55,65 @@ atom::atom_impl::atom_impl(const atom_impl &impl, const point &loc, const std::s
 
 void atom::atom_impl::prefetch()
 {
-	tie(m_location.m_x, m_location.m_y, m_location.m_z) = m_row.get("Cartn_x", "Cartn_y", "Cartn_z");
+	// tie(m_location.m_x, m_location.m_y, m_location.m_z) = m_row.get("Cartn_x", "Cartn_y", "Cartn_z");
+}
+
+
+void atom::atom_impl::moveTo(const point &p)
+{
+// 	if (m_symop != "1_555")
+// 		throw std::runtime_error("Moving symmetry copy");
+
+// #if __cpp_lib_format
+// 	m_row.assign("Cartn_x", std::format("{:.3f}", p.getX()), false, false);
+// 	m_row.assign("Cartn_y", std::format("{:.3f}", p.getY()), false, false);
+// 	m_row.assign("Cartn_z", std::format("{:.3f}", p.getZ()), false, false);
+// #else
+// 	m_row.assign("Cartn_x", format("%.3f", p.m_x).str(), false, false);
+// 	m_row.assign("Cartn_y", format("%.3f", p.m_y).str(), false, false);
+// 	m_row.assign("Cartn_z", format("%.3f", p.m_z).str(), false, false);
+// #endif
+// 	m_location = p;
+}
+
+// const compound *compound() const;
+
+std::string atom::atom_impl::get_property(std::string_view name) const
+{
+	// return m_row[name].as<std::string>();
+}
+
+int atom::atom_impl::get_property_int(std::string_view name) const
+{
+	int result = 0;
+	// if (not m_row[name].empty())
+	// {
+	// 	auto s = get_property(name);
+
+	// 	std::from_chars_result r = std::from_chars(s.data(), s.data() + s.length(), result);
+	// 	if (r.ec != std::errc() and VERBOSE > 0)
+	// 		std::cerr << "Error converting " << s << " to number for property " << name << std::endl;
+	// }
+	return result;
+}
+
+float atom::atom_impl::get_property_float(std::string_view name) const
+{
+	float result = 0;
+	// if (not m_row[name].empty())
+	// {
+	// 	auto s = get_property(name);
+
+	// 	std::from_chars_result r = std::from_chars(s.data(), s.data() + s.length(), result);
+	// 	if (r.ec != std::errc() and VERBOSE > 0)
+	// 		std::cerr << "Error converting " << s << " to number for property " << name << std::endl;
+	// }
+	return result;
+}
+
+void atom::atom_impl::set_property(const std::string_view name, const std::string &value)
+{
+	// m_row.assign(name, value, true, true);
 }
 
 // int atom::atom_impl::compare(const atom_impl &b) const
@@ -92,17 +150,17 @@ void atom::atom_impl::prefetch()
 
 int atom::atom_impl::get_charge() const
 {
-	auto formalCharge = m_row["pdbx_formal_charge"].as<std::optional<int>>();
+	// auto formalCharge = m_row["pdbx_formal_charge"].as<std::optional<int>>();
 
-	if (not formalCharge.has_value())
-	{
-		auto c = cif::compound_factory::instance().create(get_property("label_comp_id"));
+	// if (not formalCharge.has_value())
+	// {
+	// 	auto c = cif::compound_factory::instance().create(get_property("label_comp_id"));
 
-		if (c != nullptr and c->atoms().size() == 1)
-			formalCharge = c->atoms().front().charge;
-	}
+	// 	if (c != nullptr and c->atoms().size() == 1)
+	// 		formalCharge = c->atoms().front().charge;
+	// }
 
-	return formalCharge.value_or(0);
+	// return formalCharge.value_or(0);
 }
 
 // const Compound *atom::atom_impl::compound() const
@@ -919,12 +977,14 @@ polymer::polymer(const structure &s, const std::string &entityID, const std::str
 	, m_asym_id(asym_id)
 	// , mPolySeq(s.m_db["pdbx_poly_seq_scheme"), key("asym_id") == m_asym_id and key("entity_id") == m_entity_i])
 {
+	using namespace cif::literals;
+
 	std::map<size_t, size_t> ix;
 
 	auto &poly_seq_scheme = s.get_datablock()["pdbx_poly_seq_scheme"];
 	reserve(poly_seq_scheme.size());
 
-	for (auto r : poly_seq_scheme)
+	for (auto r : poly_seq_scheme.find("asym_id"_key == asym_id))
 	{
 		int seqID;
 		std::string compoundID, authSeqID;
@@ -1251,7 +1311,7 @@ void structure::load_atoms_for_model(StructureOpenOptions options)
 		if ((options bitand StructureOpenOptions::SkipHydrogen) and type_symbol == "H")
 			continue;
 
-		emplace_atom(std::make_shared<atom::atom_impl>(m_db, id, a));
+		emplace_atom(std::make_shared<atom::atom_impl>(m_db, id));
 	}
 }
 
@@ -1689,6 +1749,14 @@ atom &structure::emplace_atom(atom &&atom)
 
 	m_atom_index.insert(m_atom_index.begin() + R + 1, m_atoms.size());
 
+	// make sure the atom_type is known
+	auto &atom_type = m_db["atom_type"];
+	std::string symbol = atom.get_property("type_symbol");
+
+	using namespace cif::literals;
+	if (not atom_type.exists("symbol"_key == symbol))
+		atom_type.emplace({ { "symbol", symbol } });
+
 	return m_atoms.emplace_back(std::move(atom));
 }
 
@@ -2088,7 +2156,7 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 			{"pdbx_PDB_model_num", 1}
 		});
 
-		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id, row));
+		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
 		res.add_atom(newAtom);
 	}
 
@@ -2110,7 +2178,7 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 	return asym_id;
 }
 
-std::string structure::create_non_poly(const std::string &entity_id, std::vector<std::vector<item>> &atom_info)
+std::string structure::create_non_poly(const std::string &entity_id, std::vector<row_initializer> atoms)
 {
 	using namespace literals;
 
@@ -2131,14 +2199,14 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 
 	auto &res = m_non_polymers.emplace_back(*this, comp_id, asym_id, 0, "1");
 
-	auto appendUnlessSet = [](std::vector<item> &ai, item &&i)
+	auto appendUnlessSet = [](row_initializer &ai, item &&i)
 	{
 		if (find_if(ai.begin(), ai.end(), [name = i.name()](item &ci)
 				{ return ci.name() == name; }) == ai.end())
 			ai.emplace_back(std::move(i));
 	};
 
-	for (auto &atom : atom_info)
+	for (auto &atom : atoms)
 	{
 		auto atom_id = atom_site.get_unique_id("");
 
@@ -2156,7 +2224,7 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 
 		auto row = atom_site.emplace(atom.begin(), atom.end());
 
-		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id, row));
+		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
 		res.add_atom(newAtom);
 	}
 
@@ -2178,10 +2246,10 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 	return asym_id;
 }
 
-branch &structure::create_branch(std::vector<std::vector<item>> &nag_atoms)
+branch &structure::create_branch(std::vector<row_initializer> atoms)
 {
 	// sanity check
-	for (auto &nag_atom : nag_atoms)
+	for (auto &nag_atom : atoms)
 	{
 		for (auto info : nag_atom)
 		{
@@ -2201,14 +2269,14 @@ branch &structure::create_branch(std::vector<std::vector<item>> &nag_atoms)
 
 	auto &atom_site = m_db["atom_site"];
 
-	auto appendUnlessSet = [](std::vector<item> &ai, item &&i)
+	auto appendUnlessSet = [](row_initializer &ai, item &&i)
 	{
 		if (find_if(ai.begin(), ai.end(), [name = i.name()](item &ci)
 				{ return ci.name() == name; }) == ai.end())
 			ai.emplace_back(std::move(i));
 	};
 
-	for (auto &atom : nag_atoms)
+	for (auto &atom : atoms)
 	{
 		auto atom_id = atom_site.get_unique_id("");
 
@@ -2226,7 +2294,7 @@ branch &structure::create_branch(std::vector<std::vector<item>> &nag_atoms)
 
 		auto row = atom_site.emplace(atom.begin(), atom.end());
 
-		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id, row));
+		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
 		sugar.add_atom(newAtom);
 	}
 
@@ -2265,7 +2333,7 @@ branch &structure::create_branch(std::vector<std::vector<item>> &nag_atoms)
 	return branch;
 }
 
-branch &structure::extend_branch(const std::string &asym_id, std::vector<std::vector<item>> &atom_info,
+branch &structure::extend_branch(const std::string &asym_id, std::vector<row_initializer> atom_info,
 	int link_sugar, const std::string &link_atom)
 {
 	// sanity check

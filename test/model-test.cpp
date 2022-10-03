@@ -177,6 +177,7 @@ _struct_asym.pdbx_blank_PDB_chainid_flag   N
 _struct_asym.pdbx_modified                 N
 _struct_asym.details                       ?
 #
+_atom_type.symbol   C
 )"_cf;
 
 	expected.load_dictionary("mmcif_pdbx.dic");

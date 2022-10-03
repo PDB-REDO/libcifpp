@@ -96,6 +96,32 @@ class row_comparator
 		return d;
 	}
 
+	int operator()(const row_initializer &a, const row *b) const
+	{
+		assert(b);
+
+		row_handle rhb(m_category, *b);
+
+		int d = 0, i = 0;
+		for (auto &c : m_comparator)
+		{
+			size_t k;
+			compareFunc f;
+
+			std::tie(k, f) = c;
+
+			std::string_view ka = a[i++].value();
+			std::string_view kb = rhb[k].text();
+
+			d = f(ka, kb);
+
+			if (d != 0)
+				break;
+		}
+
+		return d;
+	}
+
   private:
 	typedef std::function<int(std::string_view, std::string_view)> compareFunc;
 	typedef std::tuple<size_t, compareFunc> key_comparator;
@@ -126,6 +152,7 @@ class category_index
 	}
 
 	row *find(row *k) const;
+	row *find_by_value(row_initializer k) const;
 
 	void insert(row *r);
 	void erase(row *r);
@@ -320,6 +347,37 @@ row *category_index::find(row *k) const
 	while (r != nullptr)
 	{
 		int d = m_row_comparator(k, r->m_row);
+		if (d < 0)
+			r = r->m_left;
+		else if (d > 0)
+			r = r->m_right;
+		else
+			break;
+	}
+
+	return r ? r->m_row : nullptr;
+}
+
+row *category_index::find_by_value(row_initializer k) const
+{
+	// sort the values in k first
+
+	row_initializer k2;
+	for (auto &f : m_category.key_field_indices())
+	{
+		std::string fld = fld=m_category.get_column_name(f);
+
+		auto ki = find_if(k.begin(), k.end(), [&fld](item &i) { return i.name() == fld; });
+		if (ki == k.end())
+			k2.emplace_back(fld, "");
+		else
+			k2.emplace_back(*ki);
+	}
+
+	const entry *r = m_root;
+	while (r != nullptr)
+	{
+		int d = m_row_comparator(k2, r->m_row);
 		if (d < 0)
 			r = r->m_left;
 		else if (d > 0)
@@ -857,6 +915,17 @@ void category::validate_links() const
 			}
 		}
 	}
+}
+
+// --------------------------------------------------------------------
+
+row_handle category::operator[](const key_type &key)
+{
+	if (m_index == nullptr)
+		throw std::logic_error("Category " + m_name + " does not have an index");
+
+	auto row = m_index->find_by_value(key);
+	return row != nullptr ? row_handle{ *this, *row } : row_handle{};
 }
 
 // --------------------------------------------------------------------
@@ -1714,7 +1783,7 @@ void category::swap_item(size_t column_ix, row_handle &a, row_handle &b)
 			v->m_next = vb->m_next;
 			vb->m_next = nullptr;
 
-			if (rb->m_tail = vb)
+			if (rb->m_tail == vb)
 				rb->m_tail = v;
 
 			break;

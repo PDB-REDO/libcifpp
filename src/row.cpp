@@ -69,7 +69,7 @@ row_initializer::row_initializer(row_handle rh)
 	auto &cat = *rh.m_category;
 
 	for (auto i = r->m_head; i != nullptr; i = i->m_next)
-		m_items.emplace_back(cat.get_column_name(i->m_column_ix), i->text());
+		emplace_back(cat.get_column_name(i->m_column_ix), i->text());
 }
 
 } // namespace cif

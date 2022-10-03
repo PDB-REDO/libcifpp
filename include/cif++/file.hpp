@@ -86,6 +86,18 @@ class file : public std::list<datablock>
 
 	bool contains(std::string_view name) const;
 
+	datablock &front()
+	{
+		assert(not empty());
+		return std::list<datablock>::front();
+	}
+
+	const datablock &front() const
+	{
+		assert(not empty());
+		return std::list<datablock>::front();
+	}
+
 	datablock &operator[](std::string_view name);
 	const datablock &operator[](std::string_view name) const;
 

@@ -370,8 +370,7 @@ if(ENABLE_TESTING)
 
 	find_package(Boost REQUIRED headers)
 
-	list(APPEND CIFPP_tests unit-v2 unit-3d format model
-	# rename-compound sugar
+	list(APPEND CIFPP_tests unit-v2 unit-3d format model rename-compound sugar
 	)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)

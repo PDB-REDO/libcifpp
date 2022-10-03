@@ -159,6 +159,22 @@ class category
 	}
 
 	// --------------------------------------------------------------------
+	// A category can have a key, as defined by the validator/dictionary
+
+	/// @brief The key type
+	using key_type = row_initializer;
+
+	/// @brief Return a row_handle for the row specified by \a key
+	/// @param key The value for the key, fields specified in the dictionary should have a value
+	/// @return The row found in the index, or an undefined row_handle
+	row_handle operator[](const key_type &key);
+
+	const row_handle operator[](const key_type &key) const
+	{
+		return const_cast<category *>(this)->operator[](key);
+	}
+
+	// --------------------------------------------------------------------
 
 	template <typename... Ts, typename... Ns>
 	iterator_proxy<const category, Ts...> rows(Ns... names) const
@@ -335,7 +351,7 @@ class category
 
 	iterator emplace(row_initializer &&ri)
 	{
-		return this->emplace(ri.m_items.begin(), ri.m_items.end());
+		return this->emplace(ri.begin(), ri.end());
 	}
 
 	template <typename ItemIter>
