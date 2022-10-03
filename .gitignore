@@ -12,5 +12,3 @@ CMakeSettings.json
 msvc/
 Testing/
 rsrc/feature-request.txt
-test/*.cif*
-test/*.ent*

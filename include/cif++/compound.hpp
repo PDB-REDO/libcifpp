@@ -114,9 +114,6 @@ class compound
 	compound_atom get_atom_by_atom_id(const std::string &atom_id) const;
 
 	bool atoms_bonded(const std::string &atomId_1, const std::string &atomId_2) const;
-	// float atomBondValue(const std::string &atomId_1, const std::string &atomId_2) const;
-	// float bondAngle(const std::string &atomId_1, const std::string &atomId_2, const std::string &atomId_3) const;
-	// float chiralVolume(const std::string &centreID) const;
 
 	bool is_water() const
 	{

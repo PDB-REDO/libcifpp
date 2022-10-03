@@ -1672,7 +1672,7 @@ _cat_2.parent_id_2
 	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 2)));
 	BOOST_CHECK(not	cat2.has_parents(cat2.find1("id"_key == 3)));
 	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 4)));
-	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 5)));
+	BOOST_CHECK(not	cat2.has_parents(cat2.find1("id"_key == 5)));
 	BOOST_CHECK(	cat2.has_parents(cat2.find1("id"_key == 6)));
 }
 

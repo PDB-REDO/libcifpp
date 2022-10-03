@@ -425,19 +425,19 @@ std::vector<atom> residue::unique_atoms() const
 	return result;
 }
 
-// std::set<std::string> residue::getAlternateIDs() const
-// {
-// 	std::set<std::string> result;
+std::set<std::string> residue::get_alternate_ids() const
+{
+	std::set<std::string> result;
 
-// 	for (auto a : m_atoms)
-// 	{
-// 		auto alt = a.get_label_alt_id();
-// 		if (not alt.empty())
-// 			result.insert(alt);
-// 	}
+	for (auto a : m_atoms)
+	{
+		auto alt = a.get_label_alt_id();
+		if (not alt.empty())
+			result.insert(alt);
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
 atom residue::get_atom_by_atom_id(const std::string &atom_id) const
 {
@@ -471,63 +471,50 @@ bool residue::is_entity() const
 	return a1.size() == a2.size();
 }
 
-// std::string residue::authID() const
-// {
-// 	return get_auth_asym_id() + authSeqID() + authInsCode();
-// }
+std::tuple<point, float> residue::center_and_radius() const
+{
+	std::vector<point> pts;
+	for (auto &a : m_atoms)
+		pts.push_back(a.get_location());
 
-// std::string residue::labelID() const
-// {
-// 	if (m_compound_id == "HOH")
-// 		return m_asym_id + m_auth_seq_id;
-// 	else
-// 		return m_asym_id + std::to_string(m_seq_id);
-// }
+	auto center = centroid(pts);
+	float radius = 0;
 
-// std::tuple<point, float> residue::centerAndRadius() const
-// {
-// 	std::vector<point> pts;
-// 	for (auto &a : m_atoms)
-// 		pts.push_back(a.location());
+	for (auto &pt : pts)
+	{
+		float d = static_cast<float>(distance(pt, center));
+		if (radius < d)
+			radius = d;
+	}
 
-// 	auto center = Centroid(pts);
-// 	float radius = 0;
+	return std::make_tuple(center, radius);
+}
 
-// 	for (auto &pt : pts)
-// 	{
-// 		float d = static_cast<float>(Distance(pt, center));
-// 		if (radius < d)
-// 			radius = d;
-// 	}
+bool residue::has_alternate_atoms() const
+{
+	return std::find_if(m_atoms.begin(), m_atoms.end(), [](const atom &atom)
+			   { return atom.is_alternate(); }) != m_atoms.end();
+}
 
-// 	return std::make_tuple(center, radius);
-// }
+std::set<std::string> residue::get_atom_ids() const
+{
+	std::set<std::string> ids;
+	for (auto a : m_atoms)
+		ids.insert(a.get_label_atom_id());
 
-// bool residue::hasAlternateAtoms() const
-// {
-// 	return std::find_if(m_atoms.begin(), m_atoms.end(), [](const atom &atom)
-// 			   { return atom.is_alternate(); }) != m_atoms.end();
-// }
+	return ids;
+}
 
-// std::set<std::string> residue::getAtom_ids() const
-// {
-// 	std::set<std::string> ids;
-// 	for (auto a : m_atoms)
-// 		ids.insert(a.get_label_atom_id());
-
-// 	return ids;
-// }
-
-// std::vector<atom> residue::getAtomsByID(const std::string &atom_id) const
-// {
-// 	std::vector<atom> atoms;
-// 	for (auto a : m_atoms)
-// 	{
-// 		if (a.get_label_atom_id() == atom_id)
-// 			atoms.push_back(a);
-// 	}
-// 	return atoms;
-// }
+std::vector<atom> residue::get_atoms_by_id(const std::string &atom_id) const
+{
+	std::vector<atom> atoms;
+	for (auto a : m_atoms)
+	{
+		if (a.get_label_atom_id() == atom_id)
+			atoms.push_back(a);
+	}
+	return atoms;
+}
 
 std::ostream &operator<<(std::ostream &os, const residue &res)
 {
@@ -567,366 +554,366 @@ monomer &monomer::operator=(monomer &&rhs)
 	return *this;
 }
 
-// bool monomer::is_first_in_chain() const
-// {
-// 	return m_index == 0;
-// }
+bool monomer::is_first_in_chain() const
+{
+	return m_index == 0;
+}
 
-// bool monomer::is_last_in_chain() const
-// {
-// 	return m_index + 1 == m_polymer->size();
-// }
+bool monomer::is_last_in_chain() const
+{
+	return m_index + 1 == m_polymer->size();
+}
 
-// bool monomer::has_alpha() const
-// {
-// 	return m_index >= 1 and m_index + 2 < m_polymer->size();
-// }
+bool monomer::has_alpha() const
+{
+	return m_index >= 1 and m_index + 2 < m_polymer->size();
+}
 
-// bool monomer::has_kappa() const
-// {
-// 	return m_index >= 2 and m_index + 2 < m_polymer->size();
-// }
+bool monomer::has_kappa() const
+{
+	return m_index >= 2 and m_index + 2 < m_polymer->size();
+}
 
-// float monomer::phi() const
-// {
-// 	float result = 360;
+float monomer::phi() const
+{
+	float result = 360;
 
-// 	try
-// 	{
-// 		if (m_index > 0)
-// 		{
-// 			auto &prev = m_polymer->operator[](m_index - 1);
-// 			if (prev.m_seq_id + 1 == m_seq_id)
-// 				result = static_cast<float>(DihedralAngle(prev.C().location(), N().location(), CAlpha().location(), C().location()));
-// 		}
-// 	}
-// 	catch (const std::exception &ex)
-// 	{
-// 		if (VERBOSE > 0)
-// 			std::cerr << ex.what() << std::endl;
-// 	}
+	try
+	{
+		if (m_index > 0)
+		{
+			auto &prev = m_polymer->operator[](m_index - 1);
+			if (prev.m_seq_id + 1 == m_seq_id)
+				result = static_cast<float>(dihedral_angle(prev.C().get_location(), N().get_location(), CAlpha().get_location(), C().get_location()));
+		}
+	}
+	catch (const std::exception &ex)
+	{
+		if (VERBOSE > 0)
+			std::cerr << ex.what() << std::endl;
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// float monomer::psi() const
-// {
-// 	float result = 360;
+float monomer::psi() const
+{
+	float result = 360;
 
-// 	try
-// 	{
-// 		if (m_index + 1 < m_polymer->size())
-// 		{
-// 			auto &next = m_polymer->operator[](m_index + 1);
-// 			if (m_seq_id + 1 == next.m_seq_id)
-// 				result = static_cast<float>(DihedralAngle(N().location(), CAlpha().location(), C().location(), next.N().location()));
-// 		}
-// 	}
-// 	catch (const std::exception &ex)
-// 	{
-// 		if (VERBOSE > 0)
-// 			std::cerr << ex.what() << std::endl;
-// 	}
+	try
+	{
+		if (m_index + 1 < m_polymer->size())
+		{
+			auto &next = m_polymer->operator[](m_index + 1);
+			if (m_seq_id + 1 == next.m_seq_id)
+				result = static_cast<float>(dihedral_angle(N().get_location(), CAlpha().get_location(), C().get_location(), next.N().get_location()));
+		}
+	}
+	catch (const std::exception &ex)
+	{
+		if (VERBOSE > 0)
+			std::cerr << ex.what() << std::endl;
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// float monomer::alpha() const
-// {
-// 	float result = 360;
+float monomer::alpha() const
+{
+	float result = 360;
 
-// 	try
-// 	{
-// 		if (m_index >= 1 and m_index + 2 < m_polymer->size())
-// 		{
-// 			auto &prev = m_polymer->operator[](m_index - 1);
-// 			auto &next = m_polymer->operator[](m_index + 1);
-// 			auto &nextNext = m_polymer->operator[](m_index + 2);
+	try
+	{
+		if (m_index >= 1 and m_index + 2 < m_polymer->size())
+		{
+			auto &prev = m_polymer->operator[](m_index - 1);
+			auto &next = m_polymer->operator[](m_index + 1);
+			auto &nextNext = m_polymer->operator[](m_index + 2);
 
-// 			result = static_cast<float>(DihedralAngle(prev.CAlpha().location(), CAlpha().location(), next.CAlpha().location(), nextNext.CAlpha().location()));
-// 		}
-// 	}
-// 	catch (const std::exception &ex)
-// 	{
-// 		if (VERBOSE > 0)
-// 			std::cerr << ex.what() << std::endl;
-// 	}
+			result = static_cast<float>(dihedral_angle(prev.CAlpha().get_location(), CAlpha().get_location(), next.CAlpha().get_location(), nextNext.CAlpha().get_location()));
+		}
+	}
+	catch (const std::exception &ex)
+	{
+		if (VERBOSE > 0)
+			std::cerr << ex.what() << std::endl;
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// float monomer::kappa() const
-// {
-// 	float result = 360;
+float monomer::kappa() const
+{
+	float result = 360;
 
-// 	try
-// 	{
-// 		if (m_index >= 2 and m_index + 2 < m_polymer->size())
-// 		{
-// 			auto &prevPrev = m_polymer->operator[](m_index - 2);
-// 			auto &nextNext = m_polymer->operator[](m_index + 2);
+	try
+	{
+		if (m_index >= 2 and m_index + 2 < m_polymer->size())
+		{
+			auto &prevPrev = m_polymer->operator[](m_index - 2);
+			auto &nextNext = m_polymer->operator[](m_index + 2);
 
-// 			if (prevPrev.m_seq_id + 4 == nextNext.m_seq_id)
-// 			{
-// 				double ckap = CosinusAngle(CAlpha().location(), prevPrev.CAlpha().location(), nextNext.CAlpha().location(), CAlpha().location());
-// 				double skap = std::sqrt(1 - ckap * ckap);
-// 				result = static_cast<float>(std::atan2(skap, ckap) * 180 / kPI);
-// 			}
-// 		}
-// 	}
-// 	catch (const std::exception &ex)
-// 	{
-// 		if (VERBOSE > 0)
-// 			std::cerr << "When trying to calculate kappa for " << asym_id() << ':' << seqID() << ": "
-// 					  << ex.what() << std::endl;
-// 	}
+			if (prevPrev.m_seq_id + 4 == nextNext.m_seq_id)
+			{
+				double ckap = cosinus_angle(CAlpha().get_location(), prevPrev.CAlpha().get_location(), nextNext.CAlpha().get_location(), CAlpha().get_location());
+				double skap = std::sqrt(1 - ckap * ckap);
+				result = static_cast<float>(std::atan2(skap, ckap) * 180 / kPI);
+			}
+		}
+	}
+	catch (const std::exception &ex)
+	{
+		if (VERBOSE > 0)
+			std::cerr << "When trying to calculate kappa for " << m_asym_id << ':' << m_seq_id << ": "
+					  << ex.what() << std::endl;
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// float monomer::tco() const
-// {
-// 	float result = 0.0;
+float monomer::tco() const
+{
+	float result = 0.0;
 
-// 	try
-// 	{
-// 		if (m_index > 0)
-// 		{
-// 			auto &prev = m_polymer->operator[](m_index - 1);
-// 			if (prev.m_seq_id + 1 == m_seq_id)
-// 				result = static_cast<float>(CosinusAngle(C().location(), O().location(), prev.C().location(), prev.O().location()));
-// 		}
-// 	}
-// 	catch (const std::exception &ex)
-// 	{
-// 		if (VERBOSE > 0)
-// 			std::cerr << "When trying to calculate tco for " << asym_id() << ':' << seqID() << ": "
-// 					  << ex.what() << std::endl;
-// 	}
+	try
+	{
+		if (m_index > 0)
+		{
+			auto &prev = m_polymer->operator[](m_index - 1);
+			if (prev.m_seq_id + 1 == m_seq_id)
+				result = static_cast<float>(cosinus_angle(C().get_location(), O().get_location(), prev.C().get_location(), prev.O().get_location()));
+		}
+	}
+	catch (const std::exception &ex)
+	{
+		if (VERBOSE > 0)
+			std::cerr << "When trying to calculate tco for " << get_asym_id() << ':' << get_seq_id() << ": "
+					  << ex.what() << std::endl;
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// float monomer::omega() const
-// {
-// 	float result = 360;
+float monomer::omega() const
+{
+	float result = 360;
 
-// 	try
-// 	{
-// 		if (not is_last_in_chain())
-// 			result = omega(*this, m_polymer->operator[](m_index + 1));
-// 	}
-// 	catch (const std::exception &ex)
-// 	{
-// 		if (VERBOSE > 0)
-// 			std::cerr << "When trying to calculate omega for " << asym_id() << ':' << seqID() << ": "
-// 					  << ex.what() << std::endl;
-// 	}
+	try
+	{
+		if (not is_last_in_chain())
+			result = omega(*this, m_polymer->operator[](m_index + 1));
+	}
+	catch (const std::exception &ex)
+	{
+		if (VERBOSE > 0)
+			std::cerr << "When trying to calculate omega for " << get_asym_id() << ':' << get_seq_id() << ": "
+					  << ex.what() << std::endl;
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// const std::map<std::string, std::vector<std::string>> kChiAtomsMap = {
-// 	{"ASP", {"CG", "OD1"}},
-// 	{"ASN", {"CG", "OD1"}},
-// 	{"ARG", {"CG", "CD", "NE", "CZ"}},
-// 	{"HIS", {"CG", "ND1"}},
-// 	{"GLN", {"CG", "CD", "OE1"}},
-// 	{"GLU", {"CG", "CD", "OE1"}},
-// 	{"SER", {"OG"}},
-// 	{"THR", {"OG1"}},
-// 	{"LYS", {"CG", "CD", "CE", "NZ"}},
-// 	{"TYR", {"CG", "CD1"}},
-// 	{"PHE", {"CG", "CD1"}},
-// 	{"LEU", {"CG", "CD1"}},
-// 	{"TRP", {"CG", "CD1"}},
-// 	{"CYS", {"SG"}},
-// 	{"ILE", {"CG1", "CD1"}},
-// 	{"MET", {"CG", "SD", "CE"}},
-// 	{"MSE", {"CG", "SE", "CE"}},
-// 	{"PRO", {"CG", "CD"}},
-// 	{"VAL", {"CG1"}}};
+const std::map<std::string, std::vector<std::string>> kChiAtomsMap = {
+	{"ASP", {"CG", "OD1"}},
+	{"ASN", {"CG", "OD1"}},
+	{"ARG", {"CG", "CD", "NE", "CZ"}},
+	{"HIS", {"CG", "ND1"}},
+	{"GLN", {"CG", "CD", "OE1"}},
+	{"GLU", {"CG", "CD", "OE1"}},
+	{"SER", {"OG"}},
+	{"THR", {"OG1"}},
+	{"LYS", {"CG", "CD", "CE", "NZ"}},
+	{"TYR", {"CG", "CD1"}},
+	{"PHE", {"CG", "CD1"}},
+	{"LEU", {"CG", "CD1"}},
+	{"TRP", {"CG", "CD1"}},
+	{"CYS", {"SG"}},
+	{"ILE", {"CG1", "CD1"}},
+	{"MET", {"CG", "SD", "CE"}},
+	{"MSE", {"CG", "SE", "CE"}},
+	{"PRO", {"CG", "CD"}},
+	{"VAL", {"CG1"}}};
 
-// size_t monomer::nrOfChis() const
-// {
-// 	size_t result = 0;
+size_t monomer::nr_of_chis() const
+{
+	size_t result = 0;
 
-// 	auto i = kChiAtomsMap.find(m_compound_id);
-// 	if (i != kChiAtomsMap.end())
-// 		result = i->second.size();
+	auto i = kChiAtomsMap.find(m_compound_id);
+	if (i != kChiAtomsMap.end())
+		result = i->second.size();
 
-// 	return result;
-// }
+	return result;
+}
 
-// float monomer::chi(size_t nr) const
-// {
-// 	float result = 0;
+float monomer::chi(size_t nr) const
+{
+	float result = 0;
 
-// 	try
-// 	{
-// 		auto i = kChiAtomsMap.find(m_compound_id);
-// 		if (i != kChiAtomsMap.end() and nr < i->second.size())
-// 		{
-// 			std::vector<std::string> atoms{"N", "CA", "CB"};
+	try
+	{
+		auto i = kChiAtomsMap.find(m_compound_id);
+		if (i != kChiAtomsMap.end() and nr < i->second.size())
+		{
+			std::vector<std::string> atoms{"N", "CA", "CB"};
 
-// 			atoms.insert(atoms.end(), i->second.begin(), i->second.end());
+			atoms.insert(atoms.end(), i->second.begin(), i->second.end());
 
-// 			// in case we have a positive chiral volume we need to swap atoms
-// 			if (chiralVolume() > 0)
-// 			{
-// 				if (m_compound_id == "LEU")
-// 					atoms.back() = "CD2";
-// 				if (m_compound_id == "VAL")
-// 					atoms.back() = "CG2";
-// 			}
+			// in case we have a positive chiral volume we need to swap atoms
+			if (chiral_volume() > 0)
+			{
+				if (m_compound_id == "LEU")
+					atoms.back() = "CD2";
+				if (m_compound_id == "VAL")
+					atoms.back() = "CG2";
+			}
 
-// 			result = static_cast<float>(DihedralAngle(
-// 				get_atom_by_id(atoms[nr + 0]).location(),
-// 				get_atom_by_id(atoms[nr + 1]).location(),
-// 				get_atom_by_id(atoms[nr + 2]).location(),
-// 				get_atom_by_id(atoms[nr + 3]).location()));
-// 		}
-// 	}
-// 	catch (const std::exception &e)
-// 	{
-// 		if (VERBOSE > 0)
-// 			std::cerr << e.what() << std::endl;
-// 		result = 0;
-// 	}
+			result = static_cast<float>(dihedral_angle(
+				get_atom_by_atom_id(atoms[nr + 0]).get_location(),
+				get_atom_by_atom_id(atoms[nr + 1]).get_location(),
+				get_atom_by_atom_id(atoms[nr + 2]).get_location(),
+				get_atom_by_atom_id(atoms[nr + 3]).get_location()));
+		}
+	}
+	catch (const std::exception &e)
+	{
+		if (VERBOSE > 0)
+			std::cerr << e.what() << std::endl;
+		result = 0;
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// bool monomer::isCis() const
-// {
-// 	bool result = false;
+bool monomer::is_cis() const
+{
+	bool result = false;
 
-// 	if (m_index + 1 < m_polymer->size())
-// 	{
-// 		auto &next = m_polymer->operator[](m_index + 1);
+	if (m_index + 1 < m_polymer->size())
+	{
+		auto &next = m_polymer->operator[](m_index + 1);
 
-// 		result = monomer::isCis(*this, next);
-// 	}
+		result = monomer::is_cis(*this, next);
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// bool monomer::isComplete() const
-// {
-// 	int seen = 0;
-// 	for (auto &a : m_atoms)
-// 	{
-// 		if (a.get_label_atom_id() == "CA")
-// 			seen |= 1;
-// 		else if (a.get_label_atom_id() == "C")
-// 			seen |= 2;
-// 		else if (a.get_label_atom_id() == "N")
-// 			seen |= 4;
-// 		else if (a.get_label_atom_id() == "O")
-// 			seen |= 8;
-// 		// else if (a.get_label_atom_id() == "OXT")		seen |= 16;
-// 	}
-// 	return seen == 15;
-// }
+bool monomer::is_complete() const
+{
+	int seen = 0;
+	for (auto &a : m_atoms)
+	{
+		if (a.get_label_atom_id() == "CA")
+			seen |= 1;
+		else if (a.get_label_atom_id() == "C")
+			seen |= 2;
+		else if (a.get_label_atom_id() == "N")
+			seen |= 4;
+		else if (a.get_label_atom_id() == "O")
+			seen |= 8;
+		// else if (a.get_label_atom_id() == "OXT")		seen |= 16;
+	}
+	return seen == 15;
+}
 
-// bool monomer::hasAlternateBackboneAtoms() const
-// {
-// 	bool result = false;
+bool monomer::has_alternate_backbone_atoms() const
+{
+	bool result = false;
 
-// 	for (auto &a : m_atoms)
-// 	{
-// 		if (not a.is_alternate())
-// 			continue;
+	for (auto &a : m_atoms)
+	{
+		if (not a.is_alternate())
+			continue;
 
-// 		auto atom_id = a.get_label_atom_id();
-// 		if (atom_id == "CA" or atom_id == "C" or atom_id == "N" or atom_id == "O")
-// 		{
-// 			result = true;
-// 			break;
-// 		}
-// 	}
+		auto atom_id = a.get_label_atom_id();
+		if (atom_id == "CA" or atom_id == "C" or atom_id == "N" or atom_id == "O")
+		{
+			result = true;
+			break;
+		}
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// float monomer::chiralVolume() const
-// {
-// 	float result = 0;
+float monomer::chiral_volume() const
+{
+	float result = 0;
 
-// 	if (m_compound_id == "LEU")
-// 	{
-// 		auto centre = get_atom_by_id("CG");
-// 		auto atom1 = get_atom_by_id("CB");
-// 		auto atom2 = get_atom_by_id("CD1");
-// 		auto atom3 = get_atom_by_id("CD2");
+	if (m_compound_id == "LEU")
+	{
+		auto centre = get_atom_by_atom_id("CG");
+		auto atom1 = get_atom_by_atom_id("CB");
+		auto atom2 = get_atom_by_atom_id("CD1");
+		auto atom3 = get_atom_by_atom_id("CD2");
 
-// 		result = DotProduct(atom1.location() - centre.location(),
-// 			CrossProduct(atom2.location() - centre.location(), atom3.location() - centre.location()));
-// 	}
-// 	else if (m_compound_id == "VAL")
-// 	{
-// 		auto centre = get_atom_by_id("CB");
-// 		auto atom1 = get_atom_by_id("CA");
-// 		auto atom2 = get_atom_by_id("CG1");
-// 		auto atom3 = get_atom_by_id("CG2");
+		result = dot_product(atom1.get_location() - centre.get_location(),
+			cross_product(atom2.get_location() - centre.get_location(), atom3.get_location() - centre.get_location()));
+	}
+	else if (m_compound_id == "VAL")
+	{
+		auto centre = get_atom_by_atom_id("CB");
+		auto atom1 = get_atom_by_atom_id("CA");
+		auto atom2 = get_atom_by_atom_id("CG1");
+		auto atom3 = get_atom_by_atom_id("CG2");
 
-// 		result = DotProduct(atom1.location() - centre.location(),
-// 			CrossProduct(atom2.location() - centre.location(), atom3.location() - centre.location()));
-// 	}
+		result = dot_product(atom1.get_location() - centre.get_location(),
+			cross_product(atom2.get_location() - centre.get_location(), atom3.get_location() - centre.get_location()));
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// bool monomer::areBonded(const monomer &a, const monomer &b, float errorMargin)
-// {
-// 	bool result = false;
+bool monomer::are_bonded(const monomer &a, const monomer &b, float errorMargin)
+{
+	bool result = false;
 
-// 	try
-// 	{
-// 		point atoms[4] = {
-// 			a.get_atom_by_id("CA").location(),
-// 			a.get_atom_by_id("C").location(),
-// 			b.get_atom_by_id("N").location(),
-// 			b.get_atom_by_id("CA").location()};
+	try
+	{
+		point atoms[4] = {
+			a.get_atom_by_atom_id("CA").get_location(),
+			a.get_atom_by_atom_id("C").get_location(),
+			b.get_atom_by_atom_id("N").get_location(),
+			b.get_atom_by_atom_id("CA").get_location()};
 
-// 		auto distanceCACA = Distance(atoms[0], atoms[3]);
-// 		double omega = DihedralAngle(atoms[0], atoms[1], atoms[2], atoms[3]);
+		auto distanceCACA = distance(atoms[0], atoms[3]);
+		double omega = dihedral_angle(atoms[0], atoms[1], atoms[2], atoms[3]);
 
-// 		bool cis = std::abs(omega) <= 30.0;
-// 		float maxCACADistance = cis ? 3.0f : 3.8f;
+		bool cis = std::abs(omega) <= 30.0;
+		float maxCACADistance = cis ? 3.0f : 3.8f;
 
-// 		result = std::abs(distanceCACA - maxCACADistance) < errorMargin;
-// 	}
-// 	catch (...)
-// 	{
-// 	}
+		result = std::abs(distanceCACA - maxCACADistance) < errorMargin;
+	}
+	catch (...)
+	{
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// float monomer::omega(const mmmonomer &a, const mmmonomer &b)
-// {
-// 	float result = 360;
+float monomer::omega(const monomer &a, const monomer &b)
+{
+	float result = 360;
 
-// 	try
-// 	{
-// 		result = static_cast<float>(DihedralAngle(
-// 			a.get_atom_by_id("CA").location(),
-// 			a.get_atom_by_id("C").location(),
-// 			b.get_atom_by_id("N").location(),
-// 			b.get_atom_by_id("CA").location()));
-// 	}
-// 	catch (...)
-// 	{
-// 	}
+	try
+	{
+		result = static_cast<float>(dihedral_angle(
+			a.get_atom_by_atom_id("CA").get_location(),
+			a.get_atom_by_atom_id("C").get_location(),
+			b.get_atom_by_atom_id("N").get_location(),
+			b.get_atom_by_atom_id("CA").get_location()));
+	}
+	catch (...)
+	{
+	}
 
-// 	return result;
-// }
+	return result;
+}
 
-// bool monomer::isCis(const mmmonomer &a, const mmmonomer &b)
-// {
-// 	return omega(a, b) < 30.0f;
-// }
+bool monomer::is_cis(const monomer &a, const monomer &b)
+{
+	return omega(a, b) < 30.0f;
+}
 
 // --------------------------------------------------------------------
 // polymer
@@ -1249,7 +1236,7 @@ structure::structure(datablock &db, size_t modelNr, StructureOpenOptions options
 			std::cerr << "Warning: no atoms loaded" << std::endl;
 	}
 	else
-		loadData();
+		load_data();
 }
 
 void structure::load_atoms_for_model(StructureOpenOptions options)
@@ -1281,14 +1268,14 @@ void structure::load_atoms_for_model(StructureOpenOptions options)
 // 	for (auto &atom : s.m_atoms)
 // 		emplace_atom(atom.clone());
 
-// 	loadData();
+// 	load_data();
 // }
 
 // structure::~structure()
 // {
 // }
 
-void structure::loadData()
+void structure::load_data()
 {
 	auto &polySeqScheme = m_db["pdbx_poly_seq_scheme"];
 
@@ -1449,45 +1436,45 @@ atom structure::get_atom_by_id(const std::string &id) const
 	throw std::out_of_range("Could not find atom with id " + id);
 }
 
-// atom structure::getAtomByLabel(const std::string &atom_id, const std::string &asym_id, const std::string &compID, int seqID, const std::string &altID)
-// {
-// 	for (auto &a : m_atoms)
-// 	{
-// 		if (a.get_label_atom_id() == atom_id and
-// 			a.get_label_asym_id() == asym_id and
-// 			a.labelCompID() == compID and
-// 			a.get_label_seq_id() == seqID and
-// 			a.get_label_alt_id() == altID)
-// 		{
-// 			return a;
-// 		}
-// 	}
+atom structure::get_atom_by_label(const std::string &atom_id, const std::string &asym_id, const std::string &compID, int seqID, const std::string &altID)
+{
+	for (auto &a : m_atoms)
+	{
+		if (a.get_label_atom_id() == atom_id and
+			a.get_label_asym_id() == asym_id and
+			a.get_label_comp_id() == compID and
+			a.get_label_seq_id() == seqID and
+			a.get_label_alt_id() == altID)
+		{
+			return a;
+		}
+	}
 
-// 	throw std::out_of_range("Could not find atom with specified label");
-// }
+	throw std::out_of_range("Could not find atom with specified label");
+}
 
-// atom structure::getAtomByPosition(point p) const
-// {
-// 	double distance = std::numeric_limits<double>::max();
-// 	size_t index = std::numeric_limits<size_t>::max();
+atom structure::get_atom_by_position(point p) const
+{
+	double dist = std::numeric_limits<double>::max();
+	size_t index = std::numeric_limits<size_t>::max();
 
-// 	for (size_t i = 0; i < m_atoms.size(); ++i)
-// 	{
-// 		auto &a = m_atoms.at(i);
+	for (size_t i = 0; i < m_atoms.size(); ++i)
+	{
+		auto &a = m_atoms.at(i);
 
-// 		auto d = Distance(a.location(), p);
-// 		if (d < distance)
-// 		{
-// 			distance = d;
-// 			index = i;
-// 		}
-// 	}
+		auto d = distance(a.get_location(), p);
+		if (d < dist)
+		{
+			dist = d;
+			index = i;
+		}
+	}
 
-// 	if (index < m_atoms.size())
-// 		return m_atoms.at(index);
+	if (index < m_atoms.size())
+		return m_atoms.at(index);
 
-// 	return {};
-// }
+	return {};
+}
 
 atom structure::get_atom_by_position_and_type(point p, std::string_view type, std::string_view res_type) const
 {

@@ -190,27 +190,6 @@ _struct_asym.details                       ?
 	}
 }
 
-// // --------------------------------------------------------------------
-
-// BOOST_AUTO_TEST_CASE(test_load_1)
-// {
-// 	cif::file cf(gTestDir / "5v3g.cif.gz");
-// 	cif::mm::structure s(cf);
-
-// 	for (auto &poly : s.polymers())
-// 	{
-// 		std::cout << std::string(80, '=') << std::endl;
-// 		for (auto &res : poly)
-// 		{
-// 			std::cout << res << std::endl;
-
-// 			for (auto &atom : res.atoms())
-// 				std::cout << "  " << atom << std::endl;
-// 		}
-// 	}
-// }
-
-
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(test_atom_id)
@@ -323,7 +302,7 @@ BOOST_AUTO_TEST_CASE(atom_numbers_1)
 }
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(test_load_1)
+BOOST_AUTO_TEST_CASE(test_load_2)
 {
 	using namespace cif::literals;
 

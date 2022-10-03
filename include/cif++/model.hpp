@@ -303,7 +303,7 @@ class atom
 	// std::string symmetry() const { return impl().mSymmetryOperator; }
 
 	// const compound &compound() const;
-	// bool isWater() const { return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
+	// bool is_water() const { return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
 	int get_charge() const;
 
 	// float uIso() const;
@@ -473,6 +473,10 @@ class residue
 
 	virtual ~residue() = default;
 
+	std::string get_entity_id() const;
+
+	EntityType entity_type() const;
+
 	const std::string &get_asym_id() const { return m_asym_id; }
 	int get_seq_id() const { return m_seq_id; }
 
@@ -509,47 +513,29 @@ class residue
 	/// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
 	std::vector<atom> unique_atoms() const;
 
-	// /// \brief The alt ID used for the unique atoms
-	// std::string unique_alt_id() const;
+	/// \brief The alt ID used for the unique atoms
+	std::string unique_alt_id() const;
 
 	atom get_atom_by_atom_id(const std::string &atomID) const;
 
-	// const std::string &asymID() const { return m_asym_id; }
-	// int seqID() const { return m_seq_id; }
-	std::string get_entity_id() const;
-
-	EntityType entity_type() const;
-
-	// std::string authAsymID() const;
-	// std::string authSeqID() const;
-	// std::string authInsCode() const;
-
-	// // return a human readable PDB-like auth id (chain+seqnr+iCode)
-	// std::string authID() const;
-
-	// // similar for mmCIF space
-	// std::string labelID() const;
-
 	// Is this residue a single entity?
 	bool is_entity() const;
-
-	// bool isWater() const { return m_compound_id == "HOH"; }
-
+	bool is_water() const { return m_compound_id == "HOH"; }
 	// bool empty() const { return m_structure == nullptr; }
 
-	// bool hasAlternateAtoms() const;
+	bool has_alternate_atoms() const;
 
-	// /// \brief Return the list of unique alt ID's present in this residue
-	// std::set<std::string> getAlternateIDs() const;
+	/// \brief Return the list of unique alt ID's present in this residue
+	std::set<std::string> get_alternate_ids() const;
 
-	// /// \brief Return the list of unique atom ID's
-	// std::set<std::string> getAtomIDs() const;
+	/// \brief Return the list of unique atom ID's
+	std::set<std::string> get_atom_ids() const;
 
-	// /// \brief Return the list of atoms having ID \a atomID
-	// std::vector<atom> getAtomsByID(const std::string &atomID) const;
+	/// \brief Return the list of atoms having ID \a atomID
+	std::vector<atom> get_atoms_by_id(const std::string &atomID) const;
 
-	// // some routines for 3d work
-	// std::tuple<point, float> centerAndRadius() const;
+	// some routines for 3d work
+	std::tuple<point, float> center_and_radius() const;
 
 	friend std::ostream &operator<<(std::ostream &os, const residue &res);
 
@@ -588,51 +574,51 @@ class monomer : public residue
 	monomer(const polymer &polymer, size_t index, int seqID, const std::string &authSeqID,
 		const std::string &compoundID);
 
-	// bool is_first_in_chain() const;
-	// bool is_last_in_chain() const;
+	bool is_first_in_chain() const;
+	bool is_last_in_chain() const;
 
-	// // convenience
-	// bool has_alpha() const;
-	// bool has_kappa() const;
+	// convenience
+	bool has_alpha() const;
+	bool has_kappa() const;
 
-	// // Assuming this is really an amino acid...
+	// Assuming this is really an amino acid...
 
-	// float phi() const;
-	// float psi() const;
-	// float alpha() const;
-	// float kappa() const;
-	// float tco() const;
-	// float omega() const;
+	float phi() const;
+	float psi() const;
+	float alpha() const;
+	float kappa() const;
+	float tco() const;
+	float omega() const;
 
-	// // torsion angles
-	// size_t nrOfChis() const;
-	// float chi(size_t i) const;
+	// torsion angles
+	size_t nr_of_chis() const;
+	float chi(size_t i) const;
 
-	// bool isCis() const;
+	bool is_cis() const;
 
-	// /// \brief Returns true if the four atoms C, CA, N and O are present
-	// bool isComplete() const;
+	/// \brief Returns true if the four atoms C, CA, N and O are present
+	bool is_complete() const;
 
-	// /// \brief Returns true if any of the backbone atoms has an alternate
-	// bool hasAlternateBackboneAtoms() const;
+	/// \brief Returns true if any of the backbone atoms has an alternate
+	bool has_alternate_backbone_atoms() const;
 
-	// atom CAlpha() const { return get_atom_by_atom_id("CA"); }
-	// atom C() const { return get_atom_by_atom_id("C"); }
-	// atom N() const { return get_atom_by_atom_id("N"); }
-	// atom O() const { return get_atom_by_atom_id("O"); }
-	// atom H() const { return get_atom_by_atom_id("H"); }
+	atom CAlpha() const { return get_atom_by_atom_id("CA"); }
+	atom C() const { return get_atom_by_atom_id("C"); }
+	atom N() const { return get_atom_by_atom_id("N"); }
+	atom O() const { return get_atom_by_atom_id("O"); }
+	atom H() const { return get_atom_by_atom_id("H"); }
 
-	// bool isBondedTo(const monomer &rhs) const
-	// {
-	// 	return this != &rhs and areBonded(*this, rhs);
-	// }
+	bool is_bonded_to(const monomer &rhs) const
+	{
+		return this != &rhs and are_bonded(*this, rhs);
+	}
 
-	// static bool areBonded(const monomer &a, const monomer &b, float errorMargin = 0.5f);
-	// static bool isCis(const monomer &a, const monomer &b);
-	// static float omega(const monomer &a, const monomer &b);
+	static bool are_bonded(const monomer &a, const monomer &b, float errorMargin = 0.5f);
+	static bool is_cis(const monomer &a, const monomer &b);
+	static float omega(const monomer &a, const monomer &b);
 
-	// // for LEU and VAL
-	// float chiralVolume() const;
+	// for LEU and VAL
+	float chiral_volume() const;
 
 	bool operator==(const monomer &rhs) const
 	{
@@ -821,11 +807,11 @@ class structure
 	atom get_atom_by_id(const std::string &id) const;
 	// atom getAtomByLocation(point pt, float maxDistance) const;
 
-	// atom getAtomByLabel(const std::string &atomID, const std::string &asymID,
-	// 	const std::string &compID, int seqID, const std::string &altID = "");
+	atom get_atom_by_label(const std::string &atomID, const std::string &asymID,
+		const std::string &compID, int seqID, const std::string &altID = "");
 
 	// /// \brief Return the atom closest to point \a p
-	// atom getAtomByPosition(point p) const;
+	atom get_atom_by_position(point p) const;
 
 	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
 	atom get_atom_by_position_and_type(point p, std::string_view type, std::string_view res_type) const;
@@ -968,7 +954,7 @@ class structure
 
 	std::string create_entity_for_branch(branch &branch);
 
-	void loadData();
+	void load_data();
 
 	void load_atoms_for_model(StructureOpenOptions options);
 
