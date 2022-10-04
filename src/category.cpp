@@ -52,7 +52,7 @@ class row_comparator
 
 		for (auto k : cv->m_keys)
 		{
-			size_t ix = cat.get_column_ix(k);
+			size_t ix = cat.add_column(k);
 
 			auto iv = cv->get_validator_for_item(k);
 			if (iv == nullptr)
@@ -365,7 +365,7 @@ row *category_index::find_by_value(row_initializer k) const
 	row_initializer k2;
 	for (auto &f : m_category.key_field_indices())
 	{
-		std::string fld = fld=m_category.get_column_name(f);
+		auto fld = m_category.get_column_name(f);
 
 		auto ki = find_if(k.begin(), k.end(), [&fld](item &i) { return i.name() == fld; });
 		if (ki == k.end())
@@ -411,7 +411,10 @@ category_index::entry *category_index::insert(entry *h, row *v)
 
 		std::ostringstream os;
 		for (auto col : m_category.fields())
-			os << col << ": " << std::quoted(rh[col].text()) << "; ";
+		{
+			if (rh[col])
+				os << col << ": " << std::quoted(rh[col].text()) << "; ";
+		}
 
 		throw std::runtime_error("Duplicate Key violation, cat: " + m_category.name() + " values: " + os.str());
 	}
@@ -484,7 +487,7 @@ void category_index::reconstruct()
 	m_root = nullptr;
 
 	for (auto r : m_category)
-		insert(r);
+		insert(r.get_row());
 
 	// maybe reconstruction can be done quicker by using the following commented code.
 	// however, I've not had the time to think of a way to set the red/black flag correctly in that case.
@@ -814,10 +817,14 @@ bool category::is_valid() const
 	// check index?
 	if (m_index)
 	{
+		if (m_index->size() != size())
+			m_validator->report_error("size of index is not equal to size of category " + m_name, true);
+
 		// m_index->validate();
 		for (auto r : *this)
 		{
-			if (m_index->find(r) != r)
+			auto p = r.get_row();
+			if (m_index->find(p) != p)
 				m_validator->report_error("Key not found in index for category " + m_name, true);
 		}
 	}
@@ -871,16 +878,24 @@ bool category::is_valid() const
 	return result;
 }
 
-void category::validate_links() const
+bool category::validate_links() const
 {
 	if (not m_validator)
-		return;
+		return false;
+
+	bool result = true;
 
 	for (auto &link : m_parent_links)
 	{
 		auto parent = link.linked;
 
 		if (parent == nullptr)
+			continue;
+
+		// this particular case should be skipped, that's because it is wrong:
+		// there are atoms that are not part of a polymer, and thus will have no
+		// parent in that category.
+		if (name() == "atom_site" and (parent->name() == "pdbx_poly_seq_scheme" or parent->name() == "entity_poly_seq"))
 			continue;
 
 		size_t missing = 0;
@@ -901,13 +916,15 @@ void category::validate_links() const
 
 		if (missing)
 		{
+			result = false;
+
 			std::cerr << "Links for " << link.v->m_link_group_label << " are incomplete" << std::endl
-					  << "  There are " << missing << " items in " << m_name << " that don't have matching parent items in " << parent->m_name << std::endl;
+					<< "  There are " << missing << " items in " << m_name << " that don't have matching parent items in " << parent->m_name << std::endl;
 			
 			if (VERBOSE)
 			{
 				std::cerr << "showing first " << first_missing_rows.size() <<  " rows" << std::endl
-						  << std::endl;
+						<< std::endl;
 
 				first_missing_rows.write(std::cerr, link.v->m_child_keys, false);
 
@@ -915,6 +932,8 @@ void category::validate_links() const
 			}
 		}
 	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -1073,7 +1092,7 @@ std::vector<row_handle> category::get_linked(row_handle r, const category &cat) 
 category::iterator category::erase(iterator pos)
 {
 	row_handle rh = *pos;
-	row *r = rh;
+	row *r = rh.get_row();
 	iterator result = ++pos;
 
 	iset keys;
@@ -1206,9 +1225,14 @@ void category::erase_orphans(condition &&cond, category &parent)
 			continue;
 
 		if (VERBOSE > 1)
+		{
+			category c(m_name);
+			c.emplace(r);
 			std::cerr << "Removing orphaned record: " << std::endl
-						<< r << std::endl
+						<< c << std::endl
 						<< std::endl;
+
+		}
 		
 		remove.emplace_back(r.m_row);
 	}
@@ -1595,6 +1619,11 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 	if (n == nullptr)
 		throw std::runtime_error("Invalid pointer passed to insert");
 
+// #ifndef NDEBUG
+// 	if (m_validator)
+// 		is_valid();
+// #endif
+
 	try
 	{
 		// First, make sure all mandatory fields are supplied
@@ -1675,6 +1704,11 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 		delete_row(n);
 		throw;
 	}
+
+// #ifndef NDEBUG
+// 	if (m_validator)
+// 		is_valid();
+// #endif
 }
 
 category::iterator category::erase_impl(const_iterator pos)

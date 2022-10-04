@@ -196,7 +196,7 @@ class row_handle
 
 	explicit operator bool() const
 	{
-		return m_category != nullptr and m_row != nullptr;
+		return not empty();
 	}
 
 	item_handle operator[](uint32_t column_ix)
@@ -259,7 +259,12 @@ class row_handle
 
 	uint16_t add_column(std::string_view name);
 
-	operator row *()
+	row *get_row()
+	{
+		return m_row;
+	}
+
+	const row *get_row() const
 	{
 		return m_row;
 	}
@@ -300,6 +305,13 @@ class row_initializer : public std::vector<item>
 	}
 
 	row_initializer(row_handle rh);
+
+	void set_value(std::string_view name, std::string_view value);
+	void set_value_if_empty(std::string_view name, std::string_view value);
+	void set_value_if_empty(item &&i)
+	{
+		set_value_if_empty(i.name(), i.value());
+	}
 };
 
 } // namespace cif

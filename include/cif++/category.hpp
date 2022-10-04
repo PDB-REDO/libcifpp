@@ -88,7 +88,7 @@ class category
 	const category_validator *get_cat_validator() const { return m_cat_validator; }
 
 	bool is_valid() const;
-	void validate_links() const;
+	bool validate_links() const;
 
 	bool operator==(const category &rhs) const;
 	bool operator!=(const category &rhs) const
@@ -306,12 +306,19 @@ class category
 		{
 			cond.prepare(*this);
 
-			for (auto r : *this)
+			auto sh = cond.single();
+
+			if (sh.has_value() and *sh)
+				result = true;
+			else
 			{
-				if (cond(r))
+				for (auto r : *this)
 				{
-					result = true;
-					break;
+					if (cond(r))
+					{
+						result = true;
+						break;
+					}
 				}
 			}
 		}

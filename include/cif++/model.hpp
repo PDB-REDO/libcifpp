@@ -52,13 +52,21 @@ class atom
 	{
 		atom_impl(datablock &db, std::string_view id)
 			: m_db(db)
+			, m_cat(db["atom_site"])
 			, m_id(id)
 		{
-			prefetch();
+			auto r = row();
+			if (r)
+				tie(m_location.m_x, m_location.m_y, m_location.m_z) = r.get("Cartn_x", "Cartn_y", "Cartn_z");
 		}
 
 		// constructor for a symmetry copy of an atom
-		atom_impl(const atom_impl &impl, const point &loc, const std::string &sym_op);
+		atom_impl(const atom_impl &impl, const point &loc, const std::string &sym_op)
+			: atom_impl(impl)
+		{
+			m_location = loc;
+			m_symop = sym_op;
+		}
 
 		atom_impl(const atom_impl &i) = default;
 
@@ -80,7 +88,18 @@ class atom
 
 		void set_property(const std::string_view name, const std::string &value);
 
+		row_handle row()
+		{
+			return m_cat[{{"id", m_id}}];
+		}
+
+		const row_handle row() const
+		{
+			return m_cat[{{"id", m_id}}];
+		}
+
 		const datablock &m_db;
+		category &m_cat;
 		std::string m_id;
 		point m_location;
 		std::string m_symop = "1_555";
@@ -99,10 +118,10 @@ class atom
 	{
 	}
 
-	// atom(datablock &db, row_handle &row)
-	// 	: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>(), row))
-	// {
-	// }
+	atom(datablock &db, row_handle &row)
+		: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>()))
+	{
+	}
 
 	// a special constructor to create symmetry copies
 	atom(const atom &rhs, const point &symmmetry_location, const std::string &symmetry_operation)

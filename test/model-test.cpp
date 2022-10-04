@@ -87,6 +87,7 @@ BOOST_AUTO_TEST_CASE(create_nonpoly_1)
 	auto atoms = R"(
 data_HEM
 loop_
+_atom_site.id
 _atom_site.group_PDB
 _atom_site.type_symbol
 _atom_site.label_atom_id
@@ -98,12 +99,14 @@ _atom_site.Cartn_z
 _atom_site.occupancy
 _atom_site.B_iso_or_equiv
 _atom_site.pdbx_formal_charge
-HETATM C  CHA . ? -5.248  39.769 -0.250  1.00 7.67  ?
-HETATM C  CHB . ? -3.774  36.790 3.280   1.00 7.05  ?
-HETATM C  CHC . ? -2.879  33.328 0.013   1.00 7.69  ?
-HETATM C  CHD . ? -4.342  36.262 -3.536  1.00 8.00  ?
+1 HETATM C  CHA . ? -5.248  39.769 -0.250  1.00 7.67  ?
+2 HETATM C  CHB . ? -3.774  36.790 3.280   1.00 7.05  ?
+3 HETATM C  CHC . ? -2.879  33.328 0.013   1.00 7.69  ?
+4 HETATM C  CHD . ? -4.342  36.262 -3.536  1.00 8.00  ?
 # that's enough to test with
 )"_cf;
+
+	atoms.load_dictionary("mmcif_pdbx");
 
 	auto &hem_data = atoms["HEM"];
 	auto &atom_site = hem_data["atom_site"];

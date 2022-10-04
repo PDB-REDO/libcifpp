@@ -65,11 +65,31 @@ row_initializer::row_initializer(row_handle rh)
 	assert(rh.m_category);
 	assert(rh.m_row);
 
-	row *r = rh;
+	row *r = rh.get_row();
 	auto &cat = *rh.m_category;
 
 	for (auto i = r->m_head; i != nullptr; i = i->m_next)
 		emplace_back(cat.get_column_name(i->m_column_ix), i->text());
+}
+
+void row_initializer::set_value(std::string_view name, std::string_view value)
+{
+	for (auto &i : *this)
+	{
+		if (i.name() == name)
+		{
+			i.value(value);
+			return;
+		}
+	}
+
+	emplace_back(name, value);
+}
+
+void row_initializer::set_value_if_empty(std::string_view name, std::string_view value)
+{
+	if (find_if(begin(), end(), [name](item &i) { return i.name() == name; }) == end())
+		emplace_back(name, value);
 }
 
 } // namespace cif

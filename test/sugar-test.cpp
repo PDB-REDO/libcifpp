@@ -115,8 +115,17 @@ BOOST_AUTO_TEST_CASE(create_sugar_1)
 	auto &db = s.get_datablock();
 	auto &as = db["atom_site"];
 
+	// NOTE, row_initializer does not actually hold the data, so copy it first
+	// before it gets destroyed by remove_residue
+
+	std::list<std::string> storage;
+
 	for (auto r : as.find("label_asym_id"_key == "L"))
-		ai.emplace_back(r);
+	{
+		auto &ri = ai.emplace_back(r);
+		for (auto &rii : ri)
+			rii.value(storage.emplace_back(rii.value()));
+	}
 
 	s.remove_residue(NAG);
 
@@ -143,6 +152,7 @@ BOOST_AUTO_TEST_CASE(create_sugar_2)
 
 	BOOST_CHECK_EQUAL(bH.size(), 2);
 
+	std::list<std::string> storage;
 	std::vector<cif::row_initializer> ai[2];
 
 	auto &db = s.get_datablock();
@@ -151,7 +161,11 @@ BOOST_AUTO_TEST_CASE(create_sugar_2)
 	for (size_t i = 0; i < 2; ++i)
 	{
 		for (auto r : as.find("label_asym_id"_key == "H" and "auth_seq_id"_key == i + 1))
-			ai[i].emplace_back(r);
+		{
+			auto &ri = ai[i].emplace_back(r);
+			for (auto &rii : ri)
+				rii.value(storage.emplace_back(rii.value()));
+		}
 	}
 
 	s.remove_branch(bH);

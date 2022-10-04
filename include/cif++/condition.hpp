@@ -55,6 +55,7 @@ namespace detail
 		virtual void prepare(const category &c) {}
 		virtual bool test(row_handle r) const = 0;
 		virtual void str(std::ostream &os) const = 0;
+		virtual std::optional<row_handle> single() const { return {}; };
 	};
 
 	struct all_condition_impl : public condition_impl
@@ -122,6 +123,11 @@ class condition
 	explicit operator bool() { return not empty(); }
 	bool empty() const { return m_impl == nullptr; }
 
+	std::optional<row_handle> single() const
+	{
+		return m_impl ? m_impl->single() : std::optional<row_handle>();
+	}
+
 	friend condition operator||(condition &&a, condition &&b);
 	friend condition operator&&(condition &&a, condition &&b);
 
@@ -173,6 +179,40 @@ namespace detail
 
 		std::string m_item_tag;
 		size_t m_item_ix = 0;
+	};
+
+	struct key_is_condition_impl : public condition_impl
+	{
+		key_is_condition_impl(item &&i)
+			: m_item_tag(i.name())
+			, m_value(i.value())
+		{
+		}
+
+		void prepare(const category &c) override;
+
+		bool test(row_handle r) const override
+		{
+			return m_single_hit.has_value() ?
+				*m_single_hit == r :
+				r[m_item_ix].compare(m_value, m_icase) == 0;
+		}
+
+		void str(std::ostream &os) const override
+		{
+			os << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value;
+		}
+
+		virtual std::optional<row_handle> single() const override
+		{
+			return m_single_hit;
+		}
+
+		std::string m_item_tag;
+		size_t m_item_ix = 0;
+		bool m_icase = false;
+		std::string m_value;
+		std::optional<row_handle> m_single_hit;
 	};
 
 	struct key_compare_condition_impl : public condition_impl
@@ -354,6 +394,13 @@ namespace detail
 			os << ')';
 		}
 
+		virtual std::optional<row_handle> single() const override
+		{
+			auto sa = mA->single();
+			auto sb = mB->single();
+			return sa == sb ? sa : std::optional<row_handle>();
+		}
+
 		condition_impl *mA;
 		condition_impl *mB;
 	};
@@ -392,6 +439,19 @@ namespace detail
 			os << ") OR (";
 			mB->str(os);
 			os << ')';
+		}
+
+		virtual std::optional<row_handle> single() const override
+		{
+			auto sa = mA->single();
+			auto sb = mB->single();
+			
+			if (sa.has_value() and sb.has_value() and sa != sb)
+				sa.reset();
+			else if (not sa.has_value())
+				sa = sb;
+
+			return sa;
 		}
 
 		condition_impl *mA;
@@ -480,27 +540,13 @@ struct key
 template <typename T>
 condition operator==(const key &key, const T &v)
 {
-	std::ostringstream s;
-	s << " == " << v;
-
-	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) == 0; },
-		s.str()));
+	return condition(new detail::key_is_condition_impl({ key.m_item_tag, v }));
 }
 
 inline condition operator==(const key &key, const char *value)
 {
 	if (value != nullptr and *value != 0)
-	{
-		std::ostringstream s;
-		s << " == " << value;
-
-		return condition(new detail::key_compare_condition_impl(
-			key.m_item_tag, [tag = key.m_item_tag, value](row_handle r, bool icase)
-			{ return r[tag].compare(value, icase) == 0; },
-			s.str()));
-	}
+		return condition(new detail::key_is_condition_impl({ key.m_item_tag, value }));
 	else
 		return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
 }

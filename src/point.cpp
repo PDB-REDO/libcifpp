@@ -327,7 +327,7 @@ std::tuple<double, point> quaternion_to_angle_axis(quaternion q)
 
 	point axis(q.get_b() / s, q.get_c() / s, q.get_d() / s);
 
-	return std::make_tuple(angle, axis);
+	return { angle, axis };
 }
 
 point center_points(std::vector<point> &Points)
