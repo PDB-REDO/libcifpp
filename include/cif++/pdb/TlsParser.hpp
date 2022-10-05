@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- *
+ * 
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- *
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,15 +26,32 @@
 
 #pragma once
 
-#include <cif++/utilities.hpp>
-#include <cif++/file.hpp>
-#include <cif++/parser.hpp>
-#include <cif++/format.hpp>
+#include <vector>
+#include <string>
+#include <tuple>
 
-#include <cif++/compound.hpp>
-#include <cif++/point.hpp>
-#include <cif++/symmetry.hpp>
+#include <cif++.hpp>
 
-#include <cif++/model.hpp>
+namespace cif
+{
+	
+extern const int
+	kResidueNrWildcard,
+	kNoSeqNum;
 
-#include <cif++/pdb/io.hpp>
+struct TLSSelection;
+typedef std::unique_ptr<TLSSelection> TLSSelectionPtr;
+
+struct TLSResidue;
+
+struct TLSSelection
+{
+	virtual ~TLSSelection() {}
+	virtual void CollectResidues(cif::datablock& db, std::vector<TLSResidue>& residues, std::size_t indentLevel = 0) const = 0;
+	std::vector<std::tuple<std::string,int,int>> GetRanges(cif::datablock& db, bool pdbNamespace) const;
+};
+
+// Low level: get the selections
+TLSSelectionPtr ParseSelectionDetails(const std::string& program, const std::string& selection);
+
+}

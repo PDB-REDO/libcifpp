@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- *
+ * 
+ * Copyright (c) 2022 NKI/AVL, Netherlands Cancer Institute
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,15 +26,18 @@
 
 #pragma once
 
-#include <cif++/utilities.hpp>
-#include <cif++/file.hpp>
-#include <cif++/parser.hpp>
-#include <cif++/format.hpp>
+#include <cif++.hpp>
 
-#include <cif++/compound.hpp>
-#include <cif++/point.hpp>
-#include <cif++/symmetry.hpp>
+namespace cif::pdb
+{
 
-#include <cif++/model.hpp>
+file read(std::istream &is);
 
-#include <cif++/pdb/io.hpp>
+void write(std::ostream &os, const datablock &db);
+
+inline void write(std::ostream &os, const file &f)
+{
+	write(os, f.front());
+}
+
+}

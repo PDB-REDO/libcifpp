@@ -26,15 +26,50 @@
 
 #pragma once
 
-#include <cif++/utilities.hpp>
-#include <cif++/file.hpp>
-#include <cif++/parser.hpp>
-#include <cif++/format.hpp>
+#include <cif++/pdb/pdb2cif.hpp>
 
-#include <cif++/compound.hpp>
-#include <cif++/point.hpp>
-#include <cif++/symmetry.hpp>
+// --------------------------------------------------------------------
 
-#include <cif++/model.hpp>
+namespace cif::pdb
+{
 
-#include <cif++/pdb/io.hpp>
+struct TemplateLine;
+
+class Remark3Parser
+{
+  public:
+	virtual ~Remark3Parser() {}
+
+	static bool parse(const std::string &expMethod, PDBRecord *r, cif::datablock &db);
+
+	virtual std::string program();
+	virtual std::string version();
+
+  protected:
+	Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db,
+		const TemplateLine templatelines[], uint32_t templateLineCount, std::regex programVersion);
+
+	virtual float parse();
+	std::string nextLine();
+
+	bool match(const char *expr, int nextState);
+	void storeCapture(const char *category, std::initializer_list<const char *> items, bool createNew = false);
+	void storeRefineLsRestr(const char *type, std::initializer_list<const char *> values);
+	void updateRefineLsRestr(const char *type, std::initializer_list<const char *> values);
+
+	virtual void fixup() {}
+
+	std::string mName;
+	std::string mExpMethod;
+	PDBRecord *mRec;
+	cif::datablock mDb;
+	std::string mLine;
+	std::smatch mM;
+	uint32_t mState;
+
+	const TemplateLine *mTemplate;
+	uint32_t mTemplateCount;
+	std::regex mProgramVersion;
+};
+
+} // namespace pdbx
