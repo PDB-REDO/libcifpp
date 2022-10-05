@@ -367,7 +367,7 @@ row *category_index::find_by_value(row_initializer k) const
 	{
 		auto fld = m_category.get_column_name(f);
 
-		auto ki = find_if(k.begin(), k.end(), [&fld](item &i) { return i.name() == fld; });
+		auto ki = find_if(k.begin(), k.end(), [&fld](auto &i) { return i.name() == fld; });
 		if (ki == k.end())
 			k2.emplace_back(fld, "");
 		else
@@ -1715,54 +1715,54 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 // #endif
 }
 
-category::iterator category::erase_impl(const_iterator pos)
-{
-	if (pos == cend())
-		return end();
+// category::iterator category::erase_impl(const_iterator pos)
+// {
+// 	if (pos == cend())
+// 		return end();
 
-	assert(false);
-	// TODO: implement
+// 	assert(false);
+// 	// TODO: implement
 
-	// row *n = const_cast<row *>(pos.row());
-	// row *cur;
+// 	// row *n = const_cast<row *>(pos.row());
+// 	// row *cur;
 
-	// if (m_head == n)
-	// {
-	// 	m_head = static_cast<row *>(m_head->m_next);
-	// 	if (m_head == nullptr)
-	// 		m_tail = nullptr;
+// 	// if (m_head == n)
+// 	// {
+// 	// 	m_head = static_cast<row *>(m_head->m_next);
+// 	// 	if (m_head == nullptr)
+// 	// 		m_tail = nullptr;
 
-	// 	n->m_next = nullptr;
-	// 	delete_row(n);
+// 	// 	n->m_next = nullptr;
+// 	// 	delete_row(n);
 
-	// 	cur = m_head;
-	// }
-	// else
-	// {
-	// 	cur = static_cast<row *>(n->m_next);
+// 	// 	cur = m_head;
+// 	// }
+// 	// else
+// 	// {
+// 	// 	cur = static_cast<row *>(n->m_next);
 
-	// 	if (m_tail == n)
-	// 		m_tail = static_cast<row *>(n->m_prev);
+// 	// 	if (m_tail == n)
+// 	// 		m_tail = static_cast<row *>(n->m_prev);
 
-	// 	row *p = m_head;
-	// 	while (p != nullptr and p->m_next != n)
-	// 		p = p->m_next;
+// 	// 	row *p = m_head;
+// 	// 	while (p != nullptr and p->m_next != n)
+// 	// 		p = p->m_next;
 
-	// 	if (p != nullptr and p->m_next == n)
-	// 	{
-	// 		p->m_next = n->m_next;
-	// 		if (p->m_next != nullptr)
-	// 			p->m_next->m_prev = p;
-	// 		n->m_next = nullptr;
-	// 	}
-	// 	else
-	// 		throw std::runtime_error("remove for a row not found in the list");
+// 	// 	if (p != nullptr and p->m_next == n)
+// 	// 	{
+// 	// 		p->m_next = n->m_next;
+// 	// 		if (p->m_next != nullptr)
+// 	// 			p->m_next->m_prev = p;
+// 	// 		n->m_next = nullptr;
+// 	// 	}
+// 	// 	else
+// 	// 		throw std::runtime_error("remove for a row not found in the list");
 
-	// 	delete_row(n);
-	// }
+// 	// 	delete_row(n);
+// 	// }
 
-	// return iterator(*this, cur);
-}
+// 	// return iterator(*this, cur);
+// }
 
 void category::swap_item(size_t column_ix, row_handle &a, row_handle &b)
 {

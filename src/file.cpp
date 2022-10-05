@@ -206,8 +206,8 @@ void file::save(const std::filesystem::path &p) const
 
 void file::save(std::ostream &os) const
 {
-	if (not is_valid())
-		std::cout << "File is not valid!" << std::endl;
+	// if (not is_valid())
+	// 	std::cout << "File is not valid!" << std::endl;
 
 	for (auto &db : *this)
 		db.write(os);

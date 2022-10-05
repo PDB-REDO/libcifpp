@@ -99,7 +99,10 @@ float atom::atom_impl::get_property_float(std::string_view name) const
 
 void atom::atom_impl::set_property(const std::string_view name, const std::string &value)
 {
-	row().assign(name, value, true, true);
+	auto r = row();
+	if (not r)
+		throw std::runtime_error("Trying to modify a row that does not exist");
+	r.assign(name, value, true, true);
 }
 
 // int atom::atom_impl::compare(const atom_impl &b) const
@@ -2231,9 +2234,9 @@ branch &structure::create_branch(std::vector<row_initializer> atoms)
 	// sanity check
 	for (auto &nag_atom : atoms)
 	{
-		for (auto info : nag_atom)
+		for (const auto &[name, value] : nag_atom)
 		{
-			if (info.name() == "label_comp_id" and info.value() != "NAG")
+			if (name == "label_comp_id" and value != "NAG")
 				throw std::logic_error("The first sugar in a branch should be a NAG");
 		}
 	}
@@ -2316,14 +2319,14 @@ branch &structure::extend_branch(const std::string &asym_id, std::vector<row_ini
 
 	for (auto &atom : atom_info)
 	{
-		for (auto info : atom)
+		for (const auto &[name, value] : atom)
 		{
-			if (info.name() != "label_comp_id")
+			if (name != "label_comp_id")
 				continue;
 
 			if (compoundID.empty())
-				compoundID = info.value();
-			else if (info.value() != compoundID)
+				compoundID = value;
+			else if (value != compoundID)
 				throw std::logic_error("All atoms should be of the same type");
 		}
 	}

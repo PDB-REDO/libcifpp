@@ -61,7 +61,7 @@ bool is_column_type_uchar(const category &cat, std::string_view col)
 namespace detail
 {
 
-	void key_is_condition_impl::prepare(const category &c)
+	condition_impl *key_equals_condition_impl::prepare(const category &c)
 	{
 		m_item_ix = get_column_ix(c, m_item_tag);
 		m_icase = is_column_type_uchar(c, m_item_tag);
@@ -72,8 +72,67 @@ namespace detail
 		{
 			m_single_hit = c[{ { m_item_tag, m_value } }];
 		}
+
+		return this;
+	}
+
+	condition_impl *and_condition_impl::prepare(const category &c)
+	{
+		for (auto &sub : mSub)
+			sub = sub->prepare(c);
+
+		for (;;)
+		{
+			auto si = find_if(mSub.begin(), mSub.end(), [](condition_impl *sub) { return dynamic_cast<and_condition_impl *>(sub) != nullptr; });
+			if (si == mSub.end())
+				break;
+			
+			and_condition_impl *sub_and = static_cast<and_condition_impl *>(*si);
+
+			mSub.erase(si);
+
+			mSub.insert(mSub.end(), sub_and->mSub.begin(), sub_and->mSub.end());
+			sub_and->mSub.clear();
+			delete sub_and;
+		}
+
+		return this;
+	}
+
+	condition_impl *or_condition_impl::prepare(const category &c)
+	{
+		condition_impl *result = this;
+
+		mA = mA->prepare(c);
+		mB = mB->prepare(c);
+
+		key_equals_condition_impl *equals = dynamic_cast<key_equals_condition_impl*>(mA);
+		key_is_empty_condition_impl *empty = dynamic_cast<key_is_empty_condition_impl*>(mB);
+
+		if (equals == nullptr and empty == nullptr)
+		{
+			equals = dynamic_cast<key_equals_condition_impl*>(mB);
+			empty = dynamic_cast<key_is_empty_condition_impl*>(mA);			
+		}
+
+		if (equals != nullptr and empty != nullptr)
+		{
+			result = new detail::key_equals_or_empty_condition_impl(equals, empty);
+			result = result->prepare(c);
+			delete this;
+		}
+
+		return result;
 	}
 
 } // namespace detail
+
+void condition::prepare(const category &c)
+{
+	if (m_impl)
+		m_impl = m_impl->prepare(c);
+	
+	m_prepared = true;
+}
 
 } // namespace cif

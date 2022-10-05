@@ -88,7 +88,7 @@ void row_initializer::set_value(std::string_view name, std::string_view value)
 
 void row_initializer::set_value_if_empty(std::string_view name, std::string_view value)
 {
-	if (find_if(begin(), end(), [name](item &i) { return i.name() == name; }) == end())
+	if (find_if(begin(), end(), [name](auto &i) { return i.name() == name; }) == end())
 		emplace_back(name, value);
 }
 

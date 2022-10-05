@@ -142,13 +142,17 @@ BOOST_AUTO_TEST_CASE(item_1)
 	BOOST_CHECK_EQUAL(i2.value(), ci2.value());
 	BOOST_CHECK_EQUAL(i3.value(), ci3.value());
 
-	item mi1(std::move(i1));
-	item mi2(std::move(i2));
-	item mi3(std::move(i3));
+	item mi1(std::move(ci1));
+	item mi2(std::move(ci2));
+	item mi3(std::move(ci3));
 
 	BOOST_CHECK_EQUAL(i1.value(), mi1.value());
 	BOOST_CHECK_EQUAL(i2.value(), mi2.value());
 	BOOST_CHECK_EQUAL(i3.value(), mi3.value());
+
+	BOOST_CHECK(ci1.empty());
+	BOOST_CHECK(ci2.empty());
+	BOOST_CHECK(ci3.empty());
 }
 
 // --------------------------------------------------------------------

@@ -550,6 +550,14 @@ class category
 		return create_item(ix, i.value());
 	}
 
+	item_value *create_item(const std::tuple<std::string_view,std::string> &i)
+	{
+		const auto &[name, value] = i;
+
+		uint16_t ix = add_column(name);
+		return create_item(ix, value);
+	}
+
 	void delete_item(item_value *iv)
 	{
 		if (iv->m_length >= item_value::kBufferSize)
