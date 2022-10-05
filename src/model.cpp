@@ -243,11 +243,6 @@ int atom::atom_impl::get_charge() const
 // 	return *result;
 // }
 
-// float atom::occupancy() const
-// {
-// 	return get_property<float>("occupancy");
-// }
-
 // std::string atom::labelEntityID() const
 // {
 // 	return get_property<std::string>("label_entity_id");

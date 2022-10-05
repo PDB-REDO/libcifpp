@@ -98,6 +98,18 @@ class atom
 			return m_cat[{{"id", m_id}}];
 		}
 
+		row_handle row_aniso()
+		{
+			auto cat = m_db.get("atom_site_anisotrop");
+			return cat ? cat->find1(key("id") == m_id) : row_handle{};
+		}
+
+		const row_handle row_aniso() const
+		{
+			auto cat = m_db.get("atom_site_anisotrop");
+			return cat ? cat->find1(key("id") == m_id) : row_handle{};
+		}
+
 		const datablock &m_db;
 		category &m_cat;
 		std::string m_id;
@@ -223,20 +235,27 @@ class atom
 		set_location(loc);
 	}
 
-	// // for direct access to underlying data, be careful!
-	// const row_handle getRow() const { return impl().mRow; }
-	// const row_handle getRowAniso() const;
+	// for direct access to underlying data, be careful!
+	const row_handle get_row() const { return impl().row(); }
+	const row_handle get_row_aniso() const { return impl().row_aniso(); }
 
 	// bool isSymmetryCopy() const { return impl().mSymmetryCopy; }
 	// std::string symmetry() const { return impl().mSymmetryOperator; }
 
 	// const compound &compound() const;
-	// bool is_water() const { return impl().mCompID == "HOH" or impl().mCompID == "H2O" or impl().mCompID == "WAT"; }
+
+	bool is_water() const
+	{
+		auto comp_id = get_label_comp_id();
+		return comp_id == "HOH" or comp_id == "H2O" or comp_id == "WAT";
+	}
+
 	int get_charge() const { return impl().get_charge(); }
 
 	// float uIso() const;
 	// bool getAnisoU(float anisou[6]) const { return impl().getAnisoU(anisou); }
-	// float occupancy() const;
+	
+	float get_occupancy() const { return get_property_float("occupancy"); }
 
 	// specifications
 
@@ -708,6 +727,8 @@ class structure
 	// Structure &operator=(Structure &&s) = default;
 
 	~structure() = default;
+
+	size_t get_model_nr() const { return m_model_nr; }
 
 	const std::vector<atom> &atoms() const { return m_atoms; }
 	// std::vector<atom> &atoms() { return m_atoms; }
