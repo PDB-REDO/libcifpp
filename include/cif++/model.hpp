@@ -609,7 +609,10 @@ class sugar : public residue
 
 	size_t get_link_nr() const
 	{
-		return m_link ? std::stoi(m_link.get_auth_seq_id()) : 0;
+		size_t result = 0;
+		if (m_link)
+			result = m_link.get_property_int("auth_seq_id");
+		return result;
 	}
 
   private:

@@ -1859,11 +1859,9 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 		// create a copy of the entity first
 		auto &entity = m_db["entity"];
 
-		try
-		{
-			entityID = entity.find1<std::string>("type"_key == "non-polymer" and "pdbx_description"_key == compound->name(), "id");
-		}
-		catch (const std::exception &ex)
+		entityID = entity.find1<std::string>("type"_key == "non-polymer" and "pdbx_description"_key == compound->name(), "id");
+
+		if (entityID.empty())
 		{
 			entityID = entity.get_unique_id("");
 			entity.emplace({{"id", entityID},
@@ -1881,6 +1879,7 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 		for (auto nps : pdbxNonPolyScheme.find("asym_id"_key == asym_id))
 		{
 			nps.assign("mon_id", newCompound, true);
+			nps.assign("pdb_mon_id", newCompound, true);
 			nps.assign("auth_mon_id", newCompound, true);
 			nps.assign("entity_id", entityID, true);
 		}
@@ -2192,13 +2191,13 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 
 		atom.set_value("name", atom_id);
 		atom.set_value("label_asym_id", asym_id);
+		atom.set_value("auth_asym_id", asym_id);
+		atom.set_value("label_entity_id", entity_id);
 
 		atom.set_value_if_empty({"group_PDB", "HETATM"});
 		atom.set_value_if_empty({"label_comp_id", comp_id});
 		atom.set_value_if_empty({"label_seq_id", ""});
-		atom.set_value_if_empty({"label_entity_id", entity_id});
 		atom.set_value_if_empty({"auth_comp_id", comp_id});
-		atom.set_value_if_empty({"auth_asym_id", asym_id});
 		atom.set_value_if_empty({"auth_seq_id", 1});
 		atom.set_value_if_empty({"pdbx_PDB_model_num", 1});
 		atom.set_value_if_empty({"label_alt_id", ""});
@@ -2256,14 +2255,14 @@ branch &structure::create_branch(std::vector<row_initializer> atoms)
 
 		atom.set_value("id", atom_id);
 		atom.set_value("label_asym_id", asym_id);
+		atom.set_value("auth_asym_id", asym_id);
+		atom.set_value("label_entity_id", tmp_entity_id);
+		atom.set_value({ "auth_seq_id", 1 });
 
 		atom.set_value_if_empty({"group_PDB", "HETATM"});
 		atom.set_value_if_empty({"label_comp_id", "NAG"});
 		atom.set_value_if_empty({"label_seq_id", "."});
-		atom.set_value_if_empty({"label_entity_id", tmp_entity_id});
 		atom.set_value_if_empty({"auth_comp_id", "NAG"});
-		atom.set_value_if_empty({"auth_asym_id", asym_id});
-		atom.set_value_if_empty({"auth_seq_id", 1});
 		atom.set_value_if_empty({"pdbx_PDB_model_num", 1});
 		atom.set_value_if_empty({"label_alt_id", ""});
 
@@ -2353,12 +2352,13 @@ branch &structure::extend_branch(const std::string &asym_id, std::vector<row_ini
 
 		atom.set_value("id", atom_id);
 		atom.set_value("label_asym_id", asym_id);
+		atom.set_value("auth_asym_id", asym_id);
+		atom.set_value("label_entity_id", tmp_entity_id);
+		atom.set_value({"auth_seq_id", sugarNum });
 
 		atom.set_value_if_empty({"group_PDB", "HETATM"});
 		atom.set_value_if_empty({"label_comp_id", compoundID});
-		atom.set_value_if_empty({"label_entity_id", tmp_entity_id});
 		atom.set_value_if_empty({"auth_comp_id", compoundID});
-		atom.set_value_if_empty({"auth_asym_id", asym_id});
 		atom.set_value_if_empty({"pdbx_PDB_model_num", 1});
 		atom.set_value_if_empty({"label_alt_id", ""});
 

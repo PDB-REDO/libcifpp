@@ -307,6 +307,11 @@ class row_initializer : public std::vector<item>
 	row_initializer(row_handle rh);
 
 	void set_value(std::string_view name, std::string_view value);
+	void set_value(item &&i)
+	{
+		set_value(i.name(), i.value());
+	}
+
 	void set_value_if_empty(std::string_view name, std::string_view value);
 	void set_value_if_empty(item &&i)
 	{

@@ -12,4 +12,6 @@ CMakeSettings.json
 msvc/
 Testing/
 rsrc/feature-request.txt
-test/test-create_sugar_2.cif
+test/test-create_sugar_?.cif
+test/oprofile_data/abi
+test/oprofile_data/samples/operf.log

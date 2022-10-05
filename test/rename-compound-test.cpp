@@ -58,6 +58,11 @@ int main(int argc, char* argv[])
 		structure.cleanup_empty_categories();
 
 		f.save(std::cout);
+
+		if (not f.is_valid())
+			throw std::runtime_error("Invalid");
+
+		f.save(std::cout);
 	}
 	catch (const std::exception& e)
 	{

@@ -358,6 +358,9 @@ namespace detail
 		std::regex mRx;
 	};
 
+	// TODO: Optimize and_condition by having a list of sub items.
+	// That way you can also collapse multiple _is_ conditions in
+	// case they make up an indexed tuple.
 	struct and_condition_impl : public condition_impl
 	{
 		and_condition_impl(condition &&a, condition &&b)

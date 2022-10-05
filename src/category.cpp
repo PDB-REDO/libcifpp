@@ -986,6 +986,11 @@ condition category::get_children_condition(row_handle rh, const category &childC
 
 	condition result;
 
+	iset mandatoryChildFields;
+	auto childCatValidator = m_validator->get_validator_for_category(childCat.name());
+	if (childCatValidator != nullptr)
+		mandatoryChildFields = childCatValidator->m_mandatory_fields;
+
 	for (auto &link : m_validator->get_links_for_parent(m_name))
 	{
 		if (link->m_child_category != childCat.m_name)
@@ -1002,14 +1007,13 @@ condition category::get_children_condition(row_handle rh, const category &childC
 
 			if (parentValue.empty())
 				cond = std::move(cond) and key(childKey) == null;
+			else if (link->m_parent_keys.size() > 1 and not mandatoryChildFields.contains(childKey))
+				cond = std::move(cond) and (key(childKey) == parentValue.text() or key(childKey) == null);
 			else
 				cond = std::move(cond) and key(childKey) == parentValue.text();
 		}
 
-		if (result)
-			result = std::move(result) or std::move(cond);
-		else
-			result = std::move(cond);
+		result = std::move(result) or std::move(cond);
 	}
 
 	return result;

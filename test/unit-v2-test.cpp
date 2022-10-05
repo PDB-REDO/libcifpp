@@ -1037,12 +1037,12 @@ _cat_2.desc
 	cat1.erase(cif::key("id") == 10);
 
 	BOOST_CHECK_EQUAL(cat1.size(), 2);
-	BOOST_CHECK_EQUAL(cat2.size(), 3); // TODO: Is this really what we want?
+	BOOST_CHECK_EQUAL(cat2.size(), 2); // TODO: Is this really what we want?
 
 	cat1.erase(cif::key("id") == 20);
 
 	BOOST_CHECK_EQUAL(cat1.size(), 1);
-	BOOST_CHECK_EQUAL(cat2.size(), 2); // TODO: Is this really what we want?
+	BOOST_CHECK_EQUAL(cat2.size(), 1); // TODO: Is this really what we want?
 }
 
 // --------------------------------------------------------------------

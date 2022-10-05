@@ -135,6 +135,10 @@ BOOST_AUTO_TEST_CASE(create_sugar_1)
 	BOOST_CHECK_EQUAL(branch.size(), 1);
 
 	BOOST_CHECK_EQUAL(branch[0].atoms().size(), nagAtoms.size());
+
+	BOOST_CHECK(file.is_valid());
+
+	file.save(gTestDir / "test-create_sugar_1.cif");
 }
 
 // --------------------------------------------------------------------
@@ -170,11 +174,17 @@ BOOST_AUTO_TEST_CASE(create_sugar_2)
 
 	s.remove_branch(bH);
 
+	file.save(gTestDir / "test-create_sugar_2-0.cif");
+
+	BOOST_CHECK(file.is_valid());
+
 	auto &bN = s.create_branch(ai[0]);
 	s.extend_branch(bN.get_asym_id(), ai[1], 1, "O4");
 
 	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose-(1-4)-2-acetamido-2-deoxy-beta-D-glucopyranose");
 	BOOST_CHECK_EQUAL(bN.size(), 2);
+
+	BOOST_CHECK(file.is_valid());
 
 	file.save(gTestDir / "test-create_sugar_2.cif");
 
@@ -204,6 +214,8 @@ BOOST_AUTO_TEST_CASE(delete_sugar_1)
 
 	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
 	BOOST_CHECK_EQUAL(bN.size(), 1);
+
+	BOOST_CHECK(file.is_valid());
 
 	file.save(gTestDir / "test-create_sugar_3.cif");
 
