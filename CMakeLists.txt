@@ -192,6 +192,10 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/symmetry.cpp
 
 	${PROJECT_SOURCE_DIR}/src/model.cpp
+
+	${PROJECT_SOURCE_DIR}/src/pdb/cif2pdb.cpp
+	${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif.cpp
+	${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp
 )
 
 set(project_headers
@@ -216,7 +220,12 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/symmetry.hpp
 
 	${PROJECT_SOURCE_DIR}/include/cif++/model.hpp
-)
+
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb/cif2pdb.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb/io.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb/pdb2cif.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb/pdb2cif_remark_3.hpp
+	)
 
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
 add_library(cifpp::cifpp ALIAS cifpp)
@@ -370,8 +379,7 @@ if(ENABLE_TESTING)
 
 	find_package(Boost REQUIRED headers)
 
-	list(APPEND CIFPP_tests unit-v2 unit-3d format model
-	# rename-compound sugar
+	list(APPEND CIFPP_tests unit-v2 unit-3d format model rename-compound sugar
 	)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)

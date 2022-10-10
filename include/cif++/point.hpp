@@ -484,7 +484,7 @@ struct point_type
 	}
 
 #if HAVE_LIBCLIPPER
-	constexpr operator clipper::Coord_orth() const
+	operator clipper::Coord_orth() const
 	{
 		return clipper::Coord_orth(m_x, m_y, m_z);
 	}

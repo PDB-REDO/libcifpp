@@ -59,10 +59,8 @@ class item
 	/// content a single character string with content \a value
 	item(std::string_view name, char value)
 		: m_name(name)
-		, m_value(m_buffer, 1)
+		, m_value({ value })
 	{
-		m_buffer[0] = value;
-		m_buffer[1] = 0;
 	}
 
 	/// \brief constructor for an item with name \a name and as
@@ -75,13 +73,15 @@ class item
 		using namespace std;
 		using namespace cif;
 
-		auto r = to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, chars_format::fixed, precision);
+		char buffer[32];
+
+		auto r = to_chars(buffer, buffer + sizeof(buffer) - 1, value, chars_format::fixed, precision);
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
 
-		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
+		assert(r.ptr >= buffer and r.ptr < buffer + sizeof(buffer));
 		*r.ptr = 0;
-		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
+		m_value.assign(buffer, r.ptr - buffer);
 	}
 
 	/// \brief constructor for an item with name \a name and as
@@ -94,13 +94,15 @@ class item
 		using namespace std;
 		using namespace cif;
 
-		auto r = to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value, chars_format::general);
+		char buffer[32];
+
+		auto r = to_chars(buffer, buffer + sizeof(buffer) - 1, value, chars_format::general);
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
 
-		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
+		assert(r.ptr >= buffer and r.ptr < buffer + sizeof(buffer));
 		*r.ptr = 0;
-		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
+		m_value.assign(buffer, r.ptr - buffer);
 	}
 
 	/// \brief constructor for an item with name \a name and as
@@ -109,13 +111,15 @@ class item
 	item(const std::string_view name, const T &value)
 		: m_name(name)
 	{
-		auto r = std::to_chars(m_buffer, m_buffer + sizeof(m_buffer) - 1, value);
+		char buffer[32];
+
+		auto r = std::to_chars(buffer, buffer + sizeof(buffer) - 1, value);
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
 
-		assert(r.ptr >= m_buffer and r.ptr < m_buffer + sizeof(m_buffer));
+		assert(r.ptr >= buffer and r.ptr < buffer + sizeof(buffer));
 		*r.ptr = 0;
-		m_value = std::string_view(m_buffer, r.ptr - m_buffer);
+		m_value.assign(buffer, r.ptr - buffer);
 	}
 
 	/// \brief constructor for an item with name \a name and as
@@ -152,10 +156,17 @@ class item
 	/// \brief the length of the value string
 	size_t length() const { return m_value.length(); }
 
+	/// \brief support for structured binding
+	template<size_t N>
+	decltype(auto) get() const
+	{
+		     if constexpr (N == 0) return name();
+		else if constexpr (N == 1) return value();
+	}
+
   private:
 	std::string_view m_name;
-	std::string_view m_value;
-	char m_buffer[64]; // TODO: optimize this magic number, might be too large
+	std::string m_value;
 };
 
 // --------------------------------------------------------------------
@@ -193,7 +204,7 @@ struct item_value
 
 	// By using std::string_view instead of c_str we obain a
 	// nice performance gain since we avoid many calls to strlen.
-	std::string_view text() const
+	constexpr inline std::string_view text() const
 	{
 		return { m_length >= kBufferSize ? m_data : m_local_data, m_length };
 	}
@@ -288,9 +299,6 @@ struct item_handle
 	}
 
 	std::string_view text() const;
-
-	// bool operator!=(const std::string &s) const { return s != c_str(); }
-	// bool operator==(const std::string &s) const { return s == c_str(); }
 
 	item_handle(uint16_t column, row_handle &row)
 		: m_column(column)
@@ -491,3 +499,21 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::str
 };
 
 } // namespace cif
+
+namespace std
+{
+
+template<> struct tuple_size<::cif::item>
+            : public std::integral_constant<std::size_t, 2> {};
+
+template<> struct tuple_element<0, ::cif::item>
+{
+	using type = decltype(std::declval<::cif::item>().name());
+};
+
+template<> struct tuple_element<1, ::cif::item>
+{
+	using type = decltype(std::declval<::cif::item>().value());
+};
+
+}

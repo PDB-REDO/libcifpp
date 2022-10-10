@@ -142,13 +142,17 @@ BOOST_AUTO_TEST_CASE(item_1)
 	BOOST_CHECK_EQUAL(i2.value(), ci2.value());
 	BOOST_CHECK_EQUAL(i3.value(), ci3.value());
 
-	item mi1(std::move(i1));
-	item mi2(std::move(i2));
-	item mi3(std::move(i3));
+	item mi1(std::move(ci1));
+	item mi2(std::move(ci2));
+	item mi3(std::move(ci3));
 
 	BOOST_CHECK_EQUAL(i1.value(), mi1.value());
 	BOOST_CHECK_EQUAL(i2.value(), mi2.value());
 	BOOST_CHECK_EQUAL(i3.value(), mi3.value());
+
+	BOOST_CHECK(ci1.empty());
+	BOOST_CHECK(ci2.empty());
+	BOOST_CHECK(ci3.empty());
 }
 
 // --------------------------------------------------------------------
@@ -1037,12 +1041,12 @@ _cat_2.desc
 	cat1.erase(cif::key("id") == 10);
 
 	BOOST_CHECK_EQUAL(cat1.size(), 2);
-	BOOST_CHECK_EQUAL(cat2.size(), 3); // TODO: Is this really what we want?
+	BOOST_CHECK_EQUAL(cat2.size(), 2); // TODO: Is this really what we want?
 
 	cat1.erase(cif::key("id") == 20);
 
 	BOOST_CHECK_EQUAL(cat1.size(), 1);
-	BOOST_CHECK_EQUAL(cat2.size(), 2); // TODO: Is this really what we want?
+	BOOST_CHECK_EQUAL(cat2.size(), 1); // TODO: Is this really what we want?
 }
 
 // --------------------------------------------------------------------
@@ -1511,8 +1515,6 @@ _cat_2.parent_id3
 	BOOST_CHECK_EQUAL(cat1.size(), 0);
 	BOOST_CHECK_EQUAL(cat2.size(), 0);
 }
-
-// --------------------------------------------------------------------
 
 // --------------------------------------------------------------------
 
@@ -2859,4 +2861,112 @@ _cat_1.name
 	auto &audit_conform = f2.front()["audit_conform"];
 	BOOST_CHECK_EQUAL(audit_conform.front()["dict_name"].as<std::string>(), "test_dict.dic");
 	BOOST_CHECK_EQUAL(audit_conform.front()["dict_version"].as<float>(), 1.0);
+}
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(ix_op_1)
+{
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+
+               int       numb
+               '[+-]?[0-9]+'
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  yes
+	loop_
+	_category_key.name        '_cat_1.id'
+	                          '_cat_1.id_2'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_1.id_2
+    _item.name                '_cat_1.id_2'
+    _item.category_id         cat_1
+    _item.mandatory_code      no
+    _item_type.code           int
+    save_
+)";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::parse_dictionary("test", is_dict);
+
+	cif::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.id_2
+1 10
+2 20
+3 ?
+    )";
+
+	// --------------------------------------------------------------------
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	auto &cat1 = f.front()["cat_1"];
+
+	using key_type = cif::category::key_type;
+	using test_tuple_type = std::tuple<key_type,bool>;
+
+	test_tuple_type TESTS[] = {
+		{ {{"id", 1}, {"id_2", 10}}, true },
+		{ {{"id_2", 10}, {"id", 1}}, true },
+		{ {{"id", 1}, {"id_2", 20}}, false },
+		{ {{"id", 3} }, true },
+	};
+
+	for (const auto &[key, test] : TESTS)
+		BOOST_CHECK_EQUAL((bool)cat1[key], test);
 }

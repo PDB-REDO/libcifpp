@@ -30,6 +30,7 @@
 #include <functional>
 #include <iostream>
 #include <regex>
+#include <utility>
 
 #include <cif++/row.hpp>
 
@@ -52,9 +53,10 @@ namespace detail
 	{
 		virtual ~condition_impl() {}
 
-		virtual void prepare(const category &c) {}
+		virtual condition_impl *prepare(const category &c) { return this; }
 		virtual bool test(row_handle r) const = 0;
 		virtual void str(std::ostream &os) const = 0;
+		virtual std::optional<row_handle> single() const { return {}; };
 	};
 
 	struct all_condition_impl : public condition_impl
@@ -105,12 +107,7 @@ class condition
 		m_impl = nullptr;
 	}
 
-	void prepare(const category &c)
-	{
-		if (m_impl)
-			m_impl->prepare(c);
-		m_prepared = true;
-	}
+	void prepare(const category &c);
 
 	bool operator()(row_handle r) const
 	{
@@ -121,6 +118,11 @@ class condition
 
 	explicit operator bool() { return not empty(); }
 	bool empty() const { return m_impl == nullptr; }
+
+	std::optional<row_handle> single() const
+	{
+		return m_impl ? m_impl->single() : std::optional<row_handle>();
+	}
 
 	friend condition operator||(condition &&a, condition &&b);
 	friend condition operator&&(condition &&a, condition &&b);
@@ -143,6 +145,9 @@ class condition
 	}
 
   private:
+
+	void optimise(condition_impl *&impl);
+
 	condition_impl *m_impl;
 	bool m_prepared = false;
 };
@@ -156,9 +161,10 @@ namespace detail
 		{
 		}
 
-		void prepare(const category &c) override
+		condition_impl *prepare(const category &c) override
 		{
 			m_item_ix = get_column_ix(c, m_item_tag);
+			return this;
 		}
 
 		bool test(row_handle r) const override
@@ -175,6 +181,85 @@ namespace detail
 		size_t m_item_ix = 0;
 	};
 
+	struct key_equals_condition_impl : public condition_impl
+	{
+		key_equals_condition_impl(item &&i)
+			: m_item_tag(i.name())
+			, m_value(i.value())
+		{
+		}
+
+		condition_impl *prepare(const category &c) override;
+
+		bool test(row_handle r) const override
+		{
+			return m_single_hit.has_value() ?
+				*m_single_hit == r :
+				r[m_item_ix].compare(m_value, m_icase) == 0;
+		}
+
+		void str(std::ostream &os) const override
+		{
+			os << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value;
+		}
+
+		virtual std::optional<row_handle> single() const override
+		{
+			return m_single_hit;
+		}
+
+		std::string m_item_tag;
+		size_t m_item_ix = 0;
+		bool m_icase = false;
+		std::string m_value;
+		std::optional<row_handle> m_single_hit;
+	};
+
+	struct key_equals_or_empty_condition_impl : public condition_impl
+	{
+		key_equals_or_empty_condition_impl(key_equals_condition_impl *equals, key_is_empty_condition_impl *empty)
+			: m_item_tag(equals->m_item_tag)
+			, m_value(equals->m_value)
+			, m_icase(equals->m_icase)
+			, m_single_hit(equals->m_single_hit)
+		{
+			assert(empty->m_item_ix == equals->m_item_ix);
+		}
+
+		condition_impl *prepare(const category &c) override
+		{
+			m_item_ix = get_column_ix(c, m_item_tag);
+			m_icase = is_column_type_uchar(c, m_item_tag);
+			return this;
+		}
+
+		bool test(row_handle r) const override
+		{
+			bool result = false;
+			if (m_single_hit.has_value())
+				result = *m_single_hit == r;
+			else
+				result = r[m_item_ix].empty() or r[m_item_ix].compare(m_value, m_icase) == 0;
+			return result;
+		}
+
+		void str(std::ostream &os) const override
+		{
+			os << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value << " OR " << m_item_tag << " IS NULL";
+		}
+
+		virtual std::optional<row_handle> single() const override
+		{
+			return m_single_hit;
+		}
+
+		std::string m_item_tag;
+		size_t m_item_ix = 0;
+		bool m_icase = false;
+		std::string m_value;
+		std::optional<row_handle> m_single_hit;
+	};	
+
 	struct key_compare_condition_impl : public condition_impl
 	{
 		template <typename COMP>
@@ -185,10 +270,11 @@ namespace detail
 		{
 		}
 
-		void prepare(const category &c) override
+		condition_impl *prepare(const category &c) override
 		{
 			m_item_ix = get_column_ix(c, m_item_tag);
 			m_icase = is_column_type_uchar(c, m_item_tag);
+			return this;
 		}
 
 		bool test(row_handle r) const override
@@ -217,9 +303,10 @@ namespace detail
 		{
 		}
 
-		void prepare(const category &c) override
+		condition_impl *prepare(const category &c) override
 		{
 			m_item_ix = get_column_ix(c, m_item_tag);
+			return this;
 		}
 
 		bool test(row_handle r) const override
@@ -318,44 +405,84 @@ namespace detail
 		std::regex mRx;
 	};
 
+	// TODO: Optimize and_condition by having a list of sub items.
+	// That way you can also collapse multiple _is_ conditions in
+	// case they make up an indexed tuple.
 	struct and_condition_impl : public condition_impl
 	{
 		and_condition_impl(condition &&a, condition &&b)
-			: mA(nullptr)
-			, mB(nullptr)
 		{
-			std::swap(mA, a.m_impl);
-			std::swap(mB, b.m_impl);
+			mSub.emplace_back(std::exchange(a.m_impl, nullptr));
+			mSub.emplace_back(std::exchange(b.m_impl, nullptr));
 		}
 
 		~and_condition_impl()
 		{
-			delete mA;
-			delete mB;
+			for (auto sub : mSub)
+				delete sub;
 		}
 
-		void prepare(const category &c) override
-		{
-			mA->prepare(c);
-			mB->prepare(c);
-		}
+		condition_impl *prepare(const category &c) override;
 
 		bool test(row_handle r) const override
 		{
-			return mA->test(r) and mB->test(r);
+			bool result = true;
+
+			for (auto sub : mSub)
+			{
+				if (sub->test(r))
+					continue;
+		
+				result = false;
+				break;
+			}
+
+			return result;
 		}
 
 		void str(std::ostream &os) const override
 		{
 			os << '(';
-			mA->str(os);
-			os << ") AND (";
-			mB->str(os);
+
+			bool first = true;
+			for (auto sub : mSub)
+			{
+				if (first)
+					first = false;
+				else
+					os << " AND ";
+
+				sub->str(os);
+			}
+
 			os << ')';
 		}
 
-		condition_impl *mA;
-		condition_impl *mB;
+		virtual std::optional<row_handle> single() const override
+		{
+			std::optional<row_handle> result;
+
+			for (auto sub : mSub)
+			{
+				auto s = sub->single();
+
+				if (not result.has_value())
+				{
+					result = s;
+					continue;
+				}
+				
+				if (s == result)
+					continue;
+
+				result.reset();
+				break;
+			}
+
+			return result;
+		}
+
+		std::vector<condition_impl *> mSub;
 	};
 
 	struct or_condition_impl : public condition_impl
@@ -374,11 +501,7 @@ namespace detail
 			delete mB;
 		}
 
-		void prepare(const category &c) override
-		{
-			mA->prepare(c);
-			mB->prepare(c);
-		}
+		condition_impl *prepare(const category &c) override;
 
 		bool test(row_handle r) const override
 		{
@@ -392,6 +515,19 @@ namespace detail
 			os << ") OR (";
 			mB->str(os);
 			os << ')';
+		}
+
+		virtual std::optional<row_handle> single() const override
+		{
+			auto sa = mA->single();
+			auto sb = mB->single();
+			
+			if (sa.has_value() and sb.has_value() and sa != sb)
+				sa.reset();
+			else if (not sa.has_value())
+				sa = sb;
+
+			return sa;
 		}
 
 		condition_impl *mA;
@@ -411,9 +547,10 @@ namespace detail
 			delete mA;
 		}
 
-		void prepare(const category &c) override
+		condition_impl *prepare(const category &c) override
 		{
-			mA->prepare(c);
+			mA = mA->prepare(c);
+			return this;
 		}
 
 		bool test(row_handle r) const override
@@ -480,27 +617,13 @@ struct key
 template <typename T>
 condition operator==(const key &key, const T &v)
 {
-	std::ostringstream s;
-	s << " == " << v;
-
-	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) == 0; },
-		s.str()));
+	return condition(new detail::key_equals_condition_impl({ key.m_item_tag, v }));
 }
 
 inline condition operator==(const key &key, const char *value)
 {
 	if (value != nullptr and *value != 0)
-	{
-		std::ostringstream s;
-		s << " == " << value;
-
-		return condition(new detail::key_compare_condition_impl(
-			key.m_item_tag, [tag = key.m_item_tag, value](row_handle r, bool icase)
-			{ return r[tag].compare(value, icase) == 0; },
-			s.str()));
-	}
+		return condition(new detail::key_equals_condition_impl({ key.m_item_tag, value }));
 	else
 		return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
 }

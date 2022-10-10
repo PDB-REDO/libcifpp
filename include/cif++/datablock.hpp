@@ -66,7 +66,7 @@ class datablock : public std::list<category>
 	const validator *get_validator() const;
 
 	bool is_valid() const;
-	void validate_links() const;
+	bool validate_links() const;
 
 	// --------------------------------------------------------------------
 

@@ -26,15 +26,40 @@
 
 #pragma once
 
-#include <cif++/utilities.hpp>
-#include <cif++/file.hpp>
-#include <cif++/parser.hpp>
-#include <cif++/format.hpp>
+#include <cif++.hpp>
 
-#include <cif++/compound.hpp>
-#include <cif++/point.hpp>
-#include <cif++/symmetry.hpp>
+namespace cif::pdb
+{
 
-#include <cif++/model.hpp>
+// --------------------------------------------------------------------
 
-#include <cif++/pdb/io.hpp>
+struct PDBRecord
+{
+	PDBRecord *mNext;
+	uint32_t mLineNr;
+	char mName[11];
+	size_t mVlen;
+	char mValue[1];
+
+	PDBRecord(uint32_t lineNr, const std::string &name, const std::string &value);
+	~PDBRecord();
+
+	void *operator new(size_t);
+	void *operator new(size_t size, size_t vLen);
+
+	void operator delete(void *p);
+	void operator delete(void *p, size_t vLen);
+
+	bool is(const char *name) const;
+
+	char vC(size_t column);
+	std::string vS(size_t columnFirst, size_t columnLast = std::numeric_limits<size_t>::max());
+	int vI(int columnFirst, int columnLast);
+	std::string vF(size_t columnFirst, size_t columnLast);
+};
+
+// --------------------------------------------------------------------
+
+void ReadPDBFile(std::istream &pdbFile, file &cifFile);
+
+} // namespace pdbx

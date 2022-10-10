@@ -88,7 +88,7 @@ class category
 	const category_validator *get_cat_validator() const { return m_cat_validator; }
 
 	bool is_valid() const;
-	void validate_links() const;
+	bool validate_links() const;
 
 	bool operator==(const category &rhs) const;
 	bool operator!=(const category &rhs) const
@@ -156,6 +156,22 @@ class category
 	bool empty() const
 	{
 		return m_head == nullptr;
+	}
+
+	// --------------------------------------------------------------------
+	// A category can have a key, as defined by the validator/dictionary
+
+	/// @brief The key type
+	using key_type = row_initializer;
+
+	/// @brief Return a row_handle for the row specified by \a key
+	/// @param key The value for the key, fields specified in the dictionary should have a value
+	/// @return The row found in the index, or an undefined row_handle
+	row_handle operator[](const key_type &key);
+
+	const row_handle operator[](const key_type &key) const
+	{
+		return const_cast<category *>(this)->operator[](key);
 	}
 
 	// --------------------------------------------------------------------
@@ -290,12 +306,19 @@ class category
 		{
 			cond.prepare(*this);
 
-			for (auto r : *this)
+			auto sh = cond.single();
+
+			if (sh.has_value() and *sh)
+				result = true;
+			else
 			{
-				if (cond(r))
+				for (auto r : *this)
 				{
-					result = true;
-					break;
+					if (cond(r))
+					{
+						result = true;
+						break;
+					}
 				}
 			}
 		}
@@ -335,7 +358,7 @@ class category
 
 	iterator emplace(row_initializer &&ri)
 	{
-		return this->emplace(ri.m_items.begin(), ri.m_items.end());
+		return this->emplace(ri.begin(), ri.end());
 	}
 
 	template <typename ItemIter>
@@ -525,6 +548,14 @@ class category
 	{
 		uint16_t ix = add_column(i.name());
 		return create_item(ix, i.value());
+	}
+
+	item_value *create_item(const std::tuple<std::string_view,std::string> &i)
+	{
+		const auto &[name, value] = i;
+
+		uint16_t ix = add_column(name);
+		return create_item(ix, value);
 	}
 
 	void delete_item(item_value *iv)

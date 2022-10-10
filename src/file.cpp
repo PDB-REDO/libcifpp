@@ -48,6 +48,9 @@ bool file::is_valid() const
 	for (auto &d : *this)
 		result = d.is_valid() and result;
 
+	if (result)
+		result = validate_links();
+
 	return result;
 }
 
@@ -66,16 +69,23 @@ bool file::is_valid()
 	for (auto &d : *this)
 		result = d.is_valid() and result;
 
+	if (result)
+		result = validate_links();
+
 	return result;
 }
 
-void file::validate_links() const
+bool file::validate_links() const
 {
 	if (m_validator == nullptr)
 		std::runtime_error("No validator loaded explicitly, cannot continue");
+	
+	bool result = true;
 
 	for (auto &db : *this)
-		db.validate_links();
+		result = db.validate_links() and result;
+	
+	return result;
 }
 
 void file::load_dictionary()
@@ -196,6 +206,9 @@ void file::save(const std::filesystem::path &p) const
 
 void file::save(std::ostream &os) const
 {
+	// if (not is_valid())
+	// 	std::cout << "File is not valid!" << std::endl;
+
 	for (auto &db : *this)
 		db.write(os);
 }

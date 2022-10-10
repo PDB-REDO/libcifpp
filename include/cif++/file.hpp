@@ -79,12 +79,24 @@ class file : public std::list<datablock>
 
 	bool is_valid() const;
 	bool is_valid();
-	void validate_links() const;
+	bool validate_links() const;
 
 	void load_dictionary();
 	void load_dictionary(std::string_view name);
 
 	bool contains(std::string_view name) const;
+
+	datablock &front()
+	{
+		assert(not empty());
+		return std::list<datablock>::front();
+	}
+
+	const datablock &front() const
+	{
+		assert(not empty());
+		return std::list<datablock>::front();
+	}
 
 	datablock &operator[](std::string_view name);
 	const datablock &operator[](std::string_view name) const;

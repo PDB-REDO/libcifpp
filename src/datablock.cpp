@@ -54,10 +54,14 @@ bool datablock::is_valid() const
 	return result;
 }
 
-void datablock::validate_links() const
+bool datablock::validate_links() const
 {
+	bool result = true;
+
 	for (auto &cat : *this)
-		cat.validate_links();
+		result = cat.validate_links() and result;
+	
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -70,7 +74,11 @@ category &datablock::operator[](std::string_view name)
 	if (i != end())
 		return *i;
 
-	emplace_back(name);
+	auto &cat = emplace_back(name);
+
+	if (m_validator)
+		cat.set_validator(m_validator, *this);
+
 	return back();
 }
 

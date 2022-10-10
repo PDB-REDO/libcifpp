@@ -26,15 +26,17 @@
 
 #pragma once
 
-#include <cif++/utilities.hpp>
-#include <cif++/file.hpp>
-#include <cif++/parser.hpp>
-#include <cif++/format.hpp>
+#include <cif++.hpp>
 
-#include <cif++/compound.hpp>
-#include <cif++/point.hpp>
-#include <cif++/symmetry.hpp>
+namespace cif::pdb
+{
 
-#include <cif++/model.hpp>
+/// \brief Just the HEADER, COMPND, SOURCE and AUTHOR lines
+void write_header_lines(std::ostream &os, const datablock &data);
 
-#include <cif++/pdb/io.hpp>
+std::string get_HEADER_line(const datablock &data, std::string::size_type truncate_at = 127);
+std::string get_COMPND_line(const datablock &data, std::string::size_type truncate_at = 127);
+std::string get_SOURCE_line(const datablock &data, std::string::size_type truncate_at = 127);
+std::string get_AUTHOR_line(const datablock &data, std::string::size_type truncate_at = 127);
+
+} // namespace pdbx

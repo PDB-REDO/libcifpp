@@ -52,7 +52,7 @@ class row_comparator
 
 		for (auto k : cv->m_keys)
 		{
-			size_t ix = cat.get_column_ix(k);
+			size_t ix = cat.add_column(k);
 
 			auto iv = cv->get_validator_for_item(k);
 			if (iv == nullptr)
@@ -96,6 +96,32 @@ class row_comparator
 		return d;
 	}
 
+	int operator()(const row_initializer &a, const row *b) const
+	{
+		assert(b);
+
+		row_handle rhb(m_category, *b);
+
+		int d = 0, i = 0;
+		for (auto &c : m_comparator)
+		{
+			size_t k;
+			compareFunc f;
+
+			std::tie(k, f) = c;
+
+			std::string_view ka = a[i++].value();
+			std::string_view kb = rhb[k].text();
+
+			d = f(ka, kb);
+
+			if (d != 0)
+				break;
+		}
+
+		return d;
+	}
+
   private:
 	typedef std::function<int(std::string_view, std::string_view)> compareFunc;
 	typedef std::tuple<size_t, compareFunc> key_comparator;
@@ -126,6 +152,7 @@ class category_index
 	}
 
 	row *find(row *k) const;
+	row *find_by_value(row_initializer k) const;
 
 	void insert(row *r);
 	void erase(row *r);
@@ -331,6 +358,37 @@ row *category_index::find(row *k) const
 	return r ? r->m_row : nullptr;
 }
 
+row *category_index::find_by_value(row_initializer k) const
+{
+	// sort the values in k first
+
+	row_initializer k2;
+	for (auto &f : m_category.key_field_indices())
+	{
+		auto fld = m_category.get_column_name(f);
+
+		auto ki = find_if(k.begin(), k.end(), [&fld](auto &i) { return i.name() == fld; });
+		if (ki == k.end())
+			k2.emplace_back(fld, "");
+		else
+			k2.emplace_back(*ki);
+	}
+
+	const entry *r = m_root;
+	while (r != nullptr)
+	{
+		int d = m_row_comparator(k2, r->m_row);
+		if (d < 0)
+			r = r->m_left;
+		else if (d > 0)
+			r = r->m_right;
+		else
+			break;
+	}
+
+	return r ? r->m_row : nullptr;
+}
+
 void category_index::insert(row *k)
 {
 	m_root = insert(m_root, k);
@@ -353,7 +411,10 @@ category_index::entry *category_index::insert(entry *h, row *v)
 
 		std::ostringstream os;
 		for (auto col : m_category.fields())
-			os << col << ": " << std::quoted(rh[col].text()) << "; ";
+		{
+			if (rh[col])
+				os << col << ": " << std::quoted(rh[col].text()) << "; ";
+		}
 
 		throw std::runtime_error("Duplicate Key violation, cat: " + m_category.name() + " values: " + os.str());
 	}
@@ -426,7 +487,7 @@ void category_index::reconstruct()
 	m_root = nullptr;
 
 	for (auto r : m_category)
-		insert(r);
+		insert(r.get_row());
 
 	// maybe reconstruction can be done quicker by using the following commented code.
 	// however, I've not had the time to think of a way to set the red/black flag correctly in that case.
@@ -756,10 +817,14 @@ bool category::is_valid() const
 	// check index?
 	if (m_index)
 	{
+		if (m_index->size() != size())
+			m_validator->report_error("size of index is not equal to size of category " + m_name, true);
+
 		// m_index->validate();
 		for (auto r : *this)
 		{
-			if (m_index->find(r) != r)
+			auto p = r.get_row();
+			if (m_index->find(p) != p)
 				m_validator->report_error("Key not found in index for category " + m_name, true);
 		}
 	}
@@ -813,16 +878,24 @@ bool category::is_valid() const
 	return result;
 }
 
-void category::validate_links() const
+bool category::validate_links() const
 {
 	if (not m_validator)
-		return;
+		return false;
+
+	bool result = true;
 
 	for (auto &link : m_parent_links)
 	{
 		auto parent = link.linked;
 
 		if (parent == nullptr)
+			continue;
+
+		// this particular case should be skipped, that's because it is wrong:
+		// there are atoms that are not part of a polymer, and thus will have no
+		// parent in that category.
+		if (name() == "atom_site" and (parent->name() == "pdbx_poly_seq_scheme" or parent->name() == "entity_poly_seq"))
 			continue;
 
 		size_t missing = 0;
@@ -843,13 +916,15 @@ void category::validate_links() const
 
 		if (missing)
 		{
+			result = false;
+
 			std::cerr << "Links for " << link.v->m_link_group_label << " are incomplete" << std::endl
-					  << "  There are " << missing << " items in " << m_name << " that don't have matching parent items in " << parent->m_name << std::endl;
+					<< "  There are " << missing << " items in " << m_name << " that don't have matching parent items in " << parent->m_name << std::endl;
 			
 			if (VERBOSE)
 			{
 				std::cerr << "showing first " << first_missing_rows.size() <<  " rows" << std::endl
-						  << std::endl;
+						<< std::endl;
 
 				first_missing_rows.write(std::cerr, link.v->m_child_keys, false);
 
@@ -857,6 +932,19 @@ void category::validate_links() const
 			}
 		}
 	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+row_handle category::operator[](const key_type &key)
+{
+	if (m_index == nullptr)
+		throw std::logic_error("Category " + m_name + " does not have an index");
+
+	auto row = m_index->find_by_value(key);
+	return row != nullptr ? row_handle{ *this, *row } : row_handle{};
 }
 
 // --------------------------------------------------------------------
@@ -898,6 +986,11 @@ condition category::get_children_condition(row_handle rh, const category &childC
 
 	condition result;
 
+	iset mandatoryChildFields;
+	auto childCatValidator = m_validator->get_validator_for_category(childCat.name());
+	if (childCatValidator != nullptr)
+		mandatoryChildFields = childCatValidator->m_mandatory_fields;
+
 	for (auto &link : m_validator->get_links_for_parent(m_name))
 	{
 		if (link->m_child_category != childCat.m_name)
@@ -914,14 +1007,13 @@ condition category::get_children_condition(row_handle rh, const category &childC
 
 			if (parentValue.empty())
 				cond = std::move(cond) and key(childKey) == null;
+			else if (link->m_parent_keys.size() > 1 and not mandatoryChildFields.contains(childKey))
+				cond = std::move(cond) and (key(childKey) == parentValue.text() or key(childKey) == null);
 			else
 				cond = std::move(cond) and key(childKey) == parentValue.text();
 		}
 
-		if (result)
-			result = std::move(result) or std::move(cond);
-		else
-			result = std::move(cond);
+		result = std::move(result) or std::move(cond);
 	}
 
 	return result;
@@ -1004,7 +1096,7 @@ std::vector<row_handle> category::get_linked(row_handle r, const category &cat) 
 category::iterator category::erase(iterator pos)
 {
 	row_handle rh = *pos;
-	row *r = rh;
+	row *r = rh.get_row();
 	iterator result = ++pos;
 
 	iset keys;
@@ -1137,9 +1229,14 @@ void category::erase_orphans(condition &&cond, category &parent)
 			continue;
 
 		if (VERBOSE > 1)
+		{
+			category c(m_name);
+			c.emplace(r);
 			std::cerr << "Removing orphaned record: " << std::endl
-						<< r << std::endl
+						<< c << std::endl
 						<< std::endl;
+
+		}
 		
 		remove.emplace_back(r.m_row);
 	}
@@ -1526,6 +1623,11 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 	if (n == nullptr)
 		throw std::runtime_error("Invalid pointer passed to insert");
 
+// #ifndef NDEBUG
+// 	if (m_validator)
+// 		is_valid();
+// #endif
+
 	try
 	{
 		// First, make sure all mandatory fields are supplied
@@ -1606,56 +1708,61 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 		delete_row(n);
 		throw;
 	}
+
+// #ifndef NDEBUG
+// 	if (m_validator)
+// 		is_valid();
+// #endif
 }
 
-category::iterator category::erase_impl(const_iterator pos)
-{
-	if (pos == cend())
-		return end();
+// category::iterator category::erase_impl(const_iterator pos)
+// {
+// 	if (pos == cend())
+// 		return end();
 
-	assert(false);
-	// TODO: implement
+// 	assert(false);
+// 	// TODO: implement
 
-	// row *n = const_cast<row *>(pos.row());
-	// row *cur;
+// 	// row *n = const_cast<row *>(pos.row());
+// 	// row *cur;
 
-	// if (m_head == n)
-	// {
-	// 	m_head = static_cast<row *>(m_head->m_next);
-	// 	if (m_head == nullptr)
-	// 		m_tail = nullptr;
+// 	// if (m_head == n)
+// 	// {
+// 	// 	m_head = static_cast<row *>(m_head->m_next);
+// 	// 	if (m_head == nullptr)
+// 	// 		m_tail = nullptr;
 
-	// 	n->m_next = nullptr;
-	// 	delete_row(n);
+// 	// 	n->m_next = nullptr;
+// 	// 	delete_row(n);
 
-	// 	cur = m_head;
-	// }
-	// else
-	// {
-	// 	cur = static_cast<row *>(n->m_next);
+// 	// 	cur = m_head;
+// 	// }
+// 	// else
+// 	// {
+// 	// 	cur = static_cast<row *>(n->m_next);
 
-	// 	if (m_tail == n)
-	// 		m_tail = static_cast<row *>(n->m_prev);
+// 	// 	if (m_tail == n)
+// 	// 		m_tail = static_cast<row *>(n->m_prev);
 
-	// 	row *p = m_head;
-	// 	while (p != nullptr and p->m_next != n)
-	// 		p = p->m_next;
+// 	// 	row *p = m_head;
+// 	// 	while (p != nullptr and p->m_next != n)
+// 	// 		p = p->m_next;
 
-	// 	if (p != nullptr and p->m_next == n)
-	// 	{
-	// 		p->m_next = n->m_next;
-	// 		if (p->m_next != nullptr)
-	// 			p->m_next->m_prev = p;
-	// 		n->m_next = nullptr;
-	// 	}
-	// 	else
-	// 		throw std::runtime_error("remove for a row not found in the list");
+// 	// 	if (p != nullptr and p->m_next == n)
+// 	// 	{
+// 	// 		p->m_next = n->m_next;
+// 	// 		if (p->m_next != nullptr)
+// 	// 			p->m_next->m_prev = p;
+// 	// 		n->m_next = nullptr;
+// 	// 	}
+// 	// 	else
+// 	// 		throw std::runtime_error("remove for a row not found in the list");
 
-	// 	delete_row(n);
-	// }
+// 	// 	delete_row(n);
+// 	// }
 
-	// return iterator(*this, cur);
-}
+// 	// return iterator(*this, cur);
+// }
 
 void category::swap_item(size_t column_ix, row_handle &a, row_handle &b)
 {
@@ -1714,7 +1821,7 @@ void category::swap_item(size_t column_ix, row_handle &a, row_handle &b)
 			v->m_next = vb->m_next;
 			vb->m_next = nullptr;
 
-			if (rb->m_tail = vb)
+			if (rb->m_tail == vb)
 				rb->m_tail = v;
 
 			break;
