@@ -68,8 +68,13 @@ row_initializer::row_initializer(row_handle rh)
 	row *r = rh.get_row();
 	auto &cat = *rh.m_category;
 
-	for (auto i = r->m_head; i != nullptr; i = i->m_next)
-		emplace_back(cat.get_column_name(i->m_column_ix), i->text());
+	for (size_t ix = 0; ix < r->size(); ++ix)
+	{
+		auto &i = r->operator[](ix);
+		if (not i)
+			continue;
+		emplace_back(cat.get_column_name(ix), i.text());
+	}
 }
 
 void row_initializer::set_value(std::string_view name, std::string_view value)

@@ -370,8 +370,8 @@ class category
 		{
 			for (auto i = b; i != e; ++i)
 			{
-				item_value *new_item = this->create_item(*i);
-				r->append(new_item);
+				// item_value *new_item = this->create_item(*i);
+				r->append(add_column(i->name()), { i->value() });
 			}
 		}
 		catch (...)
@@ -509,67 +509,6 @@ class category
 
 	using char_allocator_type = typename std::allocator_traits<allocator_type>::template rebind_alloc<char>;
 	using char_allocator_traits = std::allocator_traits<char_allocator_type>;
-
-	using item_allocator_type = typename std::allocator_traits<allocator_type>::template rebind_alloc<item_value>;
-	using item_allocator_traits = std::allocator_traits<item_allocator_type>;
-
-	item_allocator_traits::pointer get_item()
-	{
-		item_allocator_type ia(get_allocator());
-		return item_allocator_traits::allocate(ia, 1);
-	}
-
-	item_value *create_item(uint16_t column_ix, std::string_view text)
-	{
-		size_t text_length = text.length();
-
-		if (text_length + 1 > std::numeric_limits<uint16_t>::max())
-			throw std::runtime_error("libcifpp does not support string lengths longer than " + std::to_string(std::numeric_limits<uint16_t>::max()) + " bytes");
-
-		auto p = this->get_item();
-		item_allocator_type ia(get_allocator());
-		item_allocator_traits::construct(ia, p, column_ix, static_cast<uint16_t>(text_length));
-
-		char_allocator_type ca(get_allocator());
-
-		char *data;
-		if (text_length >= item_value::kBufferSize)
-			data = p->m_data = char_allocator_traits::allocate(ca, text_length + 1);
-		else
-			data = p->m_local_data;
-
-		std::copy(text.begin(), text.end(), data);
-		data[text_length] = 0;
-
-		return p;
-	}
-
-	item_value *create_item(const item &i)
-	{
-		uint16_t ix = add_column(i.name());
-		return create_item(ix, i.value());
-	}
-
-	item_value *create_item(const std::tuple<std::string_view,std::string> &i)
-	{
-		const auto &[name, value] = i;
-
-		uint16_t ix = add_column(name);
-		return create_item(ix, value);
-	}
-
-	void delete_item(item_value *iv)
-	{
-		if (iv->m_length >= item_value::kBufferSize)
-		{
-			char_allocator_type ca(get_allocator());
-			char_allocator_traits::deallocate(ca, iv->m_data, iv->m_length + 1);
-		}
-
-		item_allocator_type ia(get_allocator());
-		item_allocator_traits::destroy(ia, iv);
-		item_allocator_traits::deallocate(ia, iv, 1);
-	}
 
 	using row_allocator_type = typename std::allocator_traits<allocator_type>::template rebind_alloc<row>;
 	using row_allocator_traits = std::allocator_traits<row_allocator_type>;

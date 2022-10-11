@@ -847,20 +847,18 @@ bool category::is_valid() const
 				continue;
 			}
 
-			for (auto vi = ri->m_head; vi != nullptr; vi = vi->m_next)
+			auto vi = ri->get(cix);
+			if (vi != nullptr)
 			{
-				if (vi->m_column_ix == cix)
+				seen = true;
+				try
 				{
-					seen = true;
-					try
-					{
-						(*iv)(vi->text());
-					}
-					catch (const std::exception &e)
-					{
-						m_validator->report_error("Error validating " + m_columns[cix].m_name + ": " + e.what(), false);
-						continue;
-					}
+					(*iv)(vi->text());
+				}
+				catch (const std::exception &e)
+				{
+					m_validator->report_error("Error validating " + m_columns[cix].m_name + ": " + e.what(), false);
+					continue;
 				}
 			}
 
@@ -1406,16 +1404,10 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 	auto &col = m_columns[column];
 
 	std::string_view oldValue;
-	for (auto iv = row->m_head; iv != nullptr; iv = iv->m_next)
-	{
-		assert(iv != iv->m_next and (iv->m_next == nullptr or iv != iv->m_next->m_next));
 
-		if (iv->m_column_ix == column)
-		{
-			oldValue = iv->text();
-			break;
-		}
-	}
+	auto ival = row->get(column);
+	if (ival != nullptr)
+		oldValue = ival->text();
 
 	if (value == oldValue) // no need to update
 		return;
@@ -1439,18 +1431,11 @@ void category::update_value(row *row, size_t column, std::string_view value, boo
 	}
 
 	// first remove old value with cix
-	for (auto iv = row->m_head; iv != nullptr; iv = iv->m_next)
-	{
-		if (iv->m_column_ix != column)
-			continue;
-
-		row->remove(iv);
-		delete_item(iv);
-		break;
-	}
+	if (ival != nullptr)
+		row->remove(column);
 
 	if (not value.empty())
-		row->append(create_item(column, value));
+		row->append(column, { value });
 
 	if (reinsert)
 		m_index->insert(row);
@@ -1544,10 +1529,13 @@ row *category::clone_row(const row &r)
 
 	try
 	{
-		for (auto i = r.m_head; i != nullptr; i = i->m_next)
+		for (size_t ix = 0; ix < r.size(); ++ix)
 		{
-			item_value *v = create_item(i->m_column_ix, i->text());
-			result->append(v);
+			auto &i = r[ix];
+			if (not i)
+				continue;
+			
+			result->append( ix, { i.text() });
 		}
 	}
 	catch (...)
@@ -1563,14 +1551,6 @@ void category::delete_row(row *r)
 {
 	if (r != nullptr)
 	{
-		auto i = r->m_head;
-		while (i != nullptr)
-		{
-			auto t = i;
-			i = i->m_next;
-			delete_item(t);
-		}
-
 		row_allocator_type ra(get_allocator());
 		row_allocator_traits::destroy(ra, r);
 		row_allocator_traits::deallocate(ra, r, 1);
@@ -1582,8 +1562,12 @@ row_handle category::create_copy(row_handle r)
 	// copy the values
 	std::vector<item> items;
 
-	for (item_value *iv = r.m_row->m_head; iv != nullptr; iv = iv->m_next)
-		items.emplace_back(m_columns[iv->m_column_ix].m_name, iv->text());
+	for (size_t ix = 0; ix < r.m_row->size(); ++ix)
+	{
+		auto i = r.m_row->get(ix);
+		if (i != nullptr)
+			items.emplace_back(m_columns[ix].m_name, i->text());
+	}
 
 	if (m_cat_validator and m_cat_validator->m_keys.size() == 1)
 	{
@@ -1604,11 +1588,6 @@ row_handle category::create_copy(row_handle r)
 	}
 
 	return emplace(items.begin(), items.end());
-
-	// auto &&[result, inserted] = emplace(items.begin(), items.end());
-	// // assert(inserted);
-
-	// return result;
 }
 
 // proxy methods for every insertion
@@ -1642,42 +1621,16 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 
 				bool seen = false;
 
-				for (auto i = n->m_head; i != nullptr; i = i->m_next)
+				auto i = n->get(ix);
+				if (i != nullptr)
 				{
-					if (i->m_column_ix == ix)
-					{
-						iv->operator()(i->text());
-
-						seen = true;
-						break;
-					}
+					iv->operator()(i->text());
+					seen = true;
 				}
 
 				if (not seen and iv->m_mandatory)
 					throw std::runtime_error("missing mandatory field " + column + " for category " + m_name);
 			}
-
-			// if (m_index != nullptr)
-			// {
-			// 	std::unique_ptr<ItemRow> nr(new ItemRow{nullptr, this, nullptr});
-			// 	Row r(nr.get());
-			// 	auto keys = keyFields();
-
-			// 	for (auto v = b; v != e; ++v)
-			// 	{
-			// 		if (keys.count(v->name()))
-			// 			r.assign(v->name(), v->value(), true);
-			// 	}
-
-			// 	auto test = m_index->find(nr.get());
-			// 	if (test != nullptr)
-			// 	{
-			// 		if (VERBOSE > 1)
-			// 			std::cerr << "Not inserting new record in " << m_name << " (duplicate Key)" << std::endl;
-			// 		result = test;
-			// 		isNew = false;
-			// 	}
-			// }
 		}
 
 		if (m_index != nullptr)
@@ -1715,134 +1668,15 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 // #endif
 }
 
-// category::iterator category::erase_impl(const_iterator pos)
-// {
-// 	if (pos == cend())
-// 		return end();
-
-// 	assert(false);
-// 	// TODO: implement
-
-// 	// row *n = const_cast<row *>(pos.row());
-// 	// row *cur;
-
-// 	// if (m_head == n)
-// 	// {
-// 	// 	m_head = static_cast<row *>(m_head->m_next);
-// 	// 	if (m_head == nullptr)
-// 	// 		m_tail = nullptr;
-
-// 	// 	n->m_next = nullptr;
-// 	// 	delete_row(n);
-
-// 	// 	cur = m_head;
-// 	// }
-// 	// else
-// 	// {
-// 	// 	cur = static_cast<row *>(n->m_next);
-
-// 	// 	if (m_tail == n)
-// 	// 		m_tail = static_cast<row *>(n->m_prev);
-
-// 	// 	row *p = m_head;
-// 	// 	while (p != nullptr and p->m_next != n)
-// 	// 		p = p->m_next;
-
-// 	// 	if (p != nullptr and p->m_next == n)
-// 	// 	{
-// 	// 		p->m_next = n->m_next;
-// 	// 		if (p->m_next != nullptr)
-// 	// 			p->m_next->m_prev = p;
-// 	// 		n->m_next = nullptr;
-// 	// 	}
-// 	// 	else
-// 	// 		throw std::runtime_error("remove for a row not found in the list");
-
-// 	// 	delete_row(n);
-// 	// }
-
-// 	// return iterator(*this, cur);
-// }
-
 void category::swap_item(size_t column_ix, row_handle &a, row_handle &b)
 {
 	assert(this == a.m_category);
 	assert(this == b.m_category);
 
-	item_value *va = nullptr, *vb = nullptr;
+	auto &ra = *a.m_row;
+	auto &rb = *b.m_row;
 
-	auto ra = a.m_row;
-	auto rb = b.m_row;
-
-	if (ra->m_head != nullptr and ra->m_head->m_column_ix == column_ix)
-	{
-		va = ra->m_head;
-		ra->m_head = va->m_next;
-		va->m_next = nullptr;
-
-		if (ra->m_tail == va)
-			ra->m_tail = ra->m_head;
-	}
-	else
-	{
-		for (auto v = ra->m_head; v->m_next != nullptr; v = v->m_next)
-		{
-			if (v->m_next->m_column_ix != column_ix)
-				continue;
-			
-			va = v->m_next;
-			v->m_next = va->m_next;
-			va->m_next = nullptr;
-
-			if (ra->m_tail == va)
-				ra->m_tail = v;
-
-			break;
-		}
-	}
-
-	if (rb->m_head != nullptr and rb->m_head->m_column_ix == column_ix)
-	{
-		vb = rb->m_head;
-		rb->m_head = vb->m_next;
-		vb->m_next = nullptr;
-
-		if (rb->m_tail == vb)
-			rb->m_tail = rb->m_head;
-	}
-	else
-	{
-		for (auto v = rb->m_head; v->m_next != nullptr; v = v->m_next)
-		{
-			if (v->m_next->m_column_ix != column_ix)
-				continue;
-			
-			vb = v->m_next;
-			v->m_next = vb->m_next;
-			vb->m_next = nullptr;
-
-			if (rb->m_tail == vb)
-				rb->m_tail = v;
-
-			break;
-		}
-	}
-
-	if (ra->m_head == nullptr)
-		ra->m_head = ra->m_tail = vb;
-	else
-	{
-		ra->m_tail->m_next = vb;
-		ra->m_tail = vb;
-	}
-
-	if (rb->m_head == nullptr)
-		rb->m_head = rb->m_tail = va;
-	else
-	{
-		rb->m_tail->m_next = va;
-		rb->m_tail = va;
-	}
+	std::swap(ra.at(column_ix), rb.at(column_ix));
 }
 
 void category::reorder_by_index()
@@ -1997,8 +1831,12 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 		for (auto r = m_head; r != nullptr; r = r->m_next)
 		{
-			for (auto v = r->m_head; v != nullptr; v = v->m_next)
+			for (size_t ix = 0; ix < r->size(); ++ix)
 			{
+				auto v = r->get(ix);
+				if (v == nullptr)
+					continue;
+
 				if (v->text().find('\n') == std::string_view::npos)
 				{
 					size_t l = v->text().length();
@@ -2009,8 +1847,8 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 					if (l > 132)
 						continue;
 
-					if (columnWidths[v->m_column_ix] < l + 1)
-						columnWidths[v->m_column_ix] = l + 1;
+					if (columnWidths[ix] < l + 1)
+						columnWidths[ix] = l + 1;
 				}
 			}
 		}
@@ -2024,14 +1862,9 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 				size_t w = columnWidths[cix];
 
 				std::string_view s;
-				for (auto iv = r->m_head; iv != nullptr; iv = iv->m_next)
-				{
-					if (iv->m_column_ix == cix)
-					{
-						s = iv->text();
-						break;
-					}
-				}
+				auto iv = r->get(cix);
+				if (iv != nullptr)
+					s = iv->text();
 
 				if (s.empty())
 					s = "?";
@@ -2083,14 +1916,9 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 			os << '_' << m_name << '.' << col.m_name << std::string(l - col.m_name.length() - m_name.length() - 2, ' ');
 
 			std::string_view s;
-			for (auto iv = m_head->m_head; iv != nullptr; iv = iv->m_next)
-			{
-				if (iv->m_column_ix == cix)
-				{
-					s = iv->text();
-					break;
-				}
-			}
+			auto iv = m_head->get(cix);
+			if (iv != nullptr)
+				s = iv->text();
 
 			if (s.empty())
 				s = "?";

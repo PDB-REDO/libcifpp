@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(create_sugar_1)
 	// before it gets destroyed by remove_residue
 
 	for (auto r : as.find("label_asym_id"_key == "L"))
-		auto &ri = ai.emplace_back(r);
+		/*auto &ri = */ai.emplace_back(r);
 
 	s.remove_residue(NAG);
 
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(create_sugar_2)
 	for (size_t i = 0; i < 2; ++i)
 	{
 		for (auto r : as.find("label_asym_id"_key == "H" and "auth_seq_id"_key == i + 1))
-			auto &ri = ai[i].emplace_back(r);
+			/*auto &ri = */ai[i].emplace_back(r);
 	}
 
 	s.remove_branch(bH);

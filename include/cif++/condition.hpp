@@ -255,8 +255,8 @@ namespace detail
 
 		std::string m_item_tag;
 		size_t m_item_ix = 0;
-		bool m_icase = false;
 		std::string m_value;
+		bool m_icase = false;
 		std::optional<row_handle> m_single_hit;
 	};	
 

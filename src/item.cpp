@@ -44,11 +44,9 @@ std::string_view item_handle::text() const
 {
 	if (not m_row_handle.empty())
 	{
-		for (auto iv = m_row_handle.m_row->m_head; iv != nullptr; iv = iv->m_next)
-		{
-			if (iv->m_column_ix == m_column)
-				return iv->text();
-		}
+		auto iv = m_row_handle.m_row->get(m_column);
+		if (iv != nullptr)
+			return iv->text();
 	}
 
 	return {};

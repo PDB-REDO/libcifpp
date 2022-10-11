@@ -103,60 +103,43 @@ auto tie(Ts &...v)
 // --------------------------------------------------------------------
 /// \brief the row class, this one is not directly accessible from the outside
 
-class row
+class row : public std::vector<item_value>
 {
   public:
 	row() = default;
 
+	item_value* get(size_t ix)
+	{
+		return ix < size() ? &at(ix) : nullptr;
+	}
+
+	const item_value* get(size_t ix) const
+	{
+		return ix < size() ? &at(ix) : nullptr;
+	}
+
   private:
-	friend class item_handle;
+	friend class category;
 	friend class category_index;
-	friend class row_initializer;
 
 	template <typename, typename...>
 	friend class iterator_impl;
 
-	friend class category;
-
-	void append(item_value *iv)
+	void append(size_t ix, item_value &&iv)
 	{
-		if (m_head == nullptr)
-			m_head = m_tail = iv;
-		else
-			m_tail = m_tail->m_next = iv;
+		if (ix >= size())
+			resize(ix + 1);
+		
+		at(ix) = std::move(iv);
 	}
 
-	void remove(item_value *iv)
+	void remove(size_t ix)
 	{
-		if (iv == m_head)
-		{
-			if (m_tail == m_head)
-			{
-				assert(iv->m_next == nullptr);
-				m_head = m_tail = nullptr;
-			}
-			else
-				m_head = m_head->m_next;
-		}
-		else
-		{
-			for (auto v = m_head; v->m_next != nullptr; v = v->m_next)
-			{
-				if (v->m_next != iv)
-					continue;
-
-				v->m_next = iv->m_next;
-				iv->m_next = nullptr;
-
-				if (m_tail == iv)
-					m_tail = v;
-				break;
-			}
-		}
+		if (ix < size())
+			at(ix) = item_value{};
 	}
 
 	row *m_next = nullptr;
-	item_value *m_head = nullptr, *m_tail = nullptr;
 };
 
 // --------------------------------------------------------------------

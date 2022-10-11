@@ -179,21 +179,58 @@ class item
 
 struct item_value
 {
+	item_value() = default;
+
 	/// \brief constructor
-	item_value(uint16_t column_ix, uint16_t length)
-		: m_next(nullptr)
-		, m_column_ix(column_ix)
-		, m_length(length)
+	item_value(std::string_view text)
+		: m_length(text.length())
+	{
+		if (m_length >= kBufferSize)
+		{
+			m_data = new char[m_length + 1];
+			std::copy(text.begin(), text.end(), m_data);
+			m_data[m_length] = 0;
+		}
+		else
+		{
+			std::copy(text.begin(), text.end(), m_local_data);
+			m_local_data[m_length] = 0;
+		}
+	}
+
+	item_value(item_value &&rhs)
+		: m_length(std::exchange(rhs.m_length, 0))
+		, m_data(std::exchange(rhs.m_data, nullptr))
 	{
 	}
 
-	item_value() = delete;
+	item_value &operator=(item_value &&rhs)
+	{
+		if (this != &rhs)
+		{
+			m_length = std::exchange(rhs.m_length, m_length);
+			m_data = std::exchange(rhs.m_data, m_data);
+		}
+		return *this;
+	}
+
+	~item_value()
+	{
+		if (m_length >= kBufferSize)
+			delete[] m_data;
+		m_data = nullptr;
+		m_length = 0;
+	}
+
 	item_value(const item_value &) = delete;
 	item_value &operator=(const item_value &) = delete;
 
-	item_value *m_next;
-	uint16_t m_column_ix;
-	uint16_t m_length;
+	explicit operator bool() const
+	{
+		return m_length != 0;
+	}
+
+	size_t m_length = 0;
 	union
 	{
 		char m_local_data[8];
@@ -210,7 +247,8 @@ struct item_value
 	}
 };
 
-static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes");
+// static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes");
+static_assert(sizeof(item_value) == 16, "sizeof(item_value) should be 16 bytes");
 
 // --------------------------------------------------------------------
 // Transient object to access stored data

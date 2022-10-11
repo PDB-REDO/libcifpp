@@ -90,7 +90,7 @@ float atom::atom_impl::get_property_float(std::string_view name) const
 	{
 		auto s = get_property(name);
 
-		std::from_chars_result r = std::from_chars(s.data(), s.data() + s.length(), result);
+		std::from_chars_result r = cif::from_chars(s.data(), s.data() + s.length(), result);
 		if (r.ec != std::errc() and VERBOSE > 0)
 			std::cerr << "Error converting " << s << " to number for property " << name << std::endl;
 	}

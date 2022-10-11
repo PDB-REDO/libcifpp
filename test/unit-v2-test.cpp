@@ -1661,7 +1661,7 @@ _cat_2.parent_id_2
 	std::istream is_data(&data_buffer);
 	f.load(is_data);
 
-	auto &cat1 = f.front()["cat_1"];
+	// auto &cat1 = f.front()["cat_1"];
 	auto &cat2 = f.front()["cat_2"];
 
 	// f.front().validate_links();
