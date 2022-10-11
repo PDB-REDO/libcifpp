@@ -403,12 +403,16 @@ class residue
 
 	// constructor
 	residue(const structure &structure, const std::string &compoundID,
-		const std::string &asymID, int seqID, const std::string &authSeqID)
+		const std::string &asymID, int seqID,
+		const std::string &authAsymID, const std::string &authSeqID,
+		const std::string &pdbInsCode)
 		: m_structure(&structure)
 		, m_compound_id(compoundID)
 		, m_asym_id(asymID)
 		, m_seq_id(seqID)
+		, m_auth_asym_id(authAsymID)
 		, m_auth_seq_id(authSeqID)
+		, m_pdb_ins_code(pdbInsCode)
 	{
 	}
 
@@ -427,16 +431,9 @@ class residue
 	const std::string &get_asym_id() const { return m_asym_id; }
 	int get_seq_id() const { return m_seq_id; }
 
-	const std::string get_auth_asym_id() const
-	{
-		return m_atoms.empty() ? m_asym_id : m_atoms.front().get_auth_asym_id();
-	}
+	const std::string get_auth_asym_id() const { return m_auth_asym_id; }
 	const std::string get_auth_seq_id() const { return m_auth_seq_id; }
-
-	std::string get_pdb_ins_code() const
-	{
-		return m_atoms.empty() ? "" : m_atoms.front().get_pdb_ins_code();
-	}
+	std::string get_pdb_ins_code() const { return m_pdb_ins_code; }
 
 	const std::string &get_compound_id() const { return m_compound_id; }
 	void set_compound_id(const std::string &id) { m_compound_id = id; }
@@ -501,7 +498,7 @@ class residue
 	const structure *m_structure = nullptr;
 	std::string m_compound_id, m_asym_id;
 	int m_seq_id = 0;
-	std::string m_auth_seq_id;
+	std::string m_auth_asym_id, m_auth_seq_id, m_pdb_ins_code;
 	std::vector<atom> m_atoms;
 };
 
@@ -519,7 +516,7 @@ class monomer : public residue
 	monomer &operator=(monomer &&rhs);
 
 	monomer(const polymer &polymer, size_t index, int seqID, const std::string &authSeqID,
-		const std::string &compoundID);
+		const std::string &pdbInsCode, const std::string &compoundID);
 
 	bool is_first_in_chain() const;
 	bool is_last_in_chain() const;
@@ -582,7 +579,7 @@ class monomer : public residue
 class polymer : public std::vector<monomer>
 {
   public:
-	polymer(const structure &s, const std::string &entityID, const std::string &asymID);
+	polymer(const structure &s, const std::string &entityID, const std::string &asymID, const std::string &auth_asym_id);
 
 	polymer(const polymer &) = delete;
 	polymer &operator=(const polymer &) = delete;
@@ -593,9 +590,8 @@ class polymer : public std::vector<monomer>
 	const structure *get_structure() const { return m_structure; }
 
 	std::string get_asym_id() const { return m_asym_id; }
+	std::string get_auth_asym_id() const { return m_auth_asym_id; }	// The PDB chain ID, actually
 	std::string get_entity_id() const { return m_entity_id; }
-
-	// std::string chainID() const;
 
 	// int Distance(const monomer &a, const monomer &b) const;
 
@@ -603,6 +599,7 @@ class polymer : public std::vector<monomer>
 	const structure *m_structure;
 	std::string m_entity_id;
 	std::string m_asym_id;
+	std::string m_auth_asym_id;
 };
 
 // --------------------------------------------------------------------

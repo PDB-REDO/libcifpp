@@ -566,8 +566,8 @@ std::ostream &operator<<(std::ostream &os, const residue &res)
 // --------------------------------------------------------------------
 // monomer
 
-monomer::monomer(const polymer &polymer, size_t index, int seqID, const std::string &authSeqID, const std::string &compoundID)
-	: residue(*polymer.get_structure(), compoundID, polymer.get_asym_id(), seqID, authSeqID)
+monomer::monomer(const polymer &polymer, size_t index, int seqID, const std::string &authSeqID, const std::string &pdbInsCode, const std::string &compoundID)
+	: residue(*polymer.get_structure(), compoundID, polymer.get_asym_id(), seqID, polymer.get_auth_asym_id(), authSeqID, pdbInsCode)
 	, m_polymer(&polymer)
 	, m_index(index)
 {
@@ -955,11 +955,11 @@ bool monomer::is_cis(const monomer &a, const monomer &b)
 // --------------------------------------------------------------------
 // polymer
 
-polymer::polymer(const structure &s, const std::string &entityID, const std::string &asym_id)
+polymer::polymer(const structure &s, const std::string &entityID, const std::string &asym_id, const std::string &auth_asym_id)
 	: m_structure(const_cast<structure *>(&s))
 	, m_entity_id(entityID)
 	, m_asym_id(asym_id)
-	// , mPolySeq(s.m_db["pdbx_poly_seq_scheme"), key("asym_id") == m_asym_id and key("entity_id") == m_entity_i])
+	, m_auth_asym_id(auth_asym_id)
 {
 	using namespace cif::literals;
 
@@ -971,8 +971,8 @@ polymer::polymer(const structure &s, const std::string &entityID, const std::str
 	for (auto r : poly_seq_scheme.find("asym_id"_key == asym_id))
 	{
 		int seqID;
-		std::string compoundID, authSeqID;
-		cif::tie(seqID, authSeqID, compoundID) = r.get("seq_id", "auth_seq_num", "mon_id");
+		std::string compoundID, authSeqID, pdbInsCode;
+		cif::tie(seqID, authSeqID, compoundID, pdbInsCode) = r.get("seq_id", "auth_seq_num", "mon_id", "pdb_ins_code");
 
 		size_t index = size();
 
@@ -980,11 +980,11 @@ polymer::polymer(const structure &s, const std::string &entityID, const std::str
 		if (not ix.count(seqID))
 		{
 			ix[seqID] = index;
-			emplace_back(*this, index, seqID, authSeqID, compoundID);
+			emplace_back(*this, index, seqID, authSeqID, pdbInsCode, compoundID);
 		}
 		else if (VERBOSE > 0)
 		{
-			monomer m{*this, index, seqID, authSeqID, compoundID};
+			monomer m{*this, index, seqID, authSeqID, pdbInsCode, compoundID};
 			std::cerr << "Dropping alternate residue " << m << std::endl;
 		}
 	}
@@ -1043,7 +1043,7 @@ polymer::polymer(const structure &s, const std::string &entityID, const std::str
 
 sugar::sugar(const branch &branch, const std::string &compoundID,
 	const std::string &asym_id, int authSeqID)
-	: residue(branch.get_structure(), compoundID, asym_id, 0, std::to_string(authSeqID))
+	: residue(branch.get_structure(), compoundID, asym_id, 0, asym_id, std::to_string(authSeqID), "")
 	, m_branch(&branch)
 {
 }
@@ -1318,10 +1318,10 @@ void structure::load_data()
 {
 	auto &polySeqScheme = m_db["pdbx_poly_seq_scheme"];
 
-	for (const auto &[asym_id, entityID] : polySeqScheme.rows<std::string,std::string>("asym_id", "entity_id"))
+	for (const auto &[asym_id, auth_asym_id, entityID] : polySeqScheme.rows<std::string,std::string,std::string>("asym_id", "pdb_strand_id", "entity_id"))
 	{
 		if (m_polymers.empty() or m_polymers.back().get_asym_id() != asym_id or m_polymers.back().get_entity_id() != entityID)
-			m_polymers.emplace_back(*this, entityID, asym_id);
+			m_polymers.emplace_back(*this, entityID, asym_id, auth_asym_id);
 	}
 
 	auto &branchScheme = m_db["pdbx_branch_scheme"];
@@ -1334,8 +1334,9 @@ void structure::load_data()
 
 	auto &nonPolyScheme = m_db["pdbx_nonpoly_scheme"];
 
-	for (const auto&[asym_id, monID, pdbSeqNum] : nonPolyScheme.rows<std::string,std::string,std::string>("asym_id", "mon_id", "pdb_seq_num"))
-		m_non_polymers.emplace_back(*this, monID, asym_id, 0, pdbSeqNum);
+	for (const auto&[asym_id, monID, pdbStrandID, pdbSeqNum, pdbInsCode] :
+			nonPolyScheme.rows<std::string,std::string,std::string,std::string,std::string>("asym_id", "mon_id", "pdb_strand_id", "pdb_seq_num", "pdb_ins_code"))
+		m_non_polymers.emplace_back(*this, monID, asym_id, 0, pdbStrandID, pdbSeqNum, pdbInsCode);
 
 	// place atoms in residues
 
@@ -2110,7 +2111,7 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 
 	auto &atom_site = m_db["atom_site"];
 
-	auto &res = m_non_polymers.emplace_back(*this, comp_id, asym_id, 0, "1");
+	auto &res = m_non_polymers.emplace_back(*this, comp_id, asym_id, 0, asym_id, "1", "");
 
 	for (auto &atom : atoms)
 	{
@@ -2181,7 +2182,7 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 
 	auto &atom_site = m_db["atom_site"];
 
-	auto &res = m_non_polymers.emplace_back(*this, comp_id, asym_id, 0, "1");
+	auto &res = m_non_polymers.emplace_back(*this, comp_id, asym_id, 0, asym_id, "1", "");
 
 	for (auto &atom : atoms)
 	{
