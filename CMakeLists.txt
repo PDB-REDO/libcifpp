@@ -145,6 +145,8 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 add_git_submodule(gxrio EXCLUDE_FROM_ALL)
+find_package(ZLIB REQUIRED)
+find_package(LibLZMA REQUIRED)
 
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
@@ -242,7 +244,14 @@ target_include_directories(cifpp
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(cifpp PUBLIC Threads::Threads gxrio::gxrio ${CIFPP_REQUIRED_LIBRARIES})
+target_link_libraries(cifpp PUBLIC
+	Threads::Threads
+	ZLIB::ZLIB
+	LibLZMA::LibLZMA
+	${CIFPP_REQUIRED_LIBRARIES})
+
+get_target_property(GXRIO_INCLUDE_DIR gxrio::gxrio INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(cifpp PRIVATE ${GXRIO_INCLUDE_DIR})
 
 if(BOOST_REGEX_STANDALONE)
 	target_include_directories(cifpp PRIVATE regex/include)

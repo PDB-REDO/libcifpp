@@ -3,7 +3,6 @@
 include(CMakeFindDependencyMacro)
 find_dependency(Threads)
 
-# These are for gxrio
 find_dependency(ZLIB REQUIRED)
 find_dependency(LibLZMA REQUIRED)
 
