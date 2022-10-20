@@ -1867,12 +1867,12 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 				{"type", "non-polymer"},
 				{"pdbx_description", compound->name()},
 				{"formula_weight", compound->formula_weight()}});
-		}
 
-		auto &pdbxEntityNonpoly = m_db["pdbx_entity_nonpoly"];
-		pdbxEntityNonpoly.emplace({{"entity_id", entityID},
-			{"name", compound->name()},
-			{"comp_id", newCompound}});
+			auto &pdbxEntityNonpoly = m_db["pdbx_entity_nonpoly"];
+			pdbxEntityNonpoly.emplace({{"entity_id", entityID},
+				{"name", compound->name()},
+				{"comp_id", newCompound}});
+		}
 
 		auto &pdbxNonPolyScheme = m_db["pdbx_nonpoly_scheme"];
 		for (auto nps : pdbxNonPolyScheme.find("asym_id"_key == asym_id))
