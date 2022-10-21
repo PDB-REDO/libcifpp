@@ -4127,6 +4127,9 @@ void PDBFileParser::ConstructEntities()
 			{
 				auto &rs = chain.mSeqres[i];
 
+				if (std::find(mChemComp.begin(), mChemComp.end(), rs.mMonID) == mChemComp.end())
+					mChemComp.emplace_back(rs.mMonID);
+
 				cat_ps->emplace({
 					{ "entity_id", mMolID2EntityID[cmp.mMolID] },
 					{ "num", i + 1 },
@@ -4152,12 +4155,12 @@ void PDBFileParser::ConstructEntities()
 
 		getCategory("entity_poly")->emplace({
 			{ "entity_id", mMolID2EntityID[cmp.mMolID] },
-		{ "pdbx_seq_one_letter_code", seq },
-		{ "pdbx_seq_one_letter_code_can", seqCan },
-		{ "nstd_monomer", (nstdMonomer ? "yes" : "no") },
-		{ "pdbx_strand_id", cif::join(chains, ",") },
-		{ "nstd_linkage", nonstandardLinkage ? "yes" : "no" },
-		{ "type", type } });
+			{ "pdbx_seq_one_letter_code", seq },
+			{ "pdbx_seq_one_letter_code_can", seqCan },
+			{ "nstd_monomer", (nstdMonomer ? "yes" : "no") },
+			{ "pdbx_strand_id", cif::join(chains, ",") },
+			{ "nstd_linkage", nonstandardLinkage ? "yes" : "no" },
+			{ "type", type } });
 	}
 
 	if (not(structTitle.empty() and structDescription.empty()))
@@ -4352,15 +4355,16 @@ void PDBFileParser::ConstructEntities()
 
 		getCategory("pdbx_struct_mod_residue")->emplace({
 			{ "id", modResID++ },
-		{ "label_asym_id", asymID },
-		{ "label_seq_id", seq },
-		{ "label_comp_id", resName },
-		{ "auth_asym_id", std::string(1, chainID) },
-		{ "auth_seq_id", seqNum },
-		{ "auth_comp_id", resName },
-		{ "PDB_ins_code", iCode == ' ' ? "" : std::string{ iCode } },
-		{ "parent_comp_id", stdRes },
-		{ "details", comment } });
+			{ "label_asym_id", asymID },
+			{ "label_seq_id", seq },
+			{ "label_comp_id", resName },
+			{ "auth_asym_id", std::string(1, chainID) },
+			{ "auth_seq_id", seqNum },
+			{ "auth_comp_id", resName },
+			{ "PDB_ins_code", iCode == ' ' ? "" : std::string{ iCode } },
+			{ "parent_comp_id", stdRes },
+			{ "details", comment }
+		});
 
 		modResSet.insert(resName);
 	}
@@ -4411,11 +4415,12 @@ void PDBFileParser::ConstructEntities()
 
 		getCategory("chem_comp")->emplace({
 			{ "id", cc },
-		{ "name", name },
-		{ "formula", formula },
-		{ "formula_weight", formulaWeight },
-		{ "mon_nstd_flag", nstd },
-		{ "type", type } });
+			{ "name", name },
+			{ "formula", formula },
+			{ "formula_weight", formulaWeight },
+			{ "mon_nstd_flag", nstd },
+			{ "type", type }
+		});
 	}
 
 	getCategory("chem_comp")->reorder_by_index();
