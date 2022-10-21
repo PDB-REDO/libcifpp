@@ -5277,36 +5277,61 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 
 void PDBFileParser::ParseCrystallographic()
 {
-	Match("CRYST1", true);
-
-	getCategory("cell")->emplace({
-		{ "entry_id", mStructureID },  //	 1 -  6       Record name   "CRYST1"
-		{ "length_a", vF(7, 15) },     //	 7 - 15       Real(9.3)     a              a (Angstroms).
-		{ "length_b", vF(16, 24) },    //	16 - 24       Real(9.3)     b              b (Angstroms).
-		{ "length_c", vF(25, 33) },    //	25 - 33       Real(9.3)     c              c (Angstroms).
-		{ "angle_alpha", vF(34, 40) }, //	34 - 40       Real(7.2)     alpha          alpha (degrees).
-		{ "angle_beta", vF(41, 47) },  //	41 - 47       Real(7.2)     beta           beta (degrees).
-		{ "angle_gamma", vF(48, 54) }, //	48 - 54       Real(7.2)     gamma          gamma (degrees).
-		/* goes into symmetry */       //	56 - 66       LString       sGroup         Space  group.
-		{ "Z_PDB", vF(67, 70) }        //	67 - 70       Integer       z              Z value.
-	});
-
-	std::string spaceGroup, intTablesNr;
-	try
+	if (mRec->is("CRYST1"))
 	{
-		spaceGroup = vS(56, 66);
-		intTablesNr = std::to_string(get_space_group_number(spaceGroup));
+		Match("CRYST1", true);
+
+		getCategory("cell")->emplace({
+			{ "entry_id", mStructureID },  //	 1 -  6       Record name   "CRYST1"
+			{ "length_a", vF(7, 15) },     //	 7 - 15       Real(9.3)     a              a (Angstroms).
+			{ "length_b", vF(16, 24) },    //	16 - 24       Real(9.3)     b              b (Angstroms).
+			{ "length_c", vF(25, 33) },    //	25 - 33       Real(9.3)     c              c (Angstroms).
+			{ "angle_alpha", vF(34, 40) }, //	34 - 40       Real(7.2)     alpha          alpha (degrees).
+			{ "angle_beta", vF(41, 47) },  //	41 - 47       Real(7.2)     beta           beta (degrees).
+			{ "angle_gamma", vF(48, 54) }, //	48 - 54       Real(7.2)     gamma          gamma (degrees).
+			/* goes into symmetry */       //	56 - 66       LString       sGroup         Space  group.
+			{ "Z_PDB", vF(67, 70) }        //	67 - 70       Integer       z              Z value.
+		});
+
+		std::string spaceGroup, intTablesNr;
+		try
+		{
+			spaceGroup = vS(56, 66);
+			intTablesNr = std::to_string(get_space_group_number(spaceGroup));
+		}
+		catch (...)
+		{
+		}
+
+		getCategory("symmetry")->emplace({
+			{ "entry_id", mStructureID },
+			{ "space_group_name_H-M", spaceGroup },
+			{ "Int_Tables_number", intTablesNr } });
+
+		GetNextRecord();
 	}
-	catch (...)
+	else
 	{
+		// no cryst1, make a simple one, like this:
+		// CRYST1    1.000    1.000    1.000  90.00  90.00  90.00 P 1           1
+		getCategory("cell")->emplace({
+			{ "entry_id", mStructureID }, //	 1 -  6       Record name   "CRYST1"
+			{ "length_a", 1 },            //	 7 - 15       Real(9.3)     a              a (Angstroms).
+			{ "length_b", 1 },            //	16 - 24       Real(9.3)     b              b (Angstroms).
+			{ "length_c", 1 },            //	25 - 33       Real(9.3)     c              c (Angstroms).
+			{ "angle_alpha", 90 },        //	34 - 40       Real(7.2)     alpha          alpha (degrees).
+			{ "angle_beta", 90 },         //	41 - 47       Real(7.2)     beta           beta (degrees).
+			{ "angle_gamma", 90 },        //	48 - 54       Real(7.2)     gamma          gamma (degrees).
+			/* goes into symmetry */      //	56 - 66       LString       sGroup         Space  group.
+			{ "Z_PDB", 1 }                //	67 - 70       Integer       z              Z value.
+		});
+
+		getCategory("symmetry")->emplace({
+			{ "entry_id", mStructureID },
+			{ "space_group_name_H-M", "P 1" },
+			{ "Int_Tables_number", 1 }
+		});
 	}
-
-	getCategory("symmetry")->emplace({
-		{ "entry_id", mStructureID },
-	{ "space_group_name_H-M", spaceGroup },
-	{ "Int_Tables_number", intTablesNr } });
-
-	GetNextRecord();
 }
 
 void PDBFileParser::ParseCoordinateTransformation()
