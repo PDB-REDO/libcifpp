@@ -30,6 +30,7 @@
 #include <stack>
 
 #include <cif++.hpp>
+#include <gxrio.hpp>
 
 #include <cif++/pdb/pdb2cif.hpp>
 #include <cif++/pdb/pdb2cif_remark_3.hpp>
@@ -6193,6 +6194,15 @@ file read(std::istream &is)
 	}
 
 	return result;
+}
+
+file read(const std::filesystem::path &file)
+{
+	gxrio::ifstream in(file);
+	if (not in.is_open())
+		throw std::runtime_error("Could not open file " + file.string() + " for input");
+	
+	return read(in);
 }
 
 } // namespace pdbx

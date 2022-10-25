@@ -32,6 +32,7 @@ namespace cif::pdb
 {
 
 file read(std::istream &is);
+file read(const std::filesystem::path &file);
 
 void write(std::ostream &os, const datablock &db);
 
