@@ -239,8 +239,8 @@ class atom
 	const row_handle get_row() const { return impl().row(); }
 	const row_handle get_row_aniso() const { return impl().row_aniso(); }
 
-	// bool isSymmetryCopy() const { return impl().mSymmetryCopy; }
-	// std::string symmetry() const { return impl().mSymmetryOperator; }
+	bool is_symmetry_copy() const { return impl().m_symop != "1_555"; }
+	std::string symmetry() const { return impl().m_symop; }
 
 	// const compound &compound() const;
 
@@ -269,26 +269,17 @@ class atom
 	std::string get_auth_asym_id() const { return get_property("auth_asym_id"); }
 	std::string get_auth_seq_id() const { return get_property("auth_seq_id"); }
 	std::string get_auth_atom_id() const { return get_property("auth_atom_id"); }
+	std::string get_auth_alt_id() const { return get_property("auth_alt_id"); }
 	std::string get_pdb_ins_code() const { return get_property("pdbx_PDB_ins_code"); }
-
-	// const std::string &labelAtomID() const { return impl().mAtomID; }
-	// const std::string &get_label_comp_id() const { return impl().mCompID; }
-	// const std::string &get_label_asym_id() const { return impl().m_asym_id; }
-	// std::string labelEntityID() const;
-	// int get_label_seq_id() const { return impl().m_seq_id; }
-	// const std::string &labelAltID() const { return impl().mAltID; }
 
 	bool is_alternate() const { return not get_label_alt_id().empty(); }
 
-	// std::string authAtomID() const;
-	// std::string authCompID() const;
-	// std::string authAsymID() const;
-	// const std::string &authSeqID() const { return impl().m_auth_seq_id; }
-	// std::string pdbxAuthInsCode() const;
-	// std::string pdbxAuthAltID() const;
-
 	// std::string labelID() const; // label_comp_id + '_' + label_asym_id + '_' + label_seq_id
-	// std::string pdbID() const;   // auth_comp_id + '_' + auth_asym_id + '_' + auth_seq_id + pdbx_PDB_ins_code
+	
+	std::string pdb_id() const
+	{
+		return get_label_comp_id() + '_' + get_auth_asym_id() + '_' + get_auth_seq_id() + get_pdb_ins_code();
+	}
 
 	bool operator==(const atom &rhs) const
 	{
@@ -308,12 +299,12 @@ class atom
 
 	// // access data in compound for this atom
 
-	// // convenience routine
-	// bool isBackBone() const
-	// {
-	// 	auto atomID = labelAtomID();
-	// 	return atomID == "N" or atomID == "O" or atomID == "C" or atomID == "CA";
-	// }
+	// convenience routine
+	bool is_back_bone() const
+	{
+		auto atomID = get_label_atom_id();
+		return atomID == "N" or atomID == "O" or atomID == "C" or atomID == "CA";
+	}
 
 	void swap(atom &b)
 	{

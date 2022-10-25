@@ -340,7 +340,7 @@ void ProgressImpl::PrintDone()
 Progress::Progress(int64_t inMax, const std::string &inAction)
 	: m_impl(nullptr)
 {
-	if (isatty(STDOUT_FILENO))
+	if (isatty(STDOUT_FILENO) and VERBOSE >= 0)
 		m_impl = new ProgressImpl(inMax, inAction);
 }
 

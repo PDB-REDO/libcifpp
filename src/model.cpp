@@ -215,19 +215,6 @@ int atom::atom_impl::get_charge() const
 // 	return result;
 // }
 
-// std::string atom::labelID() const
-// {
-// 	return m_impl->mCompID + '_' + m_impl->m_asym_id + '_' + std::to_string(m_impl->m_seq_id) + ':' + m_impl->mAtom_id;
-// }
-
-// std::string atom::pdbID() const
-// {
-// 	return get_property<std::string>("auth_comp_id") + '_' +
-// 	       get_property<std::string>("auth_asym_id") + '_' +
-// 	       get_property<std::string>("auth_seq_id") +
-// 	       get_property<std::string>("pdbx_PDB_ins_code");
-// }
-
 // const Compound &atom::compound() const
 // {
 // 	auto result = impl().compound();
