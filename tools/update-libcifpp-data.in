@@ -51,3 +51,5 @@ fetch_dictionary "@CIFPP_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb
 if [ -d /etc/libcifpp/cache-update.d ] && [ -x /bin/run-parts ]; then
 	run-parts --arg "@CIFPP_CACHE_DIR@" -- /etc/libcifpp/cache-update.d
 fi
+
+wget -O/var/cache/libcifpp/mmcif_ma.dic "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"

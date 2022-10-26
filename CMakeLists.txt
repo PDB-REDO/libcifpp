@@ -59,7 +59,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
 
 # Lots of code depend on the availability of the components.cif file
-option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
+option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
 # An optional cron script can be installed to keep the data files up-to-date
 if(UNIX)
@@ -69,13 +69,13 @@ endif()
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
 if(EXISTS "$ENV{CCP4}")
 	if(EXISTS "$ENV{CLIBD}/syminfo.lib")
-		option(PDBXPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
+		option(CIFPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 	else()
-		set(PDBXPP_RECREATE_SYMOP_DATA OFF)
+		set(CIFPP_RECREATE_SYMOP_DATA OFF)
 		message(WARNING "Symop data table recreation requested, but file syminfo.lib was not found in $ENV{CLIBD}")
 	endif()
 else()
-	set(PDBXPP_RECREATE_SYMOP_DATA OFF)
+	set(CIFPP_RECREATE_SYMOP_DATA OFF)
 	message("Not trying to recreate symop_table_data.hpp since CCP4 is not defined")
 endif()
 
@@ -159,7 +159,7 @@ include(VersionString)
 write_version_header("LibCIFPP")
 
 # SymOp data table
-if(PDBXPP_RECREATE_SYMOP_DATA)
+if(CIFPP_RECREATE_SYMOP_DATA)
 	# The tool to create the table
 	add_executable(symop-map-generator "${PROJECT_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
