@@ -340,7 +340,7 @@ install(FILES
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
 	${COMPONENTS_CIF}
-	DESTINATION ${SHARE_INSTALL_DIR}
+	DESTINATION ${CIFPP_DATA_DIR}
 )
 
 configure_package_config_file(
