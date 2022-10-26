@@ -971,6 +971,7 @@ Remark3Parser::Remark3Parser(const std::string &name, const std::string &expMeth
 	, mTemplateCount(templateLineCount)
 	, mProgramVersion(programversion)
 {
+	mDb.set_validator(db.get_validator());
 }
 
 std::string Remark3Parser::nextLine()

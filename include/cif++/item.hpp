@@ -107,7 +107,7 @@ class item
 
 	/// \brief constructor for an item with name \a name and as
 	/// content a the formatted integral value \a value
-	template <typename T, std::enable_if_t<std::is_integral_v<T>, int> = 0>
+	template <typename T, std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T,bool>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
 	{
@@ -120,6 +120,15 @@ class item
 		assert(r.ptr >= buffer and r.ptr < buffer + sizeof(buffer));
 		*r.ptr = 0;
 		m_value.assign(buffer, r.ptr - buffer);
+	}
+
+	/// \brief constructor for an item with name \a name and as
+	/// content a the formatted boolean value \a value
+	template <typename T, std::enable_if_t<std::is_same_v<T,bool>, int> = 0>
+	item(const std::string_view name, const T &value)
+		: m_name(name)
+	{
+		m_value.assign(value ? "y" : "n");
 	}
 
 	/// \brief constructor for an item with name \a name and as

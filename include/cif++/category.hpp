@@ -278,7 +278,7 @@ class category
 	{
 		auto h = find<T>(pos, std::forward<condition>(cond), column);
 
-		return h.size() == 1 ? std::get<0>(*h.begin()) : T{};
+		return h.size() == 1 ? *h.begin() : T{};
 	}
 
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
@@ -474,7 +474,8 @@ class category
 	}
 
 	// --------------------------------------------------------------------
-	
+
+	void sort(std::function<int(row_handle,row_handle)> f);
 	void reorder_by_index();
 
 	// --------------------------------------------------------------------

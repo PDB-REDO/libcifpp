@@ -1679,6 +1679,33 @@ void category::swap_item(size_t column_ix, row_handle &a, row_handle &b)
 	std::swap(ra.at(column_ix), rb.at(column_ix));
 }
 
+void category::sort(std::function<int(row_handle,row_handle)> f)
+{
+	if (m_head == nullptr)
+		return;
+
+	std::vector<row_handle> rows;
+	for (auto itemRow = m_head; itemRow != nullptr; itemRow = itemRow->m_next)
+		rows.emplace_back(*this, *itemRow);
+
+	std::stable_sort(rows.begin(), rows.end(),
+		[&f](row_handle ia, row_handle ib)
+		{
+			return f(ia, ib) < 0;
+		});
+
+	m_head = rows.front().get_row();
+	m_tail = rows.back().get_row();
+
+	auto r = m_head;
+	for (size_t i = 1; i < rows.size(); ++i)
+		r = r->m_next = rows[i].get_row();
+	r->m_next = nullptr;
+
+	assert(r == m_tail);
+	assert(size() == rows.size());	
+}
+
 void category::reorder_by_index()
 {
 	if (m_index)

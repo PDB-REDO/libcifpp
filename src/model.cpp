@@ -1107,7 +1107,7 @@ branch::branch(structure &structure, const std::string &asym_id)
 	auto &branch_scheme = db["pdbx_branch_scheme"];
 	auto &branch_link = db["pdbx_entity_branch_link"];
 
-	for (const auto &[entity_id] : struct_asym.find<std::string>("id"_key == asym_id, "entity_id"))
+	for (const auto &entity_id : struct_asym.find<std::string>("id"_key == asym_id, "entity_id"))
 	{
 		for (const auto &[comp_id, num] : branch_scheme.find<std::string, int>(
 				 "asym_id"_key == asym_id, "mon_id", "pdb_seq_num"))
@@ -1313,7 +1313,7 @@ void structure::load_data()
 
 	auto &branchScheme = m_db["pdbx_branch_scheme"];
 
-	for (const auto &[asym_id] : branchScheme.rows<std::string>("asym_id"))
+	for (const auto &asym_id : branchScheme.rows<std::string>("asym_id"))
 	{
 		if (m_branches.empty() or m_branches.back().get_asym_id() != asym_id)
 			m_branches.emplace_back(*this, asym_id);
@@ -2523,14 +2523,14 @@ void structure::cleanup_empty_categories()
 
 		std::optional<size_t> count;
 		if (type == "polymer")
-			count = m_db["entity_poly"].find("entity_id"_key == id).size();
+			count = m_db["struct_asym"].find("entity_id"_key == id).size();
 		else if (type == "non-polymer" or type == "water")
 			count = m_db["pdbx_nonpoly_scheme"].find("entity_id"_key == id).size();
 		else if (type == "branched")
 		{
 			// is this correct?
 			std::set<std::string> asym_ids;
-			for (const auto &[asym_id] : m_db["pdbx_branch_scheme"].find<std::string>("entity_id"_key == id, "asym_id"))
+			for (const auto &asym_id : m_db["pdbx_branch_scheme"].find<std::string>("entity_id"_key == id, "asym_id"))
 				asym_ids.insert(asym_id);
 			count = asym_ids.size();
 		}

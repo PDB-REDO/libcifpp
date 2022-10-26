@@ -270,6 +270,7 @@ class atom
 	std::string get_auth_seq_id() const { return get_property("auth_seq_id"); }
 	std::string get_auth_atom_id() const { return get_property("auth_atom_id"); }
 	std::string get_auth_alt_id() const { return get_property("auth_alt_id"); }
+	std::string get_auth_comp_id() const { return get_property("auth_comp_id"); }
 	std::string get_pdb_ins_code() const { return get_property("pdbx_PDB_ins_code"); }
 
 	bool is_alternate() const { return not get_label_alt_id().empty(); }

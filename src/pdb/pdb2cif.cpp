@@ -3006,21 +3006,20 @@ void PDBFileParser::ParseRemark200()
 	if (inRM200({ "REJECTION CRITERIA (SIGMA(I))", "RESOLUTION RANGE HIGH (A)", "RESOLUTION RANGE LOW (A)", "NUMBER OF UNIQUE REFLECTIONS", "COMPLETENESS FOR RANGE (%)", "<I/SIGMA(I)> FOR THE DATA SET", "R MERGE (I)", "R SYM (I)", "DATA REDUNDANCY" }))
 	{
 		auto cat = getCategory("reflns");
-		if (cat->empty())
-			cat->emplace({});
-		auto r = cat->back();
-		r["entry_id"] = mStructureID;
-		r["observed_criterion_sigma_I"] = mRemark200["REJECTION CRITERIA (SIGMA(I))"];
-		r["d_resolution_high"] = mRemark200["RESOLUTION RANGE HIGH (A)"];
-		r["d_resolution_low"] = mRemark200["RESOLUTION RANGE LOW (A)"];
-		r["number_obs"] = mRemark200["NUMBER OF UNIQUE REFLECTIONS"];
-		r["percent_possible_obs"] = mRemark200["COMPLETENESS FOR RANGE (%)"];
-		r["pdbx_netI_over_sigmaI"] = mRemark200["<I/SIGMA(I)> FOR THE DATA SET"];
-		r["pdbx_Rmerge_I_obs"] = mRemark200["R MERGE (I)"];
-		r["pdbx_Rsym_value"] = mRemark200["R SYM (I)"];
-		r["pdbx_redundancy"] = mRemark200["DATA REDUNDANCY"];
-		r["pdbx_ordinal"] = 1;
-		r["pdbx_diffrn_id"] = 1;
+		cat->emplace({
+			{ "entry_id", mStructureID },
+			{ "observed_criterion_sigma_I", mRemark200["REJECTION CRITERIA (SIGMA(I))"] },
+			{ "d_resolution_high", mRemark200["RESOLUTION RANGE HIGH (A)"] },
+			{ "d_resolution_low", mRemark200["RESOLUTION RANGE LOW (A)"] },
+			{ "number_obs", mRemark200["NUMBER OF UNIQUE REFLECTIONS"] },
+			{ "percent_possible_obs", mRemark200["COMPLETENESS FOR RANGE (%)"] },
+			{ "pdbx_netI_over_sigmaI", mRemark200["<I/SIGMA(I)> FOR THE DATA SET"] },
+			{ "pdbx_Rmerge_I_obs", mRemark200["R MERGE (I)"] },
+			{ "pdbx_Rsym_value", mRemark200["R SYM (I)"] },
+			{ "pdbx_redundancy", mRemark200["DATA REDUNDANCY"] },
+			{ "pdbx_ordinal", 1 },
+			{ "pdbx_diffrn_id", 1 }
+		});
 	}
 
 	if (inRM200({ "HIGHEST RESOLUTION SHELL, RANGE HIGH (A)" })) // that one field is mandatory...
@@ -3987,12 +3986,12 @@ void PDBFileParser::ConstructEntities()
 				{
 					seqAlignBeg = pdbxPolySeqScheme.find1<int>(key("pdb_strand_id") == std::string { dbref.chainID } and
 													key("pdb_seq_num") == dbref.seqBegin and
-													key("pdb_ins_code") == insToStr(dbref.insertBegin),
+													(key("pdb_ins_code") == insToStr(dbref.insertBegin) or key("pdb_ins_code") == cif::null),
 													"seq_id");
 
 					seqAlignEnd = pdbxPolySeqScheme.find1<int>(key("pdb_strand_id") == std::string { dbref.chainID } and
 													key("pdb_seq_num") == dbref.seqEnd and
-													key("pdb_ins_code") == insToStr(dbref.insertEnd),
+													(key("pdb_ins_code") == insToStr(dbref.insertEnd) or key("pdb_ins_code") == cif::null),
 													"seq_id");
 				}
 				catch (...)
@@ -4001,20 +4000,20 @@ void PDBFileParser::ConstructEntities()
 
 				getCategory("struct_ref_seq")->emplace({
 					{ "align_id", structRefSeqAlignID },
-				{ "ref_id", structRefID },
-				{ "pdbx_PDB_id_code", dbref.PDBIDCode },
-				{ "pdbx_strand_id", std::string{ chain.mDbref.chainID } },
-				{ "seq_align_beg", seqAlignBeg },
-				{ "pdbx_seq_align_beg_ins_code", insToStr(dbref.insertBegin) },
-				{ "seq_align_end", seqAlignEnd },
-				{ "pdbx_seq_align_end_ins_code", insToStr(dbref.insertEnd) },
-				{ "pdbx_db_accession", dbref.dbAccession },
-				{ "db_align_beg", dbref.dbSeqBegin },
-				{ "pdbx_db_align_beg_ins_code", insToStr(dbref.dbinsBeg) },
-				{ "db_align_end", dbref.dbSeqEnd },
-				{ "pdbx_db_align_end_ins_code", insToStr(dbref.dbinsEnd) },
-				{ "pdbx_auth_seq_align_beg", dbref.seqBegin },
-				{ "pdbx_auth_seq_align_end", dbref.seqEnd } });
+					{ "ref_id", structRefID },
+					{ "pdbx_PDB_id_code", dbref.PDBIDCode },
+					{ "pdbx_strand_id", std::string{ chain.mDbref.chainID } },
+					{ "seq_align_beg", seqAlignBeg },
+					{ "pdbx_seq_align_beg_ins_code", insToStr(dbref.insertBegin) },
+					{ "seq_align_end", seqAlignEnd },
+					{ "pdbx_seq_align_end_ins_code", insToStr(dbref.insertEnd) },
+					{ "pdbx_db_accession", dbref.dbAccession },
+					{ "db_align_beg", dbref.dbSeqBegin },
+					{ "pdbx_db_align_beg_ins_code", insToStr(dbref.dbinsBeg) },
+					{ "db_align_end", dbref.dbSeqEnd },
+					{ "pdbx_db_align_end_ins_code", insToStr(dbref.dbinsEnd) },
+					{ "pdbx_auth_seq_align_beg", dbref.seqBegin },
+					{ "pdbx_auth_seq_align_end", dbref.seqEnd } });
 
 				// write the struct_ref_seq_dif
 				for (auto &seqadv : mSeqadvs)
@@ -5696,6 +5695,8 @@ void PDBFileParser::Parse(std::istream &is, cif::file &result)
 {
 	try
 	{
+		mDatablock.set_validator(result.get_validator());
+
 		PreParseInput(is);
 
 		mRec = mData;
@@ -6164,9 +6165,9 @@ void ReadPDBFile(std::istream &pdbFile, cif::file &cifFile)
 {
 	PDBFileParser p;
 
-	p.Parse(pdbFile, cifFile);
-
 	cifFile.load_dictionary("mmcif_pdbx");
+
+	p.Parse(pdbFile, cifFile);
 
 	if (not cifFile.is_valid() and cif::VERBOSE >= 0)
 		std::cerr << "Resulting mmCIF file is not valid!" << std::endl;

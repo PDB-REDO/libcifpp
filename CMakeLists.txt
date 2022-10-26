@@ -198,6 +198,7 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/pdb/cif2pdb.cpp
 	${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif.cpp
 	${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp
+	${PROJECT_SOURCE_DIR}/src/pdb/tls.cpp
 )
 
 set(project_headers
@@ -227,6 +228,7 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/io.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/pdb2cif.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/pdb2cif_remark_3.hpp
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb/tls.hpp
 	)
 
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
