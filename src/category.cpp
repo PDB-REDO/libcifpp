@@ -416,7 +416,7 @@ category_index::entry *category_index::insert(entry *h, row *v)
 				os << col << ": " << std::quoted(rh[col].text()) << "; ";
 		}
 
-		throw std::runtime_error("Duplicate Key violation, cat: " + m_category.name() + " values: " + os.str());
+		throw duplicate_key_error("Duplicate Key violation, cat: " + m_category.name() + " values: " + os.str());
 	}
 
 	if (is_red(h->m_right) and not is_red(h->m_left))

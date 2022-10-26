@@ -44,6 +44,15 @@ namespace cif
 {
 
 // --------------------------------------------------------------------
+// special exception
+class duplicate_key_error : public std::runtime_error
+{
+  public:
+	duplicate_key_error(const std::string &msg)
+		: std::runtime_error(msg) {}
+};
+
+// --------------------------------------------------------------------
 
 class category
 {

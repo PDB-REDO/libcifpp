@@ -3248,23 +3248,37 @@ void PDBFileParser::ParseRemark350()
 							values.clear();
 						}
 
-						getCategory("pdbx_struct_oper_list")->emplace({
-							{ "id", operID },
-						{ "type", mat == std::vector<double>{ 1, 0, 0, 0, 1, 0, 0, 0, 1 } and vec == std::vector<double>{ 0, 0, 0 } ? "identity operation" : "crystal symmetry operation" },
-							// { "name", "" },
-						    // { "symmetryOperation", "" },
-							{ "matrix[1][1]", format("%12.10f", mat[0]).str() },
-							{ "matrix[1][2]", format("%12.10f", mat[1]).str() },
-							{ "matrix[1][3]", format("%12.10f", mat[2]).str() },
-							{ "vector[1]", format("%12.10f", vec[0]).str() },
-							{ "matrix[2][1]", format("%12.10f", mat[3]).str() },
-							{ "matrix[2][2]", format("%12.10f", mat[4]).str() },
-							{ "matrix[2][3]", format("%12.10f", mat[5]).str() },
-							{ "vector[2]", format("%12.10f", vec[1]).str() },
-							{ "matrix[3][1]", format("%12.10f", mat[6]).str() },
-							{ "matrix[3][2]", format("%12.10f", mat[7]).str() },
-							{ "matrix[3][3]", format("%12.10f", mat[8]).str() },
-							{ "vector[3]", format("%12.10f", vec[2]).str() } });
+						std::string type = mat == std::vector<double>{ 1, 0, 0, 0, 1, 0, 0, 0, 1 } and vec == std::vector<double>{ 0, 0, 0 } ? "identity operation" : "crystal symmetry operation";
+
+						// if (type == "identity operation")
+						// {
+							
+						// }
+						// else
+						try
+						{
+							getCategory("pdbx_struct_oper_list")->emplace({
+								{ "id", operID },
+								{ "type", type },
+								// { "name", "" },
+								// { "symmetryOperation", "" },
+								{ "matrix[1][1]", format("%12.10f", mat[0]).str() },
+								{ "matrix[1][2]", format("%12.10f", mat[1]).str() },
+								{ "matrix[1][3]", format("%12.10f", mat[2]).str() },
+								{ "vector[1]", format("%12.10f", vec[0]).str() },
+								{ "matrix[2][1]", format("%12.10f", mat[3]).str() },
+								{ "matrix[2][2]", format("%12.10f", mat[4]).str() },
+								{ "matrix[2][3]", format("%12.10f", mat[5]).str() },
+								{ "vector[2]", format("%12.10f", vec[1]).str() },
+								{ "matrix[3][1]", format("%12.10f", mat[6]).str() },
+								{ "matrix[3][2]", format("%12.10f", mat[7]).str() },
+								{ "matrix[3][3]", format("%12.10f", mat[8]).str() },
+								{ "vector[3]", format("%12.10f", vec[2]).str() } });
+						}
+						catch (duplicate_key_error &ex)
+						{
+							// so what?
+						}
 
 						mat.clear();
 						vec.clear();
