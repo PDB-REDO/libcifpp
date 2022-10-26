@@ -12,7 +12,6 @@ have been used as well as MSVC version 2019.
 
 Other requirements are:
 
-- Boost libraries, at least version 1.70
 - [mrc](https://github.com/mhekkel/mrc), a resource compiler that
   allows including data files into the executable making them easier to
   install. Strictly this is optional, but at the expense of functionality.
