@@ -30,6 +30,7 @@
 #include <regex>
 #include <set>
 
+#include <gxrio.hpp>
 #include <cif++.hpp>
 #include <cif++/pdb/cif2pdb.hpp>
 
@@ -3722,5 +3723,22 @@ void write(std::ostream &os, const datablock &db)
 	os << format("MASTER    %5d    0%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d",  numRemark,  numHet,  numHelix,  numSheet,  numTurn,  numSite,  numXform,  numCoord,  numTer,  numConect,  numSeq) << std::endl
 			<< "END" << std::endl;
 }
+
+void write(const std::filesystem::path &p, const datablock &db)
+{
+	gxrio::ofstream out(p);
+
+	bool writePDB = false;
+	if (p.extension() == ".gz")
+		writePDB = iequals(p.stem().extension().string(), ".pdb");
+	else
+		writePDB = iequals(p.extension().string(), ".pdb");
+
+	if (writePDB)
+		write(out, db);
+	else
+		db.write(out);
+}
+
 
 } // namespace cif::pdb
