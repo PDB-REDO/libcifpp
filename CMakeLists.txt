@@ -59,7 +59,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
 
 # Lots of code depend on the availability of the components.cif file
-option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
+option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
 
 # An optional cron script can be installed to keep the data files up-to-date
 if(UNIX)
@@ -144,7 +144,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-add_git_submodule(gxrio EXCLUDE_FROM_ALL)
 find_package(ZLIB REQUIRED)
 find_package(LibLZMA REQUIRED)
 
