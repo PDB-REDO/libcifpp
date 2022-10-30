@@ -5839,6 +5839,9 @@ void PDBFileParser::Parse(std::istream &is, cif::file &result)
 				auto a1 = atom_site.find1("label_asym_id"_key == asym1 and "label_seq_id"_key == seq1 and "label_atom_id"_key == atom1);
 				auto a2 = atom_site.find1("label_asym_id"_key == asym2 and "label_seq_id"_key == seq2 and "label_atom_id"_key == atom2);
 
+				if (not a1 or not a2)
+					throw std::runtime_error("cannot find atom");
+
 				const auto &[x1, y1, z1] = a1.get<float, float, float>("cartn_x", "cartn_y", "cartn_z");
 				const auto &[x2, y2, z2] = a2.get<float, float, float>("cartn_x", "cartn_y", "cartn_z");
 

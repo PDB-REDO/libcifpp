@@ -31,30 +31,41 @@ namespace cif
 
 void row_handle::assign(size_t column, std::string_view value, bool updateLinked, bool validate)
 {
-	assert(m_category);
+	if (not m_category)
+		throw std::runtime_error("uninitialized row");
+
 	m_category->update_value(m_row, column, value, updateLinked, validate);
 }
 
 uint16_t row_handle::get_column_ix(std::string_view name) const
 {
-	assert(m_category);
+	if (not m_category)
+		throw std::runtime_error("uninitialized row");
+
 	return m_category->get_column_ix(name);
 }
 
 std::string_view row_handle::get_column_name(uint16_t ix) const
 {
-	assert(m_category);
+	if (not m_category)
+		throw std::runtime_error("uninitialized row");
+
 	return m_category->get_column_name(ix);
 }
 
 uint16_t row_handle::add_column(std::string_view name)
 {
-	assert(m_category);
+	if (not m_category)
+		throw std::runtime_error("uninitialized row");
+
 	return m_category->add_column(name);
 }
 
 void row_handle::swap(size_t column, row_handle &b)
 {
+	if (not m_category)
+		throw std::runtime_error("uninitialized row");
+
 	m_category->swap_item(column, *this, b);
 }
 
@@ -62,7 +73,9 @@ void row_handle::swap(size_t column, row_handle &b)
 
 row_initializer::row_initializer(row_handle rh)
 {
-	assert(rh.m_category);
+	if (not rh.m_category)
+		throw std::runtime_error("uninitialized row");
+
 	assert(rh.m_row);
 
 	row *r = rh.get_row();
