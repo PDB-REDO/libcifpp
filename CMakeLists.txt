@@ -387,7 +387,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc DESTINATION ${CMAKE_INSTAL
 if(ENABLE_TESTING)
 	enable_testing()
 
-	find_package(Boost REQUIRED headers)
+	find_package(Boost REQUIRED)
 
 	list(APPEND CIFPP_tests unit-v2 unit-3d format model rename-compound sugar
 	)
@@ -398,7 +398,7 @@ if(ENABLE_TESTING)
 
 		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::headers)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
 
 		if(CIFPP_USE_RSRC)
 			mrc_target_resources(${CIFPP_TEST} ${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic)
