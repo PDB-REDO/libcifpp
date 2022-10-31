@@ -6,10 +6,10 @@
 # modification, are permitted provided that the following conditions are met:
 
 # 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer
+# list of conditions and the following disclaimer
 # 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
 
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -153,6 +153,10 @@ list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
 include(FindAtomic)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 
+if(NOT PDB_REDO_META)
+	find_package(gxrio REQUIRED)
+endif()
+
 # Create a revision file, containing the current git version info
 include(VersionString)
 write_version_header("LibCIFPP")
@@ -228,7 +232,7 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/pdb2cif.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/pdb2cif_remark_3.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/tls.hpp
-	)
+)
 
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
 add_library(cifpp::cifpp ALIAS cifpp)
