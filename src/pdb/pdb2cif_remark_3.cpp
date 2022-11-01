@@ -1207,13 +1207,15 @@ void Remark3Parser::storeCapture(const char *category, std::initializer_list<con
 			}
 			else if (iequals(category, "pdbx_refine_tls_group"))
 			{
-				std::string tlsGroupID;
+				std::string tlsID;
 				if (not mDb["pdbx_refine_tls"].empty())
-					tlsGroupID = mDb["pdbx_refine_tls"].back()["id"].as<std::string>();
+					tlsID = mDb["pdbx_refine_tls"].back()["id"].as<std::string>();
+				std::string tlsGroupID = cat.get_unique_id("");
 
-				cat.emplace({ { "pdbx_refine_id", mExpMethod },
+				cat.emplace({
+					{ "pdbx_refine_id", mExpMethod },
 					{ "id", tlsGroupID },
-					{ "refine_tls_id", tlsGroupID } });
+					{ "refine_tls_id", tlsID } });
 			}
 			else if (iequals(category, "pdbx_refine_tls"))
 			{

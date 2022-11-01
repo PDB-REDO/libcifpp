@@ -704,16 +704,17 @@ class Ff : public FBase
 		else
 		{
 			std::string s{ text() };
-			try
+
+			double d = 0;
+			auto r = cif::from_chars(s.data(), s.data() + s.length(), d);
+			if (r.ec != std::errc())
 			{
-				os << std::stod(s);
-			}
-			catch (const std::exception &ex)
-			{
-				if (VERBOSE >= 0)
+				if (VERBOSE > 0)
 					std::cerr << "Failed to write '" << s << "' as a double, this indicates an error in the code for writing PDB files" << std::endl;
 				os << s;
 			}
+			else
+				os << d;
 		}
 	}
 };
