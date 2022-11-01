@@ -64,13 +64,13 @@ int sac_parser::get_next_char()
 {
 	int result = std::char_traits<char>::eof();
 
-	if (not m_buffer.empty())
+	if (m_buffer.empty())
+		result = m_source.sbumpc();
+	else
 	{
 		result = m_buffer.back();
 		m_buffer.pop_back();
 	}
-	else
-		result = m_source.sbumpc();
 
 	// very simple CR/LF translation into LF
 	if (result == '\r')
@@ -81,7 +81,10 @@ int sac_parser::get_next_char()
 		result = '\n';
 	}
 
-	m_token_value.push_back(static_cast<char>(result));
+	if (result == std::char_traits<char>::eof())
+		m_token_value.push_back(0);
+	else
+		m_token_value.push_back(std::char_traits<char>::to_char_type(result));
 
 	if (result == '\n')
 		++m_line_nr;
@@ -106,7 +109,7 @@ void sac_parser::retract()
 	if (ch == '\n')
 		--m_line_nr;
 
-	m_buffer.push_back(ch);
+	m_buffer.push_back(ch == 0 ? std::char_traits<char>::eof() : std::char_traits<char>::to_int_type(ch));
 	m_token_value.pop_back();
 }
 
