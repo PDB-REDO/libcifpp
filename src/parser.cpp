@@ -47,7 +47,7 @@ namespace cif
 // --------------------------------------------------------------------
 
 sac_parser::sac_parser(std::istream &is, bool init)
-	: m_source(is)
+	: m_source(*is.rdbuf())
 {
 	m_validate = true;
 	m_line_nr = 1;
@@ -62,20 +62,20 @@ sac_parser::sac_parser(std::istream &is, bool init)
 // translation.
 int sac_parser::get_next_char()
 {
-	int result;
+	int result = std::char_traits<char>::eof();
 
-	if (m_buffer.empty())
-		result = m_source.get();
-	else
+	if (not m_buffer.empty())
 	{
 		result = m_buffer.back();
 		m_buffer.pop_back();
 	}
+	else
+		result = m_source.sbumpc();
 
 	// very simple CR/LF translation into LF
 	if (result == '\r')
 	{
-		int lookahead = m_source.get();
+		int lookahead = m_source.sbumpc();
 		if (lookahead != '\n')
 			m_buffer.push_back(lookahead);
 		result = '\n';
@@ -453,8 +453,6 @@ void sac_parser::match(CIFToken token)
 bool sac_parser::parse_single_datablock(const std::string &datablock)
 {
 	// first locate the start, as fast as we can
-	auto &sb = *m_source.rdbuf();
-
 	enum
 	{
 		start,
@@ -471,7 +469,7 @@ bool sac_parser::parse_single_datablock(const std::string &datablock)
 	std::string::size_type si = 0;
 	bool found = false;
 
-	for (auto ch = sb.sbumpc(); not found and ch != std::streambuf::traits_type::eof(); ch = sb.sbumpc())
+	for (auto ch = m_source.sbumpc(); not found and ch != std::streambuf::traits_type::eof(); ch = m_source.sbumpc())
 	{
 		switch (state)
 		{
@@ -544,8 +542,6 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 	datablock_index index;
 
 	// first locate the start, as fast as we can
-	auto &sb = *m_source.rdbuf();
-
 	enum
 	{
 		start,
@@ -563,7 +559,7 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 	std::string::size_type si = 0;
 	std::string datablock;
 
-	for (auto ch = sb.sbumpc(); ch != std::streambuf::traits_type::eof(); ch = sb.sbumpc())
+	for (auto ch = m_source.sbumpc(); ch != std::streambuf::traits_type::eof(); ch = m_source.sbumpc())
 	{
 		switch (state)
 		{
@@ -626,7 +622,7 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 				else if (isspace(ch))
 				{
 					if (not datablock.empty())
-						index[datablock] = m_source.tellg();
+						index[datablock] = m_source.pubseekoff(0, std::ios_base::cur, std::ios_base::in);
 
 					state = start;
 				}
@@ -648,7 +644,7 @@ bool sac_parser::parse_single_datablock(const std::string &datablock, const data
 	auto i = index.find(datablock);
 	if (i != index.end())
 	{
-		m_source.seekg(i->second);
+		m_source.pubseekpos(i->second, std::ios_base::in);
 
 		produce_datablock(datablock);
 		m_lookahead = get_next_token();

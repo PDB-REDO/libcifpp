@@ -248,7 +248,7 @@ class sac_parser
 		SAVE
 	};
 
-	std::istream &m_source;
+	std::streambuf &m_source;
 
 	// Parser state
 	bool m_validate;
