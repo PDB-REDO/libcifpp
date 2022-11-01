@@ -608,7 +608,13 @@ class sugar : public residue
 	sugar(sugar &&rhs);
 	sugar &operator=(sugar &&rhs);
 
-	int num() const { return std::stoi(m_auth_seq_id); }
+	int num() const {
+		int result;
+		auto r = std::from_chars(m_auth_seq_id.data(), m_auth_seq_id.data() + m_auth_seq_id.length(), result);
+		if (r.ec != std::errc())
+			throw std::runtime_error("The auth_seq_id should be a number for a sugar");
+		return result;
+	}
 	std::string name() const;
 
 	/// \brief Return the atom the C1 is linked to

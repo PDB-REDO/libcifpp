@@ -115,8 +115,8 @@ void file::load_dictionary()
 		}
 	}
 
-	if (not m_validator)
-		load_dictionary("mmcif_pdbx.dic");	// TODO: maybe incorrect? Perhaps improve?
+	// if (not m_validator)
+	// 	load_dictionary("mmcif_pdbx.dic");	// TODO: maybe incorrect? Perhaps improve?
 }
 
 void file::load_dictionary(std::string_view name)

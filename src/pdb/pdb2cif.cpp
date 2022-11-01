@@ -1136,16 +1136,15 @@ void PDBFileParser::PreParseInput(std::istream &is)
 	{
 		std::string cs = lookahead.substr(offset, len);
 		cif::trim(cs);
-		int result;
+		int result = 0;
 
-		try
+		if (not cs.empty())
 		{
-			result = cs.empty() ? 0 : stoi(cs);
+			auto r = std::from_chars(cs.data(), cs.data() + cs.length(), result);
+			if (r.ec != std::errc())
+				throw std::runtime_error("Continuation std::string '" + cs + "' is not valid");
 		}
-		catch (...)
-		{
-			throw std::runtime_error("Continuation std::string '" + cs + "' is not valid");
-		}
+
 		return result;
 	};
 
@@ -1402,7 +1401,12 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			link.symOpB = cur->vS(67, 72);    //	67 - 72         SymOP          sym2            Symmetry operator atom 2.
 
 			if (type == "LINK") //	 1 -  6         Record name    "LINK  "
-				link.distance = std::stof(cur->vF(74, 78));
+			{
+				auto f = cur->vF(74, 78);
+				auto r = cif::from_chars(f.data(), f.data() + f.length(), link.distance);
+				if (r.ec != std::errc() and cif::VERBOSE > 0)
+					std::cerr << "Error parsing link distance at line " << cur->mLineNr << std::endl;
+			}
 			//	74 – 78         Real(5.2)      Length          Link distance
 
 			mLinks.push_back(link);
@@ -5107,11 +5111,10 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			if (mRec->is("LINK  "))
 			{
 				distance = vS(74, 78);
-				try
-				{
-					stod(distance);
-				}
-				catch (const std::invalid_argument &)
+
+				double d;
+				auto r = cif::from_chars(distance.data(), distance.data() + distance.length(), d);
+				if (r.ec != std::errc())
 				{
 					if (cif::VERBOSE > 0)
 						std::cerr << "Distance value '" << distance << "' is not a valid float in LINK record" << std::endl;
@@ -6210,6 +6213,10 @@ file read(std::istream &is)
 		else
 			result.load(is);
 	}
+
+	// Must be a PDB like file, right?
+	if (result.get_validator() == nullptr)
+		result.load_dictionary("mmcif_pdbx.dic");
 
 	return result;
 }
