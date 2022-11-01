@@ -97,6 +97,9 @@ void file::load_dictionary()
 		{
 			std::string name = audit_conform->front().get<std::string>("dict_name");
 
+			if (name == "mmcif_pdbx_v50")
+				name = "mmcif_pdbx.dic";	// we had a bug here in libcifpp... 
+
 			if (not name.empty())
 			{
 				try
@@ -113,7 +116,7 @@ void file::load_dictionary()
 	}
 
 	if (not m_validator)
-		load_dictionary("mmcif_ddl");
+		load_dictionary("mmcif_pdbx.dic");	// TODO: maybe incorrect? Perhaps improve?
 }
 
 void file::load_dictionary(std::string_view name)

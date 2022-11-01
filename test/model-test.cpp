@@ -106,7 +106,7 @@ _atom_site.pdbx_formal_charge
 # that's enough to test with
 )"_cf;
 
-	atoms.load_dictionary("mmcif_pdbx");
+	atoms.load_dictionary("mmcif_pdbx.dic");
 
 	auto &hem_data = atoms["HEM"];
 	auto &atom_site = hem_data["atom_site"];
