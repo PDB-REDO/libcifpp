@@ -257,7 +257,7 @@ class sac_parser
 	CIFToken m_lookahead;
 	std::string m_token_value;
 	CIFValue mTokenType;
-	std::stack<int> m_buffer;
+	std::string m_buffer;	// retract buffer, used to be a stack<char>
 };
 
 // --------------------------------------------------------------------
