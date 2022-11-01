@@ -414,7 +414,7 @@ compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_p
 	else
 	{
 		// A CCD components file, validate it first
-		cifFile.load_dictionary("mmcif_pdbx");
+		cifFile.load_dictionary("mmcif_pdbx.dic");
 
 		if (not cifFile.is_valid())
 			throw std::runtime_error("Invalid compound file");

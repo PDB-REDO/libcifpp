@@ -6182,7 +6182,7 @@ void ReadPDBFile(std::istream &pdbFile, cif::file &cifFile)
 {
 	PDBFileParser p;
 
-	cifFile.load_dictionary("mmcif_pdbx");
+	cifFile.load_dictionary("mmcif_pdbx.dic");
 
 	p.Parse(pdbFile, cifFile);
 

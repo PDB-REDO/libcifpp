@@ -411,10 +411,24 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 			return validator;
 	}
 
-	// not found, add it
+	// not found, try to see if it helps if we tweak the name a little
 
 	// too bad clang version 10 did not have a constructor for std::filesystem::path that accepts a std::string_view
 	std::filesystem::path dictionary(dictionary_name.data(), dictionary_name.data() + dictionary_name.length());
+
+	if (dictionary.extension() != ".dic")
+	{
+		auto dict_name = dictionary.filename().string() + ".dic";
+
+		for (auto &validator : m_validators)
+		{
+			if (iequals(validator.name(), dict_name))
+				return validator;
+		}
+	}
+
+	// not found, add it
+
 
 	auto data = load_resource(dictionary_name);
 

@@ -1,3 +1,6 @@
+Version 5.0.1
+- Fix loading dictionaries
+
 Version 5.0.0
 - Total rewrite of cif part
 - Removed DSSP code, moved into dssp project itself
