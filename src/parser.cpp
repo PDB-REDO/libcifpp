@@ -68,8 +68,8 @@ int sac_parser::get_next_char()
 		result = m_source.get();
 	else
 	{
-		result = m_buffer.top();
-		m_buffer.pop();
+		result = m_buffer.back();
+		m_buffer.pop_back();
 	}
 
 	// very simple CR/LF translation into LF
@@ -77,11 +77,11 @@ int sac_parser::get_next_char()
 	{
 		int lookahead = m_source.get();
 		if (lookahead != '\n')
-			m_buffer.push(lookahead);
+			m_buffer.push_back(lookahead);
 		result = '\n';
 	}
 
-	m_token_value += static_cast<char>(result);
+	m_token_value.push_back(static_cast<char>(result));
 
 	if (result == '\n')
 		++m_line_nr;
@@ -106,7 +106,7 @@ void sac_parser::retract()
 	if (ch == '\n')
 		--m_line_nr;
 
-	m_buffer.push(ch);
+	m_buffer.push_back(ch);
 	m_token_value.pop_back();
 }
 
