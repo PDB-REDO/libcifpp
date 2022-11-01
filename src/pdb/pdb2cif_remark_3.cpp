@@ -1425,10 +1425,9 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 	sort(scores.begin(), scores.end());
 
 	bool guessProgram = scores.empty() or scores.front().score < 0.9f;
-	;
 	if (guessProgram)
 	{
-		if (cif::VERBOSE >= 0)
+		if (cif::VERBOSE > 0)
 			std::cerr << "Unknown or untrusted program in REMARK 3, trying all parsers to see if there is a match" << std::endl;
 
 		tryParser(new BUSTER_TNT_Remark3Parser("BUSTER-TNT", expMethod, r, db));
