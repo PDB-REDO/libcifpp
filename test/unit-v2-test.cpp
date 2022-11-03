@@ -2970,3 +2970,91 @@ _cat_1.id_2
 	for (const auto &[key, test] : TESTS)
 		BOOST_CHECK_EQUAL((bool)cat1[key], test);
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(cifv1_0_1)
+{
+	auto f = R"(data_TEST
+#
+loop_
+_id
+_name
+1 aap
+2 noot
+3 mies
+4 ?
+5 .
+    )"_cf;
+
+	auto &db = f.front();
+
+	auto &cat = db[""];
+
+	for (auto r : cat)
+	{
+		int id;
+		std::optional<std::string> name;
+
+		cif::tie(id, name) = r.get("id", "name");
+
+		switch (id)
+		{
+			case 1: BOOST_CHECK_EQUAL(*name, "aap"); break;
+			case 2: BOOST_CHECK_EQUAL(*name, "noot"); break;
+			case 3: BOOST_CHECK_EQUAL(*name, "mies"); break;
+			default: BOOST_CHECK(name.has_value() == false);
+		}
+	}
+
+	std::stringstream ss;
+	ss << db;
+
+	auto f2 = cif::file(ss);
+	auto &db2 = f2.front();
+
+	BOOST_TEST(db == db2);
+}
+
+// BOOST_AUTO_TEST_CASE(cifv1_0_2)
+// {
+// 	BOOST_CHECK_THROW(R"(data_TEST
+// #
+// _version 1.0
+// loop_
+// _id
+// _name
+// 1 aap
+// 2 noot
+// 3 mies
+// 4 ?
+// 5 .
+//     )"_cf, cif::parse_error);
+// }
+
+BOOST_AUTO_TEST_CASE(cifv1_0_3)
+{
+	auto f = R"(data_TEST
+#
+_version 1.0
+_date    today
+)"_cf;
+
+	auto &db = f.front();
+
+	auto &cat = db[""];
+	BOOST_CHECK(not cat.empty());
+
+	auto r = cat.front();
+	BOOST_CHECK_EQUAL(r["version"].as<std::string>(), "1.0");
+	BOOST_CHECK_EQUAL(r["date"].as<std::string>(), "today");
+
+	std::stringstream ss;
+	ss << db;
+
+	auto f2 = cif::file(ss);
+	auto &db2 = f2.front();
+
+	BOOST_TEST(db == db2);
+}
+

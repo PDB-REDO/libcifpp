@@ -86,7 +86,7 @@ class category
 
 	const std::string &name() const { return m_name; }
 
-	iset fields() const;
+	iset key_fields() const;
 
 	std::set<uint16_t> key_field_indices() const;
 
@@ -481,6 +481,8 @@ class category
 	{
 		return get_column_ix(name) < m_columns.size();
 	}
+
+	iset get_columns() const;
 
 	// --------------------------------------------------------------------
 

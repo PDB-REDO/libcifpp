@@ -32,7 +32,7 @@ namespace cif
 
 iset get_category_fields(const category &cat)
 {
-	return cat.fields();
+	return cat.key_fields();
 }
 
 uint16_t get_column_ix(const category &cat, std::string_view col)

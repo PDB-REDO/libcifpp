@@ -695,7 +695,8 @@ void sac_parser::parse_global()
 
 void sac_parser::parse_datablock()
 {
-	std::string cat;
+	static const std::string kUnitializedCategory("<invalid>");
+	std::string cat = kUnitializedCategory;	// intial value acts as a guard for empty category names
 
 	while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::Tag or m_lookahead == CIFToken::SAVE)
 	{
@@ -703,7 +704,7 @@ void sac_parser::parse_datablock()
 		{
 			case CIFToken::LOOP:
 			{
-				cat.clear(); // should start a new category
+				cat = kUnitializedCategory; // should start a new category
 
 				match(CIFToken::LOOP);
 
@@ -714,7 +715,7 @@ void sac_parser::parse_datablock()
 					std::string catName, itemName;
 					std::tie(catName, itemName) = split_tag_name(m_token_value);
 
-					if (cat.empty())
+					if (cat == kUnitializedCategory)
 					{
 						produce_category(catName);
 						cat = catName;
@@ -800,6 +801,9 @@ void parser::produce_row()
 	if (VERBOSE >= 4)
 		std::cerr << "producing row for category " << m_category->name() << std::endl;
 
+	if (m_category == nullptr)
+		error("inconsistent categories in loop_");
+
 	m_category->emplace({});
 	m_row = m_category->back();
 	// m_row.lineNr(m_line_nr);
@@ -810,7 +814,7 @@ void parser::produce_item(const std::string &category, const std::string &item, 
 	if (VERBOSE >= 4)
 		std::cerr << "producing _" << category << '.' << item << " -> " << value << std::endl;
 
-	if (not iequals(category, m_category->name()))
+	if (m_category == nullptr or not iequals(category, m_category->name()))
 		error("inconsistent categories in loop_");
 
 	m_row[item] = m_token_value;

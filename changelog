@@ -1,5 +1,6 @@
 Version 5.0.1
 - Fix loading dictionaries
+- Support for cifv1.0 files
 
 Version 5.0.0
 - Total rewrite of cif part

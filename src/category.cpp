@@ -410,7 +410,7 @@ category_index::entry *category_index::insert(entry *h, row *v)
 		row_handle rh(m_category, *v);
 
 		std::ostringstream os;
-		for (auto col : m_category.fields())
+		for (auto col : m_category.key_fields())
 		{
 			if (rh[col])
 				os << col << ": " << std::quoted(rh[col].text()) << "; ";
@@ -686,7 +686,17 @@ category::~category()
 
 // --------------------------------------------------------------------
 
-iset category::fields() const
+iset category::get_columns() const
+{
+	iset result;
+
+	for (auto &col : m_columns)
+		result.insert(col.m_name);
+
+	return result;
+}
+
+iset category::key_fields() const
 {
 	if (m_validator == nullptr)
 		throw std::runtime_error("No Validator specified");
@@ -1853,7 +1863,10 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 		for (auto cix : order)
 		{
 			auto &col = m_columns[cix];
-			os << '_' << m_name << '.' << col.m_name << ' ' << '\n';
+			os << '_';
+			if (not m_name.empty())
+				os << m_name << '.';
+			os << col.m_name << ' ' << '\n';
 			columnWidths[cix] = 2;
 		}
 
@@ -1941,7 +1954,10 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 		{
 			auto &col = m_columns[cix];
 
-			os << '_' << m_name << '.' << col.m_name << std::string(l - col.m_name.length() - m_name.length() - 2, ' ');
+			os << '_';
+			if (not m_name.empty())
+				os << m_name << '.';
+			os << col.m_name << std::string(l - col.m_name.length() - m_name.length() - 2, ' ');
 
 			std::string_view s;
 			auto iv = m_head->get(cix);
@@ -1978,29 +1994,44 @@ bool category::operator==(const category &rhs) const
 //	if (tagsA != tagsB)
 //		std::cout << "Unequal number of fields" << std::endl;
 
+	const category_validator *catValidator = nullptr;
+
 	auto validator = a.get_validator();
-	auto catValidator = validator->get_validator_for_category(a.name());
-	if (catValidator == nullptr)
-		throw std::runtime_error("missing cat validator");
+	if (validator != nullptr)
+		catValidator = validator->get_validator_for_category(a.name());
 	
 	typedef std::function<int(std::string_view,std::string_view)> compType;
 	std::vector<std::tuple<std::string,compType>> tags;
-	auto keys = catValidator->m_keys;
+	std::vector<std::string> keys;
 	std::vector<size_t> keyIx;
 	
-	for (auto& tag: a.fields())
+	if (catValidator == nullptr)
 	{
-		auto iv = catValidator->get_validator_for_item(tag);
-		if (iv == nullptr)
-			throw std::runtime_error("missing item validator");
-		auto tv = iv->m_type;
-		if (tv == nullptr)
-			throw std::runtime_error("missing type validator");
-		tags.push_back(std::make_tuple(tag, std::bind(&cif::type_validator::compare, tv, std::placeholders::_1, std::placeholders::_2)));
-		
-		auto pred = [tag](const std::string& s) -> bool { return cif::iequals(tag, s) == 0; };
-		if (find_if(keys.begin(), keys.end(), pred) == keys.end())
-			keyIx.push_back(tags.size() - 1);
+		for (auto& tag: a.get_columns())
+		{
+			tags.push_back(std::make_tuple(tag, [](std::string_view va, std::string_view vb) { return va.compare(vb); }));
+			keyIx.push_back(keys.size());
+			keys.push_back(tag);
+		}
+	}
+	else
+	{
+		keys = catValidator->m_keys;
+
+		for (auto& tag: a.key_fields())
+		{
+			auto iv = catValidator->get_validator_for_item(tag);
+			if (iv == nullptr)
+				throw std::runtime_error("missing item validator");
+			auto tv = iv->m_type;
+			if (tv == nullptr)
+				throw std::runtime_error("missing type validator");
+			tags.push_back(std::make_tuple(tag, std::bind(&cif::type_validator::compare, tv, std::placeholders::_1, std::placeholders::_2)));
+			
+			auto pred = [tag](const std::string& s) -> bool { return cif::iequals(tag, s) == 0; };
+			if (find_if(keys.begin(), keys.end(), pred) == keys.end())
+				keyIx.push_back(tags.size() - 1);
+		}
 	}
 	
 	// a.reorderByIndex();

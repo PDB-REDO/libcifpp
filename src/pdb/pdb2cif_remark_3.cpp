@@ -1483,7 +1483,7 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 					auto r1 = cat1.front();
 					auto r2 = cat2.front();
 
-					for (auto column : cat1.fields())
+					for (auto column : cat1.key_fields())
 						r2[column] = r1[column].text();
 				}
 			}
