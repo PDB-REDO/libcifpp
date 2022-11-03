@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020-2022 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -215,7 +215,8 @@ compound_atom compound::get_atom_by_atom_id(const std::string &atom_id) const
 bool compound::atoms_bonded(const std::string &atomId_1, const std::string &atomId_2) const
 {
 	auto i = find_if(m_bonds.begin(), m_bonds.end(),
-		[&](const compound_bond &b) {
+		[&](const compound_bond &b)
+		{
 			return (b.atom_id[0] == atomId_1 and b.atom_id[1] == atomId_2) or (b.atom_id[0] == atomId_2 and b.atom_id[1] == atomId_1);
 		});
 
@@ -226,39 +227,41 @@ bool compound::atoms_bonded(const std::string &atomId_1, const std::string &atom
 // known amino acids and bases
 
 const std::map<std::string, char> compound_factory::kAAMap{
-	{"ALA", 'A'},
-	{"ARG", 'R'},
-	{"ASN", 'N'},
-	{"ASP", 'D'},
-	{"CYS", 'C'},
-	{"GLN", 'Q'},
-	{"GLU", 'E'},
-	{"GLY", 'G'},
-	{"HIS", 'H'},
-	{"ILE", 'I'},
-	{"LEU", 'L'},
-	{"LYS", 'K'},
-	{"MET", 'M'},
-	{"PHE", 'F'},
-	{"PRO", 'P'},
-	{"SER", 'S'},
-	{"THR", 'T'},
-	{"TRP", 'W'},
-	{"TYR", 'Y'},
-	{"VAL", 'V'},
-	{"GLX", 'Z'},
-	{"ASX", 'B'}};
+	{ "ALA", 'A' },
+	{ "ARG", 'R' },
+	{ "ASN", 'N' },
+	{ "ASP", 'D' },
+	{ "CYS", 'C' },
+	{ "GLN", 'Q' },
+	{ "GLU", 'E' },
+	{ "GLY", 'G' },
+	{ "HIS", 'H' },
+	{ "ILE", 'I' },
+	{ "LEU", 'L' },
+	{ "LYS", 'K' },
+	{ "MET", 'M' },
+	{ "PHE", 'F' },
+	{ "PRO", 'P' },
+	{ "SER", 'S' },
+	{ "THR", 'T' },
+	{ "TRP", 'W' },
+	{ "TYR", 'Y' },
+	{ "VAL", 'V' },
+	{ "GLX", 'Z' },
+	{ "ASX", 'B' }
+};
 
 const std::map<std::string, char> compound_factory::kBaseMap{
-	{"A", 'A'},
-	{"C", 'C'},
-	{"G", 'G'},
-	{"T", 'T'},
-	{"U", 'U'},
-	{"DA", 'A'},
-	{"DC", 'C'},
-	{"DG", 'G'},
-	{"DT", 'T'}};
+	{ "A", 'A' },
+	{ "C", 'C' },
+	{ "G", 'G' },
+	{ "T", 'T' },
+	{ "U", 'U' },
+	{ "DA", 'A' },
+	{ "DC", 'C' },
+	{ "DG", 'G' },
+	{ "DT", 'T' }
+};
 
 // --------------------------------------------------------------------
 // a factory class to generate compounds
@@ -272,7 +275,7 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 
 	virtual ~compound_factory_impl()
 	{
-		for (auto c: m_compounds)
+		for (auto c : m_compounds)
 			delete c;
 	}
 
@@ -324,17 +327,16 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 	bool is_known_peptide(const std::string &resName)
 	{
 		return m_known_peptides.count(resName) or
-			   (m_next and m_next->is_known_peptide(resName));
+		       (m_next and m_next->is_known_peptide(resName));
 	}
 
 	bool is_known_base(const std::string &resName)
 	{
 		return m_known_bases.count(resName) or
-			   (m_next and m_next->is_known_base(resName));
+		       (m_next and m_next->is_known_base(resName));
 	}
 
   protected:
-
 	virtual compound *create(const std::string &id)
 	{
 		// For the base class we assume every compound is preloaded
@@ -414,10 +416,18 @@ compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_p
 	else
 	{
 		// A CCD components file, validate it first
-		cifFile.load_dictionary("mmcif_pdbx.dic");
+		try
+		{
+			cifFile.load_dictionary("mmcif_pdbx.dic");
 
-		if (not cifFile.is_valid())
-			throw std::runtime_error("Invalid compound file");
+			if (not cifFile.is_valid())
+				std::cerr << "The components file " << file << " is not valid" << std::endl;
+		}
+		catch (const std::exception &e)
+		{
+			std::cerr << "When trying to load the components file " << file << " there was an exception:" << std::endl
+					  << e.what() << std::endl;
+		}
 
 		for (auto &db : cifFile)
 			m_compounds.push_back(new compound(db));
@@ -430,7 +440,7 @@ compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_p
 class CCD_compound_factory_impl : public compound_factory_impl
 {
   public:
-	CCD_compound_factory_impl(std::shared_ptr<compound_factory_impl> next, const fs::path& file)
+	CCD_compound_factory_impl(std::shared_ptr<compound_factory_impl> next, const fs::path &file)
 		: compound_factory_impl(next)
 		, mCompoundsFile(file)
 	{
@@ -647,7 +657,6 @@ compound_factory::compound_factory()
 		m_impl.reset(new CCP4_compound_factory_impl(clibd_mon));
 	else if (cif::VERBOSE > 0)
 		std::cerr << "CCP4 monomers library not found, CLIBD_MON is not defined" << std::endl;
-
 }
 
 compound_factory::~compound_factory()
@@ -729,4 +738,4 @@ bool compound_factory::is_known_base(const std::string &resName) const
 	return m_impl ? m_impl->is_known_base(resName) : kBaseMap.count(resName) > 0;
 }
 
-} // namespace pdbx
+} // namespace cif

@@ -857,6 +857,7 @@ bool category::is_valid() const
 				}
 				catch (const std::exception &e)
 				{
+					result = false;
 					m_validator->report_error("Error validating " + m_columns[cix].m_name + ": " + e.what(), false);
 					continue;
 				}
