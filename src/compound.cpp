@@ -424,7 +424,7 @@ compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_p
 			{
 				std::cerr << "The components file " << file << " is not valid" << std::endl;
 				if (cif::VERBOSE < 1)
-					std::cerr "(use --verbose to see why)" << std::endl;
+					std::cerr << "(use --verbose to see why)" << std::endl;
 			}
 		}
 		catch (const std::exception &e)
