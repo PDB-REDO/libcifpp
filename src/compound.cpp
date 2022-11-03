@@ -689,9 +689,7 @@ void compound_factory::set_default_dictionary(const fs::path &inDictFile)
 	}
 	catch (const std::exception &)
 	{
-		if (cif::VERBOSE >= 0)
-			std::cerr << "Error loading dictionary " << inDictFile << std::endl;
-		throw;
+		std::throw_with_nested(std::runtime_error("Error loading dictionary " + inDictFile.string()));
 	}
 }
 
@@ -700,19 +698,13 @@ void compound_factory::push_dictionary(const fs::path &inDictFile)
 	if (not fs::exists(inDictFile))
 		throw std::runtime_error("file not found: " + inDictFile.string());
 
-	//	ifstream file(inDictFile);
-	//	if (not file.is_open())
-	//		throw std::runtime_error("Could not open peptide list " + inDictFile);
-
 	try
 	{
 		m_impl.reset(new compound_factory_impl(inDictFile, m_impl));
 	}
 	catch (const std::exception &)
 	{
-		if (cif::VERBOSE >= 0)
-			std::cerr << "Error loading dictionary " << inDictFile << std::endl;
-		throw;
+		std::throw_with_nested(std::runtime_error("Error loading dictionary " + inDictFile.string()));
 	}
 }
 
@@ -724,14 +716,6 @@ void compound_factory::pop_dictionary()
 
 const compound *compound_factory::create(std::string id)
 {
-	// static bool warned = false;
-
-	// if (m_impl and warned == false)
-	// {
-	// 	std::cerr << "Warning: no compound information library was found, resulting data may be incorrect or incomplete" << std::endl;
-	// 	warned = true;
-	// }
-
 	return m_impl ? m_impl->get(id) : nullptr;
 }
 

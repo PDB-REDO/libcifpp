@@ -220,11 +220,11 @@ std::tuple<std::string, std::string> split_tag_name(std::string_view tag)
 	if (tag.empty())
 		throw std::runtime_error("empty tag");
 	if (tag[0] != '_')
-		throw std::runtime_error("tag does not start with underscore");
+		throw std::runtime_error("tag '" + std::string { tag } + "' does not start with underscore");
 
 	auto s = tag.find('.');
 	if (s == std::string::npos)
-		throw std::runtime_error("tag does not contain dot");
+		throw std::runtime_error("tag does not contain dot (" + std::string{ tag } + ')');
 	return std::tuple<std::string, std::string>{
 		tag.substr(1, s - 1), tag.substr(s + 1)};
 }
