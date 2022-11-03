@@ -421,7 +421,11 @@ compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_p
 			cifFile.load_dictionary("mmcif_pdbx.dic");
 
 			if (not cifFile.is_valid())
+			{
 				std::cerr << "The components file " << file << " is not valid" << std::endl;
+				if (cif::VERBOSE < 1)
+					std::cerr "(use --verbose to see why)" << std::endl;
+			}
 		}
 		catch (const std::exception &e)
 		{
@@ -467,7 +471,10 @@ compound *CCD_compound_factory_impl::create(const std::string &id)
 	{
 		ccd = cif::load_resource("components.cif");
 		if (not ccd)
-			throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data.");
+		{
+			std::cerr << "Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data." << std::endl;
+			return nullptr;
+		}
 	}
 	else
 		ccd.reset(new std::ifstream(mCompoundsFile));
