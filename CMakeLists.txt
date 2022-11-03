@@ -135,8 +135,16 @@ if(GXX_LIBSTDCPP)
 	if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
 
-		set(BOOST_REGEX_STANDALONE ON)
-		add_git_submodule(regex EXCLUDE_FROM_ALL)
+		set(Boost_USE_STATIC_LIBS ON)
+		find_package(Boost 1.72 COMPONENTS regex QUIET)
+
+		if(Boost_FOUND)
+			message(STATUS "Using already installed boost::regex")
+			list(APPEND CIFPP_REQUIRED_LIBRARIES Boost::regex)
+		else()
+			set(BOOST_REGEX_STANDALONE ON)
+			add_git_submodule(regex EXCLUDE_FROM_ALL)
+		endif()
 	endif()
 endif()
 
