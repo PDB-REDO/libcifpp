@@ -81,6 +81,11 @@ struct symop_data
 		return m_packed == rhs.m_packed;
 	}
 
+	bool operator<(const symop_data &rhs) const
+	{
+		return m_packed < rhs.m_packed;
+	}
+
 	std::array<int, 15> data() const
 	{
 		return {

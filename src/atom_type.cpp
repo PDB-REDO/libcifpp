@@ -1077,9 +1077,13 @@ bool atom_type_traits::is_metal(const std::string& symbol)
 
 auto atom_type_traits::wksf(int charge) const -> const SFData&
 {
+	auto type = m_info->type;
+	if (type == D)
+		type = H;
+
 	for (auto& sf: data::kWKSFData)
 	{
-		if (sf.symbol == m_info->type and sf.charge == charge)
+		if (sf.symbol == type and sf.charge == charge)
 			return sf.sf;
 	}
 
@@ -1092,7 +1096,7 @@ auto atom_type_traits::wksf(int charge) const -> const SFData&
 
 		for (auto& sf: data::kWKSFData)
 		{
-			if (sf.symbol == m_info->type and sf.charge == 0)
+			if (sf.symbol == type and sf.charge == 0)
 				return sf.sf;
 		}
 	}
@@ -1102,9 +1106,13 @@ auto atom_type_traits::wksf(int charge) const -> const SFData&
 	
 auto atom_type_traits::elsf() const -> const SFData&
 {
+	auto type = m_info->type;
+	if (type == D)
+		type = H;
+
 	for (auto& sf: data::kELSFData)
 	{
-		if (sf.symbol == m_info->type)
+		if (sf.symbol == type)
 			return sf.sf;
 	}
 

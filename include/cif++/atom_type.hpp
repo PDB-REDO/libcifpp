@@ -166,7 +166,7 @@ enum atom_type : uint8_t
 	No = 102, // Nobel­ium
 	Lr = 103, // Lawren­cium
 
-	D = 129, // Deuterium
+	D = 119, // Deuterium
 };
 
 // --------------------------------------------------------------------

@@ -1118,8 +1118,8 @@ branch::branch(structure &structure, const std::string &asym_id)
 		for (const auto &[num1, num2, atom1, atom2] : branch_link.find<size_t, size_t, std::string, std::string>(
 				 "entity_id"_key == entity_id, "entity_branch_list_num_1", "entity_branch_list_num_2", "atom_id_1", "atom_id_2"))
 		{
-			if (not iequals(atom1, "c1"))
-				throw std::runtime_error("invalid pdbx_entity_branch_link");
+			// if (not iequals(atom1, "c1"))
+			// 	throw std::runtime_error("invalid pdbx_entity_branch_link");
 
 			auto &s1 = at(num1 - 1);
 			auto &s2 = at(num2 - 1);
@@ -1143,8 +1143,8 @@ void branch::link_atoms()
 	for (const auto &[num1, num2, atom1, atom2] : branch_link.find<size_t, size_t, std::string, std::string>(
 			 "entity_id"_key == entity_id, "entity_branch_list_num_1", "entity_branch_list_num_2", "atom_id_1", "atom_id_2"))
 	{
-		if (not iequals(atom1, "c1"))
-			throw std::runtime_error("invalid pdbx_entity_branch_link");
+		// if (not iequals(atom1, "c1"))
+		// 	throw std::runtime_error("invalid pdbx_entity_branch_link");
 
 		auto &s1 = at(num1 - 1);
 		auto &s2 = at(num2 - 1);
@@ -1279,7 +1279,7 @@ void structure::load_atoms_for_model(StructureOpenOptions options)
 		if (model_nr and *model_nr != m_model_nr)
 			continue;
 
-		if ((options bitand StructureOpenOptions::SkipHydrogen) and type_symbol == "H")
+		if ((options bitand StructureOpenOptions::SkipHydrogen) and (type_symbol == "H" or type_symbol == "D"))
 			continue;
 
 		emplace_atom(std::make_shared<atom::atom_impl>(m_db, id));
