@@ -221,7 +221,7 @@ class sac_parser
 	void warning(const std::string &msg)
 	{
 		if (cif::VERBOSE > 0)
-			std::cerr << "parser warning at line" << m_line_nr << ": " << msg << std::endl;
+			std::cerr << "parser warning at line " << m_line_nr << ": " << msg << std::endl;
 	}
 
 	// production methods, these are pure virtual here
