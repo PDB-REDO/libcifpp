@@ -15,3 +15,4 @@ rsrc/feature-request.txt
 test/test-create_sugar_?.cif
 test/oprofile_data/
 test/perf.data*
+src/revision.hpp

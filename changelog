@@ -1,3 +1,7 @@
+Version 5.0.2
+- Fix export of CISPEP records in PDB format
+- Better support for exporting package_source
+
 Version 5.0.1
 - Fix loading dictionaries
 - Support for cifv1.0 files
