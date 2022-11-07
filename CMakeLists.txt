@@ -59,11 +59,11 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
 
 # Lots of code depend on the availability of the components.cif file
-option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" OFF)
+option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
 # An optional cron script can be installed to keep the data files up-to-date
 if(UNIX)
-	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" OFF)
+	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
 endif()
 
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
@@ -136,7 +136,7 @@ if(GXX_LIBSTDCPP)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
 
 		set(BOOST_REGEX_STANDALONE ON)
-		add_git_submodule(regex EXCLUDE_FROM_ALL)
+		add_git_submodule("${PROJECT_SOURCE_DIR}/regex" EXCLUDE_FROM_ALL)
 	endif()
 endif()
 
@@ -154,12 +154,15 @@ include(FindAtomic)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 
 if(NOT PDB_REDO_META)
-	find_package(gxrio REQUIRED)
+	find_package(gxrio QUIET)
+	if(NOT gxrio_FOUND)
+		add_git_submodule(${PROJECT_SOURCE_DIR}/gxrio)
+	endif()
 endif()
 
 # Create a revision file, containing the current git version info
 include(VersionString)
-write_version_header("LibCIFPP")
+write_version_header(${PROJECT_SOURCE_DIR}/src/ "LibCIFPP")
 
 # SymOp data table
 if(CIFPP_RECREATE_SYMOP_DATA)
@@ -451,3 +454,13 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 endif()
+
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_SOURCE_TGZ ON)
+set(CPACK_SOURCE_TBZ2 OFF)
+set(CPACK_SOURCE_TXZ OFF)
+set(CPACK_SOURCE_TZ OFF)
+set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git;/regex/doc;/regex/example;/regex/meta;/regex/performance;/regex/test")
+set (CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
+set (CPACK_SOURCE_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
+include(CPack)
