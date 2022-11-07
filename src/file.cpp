@@ -184,6 +184,8 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 void file::load(const std::filesystem::path &p)
 {
 	gxrio::ifstream in(p);
+	if (not in.is_open())
+		throw std::runtime_error("Could not open file " + p.string());
 	load(in);
 }
 

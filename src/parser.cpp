@@ -49,6 +49,9 @@ namespace cif
 sac_parser::sac_parser(std::istream &is, bool init)
 	: m_source(*is.rdbuf())
 {
+	if (is.rdbuf() == nullptr)
+		throw std::runtime_error("Attempt to read from uninitialised stream");
+
 	m_validate = true;
 	m_line_nr = 1;
 	m_bol = true;

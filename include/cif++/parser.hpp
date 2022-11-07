@@ -212,12 +212,16 @@ class sac_parser
 
 	void error(const std::string &msg)
 	{
+		if (cif::VERBOSE > 0)
+			std::cerr << "Error parsing mmCIF: " << msg << std::endl;
+
 		throw parse_error(m_line_nr, msg);
 	}
 
 	void warning(const std::string &msg)
 	{
-		std::cerr << "parser warning at line" << m_line_nr << ": " << msg << std::endl;
+		if (cif::VERBOSE > 0)
+			std::cerr << "parser warning at line" << m_line_nr << ": " << msg << std::endl;
 	}
 
 	// production methods, these are pure virtual here

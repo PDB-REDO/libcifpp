@@ -3226,7 +3226,8 @@ void WriteConnectivity(std::ostream &pdbFile, const datablock &db)
 				"pdbx_label_comp_id_2", "pdbx_auth_asym_id_2", "pdbx_auth_seq_id_2", "pdbx_PDB_ins_code_2",
 				"pdbx_PDB_model_num", "pdbx_omega_angle");
 
-		pdbFile << format("CISPEP %3d %3.3s %1.1s %4d%1.1s   %3.3s %1.1s %4d%1.1s       %3d       %6.2f", serNum, pep1, chainID1, seqNum1, icode1, pep2, chainID2, seqNum2, icode2, modNum, measure) << std::endl;
+		pdbFile << format("CISPEP %3.3s %3.3s %1.1s %4d%1.1s   %3.3s %1.1s %4d%1.1s       %3.3s       %6.2f",
+			serNum, pep1, chainID1, seqNum1, icode1, pep2, chainID2, seqNum2, icode2, modNum, measure) << std::endl;
 	}
 }
 
