@@ -33,6 +33,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <utility>
 
 #include <cif++/forward_decl.hpp>
 #include <cif++/text.hpp>
