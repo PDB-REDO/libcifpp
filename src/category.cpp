@@ -743,7 +743,38 @@ void category::set_validator(const validator *v, datablock &db)
 		m_cat_validator = m_validator->get_validator_for_category(m_name);
 
 		if (m_cat_validator != nullptr)
+		{
+			std::set<std::string> missing;
+
+			std::vector<uint16_t> kix;
+			for (auto k : m_cat_validator->m_keys)
+			{
+				kix.push_back(get_column_ix(k));
+				if (kix.back() >= m_columns.size())
+					missing.insert(k);
+			}
+
+			// TODO: perhaps reintroduce the following check?
+			// if (missing.empty())
+			// {
+			// 	// First check if all records do have their mandatory fields
+			// 	for (auto r : *this)
+			// 	{
+			// 		for (auto ix : kix)
+			// 		{
+			// 			if (r[ix].empty())
+			// 				missing.insert(m_columns[ix].m_name);
+			// 		}
+			// 	}
+			// }
+
+			if (missing.size() == 1)
+				throw std::runtime_error("Cannot construct index since the key field " + *missing.begin() + " in " + m_name + " is empty");
+			if (not missing.empty())
+				throw std::runtime_error("Cannot construct index since the key fields " + cif::join(missing, ", ") + " in " + m_name + " are empty");
+
 			m_index = new category_index(this);
+		}
 	}
 	else
 		m_cat_validator = nullptr;
