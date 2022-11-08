@@ -35,8 +35,6 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
-
-# include(Dart)
 include(AddGitSubmodule)
 
 set(CXX_EXTENSIONS OFF)

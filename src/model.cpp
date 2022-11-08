@@ -1133,23 +1133,26 @@ branch::branch(structure &structure, const std::string &asym_id)
 
 void branch::link_atoms()
 {
-	using namespace literals;
-
-	auto &db = m_structure->get_datablock();
-	auto &branch_link = db["pdbx_entity_branch_link"];
-
-	auto entity_id = front().get_entity_id();
-
-	for (const auto &[num1, num2, atom1, atom2] : branch_link.find<size_t, size_t, std::string, std::string>(
-			 "entity_id"_key == entity_id, "entity_branch_list_num_1", "entity_branch_list_num_2", "atom_id_1", "atom_id_2"))
+	if (not empty())
 	{
-		// if (not iequals(atom1, "c1"))
-		// 	throw std::runtime_error("invalid pdbx_entity_branch_link");
+		using namespace literals;
 
-		auto &s1 = at(num1 - 1);
-		auto &s2 = at(num2 - 1);
+		auto &db = m_structure->get_datablock();
+		auto &branch_link = db["pdbx_entity_branch_link"];
 
-		s1.set_link(s2.get_atom_by_atom_id(atom2));
+		auto entity_id = front().get_entity_id();
+
+		for (const auto &[num1, num2, atom1, atom2] : branch_link.find<size_t, size_t, std::string, std::string>(
+				"entity_id"_key == entity_id, "entity_branch_list_num_1", "entity_branch_list_num_2", "atom_id_1", "atom_id_2"))
+		{
+			// if (not iequals(atom1, "c1"))
+			// 	throw std::runtime_error("invalid pdbx_entity_branch_link");
+
+			auto &s1 = at(num1 - 1);
+			auto &s2 = at(num2 - 1);
+
+			s1.set_link(s2.get_atom_by_atom_id(atom2));
+		}
 	}
 }
 
@@ -1374,6 +1377,9 @@ void structure::load_data()
 
 		ri->second->add_atom(atom);
 	}
+
+	// what the ...
+	m_branches.erase(std::remove_if(m_branches.begin(), m_branches.end(), [](const branch &b) { return b.empty(); }), m_branches.end());
 
 	for (auto &branch : m_branches)
 		branch.link_atoms();
