@@ -136,7 +136,7 @@ if(GXX_LIBSTDCPP)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
 
 		set(BOOST_REGEX_STANDALONE ON)
-		add_git_submodule("${PROJECT_SOURCE_DIR}/regex" EXCLUDE_FROM_ALL)
+		add_git_submodule(regex EXCLUDE_FROM_ALL)
 	endif()
 endif()
 
