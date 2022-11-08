@@ -154,7 +154,7 @@ list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 if(NOT PDB_REDO_META)
 	find_package(gxrio QUIET)
 	if(NOT gxrio_FOUND)
-		add_git_submodule(${PROJECT_SOURCE_DIR}/gxrio)
+		add_git_submodule(gxrio)
 	endif()
 endif()
 
