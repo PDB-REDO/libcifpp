@@ -2458,36 +2458,39 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 
 		auto gen = db["pdbx_struct_assembly_gen"].find1(key("assembly_id") == id);
 
-		std::string asym_id_list, oper_id_list;
-		cif::tie(asym_id_list, oper_id_list) = gen.get("asym_id_list", "oper_expression");
-
-		auto asyms = split<std::string>(asym_id_list, ",");
-
-		std::vector<std::string> chains = MapAsymIDs2ChainIDs(asyms, db);
-		pdbFile << RM("APPLY THE FOLLOWING TO CHAINS: ") << join(chains, ", ") << std::endl;
-
-		for (auto oper_id : split<std::string>(oper_id_list, ",", true))
+		if (gen)
 		{
-			auto r = db["pdbx_struct_oper_list"].find1(key("id") == oper_id);
+			std::string asym_id_list, oper_id_list;
+			cif::tie(asym_id_list, oper_id_list) = gen.get("asym_id_list", "oper_expression");
 
-			pdbFile << RM("  BIOMT1 ", -3) << Fs(r, "id")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[1][1]")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[1][2]")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[1][3]")
-					<< SEP(" ", -14, 5) << Ff(r, "vector[1]")
-					<< std::endl
-					<< RM("  BIOMT2 ", -3) << Fs(r, "id")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[2][1]")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[2][2]")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[2][3]")
-					<< SEP(" ", -14, 5) << Ff(r, "vector[2]")
-					<< std::endl
-					<< RM("  BIOMT3 ", -3) << Fs(r, "id")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[3][1]")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[3][2]")
-					<< SEP(" ", -9, 6) << Ff(r, "matrix[3][3]")
-					<< SEP(" ", -14, 5) << Ff(r, "vector[3]")
-					<< std::endl;
+			auto asyms = split<std::string>(asym_id_list, ",");
+
+			std::vector<std::string> chains = MapAsymIDs2ChainIDs(asyms, db);
+			pdbFile << RM("APPLY THE FOLLOWING TO CHAINS: ") << join(chains, ", ") << std::endl;
+
+			for (auto oper_id : split<std::string>(oper_id_list, ",", true))
+			{
+				auto r = db["pdbx_struct_oper_list"].find1(key("id") == oper_id);
+
+				pdbFile << RM("  BIOMT1 ", -3) << Fs(r, "id")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[1][1]")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[1][2]")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[1][3]")
+						<< SEP(" ", -14, 5) << Ff(r, "vector[1]")
+						<< std::endl
+						<< RM("  BIOMT2 ", -3) << Fs(r, "id")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[2][1]")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[2][2]")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[2][3]")
+						<< SEP(" ", -14, 5) << Ff(r, "vector[2]")
+						<< std::endl
+						<< RM("  BIOMT3 ", -3) << Fs(r, "id")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[3][1]")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[3][2]")
+						<< SEP(" ", -9, 6) << Ff(r, "matrix[3][3]")
+						<< SEP(" ", -14, 5) << Ff(r, "vector[3]")
+						<< std::endl;
+			}
 		}
 	}
 }

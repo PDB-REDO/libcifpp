@@ -10,7 +10,7 @@ function(add_git_submodule dir)
 	# add_git_submodule(mysubmod_dir)
 	find_package(Git QUIET)
 
-	if(NOT EXISTS ${dir}/CMakeLists.txt)
+	if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${dir}/CMakeLists.txt")
 		if(NOT (GIT_FOUND AND IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.git"))
 			message(FATAL_ERROR "${CMAKE_CURRENT_SOURCE_DIR} is not a git repository and the submodule ${dir} is not complete. Cannot continue.")
 		else()
