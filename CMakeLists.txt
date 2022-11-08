@@ -405,10 +405,6 @@ if(ENABLE_TESTING)
 
 		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
 
-		if(CIFPP_USE_RSRC)
-			mrc_target_resources(${CIFPP_TEST} ${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic)
-		endif()
-
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
 			target_compile_options(${CIFPP_TEST} PRIVATE /EHsc)
