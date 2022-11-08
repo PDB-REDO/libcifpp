@@ -6223,11 +6223,18 @@ file read(std::istream &is)
 
 file read(const std::filesystem::path &file)
 {
-	gxrio::ifstream in(file);
-	if (not in.is_open())
-		throw std::runtime_error("Could not open file " + file.string() + " for input");
-	
-	return read(in);
+	try
+	{
+		gxrio::ifstream in(file);
+		if (not in.is_open())
+			throw std::runtime_error("Could not open file " + file.string() + " for input");
+		
+		return read(in);
+	}
+	catch (const std::exception &ex)
+	{
+		throw_with_nested(std::runtime_error("Error reading file " + file.string()));
+	}
 }
 
 } // namespace pdbx

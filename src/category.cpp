@@ -746,34 +746,22 @@ void category::set_validator(const validator *v, datablock &db)
 		{
 			std::set<std::string> missing;
 
-			std::vector<uint16_t> kix;
-			for (auto k : m_cat_validator->m_keys)
+			if (not empty())
 			{
-				kix.push_back(get_column_ix(k));
-				if (kix.back() >= m_columns.size())
-					missing.insert(k);
+				std::vector<uint16_t> kix;
+				for (auto k : m_cat_validator->m_keys)
+				{
+					kix.push_back(get_column_ix(k));
+					if (kix.back() >= m_columns.size())
+						missing.insert(k);
+				}
 			}
 
-			// TODO: perhaps reintroduce the following check?
-			// if (missing.empty())
-			// {
-			// 	// First check if all records do have their mandatory fields
-			// 	for (auto r : *this)
-			// 	{
-			// 		for (auto ix : kix)
-			// 		{
-			// 			if (r[ix].empty())
-			// 				missing.insert(m_columns[ix].m_name);
-			// 		}
-			// 	}
-			// }
-
-			if (missing.size() == 1)
-				throw std::runtime_error("Cannot construct index since the key field " + *missing.begin() + " in " + m_name + " is empty");
-			if (not missing.empty())
-				throw std::runtime_error("Cannot construct index since the key fields " + cif::join(missing, ", ") + " in " + m_name + " are empty");
-
-			m_index = new category_index(this);
+			if (missing.empty())
+				m_index = new category_index(this);
+			else if (VERBOSE > 0)
+				std::cerr << "Cannot construct index since the key field" << (missing.size() > 1 ? "s" : "") << " "
+							<< cif::join(missing, ", ") + " in " + m_name + " " + (missing.size() == 1 ? "is" : "are") << " missing" << std::endl;
 		}
 	}
 	else
@@ -851,6 +839,20 @@ bool category::is_valid() const
 	if (not mandatory.empty())
 	{
 		m_validator->report_error("In category " + m_name + " the following mandatory fields are missing: " + join(mandatory, ", "), false);
+		result = false;
+	}
+
+	if (m_cat_validator->m_keys.empty() == false and m_index == nullptr)
+	{
+		std::set<std::string> missing;
+
+		for (auto k : m_cat_validator->m_keys)
+		{
+			if (get_column_ix(k) >= m_columns.size())
+				missing.insert(k);
+		}
+
+		m_validator->report_error("In category " + m_name + " the index is missing, likely due to missing key fields: " + join(missing, ", "), false);
 		result = false;
 	}
 
