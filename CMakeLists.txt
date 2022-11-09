@@ -35,7 +35,6 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
-include(AddGitSubmodule)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -131,23 +130,10 @@ if(GXX_LIBSTDCPP)
 		${CMAKE_CURRENT_BINARY_DIR}/test ${PROJECT_SOURCE_DIR}/cmake/test-rx.cpp)
 
 	if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
-		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
+		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will use boost::regex instead")
 
-		find_package(Boost COMPONENTS regex QUIET)
-
-		if(Boost_FOUND)
-			if(Boost_VERSION VERSION_GREATER_EQUAL 1.77)
-				set(BOOST_REGEX_STANDALONE ON)
-				set(BOOST_REGEX_INCLUDE ${Boost_INCLUDE_DIRS})
-			else()
-				list(APPEND CIFPP_REQUIRED_LIBRARIES Boost::regex)
-				set(BOOST_REGEX_SYSTEM ON)
-			endif()
-		else()
-			add_git_submodule("https://github.com/boostorg/regex" regex EXCLUDE_FROM_ALL)
-			set(BOOST_REGEX_STANDALONE ON)
-			set(BOOST_REGEX_INCLUDE regex/include)
-		endif()
+		add_subdirectory(regex EXCLUDE_FROM_ALL)
+		set(BOOST_REGEX ON)
 	endif()
 endif()
 
@@ -245,12 +231,6 @@ add_library(cifpp::cifpp ALIAS cifpp)
 
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-if(BOOST_REGEX_STANDALONE)
-	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
-elseif(BOOST_REGEX_SYSTEM)
-	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1)
-endif()
-
 target_include_directories(cifpp
 	PUBLIC
 	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
@@ -259,8 +239,9 @@ target_include_directories(cifpp
 
 target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
 
-if(BOOST_REGEX_STANDALONE)
-	target_include_directories(cifpp PRIVATE ${BOOST_REGEX_INCLUDE})
+if(BOOST_REGEX)
+	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
+	target_include_directories(cifpp PRIVATE boost/include)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -347,11 +328,7 @@ install(FILES
 	DESTINATION ${CIFPP_DATA_DIR}
 )
 
-if(BOOST_REGEX_STANDALONE)
-	set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in)
-else()
-	set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig-boost-regex.cmake.in)
-endif()
+set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in)
 
 configure_package_config_file(
 	${CONFIG_TEMPLATE_FILE}
