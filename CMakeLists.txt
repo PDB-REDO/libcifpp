@@ -229,6 +229,11 @@ set(project_headers
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
 add_library(cifpp::cifpp ALIAS cifpp)
 
+if(BOOST_REGEX)
+	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
+	target_include_directories(cifpp PRIVATE regex/include)
+endif()
+
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
@@ -238,11 +243,6 @@ target_include_directories(cifpp
 )
 
 target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
-
-if(BOOST_REGEX)
-	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
-	target_include_directories(cifpp PRIVATE boost/include)
-endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)

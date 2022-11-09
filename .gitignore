@@ -6,3 +6,4 @@ data/components.cif*
 CMakeSettings.json
 msvc/
 src/revision.hpp
+test/test-create_sugar_?.cif
