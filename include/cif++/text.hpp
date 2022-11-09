@@ -409,8 +409,8 @@ enum class chars_format
 template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
 std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_format fmt)
 {
-	size_t size = last - first;
-	size_t r = 0;
+	int size = static_cast<int>(last - first);
+	int r = 0;
 
 	switch (fmt)
 	{

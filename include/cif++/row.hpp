@@ -57,7 +57,7 @@ namespace detail
 			return get<Ts...>(std::index_sequence_for<Ts...>{});
 		}
 
-		template <typename... Ts, uint16_t... Is>
+		template <typename... Ts, size_t... Is>
 		std::tuple<Ts...> get(std::index_sequence<Is...>) const
 		{
 			return std::tuple<Ts...>{ m_row[m_columns[Is]].template as<Ts>()... };

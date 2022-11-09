@@ -151,7 +151,7 @@ class iterator_impl
 	}
 
   private:
-	template <uint16_t... Is>
+	template <size_t... Is>
 	tuple_type get(std::index_sequence<Is...>) const
 	{
 		if (m_current != nullptr)
