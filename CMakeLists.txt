@@ -161,6 +161,7 @@ list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 
 if(NOT PDB_REDO_META)
 	find_package(gxrio QUIET)
+
 	if(NOT gxrio_FOUND)
 		add_git_submodule(gxrio EXCLUDE_FROM_ALL)
 	endif()
@@ -173,7 +174,7 @@ write_version_header(${PROJECT_SOURCE_DIR}/src/ "LibCIFPP")
 # SymOp data table
 if(CIFPP_RECREATE_SYMOP_DATA)
 	# The tool to create the table
-	add_executable(symop-map-generator "${PROJECT_SOURCE_DIR}/tools/symop-map-generator.cpp")
+	add_executable(symop-map-generator "${PROJECT_SOURCE_DIR}/src/symop-map-generator.cpp")
 
 	add_custom_command(
 		OUTPUT ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
@@ -462,7 +463,7 @@ set(CPACK_SOURCE_TGZ ON)
 set(CPACK_SOURCE_TBZ2 OFF)
 set(CPACK_SOURCE_TXZ OFF)
 set(CPACK_SOURCE_TZ OFF)
-set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git;/regex")
-set (CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
-set (CPACK_SOURCE_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
+set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git;/test;/.pc;/tools/symop-map-generator;/regex/doc;/regex/example;/regex/meta;/regex/performance;/regex/test")
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
 include(CPack)
