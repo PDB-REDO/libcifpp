@@ -134,7 +134,15 @@ if(GXX_LIBSTDCPP)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
 
 		set(BOOST_REGEX_STANDALONE ON)
-		add_git_submodule(regex EXCLUDE_FROM_ALL)
+
+		find_package(Boost 1.77 COMPONENTS regex QUIET)
+
+		if(Boost_FOUND)
+			set(BOOST_REGEX_INCLUDE ${Boost_INCLUDE_DIRS})
+		else()
+			add_git_submodule(regex EXCLUDE_FROM_ALL)
+			set(BOOST_REGEX_INCLUDE regex/include)
+		endif()
 	endif()
 endif()
 
@@ -260,7 +268,7 @@ get_target_property(GXRIO_INCLUDE_DIR gxrio::gxrio INTERFACE_INCLUDE_DIRECTORIES
 target_include_directories(cifpp PRIVATE ${GXRIO_INCLUDE_DIR})
 
 if(BOOST_REGEX_STANDALONE)
-	target_include_directories(cifpp PRIVATE regex/include)
+	target_include_directories(cifpp PRIVATE ${BOOST_REGEX_INCLUDE})
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
