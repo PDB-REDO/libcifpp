@@ -30,10 +30,10 @@
 #include <stack>
 
 #include <cif++.hpp>
-#include <gxrio.hpp>
 
 #include <cif++/pdb/pdb2cif.hpp>
 #include <cif++/pdb/pdb2cif_remark_3.hpp>
+#include <cif++/gzio.hpp>
 
 using cif::category;
 using cif::datablock;
@@ -6225,7 +6225,7 @@ file read(const std::filesystem::path &file)
 {
 	try
 	{
-		gxrio::ifstream in(file);
+		gzio::ifstream in(file);
 		if (not in.is_open())
 			throw std::runtime_error("Could not open file " + file.string() + " for input");
 		

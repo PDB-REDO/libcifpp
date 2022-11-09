@@ -24,9 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gxrio.hpp>
-
 #include <cif++/file.hpp>
+#include <cif++/gzio.hpp>
 
 namespace cif
 {
@@ -185,7 +184,7 @@ void file::load(const std::filesystem::path &p)
 {
 	try
 	{
-		gxrio::ifstream in(p);
+		gzio::ifstream in(p);
 		if (not in.is_open())
 			throw std::runtime_error("Could not open file " + p.string());
 
@@ -213,7 +212,7 @@ void file::load(std::istream &is)
 
 void file::save(const std::filesystem::path &p) const
 {
-	gxrio::ofstream outFile(p);
+	gzio::ofstream outFile(p);
 	save(outFile);
 }
 

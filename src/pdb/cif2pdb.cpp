@@ -30,9 +30,9 @@
 #include <regex>
 #include <set>
 
-#include <gxrio.hpp>
 #include <cif++.hpp>
 #include <cif++/pdb/cif2pdb.hpp>
+#include <cif++/gzio.hpp>
 
 namespace cif::pdb
 {
@@ -3731,7 +3731,7 @@ void write(std::ostream &os, const datablock &db)
 
 void write(const std::filesystem::path &p, const datablock &db)
 {
-	gxrio::ofstream out(p);
+	gzio::ofstream out(p);
 
 	bool writePDB = false;
 	if (p.extension() == ".gz")

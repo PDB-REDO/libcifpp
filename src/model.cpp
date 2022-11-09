@@ -31,8 +31,6 @@
 #include <iomanip>
 #include <numeric>
 
-#include <gxrio.hpp>
-
 namespace fs = std::filesystem;
 
 extern int VERBOSE;
@@ -1192,42 +1190,6 @@ float branch::weight() const
 			sum += compound->formula_weight();
 		return sum; });
 }
-
-// // --------------------------------------------------------------------
-// // File
-
-// void File::load(const std::filesystem::path &path)
-// {
-// 	gxrio::ifstream in(path);
-
-// 	auto ext = path.extension().string();
-// 	if (ext == ".gz" or ext = ".xz")
-// 		ext = path.stem().extension().string();
-
-// 	if (ext == ".pdb" or ext == ".ent")
-// 		ReadPDBFile(in, *this);
-// 	else
-// 		file::load(in);
-
-// 	// validate, otherwise lots of functionality won't work
-// 	loadDictionary("mmcif_pdbx");
-// 	if (not isValid() and VERBOSE >= 0)
-// 		std::cerr << "Invalid mmCIF file" << (VERBOSE > 0 ? "." : " use --verbose option to see errors") << std::endl;
-// }
-
-// void File::save(const std::filesystem::path &path)
-// {
-// 	gxrio::ostream outFile(path);
-
-// 	auto ext = path.extension().string();
-// 	if (ext == ".gz" or ext = ".xz")
-// 		ext = path.stem().extension().string();
-
-// 	if (ext == ".pdb" or ext == ".ent")
-// 		WritePDBFile(outFile, data());
-// 	else
-// 		file::save(outFile);
-// }
 
 // --------------------------------------------------------------------
 //	structure

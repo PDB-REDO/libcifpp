@@ -133,14 +133,19 @@ if(GXX_LIBSTDCPP)
 	if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will try to use boost::regex instead")
 
-		set(BOOST_REGEX_STANDALONE ON)
-
-		find_package(Boost 1.77 COMPONENTS regex QUIET)
+		find_package(Boost COMPONENTS regex QUIET)
 
 		if(Boost_FOUND)
-			set(BOOST_REGEX_INCLUDE ${Boost_INCLUDE_DIRS})
+			if(Boost_VERSION VERSION_GREATER_EQUAL 1.77)
+				set(BOOST_REGEX_STANDALONE ON)
+				set(BOOST_REGEX_INCLUDE ${Boost_INCLUDE_DIRS})
+			else()
+				list(APPEND CIFPP_REQUIRED_LIBRARIES Boost::regex)
+				set(BOOST_REGEX_SYSTEM ON)
+			endif()
 		else()
-			add_git_submodule(regex EXCLUDE_FROM_ALL)
+			add_git_submodule("https://github.com/boostorg/regex" regex EXCLUDE_FROM_ALL)
+			set(BOOST_REGEX_STANDALONE ON)
 			set(BOOST_REGEX_INCLUDE regex/include)
 		endif()
 	endif()
@@ -151,21 +156,12 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 find_package(ZLIB REQUIRED)
-find_package(LibLZMA REQUIRED)
 
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
 
 include(FindAtomic)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
-
-if(NOT PDB_REDO_META)
-	find_package(gxrio QUIET)
-
-	if(NOT gxrio_FOUND)
-		add_git_submodule(gxrio EXCLUDE_FROM_ALL)
-	endif()
-endif()
 
 # Create a revision file, containing the current git version info
 include(VersionString)
@@ -250,7 +246,9 @@ add_library(cifpp::cifpp ALIAS cifpp)
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(BOOST_REGEX_STANDALONE)
-	target_compile_definitions(cifpp PUBLIC USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
+	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
+elseif(BOOST_REGEX_SYSTEM)
+	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1)
 endif()
 
 target_include_directories(cifpp
@@ -259,14 +257,7 @@ target_include_directories(cifpp
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(cifpp PUBLIC
-	Threads::Threads
-	ZLIB::ZLIB
-	LibLZMA::LibLZMA
-	${CIFPP_REQUIRED_LIBRARIES})
-
-get_target_property(GXRIO_INCLUDE_DIR gxrio::gxrio INTERFACE_INCLUDE_DIRECTORIES)
-target_include_directories(cifpp PRIVATE ${GXRIO_INCLUDE_DIR})
+target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
 
 if(BOOST_REGEX_STANDALONE)
 	target_include_directories(cifpp PRIVATE ${BOOST_REGEX_INCLUDE})
@@ -356,8 +347,14 @@ install(FILES
 	DESTINATION ${CIFPP_DATA_DIR}
 )
 
+if(BOOST_REGEX_STANDALONE)
+	set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in)
+else()
+	set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig-boost-regex.cmake.in)
+endif()
+
 configure_package_config_file(
-	${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in
+	${CONFIG_TEMPLATE_FILE}
 	${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR SHARE_INSTALL_DIR
@@ -463,7 +460,7 @@ set(CPACK_SOURCE_TGZ ON)
 set(CPACK_SOURCE_TBZ2 OFF)
 set(CPACK_SOURCE_TXZ OFF)
 set(CPACK_SOURCE_TZ OFF)
-set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git;/test;/.pc;/tools/symop-map-generator;/regex/doc;/regex/example;/regex/meta;/regex/performance;/regex/test")
+set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git;/regex")
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
 include(CPack)

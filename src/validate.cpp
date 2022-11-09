@@ -41,12 +41,11 @@ using boost::regex;
 using std::regex;
 #endif
 
-#include <gxrio.hpp>
-
 #include <cif++/dictionary_parser.hpp>
 #include <cif++/validate.hpp>
 
 #include <cif++/utilities.hpp>
+#include <cif++/gzio.hpp>
 
 namespace cif
 {
@@ -472,7 +471,7 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 
 		if (std::filesystem::exists(p, ec) and not ec)
 		{
-			gxrio::ifstream in(p);
+			gzio::ifstream in(p);
 
 			if (not in.is_open())
 				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
