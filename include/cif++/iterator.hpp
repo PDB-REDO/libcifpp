@@ -79,7 +79,7 @@ class iterator_impl
 	}
 
 	template <typename IRowType>
-	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<size_t, N> &cix)
+	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<uint16_t, N> &cix)
 		: m_category(rhs.m_category)
 		, m_current(rhs.m_current)
 		, m_column_ix(cix)
@@ -151,7 +151,7 @@ class iterator_impl
 	}
 
   private:
-	template <std::size_t... Is>
+	template <uint16_t... Is>
 	tuple_type get(std::index_sequence<Is...>) const
 	{
 		if (m_current != nullptr)
@@ -166,7 +166,7 @@ class iterator_impl
 	category_type *m_category = nullptr;
 	row_type *m_current = nullptr;
 	value_type m_value;
-	std::array<size_t, N> m_column_ix;
+	std::array<uint16_t, N> m_column_ix;
 };
 
 template<typename Category>
@@ -204,7 +204,7 @@ class iterator_impl<Category>
 	}
 
 	template <typename IRowType>
-	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<size_t, 0> &cix)
+	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<uint16_t, 0> &)
 		: m_category(rhs.m_category)
 		, m_current(rhs.m_current)
 	{
@@ -317,7 +317,7 @@ class iterator_impl<Category, T>
 	}
 
 	template <typename IRowType>
-	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<size_t, 1> &cix)
+	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<uint16_t, 1> &cix)
 		: m_category(rhs.m_category)
 		, m_current(rhs.m_current)
 		, m_column_ix(cix[0])
@@ -403,7 +403,7 @@ class iterator_impl<Category, T>
 	category_type *m_category = nullptr;
 	row_type *m_current = nullptr;
 	value_type m_value;
-	size_t m_column_ix;
+	uint16_t m_column_ix;
 };
 
 // --------------------------------------------------------------------
@@ -455,7 +455,7 @@ class iterator_proxy
   private:
 	category_type *m_category;
 	row_iterator m_begin, m_end;
-	std::array<size_t, N> m_column_ix;
+	std::array<uint16_t, N> m_column_ix;
 };
 
 // --------------------------------------------------------------------
@@ -483,7 +483,7 @@ class conditional_iterator_proxy
 		using pointer = value_type *;
 		using reference = value_type;
 
-		conditional_iterator_impl(CategoryType &cat, row_iterator pos, const condition &cond, const std::array<size_t, N> &cix);
+		conditional_iterator_impl(CategoryType &cat, row_iterator pos, const condition &cond, const std::array<uint16_t, N> &cix);
 		conditional_iterator_impl(const conditional_iterator_impl &i) = default;
 		conditional_iterator_impl &operator=(const conditional_iterator_impl &i) = default;
 
@@ -567,7 +567,7 @@ class conditional_iterator_proxy
 	CategoryType *m_cat;
 	condition m_condition;
 	row_iterator mCBegin, mCEnd;
-	std::array<size_t, N> mCix;
+	std::array<uint16_t, N> mCix;
 };
 
 // --------------------------------------------------------------------
@@ -578,7 +578,7 @@ iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos,
 	, m_begin(pos)
 	, m_end(cat.end())
 {
-	for (size_t i = 0; i < N; ++i)
+	for (uint16_t i = 0; i < N; ++i)
 		m_column_ix[i] = m_category->get_column_ix(columns[i]);
 }
 
@@ -590,7 +590,7 @@ iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos,
 {
 	// static_assert(columns.size() == N, "The list of column names should be exactly the same as the list of requested columns");
 
-	std::size_t i = 0;
+	std::uint16_t i = 0;
 	for (auto column : columns)
 		m_column_ix[i++] = m_category->get_column_ix(column);
 }
@@ -599,7 +599,7 @@ iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos,
 
 template <typename Category, typename... Ts>
 conditional_iterator_proxy<Category, Ts...>::conditional_iterator_impl::conditional_iterator_impl(
-	Category &cat, row_iterator pos, const condition &cond, const std::array<size_t, N> &cix)
+	Category &cat, row_iterator pos, const condition &cond, const std::array<uint16_t, N> &cix)
 	: mCat(&cat)
 	, mBegin(pos, cix)
 	, mEnd(cat.end(), cix)
@@ -634,7 +634,7 @@ conditional_iterator_proxy<Category, Ts...>::conditional_iterator_proxy(Category
 	while (mCBegin != mCEnd and not m_condition(*mCBegin))
 		++mCBegin;
 
-	size_t i = 0;
+	uint16_t i = 0;
 	((mCix[i++] = m_cat->get_column_ix(names)), ...);
 }
 

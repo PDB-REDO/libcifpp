@@ -129,7 +129,7 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 		std::swap(m_gzheader, rhs.m_gzheader);
 
 		auto p = std::copy(rhs.gptr(), rhs.egptr(), m_out_buffer.begin());
-		this->setg(m_out_buffer.begin(), m_out_buffer.begin(), p);
+		this->setg(m_out_buffer.data(), m_out_buffer.data() + m_out_buffer.size(), p);
 
 		if (m_zstream and m_zstream->avail_in > 0)
 		{
@@ -137,7 +137,7 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 			std::copy(rhs.m_in_buffer.begin() + next_in_offset,
 				rhs.m_in_buffer.begin() + next_in_offset + m_zstream->avail_in,
 				m_in_buffer.begin());
-			m_zstream->next_in = m_in_buffer.begin();
+			m_zstream->next_in = m_in_buffer.data();
 		}
 	}
 
@@ -152,7 +152,7 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 		std::swap(m_gzheader, rhs.m_gzheader);
 
 		auto p = std::copy(rhs.gptr(), rhs.egptr(), m_out_buffer.begin());
-		this->setg(m_out_buffer.begin(), m_out_buffer.begin(), p);
+		this->setg(m_out_buffer.data(), m_out_buffer.data() + m_out_buffer.size(), p);
 
 		if (m_zstream and m_zstream->avail_in > 0)
 		{
@@ -160,7 +160,7 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 			std::copy(rhs.m_in_buffer.begin() + next_in_offset,
 				rhs.m_in_buffer.begin() + next_in_offset + m_zstream->avail_in,
 				m_in_buffer.begin());
-			m_zstream->next_in = reinterpret_cast<unsigned char *>(m_in_buffer.begin());
+			m_zstream->next_in = reinterpret_cast<unsigned char *>(m_in_buffer.data());
 		}
 
 		return *this;
@@ -212,7 +212,7 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 		if (err == Z_OK)
 		{
 			zstream.next_in = reinterpret_cast<unsigned char *>(m_in_buffer.data());
-			zstream.avail_in = this->m_upstream->sgetn(m_in_buffer.data(), m_in_buffer.size());
+			zstream.avail_in = static_cast<uInt>(this->m_upstream->sgetn(m_in_buffer.data(), m_in_buffer.size()));
 
 			err = ::inflateGetHeader(&zstream, &header);
 
@@ -238,12 +238,12 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 			while (this->gptr() == this->egptr())
 			{
 				zstream.next_out = reinterpret_cast<unsigned char *>(m_out_buffer.data());
-				zstream.avail_out = kBufferByteSize;
+				zstream.avail_out = static_cast<uInt>(kBufferByteSize);
 
 				if (zstream.avail_in == 0)
 				{
 					zstream.next_in = reinterpret_cast<unsigned char *>(m_in_buffer.data());
-					zstream.avail_in = this->m_upstream->sgetn(m_in_buffer.data(), m_in_buffer.size());
+					zstream.avail_in = static_cast<uInt>(this->m_upstream->sgetn(m_in_buffer.data(), m_in_buffer.size()));
 				}
 
 				int err = ::inflate(&zstream, Z_SYNC_FLUSH);
@@ -252,9 +252,9 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 				if (err == Z_STREAM_END or (err == Z_OK and n > 0))
 				{
 					this->setg(
-						m_out_buffer.begin(),
-						m_out_buffer.begin(),
-						m_out_buffer.begin() + n);
+						m_out_buffer.data(),
+						m_out_buffer.data(),
+						m_out_buffer.data() + n);
 					break;
 				}
 
@@ -319,7 +319,7 @@ class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 		std::swap(m_zstream, rhs.m_zstream);
 		std::swap(m_gzheader, rhs.m_gzheader);
 
-		this->setp(m_in_buffer.begin(), m_in_buffer.end());
+		this->setp(m_in_buffer.data(), m_in_buffer.data() + m_in_buffer.size());
 		this->sputn(rhs.pbase(), rhs.pptr() - rhs.pbase());
 		rhs.setp(nullptr, nullptr);
 	}
@@ -334,7 +334,7 @@ class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 		std::swap(m_zstream, rhs.m_zstream);
 		std::swap(m_gzheader, rhs.m_gzheader);
 
-		this->setp(m_in_buffer.begin(), m_in_buffer.end());
+		this->setp(m_in_buffer.data(), m_in_buffer.data() + m_in_buffer.size());
 		this->sputn(rhs.pbase(), rhs.pptr() - rhs.pbase());
 		rhs.setp(nullptr, nullptr);
 
@@ -393,7 +393,7 @@ class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 			err = ::deflateSetHeader(&zstream, &header);
 
 		if (err == Z_OK)
-			this->setp(this->m_in_buffer.begin(), this->m_in_buffer.end());
+			this->setp(this->m_in_buffer.data(), this->m_in_buffer.data() + this->m_in_buffer.size());
 		else
 			zstream = z_stream_s{};
 
@@ -413,7 +413,7 @@ class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 		auto &zstream = *m_zstream;
 
 		zstream.next_in = reinterpret_cast<unsigned char *>(this->pbase());
-		zstream.avail_in = this->pptr() - this->pbase();
+		zstream.avail_in = static_cast<uInt>(this->pptr() - this->pbase());
 
 		char_type buffer[BufferSize];
 
@@ -442,7 +442,7 @@ class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 			break;
 		}
 
-		this->setp(this->m_in_buffer.begin(), this->m_in_buffer.end());
+		this->setp(this->m_in_buffer.data(), this->m_in_buffer.data() + this->m_in_buffer.size());
 
 		if (not traits_type::eq_int_type(ch, traits_type::eof()))
 		{

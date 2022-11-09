@@ -29,7 +29,7 @@
 namespace cif
 {
 
-void row_handle::assign(size_t column, std::string_view value, bool updateLinked, bool validate)
+void row_handle::assign(uint16_t column, std::string_view value, bool updateLinked, bool validate)
 {
 	if (not m_category)
 		throw std::runtime_error("uninitialized row");
@@ -61,7 +61,7 @@ uint16_t row_handle::add_column(std::string_view name)
 	return m_category->add_column(name);
 }
 
-void row_handle::swap(size_t column, row_handle &b)
+void row_handle::swap(uint16_t column, row_handle &b)
 {
 	if (not m_category)
 		throw std::runtime_error("uninitialized row");
@@ -81,7 +81,7 @@ row_initializer::row_initializer(row_handle rh)
 	row *r = rh.get_row();
 	auto &cat = *rh.m_category;
 
-	for (size_t ix = 0; ix < r->size(); ++ix)
+	for (uint16_t ix = 0; ix < r->size(); ++ix)
 	{
 		auto &i = r->operator[](ix);
 		if (not i)

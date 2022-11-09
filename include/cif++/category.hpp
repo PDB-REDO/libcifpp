@@ -458,7 +458,7 @@ class category
 	{
 		using namespace std::literals;
 
-		size_t result = get_column_ix(column_name);
+		uint16_t result = get_column_ix(column_name);
 
 		if (result == m_columns.size())
 		{
@@ -507,7 +507,7 @@ class category
 	}
 
   private:
-	void update_value(row *row, size_t column, std::string_view value, bool updateLinked, bool validate = true);
+	void update_value(row *row, uint16_t column, std::string_view value, bool updateLinked, bool validate = true);
 
   private:
 	void erase_orphans(condition &&cond, category &parent);
@@ -580,7 +580,7 @@ class category
 
 	// --------------------------------------------------------------------
 
-	void swap_item(size_t column_ix, row_handle &a, row_handle &b);
+	void swap_item(uint16_t column_ix, row_handle &a, row_handle &b);
 
 	// --------------------------------------------------------------------
 	

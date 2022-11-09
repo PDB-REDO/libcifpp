@@ -40,13 +40,13 @@ namespace detail
 	{
 		static constexpr size_t N = sizeof...(C);
 
-		get_row_result(const row_handle &r, std::array<size_t, N> &&columns)
+		get_row_result(const row_handle &r, std::array<uint16_t, N> &&columns)
 			: m_row(r)
 			, m_columns(std::move(columns))
 		{
 		}
 
-		const item_handle operator[](size_t ix) const
+		const item_handle operator[](uint16_t ix) const
 		{
 			return m_row[m_columns[ix]];
 		}
@@ -57,14 +57,14 @@ namespace detail
 			return get<Ts...>(std::index_sequence_for<Ts...>{});
 		}
 
-		template <typename... Ts, std::size_t... Is>
+		template <typename... Ts, uint16_t... Is>
 		std::tuple<Ts...> get(std::index_sequence<Is...>) const
 		{
 			return std::tuple<Ts...>{ m_row[m_columns[Is]].template as<Ts>()... };
 		}
 
 		const row_handle &m_row;
-		std::array<size_t, N> m_columns;
+		std::array<uint16_t, N> m_columns;
 	};
 
 	// we want to be able to tie some variables to a get_row_result, for this we use tiewraps
@@ -108,12 +108,12 @@ class row : public std::vector<item_value>
   public:
 	row() = default;
 
-	item_value* get(size_t ix)
+	item_value* get(uint16_t ix)
 	{
 		return ix < size() ? &at(ix) : nullptr;
 	}
 
-	const item_value* get(size_t ix) const
+	const item_value* get(uint16_t ix) const
 	{
 		return ix < size() ? &at(ix) : nullptr;
 	}
@@ -125,7 +125,7 @@ class row : public std::vector<item_value>
 	template <typename, typename...>
 	friend class iterator_impl;
 
-	void append(size_t ix, item_value &&iv)
+	void append(uint16_t ix, item_value &&iv)
 	{
 		if (ix >= size())
 			resize(ix + 1);
@@ -133,7 +133,7 @@ class row : public std::vector<item_value>
 		at(ix) = std::move(iv);
 	}
 
-	void remove(size_t ix)
+	void remove(uint16_t ix)
 	{
 		if (ix < size())
 			at(ix) = item_value{};
@@ -148,7 +148,7 @@ class row : public std::vector<item_value>
 class row_handle
 {
   public:
-	friend class item_handle;
+	friend struct item_handle;
 	friend class category;
 	friend class category_index;
 	friend class row_initializer;
@@ -182,12 +182,12 @@ class row_handle
 		return not empty();
 	}
 
-	item_handle operator[](uint32_t column_ix)
+	item_handle operator[](uint16_t column_ix)
 	{
 		return empty() ? item_handle::s_null_item : item_handle(column_ix, *this);
 	}
 
-	const item_handle operator[](uint32_t column_ix) const
+	const item_handle operator[](uint16_t column_ix) const
 	{
 		return empty() ? item_handle::s_null_item : item_handle(column_ix, const_cast<row_handle &>(*this));
 	}
@@ -231,7 +231,7 @@ class row_handle
 		assign(add_column(name), value, updateLinked, validate);
 	}
 
-	void assign(size_t column, std::string_view value, bool updateLinked, bool validate = true);
+	void assign(uint16_t column, std::string_view value, bool updateLinked, bool validate = true);
 
 	bool operator==(const row_handle &rhs) const { return m_category == rhs.m_category and m_row == rhs.m_row; }
 	bool operator!=(const row_handle &rhs) const { return m_category != rhs.m_category or m_row != rhs.m_row; }
@@ -257,7 +257,7 @@ class row_handle
 		assign(i.name(), i.value(), updateLinked);
 	}
 
-	void swap(size_t column, row_handle &r);
+	void swap(uint16_t column, row_handle &r);
 
 	category *m_category = nullptr;
 	row *m_row = nullptr;

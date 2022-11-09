@@ -234,6 +234,10 @@ if(BOOST_REGEX)
 	target_include_directories(cifpp PRIVATE regex/include)
 endif()
 
+if(MSVC)
+	target_compile_definitions(cifpp PUBLIC NOMINMAX=1)
+endif()
+
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp

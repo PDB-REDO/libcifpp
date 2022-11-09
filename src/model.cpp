@@ -30,6 +30,7 @@
 #include <fstream>
 #include <iomanip>
 #include <numeric>
+#include <stack>
 
 namespace fs = std::filesystem;
 
@@ -49,12 +50,12 @@ void atom::atom_impl::moveTo(const point &p)
 	auto r = row();
 
 #if __cpp_lib_format
-	r.assign("Cartn_x", std::format("{:.3f}", p.getX()), false, false);
-	r.assign("Cartn_y", std::format("{:.3f}", p.getY()), false, false);
-	r.assign("Cartn_z", std::format("{:.3f}", p.getZ()), false, false);
+	r.assign("Cartn_x", std::format("{:.3f}", p.m_x), false, false);
+	r.assign("Cartn_y", std::format("{:.3f}", p.m_y), false, false);
+	r.assign("Cartn_z", std::format("{:.3f}", p.m_z), false, false);
 #else
-	r.assign("Cartn_x", format("%.3f", p.m_x).str(), false, false);
-	r.assign("Cartn_y", format("%.3f", p.m_y).str(), false, false);
+	r.assign("Cartn_x", cif::format"%.3f", p.m_x).str(), false, false);
+	r.assign("Cartn_y", cif::format"%.3f", p.m_y).str(), false, false);
 	r.assign("Cartn_z", format("%.3f", p.m_z).str(), false, false);
 #endif
 	m_location = p;
@@ -1410,7 +1411,7 @@ atom structure::get_atom_by_id(const std::string &id) const
 {
 	assert(m_atoms.size() == m_atom_index.size());
 
-	int L = 0, R = m_atoms.size() - 1;
+	int L = 0, R = static_cast<int>(m_atoms.size() - 1);
 	while (L <= R)
 	{
 		int i = (L + R) / 2;
@@ -1669,7 +1670,7 @@ std::string structure::insert_compound(const std::string &compoundID, bool is_en
 
 atom &structure::emplace_atom(atom &&atom)
 {
-	int L = 0, R = m_atom_index.size() - 1;
+	int L = 0, R = static_cast<int>(m_atom_index.size() - 1);
 	while (L <= R)
 	{
 		int i = (L + R) / 2;
@@ -1728,7 +1729,7 @@ void structure::remove_atom(atom &a, bool removeFromResidue)
 	bool removed = false;
 #endif
 
-	int L = 0, R = m_atom_index.size() - 1;
+	int L = 0, R = static_cast<int>(m_atom_index.size() - 1);
 	while (L <= R)
 	{
 		int i = (L + R) / 2;
@@ -1974,10 +1975,10 @@ void structure::remove_sugar(sugar &s)
 			
 			dix.insert(tix);
 
-			for (auto &s : branch)
+			for (auto &s2 : branch)
 			{
-				if (s.get_link_nr() == tix)
-					test.push(s.num());
+				if (s2.get_link_nr() == tix)
+					test.push(s2.num());
 			}
 
 			for (auto atom : branch[tix - 1].atoms())
@@ -2101,7 +2102,7 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 	}
 
 	auto &pdbx_nonpoly_scheme = m_db["pdbx_nonpoly_scheme"];
-	int ndb_nr = pdbx_nonpoly_scheme.find("asym_id"_key == asym_id and "entity_id"_key == entity_id).size() + 1;
+	size_t ndb_nr = pdbx_nonpoly_scheme.find("asym_id"_key == asym_id and "entity_id"_key == entity_id).size() + 1;
 	pdbx_nonpoly_scheme.emplace({
 		{"asym_id", asym_id},
 		{"entity_id", entity_id},
@@ -2163,7 +2164,7 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 	}
 
 	auto &pdbx_nonpoly_scheme = m_db["pdbx_nonpoly_scheme"];
-	int ndb_nr = pdbx_nonpoly_scheme.find("asym_id"_key == asym_id and "entity_id"_key == entity_id).size() + 1;
+	size_t ndb_nr = pdbx_nonpoly_scheme.find("asym_id"_key == asym_id and "entity_id"_key == entity_id).size() + 1;
 	pdbx_nonpoly_scheme.emplace({
 		{"asym_id", asym_id},
 		{"entity_id", entity_id},
@@ -2296,7 +2297,7 @@ branch &structure::extend_branch(const std::string &asym_id, std::vector<row_ini
 
 	branch &branch = *bi;
 
-	int sugarNum = branch.size() + 1;
+	int sugarNum = static_cast<int>(branch.size() + 1);
 
 	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum);
 
@@ -2331,31 +2332,31 @@ branch &structure::extend_branch(const std::string &asym_id, std::vector<row_ini
 	auto r = struct_asym.find1("id"_key == asym_id);
 	r["entity_id"] = entity_id;
 
-	for (auto &sugar : branch)
+	for (auto &s2 : branch)
 	{
-		for (auto atom : sugar.atoms())
+		for (auto atom : s2.atoms())
 			atom.set_property("label_entity_id", entity_id);
 	}
 
 	auto &pdbx_branch_scheme = m_db["pdbx_branch_scheme"];
 	pdbx_branch_scheme.erase("asym_id"_key == asym_id);
 
-	for (auto &sugar : branch)
+	for (auto &s2 : branch)
 	{
 		pdbx_branch_scheme.emplace({
 			{"asym_id", asym_id},
 			{"entity_id", entity_id},
-			{"num", sugar.num()},
-			{"mon_id", sugar.get_compound_id()},
+			{"num", s2.num()},
+			{"mon_id", s2.get_compound_id()},
 
 			{"pdb_asym_id", asym_id},
-			{"pdb_seq_num", sugar.num()},
-			{"pdb_mon_id", sugar.get_compound_id()},
+			{"pdb_seq_num", s2.num()},
+			{"pdb_mon_id", s2.get_compound_id()},
 
 			// TODO: need fix, collect from nag_atoms?
 			{"auth_asym_id", asym_id},
-			{"auth_mon_id", sugar.get_compound_id()},
-			{"auth_seq_num", sugar.get_auth_seq_id()},
+			{"auth_mon_id", s2.get_compound_id()},
+			{"auth_seq_num", s2.get_auth_seq_id()},
 
 			{"hetero", "n"}
 		});

@@ -53,21 +53,6 @@ namespace detail
 		T m_value;
 	};
 
-	// template <>
-	// struct to_varg<char>
-	// {
-	// 	using type = const char *;
-
-	// 	to_varg(const char &v)
-	// 		: m_value({ v })
-	// 	{
-	// 	}
-
-	// 	type operator*() { return m_value.c_str(); }
-
-	// 	std::string m_value;
-	// };
-
 	template <>
 	struct to_varg<const char *>
 	{

@@ -28,13 +28,76 @@
 
 #include <charconv>
 #include <cmath>
+#include <limits>
 #include <set>
 #include <sstream>
 #include <tuple>
 #include <vector>
 
+
 #if __has_include(<experimental/type_traits>)
 #include <experimental/type_traits>
+#else
+#include <type_traits>
+#endif
+
+#if (not defined(__cpp_lib_experimental_detect) or (__cpp_lib_experimental_detect < 201505)) and (not defined(_LIBCPP_VERSION) or _LIBCPP_VERSION < 5000)
+// This code is copied from:
+// https://ld2015.scusa.lsu.edu/cppreference/en/cpp/experimental/is_detected.html
+
+namespace std
+{
+	template< class... >
+	using void_t = void;
+
+	namespace experimental
+	{
+		namespace detail
+		{
+			template <class Default, class AlwaysVoid,
+					template<class...> class Op, class... Args>
+			struct detector
+			{
+				using value_t = false_type;
+				using type = Default;
+			};
+			
+			template <class Default, template<class...> class Op, class... Args>
+			struct detector<Default, void_t<Op<Args...>>, Op, Args...> {
+				// Note that std::void_t is a c++17 feature
+				using value_t = true_type;
+				using type = Op<Args...>;
+			};
+		} // namespace detail
+
+		struct nonesuch
+		{
+			nonesuch() = delete;
+			~nonesuch() = delete;
+			nonesuch(nonesuch const&) = delete;
+			void operator=(nonesuch const&) = delete;
+		};
+
+		template <template<class...> class Op, class... Args>
+		using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
+
+		template <template<class...> class Op, class... Args>
+		constexpr inline bool is_detected_v = is_detected<Op,Args...>::value;
+
+		template <template<class...> class Op, class... Args>
+		using detected_t = typename detail::detector<nonesuch, void, Op, Args...>::type;
+
+		template <class Default, template<class...> class Op, class... Args>
+		using detected_or = detail::detector<Default, void, Op, Args...>;
+
+		template <class Expected, template <class...> class Op, class... Args>
+		using is_detected_exact = std::is_same<Expected, detected_t<Op, Args...>>;
+
+		template <class Expected, template<class...> class Op, class... Args>
+		constexpr inline bool is_detected_exact_v = is_detected_exact<Expected, Op, Args...>::value;
+	}
+}
+
 #endif
 
 namespace cif
@@ -95,10 +158,10 @@ std::vector<StringType> split(std::string_view s, std::string_view separators, b
 {
 	std::vector<StringType> result;
 
-	auto b = s.begin();
+	auto b = s.data();
 	auto e = b;
 
-	while (e != s.end())
+	while (e != s.data() + s.length())
 	{
 		if (separators.find(*e) != std::string_view::npos)
 		{
@@ -346,8 +409,8 @@ enum class chars_format
 template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
 std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_format fmt)
 {
-	int size = last - first;
-	int r;
+	size_t size = last - first;
+	size_t r = 0;
 
 	switch (fmt)
 	{
