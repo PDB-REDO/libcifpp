@@ -25,6 +25,7 @@
  */
 
 #include <numeric>
+#include <stack>
 
 #include <cif++/category.hpp>
 #include <cif++/datablock.hpp>
@@ -52,7 +53,7 @@ class row_comparator
 
 		for (auto k : cv->m_keys)
 		{
-			size_t ix = cat.add_column(k);
+			uint16_t ix = cat.add_column(k);
 
 			auto iv = cv->get_validator_for_item(k);
 			if (iv == nullptr)
@@ -79,7 +80,7 @@ class row_comparator
 		int d = 0;
 		for (auto &c : m_comparator)
 		{
-			size_t k;
+			uint16_t k;
 			compareFunc f;
 
 			std::tie(k, f) = c;
@@ -105,7 +106,7 @@ class row_comparator
 		int d = 0, i = 0;
 		for (auto &c : m_comparator)
 		{
-			size_t k;
+			uint16_t k;
 			compareFunc f;
 
 			std::tie(k, f) = c;
@@ -124,7 +125,7 @@ class row_comparator
 
   private:
 	typedef std::function<int(std::string_view, std::string_view)> compareFunc;
-	typedef std::tuple<size_t, compareFunc> key_comparator;
+	typedef std::tuple<uint16_t, compareFunc> key_comparator;
 
 	std::vector<key_comparator> m_comparator;
 	category &m_category;
@@ -878,7 +879,7 @@ bool category::is_valid() const
 
 	for (auto ri = m_head; ri != nullptr; ri = ri->m_next)
 	{
-		for (size_t cix = 0; cix < m_columns.size(); ++cix)
+		for (uint16_t cix = 0; cix < m_columns.size(); ++cix)
 		{
 			bool seen = false;
 			auto iv = m_columns[cix].m_validator;
@@ -1297,7 +1298,7 @@ std::string category::get_unique_id(std::function<std::string(int)> generator)
 
 	// calling size() often is a waste of resources
 	if (m_last_unique_num == 0)
-		m_last_unique_num = size();
+		m_last_unique_num = static_cast<uint32_t>(size());
 
 	for (;;)
 	{
@@ -1439,7 +1440,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 	}
 }
 
-void category::update_value(row *row, size_t column, std::string_view value, bool updateLinked, bool validate)
+void category::update_value(row *row, uint16_t column, std::string_view value, bool updateLinked, bool validate)
 {
 	// make sure we have an index, if possible
 	if (m_index == nullptr and m_cat_validator != nullptr)
@@ -1573,7 +1574,7 @@ row *category::clone_row(const row &r)
 
 	try
 	{
-		for (size_t ix = 0; ix < r.size(); ++ix)
+		for (uint16_t ix = 0; ix < r.size(); ++ix)
 		{
 			auto &i = r[ix];
 			if (not i)
@@ -1606,7 +1607,7 @@ row_handle category::create_copy(row_handle r)
 	// copy the values
 	std::vector<item> items;
 
-	for (size_t ix = 0; ix < r.m_row->size(); ++ix)
+	for (uint16_t ix = 0; ix < r.m_row->size(); ++ix)
 	{
 		auto i = r.m_row->get(ix);
 		if (i != nullptr)
@@ -1712,7 +1713,7 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 // #endif
 }
 
-void category::swap_item(size_t column_ix, row_handle &a, row_handle &b)
+void category::swap_item(uint16_t column_ix, row_handle &a, row_handle &b)
 {
 	assert(this == a.m_category);
 	assert(this == b.m_category);
@@ -1851,7 +1852,7 @@ std::vector<std::string> category::get_tag_order() const
 void category::write(std::ostream &os) const
 {
 	std::vector<uint16_t> order(m_columns.size());
-	iota(order.begin(), order.end(), 0);
+	iota(order.begin(), order.end(), static_cast<uint16_t>(0));
 	write(os, order, false);
 }
 
@@ -1869,7 +1870,7 @@ void category::write(std::ostream &os, const std::vector<std::string> &columns, 
 
 	if (addMissingColumns)
 	{
-		for (size_t i = 0; i < m_columns.size(); ++i)
+		for (uint16_t i = 0; i < m_columns.size(); ++i)
 		{
 			if (std::find(order.begin(), order.end(), i) == order.end())
 				order.push_back(i);
@@ -1905,7 +1906,7 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 		for (auto r = m_head; r != nullptr; r = r->m_next)
 		{
-			for (size_t ix = 0; ix < r->size(); ++ix)
+			for (uint16_t ix = 0; ix < r->size(); ++ix)
 			{
 				auto v = r->get(ix);
 				if (v == nullptr)
@@ -1931,7 +1932,7 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 		{
 			size_t offset = 0;
 
-			for (size_t cix : order)
+			for (uint16_t cix : order)
 			{
 				size_t w = columnWidths[cix];
 
@@ -1983,7 +1984,7 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 		l += 3;
 
-		for (size_t cix : order)
+		for (uint16_t cix : order)
 		{
 			auto &col = m_columns[cix];
 

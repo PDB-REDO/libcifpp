@@ -115,9 +115,9 @@ namespace detail
 			empty = dynamic_cast<key_is_empty_condition_impl*>(mA);			
 		}
 
-		if (equals != nullptr and empty != nullptr)
+		if (equals != nullptr and empty != nullptr and equals->m_item_tag == empty->m_item_tag)
 		{
-			result = new detail::key_equals_or_empty_condition_impl(equals, empty);
+			result = new detail::key_equals_or_empty_condition_impl(equals);
 			result = result->prepare(c);
 			delete this;
 		}

@@ -34,12 +34,6 @@ namespace cif
 
 using namespace literals;
 
-inline void replace_all(std::string &s, std::string_view pat, std::string_view rep)
-{
-	for (std::string::size_type i = s.find(pat); i != std::string::npos; i = s.find(pat, i))
-		s.replace(i, pat.size(), rep.data(), rep.size());
-}
-
 class dictionary_parser : public parser
 {
   public:

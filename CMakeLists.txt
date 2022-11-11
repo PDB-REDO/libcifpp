@@ -141,6 +141,27 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
+if(MSVC)
+	# Avoid linking the shared library of zlib
+	# Search ZLIB_ROOT first if it is set.
+	if(ZLIB_ROOT)
+		set(_ZLIB_SEARCH_ROOT PATHS ${ZLIB_ROOT} NO_DEFAULT_PATH)
+		list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_ROOT)
+	endif()
+
+	# Normal search.
+	set(_ZLIB_x86 "(x86)")
+	set(_ZLIB_SEARCH_NORMAL
+		PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\GnuWin32\\Zlib;InstallPath]"
+			"$ENV{ProgramFiles}/zlib"
+			"$ENV{ProgramFiles${_ZLIB_x86}}/zlib")
+	unset(_ZLIB_x86)
+	list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
+
+	foreach(search ${_ZLIB_SEARCHES})
+    	find_library(ZLIB_LIBRARY NAMES zlibstatic NAMES_PER_DIR ${${search}} PATH_SUFFIXES lib)
+	endforeach()
+endif()
 find_package(ZLIB REQUIRED)
 
 include(FindFilesystem)
@@ -232,6 +253,10 @@ add_library(cifpp::cifpp ALIAS cifpp)
 if(BOOST_REGEX)
 	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
 	target_include_directories(cifpp PRIVATE regex/include)
+endif()
+
+if(MSVC)
+	target_compile_definitions(cifpp PUBLIC NOMINMAX=1)
 endif()
 
 set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)

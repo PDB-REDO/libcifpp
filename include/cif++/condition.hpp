@@ -53,15 +53,15 @@ namespace detail
 	{
 		virtual ~condition_impl() {}
 
-		virtual condition_impl *prepare(const category &c) { return this; }
-		virtual bool test(row_handle r) const = 0;
-		virtual void str(std::ostream &os) const = 0;
+		virtual condition_impl *prepare(const category &) { return this; }
+		virtual bool test(row_handle) const = 0;
+		virtual void str(std::ostream &) const = 0;
 		virtual std::optional<row_handle> single() const { return {}; };
 	};
 
 	struct all_condition_impl : public condition_impl
 	{
-		bool test(row_handle r) const override { return true; }
+		bool test(row_handle) const override { return true; }
 		void str(std::ostream &os) const override { os << "*"; }
 	};
 
@@ -178,7 +178,7 @@ namespace detail
 		}
 
 		std::string m_item_tag;
-		size_t m_item_ix = 0;
+		uint16_t m_item_ix = 0;
 	};
 
 	struct key_equals_condition_impl : public condition_impl
@@ -209,7 +209,7 @@ namespace detail
 		}
 
 		std::string m_item_tag;
-		size_t m_item_ix = 0;
+		uint16_t m_item_ix = 0;
 		bool m_icase = false;
 		std::string m_value;
 		std::optional<row_handle> m_single_hit;
@@ -217,13 +217,12 @@ namespace detail
 
 	struct key_equals_or_empty_condition_impl : public condition_impl
 	{
-		key_equals_or_empty_condition_impl(key_equals_condition_impl *equals, key_is_empty_condition_impl *empty)
+		key_equals_or_empty_condition_impl(key_equals_condition_impl *equals)
 			: m_item_tag(equals->m_item_tag)
 			, m_value(equals->m_value)
 			, m_icase(equals->m_icase)
 			, m_single_hit(equals->m_single_hit)
 		{
-			assert(empty->m_item_ix == equals->m_item_ix);
 		}
 
 		condition_impl *prepare(const category &c) override
@@ -254,7 +253,7 @@ namespace detail
 		}
 
 		std::string m_item_tag;
-		size_t m_item_ix = 0;
+		uint16_t m_item_ix = 0;
 		std::string m_value;
 		bool m_icase = false;
 		std::optional<row_handle> m_single_hit;
@@ -288,7 +287,7 @@ namespace detail
 		}
 
 		std::string m_item_tag;
-		size_t m_item_ix = 0;
+		uint16_t m_item_ix = 0;
 		bool m_icase = false;
 		std::function<bool(row_handle, bool)> m_compare;
 		std::string m_str;
@@ -321,7 +320,7 @@ namespace detail
 		}
 
 		std::string m_item_tag;
-		size_t m_item_ix;
+		uint16_t m_item_ix;
 		std::regex mRx;
 	};
 

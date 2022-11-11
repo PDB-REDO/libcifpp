@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(cc_1)
 	for (const auto &[txt, val, ch] : tests)
 	{
 		float tv;
-		const auto &[ptr, ec] = cif::from_chars(txt.begin(), txt.end(), tv);
+		const auto &[ptr, ec] = cif::from_chars(txt.data(), txt.data() + txt.length(), tv);
 
 		BOOST_CHECK(ec == std::errc());
 		BOOST_CHECK_EQUAL(tv, val);

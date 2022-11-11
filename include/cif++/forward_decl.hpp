@@ -41,6 +41,6 @@ class row;
 class row_handle;
 
 class item;
-class item_handle;
+struct item_handle;
 
 } // namespace cif

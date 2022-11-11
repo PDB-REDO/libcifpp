@@ -25,6 +25,7 @@
  */
 
 #include <cmath>
+#include <deque>
 #include <iomanip>
 #include <map>
 #include <regex>
@@ -58,9 +59,9 @@ std::string cif2pdbDate(const std::string &d)
 		int month = std::stoi(m[2].str());
 
 		if (m[3].matched)
-			result = format("%02.2d-%3.3s-%02.2d", stoi(m[3].str()), kMonths[month - 1], (year % 100)).str();
+			result = cif::format("%02.2d-%3.3s-%02.2d", stoi(m[3].str()), kMonths[month - 1], (year % 100)).str();
 		else
-			result = format("%3.3s-%02.2d", kMonths[month - 1], (year % 100)).str();
+			result = cif::format("%3.3s-%02.2d", kMonths[month - 1], (year % 100)).str();
 	}
 
 	return result;
@@ -259,7 +260,7 @@ size_t WriteCitation(std::ostream &pdbFile, const datablock &db, row_handle r, i
 		to_upper(pubname);
 
 		const std::string kRefHeader = s1 + "REF %2.2s %-28.28s  %2.2s%4.4s %5.5s %4.4s";
-		pdbFile << format(kRefHeader, "" /* continuation */, pubname, (volume.empty() ? "" : "V."), volume, pageFirst, year)
+		pdbFile << cif::format(kRefHeader, "" /* continuation */, pubname, (volume.empty() ? "" : "V."), volume, pageFirst, year)
 				<< std::endl;
 		++result;
 	}
@@ -267,7 +268,7 @@ size_t WriteCitation(std::ostream &pdbFile, const datablock &db, row_handle r, i
 	if (not issn.empty())
 	{
 		const std::string kRefHeader = s1 + "REFN                   ISSN %-25.25s";
-		pdbFile << format(kRefHeader, issn) << std::endl;
+		pdbFile << cif::format(kRefHeader, issn) << std::endl;
 		++result;
 	}
 
@@ -278,7 +279,7 @@ size_t WriteCitation(std::ostream &pdbFile, const datablock &db, row_handle r, i
 	// const char kRefHeader[] =
 	//          "REMARK   1  REFN    %4.4s %-6.6s  %2.2s %-25.25s";
 	//
-	//			pdbFile << (boost::format(kRefHeader)
+	//			pdbFile << (boost::cif::format(kRefHeader)
 	//						% (astm.empty() ? "" : "ASTN")
 	//						% astm
 	//						% country
@@ -289,14 +290,14 @@ size_t WriteCitation(std::ostream &pdbFile, const datablock &db, row_handle r, i
 	if (not pmid.empty())
 	{
 		const std::string kPMID = s1 + "PMID   %-60.60s ";
-		pdbFile << format(kPMID, pmid) << std::endl;
+		pdbFile << cif::format(kPMID, pmid) << std::endl;
 		++result;
 	}
 
 	if (not doi.empty())
 	{
 		const std::string kDOI = s1 + "DOI    %-60.60s ";
-		pdbFile << format(kDOI, doi) << std::endl;
+		pdbFile << cif::format(kDOI, doi) << std::endl;
 		++result;
 	}
 
@@ -345,7 +346,7 @@ void write_header_lines(std::ostream &pdbFile, const datablock &db)
 		}
 	}
 
-	pdbFile << format(kHeader, keywords, date, db.name()) << std::endl;
+	pdbFile << cif::format(kHeader, keywords, date, db.name()) << std::endl;
 
 	// TODO: implement
 	// OBSLTE (skip for now)
@@ -559,9 +560,9 @@ void WriteTitle(std::ostream &pdbFile, const datablock &db)
 		{
 			std::string cs = ++continuation > 1 ? std::to_string(continuation) : std::string();
 
-			pdbFile << format(kRevDatFmt, revNum, cs, date, db.name(), modType);
+			pdbFile << cif::format(kRevDatFmt, revNum, cs, date, db.name(), modType);
 			for (size_t i = 0; i < 4; ++i)
-				pdbFile << format(" %-6.6s", (i < types.size() ? types[i] : std::string()));
+				pdbFile << cif::format(" %-6.6s", (i < types.size() ? types[i] : std::string()));
 			pdbFile << std::endl;
 
 			if (types.size() > 4)
@@ -614,7 +615,7 @@ void WriteRemark2(std::ostream &pdbFile, const datablock &db)
 		{
 			float resHigh = refine.front()["ls_d_res_high"].as<float>();
 			pdbFile << "REMARK   2" << std::endl
-					<< format("REMARK   2 RESOLUTION. %7.2f ANGSTROMS.", resHigh) << std::endl;
+					<< cif::format("REMARK   2 RESOLUTION. %7.2f ANGSTROMS.", resHigh) << std::endl;
 		}
 		catch (...)
 		{ /* skip it */
@@ -1591,7 +1592,7 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 
 		percent_reflns_obs /= 100;
 
-		pdbFile << RM3("  ") << format("%3d %7.4f - %7.4f    %4.2f %8d %5d  %6.4f %6.4f", bin++, d_res_low, d_res_high, percent_reflns_obs, number_reflns_R_work, number_reflns_R_free, R_factor_R_work, R_factor_R_free) << std::endl;
+		pdbFile << RM3("  ") << cif::format("%3d %7.4f - %7.4f    %4.2f %8d %5d  %6.4f %6.4f", bin++, d_res_low, d_res_high, percent_reflns_obs, number_reflns_R_work, number_reflns_R_free, R_factor_R_work, R_factor_R_free) << std::endl;
 	}
 
 	pdbFile << RM3("") << std::endl
@@ -2559,7 +2560,7 @@ void WriteRemark465(std::ostream &pdbFile, const datablock &db)
 		cif::tie(modelNr, resName, chainID, iCode, seqNr) =
 			r.get("PDB_model_num", "auth_comp_id", "auth_asym_id", "PDB_ins_code", "auth_seq_id");
 
-		pdbFile << format("REMARK 465 %3.3s %3.3s %1.1s %5d%1.1s", modelNr, resName, chainID, seqNr, iCode) << std::endl;
+		pdbFile << cif::format("REMARK 465 %3.3s %3.3s %1.1s %5d%1.1s", modelNr, resName, chainID, seqNr, iCode) << std::endl;
 	}
 }
 
@@ -2606,7 +2607,7 @@ void WriteRemark470(std::ostream &pdbFile, const datablock &db)
 
 			while (not a.second.empty())
 			{
-				pdbFile << format("REMARK 470 %3.3s %3.3s %1.1s%4d%1.1s  ", modelNr, resName, chainID, seqNr, iCode) << "  ";
+				pdbFile << cif::format("REMARK 470 %3.3s %3.3s %1.1s%4d%1.1s  ", modelNr, resName, chainID, seqNr, iCode) << "  ";
 
 				for (size_t i = 0; i < 6 and not a.second.empty(); ++i)
 				{
@@ -2703,16 +2704,16 @@ int WritePrimaryStructure(std::ostream &pdbFile, const datablock &db)
 				"pdbx_seq_align_end_ins_code", "pdbx_db_accession", "db_align_beg", "pdbx_db_align_beg_ins_code", "db_align_end", "pdbx_db_align_end_ins_code");
 
 			if (dbAccession.length() > 8 or db_code.length() > 12 or atoi(dbseqEnd.c_str()) >= 100000)
-				pdbFile << format(
+				pdbFile << cif::format(
 							   "DBREF1 %4.4s %1.1s %4.4s%1.1s %4.4s%1.1s %-6.6s               %-20.20s",
 							   idCode, chainID, seqBegin, insertBegin, seqEnd, insertEnd, db_name, db_code)
 						<< std::endl
-						<< format(
+						<< cif::format(
 							   "DBREF2 %4.4s %1.1s     %-22.22s     %10.10s  %10.10s",
 							   idCode, chainID, dbAccession, dbseqBegin, dbseqEnd)
 						<< std::endl;
 			else
-				pdbFile << format(
+				pdbFile << cif::format(
 							   "DBREF  %4.4s %1.1s %4.4s%1.1s %4.4s%1.1s %-6.6s %-8.8s %-12.12s %5.5s%1.1s %5.5s%1.1s",
 							   idCode, chainID, seqBegin, insertBegin, seqEnd, insertEnd, db_name, dbAccession, db_code, dbseqBegin, dbinsBeg, dbseqEnd, dbinsEnd)
 						<< std::endl;
@@ -2731,7 +2732,7 @@ int WritePrimaryStructure(std::ostream &pdbFile, const datablock &db)
 
 		to_upper(conflict);
 
-		pdbFile << format(
+		pdbFile << cif::format(
 					   "SEQADV %4.4s %3.3s %1.1s %4.4s%1.1s %-4.4s %-9.9s %3.3s %5.5s %-21.21s",
 					   idCode, resName, chainID, seqNum, iCode, database, dbAccession, dbRes, dbSeq, conflict)
 					   .str()
@@ -2761,7 +2762,7 @@ int WritePrimaryStructure(std::ostream &pdbFile, const datablock &db)
 			if (t > 13)
 				t = 13;
 
-			pdbFile << format(
+			pdbFile << cif::format(
 						   "SEQRES %3d %1.1s %4d  %-51.51s          ",
 						   n++, std::string{ chainID }, seqresl[chainID], join(seq.begin(), seq.begin() + t, " "))
 					<< std::endl;
@@ -2781,7 +2782,7 @@ int WritePrimaryStructure(std::ostream &pdbFile, const datablock &db)
 		cif::tie(chainID, seqNum, resName, iCode, stdRes, comment) =
 			r.get("auth_asym_id", "auth_seq_id", "auth_comp_id", "PDB_ins_code", "parent_comp_id", "details");
 
-		pdbFile << format(
+		pdbFile << cif::format(
 					   "MODRES %4.4s %3.3s %1.1s %4.4s%1.1s %3.3s  %-41.41s",
 					   db.name(), resName, chainID, seqNum, iCode, stdRes, comment)
 					   .str()
@@ -2899,7 +2900,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 	{
 		if (h.water)
 			continue;
-		pdbFile << format("HET    %3.3s  %c%4d%c  %5d", h.hetID, h.chainID, h.seqNum, h.iCode, h.numHetAtoms) << std::endl;
+		pdbFile << cif::format("HET    %3.3s  %c%4d%c  %5d", h.hetID, h.chainID, h.seqNum, h.iCode, h.numHetAtoms) << std::endl;
 		++numHet;
 	}
 
@@ -2914,7 +2915,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 
 		for (;;)
 		{
-			pdbFile << format("HETNAM  %2.2s %3.3s ", (c > 1 ? std::to_string(c) : std::string()), id);
+			pdbFile << cif::format("HETNAM  %2.2s %3.3s ", (c > 1 ? std::to_string(c) : std::string()), id);
 			++c;
 
 			if (name.length() > 55)
@@ -3006,7 +3007,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 			{
 				std::stringstream fs;
 
-				fs << format("FORMUL  %2d  %3.3s %2.2s%c", componentNr, hetID, (c > 1 ? std::to_string(c) : std::string()), (hetID == water_comp_id ? '*' : ' '));
+				fs << cif::format("FORMUL  %2d  %3.3s %2.2s%c", componentNr, hetID, (c > 1 ? std::to_string(c) : std::string()), (hetID == water_comp_id ? '*' : ' '));
 				++c;
 
 				if (formula.length() > 51)
@@ -3073,7 +3074,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 				"pdbx_PDB_helix_class", "pdbx_PDB_helix_length", "beg_auth_seq_id", "end_auth_seq_id");
 
 		++numHelix;
-		pdbFile << format("HELIX  %3d %3.3s %3.3s %1.1s %4d%1.1s %3.3s %1.1s %4d%1.1s%2d%-30.30s %5d",
+		pdbFile << cif::format("HELIX  %3d %3.3s %3.3s %1.1s %4d%1.1s %3.3s %1.1s %4d%1.1s%2d%-30.30s %5d",
 					   numHelix, pdbx_PDB_helix_id, beg_label_comp_id, beg_auth_asym_id, beg_auth_seq_id, pdbx_beg_PDB_ins_code, end_label_comp_id, end_auth_asym_id, end_auth_seq_id, pdbx_end_PDB_ins_code, pdbx_PDB_helix_class, details, pdbx_PDB_helix_length)
 				<< std::endl;
 	}
@@ -3110,7 +3111,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 					"pdbx_end_PDB_ins_code", "beg_auth_comp_id", "beg_auth_asym_id", "beg_auth_seq_id",
 					"end_auth_comp_id", "end_auth_asym_id", "end_auth_seq_id");
 
-				pdbFile << format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d", rangeID1, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, 0) << std::endl;
+				pdbFile << cif::format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d", rangeID1, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, 0) << std::endl;
 
 				first = false;
 			}
@@ -3129,7 +3130,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 
 			if (h.empty())
 			{
-				pdbFile << format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d", rangeID2, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, sense) << std::endl;
+				pdbFile << cif::format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d", rangeID2, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, sense) << std::endl;
 			}
 			else
 			{
@@ -3142,7 +3143,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 				curAtom = cif2pdbAtomName(curAtom, compID[0], db);
 				prevAtom = cif2pdbAtomName(prevAtom, compID[1], db);
 
-				pdbFile << format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d "
+				pdbFile << cif::format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d "
 										"%-4.4s%3.3s %1.1s%4d%1.1s %-4.4s%3.3s %1.1s%4d%1.1s",
 							   rangeID2, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, sense, curAtom, curResName, curChainID, curResSeq, curICode, prevAtom, prevResName, prevChainID, prevResSeq, prevICode)
 						<< std::endl;
@@ -3181,7 +3182,7 @@ void WriteConnectivity(std::ostream &pdbFile, const datablock &db)
 		sym1 = cif2pdbSymmetry(sym1);
 		sym2 = cif2pdbSymmetry(sym2);
 
-		pdbFile << format("SSBOND %3d CYS %1.1s %4d%1.1s   CYS %1.1s %4d%1.1s                       %6.6s %6.6s %5.2f", nr, chainID1, seqNum1, icode1, chainID2, seqNum2, icode2, sym1, sym2, Length) << std::endl;
+		pdbFile << cif::format("SSBOND %3d CYS %1.1s %4d%1.1s   CYS %1.1s %4d%1.1s                       %6.6s %6.6s %5.2f", nr, chainID1, seqNum1, icode1, chainID2, seqNum2, icode2, sym1, sym2, Length) << std::endl;
 
 		++nr;
 	}
@@ -3208,10 +3209,10 @@ void WriteConnectivity(std::ostream &pdbFile, const datablock &db)
 		sym1 = cif2pdbSymmetry(sym1);
 		sym2 = cif2pdbSymmetry(sym2);
 
-		pdbFile << format("LINK        %-4.4s%1.1s%3.3s %1.1s%4d%1.1s               %-4.4s%1.1s%3.3s %1.1s%4d%1.1s  %6.6s %6.6s", name1, altLoc1, resName1, chainID1, resSeq1, iCode1, name2, altLoc2, resName2, chainID2, resSeq2, iCode2, sym1, sym2);
+		pdbFile << cif::format("LINK        %-4.4s%1.1s%3.3s %1.1s%4d%1.1s               %-4.4s%1.1s%3.3s %1.1s%4d%1.1s  %6.6s %6.6s", name1, altLoc1, resName1, chainID1, resSeq1, iCode1, name2, altLoc2, resName2, chainID2, resSeq2, iCode2, sym1, sym2);
 
 		if (not Length.empty())
-			pdbFile << format(" %5.2f", stod(Length));
+			pdbFile << cif::format(" %5.2f", stod(Length));
 
 		pdbFile << std::endl;
 	}
@@ -3229,7 +3230,7 @@ void WriteConnectivity(std::ostream &pdbFile, const datablock &db)
 				"pdbx_label_comp_id_2", "pdbx_auth_asym_id_2", "pdbx_auth_seq_id_2", "pdbx_PDB_ins_code_2",
 				"pdbx_PDB_model_num", "pdbx_omega_angle");
 
-		pdbFile << format("CISPEP %3.3s %3.3s %1.1s %4d%1.1s   %3.3s %1.1s %4d%1.1s       %3.3s       %6.2f",
+		pdbFile << cif::format("CISPEP %3.3s %3.3s %1.1s %4d%1.1s   %3.3s %1.1s %4d%1.1s       %3.3s       %6.2f",
 			serNum, pep1, chainID1, seqNum1, icode1, pep2, chainID2, seqNum2, icode2, modNum, measure) << std::endl;
 	}
 }
@@ -3250,7 +3251,7 @@ int WriteMiscellaneousFeatures(std::ostream &pdbFile, const datablock &db)
 		cif::tie(siteID, resName, chainID, seq, iCode) =
 			r.get("site_id", "auth_comp_id", "auth_asym_id", "auth_seq_id", "pdbx_auth_ins_code");
 
-		sites[siteID].push_back(format("%3.3s %1.1s%4d%1.1s ", resName, chainID, seq, iCode).str());
+		sites[siteID].push_back(cif::format("%3.3s %1.1s%4d%1.1s ", resName, chainID, seq, iCode).str());
 	}
 
 	for (auto s : sites)
@@ -3263,7 +3264,7 @@ int WriteMiscellaneousFeatures(std::ostream &pdbFile, const datablock &db)
 		int nr = 1;
 		while (res.empty() == false)
 		{
-			pdbFile << format("SITE   %3d %3.3s %2d ", nr, siteID, numRes);
+			pdbFile << cif::format("SITE   %3d %3.3s %2d ", nr, siteID, numRes);
 
 			for (int i = 0; i < 4; ++i)
 			{
@@ -3292,7 +3293,7 @@ void WriteCrystallographic(std::ostream &pdbFile, const datablock &db)
 
 	r = db["cell"].find1(key("entry_id") == db.name());
 
-	pdbFile << format("CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11.11s%4d", r["length_a"].as<double>(), r["length_b"].as<double>(), r["length_c"].as<double>(), r["angle_alpha"].as<double>(), r["angle_beta"].as<double>(), r["angle_gamma"].as<double>(), symmetry, r["Z_PDB"].as<int>()) << std::endl;
+	pdbFile << cif::format("CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11.11s%4d", r["length_a"].as<double>(), r["length_b"].as<double>(), r["length_c"].as<double>(), r["angle_alpha"].as<double>(), r["angle_beta"].as<double>(), r["angle_gamma"].as<double>(), symmetry, r["Z_PDB"].as<int>()) << std::endl;
 }
 
 int WriteCoordinateTransformation(std::ostream &pdbFile, const datablock &db)
@@ -3301,18 +3302,18 @@ int WriteCoordinateTransformation(std::ostream &pdbFile, const datablock &db)
 
 	for (auto r : db["database_PDB_matrix"])
 	{
-		pdbFile << format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 1, r["origx[1][1]"].as<float>(), r["origx[1][2]"].as<float>(), r["origx[1][3]"].as<float>(), r["origx_vector[1]"].as<float>()) << std::endl;
-		pdbFile << format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 2, r["origx[2][1]"].as<float>(), r["origx[2][2]"].as<float>(), r["origx[2][3]"].as<float>(), r["origx_vector[2]"].as<float>()) << std::endl;
-		pdbFile << format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 3, r["origx[3][1]"].as<float>(), r["origx[3][2]"].as<float>(), r["origx[3][3]"].as<float>(), r["origx_vector[3]"].as<float>()) << std::endl;
+		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 1, r["origx[1][1]"].as<float>(), r["origx[1][2]"].as<float>(), r["origx[1][3]"].as<float>(), r["origx_vector[1]"].as<float>()) << std::endl;
+		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 2, r["origx[2][1]"].as<float>(), r["origx[2][2]"].as<float>(), r["origx[2][3]"].as<float>(), r["origx_vector[2]"].as<float>()) << std::endl;
+		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 3, r["origx[3][1]"].as<float>(), r["origx[3][2]"].as<float>(), r["origx[3][3]"].as<float>(), r["origx_vector[3]"].as<float>()) << std::endl;
 		result += 3;
 		break;
 	}
 
 	for (auto r : db["atom_sites"])
 	{
-		pdbFile << format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 1, r["fract_transf_matrix[1][1]"].as<float>(), r["fract_transf_matrix[1][2]"].as<float>(), r["fract_transf_matrix[1][3]"].as<float>(), r["fract_transf_vector[1]"].as<float>()) << std::endl;
-		pdbFile << format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 2, r["fract_transf_matrix[2][1]"].as<float>(), r["fract_transf_matrix[2][2]"].as<float>(), r["fract_transf_matrix[2][3]"].as<float>(), r["fract_transf_vector[2]"].as<float>()) << std::endl;
-		pdbFile << format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 3, r["fract_transf_matrix[3][1]"].as<float>(), r["fract_transf_matrix[3][2]"].as<float>(), r["fract_transf_matrix[3][3]"].as<float>(), r["fract_transf_vector[3]"].as<float>()) << std::endl;
+		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 1, r["fract_transf_matrix[1][1]"].as<float>(), r["fract_transf_matrix[1][2]"].as<float>(), r["fract_transf_matrix[1][3]"].as<float>(), r["fract_transf_vector[1]"].as<float>()) << std::endl;
+		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 2, r["fract_transf_matrix[2][1]"].as<float>(), r["fract_transf_matrix[2][2]"].as<float>(), r["fract_transf_matrix[2][3]"].as<float>(), r["fract_transf_vector[2]"].as<float>()) << std::endl;
+		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 3, r["fract_transf_matrix[3][1]"].as<float>(), r["fract_transf_matrix[3][2]"].as<float>(), r["fract_transf_matrix[3][3]"].as<float>(), r["fract_transf_vector[3]"].as<float>()) << std::endl;
 		result += 3;
 		break;
 	}
@@ -3322,9 +3323,9 @@ int WriteCoordinateTransformation(std::ostream &pdbFile, const datablock &db)
 	{
 		std::string given = r["code"] == "given" ? "1" : "";
 
-		pdbFile << format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 1, nr, r["matrix[1][1]"].as<float>(), r["matrix[1][2]"].as<float>(), r["matrix[1][3]"].as<float>(), r["vector[1]"].as<float>(), given) << std::endl;
-		pdbFile << format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 2, nr, r["matrix[2][1]"].as<float>(), r["matrix[2][2]"].as<float>(), r["matrix[2][3]"].as<float>(), r["vector[2]"].as<float>(), given) << std::endl;
-		pdbFile << format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 3, nr, r["matrix[3][1]"].as<float>(), r["matrix[3][2]"].as<float>(), r["matrix[3][3]"].as<float>(), r["vector[3]"].as<float>(), given) << std::endl;
+		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 1, nr, r["matrix[1][1]"].as<float>(), r["matrix[1][2]"].as<float>(), r["matrix[1][3]"].as<float>(), r["vector[1]"].as<float>(), given) << std::endl;
+		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 2, nr, r["matrix[2][1]"].as<float>(), r["matrix[2][2]"].as<float>(), r["matrix[2][3]"].as<float>(), r["vector[2]"].as<float>(), given) << std::endl;
+		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 3, nr, r["matrix[3][1]"].as<float>(), r["matrix[3][2]"].as<float>(), r["matrix[3][3]"].as<float>(), r["vector[3]"].as<float>(), given) << std::endl;
 
 		++nr;
 		result += 3;
@@ -3374,7 +3375,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 
 			if (terminate)
 			{
-				pdbFile << format("TER   %5d      %3.3s %1.1s%4d%1.1s",  serial,  resName,  chainID,  resSeq,  iCode) << std::endl;
+				pdbFile << cif::format("TER   %5d      %3.3s %1.1s%4d%1.1s",  serial,  resName,  chainID,  resSeq,  iCode) << std::endl;
 
 				++serial;
 				terminatedChains.insert(chainID);
@@ -3413,7 +3414,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 		if (charge != 0)
 			sCharge = std::to_string(charge) + (charge > 0 ? '+' : '-');
 
-		pdbFile << format("%-6.6s%5d %-4.4s%1.1s%3.3s %1.1s%4d%1.1s   %8.3f%8.3f%8.3f%6.2f%6.2f          %2.2s%2.2s", group, serial, name, altLoc, resName, chainID, resSeq, iCode, x, y, z, occupancy, tempFactor, element, sCharge) << std::endl;
+		pdbFile << cif::format("%-6.6s%5d %-4.4s%1.1s%3.3s %1.1s%4d%1.1s   %8.3f%8.3f%8.3f%6.2f%6.2f          %2.2s%2.2s", group, serial, name, altLoc, resName, chainID, resSeq, iCode, x, y, z, occupancy, tempFactor, element, sCharge) << std::endl;
 
 		++numCoord;
 
@@ -3428,7 +3429,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 			tie(u11, u22, u33, u12, u13, u23) =
 				ai.get("U[1][1]", "U[2][2]", "U[3][3]", "U[1][2]", "U[1][3]", "U[2][3]");
 
-			pdbFile << format("ANISOU%5d %-4.4s%1.1s%3.3s %1.1s%4d%1.1s %7d%7d%7d%7d%7d%7d      %2.2s%2.2s", serial, name, altLoc, resName, chainID, resSeq, iCode, std::lrintf(u11 * 10000), std::lrintf(u22 * 10000), std::lrintf(u33 * 10000), std::lrintf(u12 * 10000), std::lrintf(u13 * 10000), std::lrintf(u23 * 10000), element, sCharge) << std::endl;
+			pdbFile << cif::format("ANISOU%5d %-4.4s%1.1s%3.3s %1.1s%4d%1.1s %7d%7d%7d%7d%7d%7d      %2.2s%2.2s", serial, name, altLoc, resName, chainID, resSeq, iCode, std::lrintf(u11 * 10000), std::lrintf(u22 * 10000), std::lrintf(u33 * 10000), std::lrintf(u12 * 10000), std::lrintf(u13 * 10000), std::lrintf(u23 * 10000), element, sCharge) << std::endl;
 		}
 
 		++serial;
@@ -3480,7 +3481,7 @@ std::tuple<int, int> WriteCoordinate(std::ostream &pdbFile, const datablock &db)
 		for (int model_nr : models)
 		{
 			if (models.size() > 1)
-				pdbFile << format("MODEL     %4d",  model_nr) << std::endl;
+				pdbFile << cif::format("MODEL     %4d",  model_nr) << std::endl;
 
 			std::set<std::string> TERminatedChains;
 			auto n = WriteCoordinatesForModel(pdbFile, db, last_resseq_for_chain_map, TERminatedChains, model_nr);
@@ -3552,7 +3553,7 @@ std::string get_HEADER_line(const datablock &db, std::string::size_type truncate
 		}
 	}
 
-	return FixStringLength(format("HEADER    %-40.40s%-9.9s   %-4.4s", keywords, date, db.name()).str(), truncate_at);
+	return FixStringLength(cif::format("HEADER    %-40.40s%-9.9s   %-4.4s", keywords, date, db.name()).str(), truncate_at);
 }
 
 std::string get_COMPND_line(const datablock &db, std::string::size_type truncate_at)
@@ -3725,7 +3726,7 @@ void write(std::ostream &os, const datablock &db)
 	numXform = WriteCoordinateTransformation(os, db);
 	std::tie(numCoord, numTer) = WriteCoordinate(os, db);
 
-	os << format("MASTER    %5d    0%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d",  numRemark,  numHet,  numHelix,  numSheet,  numTurn,  numSite,  numXform,  numCoord,  numTer,  numConect,  numSeq) << std::endl
+	os << cif::format("MASTER    %5d    0%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d",  numRemark,  numHet,  numHelix,  numSheet,  numTurn,  numSite,  numXform,  numCoord,  numTer,  numConect,  numSeq) << std::endl
 			<< "END" << std::endl;
 }
 

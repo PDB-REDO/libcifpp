@@ -190,7 +190,7 @@ void file::load(const std::filesystem::path &p)
 
 		load(in);
 	}
-	catch (const std::exception &ex)
+	catch (const std::exception &)
 	{
 		throw_with_nested(std::runtime_error("Error reading file " + p.string()));
 	}

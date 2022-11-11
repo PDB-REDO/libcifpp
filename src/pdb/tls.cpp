@@ -66,7 +66,7 @@ struct tls_residue
 	}
 };
 
-void dump_selection(const std::vector<tls_residue> &selected, int indentLevel)
+void dump_selection(const std::vector<tls_residue> &selected, size_t indentLevel)
 {
 	std::string indent(indentLevel * 2, ' ');
 

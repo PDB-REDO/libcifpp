@@ -38,7 +38,7 @@ void datablock::set_validator(const validator *v)
 		for (auto &cat : *this)
 			cat.set_validator(v, *this);
 	}
-	catch(const std::exception& e)
+	catch (const std::exception &)
 	{
 		throw_with_nested(std::runtime_error("Error while setting validator in datablock " + m_name));
 	}

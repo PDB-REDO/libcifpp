@@ -128,7 +128,7 @@ std::string to_lower_copy(std::string_view s)
 void to_upper(std::string &s)
 {
 	for (auto &c : s)
-		c = toupper(c);
+		c = static_cast<char>(toupper(c));
 }
 
 void replace_all(std::string &s, std::string_view what, std::string_view with)

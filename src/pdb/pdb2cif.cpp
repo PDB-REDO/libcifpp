@@ -918,7 +918,7 @@ class PDBFileParser
 				if (year < 1950)
 					year += 100;
 
-				s = format("%04d-%02d", year, month).str();
+				s = cif::format("%04d-%02d", year, month).str();
 			}
 			else
 				ec = error::make_error_code(error::pdbErrors::invalidDate);
@@ -3266,18 +3266,18 @@ void PDBFileParser::ParseRemark350()
 								{ "type", type },
 								// { "name", "" },
 								// { "symmetryOperation", "" },
-								{ "matrix[1][1]", format("%12.10f", mat[0]).str() },
-								{ "matrix[1][2]", format("%12.10f", mat[1]).str() },
-								{ "matrix[1][3]", format("%12.10f", mat[2]).str() },
-								{ "vector[1]", format("%12.10f", vec[0]).str() },
-								{ "matrix[2][1]", format("%12.10f", mat[3]).str() },
-								{ "matrix[2][2]", format("%12.10f", mat[4]).str() },
-								{ "matrix[2][3]", format("%12.10f", mat[5]).str() },
-								{ "vector[2]", format("%12.10f", vec[1]).str() },
-								{ "matrix[3][1]", format("%12.10f", mat[6]).str() },
-								{ "matrix[3][2]", format("%12.10f", mat[7]).str() },
-								{ "matrix[3][3]", format("%12.10f", mat[8]).str() },
-								{ "vector[3]", format("%12.10f", vec[2]).str() } });
+								{ "matrix[1][1]", cif::format("%12.10f", mat[0]).str() },
+								{ "matrix[1][2]", cif::format("%12.10f", mat[1]).str() },
+								{ "matrix[1][3]", cif::format("%12.10f", mat[2]).str() },
+								{ "vector[1]", cif::format("%12.10f", vec[0]).str() },
+								{ "matrix[2][1]", cif::format("%12.10f", mat[3]).str() },
+								{ "matrix[2][2]", cif::format("%12.10f", mat[4]).str() },
+								{ "matrix[2][3]", cif::format("%12.10f", mat[5]).str() },
+								{ "vector[2]", cif::format("%12.10f", vec[1]).str() },
+								{ "matrix[3][1]", cif::format("%12.10f", mat[6]).str() },
+								{ "matrix[3][2]", cif::format("%12.10f", mat[7]).str() },
+								{ "matrix[3][3]", cif::format("%12.10f", mat[8]).str() },
+								{ "vector[3]", cif::format("%12.10f", vec[2]).str() } });
 						}
 						catch (duplicate_key_error &ex)
 						{
@@ -5666,7 +5666,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 				throw std::runtime_error("ANISOU record should follow corresponding ATOM record");
 
 			auto f = [](float f) -> std::string
-			{ return format("%6.4f", f).str(); };
+			{ return cif::format("%6.4f", f).str(); };
 
 			getCategory("atom_site_anisotrop")->emplace({
 				{ "id", mAtomID },
@@ -6202,7 +6202,7 @@ file read(std::istream &is)
 	auto *buffer = is.rdbuf();
 	if (buffer)
 	{
-		char ch = buffer->sgetc();
+		char ch = std::char_traits<char>::to_char_type(buffer->sgetc());
 
 		// All PDB files should always start with a HEADER line
 		// and so the very first character in a valid PDB file

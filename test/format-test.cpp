@@ -77,9 +77,9 @@ BOOST_AUTO_TEST_CASE(fmt_1)
 	std::ostringstream os;
 
 	std::string world("world");
-	os << cif::format("Hello, %-10.10s, the magic number is %d and pi is %g", world, 42, M_PI);
+	os << cif::format("Hello, %-10.10s, the magic number is %d and pi is %g", world, 42, cif::kPI);
 	BOOST_CHECK_EQUAL(os.str(), "Hello, world     , the magic number is 42 and pi is 3.14159");
 
-	BOOST_CHECK_EQUAL(cif::format("Hello, %-10.10s, the magic number is %d and pi is %g", world, 42, M_PI).str(),
+	BOOST_CHECK_EQUAL(cif::format("Hello, %-10.10s, the magic number is %d and pi is %g", world, 42, cif::kPI).str(),
 		"Hello, world     , the magic number is 42 and pi is 3.14159");
 }

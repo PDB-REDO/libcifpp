@@ -28,6 +28,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <deque>
 #include <fstream>
 #include <functional>
 #include <iomanip>

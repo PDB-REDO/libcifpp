@@ -26,8 +26,8 @@
 /// whether to use a compressions/decompression algorithm is
 /// based on the extension of the \a filename argument.
 
-// This is a stripped down version of the gzio library from
-// https://github.com/mhekkel/gzio.git
+// This is a stripped down version of the gxrio library from
+// https://github.com/mhekkel/gxrio.git
 // Most notably, the lzma support has been removed since getting
 // that to work in Windows proved to be too much work.
 
