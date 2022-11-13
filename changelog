@@ -1,3 +1,6 @@
+Version 5.0.3
+- Fix installation of libcifpp into the correct locations
+
 Version 5.0.2
 - Fix export of CISPEP records in PDB format
 - Better support for exporting package_source

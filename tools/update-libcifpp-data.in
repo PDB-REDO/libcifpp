@@ -7,8 +7,8 @@ if [ "$EUID" -ne 0 ]
 	exit
 fi
 
-if [ -f /etc/libcifpp.conf ] ; then
-	. /etc/libcifpp.conf
+if [ -f @CIFPP_ETC_DIR@/libcifpp.conf ] ; then
+	. @CIFPP_ETC_DIR@/libcifpp.conf
 fi
 
 # check to see if we're supposed to run at all
@@ -48,8 +48,8 @@ fetch_dictionary "@CIFPP_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb
 
 # notify subscribers
 
-if [ -d /etc/libcifpp/cache-update.d ] && [ -x /bin/run-parts ]; then
-	run-parts --arg "@CIFPP_CACHE_DIR@" -- /etc/libcifpp/cache-update.d
+if [ -d @CIFPP_ETC_DIR@/libcifpp/cache-update.d ] && [ -x /bin/run-parts ]; then
+	run-parts --arg "@CIFPP_CACHE_DIR@" -- @CIFPP_ETC_DIR@/libcifpp/cache-update.d
 fi
 
 wget -O/var/cache/libcifpp/mmcif_ma.dic "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"
