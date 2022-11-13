@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
@@ -7,8 +7,8 @@ if [ "$EUID" -ne 0 ]
 	exit
 fi
 
-if [ -f @CIFPP_ETC_DIR@/libcifpp.conf ] ; then
-	. @CIFPP_ETC_DIR@/libcifpp.conf
+if [ -f "@CIFPP_ETC_DIR@/libcifpp.conf" ] ; then
+	. "@CIFPP_ETC_DIR@/libcifpp.conf"
 fi
 
 # check to see if we're supposed to run at all
@@ -17,7 +17,7 @@ if [ "$update" != "true" ] ; then
 fi
 
 # if cache directory doesn't exist, exit. 
-if ! [ -d @CIFPP_CACHE_DIR@ ]; then
+if ! [ -d "@CIFPP_CACHE_DIR@" ]; then
 	exit
 fi
 
@@ -46,10 +46,10 @@ fetch_dictionary () {
 fetch_dictionary "@CIFPP_CACHE_DIR@/mmcif_pdbx.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
 fetch_dictionary "@CIFPP_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
 
-# notify subscribers
+# notify subscribers, will fail on FreeBSD
 
-if [ -d @CIFPP_ETC_DIR@/libcifpp/cache-update.d ] && [ -x /bin/run-parts ]; then
-	run-parts --arg "@CIFPP_CACHE_DIR@" -- @CIFPP_ETC_DIR@/libcifpp/cache-update.d
+if [ -d "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" ] && [ -x /bin/run-parts ]; then
+	run-parts --arg "@CIFPP_CACHE_DIR@" -- "@CIFPP_ETC_DIR@/libcifpp/cache-update.d"
 fi
 
-wget -O/var/cache/libcifpp/mmcif_ma.dic "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"
+wget -O"@CIFPP_CACHE_DIR@/mmcif_ma.dic" "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"

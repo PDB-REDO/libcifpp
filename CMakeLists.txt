@@ -428,7 +428,13 @@ endif()
 
 # Optionally install the update scripts for CCD and dictionary files
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
-	set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly")
+	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly")
+	elseif(UNIX)	# assume all others are like FreeBSD... 
+		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly")
+	else()
+		message(FATAL_ERROR "Don't know where to install the update script")
+	endif()
 
 	configure_file(${PROJECT_SOURCE_DIR}/tools/update-libcifpp-data.in update-libcifpp-data @ONLY)
 	install(
