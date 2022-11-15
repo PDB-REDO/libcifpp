@@ -8,6 +8,6 @@ Name: libcifpp
 Description: C++ library for the manipulation of mmCIF files.
 Version: @PACKAGE_VERSION@
 
-Requires.private: zlib, liblzma
+Requires.private: zlib
 Libs: -L${libdir} -lcifpp
 Cflags: -I${includedir} -pthread
