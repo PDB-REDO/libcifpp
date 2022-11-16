@@ -6211,7 +6211,16 @@ file read(std::istream &is)
 		if (ch == 'h' or ch == 'H')
 			ReadPDBFile(is, result);
 		else
-			result.load(is);
+		{
+			try
+			{
+				result.load(is);
+			}
+			catch (const std::exception &ex)
+			{
+				std::throw_with_nested(std::runtime_error("Since the file did not start with a valid PDB HEADER line mmCIF was assumed, but that failed."));
+			}
+		}
 	}
 
 	// Must be a PDB like file, right?
