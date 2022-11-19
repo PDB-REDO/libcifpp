@@ -259,8 +259,6 @@ struct item_value
 	}
 };
 
-static_assert(sizeof(item_value) == sizeof(void*) + 8, "sizeof(item_value) should be correct");
-
 // --------------------------------------------------------------------
 // Transient object to access stored data
 
