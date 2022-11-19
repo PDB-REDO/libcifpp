@@ -194,6 +194,7 @@ struct item_value
 	/// \brief constructor
 	item_value(std::string_view text)
 		: m_length(text.length())
+		, m_storage(0)
 	{
 		if (m_length >= kBufferSize)
 		{
@@ -210,7 +211,7 @@ struct item_value
 
 	item_value(item_value &&rhs)
 		: m_length(std::exchange(rhs.m_length, 0))
-		, m_data(std::exchange(rhs.m_data, nullptr))
+		, m_storage(std::exchange(rhs.m_storage, 0))
 	{
 	}
 
@@ -219,7 +220,7 @@ struct item_value
 		if (this != &rhs)
 		{
 			m_length = std::exchange(rhs.m_length, m_length);
-			m_data = std::exchange(rhs.m_data, m_data);
+			m_storage = std::exchange(rhs.m_storage, m_storage);
 		}
 		return *this;
 	}
@@ -228,7 +229,7 @@ struct item_value
 	{
 		if (m_length >= kBufferSize)
 			delete[] m_data;
-		m_data = nullptr;
+		m_storage = 0;
 		m_length = 0;
 	}
 
@@ -245,6 +246,7 @@ struct item_value
 	{
 		char m_local_data[8];
 		char *m_data;
+		uint64_t m_storage;
 	};
 
 	static constexpr size_t kBufferSize = sizeof(m_local_data);
@@ -257,8 +259,7 @@ struct item_value
 	}
 };
 
-// static_assert(sizeof(item_value) == 24, "sizeof(item_value) should be 24 bytes");
-static_assert(sizeof(item_value) == 16, "sizeof(item_value) should be 16 bytes");
+static_assert(sizeof(item_value) == sizeof(void*) + 8, "sizeof(item_value) should be correct");
 
 // --------------------------------------------------------------------
 // Transient object to access stored data
