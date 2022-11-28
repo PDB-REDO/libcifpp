@@ -46,10 +46,10 @@ fetch_dictionary () {
 fetch_dictionary "@CIFPP_CACHE_DIR@/mmcif_pdbx.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
 fetch_dictionary "@CIFPP_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
 
+wget -O"@CIFPP_CACHE_DIR@/mmcif_ma.dic" "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"
+
 # notify subscribers, will fail on FreeBSD
 
 if [ -d "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" ] && [ -x /bin/run-parts ]; then
 	run-parts --arg "@CIFPP_CACHE_DIR@" -- "@CIFPP_ETC_DIR@/libcifpp/cache-update.d"
 fi
-
-wget -O"@CIFPP_CACHE_DIR@/mmcif_ma.dic" "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"
