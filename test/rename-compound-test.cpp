@@ -39,6 +39,12 @@ int main(int argc, char* argv[])
 
 		if (argc == 3)
 			testdir = argv[2];
+		else
+		{
+			while (not testdir.empty() and not std::filesystem::exists(testdir / "test"))
+				testdir = testdir.parent_path();
+			testdir /= "test";
+		}
 
 		if (std::filesystem::exists(testdir / ".." / "data" / "ccd-subset.cif"))
 			cif::add_file_resource("components.cif", testdir / ".." / "data" / "ccd-subset.cif");

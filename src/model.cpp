@@ -1688,7 +1688,10 @@ atom &structure::emplace_atom(atom &&atom)
 			R = i - 1;
 	}
 
-	m_atom_index.insert(m_atom_index.begin() + R + 1, m_atoms.size());
+	if (R == -1)	// msvc... 
+		m_atom_index.insert(m_atom_index.begin(), m_atoms.size());
+	else
+		m_atom_index.insert(m_atom_index.begin() + R + 1, m_atoms.size());
 
 	// make sure the atom_type is known
 	auto &atom_type = m_db["atom_type"];

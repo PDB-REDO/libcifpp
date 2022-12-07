@@ -95,11 +95,13 @@ class sac_parser
 	{
 		auto s = text.begin();
 
-		bool result = is_ordinary(*s++);
-		while (result and s != text.end())
+		bool result = true;
+		for (auto ch : text)
 		{
-			result = is_non_blank(*s);
-			++s;
+			if (is_non_blank(ch))
+				continue;
+			result = false;
+			break;
 		}
 
 		// but be careful it does not contain e.g. stop_

@@ -87,17 +87,17 @@ class Matrix : public MatrixExpression<Matrix>
 	Matrix &operator=(Matrix &&m) = default;
 	Matrix &operator=(const Matrix &m) = default;
 
-	uint32_t dim_m() const { return m_m; }
-	uint32_t dim_n() const { return m_n; }
+	size_t dim_m() const { return m_m; }
+	size_t dim_n() const { return m_n; }
 
-	double operator()(uint32_t i, uint32_t j) const
+	double operator()(size_t i, size_t j) const
 	{
 		assert(i < m_m);
 		assert(j < m_n);
 		return m_data[i * m_n + j];
 	}
 
-	double &operator()(uint32_t i, uint32_t j)
+	double &operator()(size_t i, size_t j)
 	{
 		assert(i < m_m);
 		assert(j < m_n);
@@ -105,7 +105,7 @@ class Matrix : public MatrixExpression<Matrix>
 	}
 
   private:
-	uint32_t m_m = 0, m_n = 0;
+	size_t m_m = 0, m_n = 0;
 	std::vector<double> m_data;
 };
 
@@ -522,15 +522,17 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 
 point nudge(point p, float offset)
 {
+	static const float kPI_f = static_cast<float>(kPI);
+
 	static std::random_device rd;
 	static std::mt19937_64 rng(rd());
 
-	std::uniform_real_distribution<float> randomAngle(0, 2 * kPI);
-	std::normal_distribution<> randomOffset(0, offset);
+	std::uniform_real_distribution<float> randomAngle(0, 2 * kPI_f);
+	std::normal_distribution<float> randomOffset(0, offset);
 
 	float theta = randomAngle(rng);
-	float phi1 = randomAngle(rng) - kPI;
-	float phi2 = randomAngle(rng) - kPI;
+	float phi1 = randomAngle(rng) - kPI_f;
+	float phi2 = randomAngle(rng) - kPI_f;
 
 	quaternion q = spherical(1.0f, theta, phi1, phi2);
 
