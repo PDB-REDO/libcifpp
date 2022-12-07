@@ -2322,15 +2322,21 @@ _test.text ??
 
 BOOST_AUTO_TEST_CASE(output_test_1)
 {
+	cif::VERBOSE = 5;
+
 	auto data1 = R"(
 data_Q
 loop_
 _test.text
-"stop_the_crap"
+stop_the_crap
 'and stop_ this too'
 'data_dinges'
-'blablaglobal_bla'
+blablaglobal_bla
 boo.data_.whatever
+'data_.whatever'
+'stop_'
+'loop_'
+'global_'
 )"_cf;
 
 	auto &db1 = data1.front();
@@ -2341,11 +2347,15 @@ boo.data_.whatever
 		const char *s;
 		bool q;
 	} kS[] = {
-		{ "stop_the_crap", false },
+		{ "stop_the_crap", true },
 		{ "and stop_ this too", false },
 		{ "data_dinges", false },
-		{ "blablaglobal_bla", false },
-		{ "boo.data_.whatever", true }
+		{ "blablaglobal_bla", true },
+		{ "boo.data_.whatever", true },
+		{ "data_.whatever", false },
+		{ "stop_", false },
+		{ "loop_", false },
+		{ "global_", false }
 	};
 
 	BOOST_CHECK_EQUAL(test1.size(), sizeof(kS) / sizeof(T));

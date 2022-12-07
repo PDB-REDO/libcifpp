@@ -27,6 +27,7 @@
 #pragma once
 
 #include <map>
+#include <regex>
 
 #include <cif++/row.hpp>
 
@@ -93,8 +94,6 @@ class sac_parser
 
 	static bool is_unquoted_string(std::string_view text)
 	{
-		auto s = text.begin();
-
 		bool result = true;
 		for (auto ch : text)
 		{
@@ -104,14 +103,10 @@ class sac_parser
 			break;
 		}
 
-		// but be careful it does not contain e.g. stop_
-		if (result)
-		{
-			static const std::regex reservedRx(R"((^(?:data|save)|.*(?:loop|stop|global))_.+)", std::regex_constants::icase);
-			result = not std::regex_match(text.begin(), text.end(), reservedRx);
-		}
+		static const std::regex kReservedRx(R"(loop_|stop_|global_|data_\S+|save_\S+)", std::regex_constants::icase);
 
-		return result;
+		// but be careful it does not contain e.g. stop_
+		return result and not std::regex_match(text.begin(), text.end(), kReservedRx);
 	}
 
   protected:

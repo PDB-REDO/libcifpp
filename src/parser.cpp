@@ -380,18 +380,13 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					std::string s = to_lower_copy(m_token_value);
 
-					if (s == "global_")
-						result = CIFToken::GLOBAL;
-					else if (s == "stop_")
-						result = CIFToken::STOP;
-					else if (s == "loop_")
-						result = CIFToken::LOOP;
-					else if (s == "data_")
+					if (s == "data_")
 					{
 						state = State::DATA;
 						continue;
 					}
-					else if (s == "save_")
+					
+					if (s == "save_")
 					{
 						state = State::SAVE;
 						continue;
@@ -405,6 +400,12 @@ sac_parser::CIFToken sac_parser::get_next_token()
 
 					if (m_token_value == ".")
 						mTokenType = CIFValue::Inapplicable;
+					else if (iequals(m_token_value, "global_"))
+						result = CIFToken::GLOBAL;
+					else if (iequals(m_token_value, "stop_"))
+						result = CIFToken::STOP;
+					else if (iequals(m_token_value, "loop_"))
+						result = CIFToken::LOOP;
 					else if (m_token_value == "?")
 					{
 						mTokenType = CIFValue::Unknown;
@@ -786,6 +787,9 @@ void sac_parser::parse_save_frame()
 
 void parser::produce_datablock(const std::string &name)
 {
+	if (VERBOSE >= 4)
+		std::cerr << "producing data_" << name << std::endl;
+
 	const auto &[iter, ignore] = m_file.emplace(name);
 	m_datablock = &(*iter);
 }
@@ -801,7 +805,7 @@ void parser::produce_category(const std::string &name)
 
 void parser::produce_row()
 {
-	if (VERBOSE >= 4)
+	if (VERBOSE >= 4 and m_category != nullptr)
 		std::cerr << "producing row for category " << m_category->name() << std::endl;
 
 	if (m_category == nullptr)
