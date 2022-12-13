@@ -76,59 +76,82 @@ namespace detail
 		return this;
 	}
 
-	condition_impl *and_condition_impl::prepare(const category &c)
+	bool found_in_range(condition_impl *c, std::vector<and_condition_impl *>::iterator b, std::vector<and_condition_impl *>::iterator e)
 	{
-		for (auto &sub : m_sub)
-			sub = sub->prepare(c);
+		bool result = true;
 
-		for (;;)
+		for (auto s = b; s != e; ++s)
 		{
-			auto si = find_if(m_sub.begin(), m_sub.end(), [](condition_impl *sub) { return dynamic_cast<and_condition_impl *>(sub) != nullptr; });
-			if (si == m_sub.end())
+			auto &cs = (*s)->m_sub;
+
+			if (find_if(cs.begin(), cs.end(), [c](const condition_impl *i) { return i->equals(c); }) == cs.end())
+			{
+				result = false;
 				break;
-			
-			and_condition_impl *sub_and = static_cast<and_condition_impl *>(*si);
-
-			m_sub.erase(si);
-
-			m_sub.insert(m_sub.end(), sub_and->m_sub.begin(), sub_and->m_sub.end());
-			sub_and->m_sub.clear();
-			delete sub_and;
-		}
-
-		return this;
-	}
-
-	condition_impl *or_condition_impl::prepare(const category &c)
-	{
-		condition_impl *result = this;
-
-		for (auto &sub : m_sub)
-			sub = sub->prepare(c);
-
-		if (m_sub.size() == 2)
-		{
-			auto a = m_sub.front();
-			auto b = m_sub.back();
-
-			key_equals_condition_impl *equals = dynamic_cast<key_equals_condition_impl*>(a);
-			key_is_empty_condition_impl *empty = dynamic_cast<key_is_empty_condition_impl*>(b);
-
-			if (equals == nullptr and empty == nullptr)
-			{
-				equals = dynamic_cast<key_equals_condition_impl*>(b);
-				empty = dynamic_cast<key_is_empty_condition_impl*>(a);			
-			}
-
-			if (equals != nullptr and empty != nullptr and equals->m_item_tag == empty->m_item_tag)
-			{
-				result = new detail::key_equals_or_empty_condition_impl(equals);
-				result = result->prepare(c);
-				delete this;
 			}
 		}
 
 		return result;
+	}
+
+	condition_impl *and_condition_impl::combine_equal(std::vector<and_condition_impl *> &subs, or_condition_impl *oc)
+	{
+		and_condition_impl *and_result = nullptr;
+
+		auto first = subs.front();
+		auto &fc = first->m_sub;
+
+		for (auto c : fc)
+		{
+			if (not found_in_range(c, subs.begin() + 1, subs.end()))
+				continue;
+
+			if (and_result == nullptr)
+				and_result = new and_condition_impl();
+
+			and_result->m_sub.push_back(c);
+			fc.erase(remove(fc.begin(), fc.end(), c), fc.end());
+
+			for (auto sub : subs)
+			{
+				auto &ssub = sub->m_sub;
+
+				for (auto sc : ssub)
+				{
+					if (not sc->equals(c))
+						continue;
+					
+					ssub.erase(remove(ssub.begin(), ssub.end(), sc), ssub.end());
+					delete sc;
+					break;
+				}
+			}
+		}
+
+		if (and_result != nullptr)
+		{
+			and_result->m_sub.push_back(oc);
+			return and_result;
+		}
+
+		return oc;
+	}
+
+	condition_impl *or_condition_impl::prepare(const category &c)
+	{
+		std::vector<and_condition_impl *> and_conditions;
+
+		for (auto &sub : m_sub)
+		{
+			sub = sub->prepare(c);
+			if (typeid(*sub) == typeid(and_condition_impl))
+				and_conditions.push_back(static_cast<and_condition_impl *>(sub));
+		}
+
+		if (and_conditions.size() == m_sub.size())
+			return and_condition_impl::combine_equal(and_conditions, this);
+
+		return this;
 	}
 
 } // namespace detail

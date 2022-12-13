@@ -57,6 +57,8 @@ namespace detail
 		virtual bool test(row_handle) const = 0;
 		virtual void str(std::ostream &) const = 0;
 		virtual std::optional<row_handle> single() const { return {}; };
+
+		virtual bool equals(const condition_impl *rhs) const { return false; }
 	};
 
 	struct all_condition_impl : public condition_impl
@@ -208,6 +210,19 @@ namespace detail
 			return m_single_hit;
 		}
 
+		virtual bool equals(const condition_impl *rhs) const override
+		{
+			if (typeid(*rhs) == typeid(key_equals_condition_impl))
+			{
+				auto ri = static_cast<const key_equals_condition_impl *>(rhs);
+				if (m_single_hit.has_value() or ri->m_single_hit.has_value())
+					return m_single_hit == ri->m_single_hit;
+				else
+					return m_item_ix == ri->m_item_ix and m_value == ri->m_value;
+			}
+			return this == rhs;
+		}
+
 		std::string m_item_tag;
 		uint16_t m_item_ix = 0;
 		bool m_icase = false;
@@ -244,12 +259,25 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value << " OR " << m_item_tag << " IS NULL";
+			os << '(' << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value << " OR " << m_item_tag << " IS NULL)";
 		}
 
 		virtual std::optional<row_handle> single() const override
 		{
 			return m_single_hit;
+		}
+
+		virtual bool equals(const condition_impl *rhs) const override
+		{
+			if (typeid(*rhs) == typeid(key_equals_or_empty_condition_impl))
+			{
+				auto ri = static_cast<const key_equals_or_empty_condition_impl *>(rhs);
+				if (m_single_hit.has_value() or ri->m_single_hit.has_value())
+					return m_single_hit == ri->m_single_hit;
+				else
+					return m_item_ix == ri->m_item_ix and m_value == ri->m_value;
+			}
+			return this == rhs;
 		}
 
 		std::string m_item_tag;
@@ -409,10 +437,29 @@ namespace detail
 	// case they make up an indexed tuple.
 	struct and_condition_impl : public condition_impl
 	{
+		and_condition_impl() = default;
+
 		and_condition_impl(condition &&a, condition &&b)
 		{
-			m_sub.emplace_back(std::exchange(a.m_impl, nullptr));
-			m_sub.emplace_back(std::exchange(b.m_impl, nullptr));
+			if (typeid(*a.m_impl) == typeid(*this))
+			{
+				and_condition_impl *ai = static_cast<and_condition_impl *>(a.m_impl);
+
+				std::swap(m_sub, ai->m_sub);
+				m_sub.emplace_back(std::exchange(b.m_impl, nullptr));
+			}
+			else if (typeid(*b.m_impl) == typeid(*this))
+			{
+				and_condition_impl *bi = static_cast<and_condition_impl *>(b.m_impl);
+
+				std::swap(m_sub, bi->m_sub);
+				m_sub.emplace_back(std::exchange(a.m_impl, nullptr));
+			}
+			else
+			{
+				m_sub.emplace_back(std::exchange(a.m_impl, nullptr));
+				m_sub.emplace_back(std::exchange(b.m_impl, nullptr));
+			}
 		}
 
 		~and_condition_impl()
@@ -421,7 +468,12 @@ namespace detail
 				delete sub;
 		}
 
-		condition_impl *prepare(const category &c) override;
+		condition_impl *prepare(const category &c) override
+		{
+			for (auto &sub : m_sub)
+				sub = sub->prepare(c);
+			return this;
+		}
 
 		bool test(row_handle r) const override
 		{
@@ -481,6 +533,8 @@ namespace detail
 			return result;
 		}
 
+		static condition_impl *combine_equal(std::vector<and_condition_impl *> &subs, or_condition_impl *oc);
+
 		std::vector<condition_impl *> m_sub;
 	};
 
@@ -535,16 +589,17 @@ namespace detail
 		void str(std::ostream &os) const override
 		{
 			bool first = true;
+
+			os << '(';
 			for (auto sub : m_sub)
 			{
 				if (first)
 					first = false;
 				else
 					os << " OR ";
-				os << '(';
 				sub->str(os);
-				os << ')';
 			}
+			os << ')';
 		}
 
 		virtual std::optional<row_handle> single() const override
@@ -610,7 +665,7 @@ namespace detail
 
 } // namespace detail
 
-inline condition operator&&(condition &&a, condition &&b)
+inline condition operator and(condition &&a, condition &&b)
 {
 	if (a.m_impl and b.m_impl)
 		return condition(new detail::and_condition_impl(std::move(a), std::move(b)));
@@ -619,12 +674,32 @@ inline condition operator&&(condition &&a, condition &&b)
 	return condition(std::move(b));
 }
 
-inline condition operator||(condition &&a, condition &&b)
+inline condition operator or(condition &&a, condition &&b)
 {
 	if (a.m_impl and b.m_impl)
+	{
+		if (typeid(*a.m_impl) == typeid(detail::key_equals_condition_impl) and
+			typeid(*b.m_impl) == typeid(detail::key_is_empty_condition_impl))
+		{
+			detail::key_equals_condition_impl *ci = static_cast<detail::key_equals_condition_impl *>(std::exchange(a.m_impl, nullptr));
+			delete std::exchange(b.m_impl, nullptr);
+			return condition(new detail::key_equals_or_empty_condition_impl(ci));
+		}
+
+		if (typeid(*b.m_impl) == typeid(detail::key_equals_condition_impl) and
+			typeid(*a.m_impl) == typeid(detail::key_is_empty_condition_impl))
+		{
+			detail::key_equals_condition_impl *ci = static_cast<detail::key_equals_condition_impl *>(std::exchange(b.m_impl, nullptr));
+			delete std::exchange(a.m_impl, nullptr);
+			return condition(new detail::key_equals_or_empty_condition_impl(ci));
+		}
+
 		return condition(new detail::or_condition_impl(std::move(a), std::move(b)));
+	}
+
 	if (a.m_impl)
 		return condition(std::move(a));
+
 	return condition(std::move(b));
 }
 
@@ -747,7 +822,7 @@ inline condition operator==(const key &key, const empty_type &)
 	return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
 }
 
-inline condition operator !(condition &&rhs)
+inline condition operator not(condition &&rhs)
 {
 	return condition(new detail::not_condition_impl(std::move(rhs)));
 }
