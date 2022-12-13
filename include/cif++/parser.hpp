@@ -94,13 +94,17 @@ class sac_parser
 
 	static bool is_unquoted_string(std::string_view text)
 	{
-		bool result = true;
-		for (auto ch : text)
+		bool result = is_ordinary(text.front());
+
+		if (result)
 		{
-			if (is_non_blank(ch))
-				continue;
-			result = false;
-			break;
+			for (auto ch : text)
+			{
+				if (is_non_blank(ch))
+					continue;
+				result = false;
+				break;
+			}
 		}
 
 		static const std::regex kReservedRx(R"(loop_|stop_|global_|data_\S+|save_\S+)", std::regex_constants::icase);

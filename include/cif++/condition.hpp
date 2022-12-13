@@ -147,7 +147,6 @@ class condition
 	}
 
   private:
-
 	void optimise(condition_impl *&impl);
 
 	condition_impl *m_impl;
@@ -195,9 +194,7 @@ namespace detail
 
 		bool test(row_handle r) const override
 		{
-			return m_single_hit.has_value() ?
-				*m_single_hit == r :
-				r[m_item_ix].compare(m_value, m_icase) == 0;
+			return m_single_hit.has_value() ? *m_single_hit == r : r[m_item_ix].compare(m_value, m_icase) == 0;
 		}
 
 		void str(std::ostream &os) const override
@@ -285,7 +282,7 @@ namespace detail
 		std::string m_value;
 		bool m_icase = false;
 		std::optional<row_handle> m_single_hit;
-	};	
+	};
 
 	struct key_compare_condition_impl : public condition_impl
 	{
@@ -483,7 +480,7 @@ namespace detail
 			{
 				if (sub->test(r))
 					continue;
-		
+
 				result = false;
 				break;
 			}
@@ -522,7 +519,7 @@ namespace detail
 					result = s;
 					continue;
 				}
-				
+
 				if (s == result)
 					continue;
 
@@ -582,7 +579,7 @@ namespace detail
 				result = true;
 				break;
 			}
-			
+
 			return result;
 		}
 
@@ -615,7 +612,7 @@ namespace detail
 					result = s;
 					continue;
 				}
-				
+
 				if (s == result)
 					continue;
 
@@ -688,7 +685,7 @@ inline condition operator or(condition &&a, condition &&b)
 				return condition(new detail::key_equals_or_empty_condition_impl(ci));
 		}
 		else if (typeid(*b.m_impl) == typeid(detail::key_equals_condition_impl) and
-			typeid(*a.m_impl) == typeid(detail::key_is_empty_condition_impl))
+				 typeid(*a.m_impl) == typeid(detail::key_is_empty_condition_impl))
 		{
 			auto ci = static_cast<detail::key_equals_condition_impl *>(b.m_impl);
 			auto ce = static_cast<detail::key_is_empty_condition_impl *>(a.m_impl);
