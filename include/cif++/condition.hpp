@@ -681,16 +681,14 @@ inline condition operator or(condition &&a, condition &&b)
 		if (typeid(*a.m_impl) == typeid(detail::key_equals_condition_impl) and
 			typeid(*b.m_impl) == typeid(detail::key_is_empty_condition_impl))
 		{
-			detail::key_equals_condition_impl *ci = static_cast<detail::key_equals_condition_impl *>(std::exchange(a.m_impl, nullptr));
-			delete std::exchange(b.m_impl, nullptr);
+			auto ci = static_cast<detail::key_equals_condition_impl *>(a.m_impl);
 			return condition(new detail::key_equals_or_empty_condition_impl(ci));
 		}
 
 		if (typeid(*b.m_impl) == typeid(detail::key_equals_condition_impl) and
 			typeid(*a.m_impl) == typeid(detail::key_is_empty_condition_impl))
 		{
-			detail::key_equals_condition_impl *ci = static_cast<detail::key_equals_condition_impl *>(std::exchange(b.m_impl, nullptr));
-			delete std::exchange(a.m_impl, nullptr);
+			auto ci = static_cast<detail::key_equals_condition_impl *>(b.m_impl);
 			return condition(new detail::key_equals_or_empty_condition_impl(ci));
 		}
 
