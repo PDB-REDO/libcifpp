@@ -6102,13 +6102,6 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 			switch (tb(x, y))
 			{
 				case -1:
-					//					if (cif::VERBOSE > 0)
-					//						std::cerr << "A residue found in the ATOM records "
-					//							 << "(" << ry[y].mMonID << " @ " << mDbref.chainID << ":" << ry[y].mSeqNum
-					//							 	<<  ((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : std::string{ ry[y].mIcode }) << ")"
-					//							 << " was not found in the SEQRES records" << std::endl;
-					// --y;
-
 					throw std::runtime_error("A residue found in the ATOM records (" + ry[y].mMonID +
 											 " @ " + std::string{ mDbref.chainID } + ":" + std::to_string(ry[y].mSeqNum) +
 											 ((ry[y].mIcode == ' ' or ry[y].mIcode == 0) ? "" : std::string{ ry[y].mIcode }) +
@@ -6123,10 +6116,11 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 					break;
 
 				case 0:
-					if (cif::VERBOSE > 3 and rx[x].mMonID != ry[y].mMonID)
-						std::cerr << "Warning, unaligned residues at " << x << "/" << y << "(" << rx[x].mMonID << '/' << ry[y].mMonID << ')' << std::endl;
-					else if (cif::VERBOSE > 4)
-						std::cerr << rx[x].mMonID << " -> " << ry[y].mMonID << " (" << ry[y].mSeqNum << ')' << std::endl;
+					if (rx[x].mMonID != ry[y].mMonID)
+					{
+						std::cerr << "Warning, unaligned residues at " << x << "/" << y << "(" << rx[x].mMonID << '/' << ry[y].mMonID << ") SEQRES does not agree with ATOM records" << std::endl;
+						rx[x].mMonID = ry[y].mMonID;
+					}
 
 					rx[x].mSeqNum = ry[y].mSeqNum;
 					rx[x].mIcode = ry[y].mIcode;
