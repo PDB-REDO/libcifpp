@@ -1142,10 +1142,6 @@ category::iterator category::erase(iterator pos)
 	row *r = rh.get_row();
 	iterator result = ++pos;
 
-	iset keys;
-	if (m_cat_validator)
-		keys = iset(m_cat_validator->m_keys.begin(), m_cat_validator->m_keys.end());
-
 	if (m_head == nullptr)
 		throw std::runtime_error("erase");
 
@@ -1174,7 +1170,7 @@ category::iterator category::erase(iterator pos)
 	// in mmcif_pdbx.dic dictionary.
 	//
 	// For each link group in _pdbx_item_linked_group_list
-	// a std::set of keys from one category is mapped to another.
+	// a set of keys from one category is mapped to another.
 	// If all values in a child are the same as the specified parent ones
 	// the child is removed as well, recursively of course.
 
@@ -1198,25 +1194,29 @@ category::iterator category::erase(iterator pos)
 	return result;
 }
 
-size_t category::erase(condition &&cond)
+template<typename T>
+class save_value
 {
-	size_t result = 0;
-
-	cond.prepare(*this);
-
-	auto ri = begin();
-	while (ri != end())
+  public:
+	save_value(T &v, const T nv = {})
+		: m_v(v)
+		, m_sv(std::exchange(m_v, nv))
 	{
-		if (cond(*ri))
-		{
-			ri = erase(ri);
-			++result;
-		}
-		else
-			++ri;
 	}
 
-	return result;
+	~save_value()
+	{
+		m_v = m_sv;
+	}
+
+  private:
+	T &m_v;
+	const T m_sv;
+};
+
+size_t category::erase(condition &&cond)
+{
+	return erase(std::move(cond), {});
 }
 
 size_t category::erase(condition &&cond, std::function<void(row_handle)> &&visit)
@@ -1225,18 +1225,30 @@ size_t category::erase(condition &&cond, std::function<void(row_handle)> &&visit
 
 	cond.prepare(*this);
 
+	std::map<category *, condition> potential_orphans;
+
 	auto ri = begin();
 	while (ri != end())
 	{
 		if (cond(*ri))
 		{
-			visit(*ri);
+			if (visit)
+				visit(*ri);
+
+			for (auto &&[childCat, link] : m_child_links)
+				potential_orphans[childCat] = std::move(potential_orphans[childCat]) or get_children_condition(*ri, *childCat);
+
+			save_value sv(m_validator);
+
 			ri = erase(ri);
 			++result;
 		}
 		else
 			++ri;
 	}
+
+	for (auto &&[childCat, condition] : potential_orphans)
+		childCat->erase_orphans(std::move(condition), *this);
 
 	return result;
 }
