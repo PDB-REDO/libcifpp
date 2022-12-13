@@ -411,13 +411,13 @@ namespace detail
 	{
 		and_condition_impl(condition &&a, condition &&b)
 		{
-			mSub.emplace_back(std::exchange(a.m_impl, nullptr));
-			mSub.emplace_back(std::exchange(b.m_impl, nullptr));
+			m_sub.emplace_back(std::exchange(a.m_impl, nullptr));
+			m_sub.emplace_back(std::exchange(b.m_impl, nullptr));
 		}
 
 		~and_condition_impl()
 		{
-			for (auto sub : mSub)
+			for (auto sub : m_sub)
 				delete sub;
 		}
 
@@ -427,7 +427,7 @@ namespace detail
 		{
 			bool result = true;
 
-			for (auto sub : mSub)
+			for (auto sub : m_sub)
 			{
 				if (sub->test(r))
 					continue;
@@ -444,7 +444,7 @@ namespace detail
 			os << '(';
 
 			bool first = true;
-			for (auto sub : mSub)
+			for (auto sub : m_sub)
 			{
 				if (first)
 					first = false;
@@ -461,7 +461,7 @@ namespace detail
 		{
 			std::optional<row_handle> result;
 
-			for (auto sub : mSub)
+			for (auto sub : m_sub)
 			{
 				auto s = sub->single();
 
@@ -481,56 +481,97 @@ namespace detail
 			return result;
 		}
 
-		std::vector<condition_impl *> mSub;
+		std::vector<condition_impl *> m_sub;
 	};
 
 	struct or_condition_impl : public condition_impl
 	{
 		or_condition_impl(condition &&a, condition &&b)
-			: mA(nullptr)
-			, mB(nullptr)
 		{
-			std::swap(mA, a.m_impl);
-			std::swap(mB, b.m_impl);
+			if (typeid(*a.m_impl) == typeid(*this))
+			{
+				or_condition_impl *ai = static_cast<or_condition_impl *>(a.m_impl);
+
+				std::swap(m_sub, ai->m_sub);
+				m_sub.emplace_back(std::exchange(b.m_impl, nullptr));
+			}
+			else if (typeid(*b.m_impl) == typeid(*this))
+			{
+				or_condition_impl *bi = static_cast<or_condition_impl *>(b.m_impl);
+
+				std::swap(m_sub, bi->m_sub);
+				m_sub.emplace_back(std::exchange(a.m_impl, nullptr));
+			}
+			else
+			{
+				m_sub.emplace_back(std::exchange(a.m_impl, nullptr));
+				m_sub.emplace_back(std::exchange(b.m_impl, nullptr));
+			}
 		}
 
 		~or_condition_impl()
 		{
-			delete mA;
-			delete mB;
+			for (auto sub : m_sub)
+				delete sub;
 		}
 
 		condition_impl *prepare(const category &c) override;
 
 		bool test(row_handle r) const override
 		{
-			return mA->test(r) or mB->test(r);
+			bool result = false;
+
+			for (auto sub : m_sub)
+			{
+				if (not sub->test(r))
+					continue;
+				result = true;
+				break;
+			}
+			
+			return result;
 		}
 
 		void str(std::ostream &os) const override
 		{
-			os << '(';
-			mA->str(os);
-			os << ") OR (";
-			mB->str(os);
-			os << ')';
+			bool first = true;
+			for (auto sub : m_sub)
+			{
+				if (first)
+					first = false;
+				else
+					os << " OR ";
+				os << '(';
+				sub->str(os);
+				os << ')';
+			}
 		}
 
 		virtual std::optional<row_handle> single() const override
 		{
-			auto sa = mA->single();
-			auto sb = mB->single();
-			
-			if (sa.has_value() and sb.has_value() and sa != sb)
-				sa.reset();
-			else if (not sa.has_value())
-				sa = sb;
+			std::optional<row_handle> result;
 
-			return sa;
+			for (auto sub : m_sub)
+			{
+				auto s = sub->single();
+
+				if (not result.has_value())
+				{
+					result = s;
+					continue;
+				}
+				
+				if (s == result)
+					continue;
+
+				result.reset();
+				break;
+			}
+
+			return result;
 		}
 
-		condition_impl *mA;
-		condition_impl *mB;
+		std::vector<condition_impl *> m_sub;
 	};
 
 	struct not_condition_impl : public condition_impl

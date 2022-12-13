@@ -78,21 +78,21 @@ namespace detail
 
 	condition_impl *and_condition_impl::prepare(const category &c)
 	{
-		for (auto &sub : mSub)
+		for (auto &sub : m_sub)
 			sub = sub->prepare(c);
 
 		for (;;)
 		{
-			auto si = find_if(mSub.begin(), mSub.end(), [](condition_impl *sub) { return dynamic_cast<and_condition_impl *>(sub) != nullptr; });
-			if (si == mSub.end())
+			auto si = find_if(m_sub.begin(), m_sub.end(), [](condition_impl *sub) { return dynamic_cast<and_condition_impl *>(sub) != nullptr; });
+			if (si == m_sub.end())
 				break;
 			
 			and_condition_impl *sub_and = static_cast<and_condition_impl *>(*si);
 
-			mSub.erase(si);
+			m_sub.erase(si);
 
-			mSub.insert(mSub.end(), sub_and->mSub.begin(), sub_and->mSub.end());
-			sub_and->mSub.clear();
+			m_sub.insert(m_sub.end(), sub_and->m_sub.begin(), sub_and->m_sub.end());
+			sub_and->m_sub.clear();
 			delete sub_and;
 		}
 
@@ -103,23 +103,29 @@ namespace detail
 	{
 		condition_impl *result = this;
 
-		mA = mA->prepare(c);
-		mB = mB->prepare(c);
+		for (auto &sub : m_sub)
+			sub = sub->prepare(c);
 
-		key_equals_condition_impl *equals = dynamic_cast<key_equals_condition_impl*>(mA);
-		key_is_empty_condition_impl *empty = dynamic_cast<key_is_empty_condition_impl*>(mB);
-
-		if (equals == nullptr and empty == nullptr)
+		if (m_sub.size() == 2)
 		{
-			equals = dynamic_cast<key_equals_condition_impl*>(mB);
-			empty = dynamic_cast<key_is_empty_condition_impl*>(mA);			
-		}
+			auto a = m_sub.front();
+			auto b = m_sub.back();
 
-		if (equals != nullptr and empty != nullptr and equals->m_item_tag == empty->m_item_tag)
-		{
-			result = new detail::key_equals_or_empty_condition_impl(equals);
-			result = result->prepare(c);
-			delete this;
+			key_equals_condition_impl *equals = dynamic_cast<key_equals_condition_impl*>(a);
+			key_is_empty_condition_impl *empty = dynamic_cast<key_is_empty_condition_impl*>(b);
+
+			if (equals == nullptr and empty == nullptr)
+			{
+				equals = dynamic_cast<key_equals_condition_impl*>(b);
+				empty = dynamic_cast<key_is_empty_condition_impl*>(a);			
+			}
+
+			if (equals != nullptr and empty != nullptr and equals->m_item_tag == empty->m_item_tag)
+			{
+				result = new detail::key_equals_or_empty_condition_impl(equals);
+				result = result->prepare(c);
+				delete this;
+			}
 		}
 
 		return result;
