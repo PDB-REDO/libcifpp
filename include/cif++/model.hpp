@@ -50,7 +50,7 @@ class atom
   private:
 	struct atom_impl : public std::enable_shared_from_this<atom_impl>
 	{
-		atom_impl(datablock &db, std::string_view id)
+		atom_impl(const datablock &db, std::string_view id)
 			: m_db(db)
 			, m_cat(db["atom_site"])
 			, m_id(id)
@@ -111,7 +111,7 @@ class atom
 		}
 
 		const datablock &m_db;
-		category &m_cat;
+		const category &m_cat;
 		std::string m_id;
 		point m_location;
 		std::string m_symop = "1_555";
@@ -130,7 +130,7 @@ class atom
 	{
 	}
 
-	atom(datablock &db, row_handle &row)
+	atom(const datablock &db, const row_handle &row)
 		: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>()))
 	{
 	}
@@ -893,15 +893,7 @@ class structure
 
 	void validate_atoms() const;
 
-  private:
-	friend polymer;
-	friend residue;
-
-	std::string insert_compound(const std::string &compoundID, bool is_entity);
-
-	std::string create_entity_for_branch(branch &branch);
-
-	void load_data();
+	// TODO: make this protected?
 
 	void load_atoms_for_model(StructureOpenOptions options);
 
@@ -912,6 +904,16 @@ class structure
 	}
 
 	atom &emplace_atom(atom &&atom);
+
+  private:
+	friend polymer;
+	friend residue;
+
+	std::string insert_compound(const std::string &compoundID, bool is_entity);
+
+	std::string create_entity_for_branch(branch &branch);
+
+	void load_data();
 
 	void remove_atom(atom &a, bool removeFromResidue);
 	void remove_sugar(sugar &sugar);

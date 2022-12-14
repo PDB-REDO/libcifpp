@@ -2331,6 +2331,11 @@ _test.text
 'data_dinges'
 'blablaglobal_bla'
 boo.data_.whatever
+'data_.whatever'
+'stop_'
+'loop_'
+'global_'
+'_with.leading_underscore'
 )"_cf;
 
 	auto &db1 = data1.front();
@@ -2344,8 +2349,13 @@ boo.data_.whatever
 		{ "stop_the_crap", false },
 		{ "and stop_ this too", false },
 		{ "data_dinges", false },
-		{ "blablaglobal_bla", false },
-		{ "boo.data_.whatever", true }
+		{ "blablaglobal_bla", true },
+		{ "boo.data_.whatever", true },
+		{ "data_.whatever", false },
+		{ "stop_", false },
+		{ "loop_", false },
+		{ "global_", false },
+		{ "_with.leading_underscore", false }
 	};
 
 	BOOST_CHECK_EQUAL(test1.size(), sizeof(kS) / sizeof(T));
