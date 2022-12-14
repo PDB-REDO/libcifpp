@@ -27,6 +27,7 @@
 #pragma once
 
 #include <map>
+#include <regex>
 
 #include <cif++/row.hpp>
 
@@ -93,23 +94,23 @@ class sac_parser
 
 	static bool is_unquoted_string(std::string_view text)
 	{
-		auto s = text.begin();
+		bool result = is_ordinary(text.front());
 
-		bool result = is_ordinary(*s++);
-		while (result and s != text.end())
-		{
-			result = is_non_blank(*s);
-			++s;
-		}
-
-		// but be careful it does not contain e.g. stop_
 		if (result)
 		{
-			static const std::regex reservedRx(R"((^(?:data|save)|.*(?:loop|stop|global))_.+)", std::regex_constants::icase);
-			result = not std::regex_match(text.begin(), text.end(), reservedRx);
+			for (auto ch : text)
+			{
+				if (is_non_blank(ch))
+					continue;
+				result = false;
+				break;
+			}
 		}
 
-		return result;
+		static const std::regex kReservedRx(R"(loop_|stop_|global_|data_\S+|save_\S+)", std::regex_constants::icase);
+
+		// but be careful it does not contain e.g. stop_
+		return result and not std::regex_match(text.begin(), text.end(), kReservedRx);
 	}
 
   protected:

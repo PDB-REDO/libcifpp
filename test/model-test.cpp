@@ -58,6 +58,12 @@ bool init_unit_test()
 	// not a test, just initialize test dir
 	if (boost::unit_test::framework::master_test_suite().argc == 2)
 		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
+	else
+	{
+		while (not gTestDir.empty() and not std::filesystem::exists(gTestDir / "test"))
+			gTestDir = gTestDir.parent_path();
+		gTestDir /= "test";
+	}
 
 	// do this now, avoids the need for installing
 	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");

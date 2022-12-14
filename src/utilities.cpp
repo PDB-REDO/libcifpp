@@ -124,7 +124,8 @@ std::string get_executable_path()
 {
 	using namespace std::literals;
 
-	char path[PATH_MAX] = "";
+	// This used to be PATH_MAX, but lets simply assume 1024 is enough...
+	char path[1024] = "";
 	if (readlink("/proc/self/exe", path, sizeof(path)) == -1)
 		throw std::runtime_error("could not get exe path "s + strerror(errno));
 	return {path};

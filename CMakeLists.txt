@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 5.0.2 LANGUAGES CXX)
+project(cifpp VERSION 5.0.6 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -299,18 +299,16 @@ if(CIFPP_DOWNLOAD_CCD)
 	add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
 endif()
 
-if(UNIX)
-	set(CIFPP_CACHE_DIR "/var/cache/libcifpp" CACHE STRING "The cache directory to use")
-	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
-endif()
-
-set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
-set(SHARE_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/libcifpp)
-
-set(CIFPP_DATA_DIR "${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_DIR}" CACHE STRING "The directory containing the provided data files")
-
+# Installation directories
+set(CIFPP_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp")
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
+
+if(UNIX)
+	set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp")
+	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
+
+	set(CIFPP_ETC_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+endif()
 
 # Install rules
 install(TARGETS cifpp
@@ -359,7 +357,7 @@ configure_package_config_file(
 	${CONFIG_TEMPLATE_FILE}
 	${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
-	PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR SHARE_INSTALL_DIR
+	PATH_VARS CIFPP_DATA_DIR
 )
 
 install(FILES
@@ -429,11 +427,15 @@ if(ENABLE_TESTING)
 	endforeach()
 endif()
 
-message("Will install in ${CMAKE_INSTALL_PREFIX}")
-
 # Optionally install the update scripts for CCD and dictionary files
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
-	set(CIFPP_CRON_DIR "$ENV{DESTDIR}/etc/cron.weekly")
+	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly")
+	elseif(UNIX)	# assume all others are like FreeBSD... 
+		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly")
+	else()
+		message(FATAL_ERROR "Don't know where to install the update script")
+	endif()
 
 	configure_file(${PROJECT_SOURCE_DIR}/tools/update-libcifpp-data.in update-libcifpp-data @ONLY)
 	install(
@@ -443,15 +445,15 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	)
 
 	install(DIRECTORY DESTINATION ${CIFPP_CACHE_DIR})
-	install(DIRECTORY DESTINATION "$ENV{DESTDIR}/etc/libcifpp/cache-update.d")
+	install(DIRECTORY DESTINATION "${CIFPP_ETC_DIR}/libcifpp/cache-update.d")
 
 	# a config to, to make it complete
-	if(NOT EXISTS "$ENV{DESTDIR}/etc/libcifpp.conf")
+	if(NOT EXISTS "${CIFPP_ETC_DIR}/libcifpp.conf")
 		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf [[# Uncomment the next line to enable automatic updates
 # update=true
 ]])
-		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf DESTINATION "$ENV{DESTDIR}/etc")
-		install(CODE "message(\"A configuration file has been written to $ENV{DESTDIR}/etc/libcifpp.conf, please edit this file to enable automatic updates\")")
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf DESTINATION "${CIFPP_ETC_DIR}")
+		install(CODE "message(\"A configuration file has been written to ${CIFPP_ETC_DIR}/libcifpp.conf, please edit this file to enable automatic updates\")")
 	endif()
 
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
@@ -462,7 +464,7 @@ set(CPACK_SOURCE_TGZ ON)
 set(CPACK_SOURCE_TBZ2 OFF)
 set(CPACK_SOURCE_TXZ OFF)
 set(CPACK_SOURCE_TZ OFF)
-set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git;/regex")
+set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git")
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
 include(CPack)

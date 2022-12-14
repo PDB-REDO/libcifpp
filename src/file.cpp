@@ -125,7 +125,7 @@ void file::load_dictionary(std::string_view name)
 
 bool file::contains(std::string_view name) const
 {
-	return std::find_if(begin(), end(), [name](const datablock &db) { return db.name() == name; }) != end();
+	return std::find_if(begin(), end(), [name](const datablock &db) { return iequals(db.name(), name); }) != end();
 }
 
 datablock &file::operator[](std::string_view name)

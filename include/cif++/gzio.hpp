@@ -26,8 +26,8 @@
 /// whether to use a compressions/decompression algorithm is
 /// based on the extension of the \a filename argument.
 
-// This is a stripped down version of the gzio library from
-// https://github.com/mhekkel/gzio.git
+// This is a stripped down version of the gxrio library from
+// https://github.com/mhekkel/gxrio.git
 // Most notably, the lzma support has been removed since getting
 // that to work in Windows proved to be too much work.
 
@@ -128,15 +128,15 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 		std::swap(m_zstream, rhs.m_zstream);
 		std::swap(m_gzheader, rhs.m_gzheader);
 
-		auto p = std::copy(rhs.gptr(), rhs.egptr(), m_out_buffer.begin());
-		this->setg(m_out_buffer.data(), m_out_buffer.data() + m_out_buffer.size(), p);
+		auto p = std::copy(rhs.gptr(), rhs.egptr(), m_out_buffer.data());
+		this->setg(m_out_buffer.data(), m_out_buffer.data(), p);
 
 		if (m_zstream and m_zstream->avail_in > 0)
 		{
 			auto next_in_offset = m_zstream->next_in - rhs.m_in_buffer.data();
-			std::copy(rhs.m_in_buffer.begin() + next_in_offset,
-				rhs.m_in_buffer.begin() + next_in_offset + m_zstream->avail_in,
-				m_in_buffer.begin());
+			std::copy(rhs.m_in_buffer.data() + next_in_offset,
+				rhs.m_in_buffer.data() + next_in_offset + m_zstream->avail_in,
+				m_in_buffer.data());
 			m_zstream->next_in = m_in_buffer.data();
 		}
 	}
@@ -151,15 +151,15 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 		std::swap(m_zstream, rhs.m_zstream);
 		std::swap(m_gzheader, rhs.m_gzheader);
 
-		auto p = std::copy(rhs.gptr(), rhs.egptr(), m_out_buffer.begin());
-		this->setg(m_out_buffer.data(), m_out_buffer.data() + m_out_buffer.size(), p);
+		auto p = std::copy(rhs.gptr(), rhs.egptr(), m_out_buffer.data());
+		this->setg(m_out_buffer.data(), m_out_buffer.data(), p);
 
 		if (m_zstream and m_zstream->avail_in > 0)
 		{
 			auto next_in_offset = m_zstream->next_in - reinterpret_cast<unsigned char *>(rhs.m_in_buffer.data());
-			std::copy(rhs.m_in_buffer.begin() + next_in_offset,
-				rhs.m_in_buffer.begin() + next_in_offset + m_zstream->avail_in,
-				m_in_buffer.begin());
+			std::copy(rhs.m_in_buffer.data() + next_in_offset,
+				rhs.m_in_buffer.data() + next_in_offset + m_zstream->avail_in,
+				m_in_buffer.data());
 			m_zstream->next_in = reinterpret_cast<unsigned char *>(m_in_buffer.data());
 		}
 

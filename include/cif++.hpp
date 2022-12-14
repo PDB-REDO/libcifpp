@@ -38,3 +38,4 @@
 #include <cif++/model.hpp>
 
 #include <cif++/pdb/io.hpp>
+#include <cif++/gzio.hpp>

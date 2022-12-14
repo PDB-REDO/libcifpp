@@ -101,13 +101,13 @@ class atom
 		row_handle row_aniso()
 		{
 			auto cat = m_db.get("atom_site_anisotrop");
-			return cat ? cat->find1(key("id") == m_id) : row_handle{};
+			return cat ? cat->operator[]({ {"id", m_id} }) : row_handle{};
 		}
 
 		const row_handle row_aniso() const
 		{
 			auto cat = m_db.get("atom_site_anisotrop");
-			return cat ? cat->find1(key("id") == m_id) : row_handle{};
+			return cat ? cat->operator[]({ {"id", m_id} }) : row_handle{};
 		}
 
 		const datablock &m_db;
