@@ -63,7 +63,7 @@ namespace detail
 
 	condition_impl *key_equals_condition_impl::prepare(const category &c)
 	{
-		m_item_ix = get_column_ix(c, m_item_tag);
+		m_item_ix = c.get_column_ix(m_item_tag);
 		m_icase = is_column_type_uchar(c, m_item_tag);
 
 		if (c.get_cat_validator() != nullptr and

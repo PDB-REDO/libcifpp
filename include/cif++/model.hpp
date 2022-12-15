@@ -408,6 +408,8 @@ class residue
 	{
 	}
 
+	residue(const structure &structure, const std::vector<atom> &atoms);
+
 	residue(const residue &rhs) = delete;
 	residue &operator=(const residue &rhs) = delete;
 
@@ -763,6 +765,9 @@ class structure
 	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
 	atom get_atom_by_position_and_type(point p, std::string_view type, std::string_view res_type) const;
 
+	/// \brief Create a non-poly residue based on atoms already present in this structure.
+	residue &create_residue(const std::vector<atom> &atoms);
+
 	/// \brief Get a non-poly residue for an asym with id \a asymID
 	residue &get_residue(const std::string &asymID)
 	{
@@ -898,7 +903,7 @@ class structure
 	void load_atoms_for_model(StructureOpenOptions options);
 
 	template <typename... Args>
-	atom &emplace_atom(Args... args)
+	atom &emplace_atom(Args&... args)
 	{
 		return emplace_atom(atom{ std::forward<Args>(args)... });
 	}

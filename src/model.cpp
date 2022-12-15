@@ -305,6 +305,25 @@ std::ostream &operator<<(std::ostream &os, const atom &atom)
 // --------------------------------------------------------------------
 // residue
 
+residue::residue(const structure &structure, const std::vector<atom> &atoms)
+	: m_structure(&structure)
+{
+	if (atoms.empty())
+		throw std::runtime_error("Empty list of atoms");
+	
+	auto &a = atoms.front();
+
+	m_compound_id = a.get_label_comp_id();
+	m_asym_id = a.get_label_asym_id();
+	m_seq_id = a.get_label_seq_id();
+	m_auth_asym_id = a.get_auth_asym_id();
+	m_auth_seq_id = a.get_auth_seq_id();
+	m_pdb_ins_code = a.get_pdb_ins_code();
+
+	for (auto atom : atoms)
+		m_atoms.push_back(atom);
+}
+
 // residue::residue(residue &&rhs)
 // 	: m_structure(rhs.m_structure)
 // 	, m_compound_id(std::move(rhs.m_compound_id))
@@ -1512,6 +1531,11 @@ polymer &structure::get_polymer_by_asym_id(const std::string &asym_id)
 	}
 
 	throw std::runtime_error("polymer with asym id " + asym_id + " not found");
+}
+
+residue &structure::create_residue(const std::vector<atom> &atoms)
+{
+	return m_non_polymers.emplace_back(*this, atoms);
 }
 
 residue &structure::get_residue(const std::string &asym_id, int seqID, const std::string &authSeqID)

@@ -215,7 +215,8 @@ namespace detail
 				if (m_single_hit.has_value() or ri->m_single_hit.has_value())
 					return m_single_hit == ri->m_single_hit;
 				else
-					return m_item_ix == ri->m_item_ix and m_value == ri->m_value;
+					// watch out, both m_item_ix might be the same while tags might be diffent (in case they both do not exist in the category)
+					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_tag == ri->m_item_tag;
 			}
 			return this == rhs;
 		}
@@ -272,7 +273,8 @@ namespace detail
 				if (m_single_hit.has_value() or ri->m_single_hit.has_value())
 					return m_single_hit == ri->m_single_hit;
 				else
-					return m_item_ix == ri->m_item_ix and m_value == ri->m_value;
+					// watch out, both m_item_ix might be the same while tags might be diffent (in case they both do not exist in the category)
+					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_tag == ri->m_item_tag;
 			}
 			return this == rhs;
 		}
