@@ -2337,6 +2337,7 @@ boo.data_.whatever
 'stop_'
 'loop_'
 'global_'
+'_with.leading_underscore'
 )"_cf;
 
 	auto &db1 = data1.front();
@@ -2355,7 +2356,8 @@ boo.data_.whatever
 		{ "data_.whatever", false },
 		{ "stop_", false },
 		{ "loop_", false },
-		{ "global_", false }
+		{ "global_", false },
+		{ "_with.leading_underscore", false }
 	};
 
 	BOOST_CHECK_EQUAL(test1.size(), sizeof(kS) / sizeof(T));
