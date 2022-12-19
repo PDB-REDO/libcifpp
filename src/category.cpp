@@ -595,8 +595,6 @@ category::category(const category &rhs)
 	, m_columns(rhs.m_columns)
 	, m_validator(rhs.m_validator)
 	, m_cat_validator(rhs.m_cat_validator)
-	, m_parent_links(rhs.m_parent_links)
-	, m_child_links(rhs.m_child_links)
 	, m_cascade(rhs.m_cascade)
 {
 	for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
@@ -645,8 +643,6 @@ category &category::operator=(const category &rhs)
 
 		m_validator = rhs.m_validator;
 		m_cat_validator = rhs.m_cat_validator;
-		m_parent_links = rhs.m_parent_links;
-		m_child_links = rhs.m_child_links;
 
 		if (m_cat_validator != nullptr)
 			m_index = new category_index(this);
@@ -983,11 +979,19 @@ bool category::validate_links() const
 
 row_handle category::operator[](const key_type &key)
 {
-	if (m_index == nullptr)
-		throw std::logic_error("Category " + m_name + " does not have an index");
+	row_handle result{};
 
-	auto row = m_index->find_by_value(key);
-	return row != nullptr ? row_handle{ *this, *row } : row_handle{};
+	if (not empty())
+	{
+		if (m_index == nullptr)
+			throw std::logic_error("Category " + m_name + " does not have an index");
+
+		auto row = m_index->find_by_value(key);
+		if (row != nullptr)
+			result = { *this, *row };
+	}
+
+	return result;
 }
 
 // --------------------------------------------------------------------

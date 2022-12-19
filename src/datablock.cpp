@@ -29,6 +29,30 @@
 namespace cif
 {
 
+datablock::datablock(const datablock &db)
+	: std::list<category>(db)
+	, m_name(db.m_name)
+	, m_validator(db.m_validator)
+{
+	for (auto &cat : *this)
+		cat.update_links(*this);
+}
+
+datablock &datablock::operator=(const datablock &db)
+{
+	if (this != &db)
+	{
+		std::list<category>::operator=(db);
+		m_name = db.m_name;
+		m_validator = db.m_validator;
+
+		for (auto &cat : *this)
+			cat.update_links(*this);
+	}
+
+	return *this;
+}
+
 void datablock::set_validator(const validator *v)
 {
 	m_validator = v;

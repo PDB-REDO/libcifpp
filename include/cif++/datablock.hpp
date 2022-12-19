@@ -45,11 +45,10 @@ class datablock : public std::list<category>
 	{
 	}
 
-	datablock(const datablock &) = default;
-
+	datablock(const datablock &);
 	datablock(datablock &&) = default;
 
-	datablock &operator=(const datablock &) = default;
+	datablock &operator=(const datablock &);
 	datablock &operator=(datablock &&) = default;
 
 	// --------------------------------------------------------------------
