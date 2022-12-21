@@ -677,13 +677,13 @@ compound_factory::compound_factory()
 {
 	auto ccd = cif::load_resource("components.cif");
 	if (ccd)
-		m_impl.reset(new CCD_compound_factory_impl(m_impl));
+		m_impl = std::make_shared<CCD_compound_factory_impl>(m_impl);
 	else if (cif::VERBOSE > 0)
 		std::cerr << "CCD components.cif file was not found" << std::endl;
 
 	const char *clibd_mon = getenv("CLIBD_MON");
 	if (clibd_mon != nullptr and fs::is_directory(clibd_mon))
-		m_impl.reset(new CCP4_compound_factory_impl(clibd_mon));
+		m_impl = std::make_shared<CCP4_compound_factory_impl>(clibd_mon, m_impl);
 	else if (cif::VERBOSE > 0)
 		std::cerr << "CCP4 monomers library not found, CLIBD_MON is not defined" << std::endl;
 }
