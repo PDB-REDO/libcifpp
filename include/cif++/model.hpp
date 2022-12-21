@@ -394,7 +394,7 @@ class residue
 	friend class structure;
 
 	// constructor
-	residue(const structure &structure, const std::string &compoundID,
+	residue(structure &structure, const std::string &compoundID,
 		const std::string &asymID, int seqID,
 		const std::string &authAsymID, const std::string &authSeqID,
 		const std::string &pdbInsCode)
@@ -408,7 +408,7 @@ class residue
 	{
 	}
 
-	residue(const structure &structure, const std::vector<atom> &atoms);
+	residue(structure &structure, const std::vector<atom> &atoms);
 
 	residue(const residue &rhs) = delete;
 	residue &operator=(const residue &rhs) = delete;
@@ -432,7 +432,7 @@ class residue
 	const std::string &get_compound_id() const { return m_compound_id; }
 	void set_compound_id(const std::string &id) { m_compound_id = id; }
 
-	const structure *get_structure() const { return m_structure; }
+	structure *get_structure() const { return m_structure; }
 
 	// const compound &compound() const;
 
@@ -489,7 +489,7 @@ class residue
   protected:
 	residue() {}
 
-	const structure *m_structure = nullptr;
+	structure *m_structure = nullptr;
 	std::string m_compound_id, m_asym_id;
 	int m_seq_id = 0;
 	std::string m_auth_asym_id, m_auth_seq_id, m_pdb_ins_code;
@@ -573,7 +573,7 @@ class monomer : public residue
 class polymer : public std::vector<monomer>
 {
   public:
-	polymer(const structure &s, const std::string &entityID, const std::string &asymID, const std::string &auth_asym_id);
+	polymer(structure &s, const std::string &entityID, const std::string &asymID, const std::string &auth_asym_id);
 
 	polymer(const polymer &) = delete;
 	polymer &operator=(const polymer &) = delete;
@@ -581,7 +581,7 @@ class polymer : public std::vector<monomer>
 	// monomer &getBySeqID(int seqID);
 	// const monomer &getBySeqID(int seqID) const;
 
-	const structure *get_structure() const { return m_structure; }
+	structure *get_structure() const { return m_structure; }
 
 	std::string get_asym_id() const { return m_asym_id; }
 	std::string get_auth_asym_id() const { return m_auth_asym_id; }	// The PDB chain ID, actually
@@ -590,7 +590,7 @@ class polymer : public std::vector<monomer>
 	// int Distance(const monomer &a, const monomer &b) const;
 
   private:
-	const structure *m_structure;
+	structure *m_structure;
 	std::string m_entity_id;
 	std::string m_asym_id;
 	std::string m_auth_asym_id;
@@ -604,7 +604,7 @@ class branch;
 class sugar : public residue
 {
   public:
-	sugar(const branch &branch, const std::string &compoundID,
+	sugar(branch &branch, const std::string &compoundID,
 		const std::string &asymID, int authSeqID);
 
 	sugar(sugar &&rhs);
@@ -631,27 +631,42 @@ class sugar : public residue
 		return result;
 	}
 
+	cif::mm::atom add_atom(row_initializer atom_info);
+
   private:
-	const branch *m_branch;
+	branch *m_branch;
 	atom m_link;
 };
 
 class branch : public std::vector<sugar>
 {
   public:
-	branch(structure &structure, const std::string &asymID);
+	branch(structure &structure, const std::string &asym_id, const std::string &entity_id);
+
+	branch(const branch &) = delete;
+	branch &operator=(const branch &) = delete;
+
+	branch(branch &&) = default;
+	branch &operator=(branch &&) = default;
 
 	void link_atoms();
 
 	std::string name() const;
 	float weight() const;
 	std::string get_asym_id() const { return m_asym_id; }
+	std::string get_entity_id() const { return m_entity_id; }
 
 	structure &get_structure() { return *m_structure; }
-	const structure &get_structure() const { return *m_structure; }
+	structure &get_structure() const { return *m_structure; }
 
-	sugar &getSugarByNum(int nr);
-	const sugar &getSugarByNum(int nr) const;
+	sugar &get_sugar_by_num(int nr);
+
+	const sugar &get_sugar_by_num(int nr) const
+	{
+		return const_cast<branch *>(this)->get_sugar_by_num(nr);
+	}
+
+	sugar &construct_sugar(const std::string &compound_id);
 
   private:
 	friend sugar;
@@ -659,7 +674,7 @@ class branch : public std::vector<sugar>
 	std::string name(const sugar &s) const;
 
 	structure *m_structure;
-	std::string m_asym_id;
+	std::string m_asym_id, m_entity_id;
 };
 
 // // --------------------------------------------------------------------
@@ -850,6 +865,9 @@ class structure
 	/// \param atoms		The array of sets of item data containing the data for the atoms.
 	/// \return				The newly create asym ID
 	std::string create_non_poly(const std::string &entity_id, std::vector<row_initializer> atoms);
+
+	/// \brief Create a new and empty (sugar) branch
+	branch &create_branch();
 
 	/// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a atoms
 	branch &create_branch(std::vector<row_initializer> atoms);

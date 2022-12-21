@@ -223,6 +223,28 @@ bool compound::atoms_bonded(const std::string &atomId_1, const std::string &atom
 	return i != m_bonds.end();
 }
 
+float compound::bond_length(const std::string &atomId_1, const std::string &atomId_2) const
+{
+	auto i = find_if(m_bonds.begin(), m_bonds.end(),
+		[&](const compound_bond &b)
+		{
+			return (b.atom_id[0] == atomId_1 and b.atom_id[1] == atomId_2) or (b.atom_id[0] == atomId_2 and b.atom_id[1] == atomId_1);
+		});
+
+	float result = std::numeric_limits<float>::max();
+
+	if (i != m_bonds.end())
+	{
+		auto a = get_atom_by_atom_id(atomId_1);
+		auto b = get_atom_by_atom_id(atomId_2);
+
+		result = distance(point{a.x, a.y, a.z}, point{b.x, b.y, b.z});
+	}
+
+	return result;
+}
+
+
 // --------------------------------------------------------------------
 // known amino acids and bases
 

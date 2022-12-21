@@ -36,6 +36,7 @@
 
 #include <cif++.hpp>
 #include <cif++/atom_type.hpp>
+#include <cif++/point.hpp>
 
 namespace cif
 {
@@ -75,6 +76,11 @@ struct compound_atom
 	bool leaving_atom = false;
 	bool stereo_config = false;
 	float x, y, z;
+
+	point get_location() const
+	{
+		return { x, y, z };
+	}
 };
 
 /// --------------------------------------------------------------------
@@ -114,6 +120,7 @@ class compound
 	compound_atom get_atom_by_atom_id(const std::string &atom_id) const;
 
 	bool atoms_bonded(const std::string &atomId_1, const std::string &atomId_2) const;
+	float bond_length(const std::string &atomId_1, const std::string &atomId_2) const;
 
 	bool is_water() const
 	{
