@@ -355,6 +355,44 @@ point center_points(std::vector<point> &Points)
 	return t;
 }
 
+quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
+	float angle, float esd)
+{
+	p1 -= p3;
+	p2 -= p3;
+	p4 -= p3;
+	p3 -= p3;
+
+	quaternion q;
+	auto axis = p2;
+
+	float dh = dihedral_angle(p1, p2, p3, p4);
+	for (int iteration = 0; iteration < 100; ++iteration)
+	{
+		float delta = std::fmod(angle - dh, 360);
+
+		if (delta < -180)
+			delta += 360;
+		if (delta > 180)
+			delta -= 360;
+
+		if (std::abs(delta) < esd)
+			break;
+
+		// if (iteration > 0)
+		// 	std::cout << cif::coloured(("iteration " + std::to_string(iteration)).c_str(), cif::scBLUE, cif::scBLACK) << " delta: " << delta << std::endl;
+
+		auto q2 = construct_from_angle_axis(delta, axis);
+		q = iteration == 0 ? q2 : q * q2;
+			
+		p4.rotate(q2);
+
+		dh = dihedral_angle(p1, p2, p3, p4);
+	}
+
+	return q;
+}
+
 point centroid(const std::vector<point> &pts)
 {
 	point result;

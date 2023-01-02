@@ -483,6 +483,13 @@ struct point_type
 		m_z = p.get_d();
 	}
 
+	constexpr void rotate(const quaternion &q, point_type pivot)
+	{
+		operator-=(pivot);
+		rotate(q);
+		operator+=(pivot);
+	}
+
 #if HAVE_LIBCLIPPER
 	operator clipper::Coord_orth() const
 	{
@@ -664,6 +671,12 @@ point nudge(point p, float offset);
 
 quaternion construct_from_angle_axis(float angle, point axis);
 std::tuple<double, point> quaternion_to_angle_axis(quaternion q);
+
+/// @brief Given four points and an angle, return the quaternion required to rotate
+/// point p4 along the p2-p3 axis and around point p3 to obtain the required within
+/// an accuracy of esd
+quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
+	float angle, float esd);
 
 point centroid(const std::vector<point> &Points);
 point center_points(std::vector<point> &Points);
