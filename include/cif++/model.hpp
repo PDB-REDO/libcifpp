@@ -667,6 +667,8 @@ class branch : public std::vector<sugar>
 	}
 
 	sugar &construct_sugar(const std::string &compound_id);
+	sugar &construct_sugar(const std::string &compound_id, const std::string &atom_id,
+		int linked_sugar_nr, const std::string &linked_atom_id);
 
   private:
 	friend sugar;
