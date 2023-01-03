@@ -2678,4 +2678,14 @@ void structure::validate_atoms() const
 	assert(atoms.empty());
 }
 
+// --------------------------------------------------------------------
+
+void reconstruct_pdbx(datablock &db)
+{
+	if (db.get("atom_site") == nullptr)
+		throw std::runtime_error("Cannot reconstruct PDBx file, atom data missing");
+	
+	
+}
+
 } // namespace pdbx
