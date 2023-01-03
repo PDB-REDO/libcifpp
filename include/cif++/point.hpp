@@ -54,7 +54,7 @@ class quaternion_type
   public:
 	using value_type = T;
 
-	constexpr explicit quaternion_type(value_type const &value_a = value_type(), value_type const &value_b = value_type(), value_type const &value_c = value_type(), value_type const &value_d = value_type())
+	constexpr explicit quaternion_type(value_type const &value_a = {}, value_type const &value_b = {}, value_type const &value_c = {}, value_type const &value_d = {})
 		: a(value_a)
 		, b(value_b)
 		, c(value_c)
@@ -304,6 +304,21 @@ class quaternion_type
 	constexpr value_type get_b() const { return b; }
 	constexpr value_type get_c() const { return c; }
 	constexpr value_type get_d() const { return d; }
+
+	constexpr bool operator==(const quaternion_type &rhs) const
+	{
+		return a == rhs.a and b == rhs.b and c == rhs.c and d == rhs.d;
+	}
+
+	constexpr bool operator!=(const quaternion_type &rhs) const
+	{
+		return a != rhs.a or b != rhs.b or c != rhs.c or d != rhs.d;
+	}
+
+	constexpr operator bool() const
+	{
+		return operator!=({});
+	}
 
   private:
 	value_type a, b, c, d;
