@@ -1244,6 +1244,36 @@ sugar &branch::construct_sugar(const std::string &compound_id)
 	return result;
 }
 
+sugar &branch::construct_sugar(const std::string &compound_id, const std::string &atom_id,
+	int linked_sugar_nr, const std::string &linked_atom_id)
+{
+	auto &result = construct_sugar(compound_id);
+
+	auto &linked = get_sugar_by_num(linked_sugar_nr);
+	result.set_link(linked.get_atom_by_atom_id(linked_atom_id));
+
+	auto &db = m_structure->get_datablock();
+
+	auto &pdbx_entity_branch_link = db["pdbx_entity_branch_link"];
+	auto linkID = pdbx_entity_branch_link.get_unique_id("");
+
+	db["pdbx_entity_branch_link"].emplace({
+		{ "link_id", linkID },
+		{ "entity_id", get_entity_id() },
+		{ "entity_branch_list_num_1", result.num() }, 
+		{ "comp_id_1", compound_id }, 
+		{ "atom_id_1", atom_id },
+		{ "leaving_atom_id_1", "O1" }, 	/// TODO: Need to fix this!
+		{ "entity_branch_list_num_2", linked.num() }, 
+		{ "comp_id_2", linked.get_compound_id() }, 
+		{ "atom_id_2", linked_atom_id }, 
+		{ "leaving_atom_id_2", "." }, 
+		{ "value_order", "sing" }
+	});
+
+	return result;
+}
+
 std::string branch::name(const sugar &s) const
 {
 	using namespace literals;
@@ -2275,10 +2305,16 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 
 branch &structure::create_branch()
 {
+	auto &entity = m_db["entity"];
 	auto &struct_asym = m_db["struct_asym"];
 
-	std::string asym_id = struct_asym.get_unique_id();
-	auto entity_id = m_db["entity"].get_unique_id("");
+	auto entity_id = entity.get_unique_id("");
+	auto asym_id = struct_asym.get_unique_id();
+
+	entity.emplace({
+		{"id", entity_id},
+		{"type", "branched"}
+	});
 
 	struct_asym.emplace({
 		{"id", asym_id},

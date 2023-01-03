@@ -54,7 +54,7 @@ class quaternion_type
   public:
 	using value_type = T;
 
-	constexpr explicit quaternion_type(value_type const &value_a = value_type(), value_type const &value_b = value_type(), value_type const &value_c = value_type(), value_type const &value_d = value_type())
+	constexpr explicit quaternion_type(value_type const &value_a = {}, value_type const &value_b = {}, value_type const &value_c = {}, value_type const &value_d = {})
 		: a(value_a)
 		, b(value_b)
 		, c(value_c)
@@ -305,6 +305,21 @@ class quaternion_type
 	constexpr value_type get_c() const { return c; }
 	constexpr value_type get_d() const { return d; }
 
+	constexpr bool operator==(const quaternion_type &rhs) const
+	{
+		return a == rhs.a and b == rhs.b and c == rhs.c and d == rhs.d;
+	}
+
+	constexpr bool operator!=(const quaternion_type &rhs) const
+	{
+		return a != rhs.a or b != rhs.b or c != rhs.c or d != rhs.d;
+	}
+
+	constexpr operator bool() const
+	{
+		return operator!=({});
+	}
+
   private:
 	value_type a, b, c, d;
 };
@@ -481,6 +496,13 @@ struct point_type
 		m_x = p.get_b();
 		m_y = p.get_c();
 		m_z = p.get_d();
+	}
+
+	constexpr void rotate(const quaternion &q, point_type pivot)
+	{
+		operator-=(pivot);
+		rotate(q);
+		operator+=(pivot);
 	}
 
 #if HAVE_LIBCLIPPER
@@ -664,6 +686,12 @@ point nudge(point p, float offset);
 
 quaternion construct_from_angle_axis(float angle, point axis);
 std::tuple<double, point> quaternion_to_angle_axis(quaternion q);
+
+/// @brief Given four points and an angle, return the quaternion required to rotate
+/// point p4 along the p2-p3 axis and around point p3 to obtain the required within
+/// an accuracy of esd
+quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
+	float angle, float esd);
 
 point centroid(const std::vector<point> &Points);
 point center_points(std::vector<point> &Points);

@@ -87,19 +87,20 @@ BOOST_AUTO_TEST_CASE(t1)
 	// q = Normalize(q);
 
 	// Quaternion q{ 0.1, 0.2, 0.3, 0.4 };
-	cif::quaternion q{0.5, 0.5, 0.5, 0.5};
+	cif::quaternion q{ 0.5, 0.5, 0.5, 0.5 };
 	q = normalize(q);
 
 	const auto &&[angle0, axis0] = cif::quaternion_to_angle_axis(q);
 
 	std::vector<cif::point> p1{
-		{16.979, 13.301, 44.555},
-		{18.150, 13.525, 43.680},
-		{18.656, 14.966, 43.784},
-		{17.890, 15.889, 44.078},
-		{17.678, 13.270, 42.255},
-		{16.248, 13.734, 42.347},
-		{15.762, 13.216, 43.724}};
+		{ 16.979, 13.301, 44.555 },
+		{ 18.150, 13.525, 43.680 },
+		{ 18.656, 14.966, 43.784 },
+		{ 17.890, 15.889, 44.078 },
+		{ 17.678, 13.270, 42.255 },
+		{ 16.248, 13.734, 42.347 },
+		{ 15.762, 13.216, 43.724 }
+	};
 
 	auto p2 = p1;
 
@@ -136,7 +137,7 @@ BOOST_AUTO_TEST_CASE(t2)
 
 	cif::point xp = cif::cross_product(p[1] - p[0], p[2] - p[0]);
 
-	auto q = cif::construct_from_angle_axis(45, xp); //mmcif::Normalize(Quaternion{45 * mmcif::kPI / 180, xp.mX, xp.mY, xp.mZ});
+	auto q = cif::construct_from_angle_axis(45, xp); // mmcif::Normalize(Quaternion{45 * mmcif::kPI / 180, xp.mX, xp.mY, xp.mZ});
 
 	auto &&[angle, axis] = cif::quaternion_to_angle_axis(q);
 
@@ -153,7 +154,7 @@ BOOST_AUTO_TEST_CASE(t3)
 
 	cif::point xp = cif::cross_product(p[1] - p[0], p[2] - p[0]);
 
-	auto q = cif::construct_from_angle_axis(45, xp); //mmcif::Normalize(Quaternion{45 * mmcif::kPI / 180, xp.mX, xp.mY, xp.mZ});
+	auto q = cif::construct_from_angle_axis(45, xp); // mmcif::Normalize(Quaternion{45 * mmcif::kPI / 180, xp.mX, xp.mY, xp.mZ});
 
 	auto v = p[1];
 	v -= p[0];
@@ -165,4 +166,49 @@ BOOST_AUTO_TEST_CASE(t3)
 	double a = cif::angle(v, p[0], p[1]);
 
 	BOOST_TEST(a == 45, tt::tolerance(0.01));
+}
+
+BOOST_AUTO_TEST_CASE(dh_q_1)
+{
+	struct
+	{
+		float angle;
+		cif::point pts[4];
+	} tests[] = {
+		{ -97.5,
+			{ { 68.8649979, -7.34800005, 54.3769989 },
+				{ 68.1350021, -8.18700027, 53.6489983 },
+				{ 68.7760239, -9.07335377, 52.7140236 },
+				{ 68.9000015, -10.3944235, 53.2217026 } } },
+		{ 80.3,
+			{ { 0.304512024, 0.531184196, 2.25860214 },
+				{ 0.956512451, 0.0321846008, 1.07460022 },
+				{ 0, 0, 0 },
+				{ 0.21336633, -1.09552193, -0.878999829 } } },
+		{ -97.5,
+			{ { 0.088973999, 1.72535372, 1.66297531 },
+				{ -0.641021729, 0.886353493, 0.93497467 },
+				{ 0, 0, 0 },
+				{ 1.29433727, -0.395142615, 0.432300746 } } },
+		{ -97.5,
+			{
+				{ 0.088973999, 1.72535372, 1.66297531 },
+				{ -0.641021729, 0.886353493, 0.93497467 },
+				{ 0, 0, 0 },
+				{ 1.33983064, 0.384027064, -0.275154471 },
+
+			} }
+	};
+
+	for (auto &&[angle, pts] : tests)
+	{
+		auto q = cif::construct_for_dihedral_angle(pts[0], pts[1], pts[2], pts[3], angle, 1);
+
+		pts[3] -= pts[2];
+		pts[3].rotate(q);
+		pts[3] += pts[2];
+
+		auto dh = cif::dihedral_angle(pts[0], pts[1], pts[2], pts[3]);
+		BOOST_TEST(dh == angle, tt::tolerance(0.1f));
+	}
 }
