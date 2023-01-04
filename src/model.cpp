@@ -1222,6 +1222,22 @@ sugar &branch::construct_sugar(const std::string &compound_id)
 {
 	auto &db = m_structure->get_datablock();
 
+	auto compound = compound_factory::instance().create(compound_id);
+	if (compound == nullptr)
+		throw std::runtime_error("Trying to insert unknown compound " + compound_id + " (not found in CCD)");
+
+	auto &chemComp = db["chem_comp"];
+	auto r = chemComp.find(key("id") == compound_id);
+	if (r.empty())
+	{
+		chemComp.emplace({
+			{"id", compound_id},
+			{"name", compound->name()},
+			{"formula", compound->formula()},
+			{"formula_weight", compound->formula_weight()},
+			{"type", compound->type()}});
+	}
+
 	sugar &result = emplace_back(*this, compound_id, m_asym_id, size() + 1);
 
 	db["pdbx_branch_scheme"].emplace({
@@ -2014,6 +2030,51 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 	{
 		atomSites.update_value(key("id") == a.id(), "label_comp_id", newCompound);
 		atomSites.update_value(key("id") == a.id(), "auth_comp_id", newCompound);
+	}
+}
+
+void structure::remove_residue(const std::string &asym_id, int seq_id, const std::string &auth_seq_id)
+{
+	if (seq_id == 0)
+	{
+		for (auto &res : m_non_polymers)
+		{
+			if (res.get_asym_id() == asym_id and (auth_seq_id.empty() or res.get_auth_seq_id() == auth_seq_id))
+			{
+				remove_residue(res);
+				return;
+			}
+		}
+	}
+
+	for (auto &poly : m_polymers)
+	{
+		if (poly.get_asym_id() != asym_id)
+			continue;
+
+		for (auto &res : poly)
+		{
+			if (res.get_seq_id() == seq_id)
+			{
+				remove_residue(res);
+				return;
+			}
+		}
+	}
+
+	for (auto &branch : m_branches)
+	{
+		if (branch.get_asym_id() != asym_id)
+			continue;
+
+		for (auto &sugar : branch)
+		{
+			if (sugar.get_asym_id() == asym_id and sugar.get_auth_seq_id() == auth_seq_id)
+			{
+				remove_residue(sugar);
+				return;
+			}
+		}
 	}
 }
 
