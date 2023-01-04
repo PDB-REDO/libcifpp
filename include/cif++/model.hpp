@@ -842,10 +842,7 @@ class structure
 	///
 	/// \param asym_id     The asym ID
 	/// \param seq_id      The sequence ID
-	void remove_residue(const std::string &asym_id, int seq_id, const std::string &auth_seq_id)
-	{
-		remove_residue(get_residue(asym_id, seq_id, auth_seq_id));
-	}
+	void remove_residue(const std::string &asym_id, int seq_id, const std::string &auth_seq_id);
 
 	/// \brief Create a new non-polymer entity, returns new ID
 	/// \param mon_id	The mon_id for the new nonpoly, must be an existing and known compound from CCD
