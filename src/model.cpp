@@ -954,7 +954,7 @@ float monomer::omega(const monomer &a, const monomer &b)
 
 bool monomer::is_cis(const monomer &a, const monomer &b)
 {
-	return omega(a, b) < 30.0f;
+	return std::abs(omega(a, b)) < 30.0f;
 }
 
 // --------------------------------------------------------------------
