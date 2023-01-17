@@ -2388,180 +2388,180 @@ branch &structure::create_branch()
 	return m_branches.emplace_back(*this, asym_id, entity_id);
 }
 
-branch &structure::create_branch(std::vector<row_initializer> atoms)
-{
-// 	// sanity check
-// 	for (auto &nag_atom : atoms)
-// 	{
-// 		for (const auto &[name, value] : nag_atom)
-// 		{
-// 			if (name == "label_comp_id" and value != "NAG")
-// 				throw std::logic_error("The first sugar in a branch should be a NAG");
-// 		}
-// 	}
+// branch &structure::create_branch(std::vector<row_initializer> atoms)
+// {
+// // 	// sanity check
+// // 	for (auto &nag_atom : atoms)
+// // 	{
+// // 		for (const auto &[name, value] : nag_atom)
+// // 		{
+// // 			if (name == "label_comp_id" and value != "NAG")
+// // 				throw std::logic_error("The first sugar in a branch should be a NAG");
+// // 		}
+// // 	}
 
-// 	using namespace literals;
+// // 	using namespace literals;
 
-// 	auto &branch = create_branch();
-// 	auto asym_id = branch.get_asym_id();
-// 	auto entity_id = branch.get_entity_id();
+// // 	auto &branch = create_branch();
+// // 	auto asym_id = branch.get_asym_id();
+// // 	auto entity_id = branch.get_entity_id();
 
-// 	auto &sugar = branch.emplace_back(branch, "NAG", asym_id, 1);
+// // 	auto &sugar = branch.emplace_back(branch, "NAG", asym_id, 1);
 
-// 	auto &atom_site = m_db["atom_site"];
+// // 	auto &atom_site = m_db["atom_site"];
 
-// 	for (auto &atom : atoms)
-// 	{
-// 		auto atom_id = atom_site.get_unique_id("");
+// // 	for (auto &atom : atoms)
+// // 	{
+// // 		auto atom_id = atom_site.get_unique_id("");
 
-// 		atom.set_value("id", atom_id);
-// 		atom.set_value("label_asym_id", asym_id);
-// 		atom.set_value("auth_asym_id", asym_id);
-// 		atom.set_value("label_entity_id", entity_id);
-// 		atom.set_value({ "auth_seq_id", 1 });
+// // 		atom.set_value("id", atom_id);
+// // 		atom.set_value("label_asym_id", asym_id);
+// // 		atom.set_value("auth_asym_id", asym_id);
+// // 		atom.set_value("label_entity_id", entity_id);
+// // 		atom.set_value({ "auth_seq_id", 1 });
 
-// 		atom.set_value_if_empty({"group_PDB", "HETATM"});
-// 		atom.set_value_if_empty({"label_comp_id", "NAG"});
-// 		atom.set_value_if_empty({"label_seq_id", "."});
-// 		atom.set_value_if_empty({"auth_comp_id", "NAG"});
-// 		atom.set_value_if_empty({"pdbx_PDB_model_num", 1});
-// 		atom.set_value_if_empty({"label_alt_id", ""});
+// // 		atom.set_value_if_empty({"group_PDB", "HETATM"});
+// // 		atom.set_value_if_empty({"label_comp_id", "NAG"});
+// // 		atom.set_value_if_empty({"label_seq_id", "."});
+// // 		atom.set_value_if_empty({"auth_comp_id", "NAG"});
+// // 		atom.set_value_if_empty({"pdbx_PDB_model_num", 1});
+// // 		atom.set_value_if_empty({"label_alt_id", ""});
 
-// 		auto row = atom_site.emplace(atom.begin(), atom.end());
+// // 		auto row = atom_site.emplace(atom.begin(), atom.end());
 
-// 		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
-// 		sugar.add_atom(newAtom);
-// 	}
+// // 		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
+// // 		sugar.add_atom(newAtom);
+// // 	}
 
-// 	// // now we can create the entity and get the real ID
-// 	// auto entity_id = create_entity_for_branch(branch);
-// 	// assert(not entity_id.empty());
+// // 	// // now we can create the entity and get the real ID
+// // 	// auto entity_id = create_entity_for_branch(branch);
+// // 	// assert(not entity_id.empty());
 
-// 	for (auto &a : sugar.atoms())
-// 		a.set_property("label_entity_id", entity_id);
+// // 	for (auto &a : sugar.atoms())
+// // 		a.set_property("label_entity_id", entity_id);
 
-// 	m_db["pdbx_branch_scheme"].emplace({
-// 		{"asym_id", asym_id},
-// 		{"entity_id", entity_id},
-// 		{"num", 1},
-// 		{"mon_id", "NAG"},
+// // 	m_db["pdbx_branch_scheme"].emplace({
+// // 		{"asym_id", asym_id},
+// // 		{"entity_id", entity_id},
+// // 		{"num", 1},
+// // 		{"mon_id", "NAG"},
 
-// 		{"pdb_asym_id", asym_id},
-// 		{"pdb_seq_num", 1},
-// 		{"pdb_mon_id", "NAG"},
+// // 		{"pdb_asym_id", asym_id},
+// // 		{"pdb_seq_num", 1},
+// // 		{"pdb_mon_id", "NAG"},
 
-// 		// TODO: need fix, collect from nag_atoms?
-// 		{"auth_asym_id", asym_id},
-// 		{"auth_mon_id", "NAG"},
-// 		{"auth_seq_num", 1},
+// // 		// TODO: need fix, collect from nag_atoms?
+// // 		{"auth_asym_id", asym_id},
+// // 		{"auth_mon_id", "NAG"},
+// // 		{"auth_seq_num", 1},
 
-// 		{"hetero", "n"}
-// 	});
+// // 		{"hetero", "n"}
+// // 	});
 
-// 	return branch;
-}
+// // 	return branch;
+// }
 
-branch &structure::extend_branch(const std::string &asym_id, std::vector<row_initializer> atom_info,
-	int link_sugar, const std::string &link_atom)
-{
-// 	// sanity check
-// 	std::string compoundID;
+// branch &structure::extend_branch(const std::string &asym_id, std::vector<row_initializer> atom_info,
+// 	int link_sugar, const std::string &link_atom)
+// {
+// // 	// sanity check
+// // 	std::string compoundID;
 
-// 	for (auto &atom : atom_info)
-// 	{
-// 		for (const auto &[name, value] : atom)
-// 		{
-// 			if (name != "label_comp_id")
-// 				continue;
+// // 	for (auto &atom : atom_info)
+// // 	{
+// // 		for (const auto &[name, value] : atom)
+// // 		{
+// // 			if (name != "label_comp_id")
+// // 				continue;
 
-// 			if (compoundID.empty())
-// 				compoundID = value;
-// 			else if (value != compoundID)
-// 				throw std::logic_error("All atoms should be of the same type");
-// 		}
-// 	}
+// // 			if (compoundID.empty())
+// // 				compoundID = value;
+// // 			else if (value != compoundID)
+// // 				throw std::logic_error("All atoms should be of the same type");
+// // 		}
+// // 	}
 
-// 	using namespace literals;
+// // 	using namespace literals;
 
-// 	// auto &branch = m_branches.emplace_back(*this, asym_id);
-// 	auto tmp_entity_id = m_db["entity"].get_unique_id("");
+// // 	// auto &branch = m_branches.emplace_back(*this, asym_id);
+// // 	auto tmp_entity_id = m_db["entity"].get_unique_id("");
 
-// 	auto &atom_site = m_db["atom_site"];
+// // 	auto &atom_site = m_db["atom_site"];
 
-// 	auto bi = std::find_if(m_branches.begin(), m_branches.end(), [asym_id](branch &b)
-// 		{ return b.get_asym_id() == asym_id; });
-// 	if (bi == m_branches.end())
-// 		throw std::logic_error("Create a branch first!");
+// // 	auto bi = std::find_if(m_branches.begin(), m_branches.end(), [asym_id](branch &b)
+// // 		{ return b.get_asym_id() == asym_id; });
+// // 	if (bi == m_branches.end())
+// // 		throw std::logic_error("Create a branch first!");
 
-// 	branch &branch = *bi;
+// // 	branch &branch = *bi;
 
-// 	int sugarNum = static_cast<int>(branch.size() + 1);
+// // 	int sugarNum = static_cast<int>(branch.size() + 1);
 
-// 	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum);
+// // 	auto &sugar = branch.emplace_back(branch, compoundID, asym_id, sugarNum);
 
-// 	for (auto &atom : atom_info)
-// 	{
-// 		auto atom_id = atom_site.get_unique_id("");
+// // 	for (auto &atom : atom_info)
+// // 	{
+// // 		auto atom_id = atom_site.get_unique_id("");
 
-// 		atom.set_value("id", atom_id);
-// 		atom.set_value("label_asym_id", asym_id);
-// 		atom.set_value("auth_asym_id", asym_id);
-// 		atom.set_value("label_entity_id", tmp_entity_id);
-// 		atom.set_value({"auth_seq_id", sugarNum });
+// // 		atom.set_value("id", atom_id);
+// // 		atom.set_value("label_asym_id", asym_id);
+// // 		atom.set_value("auth_asym_id", asym_id);
+// // 		atom.set_value("label_entity_id", tmp_entity_id);
+// // 		atom.set_value({"auth_seq_id", sugarNum });
 
-// 		atom.set_value_if_empty({"group_PDB", "HETATM"});
-// 		atom.set_value_if_empty({"label_comp_id", compoundID});
-// 		atom.set_value_if_empty({"auth_comp_id", compoundID});
-// 		atom.set_value_if_empty({"pdbx_PDB_model_num", 1});
-// 		atom.set_value_if_empty({"label_alt_id", ""});
+// // 		atom.set_value_if_empty({"group_PDB", "HETATM"});
+// // 		atom.set_value_if_empty({"label_comp_id", compoundID});
+// // 		atom.set_value_if_empty({"auth_comp_id", compoundID});
+// // 		atom.set_value_if_empty({"pdbx_PDB_model_num", 1});
+// // 		atom.set_value_if_empty({"label_alt_id", ""});
 
-// 		auto row = atom_site.emplace(atom.begin(), atom.end());
+// // 		auto row = atom_site.emplace(atom.begin(), atom.end());
 
-// 		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
-// 		sugar.add_atom(newAtom);
-// 	}
+// // 		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
+// // 		sugar.add_atom(newAtom);
+// // 	}
 
-// 	sugar.set_link(branch.at(link_sugar - 1).get_atom_by_atom_id(link_atom));
+// // 	sugar.set_link(branch.at(link_sugar - 1).get_atom_by_atom_id(link_atom));
 
-// 	auto entity_id = create_entity_for_branch(branch);
+// // 	auto entity_id = create_entity_for_branch(branch);
 
-// 	// Update the entity id of the asym
-// 	auto &struct_asym = m_db["struct_asym"];
-// 	auto r = struct_asym.find1("id"_key == asym_id);
-// 	r["entity_id"] = entity_id;
+// // 	// Update the entity id of the asym
+// // 	auto &struct_asym = m_db["struct_asym"];
+// // 	auto r = struct_asym.find1("id"_key == asym_id);
+// // 	r["entity_id"] = entity_id;
 
-// 	for (auto &s2 : branch)
-// 	{
-// 		for (auto atom : s2.atoms())
-// 			atom.set_property("label_entity_id", entity_id);
-// 	}
+// // 	for (auto &s2 : branch)
+// // 	{
+// // 		for (auto atom : s2.atoms())
+// // 			atom.set_property("label_entity_id", entity_id);
+// // 	}
 
-// 	auto &pdbx_branch_scheme = m_db["pdbx_branch_scheme"];
-// 	pdbx_branch_scheme.erase("asym_id"_key == asym_id);
+// // 	auto &pdbx_branch_scheme = m_db["pdbx_branch_scheme"];
+// // 	pdbx_branch_scheme.erase("asym_id"_key == asym_id);
 
-// 	for (auto &s2 : branch)
-// 	{
-// 		pdbx_branch_scheme.emplace({
-// 			{"asym_id", asym_id},
-// 			{"entity_id", entity_id},
-// 			{"num", s2.num()},
-// 			{"mon_id", s2.get_compound_id()},
+// // 	for (auto &s2 : branch)
+// // 	{
+// // 		pdbx_branch_scheme.emplace({
+// // 			{"asym_id", asym_id},
+// // 			{"entity_id", entity_id},
+// // 			{"num", s2.num()},
+// // 			{"mon_id", s2.get_compound_id()},
 
-// 			{"pdb_asym_id", asym_id},
-// 			{"pdb_seq_num", s2.num()},
-// 			{"pdb_mon_id", s2.get_compound_id()},
+// // 			{"pdb_asym_id", asym_id},
+// // 			{"pdb_seq_num", s2.num()},
+// // 			{"pdb_mon_id", s2.get_compound_id()},
 
-// 			// TODO: need fix, collect from nag_atoms?
-// 			{"auth_asym_id", asym_id},
-// 			{"auth_mon_id", s2.get_compound_id()},
-// 			{"auth_seq_num", s2.get_auth_seq_id()},
+// // 			// TODO: need fix, collect from nag_atoms?
+// // 			{"auth_asym_id", asym_id},
+// // 			{"auth_mon_id", s2.get_compound_id()},
+// // 			{"auth_seq_num", s2.get_auth_seq_id()},
 
-// 			{"hetero", "n"}
-// 		});
-// 	}
+// // 			{"hetero", "n"}
+// // 		});
+// // 	}
 
-// 	return branch;
-}
+// // 	return branch;
+// }
 
 std::string structure::create_entity_for_branch(branch &branch)
 {
