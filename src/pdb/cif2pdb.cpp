@@ -24,6 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cif++.hpp>
+#include <cif++/pdb/cif2pdb.hpp>
+#include <cif++/gzio.hpp>
+
 #include <cmath>
 #include <deque>
 #include <iomanip>
@@ -31,9 +35,6 @@
 #include <regex>
 #include <set>
 
-#include <cif++.hpp>
-#include <cif++/pdb/cif2pdb.hpp>
-#include <cif++/gzio.hpp>
 
 namespace cif::pdb
 {

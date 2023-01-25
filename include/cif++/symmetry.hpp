@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <cif++/exports.hpp>
+
 #include <array>
 #include <cstdint>
 #include <string>
@@ -50,8 +52,8 @@ struct space_group
 	int nr;
 };
 
-extern const space_group kSpaceGroups[];
-extern const std::size_t kNrOfSpaceGroups;
+extern CIFPP_EXPORT const space_group kSpaceGroups[];
+extern CIFPP_EXPORT const std::size_t kNrOfSpaceGroups;
 
 // --------------------------------------------------------------------
 

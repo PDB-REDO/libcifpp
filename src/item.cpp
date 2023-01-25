@@ -24,9 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cassert>
-
 #include <cif++/row.hpp>
+
+#include <cassert>
 
 namespace cif
 {

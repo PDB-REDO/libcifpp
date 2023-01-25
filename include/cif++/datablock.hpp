@@ -26,9 +26,8 @@
 
 #pragma once
 
-#include <cif++/forward_decl.hpp>
-
 #include <cif++/category.hpp>
+#include <cif++/forward_decl.hpp>
 
 namespace cif
 {
@@ -88,7 +87,7 @@ class datablock : public std::list<category>
 	}
 
 	// --------------------------------------------------------------------
-	
+
 	bool operator==(const datablock &rhs) const;
 
   private:

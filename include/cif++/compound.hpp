@@ -29,14 +29,14 @@
 /// \file This file contains the definition for the class compound, encapsulating
 /// the information found for compounds in the CCD.
 
+#include <cif++.hpp>
+#include <cif++/atom_type.hpp>
+#include <cif++/point.hpp>
+
 #include <map>
 #include <set>
 #include <tuple>
 #include <vector>
-
-#include <cif++.hpp>
-#include <cif++/atom_type.hpp>
-#include <cif++/point.hpp>
 
 namespace cif
 {
@@ -195,4 +195,4 @@ class compound_factory
 	std::shared_ptr<compound_factory_impl> m_impl;
 };
 
-} // namespace pdbx
+} // namespace cif

@@ -24,6 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cif++/utilities.hpp>
+#include "revision.hpp"
+
 #include <atomic>
 #include <cassert>
 #include <cmath>
@@ -43,10 +46,6 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #endif
-
-#include <cif++/utilities.hpp>
-
-#include "revision.hpp"
 
 namespace fs = std::filesystem;
 

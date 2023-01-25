@@ -26,14 +26,14 @@
 
 #pragma once
 
-#include <array>
-
 #include <cif++/forward_decl.hpp>
 
 #include <cif++/condition.hpp>
 #include <cif++/iterator.hpp>
 #include <cif++/row.hpp>
 #include <cif++/validate.hpp>
+
+#include <array>
 
 // TODO: implement all of:
 // https://en.cppreference.com/w/cpp/named_req/Container

@@ -26,12 +26,12 @@
 
 #pragma once
 
+#include <cif++/text.hpp>
+
 #include <filesystem>
 #include <list>
 #include <mutex>
 #include <utility>
-
-#include <cif++/text.hpp>
 
 namespace cif
 {

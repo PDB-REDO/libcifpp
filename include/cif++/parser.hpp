@@ -26,10 +26,10 @@
 
 #pragma once
 
+#include <cif++/row.hpp>
+
 #include <map>
 #include <regex>
-
-#include <cif++/row.hpp>
 
 namespace cif
 {
