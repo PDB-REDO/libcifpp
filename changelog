@@ -1,3 +1,6 @@
+Version 5.0.7
+- Reintroduce exports file. For DLL's
+
 Version 5.0.6
 - Fix file::contains, using iequals
 - Fix is_cis
