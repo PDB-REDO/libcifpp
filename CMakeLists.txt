@@ -173,6 +173,12 @@ list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
 include(FindAtomic)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
 
+if(MSVC)
+	# this dependency can go once MSVC supports std::experimental::is_detected
+	find_package(zeep 5.1.8 REQUIRED)
+	list(APPEND CIFPP_REQUIRED_LIBRARIES zeep::zeep)
+endif()
+
 # Create a revision file, containing the current git version info
 include(VersionString)
 write_version_header(${PROJECT_SOURCE_DIR}/src/ "LibCIFPP")
