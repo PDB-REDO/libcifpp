@@ -227,7 +227,6 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/datablock.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/file.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/validate.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/list.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/iterator.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/parser.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/forward_decl.hpp
