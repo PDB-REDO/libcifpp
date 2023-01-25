@@ -26,9 +26,9 @@
 
 #pragma once
 
-#include <numeric>
-
 #include <cif++/atom_type.hpp>
+
+#include <numeric>
 
 #if __cpp_lib_format
 #include <format>

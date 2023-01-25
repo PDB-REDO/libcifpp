@@ -27,11 +27,11 @@
 // #include <sys/ioctl.h>
 // #include <termios.h>
 
-#include <iomanip>
-#include <iostream>
-
 #include <cif++.hpp>
 #include <cif++/pdb/tls.hpp>
+
+#include <iomanip>
+#include <iostream>
 
 namespace cif
 {

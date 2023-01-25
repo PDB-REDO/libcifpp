@@ -34,8 +34,6 @@
 
 namespace fs = std::filesystem;
 
-extern int VERBOSE;
-
 namespace cif::mm
 {
 

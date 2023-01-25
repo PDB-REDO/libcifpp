@@ -26,13 +26,13 @@
 
 #pragma once
 
+#include <cif++/row.hpp>
+
 #include <cassert>
 #include <functional>
 #include <iostream>
 #include <regex>
 #include <utility>
-
-#include <cif++/row.hpp>
 
 namespace cif
 {

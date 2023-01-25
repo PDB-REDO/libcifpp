@@ -24,13 +24,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <numeric>
-#include <stack>
-
 #include <cif++/category.hpp>
 #include <cif++/datablock.hpp>
 #include <cif++/parser.hpp>
 #include <cif++/utilities.hpp>
+
+#include <numeric>
+#include <stack>
 
 // TODO: Find out what the rules are exactly for linked items, the current implementation
 // is inconsistent. It all depends whether a link is satified if a field taking part in the

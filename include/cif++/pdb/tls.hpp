@@ -26,11 +26,11 @@
 
 #pragma once
 
+#include <cif++.hpp>
+
 #include <string>
 #include <tuple>
 #include <vector>
-
-#include <cif++.hpp>
 
 namespace cif
 {

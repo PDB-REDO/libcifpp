@@ -24,15 +24,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cif++/compound.hpp>
+
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <mutex>
 #include <numeric>
 #include <shared_mutex>
-
-#include <filesystem>
-#include <fstream>
-
-#include <cif++/compound.hpp>
 
 namespace fs = std::filesystem;
 
