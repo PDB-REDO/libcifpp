@@ -1241,10 +1241,10 @@ size_t category::erase(condition &&cond, std::function<void(row_handle)> &&visit
 
 			for (auto &&[childCat, link] : m_child_links)
 			{
-				auto cond = get_children_condition(*ri, *childCat);
-				if (not cond)
+				auto ccond = get_children_condition(*ri, *childCat);
+				if (not ccond)
 					continue;
-				potential_orphans[childCat] = std::move(potential_orphans[childCat]) or std::move(cond);
+				potential_orphans[childCat] = std::move(potential_orphans[childCat]) or std::move(ccond);
 			}
 
 			save_value sv(m_validator);

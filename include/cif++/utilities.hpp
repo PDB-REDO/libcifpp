@@ -55,18 +55,18 @@ namespace cif
 extern CIFPP_EXPORT int VERBOSE;
 
 // the git 'build' number
-CIFPP_EXPORT std::string get_version_nr();
+std::string get_version_nr();
 // std::string get_version_date();
 
 // --------------------------------------------------------------------
 //	Code helping with terminal i/o
 
-CIFPP_EXPORT uint32_t get_terminal_width();
+uint32_t get_terminal_width();
 
 // --------------------------------------------------------------------
 //	Path of the current executable
 
-CIFPP_EXPORT std::string get_executable_path();
+std::string get_executable_path();
 
 // --------------------------------------------------------------------
 //	some manipulators to write coloured text to terminals
@@ -157,7 +157,7 @@ inline auto coloured(std::basic_string<CharT, Traits, Alloc> &s, StringColour fo
 // --------------------------------------------------------------------
 //	A progress bar
 
-class CIFPP_EXPORT Progress
+class Progress
 {
   public:
 	Progress(int64_t inMax, const std::string &inAction);
@@ -178,8 +178,8 @@ class CIFPP_EXPORT Progress
 // --------------------------------------------------------------------
 // Resources
 
-CIFPP_EXPORT std::unique_ptr<std::istream> load_resource(std::filesystem::path name);
-CIFPP_EXPORT void add_file_resource(const std::string &name, std::filesystem::path dataFile);
-CIFPP_EXPORT void add_data_directory(std::filesystem::path dataDir);
+std::unique_ptr<std::istream> load_resource(std::filesystem::path name);
+void add_file_resource(const std::string &name, std::filesystem::path dataFile);
+void add_data_directory(std::filesystem::path dataDir);
 
 } // namespace cif

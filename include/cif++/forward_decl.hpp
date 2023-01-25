@@ -34,15 +34,15 @@
 namespace cif
 {
 
-class CIFPP_EXPORT category;
-class CIFPP_EXPORT datablock;
-class CIFPP_EXPORT file;
-class CIFPP_EXPORT parser;
+class category;
+class datablock;
+class file;
+class parser;
 
-class CIFPP_EXPORT row;
-class CIFPP_EXPORT row_handle;
+class row;
+class row_handle;
 
-class CIFPP_EXPORT item;
-struct CIFPP_EXPORT item_handle;
+class item;
+struct item_handle;
 
 } // namespace cif

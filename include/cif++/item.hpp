@@ -51,7 +51,7 @@ namespace cif
 // --------------------------------------------------------------------
 /// \brief item is a transient class that is used to pass data into rows
 ///        but it also takes care of formatting data. 
-class CIFPP_EXPORT item
+class item
 {
   public:
 	/// \brief Default constructor, empty item
@@ -188,7 +188,7 @@ class CIFPP_EXPORT item
 /// Typically, more than 99% of the strings in an mmCIF file are less
 /// than 8 bytes in length.
 
-struct CIFPP_EXPORT item_value
+struct item_value
 {
 	item_value() = default;
 
@@ -265,7 +265,7 @@ struct CIFPP_EXPORT item_value
 
 /// \brief This is item_handle, it is used to access the data stored in item_value.
 
-struct CIFPP_EXPORT item_handle
+struct item_handle
 {
   public:
 	// conversion helper class
@@ -354,7 +354,7 @@ struct CIFPP_EXPORT item_handle
 	{
 	}
 
-	CIFPP_EXPORT static const item_handle s_null_item;
+	static CIFPP_EXPORT const item_handle s_null_item;
 
 	friend void swap(item_handle a, item_handle b)
 	{

@@ -45,7 +45,7 @@ class structure;
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT atom
+class atom
 {
   private:
 	struct atom_impl : public std::enable_shared_from_this<atom_impl>
@@ -388,7 +388,7 @@ enum class EntityType
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT residue
+class residue
 {
   public:
 	friend class structure;
@@ -499,7 +499,7 @@ class CIFPP_EXPORT residue
 // --------------------------------------------------------------------
 // a monomer models a single residue in a protein chain
 
-class CIFPP_EXPORT monomer : public residue
+class monomer : public residue
 {
   public:
 	//	monomer();
@@ -570,7 +570,7 @@ class CIFPP_EXPORT monomer : public residue
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT polymer : public std::vector<monomer>
+class polymer : public std::vector<monomer>
 {
   public:
 	polymer(structure &s, const std::string &entityID, const std::string &asymID, const std::string &auth_asym_id);
@@ -599,9 +599,9 @@ class CIFPP_EXPORT polymer : public std::vector<monomer>
 // --------------------------------------------------------------------
 // sugar and branch, to describe glycosylation sites
 
-class CIFPP_EXPORT branch;
+class branch;
 
-class CIFPP_EXPORT sugar : public residue
+class sugar : public residue
 {
   public:
 	sugar(branch &branch, const std::string &compoundID,
@@ -638,7 +638,7 @@ class CIFPP_EXPORT sugar : public residue
 	atom m_link;
 };
 
-class CIFPP_EXPORT branch : public std::vector<sugar>
+class branch : public std::vector<sugar>
 {
   public:
 	branch(structure &structure, const std::string &asym_id, const std::string &entity_id);
@@ -724,7 +724,7 @@ inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT structure
+class structure
 {
   public:
 	structure(file &p, size_t modelNr = 1, StructureOpenOptions options = {});

@@ -40,7 +40,7 @@ struct category_validator;
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT validation_error : public std::exception
+class validation_error : public std::exception
 {
   public:
 	validation_error(const std::string &msg);
@@ -59,11 +59,11 @@ enum class DDL_PrimitiveType
 	Numb
 };
 
-CIFPP_EXPORT DDL_PrimitiveType map_to_primitive_type(std::string_view s);
+DDL_PrimitiveType map_to_primitive_type(std::string_view s);
 
 struct regex_impl;
 
-struct CIFPP_EXPORT type_validator
+struct type_validator
 {
 	std::string m_name;
 	DDL_PrimitiveType m_primitive_type;
@@ -100,7 +100,7 @@ struct CIFPP_EXPORT type_validator
 	int compare(std::string_view a, std::string_view b) const;
 };
 
-struct CIFPP_EXPORT item_validator
+struct item_validator
 {
 	std::string m_tag;
 	bool m_mandatory;
@@ -133,7 +133,7 @@ struct CIFPP_EXPORT item_validator
 	void operator()(std::string_view value) const;
 };
 
-struct CIFPP_EXPORT category_validator
+struct category_validator
 {
 	std::string m_name;
 	std::vector<std::string> m_keys;
@@ -156,7 +156,7 @@ struct CIFPP_EXPORT category_validator
 	}
 };
 
-struct CIFPP_EXPORT link_validator
+struct link_validator
 {
 	int m_link_group_id;
 	std::string m_parent_category;
@@ -168,7 +168,7 @@ struct CIFPP_EXPORT link_validator
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT validator
+class validator
 {
   public:
 	validator(std::string_view name)
@@ -217,7 +217,7 @@ class CIFPP_EXPORT validator
 };
 
 // --------------------------------------------------------------------
-class CIFPP_EXPORT validator_factory
+class validator_factory
 {
   public:
 	static validator_factory &instance()

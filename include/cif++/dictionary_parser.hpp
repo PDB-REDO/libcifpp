@@ -31,6 +31,6 @@
 namespace cif
 {
 
-CIFPP_EXPORT validator parse_dictionary(std::string_view name, std::istream &is);
+validator parse_dictionary(std::string_view name, std::istream &is);
 
 } // namespace cif

@@ -67,7 +67,7 @@ bond_type from_string(const std::string &bondType);
 /// \brief struct containing information about an atom in a chemical compound.
 /// This is a subset of the available information. Contact the author if you need more fields.
 
-struct CIFPP_EXPORT compound_atom
+struct compound_atom
 {
 	std::string id;
 	atom_type type_symbol;
@@ -86,7 +86,7 @@ struct CIFPP_EXPORT compound_atom
 /// --------------------------------------------------------------------
 /// \brief struct containing information about the bonds
 
-struct CIFPP_EXPORT compound_bond
+struct compound_bond
 {
 	std::string atom_id[2];
 	bond_type type;
@@ -101,7 +101,7 @@ struct CIFPP_EXPORT compound_bond
 /// compound definitions by calling the addExtraComponents function and
 /// pass it a valid CCD formatted file.
 
-class CIFPP_EXPORT compound
+class compound
 {
   public:
 	// accessors
@@ -149,7 +149,7 @@ class CIFPP_EXPORT compound
 // --------------------------------------------------------------------
 // Factory class for compound and Link objects
 
-class CIFPP_EXPORT compound_factory
+class compound_factory
 {
   public:
 	/// \brief Initialise a singleton instance.
@@ -180,7 +180,7 @@ class CIFPP_EXPORT compound_factory
 
 	~compound_factory();
 
-	static const std::map<std::string, char> kAAMap, kBaseMap;
+	static CIFPP_EXPORT const std::map<std::string, char> kAAMap, kBaseMap;
 
   private:
 	compound_factory();

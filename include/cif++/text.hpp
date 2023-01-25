@@ -109,16 +109,16 @@ namespace cif
 // some basic utilities: Since we're using ASCII input only, we define for optimisation
 // our own case conversion routines.
 
-CIFPP_EXPORT bool iequals(std::string_view a, std::string_view b);
-CIFPP_EXPORT int icompare(std::string_view a, std::string_view b);
+bool iequals(std::string_view a, std::string_view b);
+int icompare(std::string_view a, std::string_view b);
 
-CIFPP_EXPORT bool iequals(const char *a, const char *b);
-CIFPP_EXPORT int icompare(const char *a, const char *b);
+bool iequals(const char *a, const char *b);
+int icompare(const char *a, const char *b);
 
-CIFPP_EXPORT void to_lower(std::string &s);
-CIFPP_EXPORT std::string to_lower_copy(std::string_view s);
+void to_lower(std::string &s);
+std::string to_lower_copy(std::string_view s);
 
-CIFPP_EXPORT void to_upper(std::string &s);
+void to_upper(std::string &s);
 // std::string toUpperCopy(const std::string &s);
 
 template <typename IterType>
@@ -181,7 +181,7 @@ std::vector<StringType> split(std::string_view s, std::string_view separators, b
 	return result;
 }
 
-CIFPP_EXPORT void replace_all(std::string &s, std::string_view what, std::string_view with = {});
+void replace_all(std::string &s, std::string_view what, std::string_view with = {});
 
 #if defined(__cpp_lib_starts_ends_with)
 
@@ -225,15 +225,15 @@ inline bool contains(std::string_view s, std::string_view q)
 
 #endif
 
-CIFPP_EXPORT bool icontains(std::string_view s, std::string_view q);
+bool icontains(std::string_view s, std::string_view q);
 
-CIFPP_EXPORT void trim_left(std::string &s);
-CIFPP_EXPORT void trim_right(std::string &s);
-CIFPP_EXPORT void trim(std::string &s);
+void trim_left(std::string &s);
+void trim_right(std::string &s);
+void trim(std::string &s);
 
-CIFPP_EXPORT std::string trim_left_copy(std::string_view s);
-CIFPP_EXPORT std::string trim_right_copy(std::string_view s);
-CIFPP_EXPORT std::string trim_copy(std::string_view s);
+std::string trim_left_copy(std::string_view s);
+std::string trim_right_copy(std::string_view s);
+std::string trim_copy(std::string_view s);
 
 // To make life easier, we also define iless and iset using iequals
 
@@ -250,7 +250,7 @@ typedef std::set<std::string, iless> iset;
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
 
-extern const uint8_t kCharToLowerMap[256];
+extern CIFPP_EXPORT const uint8_t kCharToLowerMap[256];
 
 inline char tolower(int ch)
 {
@@ -259,17 +259,17 @@ inline char tolower(int ch)
 
 // --------------------------------------------------------------------
 
-CIFPP_EXPORT std::tuple<std::string, std::string> split_tag_name(std::string_view tag);
+std::tuple<std::string, std::string> split_tag_name(std::string_view tag);
 
 // --------------------------------------------------------------------
 // generate a cif name, mainly used to generate asym_id's
 
-CIFPP_EXPORT std::string cif_id_for_number(int number);
+std::string cif_id_for_number(int number);
 
 // --------------------------------------------------------------------
 //	custom wordwrapping routine
 
-CIFPP_EXPORT std::vector<std::string> word_wrap(const std::string &text, size_t width);
+std::vector<std::string> word_wrap(const std::string &text, size_t width);
 
 // --------------------------------------------------------------------
 /// std::from_chars for floating point types.
@@ -449,8 +449,8 @@ std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_f
 template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
 std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_format fmt, int precision)
 {
-	int size = last - first;
-	int r;
+	int size = static_cast<int>(last - first);
+	int r = 0;
 
 	switch (fmt)
 	{

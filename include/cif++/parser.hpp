@@ -36,7 +36,7 @@ namespace cif
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT parse_error : public std::runtime_error
+class parse_error : public std::runtime_error
 {
   public:
 	parse_error(uint32_t line_nr, const std::string &message)
@@ -49,7 +49,7 @@ class CIFPP_EXPORT parse_error : public std::runtime_error
 
 // TODO: Need to implement support for transformed long lines
 
-class CIFPP_EXPORT sac_parser
+class sac_parser
 {
   public:
 	using datablock_index = std::map<std::string, std::size_t>;
@@ -94,7 +94,7 @@ class CIFPP_EXPORT sac_parser
 
 	static bool is_unquoted_string(std::string_view text)
 	{
-		bool result = is_ordinary(text.front());
+		bool result = text.empty() or is_ordinary(text.front());
 
 		if (result)
 		{
@@ -267,7 +267,7 @@ class CIFPP_EXPORT sac_parser
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT parser : public sac_parser
+class parser : public sac_parser
 {
   public:
 	parser(std::istream &is, file &file)

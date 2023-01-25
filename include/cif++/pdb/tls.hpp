@@ -35,10 +35,6 @@
 namespace cif
 {
 
-extern const int
-	kResidueNrWildcard,
-	kNoSeqNum;
-
 struct tls_selection;
 struct tls_residue;
 

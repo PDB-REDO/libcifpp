@@ -1153,7 +1153,7 @@ branch::branch(structure &structure, const std::string &asym_id, const std::stri
 	auto &branch_scheme = db["pdbx_branch_scheme"];
 	auto &branch_link = db["pdbx_entity_branch_link"];
 
-	for (const auto &entity_id : struct_asym.find<std::string>("id"_key == asym_id, "entity_id"))
+	for (const auto &asym_entity_id : struct_asym.find<std::string>("id"_key == asym_id, "entity_id"))
 	{
 		for (const auto &[comp_id, num] : branch_scheme.find<std::string, int>(
 				 "asym_id"_key == asym_id, "mon_id", "pdb_seq_num"))
@@ -1162,7 +1162,7 @@ branch::branch(structure &structure, const std::string &asym_id, const std::stri
 		}
 
 		for (const auto &[num1, num2, atom1, atom2] : branch_link.find<size_t, size_t, std::string, std::string>(
-				 "entity_id"_key == entity_id, "entity_branch_list_num_1", "entity_branch_list_num_2", "atom_id_1", "atom_id_2"))
+				 "entity_id"_key == asym_entity_id, "entity_branch_list_num_1", "entity_branch_list_num_2", "atom_id_1", "atom_id_2"))
 		{
 			// if (not iequals(atom1, "c1"))
 			// 	throw std::runtime_error("invalid pdbx_entity_branch_link");
@@ -1236,7 +1236,7 @@ sugar &branch::construct_sugar(const std::string &compound_id)
 			{"type", compound->type()}});
 	}
 
-	sugar &result = emplace_back(*this, compound_id, m_asym_id, size() + 1);
+	sugar &result = emplace_back(*this, compound_id, m_asym_id, static_cast<int>(size() + 1));
 
 	db["pdbx_branch_scheme"].emplace({
 		{"asym_id", result.get_asym_id()},

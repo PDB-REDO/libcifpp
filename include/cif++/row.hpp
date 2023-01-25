@@ -103,7 +103,7 @@ auto tie(Ts &...v)
 // --------------------------------------------------------------------
 /// \brief the row class, this one is not directly accessible from the outside
 
-class CIFPP_EXPORT row : public std::vector<item_value>
+class row : public std::vector<item_value>
 {
   public:
 	row() = default;
@@ -145,7 +145,7 @@ class CIFPP_EXPORT row : public std::vector<item_value>
 // --------------------------------------------------------------------
 /// \brief row_handle is the way to access data stored in rows
 
-class CIFPP_EXPORT row_handle
+class row_handle
 {
   public:
 	friend struct item_handle;
@@ -265,7 +265,7 @@ class CIFPP_EXPORT row_handle
 
 // --------------------------------------------------------------------
 
-class CIFPP_EXPORT row_initializer : public std::vector<item>
+class row_initializer : public std::vector<item>
 {
   public:
 	friend class category;

@@ -407,9 +407,9 @@ struct rsrc_imp
 
 #if _MSC_VER
 
-extern "C" const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
-extern "C" const char *gResourceDataDefault[1] = {};
-extern "C" const char *gResourceNameDefault[1] = {};
+extern "C" CIFPP_EXPORT const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
+extern "C" CIFPP_EXPORT const char *gResourceDataDefault[1] = {};
+extern "C" CIFPP_EXPORT const char *gResourceNameDefault[1] = {};
 
 extern "C" const mrsrc::rsrc_imp gResourceIndex[];
 extern "C" const char gResourceData[];

@@ -78,23 +78,23 @@ bool init_unit_test()
 BOOST_AUTO_TEST_CASE(cc_1)
 {
 	std::tuple<std::string_view, float, char> tests[] = {
-		{ "1.0", 1.0, 0 },
-		{ "1.0e10", 1.0e10, 0 },
-		{ "-1.1e10", -1.1e10, 0 },
-		{ "-.2e11", -.2e11, 0 },
-		{ "1.3e-10", 1.3e-10, 0 },
+		{ "1.0", 1.0f, 0 },
+		{ "1.0e10", 1.0e10f, 0 },
+		{ "-1.1e10", -1.1e10f, 0 },
+		{ "-.2e11", -.2e11f, 0 },
+		{ "1.3e-10", 1.3e-10f, 0 },
 
-		{ "1.0 ", 1.0, ' ' },
-		{ "1.0e10 ", 1.0e10, ' ' },
-		{ "-1.1e10 ", -1.1e10, ' ' },
-		{ "-.2e11 ", -.2e11, ' ' },
-		{ "1.3e-10 ", 1.3e-10, ' ' },
+		{ "1.0 ", 1.0f, ' ' },
+		{ "1.0e10 ", 1.0e10f, ' ' },
+		{ "-1.1e10 ", -1.1e10f, ' ' },
+		{ "-.2e11 ", -.2e11f, ' ' },
+		{ "1.3e-10 ", 1.3e-10f, ' ' },
 
-		{ "3.0", 3.0, 0 },
-		{ "3.0 ", 3.0, ' ' },
+		{ "3.0", 3.0f, 0 },
+		{ "3.0 ", 3.0f, ' ' },
 
-		{ "3.000000", 3.0, 0 },
-		{ "3.000000 ", 3.0, ' ' },
+		{ "3.000000", 3.0f, 0 },
+		{ "3.000000 ", 3.0f, ' ' },
 	};
 
 	for (const auto &[txt, val, ch] : tests)
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(cc_1)
 BOOST_AUTO_TEST_CASE(cc_2)
 {
 	std::tuple<float, int, std::string_view> tests[] = {
-		{ 1.1, 1, "1.1" }
+		{ 1.1f, 1, "1.1" }
 	};
 
 	for (const auto &[val, prec, test] : tests)
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(item_1)
 	using namespace cif;
 
 	item i1("1", "1");
-	item i2("2", 2.0);
+	item i2("2", 2.0f);
 	item i3("3", '3');
 
 	item ci1(i1);
@@ -163,23 +163,23 @@ BOOST_AUTO_TEST_CASE(r_1)
 	c.emplace({
 		{ "f-1", 1 },
 		{ "f-2", "two" },
-		{ "f-3", 3.0, 3 },
+		{ "f-3", 3.0f, 3 },
 	});
 
 	auto row = c.front();
 	BOOST_CHECK_EQUAL(row["f-1"].compare(1), 0);
 	BOOST_CHECK_EQUAL(row["f-2"].compare("two"), 0);
-	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0), 0); // This fails when running in valgrind... sigh
+	BOOST_CHECK_EQUAL(row["f-3"].compare(3.0f), 0); // This fails when running in valgrind... sigh
 
 	const auto &[f1, f2, f3] = row.get<int, std::string, float>("f-1", "f-2", "f-3");
 
 	BOOST_CHECK_EQUAL(f1, 1);
 	BOOST_CHECK_EQUAL(f2, "two");
-	BOOST_CHECK_EQUAL(f3, 3.0); // This fails when running in valgrind... sigh
+	BOOST_CHECK_EQUAL(f3, 3.0f); // This fails when running in valgrind... sigh
 
 	BOOST_CHECK_EQUAL(row.get<int>("f-1"), 1);
 	BOOST_CHECK_EQUAL(row.get<std::string>("f-2"), "two");
-	BOOST_CHECK_EQUAL(row.get<float>("f-3"), 3.0);
+	BOOST_CHECK_EQUAL(row.get<float>("f-3"), 3.0f);
 
 	int f_1;
 	std::string f_2;
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE(r_1)
 
 	BOOST_CHECK_EQUAL(f_1, 1);
 	BOOST_CHECK_EQUAL(f_2, "two");
-	BOOST_CHECK_EQUAL(f_3, 3.0); // This fails when running in valgrind... sigh
+	BOOST_CHECK_EQUAL(f_3, 3.0f); // This fails when running in valgrind... sigh
 }
 
 BOOST_AUTO_TEST_CASE(r_2)
@@ -486,14 +486,14 @@ _test.value
 		BOOST_CHECK_EQUAL(++n, 1);
 		BOOST_CHECK_EQUAL(r["id"].as<int>(), 1);
 		BOOST_CHECK_EQUAL(r["name"].as<std::string>(), "aap");
-		BOOST_CHECK_EQUAL(r["value"].as<float>(), 1.0);
+		BOOST_CHECK_EQUAL(r["value"].as<float>(), 1.0f);
 	}
 
 	auto t = test.find(cif::key("id") == 1);
 	BOOST_CHECK(not t.empty());
 	BOOST_CHECK_EQUAL(t.front()["name"].as<std::string>(), "aap");
 
-	auto t2 = test.find(cif::key("value") == 1.2);
+	auto t2 = test.find(cif::key("value") == 1.2f);
 	BOOST_CHECK(not t2.empty());
 	BOOST_CHECK_EQUAL(t2.front()["name"].as<std::string>(), "mies");
 }

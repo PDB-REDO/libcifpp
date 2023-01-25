@@ -40,16 +40,16 @@ namespace cif
 // --------------------------------------------------------------------
 // let's make life easier
 
-CIFPP_EXPORT iset get_category_fields(const category &cat);
-CIFPP_EXPORT uint16_t get_column_ix(const category &cat, std::string_view col);
-CIFPP_EXPORT bool is_column_type_uchar(const category &cat, std::string_view col);
+iset get_category_fields(const category &cat);
+uint16_t get_column_ix(const category &cat, std::string_view col);
+bool is_column_type_uchar(const category &cat, std::string_view col);
 
 // --------------------------------------------------------------------
 // some more templates to be able to do querying
 
 namespace detail
 {
-	struct CIFPP_EXPORT condition_impl
+	struct condition_impl
 	{
 		virtual ~condition_impl() {}
 
@@ -61,7 +61,7 @@ namespace detail
 		virtual bool equals(const condition_impl *rhs) const { return false; }
 	};
 
-	struct CIFPP_EXPORT all_condition_impl : public condition_impl
+	struct all_condition_impl : public condition_impl
 	{
 		bool test(row_handle) const override { return true; }
 		void str(std::ostream &os) const override { os << "*"; }
@@ -72,7 +72,7 @@ namespace detail
 	struct not_condition_impl;
 } // namespace detail
 
-class CIFPP_EXPORT condition
+class condition
 {
   public:
 	using condition_impl = detail::condition_impl;
@@ -155,7 +155,7 @@ class CIFPP_EXPORT condition
 
 namespace detail
 {
-	struct CIFPP_EXPORT key_is_empty_condition_impl : public condition_impl
+	struct key_is_empty_condition_impl : public condition_impl
 	{
 		key_is_empty_condition_impl(const std::string &item_tag)
 			: m_item_tag(item_tag)
@@ -182,7 +182,7 @@ namespace detail
 		uint16_t m_item_ix = 0;
 	};
 
-	struct CIFPP_EXPORT key_equals_condition_impl : public condition_impl
+	struct key_equals_condition_impl : public condition_impl
 	{
 		key_equals_condition_impl(item &&i)
 			: m_item_tag(i.name())
@@ -228,7 +228,7 @@ namespace detail
 		std::optional<row_handle> m_single_hit;
 	};
 
-	struct CIFPP_EXPORT key_equals_or_empty_condition_impl : public condition_impl
+	struct key_equals_or_empty_condition_impl : public condition_impl
 	{
 		key_equals_or_empty_condition_impl(key_equals_condition_impl *equals)
 			: m_item_tag(equals->m_item_tag)
@@ -286,7 +286,7 @@ namespace detail
 		std::optional<row_handle> m_single_hit;
 	};
 
-	struct CIFPP_EXPORT key_compare_condition_impl : public condition_impl
+	struct key_compare_condition_impl : public condition_impl
 	{
 		template <typename COMP>
 		key_compare_condition_impl(const std::string &item_tag, COMP &&comp, const std::string &s)
@@ -320,7 +320,7 @@ namespace detail
 		std::string m_str;
 	};
 
-	struct CIFPP_EXPORT key_matches_condition_impl : public condition_impl
+	struct key_matches_condition_impl : public condition_impl
 	{
 		key_matches_condition_impl(const std::string &item_tag, const std::regex &rx)
 			: m_item_tag(item_tag)
@@ -352,7 +352,7 @@ namespace detail
 	};
 
 	template <typename T>
-	struct CIFPP_EXPORT any_is_condition_impl : public condition_impl
+	struct any_is_condition_impl : public condition_impl
 	{
 		typedef T valueType;
 
@@ -392,7 +392,7 @@ namespace detail
 		valueType mValue;
 	};
 
-	struct CIFPP_EXPORT any_matches_condition_impl : public condition_impl
+	struct any_matches_condition_impl : public condition_impl
 	{
 		any_matches_condition_impl(const std::regex &rx)
 			: mRx(rx)
@@ -434,7 +434,7 @@ namespace detail
 	// TODO: Optimize and_condition by having a list of sub items.
 	// That way you can also collapse multiple _is_ conditions in
 	// case they make up an indexed tuple.
-	struct CIFPP_EXPORT and_condition_impl : public condition_impl
+	struct and_condition_impl : public condition_impl
 	{
 		and_condition_impl() = default;
 
@@ -537,7 +537,7 @@ namespace detail
 		std::vector<condition_impl *> m_sub;
 	};
 
-	struct CIFPP_EXPORT or_condition_impl : public condition_impl
+	struct or_condition_impl : public condition_impl
 	{
 		or_condition_impl(condition &&a, condition &&b)
 		{
@@ -628,7 +628,7 @@ namespace detail
 		std::vector<condition_impl *> m_sub;
 	};
 
-	struct CIFPP_EXPORT not_condition_impl : public condition_impl
+	struct not_condition_impl : public condition_impl
 	{
 		not_condition_impl(condition &&a)
 			: mA(nullptr)
@@ -705,7 +705,7 @@ inline condition operator or(condition &&a, condition &&b)
 	return condition(std::move(b));
 }
 
-struct CIFPP_EXPORT empty_type
+struct empty_type
 {
 };
 
@@ -713,7 +713,7 @@ struct CIFPP_EXPORT empty_type
 
 inline constexpr empty_type null = empty_type();
 
-struct CIFPP_EXPORT key
+struct key
 {
 	explicit key(const std::string &itemTag)
 		: m_item_tag(itemTag)
@@ -829,7 +829,7 @@ inline condition operator not(condition &&rhs)
 	return condition(new detail::not_condition_impl(std::move(rhs)));
 }
 
-struct CIFPP_EXPORT any_type
+struct any_type
 {
 };
 

@@ -44,7 +44,7 @@ enum class space_group_name
 	Hall
 };
 
-struct CIFPP_EXPORT space_group
+struct space_group
 {
 	const char *name;
 	const char *xHM;
@@ -57,7 +57,7 @@ extern CIFPP_EXPORT const std::size_t kNrOfSpaceGroups;
 
 // --------------------------------------------------------------------
 
-struct CIFPP_EXPORT symop_data
+struct symop_data
 {
 	constexpr symop_data(const std::array<int, 15> &data)
 		: m_packed((data[0] & 0x03ULL) << 34 bitor
@@ -122,7 +122,7 @@ struct CIFPP_EXPORT symop_data
 	uint64_t m_packed;
 };
 
-struct CIFPP_EXPORT symop_datablock
+struct symop_datablock
 {
 	constexpr symop_datablock(int spacegroup, int rotational_number, const std::array<int, 15> &rt_data)
 		: m_v((spacegroup & 0xffffULL) << 48 bitor
@@ -141,12 +141,12 @@ struct CIFPP_EXPORT symop_datablock
 
 static_assert(sizeof(symop_datablock) == sizeof(uint64_t), "Size of symop_data is wrong");
 
-CIFPP_EXPORT extern const symop_datablock kSymopNrTable[];
-CIFPP_EXPORT extern const std::size_t kSymopNrTableSize;
+extern CIFPP_EXPORT const symop_datablock kSymopNrTable[];
+extern CIFPP_EXPORT const std::size_t kSymopNrTableSize;
 
 // --------------------------------------------------------------------
 
-CIFPP_EXPORT int get_space_group_number(std::string spacegroup);                        // alternative for clipper's parsing code, using space_group_name::full
-CIFPP_EXPORT int get_space_group_number(std::string spacegroup, space_group_name type); // alternative for clipper's parsing code
+int get_space_group_number(std::string spacegroup);                        // alternative for clipper's parsing code, using space_group_name::full
+int get_space_group_number(std::string spacegroup, space_group_name type); // alternative for clipper's parsing code
 
 } // namespace cif
