@@ -39,7 +39,7 @@ namespace cif
 namespace detail
 {
 	template <typename T>
-	struct to_varg
+	struct CIFPP_EXPORT to_varg
 	{
 		using type = T;
 
@@ -54,7 +54,7 @@ namespace detail
 	};
 
 	template <>
-	struct to_varg<const char *>
+	struct CIFPP_EXPORT to_varg<const char *>
 	{
 		using type = const char *;
 
@@ -69,7 +69,7 @@ namespace detail
 	};
 
 	template <>
-	struct to_varg<std::string>
+	struct CIFPP_EXPORT to_varg<std::string>
 	{
 		using type = const char *;
 
@@ -86,7 +86,7 @@ namespace detail
 } // namespace
 
 template <typename... Args>
-class format_plus_arg
+class CIFPP_EXPORT format_plus_arg
 {
   public:
 	using args_vector_type = std::tuple<detail::to_varg<Args>...>;
@@ -141,7 +141,7 @@ constexpr auto format(std::string_view fmt, Args... args)
 // --------------------------------------------------------------------
 /// A streambuf that fills out lines with spaces up until a specified width
 
-class fill_out_streambuf : public std::streambuf
+class CIFPP_EXPORT fill_out_streambuf : public std::streambuf
 {
   public:
 	using base_type = std::streambuf;

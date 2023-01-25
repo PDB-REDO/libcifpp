@@ -45,7 +45,7 @@ class structure;
 
 // --------------------------------------------------------------------
 
-class atom
+class CIFPP_EXPORT atom
 {
   private:
 	struct atom_impl : public std::enable_shared_from_this<atom_impl>
@@ -388,7 +388,7 @@ enum class EntityType
 
 // --------------------------------------------------------------------
 
-class residue
+class CIFPP_EXPORT residue
 {
   public:
 	friend class structure;
@@ -499,7 +499,7 @@ class residue
 // --------------------------------------------------------------------
 // a monomer models a single residue in a protein chain
 
-class monomer : public residue
+class CIFPP_EXPORT monomer : public residue
 {
   public:
 	//	monomer();
@@ -570,7 +570,7 @@ class monomer : public residue
 
 // --------------------------------------------------------------------
 
-class polymer : public std::vector<monomer>
+class CIFPP_EXPORT polymer : public std::vector<monomer>
 {
   public:
 	polymer(structure &s, const std::string &entityID, const std::string &asymID, const std::string &auth_asym_id);
@@ -599,9 +599,9 @@ class polymer : public std::vector<monomer>
 // --------------------------------------------------------------------
 // sugar and branch, to describe glycosylation sites
 
-class branch;
+class CIFPP_EXPORT branch;
 
-class sugar : public residue
+class CIFPP_EXPORT sugar : public residue
 {
   public:
 	sugar(branch &branch, const std::string &compoundID,
@@ -638,7 +638,7 @@ class sugar : public residue
 	atom m_link;
 };
 
-class branch : public std::vector<sugar>
+class CIFPP_EXPORT branch : public std::vector<sugar>
 {
   public:
 	branch(structure &structure, const std::string &asym_id, const std::string &entity_id);
@@ -724,7 +724,7 @@ inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
 
 // --------------------------------------------------------------------
 
-class structure
+class CIFPP_EXPORT structure
 {
   public:
 	structure(file &p, size_t modelNr = 1, StructureOpenOptions options = {});

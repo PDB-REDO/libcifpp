@@ -194,7 +194,7 @@ enum class ionic_radius_type
 	effective, crystal
 };
 
-struct atom_type_info
+struct CIFPP_EXPORT atom_type_info
 {
 	atom_type type;
 	std::string name;
@@ -204,12 +204,12 @@ struct atom_type_info
 	float radii[kRadiusTypeCount];
 };
 
-extern const atom_type_info kKnownAtoms[];
+CIFPP_EXPORT extern const atom_type_info kKnownAtoms[];
 
 // --------------------------------------------------------------------
 // AtomTypeTraits
 
-class atom_type_traits
+class CIFPP_EXPORT atom_type_traits
 {
   public:
 	atom_type_traits(atom_type a);

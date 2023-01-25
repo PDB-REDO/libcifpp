@@ -45,7 +45,7 @@ namespace cif
 
 // --------------------------------------------------------------------
 // special exception
-class duplicate_key_error : public std::runtime_error
+class CIFPP_EXPORT duplicate_key_error : public std::runtime_error
 {
   public:
 	duplicate_key_error(const std::string &msg)
@@ -54,7 +54,7 @@ class duplicate_key_error : public std::runtime_error
 
 // --------------------------------------------------------------------
 
-class category
+class CIFPP_EXPORT category
 {
   public:
 	friend class row_handle;

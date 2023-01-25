@@ -34,7 +34,7 @@ namespace cif
 
 // --------------------------------------------------------------------
 
-class datablock : public std::list<category>
+class CIFPP_EXPORT datablock : public std::list<category>
 {
   public:
 	datablock() = default;

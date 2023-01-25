@@ -28,6 +28,7 @@
 
 #include <list>
 
+#include <cif++/exports.hpp>
 #include <cif++/datablock.hpp>
 #include <cif++/parser.hpp>
 
@@ -36,7 +37,7 @@ namespace cif
 
 // --------------------------------------------------------------------
 
-class file : public std::list<datablock>
+class CIFPP_EXPORT file : public std::list<datablock>
 {
   public:
 	file() = default;

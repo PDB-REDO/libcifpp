@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <cif++/exports.hpp>
+
 #include <cmath>
 #include <complex>
 #include <functional>
@@ -49,7 +51,7 @@ const double
 // We use quaternions to do rotations in 3d space
 
 template <typename T>
-class quaternion_type
+class CIFPP_EXPORT quaternion_type
 {
   public:
 	using value_type = T;
@@ -353,7 +355,7 @@ using quaternion = quaternion_type<float>;
 //	tie(x, y, z) = atom.loc();
 
 template <typename F>
-struct point_type
+struct CIFPP_EXPORT point_type
 {
 	using value_type = F;
 
@@ -680,21 +682,21 @@ constexpr auto distance_point_to_line(const point_type<F> &l1, const point_type<
 // a random direction with a distance randomly chosen from a normal
 // distribution with a stddev of offset.
 
-point nudge(point p, float offset);
+CIFPP_EXPORT point nudge(point p, float offset);
 
 // --------------------------------------------------------------------
 
-quaternion construct_from_angle_axis(float angle, point axis);
-std::tuple<double, point> quaternion_to_angle_axis(quaternion q);
+CIFPP_EXPORT quaternion construct_from_angle_axis(float angle, point axis);
+CIFPP_EXPORT std::tuple<double, point> quaternion_to_angle_axis(quaternion q);
 
 /// @brief Given four points and an angle, return the quaternion required to rotate
 /// point p4 along the p2-p3 axis and around point p3 to obtain the required within
 /// an accuracy of esd
-quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
+CIFPP_EXPORT quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
 	float angle, float esd);
 
-point centroid(const std::vector<point> &Points);
-point center_points(std::vector<point> &Points);
+CIFPP_EXPORT point centroid(const std::vector<point> &Points);
+CIFPP_EXPORT point center_points(std::vector<point> &Points);
 
 /// \brief Returns how the two sets of points \a a and \b b can be aligned
 ///
@@ -702,10 +704,10 @@ point center_points(std::vector<point> &Points);
 /// \param b    The second set of points
 /// \result     The quaternion which should be applied to the points in \a a to
 ///             obtain the best superposition.
-quaternion align_points(const std::vector<point> &a, const std::vector<point> &b);
+CIFPP_EXPORT quaternion align_points(const std::vector<point> &a, const std::vector<point> &b);
 
 /// \brief The RMSd for the points in \a a and \a b
-double RMSd(const std::vector<point> &a, const std::vector<point> &b);
+CIFPP_EXPORT double RMSd(const std::vector<point> &a, const std::vector<point> &b);
 
 // --------------------------------------------------------------------
 // Helper class to generate evenly divided points on a sphere
