@@ -35,10 +35,13 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
+include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+# set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
@@ -224,7 +227,6 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/datablock.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/file.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/validate.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/list.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/iterator.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/parser.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/forward_decl.hpp
@@ -249,6 +251,7 @@ set(project_headers
 
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
 add_library(cifpp::cifpp ALIAS cifpp)
+generate_export_header(cifpp EXPORT_FILE_NAME cif++/exports.hpp)
 
 if(BOOST_REGEX)
 	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
@@ -263,7 +266,7 @@ set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
 	PUBLIC
-	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include;${PROJECT_BINARY_DIR}>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
@@ -340,6 +343,12 @@ install(
 install(
 	FILES include/cif++.hpp
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+	COMPONENT Devel
+)
+
+install(
+	FILES ${PROJECT_BINARY_DIR}/cif++/exports.hpp
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cif++
 	COMPONENT Devel
 )
 

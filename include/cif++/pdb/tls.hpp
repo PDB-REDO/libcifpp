@@ -26,18 +26,14 @@
 
 #pragma once
 
+#include <cif++.hpp>
+
 #include <string>
 #include <tuple>
 #include <vector>
 
-#include <cif++.hpp>
-
 namespace cif
 {
-
-extern const int
-	kResidueNrWildcard,
-	kNoSeqNum;
 
 struct tls_selection;
 struct tls_residue;

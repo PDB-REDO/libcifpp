@@ -204,7 +204,7 @@ struct atom_type_info
 	float radii[kRadiusTypeCount];
 };
 
-extern const atom_type_info kKnownAtoms[];
+extern CIFPP_EXPORT const atom_type_info kKnownAtoms[];
 
 // --------------------------------------------------------------------
 // AtomTypeTraits

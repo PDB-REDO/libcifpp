@@ -24,10 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cif++/point.hpp>
+
 #include <cassert>
 #include <random>
-
-#include <cif++/point.hpp>
 
 namespace cif
 {
@@ -369,7 +369,7 @@ quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
 	float dh = dihedral_angle(p1, p2, p3, p4);
 	for (int iteration = 0; iteration < 100; ++iteration)
 	{
-		float delta = std::fmod(angle - dh, 360);
+		float delta = std::fmod(angle - dh, 360.0f);
 
 		if (delta < -180)
 			delta += 360;

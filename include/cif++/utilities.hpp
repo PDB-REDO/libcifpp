@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <cif++/exports.hpp>
+
 #include <filesystem>
 
 #ifndef STDOUT_FILENO
@@ -50,7 +52,7 @@
 namespace cif
 {
 
-extern int VERBOSE;
+extern CIFPP_EXPORT int VERBOSE;
 
 // the git 'build' number
 std::string get_version_nr();

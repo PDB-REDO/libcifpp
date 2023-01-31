@@ -26,10 +26,10 @@
 
 #pragma once
 
+#include <cif++/row.hpp>
+
 #include <map>
 #include <regex>
-
-#include <cif++/row.hpp>
 
 namespace cif
 {
@@ -94,7 +94,7 @@ class sac_parser
 
 	static bool is_unquoted_string(std::string_view text)
 	{
-		bool result = is_ordinary(text.front());
+		bool result = text.empty() or is_ordinary(text.front());
 
 		if (result)
 		{

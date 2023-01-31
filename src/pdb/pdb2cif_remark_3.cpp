@@ -25,11 +25,10 @@
  */
 
 #include <cif++.hpp>
+#include <cif++/pdb/pdb2cif_remark_3.hpp>
 
 #include <map>
 #include <set>
-
-#include <cif++/pdb/pdb2cif_remark_3.hpp>
 
 namespace cif::pdb
 {

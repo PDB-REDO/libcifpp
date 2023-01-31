@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <cif++/exports.hpp>
+
 #include <charconv>
 #include <cmath>
 #include <limits>
@@ -33,7 +35,6 @@
 #include <sstream>
 #include <tuple>
 #include <vector>
-
 
 #if __has_include(<experimental/type_traits>)
 #include <experimental/type_traits>
@@ -249,7 +250,7 @@ typedef std::set<std::string, iless> iset;
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
 
-extern const uint8_t kCharToLowerMap[256];
+extern CIFPP_EXPORT const uint8_t kCharToLowerMap[256];
 
 inline char tolower(int ch)
 {
@@ -448,8 +449,8 @@ std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_f
 template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
 std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_format fmt, int precision)
 {
-	int size = last - first;
-	int r;
+	int size = static_cast<int>(last - first);
+	int r = 0;
 
 	switch (fmt)
 	{

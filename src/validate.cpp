@@ -24,6 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cif++/dictionary_parser.hpp>
+#include <cif++/validate.hpp>
+#include <cif++/utilities.hpp>
+#include <cif++/gzio.hpp>
+
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -40,12 +45,6 @@ using boost::regex;
 #include <regex>
 using std::regex;
 #endif
-
-#include <cif++/dictionary_parser.hpp>
-#include <cif++/validate.hpp>
-
-#include <cif++/utilities.hpp>
-#include <cif++/gzio.hpp>
 
 namespace cif
 {

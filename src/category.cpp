@@ -24,13 +24,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <numeric>
-#include <stack>
-
 #include <cif++/category.hpp>
 #include <cif++/datablock.hpp>
 #include <cif++/parser.hpp>
 #include <cif++/utilities.hpp>
+
+#include <numeric>
+#include <stack>
 
 // TODO: Find out what the rules are exactly for linked items, the current implementation
 // is inconsistent. It all depends whether a link is satified if a field taking part in the
@@ -1241,10 +1241,10 @@ size_t category::erase(condition &&cond, std::function<void(row_handle)> &&visit
 
 			for (auto &&[childCat, link] : m_child_links)
 			{
-				auto cond = get_children_condition(*ri, *childCat);
-				if (not cond)
+				auto ccond = get_children_condition(*ri, *childCat);
+				if (not ccond)
 					continue;
-				potential_orphans[childCat] = std::move(potential_orphans[childCat]) or std::move(cond);
+				potential_orphans[childCat] = std::move(potential_orphans[childCat]) or std::move(ccond);
 			}
 
 			save_value sv(m_validator);

@@ -26,6 +26,12 @@
 
 #pragma once
 
+#include <cif++/exports.hpp>
+#include <cif++/forward_decl.hpp>
+#include <cif++/text.hpp>
+#include <cif++/utilities.hpp>
+
+#include <cassert>
 #include <charconv>
 #include <cstring>
 #include <iomanip>
@@ -35,17 +41,12 @@
 #include <optional>
 #include <utility>
 
-#include <cif++/forward_decl.hpp>
-#include <cif++/text.hpp>
-
 /// \file item.hpp
 /// This file contains the declaration of item but also the item_value and item_handle
 /// These handle the storage of and access to the data for a single data field. 
 
 namespace cif
 {
-
-extern int VERBOSE;
 
 // --------------------------------------------------------------------
 /// \brief item is a transient class that is used to pass data into rows
@@ -353,7 +354,7 @@ struct item_handle
 	{
 	}
 
-	static const item_handle s_null_item;
+	static CIFPP_EXPORT const item_handle s_null_item;
 
 	friend void swap(item_handle a, item_handle b)
 	{

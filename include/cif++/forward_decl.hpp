@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <cif++/exports.hpp>
+
 #include <string>
 #include <vector>
 

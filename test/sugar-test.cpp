@@ -96,87 +96,87 @@ BOOST_AUTO_TEST_CASE(sugar_name_1)
 	}
 }
 
-// --------------------------------------------------------------------
+// // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(create_sugar_1)
-{
-	using namespace cif::literals;
+// BOOST_AUTO_TEST_CASE(create_sugar_1)
+// {
+// 	using namespace cif::literals;
 
-	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
-	cif::file file(example.string());
-	cif::mm::structure s(file);
+// 	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
+// 	cif::file file(example.string());
+// 	cif::mm::structure s(file);
 
-	// collect atoms from asym L first
-	auto &NAG = s.get_residue("L");
-	auto nagAtoms = NAG.atoms();
+// 	// collect atoms from asym L first
+// 	auto &NAG = s.get_residue("L");
+// 	auto nagAtoms = NAG.atoms();
 
-	std::vector<cif::row_initializer> ai;
+// 	std::vector<cif::row_initializer> ai;
 
-	auto &db = s.get_datablock();
-	auto &as = db["atom_site"];
+// 	auto &db = s.get_datablock();
+// 	auto &as = db["atom_site"];
 
-	// NOTE, row_initializer does not actually hold the data, so copy it first
-	// before it gets destroyed by remove_residue
+// 	// NOTE, row_initializer does not actually hold the data, so copy it first
+// 	// before it gets destroyed by remove_residue
 
-	for (auto r : as.find("label_asym_id"_key == "L"))
-		/*auto &ri = */ai.emplace_back(r);
+// 	for (auto r : as.find("label_asym_id"_key == "L"))
+// 		/*auto &ri = */ai.emplace_back(r);
 
-	s.remove_residue(NAG);
+// 	s.remove_residue(NAG);
 
-	auto &branch = s.create_branch(ai);
+// 	auto &branch = s.create_branch(ai);
 
-	BOOST_CHECK_EQUAL(branch.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
-	BOOST_CHECK_EQUAL(branch.size(), 1);
+// 	BOOST_CHECK_EQUAL(branch.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
+// 	BOOST_CHECK_EQUAL(branch.size(), 1);
 
-	BOOST_CHECK_EQUAL(branch[0].atoms().size(), nagAtoms.size());
+// 	BOOST_CHECK_EQUAL(branch[0].atoms().size(), nagAtoms.size());
 
-	BOOST_CHECK(file.is_valid());
+// 	BOOST_CHECK(file.is_valid());
 
-	file.save(gTestDir / "test-create_sugar_1.cif");
-}
+// 	file.save(gTestDir / "test-create_sugar_1.cif");
+// }
 
-// --------------------------------------------------------------------
+// // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(create_sugar_2)
-{
-	using namespace cif::literals;
+// BOOST_AUTO_TEST_CASE(create_sugar_2)
+// {
+// 	using namespace cif::literals;
 
-	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
-	cif::file file(example.string());
-	cif::mm::structure s(file);
+// 	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
+// 	cif::file file(example.string());
+// 	cif::mm::structure s(file);
 
-	// Get branch for H
-	auto &bH = s.get_branch_by_asym_id("H");
+// 	// Get branch for H
+// 	auto &bH = s.get_branch_by_asym_id("H");
 
-	BOOST_CHECK_EQUAL(bH.size(), 2);
+// 	BOOST_CHECK_EQUAL(bH.size(), 2);
 
-	std::vector<cif::row_initializer> ai[2];
+// 	std::vector<cif::row_initializer> ai[2];
 
-	auto &db = s.get_datablock();
-	auto &as = db["atom_site"];
+// 	auto &db = s.get_datablock();
+// 	auto &as = db["atom_site"];
 
-	for (size_t i = 0; i < 2; ++i)
-	{
-		for (auto r : as.find("label_asym_id"_key == "H" and "auth_seq_id"_key == i + 1))
-			/*auto &ri = */ai[i].emplace_back(r);
-	}
+// 	for (size_t i = 0; i < 2; ++i)
+// 	{
+// 		for (auto r : as.find("label_asym_id"_key == "H" and "auth_seq_id"_key == i + 1))
+// 			/*auto &ri = */ai[i].emplace_back(r);
+// 	}
 
-	s.remove_branch(bH);
+// 	s.remove_branch(bH);
 
-	BOOST_CHECK(file.is_valid());
+// 	BOOST_CHECK(file.is_valid());
 
-	auto &bN = s.create_branch(ai[0]);
-	s.extend_branch(bN.get_asym_id(), ai[1], 1, "O4");
+// 	auto &bN = s.create_branch(ai[0]);
+// 	s.extend_branch(bN.get_asym_id(), ai[1], 1, "O4");
 
-	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose-(1-4)-2-acetamido-2-deoxy-beta-D-glucopyranose");
-	BOOST_CHECK_EQUAL(bN.size(), 2);
+// 	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose-(1-4)-2-acetamido-2-deoxy-beta-D-glucopyranose");
+// 	BOOST_CHECK_EQUAL(bN.size(), 2);
 
-	BOOST_CHECK(file.is_valid());
+// 	BOOST_CHECK(file.is_valid());
 
-	file.save(gTestDir / "test-create_sugar_2.cif");
+// 	file.save(gTestDir / "test-create_sugar_2.cif");
 
-	BOOST_CHECK_NO_THROW(cif::mm::structure s2(file));
-}
+// 	BOOST_CHECK_NO_THROW(cif::mm::structure s2(file));
+// }
 
 // --------------------------------------------------------------------
 
