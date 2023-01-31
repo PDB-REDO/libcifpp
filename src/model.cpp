@@ -618,19 +618,19 @@ float monomer::phi() const
 {
 	float result = 360;
 
-	try
+	if (m_index > 0)
 	{
-		if (m_index > 0)
+		auto &prev = m_polymer->operator[](m_index - 1);
+		if (prev.m_seq_id + 1 == m_seq_id)
 		{
-			auto &prev = m_polymer->operator[](m_index - 1);
-			if (prev.m_seq_id + 1 == m_seq_id)
-				result = static_cast<float>(dihedral_angle(prev.C().get_location(), N().get_location(), CAlpha().get_location(), C().get_location()));
+			auto a1 = prev.C();
+			auto a2 = N();
+			auto a3 = CAlpha();
+			auto a4 = C();
+
+			if (a1 and a2 and a3 and a4)
+				result = dihedral_angle(a1.get_location(), a2.get_location(), a3.get_location(), a4.get_location());
 		}
-	}
-	catch (const std::exception &ex)
-	{
-		if (VERBOSE > 0)
-			std::cerr << ex.what() << std::endl;
 	}
 
 	return result;
@@ -640,19 +640,19 @@ float monomer::psi() const
 {
 	float result = 360;
 
-	try
+	if (m_index + 1 < m_polymer->size())
 	{
-		if (m_index + 1 < m_polymer->size())
+		auto &next = m_polymer->operator[](m_index + 1);
+		if (m_seq_id + 1 == next.m_seq_id)
 		{
-			auto &next = m_polymer->operator[](m_index + 1);
-			if (m_seq_id + 1 == next.m_seq_id)
-				result = static_cast<float>(dihedral_angle(N().get_location(), CAlpha().get_location(), C().get_location(), next.N().get_location()));
+			auto a1 = N();
+			auto a2 = CAlpha();
+			auto a3 = C();
+			auto a4 = next.N();
+
+			if (a1 and a2 and a3 and a4)
+				result = dihedral_angle(a1.get_location(), a2.get_location(), a3.get_location(), a4.get_location());
 		}
-	}
-	catch (const std::exception &ex)
-	{
-		if (VERBOSE > 0)
-			std::cerr << ex.what() << std::endl;
 	}
 
 	return result;
@@ -935,17 +935,17 @@ float monomer::omega(const monomer &a, const monomer &b)
 {
 	float result = 360;
 
-	try
-	{
+	auto a1 = a.get_atom_by_atom_id("CA");
+	auto a2 = a.get_atom_by_atom_id("C");
+	auto a3 = b.get_atom_by_atom_id("N");
+	auto a4 = b.get_atom_by_atom_id("CA");
+
+	if (a1 and a2 and a3 and a4)
 		result = static_cast<float>(dihedral_angle(
-			a.get_atom_by_atom_id("CA").get_location(),
-			a.get_atom_by_atom_id("C").get_location(),
-			b.get_atom_by_atom_id("N").get_location(),
-			b.get_atom_by_atom_id("CA").get_location()));
-	}
-	catch (...)
-	{
-	}
+			a1.get_location(),
+			a2.get_location(),
+			a3.get_location(),
+			a4.get_location()));
 
 	return result;
 }
@@ -974,8 +974,12 @@ polymer::polymer(structure &s, const std::string &entityID, const std::string &a
 	for (auto r : poly_seq_scheme.find("asym_id"_key == asym_id))
 	{
 		int seqID;
+		std::optional<int> pdbSeqNum;
 		std::string compoundID, authSeqID, pdbInsCode;
-		cif::tie(seqID, authSeqID, compoundID, pdbInsCode) = r.get("seq_id", "auth_seq_num", "mon_id", "pdb_ins_code");
+		cif::tie(seqID, authSeqID, compoundID, pdbInsCode, pdbSeqNum) = r.get("seq_id", "auth_seq_num", "mon_id", "pdb_ins_code", "pdb_seq_num");
+
+		if (authSeqID.empty() and pdbSeqNum.has_value())
+			authSeqID = std::to_string(*pdbSeqNum);
 
 		size_t index = size();
 

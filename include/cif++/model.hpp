@@ -321,13 +321,6 @@ class atom
 
 	friend std::ostream &operator<<(std::ostream &os, const atom &atom);
 
-	// /// \brief Synchronize data with underlying cif data
-	// void sync()
-	// {
-	// 	if (m_impl)
-	// 		m_impl->prefetch();
-	// }
-
   private:
 	friend class structure;
 
@@ -340,25 +333,6 @@ class atom
 
 	std::shared_ptr<atom_impl> m_impl;
 };
-
-// template <>
-// inline std::string atom::get_property<std::string>(const std::string_view name) const
-// {
-// 	return get_property(name);
-// }
-
-// template <>
-// inline int atom::get_property<int>(const std::string_view name) const
-// {
-// 	auto v = impl().get_property(name);
-// 	return v.empty() ? 0 : stoi(v);
-// }
-
-// template <>
-// inline float atom::get_property<float>(const std::string_view name) const
-// {
-// 	return stof(impl().get_property(name));
-// }
 
 inline void swap(atom &a, atom &b)
 {
