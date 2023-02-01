@@ -1,3 +1,10 @@
+Version 5.0.8
+- implemented find_first, find_min, find_max and count in category
+- find1 now throws an exception if condition does not not exactly match one row
+- Change in writing out PDB files, now looking up the original auth_seq_num
+  via the pdbx_xxx_scheme categories based on the atom_site.auth_seq_num ->
+  pdbx_xxx_scheme.pdb_seq_num relationship.
+
 Version 5.0.7.1
 - Use the implementation from zeep for std::experimental::is_detected
 

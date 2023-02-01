@@ -1774,8 +1774,6 @@ _test.name
 
 BOOST_AUTO_TEST_CASE(c3)
 {
-	cif::VERBOSE = 1;
-
 	auto f = R"(data_TEST
 #
 loop_
@@ -1809,6 +1807,43 @@ _test.name
 
 	BOOST_CHECK_EQUAL(id, 1);
 	BOOST_CHECK_EQUAL(name, "aap");
+}
+
+BOOST_AUTO_TEST_CASE(c4)
+{
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+1 aap
+2 noot
+3 mies
+4 .
+5 ?
+    )"_cf;
+
+	auto &db = f.front();
+
+	// query tests
+	BOOST_TEST(db["test"].find_max<int>("id") == 5);
+	BOOST_TEST(db["test"].find_max<int>("id", cif::key("name") != cif::null) == 3);
+
+	BOOST_TEST(db["test"].find_min<int>("id") == 1);
+	BOOST_TEST(db["test"].find_min<int>("id", cif::key("name") == cif::null) == 4);
+
+	// count tests
+	BOOST_TEST(db["test"].count(cif::all()) == 5);
+	BOOST_TEST(db["test"].count(cif::key("name") != cif::null) == 3);
+	BOOST_TEST(db["test"].count(cif::key("name") == cif::null) == 2);
+
+	// find_first tests
+	BOOST_TEST(db["test"].find_first<int>(cif::key("id") == 1, "id") == 1);
+	BOOST_TEST(db["test"].find_first<int>(cif::all(), "id") == 1);
+
+	// find1 tests
+	BOOST_TEST(db["test"].find1<int>(cif::key("id") == 1, "id") == 1);
+	BOOST_CHECK_THROW(db["test"].find1<int>(cif::all(), "id"), cif::multiple_results_error);
 }
 
 // --------------------------------------------------------------------

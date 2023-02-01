@@ -49,7 +49,18 @@ class duplicate_key_error : public std::runtime_error
 {
   public:
 	duplicate_key_error(const std::string &msg)
-		: std::runtime_error(msg) {}
+		: std::runtime_error(msg)
+	{
+	}
+};
+
+class multiple_results_error : public std::runtime_error
+{
+  public:
+	multiple_results_error()
+		: std::runtime_error("query should have returned exactly one row")
+	{
+	}
 };
 
 // --------------------------------------------------------------------
@@ -109,52 +120,52 @@ class category
 
 	reference front()
 	{
-		return {*this, *m_head};
+		return { *this, *m_head };
 	}
 
 	const_reference front() const
 	{
-		return {const_cast<category &>(*this), const_cast<row &>(*m_head)};
+		return { const_cast<category &>(*this), const_cast<row &>(*m_head) };
 	}
 
 	reference back()
 	{
-		return {*this, *m_tail};
+		return { *this, *m_tail };
 	}
 
 	const_reference back() const
 	{
-		return {const_cast<category &>(*this), const_cast<row &>(*m_tail)};
+		return { const_cast<category &>(*this), const_cast<row &>(*m_tail) };
 	}
 
 	iterator begin()
 	{
-		return {*this, m_head};
+		return { *this, m_head };
 	}
 
 	iterator end()
 	{
-		return {*this, nullptr};
+		return { *this, nullptr };
 	}
 
 	const_iterator begin() const
 	{
-		return {*this, m_head};
+		return { *this, m_head };
 	}
 
 	const_iterator end() const
 	{
-		return {*this, nullptr};
+		return { *this, nullptr };
 	}
 
 	const_iterator cbegin() const
 	{
-		return {*this, m_head};
+		return { *this, m_head };
 	}
 
 	const_iterator cend() const
 	{
-		return {*this, nullptr};
+		return { *this, nullptr };
 	}
 
 	size_t size() const
@@ -189,64 +200,64 @@ class category
 	iterator_proxy<const category, Ts...> rows(Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return iterator_proxy<const category, Ts...>(*this, begin(), {names...});
+		return iterator_proxy<const category, Ts...>(*this, begin(), { names... });
 	}
 
 	template <typename... Ts, typename... Ns>
 	iterator_proxy<category, Ts...> rows(Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return iterator_proxy<category, Ts...>(*this, begin(), {names...});
+		return iterator_proxy<category, Ts...>(*this, begin(), { names... });
 	}
 
 	// --------------------------------------------------------------------
 
 	conditional_iterator_proxy<category> find(condition &&cond)
 	{
-		return find(begin(), std::forward<condition>(cond));
+		return find(begin(), std::move(cond));
 	}
 
 	conditional_iterator_proxy<category> find(iterator pos, condition &&cond)
 	{
-		return {*this, pos, std::forward<condition>(cond)};
+		return { *this, pos, std::move(cond) };
 	}
 
 	conditional_iterator_proxy<const category> find(condition &&cond) const
 	{
-		return find(cbegin(), std::forward<condition>(cond));
+		return find(cbegin(), std::move(cond));
 	}
 
 	conditional_iterator_proxy<const category> find(const_iterator pos, condition &&cond) const
 	{
-		return conditional_iterator_proxy<const category>{*this, pos, std::forward<condition>(cond)};
+		return conditional_iterator_proxy<const category>{ *this, pos, std::move(cond) };
 	}
 
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<category, Ts...> find(condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return find<Ts...>(cbegin(), std::forward<condition>(cond), std::forward<Ns>(names)...);
+		return find<Ts...>(cbegin(), std::move(cond), std::forward<Ns>(names)...);
 	}
 
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<const category, Ts...> find(condition &&cond, Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return find<Ts...>(cbegin(), std::forward<condition>(cond), std::forward<Ns>(names)...);
+		return find<Ts...>(cbegin(), std::move(cond), std::forward<Ns>(names)...);
 	}
 
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<category, Ts...> find(const_iterator pos, condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return {*this, pos, std::forward<condition>(cond), std::forward<Ns>(names)...};
+		return { *this, pos, std::move(cond), std::forward<Ns>(names)... };
 	}
 
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<const category, Ts...> find(const_iterator pos, condition &&cond, Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
-		return {*this, pos, std::forward<condition>(cond), std::forward<Ns>(names)...};
+		return { *this, pos, std::move(cond), std::forward<Ns>(names)... };
 	}
 
 	// --------------------------------------------------------------------
@@ -254,40 +265,49 @@ class category
 
 	row_handle find1(condition &&cond)
 	{
-		return find1(begin(), std::forward<condition>(cond));
+		return find1(begin(), std::move(cond));
 	}
 
 	row_handle find1(iterator pos, condition &&cond)
 	{
-		auto h = find(pos, std::forward<condition>(cond));
+		auto h = find(pos, std::move(cond));
 
-		return h.size() != 1 ? row_handle{} : *h.begin();
+		if (h.size() != 1)
+			throw multiple_results_error();
+
+		return *h.begin();
 	}
 
 	const row_handle find1(condition &&cond) const
 	{
-		return find1(cbegin(), std::forward<condition>(cond));
+		return find1(cbegin(), std::move(cond));
 	}
 
 	const row_handle find1(const_iterator pos, condition &&cond) const
 	{
-		auto h = find(pos, std::forward<condition>(cond));
+		auto h = find(pos, std::move(cond));
 
-		return h.size() != 1 ? row_handle{} : *h.begin();
+		if (h.size() != 1)
+			throw multiple_results_error();
+
+		return *h.begin();
 	}
 
 	template <typename T>
 	T find1(condition &&cond, const char *column) const
 	{
-		return find1<T>(cbegin(), std::forward<condition>(cond), column);
+		return find1<T>(cbegin(), std::move(cond), column);
 	}
 
 	template <typename T>
 	T find1(const_iterator pos, condition &&cond, const char *column) const
 	{
-		auto h = find<T>(pos, std::forward<condition>(cond), column);
+		auto h = find<T>(pos, std::move(cond), column);
 
-		return h.size() == 1 ? *h.begin() : T{};
+		if (h.size() != 1)
+			throw multiple_results_error();
+
+		return *h.begin();
 	}
 
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
@@ -295,16 +315,119 @@ class category
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Cs), "The number of column titles should be equal to the number of types to return");
 		// static_assert(std::is_same_v<Cs, const char*>..., "The column names should be const char");
-		return find1<Ts...>(cbegin(), std::forward<condition>(cond), std::forward<Cs>(columns)...);
+		return find1<Ts...>(cbegin(), std::move(cond), std::forward<Cs>(columns)...);
 	}
 
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
 	std::tuple<Ts...> find1(const_iterator pos, condition &&cond, Cs... columns) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Cs), "The number of column titles should be equal to the number of types to return");
-		auto h = find<Ts...>(pos, std::forward<condition>(cond), std::forward<Cs>(columns)...);
+		auto h = find<Ts...>(pos, std::move(cond), std::forward<Cs>(columns)...);
 
-		return h.size() == 1 ? *h.begin() : std::tuple<Ts...>{};
+		if (h.size() != 1)
+			throw multiple_results_error();
+
+		return *h.begin();
+	}
+
+	// --------------------------------------------------------------------
+	// if you want only a first hit
+
+	row_handle find_first(condition &&cond)
+	{
+		return find_first(begin(), std::move(cond));
+	}
+
+	row_handle find_first(iterator pos, condition &&cond)
+	{
+		auto h = find(pos, std::move(cond));
+
+		return h.empty() ? row_handle{} : *h.begin();
+	}
+
+	const row_handle find_first(condition &&cond) const
+	{
+		return find_first(cbegin(), std::move(cond));
+	}
+
+	const row_handle find_first(const_iterator pos, condition &&cond) const
+	{
+		auto h = find(pos, std::move(cond));
+
+		return h.empty() ? row_handle{} : *h.begin();
+	}
+
+	template <typename T>
+	T find_first(condition &&cond, const char *column) const
+	{
+		return find_first<T>(cbegin(), std::move(cond), column);
+	}
+
+	template <typename T>
+	T find_first(const_iterator pos, condition &&cond, const char *column) const
+	{
+		auto h = find<T>(pos, std::move(cond), column);
+
+		return h.empty() ? T{} : *h.begin();
+	}
+
+	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
+	std::tuple<Ts...> find_first(condition &&cond, Cs... columns) const
+	{
+		static_assert(sizeof...(Ts) == sizeof...(Cs), "The number of column titles should be equal to the number of types to return");
+		// static_assert(std::is_same_v<Cs, const char*>..., "The column names should be const char");
+		return find_first<Ts...>(cbegin(), std::move(cond), std::forward<Cs>(columns)...);
+	}
+
+	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
+	std::tuple<Ts...> find_first(const_iterator pos, condition &&cond, Cs... columns) const
+	{
+		static_assert(sizeof...(Ts) == sizeof...(Cs), "The number of column titles should be equal to the number of types to return");
+		auto h = find<Ts...>(pos, std::move(cond), std::forward<Cs>(columns)...);
+
+		return h.empty() ? std::tuple<Ts...>{} : *h.begin();
+	}
+
+	// --------------------------------------------------------------------
+
+	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	T find_max(const char *column, condition &&cond) const
+	{
+		T result = std::numeric_limits<T>::min();
+
+		for (auto v : find<T>(std::move(cond), column))
+		{
+			if (result < v)
+				result = v;
+		}
+
+		return result;
+	}
+
+	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	T find_max(const char *column) const
+	{
+		return find_max<T>(column, all());
+	}
+
+	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	T find_min(const char *column, condition &&cond) const
+	{
+		T result = std::numeric_limits<T>::max();
+
+		for (auto v : find<T>(std::move(cond), column))
+		{
+			if (result > v)
+				result = v;
+		}
+
+		return result;
+	}
+
+	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	T find_min(const char *column) const
+	{
+		return find_min<T>(column, all());
 	}
 
 	bool exists(condition &&cond) const
@@ -328,6 +451,31 @@ class category
 						result = true;
 						break;
 					}
+				}
+			}
+		}
+
+		return result;
+	}
+
+	size_t count(condition &&cond) const
+	{
+		size_t result = 0;
+
+		if (cond)
+		{
+			cond.prepare(*this);
+
+			auto sh = cond.single();
+
+			if (sh.has_value() and *sh)
+				result = 1;
+			else
+			{
+				for (auto r : *this)
+				{
+					if (cond(r))
+						++result;
 				}
 			}
 		}
@@ -486,7 +634,7 @@ class category
 
 	// --------------------------------------------------------------------
 
-	void sort(std::function<int(row_handle,row_handle)> f);
+	void sort(std::function<int(row_handle, row_handle)> f);
 	void reorder_by_index();
 
 	// --------------------------------------------------------------------
@@ -583,7 +731,7 @@ class category
 	void swap_item(uint16_t column_ix, row_handle &a, row_handle &b);
 
 	// --------------------------------------------------------------------
-	
+
 	std::string m_name;
 	std::vector<item_column> m_columns;
 	const validator *m_validator = nullptr;

@@ -1780,7 +1780,7 @@ std::string structure::insert_compound(const std::string &compoundID, bool is_en
 	{
 		auto &pdbxEntityNonpoly = m_db["pdbx_entity_nonpoly"];
 
-		entity_id = pdbxEntityNonpoly.find1<std::string>("comp_id"_key == compoundID, "entity_id");
+		entity_id = pdbxEntityNonpoly.find_first<std::string>("comp_id"_key == compoundID, "entity_id");
 
 		if (entity_id.empty())
 		{
@@ -1954,7 +1954,7 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 		// create a copy of the entity first
 		auto &entity = m_db["entity"];
 
-		entityID = entity.find1<std::string>("type"_key == "non-polymer" and "pdbx_description"_key == compound->name(), "id");
+		entityID = entity.find_first<std::string>("type"_key == "non-polymer" and "pdbx_description"_key == compound->name(), "id");
 
 		if (entityID.empty())
 		{
@@ -2573,7 +2573,7 @@ std::string structure::create_entity_for_branch(branch &branch)
 
 	auto &entity = m_db["entity"];
 
-	std::string entityID = entity.find1<std::string>("type"_key == "branched" and "pdbx_description"_key == entityName, "id");
+	std::string entityID = entity.find_first<std::string>("type"_key == "branched" and "pdbx_description"_key == entityName, "id");
 
 	if (entityID.empty())
 	{

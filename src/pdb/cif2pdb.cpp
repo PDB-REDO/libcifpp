@@ -122,9 +122,9 @@ std::string cifSoftware(const datablock &db, SoftwareType sw)
 	{
 		switch (sw)
 		{
-			case eRefinement: result = db["computing"].find1<std::string>(key("entry_id") == db.name(), "structure_refinement"); break;
-			case eDataScaling: result = db["computing"].find1<std::string>(key("entry_id") == db.name(), "pdbx_data_reduction_ds"); break;
-			case eDataReduction: result = db["computing"].find1<std::string>(key("entry_id") == db.name(), "pdbx_data_reduction_ii"); break;
+			case eRefinement: result = db["computing"].find_first<std::string>(key("entry_id") == db.name(), "structure_refinement"); break;
+			case eDataScaling: result = db["computing"].find_first<std::string>(key("entry_id") == db.name(), "pdbx_data_reduction_ds"); break;
+			case eDataReduction: result = db["computing"].find_first<std::string>(key("entry_id") == db.name(), "pdbx_data_reduction_ii"); break;
 			default: break;
 		}
 
@@ -136,11 +136,11 @@ std::string cifSoftware(const datablock &db, SoftwareType sw)
 
 			switch (sw)
 			{
-				case eRefinement: r = software.find1(key("classification") == "refinement"); break;
-				case eDataScaling: r = software.find1(key("classification") == "data scaling"); break;
-				case eDataExtraction: r = software.find1(key("classification") == "data extraction"); break;
-				case eDataReduction: r = software.find1(key("classification") == "data reduction"); break;
-				case ePhasing: r = software.find1(key("classification") == "phasing"); break;
+				case eRefinement: r = software.find_first(key("classification") == "refinement"); break;
+				case eDataScaling: r = software.find_first(key("classification") == "data scaling"); break;
+				case eDataExtraction: r = software.find_first(key("classification") == "data extraction"); break;
+				case eDataReduction: r = software.find_first(key("classification") == "data reduction"); break;
+				case ePhasing: r = software.find_first(key("classification") == "phasing"); break;
 			}
 
 			if (not r.empty())
@@ -958,7 +958,7 @@ void WriteRemark3BusterTNT(std::ostream &pdbFile, const datablock &db)
 	for (auto t : tls)
 	{
 		std::string id = t["id"].as<std::string>();
-		auto g = db["pdbx_refine_tls_group"].find1(key("refine_tls_id") == id);
+		auto g = db["pdbx_refine_tls_group"].find_first(key("refine_tls_id") == id);
 
 		pdbFile << RM3("") << std::endl
 				<< RM3("  TLS GROUP : ") << id << std::endl
@@ -1656,7 +1656,7 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 	{
 		std::string id = t["id"].as<std::string>();
 
-		auto pdbx_refine_tls_group = db["pdbx_refine_tls_group"].find1(key("refine_tls_id") == id);
+		auto pdbx_refine_tls_group = db["pdbx_refine_tls_group"].find_first(key("refine_tls_id") == id);
 
 		pdbFile << RM3("  TLS GROUP : ") << id << std::endl
 				<< RM3("   SELECTION: ") << Fs(pdbx_refine_tls_group, "selection_details") << std::endl
@@ -2188,20 +2188,20 @@ void WriteRemark200(std::ostream &pdbFile, const datablock &db)
 			std::string diffrn_id = diffrn["id"].as<std::string>();
 			std::string crystal_id = diffrn["crystal_id"].as<std::string>();
 
-			auto diffrn_radiation = db["diffrn_radiation"].find1(key("diffrn_id") == diffrn_id);
-			auto diffrn_radiation_wavelength = db["diffrn_radiation_wavelength"].find1(key("id") == diffrn_radiation["wavelength_id"].as<std::string>());
-			auto diffrn_source = db["diffrn_source"].find1(key("diffrn_id") == diffrn_id);
-			auto diffrn_detector = db["diffrn_detector"].find1(key("diffrn_id") == diffrn_id);
-			auto exptl = db["exptl"].find1(key("entry_id") == db.name());
-			auto exptl_crystal = db["exptl_crystal"].find1(key("id") == crystal_id);
-			auto exptl_crystal_grow = db["exptl_crystal_grow"].find1(key("crystal_id") == crystal_id);
-			auto computing = db["computing"].find1(key("entry_id") == db.name());
-			auto reflns = db["reflns"].find1(key("entry_id") == db.name());
+			auto diffrn_radiation = db["diffrn_radiation"].find_first(key("diffrn_id") == diffrn_id);
+			auto diffrn_radiation_wavelength = db["diffrn_radiation_wavelength"].find_first(key("id") == diffrn_radiation["wavelength_id"].as<std::string>());
+			auto diffrn_source = db["diffrn_source"].find_first(key("diffrn_id") == diffrn_id);
+			auto diffrn_detector = db["diffrn_detector"].find_first(key("diffrn_id") == diffrn_id);
+			auto exptl = db["exptl"].find_first(key("entry_id") == db.name());
+			auto exptl_crystal = db["exptl_crystal"].find_first(key("id") == crystal_id);
+			auto exptl_crystal_grow = db["exptl_crystal_grow"].find_first(key("crystal_id") == crystal_id);
+			auto computing = db["computing"].find_first(key("entry_id") == db.name());
+			auto reflns = db["reflns"].find_first(key("entry_id") == db.name());
 
 			std::string pdbx_diffrn_id = reflns["pdbx_diffrn_id"].as<std::string>();
 
-			auto reflns_shell = db["reflns_shell"].find1(key("pdbx_diffrn_id") == pdbx_diffrn_id);
-			auto refine = db["refine"].find1(key("pdbx_diffrn_id") == pdbx_diffrn_id);
+			auto reflns_shell = db["reflns_shell"].find_first(key("pdbx_diffrn_id") == pdbx_diffrn_id);
+			auto refine = db["refine"].find_first(key("pdbx_diffrn_id") == pdbx_diffrn_id);
 
 			std::string date =
 				diffrn_detector.empty() ? "NULL" : cif2pdbDate(diffrn_detector["pdbx_collection_date"].as<std::string>());
@@ -2326,7 +2326,7 @@ void WriteRemark280(std::ostream &pdbFile, const datablock &db)
 		for (auto exptl_crystal : db["exptl_crystal"])
 		{
 			std::string crystal_id = exptl_crystal["id"].as<std::string>();
-			auto exptl_crystal_grow = db["exptl_crystal_grow"].find1(key("crystal_id") == crystal_id);
+			auto exptl_crystal_grow = db["exptl_crystal_grow"].find_first(key("crystal_id") == crystal_id);
 
 			pdbFile
 				<< RM("") << std::endl
@@ -2458,7 +2458,7 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 			}
 		}
 
-		auto gen = db["pdbx_struct_assembly_gen"].find1(key("assembly_id") == id);
+		auto gen = db["pdbx_struct_assembly_gen"].find_first(key("assembly_id") == id);
 
 		if (gen)
 		{
@@ -2472,7 +2472,7 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 
 			for (auto oper_id : split<std::string>(oper_id_list, ",", true))
 			{
-				auto r = db["pdbx_struct_oper_list"].find1(key("id") == oper_id);
+				auto r = db["pdbx_struct_oper_list"].find_first(key("id") == oper_id);
 
 				pdbFile << RM("  BIOMT1 ", -3) << Fs(r, "id")
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[1][1]")
@@ -2952,7 +2952,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 		if (id == water_comp_id)
 			continue;
 
-		std::string syn = db["chem_comp"].find1<std::string>(key("id") == id, "pdbx_synonyms");
+		std::string syn = db["chem_comp"].find_first<std::string>(key("id") == id, "pdbx_synonyms");
 		if (syn.empty())
 			continue;
 
@@ -3105,7 +3105,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 				std::string initResName, initChainID, initICode, endResName, endChainID, endICode;
 				int initSeqNum, endSeqNum;
 
-				auto r1 = db["struct_sheet_range"].find1(key("sheet_id") == sheetID and key("id") == rangeID1);
+				auto r1 = db["struct_sheet_range"].find_first(key("sheet_id") == sheetID and key("id") == rangeID1);
 
 				cif::tie(initResName, initICode, endResName, endICode,
 					initResName, initChainID, initSeqNum, endResName, endChainID, endSeqNum) = r1.get("beg_label_comp_id", "pdbx_beg_PDB_ins_code", "end_label_comp_id",
@@ -3120,7 +3120,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 			std::string initResName, initChainID, initICode, endResName, endChainID, endICode, curAtom, curResName, curChainID, curICode, prevAtom, prevResName, prevChainID, prevICode;
 			int initSeqNum, endSeqNum, curResSeq, prevResSeq;
 
-			auto r2 = db["struct_sheet_range"].find1(key("sheet_id") == sheetID and key("id") == rangeID2);
+			auto r2 = db["struct_sheet_range"].find_first(key("sheet_id") == sheetID and key("id") == rangeID2);
 
 			cif::tie(initResName, initICode, endResName, endICode,
 				initResName, initChainID, initSeqNum, endResName, endChainID, endSeqNum) = r2.get("beg_label_comp_id", "pdbx_beg_PDB_ins_code", "end_label_comp_id",
@@ -3289,10 +3289,10 @@ int WriteMiscellaneousFeatures(std::ostream &pdbFile, const datablock &db)
 
 void WriteCrystallographic(std::ostream &pdbFile, const datablock &db)
 {
-	auto r = db["symmetry"].find1(key("entry_id") == db.name());
+	auto r = db["symmetry"].find_first(key("entry_id") == db.name());
 	std::string symmetry = r["space_group_name_H-M"].as<std::string>();
 
-	r = db["cell"].find1(key("entry_id") == db.name());
+	r = db["cell"].find_first(key("entry_id") == db.name());
 
 	pdbFile << cif::format("CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11.11s%4d", r["length_a"].as<double>(), r["length_b"].as<double>(), r["length_c"].as<double>(), r["angle_alpha"].as<double>(), r["angle_beta"].as<double>(), r["angle_gamma"].as<double>(), symmetry, r["Z_PDB"].as<int>()) << std::endl;
 }
@@ -3339,10 +3339,16 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 	const std::map<std::string, std::tuple<std::string, int, std::string>> &last_resseq_for_chain_map,
 	std::set<std::string> &terminatedChains, int model_nr)
 {
+	using namespace cif::literals;
+
 	int numCoord = 0, numTer = 0;
 
 	auto &atom_site = db["atom_site"];
 	auto &atom_site_anisotrop = db["atom_site_anisotrop"];
+	auto &entity = db["entity"];
+	auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
+	auto &pdbx_nonpoly_scheme = db["pdbx_nonpoly_scheme"];
+	auto &pdbx_branch_scheme = db["pdbx_branch_scheme"];
 
 	int serial = 1;
 	auto ri = atom_site.begin();
@@ -3405,6 +3411,16 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 			r.get("id", "group_PDB", "label_atom_id", "label_alt_id", "auth_comp_id", "auth_asym_id", "auth_seq_id",
 				"pdbx_PDB_ins_code", "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol", "pdbx_formal_charge");
 
+		int entity_id = r.get<int>("label_entity_id");
+		auto type = entity.find1<std::string>("id"_key == entity_id, "type");
+
+		if (type == "branched")	// find the real auth_seq_num, since sugars have their auth_seq_num reused as sugar number... sigh.
+			resSeq = pdbx_branch_scheme.find1<int>("asym_id"_key == r.get<std::string>("label_asym_id") and "pdb_seq_num"_key == resSeq, "auth_seq_num");
+		else if (type == "non-polymer")	// same for non-polymers
+			resSeq = pdbx_nonpoly_scheme.find1<int>("asym_id"_key == r.get<std::string>("label_asym_id") and "pdb_seq_num"_key == resSeq, "auth_seq_num");
+		else if (type == "polymer")
+			resSeq = pdbx_poly_seq_scheme.find1<int>("asym_id"_key == r.get<std::string>("label_asym_id") and "pdb_seq_num"_key == resSeq, "auth_seq_num");
+
 		if (chainID.length() > 1)
 			throw std::runtime_error("Chain ID " + chainID + " won't fit into a PDB file");
 
@@ -3419,7 +3435,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 
 		++numCoord;
 
-		auto ai = atom_site_anisotrop.find1(key("id") == id);
+		auto ai = atom_site_anisotrop.find_first(key("id") == id);
 		if (not ai.empty())
 		//
 		//		auto ai = find_if(atom_site_anisotrop.begin(), atom_site_anisotrop.end(), [id](row_handle r) -> bool { return r["id"] == id; });
