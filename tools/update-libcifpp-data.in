@@ -6,7 +6,7 @@ set -e
 euid=${EUID:-$(id -u)}
 
 if [ "${euid}" -ne 0 ] ; then
-	then echo "Please run as root"
+	echo "Please run as root"
 	exit
 fi
 
