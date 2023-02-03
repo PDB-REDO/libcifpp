@@ -28,6 +28,7 @@
 
 #include <cif++/exports.hpp>
 
+#include <array>
 #include <cmath>
 #include <complex>
 #include <functional>

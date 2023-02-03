@@ -28,6 +28,8 @@
 
 #include <cif++/row.hpp>
 
+#include <array>
+
 namespace cif
 {
 
