@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 5.0.6 LANGUAGES CXX)
+project(cifpp VERSION 5.0.8 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -89,6 +89,7 @@ if(BUILD_FOR_CCP4)
 		list(APPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
 		list(APPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
+		set(CMAKE_INSTALL_FULL_DATADIR "${CMAKE_INSTALL_PREFIX}/share/libcifpp")
 
 		if(WIN32)
 			set(BUILD_SHARED_LIBS ON)
@@ -172,6 +173,12 @@ list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
 
 include(FindAtomic)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
+
+if(MSVC)
+	# this dependency can go once MSVC supports std::experimental::is_detected
+	find_package(zeep 5.1.8 REQUIRED)
+	list(APPEND CIFPP_REQUIRED_LIBRARIES zeep::zeep)
+endif()
 
 # Create a revision file, containing the current git version info
 include(VersionString)

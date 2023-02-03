@@ -182,6 +182,33 @@ namespace detail
 		uint16_t m_item_ix = 0;
 	};
 
+	struct key_is_not_empty_condition_impl : public condition_impl
+	{
+		key_is_not_empty_condition_impl(const std::string &item_tag)
+			: m_item_tag(item_tag)
+		{
+		}
+
+		condition_impl *prepare(const category &c) override
+		{
+			m_item_ix = get_column_ix(c, m_item_tag);
+			return this;
+		}
+
+		bool test(row_handle r) const override
+		{
+			return not r[m_item_ix].empty();
+		}
+
+		void str(std::ostream &os) const override
+		{
+			os << m_item_tag << " IS NOT NULL";
+		}
+
+		std::string m_item_tag;
+		uint16_t m_item_ix = 0;
+	};
+
 	struct key_equals_condition_impl : public condition_impl
 	{
 		key_equals_condition_impl(item &&i)
@@ -822,6 +849,11 @@ inline condition operator==(const key &key, const std::regex &rx)
 inline condition operator==(const key &key, const empty_type &)
 {
 	return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
+}
+
+inline condition operator!=(const key &key, const empty_type &)
+{
+	return condition(new detail::key_is_not_empty_condition_impl(key.m_item_tag));
 }
 
 inline condition operator not(condition &&rhs)

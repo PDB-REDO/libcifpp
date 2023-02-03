@@ -1028,6 +1028,9 @@ atom_type_traits::atom_type_traits(const std::string& symbol)
 			break;
 		}
 	}
+
+	if (symbol == "X")
+		m_info = &data::kKnownAtoms[0];
 	
 	if (m_info == nullptr)
 		throw std::invalid_argument("Not a known element: " + symbol);
