@@ -1,58 +1,76 @@
 #!/bin/sh
 
+# Code updated based on a bug report in Ubuntu:
+#   Bug #1999259 reported by Kyler Laird on 2022-12-09
+
 set -e
 
 # Get the effective UID, but do so in a compatible way (we may be running dash)
 euid=${EUID:-$(id -u)}
 
-if [ "${euid}" -ne 0 ] ; then
+if [ "${euid}" -ne 0 ]; then
 	echo "Please run as root"
 	exit
 fi
 
-if [ -f "@CIFPP_ETC_DIR@/libcifpp.conf" ] ; then
+if [ -f "@CIFPP_ETC_DIR@/libcifpp.conf" ]; then
 	. "@CIFPP_ETC_DIR@/libcifpp.conf"
 fi
 
 # check to see if we're supposed to run at all
-if [ "$update" != "true" ] ; then
+if [ "$update" != "true" ]; then
 	exit
 fi
 
-# if cache directory doesn't exist, exit. 
+# if cache directory doesn't exist, exit.
 if ! [ -d "@CIFPP_CACHE_DIR@" ]; then
 	exit
 fi
 
-fetch_dictionary () {
+# Create a temp file in the right directory and
+# make sure it is cleaned up when this script exits
+
+tmpfile=$(mktemp --tmpdir=@CIFPP_CACHE_DIR@)
+trap "rm -f \"${tmpfile}\"" EXIT
+
+# Record if updating was really necessary
+updated=false
+
+update_dictionary() {
 	dict=$1
 	source=$2
 
-	wget -O${dict}.gz ${source}
+	# Using curl with
+	# --location (follow redirects)
+	# --silent (no diagnostic output at all)
+	# --time-cond (only fetch if source is newer)
+	#
+	# Output is extracted and written to $tmpfile and when successful 
+	# the tmpfile is placed at the desired location and updated is set
+	# to true
 
-	# be careful not to nuke an existing dictionary file
-	# extract to a temporary file first
+	echo "${dict}"
 
-	gunzip -c ${dict}.gz > ${dict}-tmp
-
-	# then move the extracted file to the final location
-
-	mv ${dict}-tmp ${dict}
-
-	# and clean up afterwards
-
-	rm ${dict}.gz
+	curl --silent --location --compressed --time-cond "${dict}" "${source}" | (
+		# uncompress the file on the fly, if it is compressed
+		if [ "${source%.gz}" != "${source}" ]; then
+			gunzip -c > "${tmpfile}" 2>/dev/null
+		else
+			cat > "${tmpfile}"
+		fi
+	) && (
+		mv "${tmpfile}" "${dict}" && chmod a+r "${dict}" && updated=true
+	) || true
 }
 
-# fetch the dictionaries
+# Update the dictionaries
 
-fetch_dictionary "@CIFPP_CACHE_DIR@/mmcif_pdbx.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
-fetch_dictionary "@CIFPP_CACHE_DIR@/components.cif" "ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
-
-wget -O"@CIFPP_CACHE_DIR@/mmcif_ma.dic" "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"
+update_dictionary "@CIFPP_CACHE_DIR@/components.cif" "https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
+update_dictionary "@CIFPP_CACHE_DIR@/mmcif_pdbx.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
+update_dictionary "@CIFPP_CACHE_DIR@/mmcif_ma.dic" "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"
 
 # notify subscribers, will fail on FreeBSD
 
-if [ -d "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" ] && [ -x /bin/run-parts ]; then
+if [ "${updated}" != "false" ] && [ -d "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" ] && [ -x /bin/run-parts ]; then
 	run-parts --arg "@CIFPP_CACHE_DIR@" -- "@CIFPP_ETC_DIR@/libcifpp/cache-update.d"
 fi
