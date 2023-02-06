@@ -4202,7 +4202,8 @@ void PDBFileParser::ConstructEntities()
 	// done with the sugar, resume operation as before
 
 	std::map<char, std::string> waterChains;
-	std::map<std::tuple<std::string, std::string>, int> ndbSeqNum; // for nonpoly scheme
+	std::map<std::tuple<std::string, std::string>, int> ndbSeqNum;	// for nonpoly scheme
+	std::map<std::string,int> entityAuthSeqNum;						// for nonpoly scheme too
 
 	for (size_t i = 0; i < mHets.size(); ++i)
 	{
@@ -4331,6 +4332,7 @@ void PDBFileParser::ConstructEntities()
 		}
 
 		int seqNr = ++ndbSeqNum[std::make_tuple(hetID, asymID)];
+		int authSeqNr = ++entityAuthSeqNum[hetID];
 
 		std::string iCode{ het.iCode };
 		cif::trim(iCode);
@@ -4339,15 +4341,15 @@ void PDBFileParser::ConstructEntities()
 
 		getCategory("pdbx_nonpoly_scheme")->emplace({
 			{ "asym_id", asymID },
-		{ "entity_id", mHet2EntityID[hetID] },
-		{ "mon_id", hetID },
-		{ "ndb_seq_num", seqNr },
-		{ "pdb_seq_num", het.seqNum },
-		{ "auth_seq_num", het.seqNum },	// Yes
-		{ "pdb_mon_id", hetID },
-		{ "auth_mon_id", hetID },
-		{ "pdb_strand_id", std::string{ het.chainID } },
-		{ "pdb_ins_code", iCode } });
+			{ "entity_id", mHet2EntityID[hetID] },
+			{ "mon_id", hetID },
+			{ "ndb_seq_num", seqNr },
+			{ "pdb_seq_num", het.seqNum },
+			{ "auth_seq_num", authSeqNr },	// Yes
+			{ "pdb_mon_id", hetID },
+			{ "auth_mon_id", hetID },
+			{ "pdb_strand_id", std::string{ het.chainID } },
+			{ "pdb_ins_code", iCode } });
 
 		// mapping needed?
 		mChainSeq2AsymSeq[std::make_tuple(het.chainID, het.seqNum, het.iCode)] = std::make_tuple(asymID, seqNr, false);
