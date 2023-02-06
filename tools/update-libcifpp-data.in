@@ -49,8 +49,6 @@ update_dictionary() {
 	# the tmpfile is placed at the desired location and updated is set
 	# to true
 
-	echo "${dict}"
-
 	curl --silent --location --compressed --time-cond "${dict}" "${source}" | (
 		# uncompress the file on the fly, if it is compressed
 		if [ "${source%.gz}" != "${source}" ]; then
