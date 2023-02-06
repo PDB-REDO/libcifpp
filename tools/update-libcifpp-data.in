@@ -30,11 +30,8 @@ fi
 # Create a temp file in the right directory and
 # make sure it is cleaned up when this script exits
 
-tmpfile=$(mktemp --tmpdir=@CIFPP_CACHE_DIR@)
+tmpfile=$(mktemp)
 trap "rm -f \"${tmpfile}\"" EXIT
-
-# Record if updating was really necessary
-updated=false
 
 update_dictionary() {
 	dict=$1
@@ -57,7 +54,7 @@ update_dictionary() {
 			cat > "${tmpfile}"
 		fi
 	) && (
-		mv "${tmpfile}" "${dict}" && chmod a+r "${dict}" && updated=true
+		mv "${tmpfile}" "${dict}" && chmod a+r "${dict}"
 	) || true
 }
 
@@ -69,6 +66,6 @@ update_dictionary "@CIFPP_CACHE_DIR@/mmcif_ma.dic" "https://github.com/ihmwg/Mod
 
 # notify subscribers, will fail on FreeBSD
 
-if [ "${updated}" != "false" ] && [ -d "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" ] && [ -x /bin/run-parts ]; then
+if [ -d "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" ] && [ -x /bin/run-parts ]; then
 	run-parts --arg "@CIFPP_CACHE_DIR@" -- "@CIFPP_ETC_DIR@/libcifpp/cache-update.d"
 fi

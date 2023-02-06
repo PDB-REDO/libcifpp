@@ -1582,7 +1582,7 @@ void PDBFileParser::ParseTitle()
 
 			if (not iequals(key, "MOL_ID") and mCompounds.empty())
 			{
-				if (cif::VERBOSE >= 0)
+				if (cif::VERBOSE > 0)
 					std::cerr << "Ignoring invalid COMPND record" << std::endl;
 				break;
 			}
