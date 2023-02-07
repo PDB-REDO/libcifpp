@@ -672,6 +672,7 @@ class Fi : public FBase
 	virtual void out(std::ostream &os)
 	{
 		std::string s{ text() };
+
 		if (s.empty())
 		{
 			os << "NULL";
@@ -679,7 +680,18 @@ class Fi : public FBase
 				os << std::string(os.width() - 4, ' ');
 		}
 		else
-			os << std::stol(s);
+		{
+			long l = 0;
+			auto r = std::from_chars(s.data(), s.data() + s.length(), l);
+			if (r.ec != std::errc())
+			{
+				if (VERBOSE > 0)
+					std::cerr << "Failed to write '" << s << "' as a long from field " << mField << ", this indicates an error in the code for writing PDB files" << std::endl;
+				os << s;
+			}
+			else
+				os << l;
+		}
 	}
 };
 
@@ -712,7 +724,7 @@ class Ff : public FBase
 			if (r.ec != std::errc())
 			{
 				if (VERBOSE > 0)
-					std::cerr << "Failed to write '" << s << "' as a double, this indicates an error in the code for writing PDB files" << std::endl;
+					std::cerr << "Failed to write '" << s << "' as a double from field " << mField << ", this indicates an error in the code for writing PDB files" << std::endl;
 				os << s;
 			}
 			else
@@ -1384,7 +1396,7 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 					unit = "       : ";
 
 				pdbFile << RM3("  ", 18) << type
-						<< SEP("", -2) << Fi(l, "pdbx_ens_id")
+						<< SEP("", -2) << Fs(l, "pdbx_ens_id")
 						<< SEP("    ", 1) << Fs(l, "pdbx_auth_asym_id")
 						<< SEP(unit.c_str(), -6) << Fi(l, "pdbx_number")
 						<< SEP(" ;", -6, 3) << Ff(l, "rms_dev_position")
@@ -3365,10 +3377,21 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 			cif::tie(nextResName, nextChainID, nextICode, nextResSeq, modelNum) =
 				(*ri).get("label_comp_id", "auth_asym_id", "pdbx_PDB_ins_code", "auth_seq_id", "pdbx_PDB_model_num");
 
-		if (modelNum.empty() == false and stol(modelNum) != model_nr)
+		if (modelNum.empty() == false)
 		{
-			++ri;
-			continue;
+			int nr = 0;
+			auto r = std::from_chars(modelNum.data(), modelNum.data() + modelNum.length(), nr);
+			if (r.ec != std::errc())
+			{
+				if (VERBOSE > 0)
+					std::cerr << "Model number '" << modelNum << "' is not a valid integer" << std::endl;
+			}
+
+			if (nr != model_nr)
+			{
+				++ri;
+				continue;
+			}
 		}
 
 		if (chainID.empty() == false and terminatedChains.count(chainID) == 0)
