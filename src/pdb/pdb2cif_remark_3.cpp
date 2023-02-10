@@ -1233,7 +1233,9 @@ void Remark3Parser::storeCapture(const char *category, std::initializer_list<con
 			{
 				cat.emplace({ // #warning("crystal id, diffrn id, what should be put here?")
 					{ "crystal_id", 1 },
-					{ "diffrn_id", 1 } });
+					{ "diffrn_id", 1 },
+					{ "operator", "" },
+					{ "fraction", 0.f } });
 			}
 			else if (iequals(category, "reflns"))
 				cat.emplace({ { "pdbx_ordinal", cat.size() + 1 },

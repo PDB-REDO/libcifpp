@@ -807,11 +807,17 @@ float monomer::chi(size_t nr) const
 					atoms.back() = "CG2";
 			}
 
-			result = static_cast<float>(dihedral_angle(
-				get_atom_by_atom_id(atoms[nr + 0]).get_location(),
-				get_atom_by_atom_id(atoms[nr + 1]).get_location(),
-				get_atom_by_atom_id(atoms[nr + 2]).get_location(),
-				get_atom_by_atom_id(atoms[nr + 3]).get_location()));
+			auto atom_0 = get_atom_by_atom_id(atoms[nr + 0]);
+			auto atom_1 = get_atom_by_atom_id(atoms[nr + 1]);
+			auto atom_2 = get_atom_by_atom_id(atoms[nr + 2]);
+			auto atom_3 = get_atom_by_atom_id(atoms[nr + 3]);
+
+			if (atom_0 and atom_1 and atom_2 and atom_3)
+				result = static_cast<float>(dihedral_angle(
+					atom_0.get_location(),
+					atom_1.get_location(),
+					atom_2.get_location(),
+					atom_3.get_location()));
 		}
 	}
 	catch (const std::exception &e)
