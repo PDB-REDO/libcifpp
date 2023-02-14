@@ -3459,8 +3459,8 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 					resSeq = pdbx_branch_scheme.find1<int>("asym_id"_key == r.get<std::string>("label_asym_id") and "pdb_seq_num"_key == resSeq, "auth_seq_num");
 				// else if (type == "non-polymer")	// same for non-polymers
 				// 	resSeq = pdbx_nonpoly_scheme.find1<int>("asym_id"_key == r.get<std::string>("label_asym_id") and "pdb_seq_num"_key == resSeq, "auth_seq_num");
-				else if (type == "polymer")
-					resSeq = pdbx_poly_seq_scheme.find1<int>("asym_id"_key == r.get<std::string>("label_asym_id") and "pdb_seq_num"_key == resSeq, "auth_seq_num");
+				// else if (type == "polymer")
+				// 	resSeq = pdbx_poly_seq_scheme.find1<int>("asym_id"_key == r.get<std::string>("label_asym_id") and "pdb_seq_num"_key == resSeq, "auth_seq_num");
 			}
 			catch (const std::exception &ex)
 			{
