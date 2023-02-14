@@ -1406,10 +1406,24 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 		}
 	}
 
-	// TODO: add twin information
+	pdbFile << RM3("") << std::endl
+			<< RM3(" TWIN DETAILS") << std::endl;
 
-	//	{ R"(TWIN DETAILS)", "", {} },
-	//	{ R"(NUMBER OF TWIN DOMAINS)", "", {} },
+	auto &twins = db["pdbx_reflns_twin"];
+	if (twins.empty())
+		pdbFile << RM3("  NUMBER OF TWIN DOMAINS  : NULL") << std::endl;
+	else
+	{
+		pdbFile << RM3("  NUMBER OF TWIN DOMAINS  :    ") << twins.size() << std::endl;
+
+		int nr = 1;
+		for (auto twin : twins)
+		{
+			pdbFile << RM3("     TWIN DOMAIN   : ") << nr++ << std::endl
+					<< RM3("     TWIN OPERATOR : ") << Fs(twin, "operator") << std::endl
+					<< RM3("     TWIN FRACTION : ") << SEP("", -6, 3) << Ff(twin, "fraction") << std::endl;
+		}
+	}
 
 	auto &tls = db["pdbx_refine_tls"];
 
