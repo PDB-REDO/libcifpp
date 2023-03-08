@@ -3104,4 +3104,3 @@ _date    today
 
 	BOOST_TEST(db == db2);
 }
-

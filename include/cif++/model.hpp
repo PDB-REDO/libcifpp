@@ -216,6 +216,14 @@ class atom
 		set_location(loc);
 	}
 
+	/// \brief rotate the coordinates of this atom by \a q around point \a p
+	void rotate(quaternion q, point p)
+	{
+		auto loc = get_location();
+		loc.rotate(q, p);
+		set_location(loc);
+	}
+
 	/// \brief Translate and rotate the position of this atom by \a t and \a q
 	void translate_and_rotate(point t, quaternion q)
 	{

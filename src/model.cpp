@@ -2335,18 +2335,19 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 	{
 		auto atom_id = atom_site.get_unique_id("");
 
-		atom.set_value("name", atom_id);
+		atom.set_value("id", atom_id);
 		atom.set_value("label_asym_id", asym_id);
 		atom.set_value("auth_asym_id", asym_id);
 		atom.set_value("label_entity_id", entity_id);
 
 		atom.set_value_if_empty({"group_PDB", "HETATM"});
 		atom.set_value_if_empty({"label_comp_id", comp_id});
-		atom.set_value_if_empty({"label_seq_id", ""});
+		atom.set_value_if_empty({"label_seq_id", "."});
 		atom.set_value_if_empty({"auth_comp_id", comp_id});
 		atom.set_value_if_empty({"auth_seq_id", 1});
 		atom.set_value_if_empty({"pdbx_PDB_model_num", 1});
 		atom.set_value_if_empty({"label_alt_id", ""});
+		atom.set_value_if_empty({"occupancy", 1.0, 2});
 
 		auto row = atom_site.emplace(atom.begin(), atom.end());
 
