@@ -168,6 +168,46 @@ BOOST_AUTO_TEST_CASE(t3)
 	BOOST_TEST(a == 45, tt::tolerance(0.01));
 }
 
+BOOST_AUTO_TEST_CASE(dh_q_0)
+{
+	cif::point axis(1, 0, 0);
+
+	cif::point p(1, 1, 0);
+	
+	cif::point t[3] =
+	{
+		{ 0, 1, 0 },
+		{ 0, 0, 0 },
+		{ 1, 0, 0 }
+	};
+
+	auto a = cif::dihedral_angle(t[0], t[1], t[2], p);
+	BOOST_TEST(a == 0, tt::tolerance(0.01f));
+
+	auto q = cif::construct_from_angle_axis(90, axis);
+
+	p.rotate(q);
+
+	BOOST_TEST(p.m_x == 1, tt::tolerance(0.01f));
+	BOOST_TEST(p.m_y == 0, tt::tolerance(0.01f));
+	BOOST_TEST(p.m_z == 1, tt::tolerance(0.01f));
+
+	a = cif::dihedral_angle(t[0], t[1], t[2], p);
+	BOOST_TEST(a == 90, tt::tolerance(0.01f));
+
+	q = cif::construct_from_angle_axis(-90, axis);
+
+	p.rotate(q);
+
+	BOOST_TEST(p.m_x == 1, tt::tolerance(0.01f));
+	BOOST_TEST(p.m_y == 1, tt::tolerance(0.01f));
+	BOOST_TEST(p.m_z == 0, tt::tolerance(0.01f));
+
+	a = cif::dihedral_angle(t[0], t[1], t[2], p);
+	BOOST_TEST(a == 0, tt::tolerance(0.01f));
+
+}
+
 BOOST_AUTO_TEST_CASE(dh_q_1)
 {
 	struct
@@ -204,9 +244,7 @@ BOOST_AUTO_TEST_CASE(dh_q_1)
 	{
 		auto q = cif::construct_for_dihedral_angle(pts[0], pts[1], pts[2], pts[3], angle, 1);
 
-		pts[3] -= pts[2];
-		pts[3].rotate(q);
-		pts[3] += pts[2];
+		pts[3].rotate(q, pts[2]);
 
 		auto dh = cif::dihedral_angle(pts[0], pts[1], pts[2], pts[3]);
 		BOOST_TEST(dh == angle, tt::tolerance(0.1f));
