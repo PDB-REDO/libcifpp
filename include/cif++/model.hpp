@@ -847,6 +847,12 @@ class structure
 	/// \return				The newly create asym ID
 	std::string create_non_poly(const std::string &entity_id, std::vector<row_initializer> atoms);
 
+	/// \brief Create a new water with atom constructed from info in \a atom_info
+	/// This method creates a new atom record filled with info from the info.
+	///
+	/// \param atom			The set of item data containing the data for the atoms.
+	void create_water(row_initializer atom);
+
 	/// \brief Create a new and empty (sugar) branch
 	branch &create_branch();
 
