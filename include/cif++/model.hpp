@@ -752,6 +752,7 @@ class structure
 
 	const std::vector<residue> &non_polymers() const { return m_non_polymers; }
 
+	bool has_atom_id(const std::string &id) const;
 	atom get_atom_by_id(const std::string &id) const;
 	// atom getAtomByLocation(point pt, float maxDistance) const;
 

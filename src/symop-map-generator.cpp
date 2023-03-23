@@ -261,7 +261,7 @@ int main(int argc, char* const argv[])
 		};
 
 		std::map<int,SymInfoBlock> symInfo;
-		int symopnr, mysymnr = 10000;
+		int symopnr = 0, mysymnr = 10000;
 
 		std::ifstream file(input);
 		if (not file.is_open())
@@ -383,10 +383,10 @@ const space_group kSpaceGroups[] =
 			old = '"' + old + '"' + std::string(20 - old.length(), ' ');
 			xHM = '"' + xHM + '"' + std::string(30 - xHM.length(), ' ');
 
-			for (std::string::size_type p = Hall.length(); p > 0; --p)
+			for (auto p = Hall.begin(); p != Hall.end(); ++p)
 			{
-				if (Hall[p - 1] == '"')
-					Hall.insert(p - 1, "\\", 1);
+				if (*p == '"')
+					p = Hall.insert(p, '\\') + 1;
 			}
 
 			Hall = '"' + Hall + '"' + std::string(40 - Hall.length(), ' ');
