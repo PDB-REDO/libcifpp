@@ -3,6 +3,7 @@ Version 5.0.9
 - Added create_water to model
 - Writing twin domain info in PDB files and more PDB fixes
 - remove_atom improved (remove struct_conn records)
+- Added a specialisation for category::find1<std::optional>
 
 Version 5.0.8
 - implemented find_first, find_min, find_max and count in category

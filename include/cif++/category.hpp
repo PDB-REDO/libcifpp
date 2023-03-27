@@ -64,6 +64,12 @@ class multiple_results_error : public std::runtime_error
 };
 
 // --------------------------------------------------------------------
+// These should be moved elsewhere, one day.
+
+template<typename _Tp> inline constexpr bool is_optional_v = false;
+template<typename _Tp> inline constexpr bool is_optional_v<std::optional<_Tp>> = true;
+
+// --------------------------------------------------------------------
 
 class category
 {
@@ -299,13 +305,27 @@ class category
 		return find1<T>(cbegin(), std::move(cond), column);
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<not is_optional_v<T>, int> = 0>
 	T find1(const_iterator pos, condition &&cond, const char *column) const
 	{
 		auto h = find<T>(pos, std::move(cond), column);
 
 		if (h.size() != 1)
 			throw multiple_results_error();
+
+		return *h.begin();
+	}
+
+	template <typename T, std::enable_if_t<is_optional_v<T>, int> = 0>
+	T find1(const_iterator pos, condition &&cond, const char *column) const
+	{
+		auto h = find<typename T::value_type>(pos, std::move(cond), column);
+
+		if (h.size() > 1)
+			throw multiple_results_error();
+
+		if (h.empty())
+			return {};
 
 		return *h.begin();
 	}

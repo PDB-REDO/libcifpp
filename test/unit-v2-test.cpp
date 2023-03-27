@@ -3104,3 +3104,30 @@ _date    today
 
 	BOOST_TEST(db == db2);
 }
+
+BOOST_AUTO_TEST_CASE(find1_opt_1)
+{
+	using namespace cif::literals;
+	using namespace std::literals;
+
+	auto f = R"(data_TEST
+#
+loop_
+_test.id
+_test.name
+_test.value
+1 aap   1.0
+2 noot  1.1
+3 mies  1.2
+    )"_cf;
+
+	auto &db = f.front();
+	auto &test = db["test"];
+
+	auto v = test.find1<std::optional<float>>("id"_key == 1, "value");
+	BOOST_CHECK(v.has_value());
+	BOOST_TEST(*v == 1.0f);
+
+	v = test.find1<std::optional<float>>("id"_key == 4, "value");
+	BOOST_CHECK(v.has_value() == false);
+}

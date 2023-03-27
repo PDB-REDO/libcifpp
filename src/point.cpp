@@ -299,17 +299,6 @@ quaternion_type<T> normalize(quaternion_type<T> q)
 
 quaternion construct_from_angle_axis(float angle, point axis)
 {
-	// auto q = std::cos((angle * kPI / 180) / 2);
-	// auto s = std::sqrt(1 - q * q);
-
-	// axis.normalize();
-
-	// return normalize(quaternion{
-	// 	static_cast<float>(q),
-	// 	static_cast<float>(s * axis.m_x),
-	// 	static_cast<float>(s * axis.m_y),
-	// 	static_cast<float>(s * axis.m_z) });
-
 	angle = (angle * kPI / 180) / 2;
 	auto s = std::sin(angle);
 	auto c = std::cos(angle);
