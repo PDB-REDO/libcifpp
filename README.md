@@ -22,25 +22,20 @@ Building
 This library uses [cmake](https://cmake.org). The usual way of building
 and installing is to create a `build` directory and run cmake there.
 
-On linux e.g. you would issue the following commands:
+On linux e.g. you would issue the following commands to build and install
+libcifpp in your `$HOME/.local` folder:
 
+```bash
+ git clone https://github.com/PDB-REDO/libcifpp.git
+ cd libcifpp
+ cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Release
+ cmake --build build
+ cmake --install build
 ```
-	git clone https://github.com/PDB-REDO/libcifpp.git
-	cd libcifpp
-	mkdir build
-	cd build
-	cmake ..
-	cmake --build . --config Release
-	ctest -C Release
-	cmake --install .
-```
+
 This checks out the source code from github, creates a new directory
-where cmake stores its files. Run a configure, build the code and run
-tests. And then it installs the library and auxiliary files.
+where cmake stores its files. Run a configure, build the code and then
+it installs the library and auxiliary files.
 
-The default is to install everything in `$HOME/.local` on Linux and
-`%LOCALAPPDATA%` on Windows (the AppData/Local folder in your home directory).
-You can change this by specifying the prefix with the
-[CMAKE_INSTALL_PREFIX](https://cmake.org/cmake/help/v3.21/variable/CMAKE_INSTALL_PREFIX.html)
-variable.
-
+If you want to run the tests before installing, you should add `-DENABLE_TESTING=ON`
+to the first cmake command.
