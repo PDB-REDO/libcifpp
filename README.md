@@ -27,12 +27,9 @@ On linux e.g. you would issue the following commands:
 ```
 	git clone https://github.com/PDB-REDO/libcifpp.git
 	cd libcifpp
-	mkdir build
-	cd build
-	cmake ..
-	cmake --build . --config Release
-	ctest -C Release
-	cmake --install .
+	cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$HOME/path/to/libcifpp/ -DCMAKE_BUILD_TYPE=Release
+	cmake --build build
+	cmake --install build
 ```
 This checks out the source code from github, creates a new directory
 where cmake stores its files. Run a configure, build the code and run
