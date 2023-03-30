@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(create_nonpoly_2)
 	
 	cif::mm::structure structure(file);
 
-	cif::file lig("HEM.cif");
+	cif::file lig(gTestDir / "HEM.cif");
 	auto &chem_comp_atom = lig["HEM"]["chem_comp_atom"];
 
 	std::vector<cif::row_initializer> atoms;
