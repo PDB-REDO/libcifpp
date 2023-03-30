@@ -1376,23 +1376,16 @@ structure::structure(datablock &db, size_t modelNr, StructureOpenOptions options
 
 void structure::load_atoms_for_model(StructureOpenOptions options)
 {
+	using namespace literals;
+
 	auto &atomCat = m_db["atom_site"];
 
-	for (const auto &a : atomCat)
-	{
-		std::string id, type_symbol;
-		std::optional<size_t> model_nr;
+	condition c = "pdbx_PDB_model_num"_key == null or "pdbx_PDB_model_num"_key == m_model_nr;
+	if (options bitand StructureOpenOptions::SkipHydrogen)
+		c = std::move(c) and ("type_symbol"_key != "H" and "type_symbol"_key != "D");
 
-		cif::tie(id, type_symbol, model_nr) = a.get("id", "type_symbol", "pdbx_PDB_model_num");
-
-		if (model_nr and *model_nr != m_model_nr)
-			continue;
-
-		if ((options bitand StructureOpenOptions::SkipHydrogen) and (type_symbol == "H" or type_symbol == "D"))
-			continue;
-
+	for (auto id : atomCat.find<std::string>(std::move(c), "id"))
 		emplace_atom(std::make_shared<atom::atom_impl>(m_db, id));
-	}
 }
 
 // structure::structure(const structure &s)
