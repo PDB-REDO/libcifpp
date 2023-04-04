@@ -112,12 +112,12 @@ class row : public std::vector<item_value>
 
 	item_value* get(uint16_t ix)
 	{
-		return ix < size() ? &at(ix) : nullptr;
+		return ix < size() ? &data()[ix] : nullptr;
 	}
 
 	const item_value* get(uint16_t ix) const
 	{
-		return ix < size() ? &at(ix) : nullptr;
+		return ix < size() ? &data()[ix] : nullptr;
 	}
 
   private:

@@ -270,6 +270,10 @@ class atom_type_traits
 	const SFData &wksf(int charge = 0) const;
 	const SFData &elsf() const;
 
+	// Clipper doesn't like atoms with charges that do not have a scattering factor. And
+	// rightly so, but we need to know in advance if this is the case
+	bool has_sf(int charge) const;
+
   private:
 	const struct atom_type_info *m_info;
 };

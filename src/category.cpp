@@ -51,7 +51,7 @@ class row_comparator
 	{
 		auto cv = cat.get_cat_validator();
 
-		for (auto k : cv->m_keys)
+		for (auto &k : cv->m_keys)
 		{
 			uint16_t ix = cat.add_column(k);
 
@@ -78,13 +78,8 @@ class row_comparator
 		row_handle rhb(m_category, *b);
 
 		int d = 0;
-		for (auto &c : m_comparator)
+		for (const auto &[k, f] : m_comparator)
 		{
-			uint16_t k;
-			compareFunc f;
-
-			std::tie(k, f) = c;
-
 			std::string_view ka = rha[k].text();
 			std::string_view kb = rhb[k].text();
 
@@ -103,29 +98,30 @@ class row_comparator
 
 		row_handle rhb(m_category, *b);
 
-		int d = 0, i = 0;
-		for (auto &c : m_comparator)
+		int d = 0;
+		auto ai = a.begin();
+
+		for (const auto &[k, f] : m_comparator)
 		{
-			uint16_t k;
-			compareFunc f;
+			assert(ai != a.end());
 
-			std::tie(k, f) = c;
-
-			std::string_view ka = a[i++].value();
+			std::string_view ka = ai->value();
 			std::string_view kb = rhb[k].text();
 
 			d = f(ka, kb);
 
 			if (d != 0)
 				break;
+			
+			++ai;
 		}
 
 		return d;
 	}
 
   private:
-	typedef std::function<int(std::string_view, std::string_view)> compareFunc;
-	typedef std::tuple<uint16_t, compareFunc> key_comparator;
+	using compareFunc = std::function<int(std::string_view, std::string_view)>;
+	using key_comparator = std::tuple<uint16_t, compareFunc>;
 
 	std::vector<key_comparator> m_comparator;
 	category &m_category;
@@ -139,13 +135,7 @@ class row_comparator
 class category_index
 {
   public:
-	category_index(category *cat)
-		: m_category(*cat)
-		, m_row_comparator(m_category)
-		, m_root(nullptr)
-	{
-		reconstruct();
-	}
+	category_index(category *cat);
 
 	~category_index()
 	{
@@ -157,9 +147,6 @@ class category_index
 
 	void insert(row *r);
 	void erase(row *r);
-
-	// batch create
-	void reconstruct();
 
 	// reorder the row's and returns new head and tail
 	std::tuple<row *, row *> reorder()
@@ -241,7 +228,7 @@ class category_index
 			h->m_right->m_red = not h->m_right->m_red;
 	}
 
-	bool is_red(entry *h) const
+	constexpr bool is_red(entry *h) const
 	{
 		return h != nullptr and h->m_red;
 	}
@@ -341,6 +328,15 @@ class category_index
 	row_comparator m_row_comparator;
 	entry *m_root;
 };
+
+category_index::category_index(category *cat)
+	: m_category(*cat)
+	, m_row_comparator(m_category)
+	, m_root(nullptr)
+{
+	for (auto r : m_category)
+		insert(r.get_row());
+}
 
 row *category_index::find(row *k) const
 {
@@ -480,83 +476,6 @@ category_index::entry *category_index::erase(entry *h, row *k)
 	}
 
 	return fix_up(h);
-}
-
-void category_index::reconstruct()
-{
-	delete m_root;
-	m_root = nullptr;
-
-	for (auto r : m_category)
-		insert(r.get_row());
-
-	// maybe reconstruction can be done quicker by using the following commented code.
-	// however, I've not had the time to think of a way to set the red/black flag correctly in that case.
-
-	//	std::vector<row*> rows;
-	//	transform(mCat.begin(), mCat.end(), backInserter(rows),
-	//		[](Row r) -> row* { assert(r.mData); return r.mData; });
-	//
-	//	assert(std::find(rows.begin(), rows.end(), nullptr) == rows.end());
-	//
-	//	// don't use sort here, it will run out of the stack of something.
-	//	// quicksort is notorious for using excessive recursion.
-	//	// Besides, most of the time, the data is ordered already anyway.
-	//
-	//	stable_sort(rows.begin(), rows.end(), [this](row* a, row* b) -> bool { return this->mComp(a, b) < 0; });
-	//
-	//	for (size_t i = 0; i < rows.size() - 1; ++i)
-	//		assert(mComp(rows[i], rows[i + 1]) < 0);
-	//
-	//	deque<entry*> e;
-	//	transform(rows.begin(), rows.end(), back_inserter(e),
-	//		[](row* r) -> entry* { return new entry(r); });
-	//
-	//	while (e.size() > 1)
-	//	{
-	//		deque<entry*> ne;
-	//
-	//		while (not e.empty())
-	//		{
-	//			entry* a = e.front();
-	//			e.pop_front();
-	//
-	//			if (e.empty())
-	//				ne.push_back(a);
-	//			else
-	//			{
-	//				entry* b = e.front();
-	//				b->mLeft = a;
-	//
-	//				assert(mComp(a->mRow, b->mRow) < 0);
-	//
-	//				e.pop_front();
-	//
-	//				if (not e.empty())
-	//				{
-	//					entry* c = e.front();
-	//					e.pop_front();
-	//
-	//					assert(mComp(b->mRow, c->mRow) < 0);
-	//
-	//					b->mRight = c;
-	//				}
-	//
-	//				ne.push_back(b);
-	//
-	//				if (not e.empty())
-	//				{
-	//					ne.push_back(e.front());
-	//					e.pop_front();
-	//				}
-	//			}
-	//		}
-	//
-	//		swap (e, ne);
-	//	}
-	//
-	//	assert(e.size() == 1);
-	//	mRoot = e.front();
 }
 
 size_t category_index::size() const

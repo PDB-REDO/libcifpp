@@ -661,37 +661,6 @@ class branch : public std::vector<sugar>
 	std::string m_asym_id, m_entity_id;
 };
 
-// // --------------------------------------------------------------------
-// // file is a reference to the data stored in e.g. the cif file.
-// // This object is not copyable.
-
-// class File : public file
-// {
-//   public:
-// 	File() {}
-
-// 	// File(const std::filesystem::path &path)
-// 	// {
-// 	// 	load(path);
-// 	// }
-
-// 	// File(const char *data, size_t length)
-// 	// {
-// 	// 	load(data, length);
-// 	// }
-
-// 	File(const File &) = delete;
-// 	File &operator=(const File &) = delete;
-
-// 	// void load(const std::filesystem::path &p) override;
-// 	// void save(const std::filesystem::path &p) override;
-
-// 	// using file::load;
-// 	// using file::save;
-
-// 	datablock &data() { return front(); }
-// };
-
 // --------------------------------------------------------------------
 
 enum class StructureOpenOptions
@@ -699,7 +668,7 @@ enum class StructureOpenOptions
 	SkipHydrogen = 1 << 0
 };
 
-inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
+constexpr inline bool operator&(StructureOpenOptions a, StructureOpenOptions b)
 {
 	return static_cast<int>(a) bitand static_cast<int>(b);
 }
