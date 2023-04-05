@@ -519,7 +519,7 @@ category::category(const category &rhs)
 	for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
 		insert_impl(end(), clone_row(*r));
 
-	if (m_cat_validator != nullptr)
+	if (m_cat_validator != nullptr and m_index == nullptr)
 		m_index = new category_index(this);
 }
 
@@ -563,7 +563,7 @@ category &category::operator=(const category &rhs)
 		m_validator = rhs.m_validator;
 		m_cat_validator = rhs.m_cat_validator;
 
-		if (m_cat_validator != nullptr)
+		if (m_cat_validator != nullptr and m_index == nullptr)
 			m_index = new category_index(this);
 	}
 
@@ -574,9 +574,6 @@ category &category::operator=(category &&rhs)
 {
 	if (this != &rhs)
 	{
-		if (not empty())
-			clear();
-
 		m_name = std::move(rhs.m_name);
 		m_columns = std::move(rhs.m_columns);
 		m_cascade = rhs.m_cascade;
@@ -584,12 +581,10 @@ category &category::operator=(category &&rhs)
 		m_cat_validator = rhs.m_cat_validator;
 		m_parent_links = rhs.m_parent_links;
 		m_child_links = rhs.m_child_links;
-		m_index = rhs.m_index;
-		m_head = rhs.m_head;
-		m_tail = rhs.m_tail;
 
-		rhs.m_head = rhs.m_tail = nullptr;
-		rhs.m_index = nullptr;
+		std::swap(m_index, rhs.m_index);
+		std::swap(m_head, rhs.m_head);
+		std::swap(m_tail, rhs.m_tail);
 	}
 
 	return *this;
