@@ -29,9 +29,9 @@
 /// \file This file contains the definition for the class compound, encapsulating
 /// the information found for compounds in the CCD.
 
-#include <cif++.hpp>
-#include <cif++/atom_type.hpp>
-#include <cif++/point.hpp>
+#include "../cif++.hpp"
+#include "atom_type.hpp"
+#include "point.hpp"
 
 #include <map>
 #include <set>

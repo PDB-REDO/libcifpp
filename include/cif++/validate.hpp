@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <cif++/text.hpp>
+#include "text.hpp"
 
 #include <filesystem>
 #include <list>

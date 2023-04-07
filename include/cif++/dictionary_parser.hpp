@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <cif++/validate.hpp>
+#include "validate.hpp"
 
 namespace cif
 {

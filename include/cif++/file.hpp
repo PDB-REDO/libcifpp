@@ -28,9 +28,9 @@
 
 #include <list>
 
-#include <cif++/exports.hpp>
-#include <cif++/datablock.hpp>
-#include <cif++/parser.hpp>
+#include "exports.hpp"
+#include "datablock.hpp"
+#include "parser.hpp"
 
 namespace cif
 {

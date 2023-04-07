@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <cif++/exports.hpp>
+#include "exports.hpp"
 
 #include <charconv>
 #include <cmath>
