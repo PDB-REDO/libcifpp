@@ -26,12 +26,12 @@
 
 #pragma once
 
-#include <cif++/forward_decl.hpp>
+#include "forward_decl.hpp"
 
-#include <cif++/condition.hpp>
-#include <cif++/iterator.hpp>
-#include <cif++/row.hpp>
-#include <cif++/validate.hpp>
+#include "condition.hpp"
+#include "iterator.hpp"
+#include "row.hpp"
+#include "validate.hpp"
 
 #include <array>
 

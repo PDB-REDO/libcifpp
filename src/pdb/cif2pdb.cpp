@@ -3359,7 +3359,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 	auto &atom_site_anisotrop = db["atom_site_anisotrop"];
 	auto &entity = db["entity"];
 	auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
-	auto &pdbx_nonpoly_scheme = db["pdbx_nonpoly_scheme"];
+	//auto &pdbx_nonpoly_scheme = db["pdbx_nonpoly_scheme"];
 	auto &pdbx_branch_scheme = db["pdbx_branch_scheme"];
 
 	int serial = 1;
