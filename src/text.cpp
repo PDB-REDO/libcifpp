@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/text.hpp>
+#include "cif++/text.hpp"
 
 #include <algorithm>
 #include <cassert>

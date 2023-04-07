@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/datablock.hpp>
+#include "cif++/datablock.hpp"
 
 namespace cif
 {

@@ -24,11 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/symmetry.hpp>
+#include "cif++/symmetry.hpp"
 
 #include <stdexcept>
 
-#include "./symop_table_data.hpp"
+#include "symop_table_data.hpp"
 
 namespace cif
 {

@@ -26,16 +26,16 @@
 
 #pragma once
 
-#include <cif++/utilities.hpp>
-#include <cif++/file.hpp>
-#include <cif++/parser.hpp>
-#include <cif++/format.hpp>
+#include "cif++/utilities.hpp"
+#include "cif++/file.hpp"
+#include "cif++/parser.hpp"
+#include "cif++/format.hpp"
 
-#include <cif++/compound.hpp>
-#include <cif++/point.hpp>
-#include <cif++/symmetry.hpp>
+#include "cif++/compound.hpp"
+#include "cif++/point.hpp"
+#include "cif++/symmetry.hpp"
 
-#include <cif++/model.hpp>
+#include "cif++/model.hpp"
 
-#include <cif++/pdb/io.hpp>
-#include <cif++/gzio.hpp>
+#include "cif++/pdb/io.hpp"
+#include "cif++/gzio.hpp"

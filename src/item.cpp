@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/row.hpp>
+#include "cif++/row.hpp"
 
 #include <cassert>
 

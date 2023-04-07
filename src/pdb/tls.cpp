@@ -27,8 +27,8 @@
 // #include <sys/ioctl.h>
 // #include <termios.h>
 
-#include <cif++.hpp>
-#include <cif++/pdb/tls.hpp>
+#include "cif++.hpp"
+#include "cif++/pdb/tls.hpp"
 
 #include <iomanip>
 #include <iostream>

@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/point.hpp>
+#include "cif++/point.hpp"
 
 #include <cassert>
 #include <random>

@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <cif++/row.hpp>
+#include "cif++/row.hpp"
 
 #include <cassert>
 #include <functional>
