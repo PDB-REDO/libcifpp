@@ -24,10 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/category.hpp>
-#include <cif++/datablock.hpp>
-#include <cif++/parser.hpp>
-#include <cif++/utilities.hpp>
+#include "cif++/category.hpp"
+#include "cif++/datablock.hpp"
+#include "cif++/parser.hpp"
+#include "cif++/utilities.hpp"
 
 #include <numeric>
 #include <stack>

@@ -31,9 +31,6 @@
 
 #include <cif++.hpp>
 
-#include <cif++/dictionary_parser.hpp>
-#include <cif++/parser.hpp>
-
 namespace tt = boost::test_tools;
 
 std::filesystem::path gTestDir = std::filesystem::current_path(); // filled in first test

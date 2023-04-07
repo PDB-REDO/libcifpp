@@ -24,10 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/utilities.hpp>
-#include <cif++/forward_decl.hpp>
-#include <cif++/parser.hpp>
-#include <cif++/file.hpp>
+#include "cif++/utilities.hpp"
+#include "cif++/forward_decl.hpp"
+#include "cif++/parser.hpp"
+#include "cif++/file.hpp"
 
 #include <cassert>
 #include <iostream>

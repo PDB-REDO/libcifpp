@@ -31,8 +31,8 @@
 
 #include <cif++.hpp>
 
-#include <cif++/dictionary_parser.hpp>
-#include <cif++/parser.hpp>
+#include "cif++/dictionary_parser.hpp"
+
 
 namespace tt = boost::test_tools;
 

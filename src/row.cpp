@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/category.hpp>
+#include "cif++/category.hpp"
 
 namespace cif
 {

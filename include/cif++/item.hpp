@@ -26,10 +26,10 @@
 
 #pragma once
 
-#include <cif++/exports.hpp>
-#include <cif++/forward_decl.hpp>
-#include <cif++/text.hpp>
-#include <cif++/utilities.hpp>
+#include "cif++/exports.hpp"
+#include "cif++/forward_decl.hpp"
+#include "cif++/text.hpp"
+#include "cif++/utilities.hpp"
 
 #include <cassert>
 #include <charconv>

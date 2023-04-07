@@ -24,8 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/file.hpp>
-#include <cif++/gzio.hpp>
+#include "cif++/file.hpp"
+#include "cif++/gzio.hpp"
 
 namespace cif
 {
