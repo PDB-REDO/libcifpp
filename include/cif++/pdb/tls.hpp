@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "../../cif++.hpp"
+#include "cif++/datablock.hpp"
 
 #include <string>
 #include <tuple>

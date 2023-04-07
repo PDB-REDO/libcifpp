@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "atom_type.hpp"
+#include "cif++/atom_type.hpp"
 
 #include <numeric>
 

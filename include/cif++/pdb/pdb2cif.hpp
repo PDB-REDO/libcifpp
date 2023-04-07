@@ -26,8 +26,7 @@
 
 #pragma once
 
-#include "../../cif++.hpp"
-
+#include "cif++/file.hpp"
 namespace cif::pdb
 {
 

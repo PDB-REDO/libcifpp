@@ -26,8 +26,7 @@
 
 #include <cmath>
 
-#include <cif++.hpp>
-#include <cif++/atom_type.hpp>
+#include "cif++.hpp"
 
 namespace cif
 {

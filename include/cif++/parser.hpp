@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "row.hpp"
+#include "cif++/row.hpp"
 
 #include <map>
 #include <regex>

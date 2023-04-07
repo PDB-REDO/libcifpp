@@ -24,10 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/condition.hpp>
-#include <cif++/dictionary_parser.hpp>
-#include <cif++/file.hpp>
-#include <cif++/parser.hpp>
+#include "cif++/condition.hpp"
+#include "cif++/dictionary_parser.hpp"
+#include "cif++/file.hpp"
+#include "cif++/parser.hpp"
 
 namespace cif
 {

@@ -24,10 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/dictionary_parser.hpp>
-#include <cif++/validate.hpp>
-#include <cif++/utilities.hpp>
-#include <cif++/gzio.hpp>
+#include "cif++/dictionary_parser.hpp"
+#include "cif++/validate.hpp"
+#include "cif++/utilities.hpp"
+#include "cif++/gzio.hpp"
 
 #include <cassert>
 #include <fstream>

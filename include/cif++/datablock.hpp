@@ -26,8 +26,8 @@
 
 #pragma once
 
-#include "category.hpp"
-#include "forward_decl.hpp"
+#include "cif++/category.hpp"
+#include "cif++/forward_decl.hpp"
 
 namespace cif
 {

@@ -24,7 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cif++/utilities.hpp>
+#include "cif++/utilities.hpp"
+
 #include "revision.hpp"
 
 #include <atomic>

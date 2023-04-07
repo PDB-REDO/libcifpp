@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "exports.hpp"
+#include "cif++/exports.hpp"
 
 #include <filesystem>
 
