@@ -58,7 +58,7 @@ namespace detail
 		virtual void str(std::ostream &) const = 0;
 		virtual std::optional<row_handle> single() const { return {}; };
 
-		virtual bool equals(const condition_impl *rhs) const { return false; }
+		virtual bool equals([[maybe_unused]] const condition_impl *rhs) const { return false; }
 	};
 
 	struct all_condition_impl : public condition_impl
