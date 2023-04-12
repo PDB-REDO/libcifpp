@@ -34,7 +34,7 @@ namespace cif
 {
 
 // --------------------------------------------------------------------
-// Unfortunately, clipper has a different numbering scheme than PDB
+// Unfortunately, clipper has a different numbering scheme than CCP4
 // for rotation numbers. So we created a table to map those.
 // Perhaps a bit over the top, but hey....
 

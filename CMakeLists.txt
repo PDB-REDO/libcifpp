@@ -191,12 +191,12 @@ if(CIFPP_RECREATE_SYMOP_DATA)
 
 	add_custom_command(
 		OUTPUT ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
-		COMMAND $<TARGET_FILE:symop-map-generator> $ENV{CLIBD}/syminfo.lib ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
+		COMMAND $<TARGET_FILE:symop-map-generator> $ENV{CLIBD}/syminfo.lib $ENV{CLIBD}/symop.lib ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
 	)
 
 	add_custom_target(
 		OUTPUT ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
-		DEPENDS symop-map-generator "$ENV{CLIBD}/syminfo.lib"
+		DEPENDS symop-map-generator "$ENV{CLIBD}/syminfo.lib" "$ENV{CLIBD}/symop.lib"
 	)
 endif()
 

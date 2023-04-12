@@ -60,21 +60,21 @@ extern CIFPP_EXPORT const std::size_t kNrOfSpaceGroups;
 struct symop_data
 {
 	constexpr symop_data(const std::array<int, 15> &data)
-		: m_packed((data[0] & 0x03ULL) << 34 bitor
-				   (data[1] & 0x03ULL) << 32 bitor
-				   (data[2] & 0x03ULL) << 30 bitor
-				   (data[3] & 0x03ULL) << 28 bitor
-				   (data[4] & 0x03ULL) << 26 bitor
-				   (data[5] & 0x03ULL) << 24 bitor
-				   (data[6] & 0x03ULL) << 22 bitor
-				   (data[7] & 0x03ULL) << 20 bitor
-				   (data[8] & 0x03ULL) << 18 bitor
-				   (data[9] & 0x07ULL) << 15 bitor
-				   (data[10] & 0x07ULL) << 12 bitor
-				   (data[11] & 0x07ULL) << 9 bitor
-				   (data[12] & 0x07ULL) << 6 bitor
-				   (data[13] & 0x07ULL) << 3 bitor
-				   (data[14] & 0x07ULL) << 0)
+		: m_packed((data[0]  bitand 0x03ULL) << 34 bitor
+				   (data[1]  bitand 0x03ULL) << 32 bitor
+				   (data[2]  bitand 0x03ULL) << 30 bitor
+				   (data[3]  bitand 0x03ULL) << 28 bitor
+				   (data[4]  bitand 0x03ULL) << 26 bitor
+				   (data[5]  bitand 0x03ULL) << 24 bitor
+				   (data[6]  bitand 0x03ULL) << 22 bitor
+				   (data[7]  bitand 0x03ULL) << 20 bitor
+				   (data[8]  bitand 0x03ULL) << 18 bitor
+				   (data[9]  bitand 0x07ULL) << 15 bitor
+				   (data[10] bitand 0x07ULL) << 12 bitor
+				   (data[11] bitand 0x07ULL) << 9  bitor
+				   (data[12] bitand 0x07ULL) << 6  bitor
+				   (data[13] bitand 0x07ULL) << 3  bitor
+				   (data[14] bitand 0x07ULL) << 0)
 	{
 	}
 
@@ -88,24 +88,35 @@ struct symop_data
 		return m_packed < rhs.m_packed;
 	}
 
-	std::array<int, 15> data() const
+	inline constexpr int unpack3(int offset) const
+	{
+		int result = (m_packed >> offset) bitand 0x03;
+		return result == 3 ? -1 : result;
+	}
+
+	inline constexpr int unpack7(int offset) const
+	{
+		return (m_packed >> offset) bitand 0x07;
+	}
+
+	constexpr std::array<int, 15> data() const
 	{
 		return {
-			static_cast<int>(m_packed >> 34) bitand 0x03,
-			static_cast<int>(m_packed >> 32) bitand 0x03,
-			static_cast<int>(m_packed >> 30) bitand 0x03,
-			static_cast<int>(m_packed >> 28) bitand 0x03,
-			static_cast<int>(m_packed >> 26) bitand 0x03,
-			static_cast<int>(m_packed >> 24) bitand 0x03,
-			static_cast<int>(m_packed >> 22) bitand 0x03,
-			static_cast<int>(m_packed >> 20) bitand 0x03,
-			static_cast<int>(m_packed >> 18) bitand 0x03,
-			static_cast<int>(m_packed >> 15) bitand 0x07,
-			static_cast<int>(m_packed >> 12) bitand 0x07,
-			static_cast<int>(m_packed >> 9) bitand 0x07,
-			static_cast<int>(m_packed >> 6) bitand 0x07,
-			static_cast<int>(m_packed >> 3) bitand 0x07,
-			static_cast<int>(m_packed >> 0) bitand 0x07,
+			unpack3(34),
+			unpack3(32),
+			unpack3(30),
+			unpack3(28),
+			unpack3(26),
+			unpack3(24),
+			unpack3(22),
+			unpack3(20),
+			unpack3(18),
+			unpack7(15),
+			unpack7(12),
+			unpack7(9),
+			unpack7(6),
+			unpack7(3),
+			unpack7(0)
 		};
 	}
 
@@ -125,8 +136,8 @@ struct symop_data
 struct symop_datablock
 {
 	constexpr symop_datablock(int spacegroup, int rotational_number, const std::array<int, 15> &rt_data)
-		: m_v((spacegroup & 0xffffULL) << 48 bitor
-			  (rotational_number & 0xffULL) << 40 bitor
+		: m_v((spacegroup bitand 0xffffULL) << 48 bitor
+			  (rotational_number bitand 0xffULL) << 40 bitor
 			  symop_data(rt_data).m_packed)
 	{
 	}
