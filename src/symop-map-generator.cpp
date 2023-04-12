@@ -315,7 +315,10 @@ int main(int argc, char* const argv[])
 			{
 				case State::skip:
 					if (line == "begin_spacegroup")
+					{
 						state = State::spacegroup;
+						cur = {};
+					}
 					break;
 				
 				case State::spacegroup:

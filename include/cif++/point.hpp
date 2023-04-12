@@ -718,7 +718,6 @@ template <int N>
 class spherical_dots
 {
   public:
-
 	constexpr static int P = 2 * N * 1;
 
 	using array_type = typename std::array<point, P>;

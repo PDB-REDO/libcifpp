@@ -25,251 +25,13 @@
  */
 
 #include "cif++/point.hpp"
+#include "cif++/matrix.hpp"
 
 #include <cassert>
 #include <random>
 
 namespace cif
 {
-
-// --------------------------------------------------------------------
-// We're using expression templates here
-
-template <typename M>
-class MatrixExpression
-{
-  public:
-	uint32_t dim_m() const { return static_cast<const M &>(*this).dim_m(); }
-	uint32_t dim_n() const { return static_cast<const M &>(*this).dim_n(); }
-
-	double &operator()(uint32_t i, uint32_t j)
-	{
-		return static_cast<M &>(*this).operator()(i, j);
-	}
-
-	double operator()(uint32_t i, uint32_t j) const
-	{
-		return static_cast<const M &>(*this).operator()(i, j);
-	}
-};
-
-// --------------------------------------------------------------------
-// matrix is m x n, addressing i,j is 0 <= i < m and 0 <= j < n
-// element m i,j is mapped to [i * n + j] and thus storage is row major
-
-class Matrix : public MatrixExpression<Matrix>
-{
-  public:
-	template <typename M2>
-	Matrix(const MatrixExpression<M2> &m)
-		: m_m(m.dim_m())
-		, m_n(m.dim_n())
-		, m_data(m_m * m_n)
-	{
-		for (uint32_t i = 0; i < m_m; ++i)
-		{
-			for (uint32_t j = 0; j < m_n; ++j)
-				operator()(i, j) = m(i, j);
-		}
-	}
-
-	Matrix(size_t m, size_t n, double v = 0)
-		: m_m(m)
-		, m_n(n)
-		, m_data(m_m * m_n)
-	{
-		std::fill(m_data.begin(), m_data.end(), v);
-	}
-
-	Matrix() = default;
-	Matrix(Matrix &&m) = default;
-	Matrix(const Matrix &m) = default;
-	Matrix &operator=(Matrix &&m) = default;
-	Matrix &operator=(const Matrix &m) = default;
-
-	size_t dim_m() const { return m_m; }
-	size_t dim_n() const { return m_n; }
-
-	double operator()(size_t i, size_t j) const
-	{
-		assert(i < m_m);
-		assert(j < m_n);
-		return m_data[i * m_n + j];
-	}
-
-	double &operator()(size_t i, size_t j)
-	{
-		assert(i < m_m);
-		assert(j < m_n);
-		return m_data[i * m_n + j];
-	}
-
-  private:
-	size_t m_m = 0, m_n = 0;
-	std::vector<double> m_data;
-};
-
-// --------------------------------------------------------------------
-
-class SymmetricMatrix : public MatrixExpression<SymmetricMatrix>
-{
-  public:
-	SymmetricMatrix(uint32_t n, double v = 0)
-		: m_n(n)
-		, m_data((m_n * (m_n + 1)) / 2)
-	{
-		std::fill(m_data.begin(), m_data.end(), v);
-	}
-
-	SymmetricMatrix() = default;
-	SymmetricMatrix(SymmetricMatrix &&m) = default;
-	SymmetricMatrix(const SymmetricMatrix &m) = default;
-	SymmetricMatrix &operator=(SymmetricMatrix &&m) = default;
-	SymmetricMatrix &operator=(const SymmetricMatrix &m) = default;
-
-	uint32_t dim_m() const { return m_n; }
-	uint32_t dim_n() const { return m_n; }
-
-	double operator()(uint32_t i, uint32_t j) const
-	{
-		return i < j
-		           ? m_data[(j * (j + 1)) / 2 + i]
-		           : m_data[(i * (i + 1)) / 2 + j];
-	}
-
-	double &operator()(uint32_t i, uint32_t j)
-	{
-		if (i > j)
-			std::swap(i, j);
-		assert(j < m_n);
-		return m_data[(j * (j + 1)) / 2 + i];
-	}
-
-  private:
-	uint32_t m_n;
-	std::vector<double> m_data;
-};
-
-class IdentityMatrix : public MatrixExpression<IdentityMatrix>
-{
-  public:
-	IdentityMatrix(uint32_t n)
-		: m_n(n)
-	{
-	}
-
-	uint32_t dim_m() const { return m_n; }
-	uint32_t dim_n() const { return m_n; }
-
-	double operator()(uint32_t i, uint32_t j) const
-	{
-		return i == j ? 1 : 0;
-	}
-
-  private:
-	uint32_t m_n;
-};
-
-// --------------------------------------------------------------------
-// matrix functions, implemented as expression templates
-
-template <typename M1, typename M2>
-class MatrixSubtraction : public MatrixExpression<MatrixSubtraction<M1, M2>>
-{
-  public:
-	MatrixSubtraction(const M1 &m1, const M2 &m2)
-		: m_m1(m1)
-		, m_m2(m2)
-	{
-		assert(m_m1.dim_m() == m_m2.dim_m());
-		assert(m_m1.dim_n() == m_m2.dim_n());
-	}
-
-	uint32_t dim_m() const { return m_m1.dim_m(); }
-	uint32_t dim_n() const { return m_m1.dim_n(); }
-
-	double operator()(uint32_t i, uint32_t j) const
-	{
-		return m_m1(i, j) - m_m2(i, j);
-	}
-
-  private:
-	const M1 &m_m1;
-	const M2 &m_m2;
-};
-
-template <typename M1, typename M2>
-MatrixSubtraction<M1, M2> operator-(const MatrixExpression<M1> &m1, const MatrixExpression<M2> &m2)
-{
-	return MatrixSubtraction(*static_cast<const M1 *>(&m1), *static_cast<const M2 *>(&m2));
-}
-
-template <typename M>
-class MatrixMultiplication : public MatrixExpression<MatrixMultiplication<M>>
-{
-  public:
-	MatrixMultiplication(const M &m, double v)
-		: m_m(m)
-		, m_v(v)
-	{
-	}
-
-	uint32_t dim_m() const { return m_m.dim_m(); }
-	uint32_t dim_n() const { return m_m.dim_n(); }
-
-	double operator()(uint32_t i, uint32_t j) const
-	{
-		return m_m(i, j) * m_v;
-	}
-
-  private:
-	const M &m_m;
-	double m_v;
-};
-
-template <typename M>
-MatrixMultiplication<M> operator*(const MatrixExpression<M> &m, double v)
-{
-	return MatrixMultiplication(*static_cast<const M *>(&m), v);
-}
-
-// --------------------------------------------------------------------
-
-template <class M1>
-Matrix Cofactors(const M1 &m)
-{
-	Matrix cf(m.dim_m(), m.dim_m());
-
-	const size_t ixs[4][3] = {
-		{ 1, 2, 3 },
-		{ 0, 2, 3 },
-		{ 0, 1, 3 },
-		{ 0, 1, 2 }
-	};
-
-	for (size_t x = 0; x < 4; ++x)
-	{
-		const size_t *ix = ixs[x];
-
-		for (size_t y = 0; y < 4; ++y)
-		{
-			const size_t *iy = ixs[y];
-
-			cf(x, y) =
-				m(ix[0], iy[0]) * m(ix[1], iy[1]) * m(ix[2], iy[2]) +
-				m(ix[0], iy[1]) * m(ix[1], iy[2]) * m(ix[2], iy[0]) +
-				m(ix[0], iy[2]) * m(ix[1], iy[0]) * m(ix[2], iy[1]) -
-				m(ix[0], iy[2]) * m(ix[1], iy[1]) * m(ix[2], iy[0]) -
-				m(ix[0], iy[1]) * m(ix[1], iy[0]) * m(ix[2], iy[2]) -
-				m(ix[0], iy[0]) * m(ix[1], iy[2]) * m(ix[2], iy[1]);
-
-			if ((x + y) % 2 == 1)
-				cf(x, y) *= -1;
-		}
-	}
-
-	return cf;
-}
 
 // --------------------------------------------------------------------
 
@@ -443,8 +205,8 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 
 quaternion align_points(const std::vector<point> &pa, const std::vector<point> &pb)
 {
-	// First calculate M, a 3x3 Matrix containing the sums of products of the coordinates of A and B
-	Matrix M(3, 3, 0);
+	// First calculate M, a 3x3 matrix containing the sums of products of the coordinates of A and B
+	matrix3x3<double> M;
 
 	for (uint32_t i = 0; i < pa.size(); ++i)
 	{
@@ -462,8 +224,8 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 		M(2, 2) += a.m_z * b.m_z;
 	}
 
-	// Now calculate N, a symmetric 4x4 Matrix
-	SymmetricMatrix N(4);
+	// Now calculate N, a symmetric 4x4 matrix
+	symmetric_matrix4x4<double> N(4);
 
 	N(0, 0) = M(0, 0) + M(1, 1) + M(2, 2);
 	N(0, 1) = M(1, 2) - M(2, 1);
@@ -512,10 +274,10 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 	double lambda = LargestDepressedQuarticSolution(C, D, E);
 
 	// calculate t = (N - λI)
-	Matrix t = N - IdentityMatrix(4) * lambda;
+	matrix<double> t(N - identity_matrix(4) * lambda);
 
-	// calculate a Matrix of cofactors for t
-	Matrix cf = Cofactors(t);
+	// calculate a matrix of cofactors for t
+	auto cf = matrix_cofactors(t);
 
 	int maxR = 0;
 	for (int r = 1; r < 4; ++r)

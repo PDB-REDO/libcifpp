@@ -247,3 +247,67 @@ BOOST_AUTO_TEST_CASE(dh_q_1)
 		BOOST_TEST(dh == angle, tt::tolerance(0.1f));
 	}
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(symm_1)
+{
+	cif::cell c(10, 10, 10);
+
+	cif::point p{ 1, 1, 1 };
+
+	cif::point f = fractional(p, c);
+
+	BOOST_TEST(f.m_x == 0.1f, tt::tolerance(0.01));
+	BOOST_TEST(f.m_y == 0.1f, tt::tolerance(0.01));
+	BOOST_TEST(f.m_z == 0.1f, tt::tolerance(0.01));
+
+	cif::point o = orthogonal(f, c);
+
+	BOOST_TEST(o.m_x == 1.f, tt::tolerance(0.01));
+	BOOST_TEST(o.m_y == 1.f, tt::tolerance(0.01));
+	BOOST_TEST(o.m_z == 1.f, tt::tolerance(0.01));
+}
+
+BOOST_AUTO_TEST_CASE(symm_2)
+{
+	using namespace cif::literals;
+
+	auto symop = "1_555"_symop;
+
+	BOOST_TEST(symop.is_identity() == true);
+}
+
+BOOST_AUTO_TEST_CASE(symm_3)
+{
+	using namespace cif::literals;
+
+	cif::spacegroup sg(18);
+
+	BOOST_TEST(sg.size() == 4);
+	BOOST_TEST(sg.get_name() == "P 21 21 2");
+}
+
+BOOST_AUTO_TEST_CASE(symm_4)
+{
+	using namespace cif::literals;
+
+	// based on 2b8h
+	auto sg = cif::spacegroup(154); // p 32 2 1
+	auto c = cif::cell(107.516, 107.516, 338.487, 90.00, 90.00, 120.00);
+	
+	cif::point a{   -8.688,  79.351, 10.439 }; // O6 NAG A 500
+	cif::point b{  -35.356,  33.693, -3.236 }; // CG2 THR D 400
+	cif::point sb(  -6.916,   79.34,   3.236); // 4_565 copy of b
+
+	BOOST_TEST(distance(a, sg(a, c, "1_455"_symop)) == static_cast<float>(c.get_a()));
+	BOOST_TEST(distance(a, sg(a, c, "1_545"_symop)) == static_cast<float>(c.get_b()));
+	BOOST_TEST(distance(a, sg(a, c, "1_554"_symop)) == static_cast<float>(c.get_c()));
+
+	auto sb2 = sg(b, c, "4_565"_symop);
+	BOOST_TEST(sb.m_x == sb2.m_x);
+	BOOST_TEST(sb.m_y == sb2.m_y);
+	BOOST_TEST(sb.m_z == sb2.m_z);
+
+	BOOST_TEST(distance(a, sb2) == 7.42f);	
+}
