@@ -39,6 +39,17 @@ namespace cif
 
 // --------------------------------------------------------------------
 
+inline point operator*(const matrix3x3<float> &m, const point &pt)
+{
+	return {
+		m(0, 0) * pt.m_x + m(0, 1) * pt.m_y + m(0, 2) * pt.m_z,
+		m(1, 0) * pt.m_x + m(1, 1) * pt.m_y + m(1, 2) * pt.m_z,
+		m(2, 0) * pt.m_x + m(2, 1) * pt.m_y + m(2, 2) * pt.m_z
+	};
+}
+
+// --------------------------------------------------------------------
+
 enum class space_group_name
 {
 	full,
@@ -195,7 +206,7 @@ class cell
 };
 
 /// @brief A class that encapsulates the symmetry operations as used in PDB files, i.e. a rotational number and a translation vector
-class sym_op
+struct sym_op
 {
   public:
 	sym_op(uint8_t nr = 1, uint8_t ta = 5, uint8_t tb = 5, uint8_t tc = 5)
@@ -225,12 +236,11 @@ class sym_op
 
 	std::string string() const;
 
-	friend class spacegroup;
-
-  private:
 	uint8_t m_nr;
 	uint8_t m_ta, m_tb, m_tc;
 };
+
+static_assert(sizeof(sym_op) == 4, "Sym_op should be four bytes");
 
 namespace literals
 {
@@ -257,6 +267,16 @@ class transformation
 
 	point operator()(const cell &c, const point &pt) const;
 
+	point operator()(const point &pt) const
+	{
+		return m_rotation * pt + m_translation;
+	}
+
+	friend transformation operator*(const transformation &lhs, const transformation &rhs);
+	friend transformation inverse(const transformation &t);
+
+	friend class spacegroup;
+
   private:
 	matrix3x3<float> m_rotation;
 	point m_translation;
@@ -264,12 +284,19 @@ class transformation
 
 // --------------------------------------------------------------------
 
-int get_space_group_number(std::string_view spacegroup);                        // alternative for clipper's parsing code, using space_group_name::full
-int get_space_group_number(std::string_view spacegroup, space_group_name type); // alternative for clipper's parsing code
+int get_space_group_number(const datablock &db);
+int get_space_group_number(std::string_view spacegroup);
+int get_space_group_number(std::string_view spacegroup, space_group_name type);
 
 class spacegroup : public std::vector<transformation>
 {
   public:
+	spacegroup(const datablock &db)
+		: spacegroup(get_space_group_number(db))
+	{
+
+	}
+
 	spacegroup(std::string_view name)
 		: spacegroup(get_space_group_number(name))
 	{
@@ -285,42 +312,12 @@ class spacegroup : public std::vector<transformation>
 	int get_nr() const { return m_nr; }
 	std::string get_name() const;
 
-	point operator()(const point &pt, const cell &c, sym_op symop);
+	point operator()(const point &pt, const cell &c, sym_op symop) const;
 
   private:
 	int m_nr;
 	size_t m_index;
 };
-
-// --------------------------------------------------------------------
-
-int get_space_group_number(std::string spacegroup);                        // alternative for clipper's parsing code, using space_group_name::full
-int get_space_group_number(std::string spacegroup, space_group_name type); // alternative for clipper's parsing code
-
-// class rtop
-// {
-//   public:
-// 	rtop(const spacegroup &sg, const cell &c, int nr);
-
-// 	friend rtop operator+(rtop rt, cif::point t);
-// 	friend cif::point operator*(cif::point p, rtop rt);
-
-//   private:
-// 	cell m_c;
-// 	cif::quaternion m_q;
-// 	cif::point m_t;
-// };
-
-// class spacegroup
-// {
-//   public:
-// 	spacegroup(const cif::datablock &db);
-
-//   private:
-// 	std::vector<
-// };
-
-static_assert(sizeof(sym_op) == 4, "Sym_op should be four bytes");
 
 // --------------------------------------------------------------------
 // Symmetry operations on points
@@ -342,5 +339,25 @@ inline point fractional(const point &pt, const cell &c)
 {
 	return c.get_fractional_matrix() * pt;
 }
+
+inline transformation orthogonal(const transformation &t, const cell &c)
+{
+	return transformation(c.get_orthogonal_matrix(), {}) * t * transformation(c.get_fractional_matrix(), {});
+}
+
+inline transformation fractional(const transformation &t, const cell &c)
+{
+	return transformation(c.get_fractional_matrix(), {}) * t * transformation(c.get_orthogonal_matrix(), {});
+}
+
+// --------------------------------------------------------------------
+
+inline point symmetry_copy(const point &pt, const spacegroup &sg, const cell &c, sym_op symop)
+{
+	return sg(pt, c, symop);
+}
+
+std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const cell &c, point a, point b);
+
 
 } // namespace cif

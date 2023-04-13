@@ -347,13 +347,44 @@ auto operator-(const matrix_expression<M1> &m1, const matrix_expression<M2> &m2)
 	return matrix_subtraction(m1, m2);
 }
 
-template <typename M, typename F>
-class matrix_multiplication : public matrix_expression<matrix_multiplication<M, F>>
+template <typename M1, typename M2>
+class matrix_matrix_multiplication : public matrix_expression<matrix_matrix_multiplication<M1, M2>>
 {
   public:
-	using value_type = F;
+	matrix_matrix_multiplication(const M1 &m1, const M2 &m2)
+		: m_m1(m1)
+		, m_m2(m2)
+	{
+		assert(m1.dim_m() == m2.dim_n());
+	}
 
-	matrix_multiplication(const M &m, value_type v)
+	constexpr uint32_t dim_m() const { return m_m1.dim_m(); }
+	constexpr uint32_t dim_n() const { return m_m1.dim_n(); }
+
+	constexpr auto operator()(uint32_t i, uint32_t j) const
+	{
+		using value_type = decltype(m_m1(0, 0));
+
+		value_type result = {};
+
+		for (uint32_t k = 0; k < m_m1.dim_m(); ++k)
+			result += m_m1(i, k) * m_m2(k, j);
+
+		return result;
+	}
+
+  private:
+	const M1 &m_m1;
+	const M2 &m_m2;
+};
+
+template<typename M, typename T>
+class matrix_scalar_multiplication : public matrix_expression<matrix_scalar_multiplication<M, T>>
+{
+  public:
+	using value_type = T;
+
+	matrix_scalar_multiplication(const M &m, value_type v)
 		: m_m(m)
 		, m_v(v)
 	{
@@ -372,10 +403,17 @@ class matrix_multiplication : public matrix_expression<matrix_multiplication<M, 
 	value_type m_v;
 };
 
-template <typename M, typename F>
-auto operator*(const matrix_expression<M> &m, F v)
+
+template <typename M1, typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+auto operator*(const matrix_expression<M1> &m, T v)
 {
-	return matrix_multiplication(m, v);
+	return matrix_scalar_multiplication(m, v);
+}
+
+template <typename M1, typename M2, std::enable_if_t<not std::is_floating_point_v<M2>, int> = 0>
+auto operator*(const matrix_expression<M1> &m1, const matrix_expression<M2> &m2)
+{
+	return matrix_matrix_multiplication(m1, m2);
 }
 
 // --------------------------------------------------------------------

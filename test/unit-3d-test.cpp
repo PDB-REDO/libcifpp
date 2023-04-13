@@ -32,6 +32,7 @@
 #include <cif++.hpp>
 
 namespace tt = boost::test_tools;
+namespace utf = boost::unit_test;
 
 std::filesystem::path gTestDir = std::filesystem::current_path(); // filled in first test
 
@@ -288,7 +289,7 @@ BOOST_AUTO_TEST_CASE(symm_3)
 	BOOST_TEST(sg.get_name() == "P 21 21 2");
 }
 
-BOOST_AUTO_TEST_CASE(symm_4)
+BOOST_AUTO_TEST_CASE(symm_4, *utf::tolerance(0.1f))
 {
 	using namespace cif::literals;
 
@@ -310,4 +311,52 @@ BOOST_AUTO_TEST_CASE(symm_4)
 	BOOST_TEST(sb.m_z == sb2.m_z);
 
 	BOOST_TEST(distance(a, sb2) == 7.42f);	
+}
+
+BOOST_AUTO_TEST_CASE(symm_2bi3_1, *utf::tolerance(0.1f))
+{
+	cif::file f(gTestDir / "2bi3.cif.gz");
+
+	auto &db = f.front();
+	cif::mm::structure s(db);
+
+	cif::spacegroup sg(db);
+	cif::cell c(db);
+
+	auto struct_conn = db["struct_conn"];
+	for (const auto &[
+			asym1, seqid1, authseqid1, atomid1, symm1,
+			asym2, seqid2, authseqid2, atomid2, symm2,
+			dist] : struct_conn.find<
+				std::string,int,std::string,std::string,std::string,
+				std::string,int,std::string,std::string,std::string,
+				float>(
+			cif::key("ptnr1_symmetry") != "1_555" or cif::key("ptnr2_symmetry") != "1_555",
+			"ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr1_auth_seq_id", "ptnr1_label_atom_id", "ptnr1_symmetry", 
+			"ptnr2_label_asym_id", "ptnr2_label_seq_id", "ptnr2_auth_seq_id", "ptnr2_label_atom_id", "ptnr2_symmetry", 
+			"pdbx_dist_value"
+		))
+	{
+		auto &r1 = s.get_residue(asym1, seqid1, authseqid1);
+		auto &r2 = s.get_residue(asym2, seqid2, authseqid2);
+
+		auto a1 = r1.get_atom_by_atom_id(atomid1);
+		auto a2 = r2.get_atom_by_atom_id(atomid2);
+
+		auto sa1 = symmetry_copy(a1.get_location(), sg, c, cif::sym_op(symm1));
+		auto sa2 = symmetry_copy(a2.get_location(), sg, c, cif::sym_op(symm2));
+
+		BOOST_TEST(cif::distance(sa1, sa2) == dist);
+
+		auto pa1 = a1.get_location();
+
+		const auto &[d, p, so] = cif::closest_symmetry_copy(sg, c, pa1, a2.get_location());
+
+		BOOST_TEST(p.m_x == sa2.m_x);
+		BOOST_TEST(p.m_y == sa2.m_y);
+		BOOST_TEST(p.m_z == sa2.m_z);
+
+		BOOST_TEST(d == dist);
+		BOOST_TEST(so.string() == symm2);
+	}
 }

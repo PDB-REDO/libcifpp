@@ -52,7 +52,7 @@ cell::cell(const datablock &db)
 {
 	auto &_cell = db["cell"];
 
-	cif::tie(m_a, m_b, m_c, m_alpha, m_beta, m_gamma) =
+	tie(m_a, m_b, m_c, m_alpha, m_beta, m_gamma) =
 		_cell.front().get("length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma");
 
 	init();
@@ -98,6 +98,22 @@ sym_op::sym_op(std::string_view s)
 		throw std::invalid_argument("Could not convert string into sym_op");
 }
 
+std::string sym_op::string() const
+{
+	char b[9];
+	auto r = std::to_chars(b, b + sizeof(b), m_nr);
+	if (r.ec != std::errc() or r.ptr > b + 4)
+		throw std::runtime_error("Could not write out symmetry operation to string");
+	
+	*r.ptr++ = '_';
+	*r.ptr++ = '0' + m_ta;
+	*r.ptr++ = '0' + m_tb;
+	*r.ptr++ = '0' + m_tc;
+	*r.ptr = 0;
+
+	return { b, r.ptr - b };
+}
+
 // --------------------------------------------------------------------
 
 transformation::transformation(const symop_data &data)
@@ -116,7 +132,24 @@ transformation::transformation(const symop_data &data)
 
 	m_translation.m_x = d[9] == 0 ? 0 : 1.0 * d[9] / d[10];
 	m_translation.m_y = d[11] == 0 ? 0 : 1.0 * d[11] / d[12];
-	m_translation.m_y = d[13] == 0 ? 0 : 1.0 * d[13] / d[14];
+	m_translation.m_z = d[13] == 0 ? 0 : 1.0 * d[13] / d[14];
+}
+
+transformation operator*(const transformation &lhs, const transformation &rhs)
+{
+	auto r = lhs.m_rotation * rhs.m_rotation;
+	auto t = lhs.m_rotation * rhs.m_translation;
+	t = t + lhs.m_translation;
+
+	return transformation(r, t);
+
+	// return transformation(lhs.m_rotation * rhs.m_rotation, lhs.m_rotation * rhs.m_translation + lhs.m_translation);
+}
+
+transformation inverse(const transformation &t)
+{
+	auto inv_matrix = inverse(t.m_rotation);
+	return { inv_matrix, -(inv_matrix * t.m_translation) };
 }
 
 // --------------------------------------------------------------------
@@ -124,12 +157,12 @@ transformation::transformation(const symop_data &data)
 spacegroup::spacegroup(int nr)
 	: m_nr(nr)
 {
-	const size_t N = cif::kSymopNrTableSize;
+	const size_t N = kSymopNrTableSize;
 	int32_t L = 0, R = static_cast<int32_t>(N - 1);
 	while (L <= R)
 	{
 		int32_t i = (L + R) / 2;
-		if (cif::kSymopNrTable[i].spacegroup() < m_nr)
+		if (kSymopNrTable[i].spacegroup() < m_nr)
 			L = i + 1;
 		else
 			R = i - 1;
@@ -137,8 +170,8 @@ spacegroup::spacegroup(int nr)
 
 	m_index = L;
 
-	for (size_t i = L; i < N and cif::kSymopNrTable[i].spacegroup() == m_nr; ++i)
-		emplace_back(cif::kSymopNrTable[i].symop().data());
+	for (size_t i = L; i < N and kSymopNrTable[i].spacegroup() == m_nr; ++i)
+		emplace_back(kSymopNrTable[i].symop().data());
 }
 
 std::string spacegroup::get_name() const
@@ -152,14 +185,60 @@ std::string spacegroup::get_name() const
 	throw std::runtime_error("Spacegroup has an invalid number: " + std::to_string(m_nr));
 }
 
-point spacegroup::operator()(const point &pt, const cell &c, sym_op symop)
+point offsetToOrigin(const cell &c, const point &p)
+{
+	point d{};
+
+	while (p.m_x + d.m_x < (c.get_a() / 2))
+		d.m_x += c.get_a();
+	while (p.m_x + d.m_x > (c.get_a() / 2))
+		d.m_x -= c.get_a();
+
+	while (p.m_y + d.m_y < (c.get_b() / 2))
+		d.m_y += c.get_b();
+	while (p.m_y + d.m_y > (c.get_b() / 2))
+		d.m_y -= c.get_b();
+
+	while (p.m_z + d.m_z < (c.get_c() / 2))
+		d.m_z += c.get_c();
+	while (p.m_z + d.m_z > (c.get_c() / 2))
+		d.m_z -= c.get_c();
+
+	return d;
+};
+
+std::tuple<int,int,int> offsetToOriginInt(const cell &c, const point &p)
+{
+	auto o = offsetToOrigin(c, p);
+	return {
+		std::rintf(o.m_x / c.get_a()),
+		std::rintf(o.m_y / c.get_b()),
+		std::rintf(o.m_z / c.get_c())
+	};
+}
+
+point spacegroup::operator()(const point &pt, const cell &c, sym_op symop) const
 {
 	if (symop.m_nr < 1 or symop.m_nr > size())
 		throw std::out_of_range("symmetry operator number out of range");
 	
 	transformation t = at(symop.m_nr - 1);
 
-	return pt;
+	t.m_translation.m_x += symop.m_ta - 5;
+	t.m_translation.m_y += symop.m_tb - 5;
+	t.m_translation.m_z += symop.m_tc - 5;
+
+	auto t_orth = orthogonal(t, c);
+
+	auto o = offsetToOrigin(c, pt);
+	transformation tlo(identity_matrix<float>(3), o);
+	auto itlo = inverse(tlo);
+
+	point result = pt + o;
+	result = t_orth(result);
+	result = itlo(result);
+
+	return result;
 }
 
 // --------------------------------------------------------------------
@@ -277,6 +356,86 @@ int get_space_group_number(std::string_view spacegroup, space_group_name type)
 		throw std::runtime_error("Spacegroup name " + std::string(spacegroup) + " was not found in table");
 
 	return result;
+}
+
+int get_space_group_number(const datablock &db)
+{
+	auto &_symmetry = db["symmetry"];
+
+	if (_symmetry.size() != 1)
+		throw std::runtime_error("Could not find a unique symmetry in this mmCIF file");
+	
+	return _symmetry.front().get<int>("Int_Tables_number");
+}
+
+// --------------------------------------------------------------------
+
+std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const cell &c, point a, point b)
+{
+	if (c.get_a() == 0 or c.get_b() == 0 or c.get_c() == 0)
+		throw std::runtime_error("Invalid cell, contains a dimension that is zero");
+
+	point result_p;
+	float result_d = std::numeric_limits<float>::max();
+	sym_op result_s;
+
+	auto fa = fractional(a, c);
+	auto fb = fractional(b, c);
+
+	for (size_t i = 0; i < sg.size(); ++i)
+	{
+		sym_op s(i + 1);
+		auto &t = sg[i];
+
+		auto fsb = t(fb);
+
+		while (fsb.m_x - 0.5f > fa.m_x)
+		{
+			fsb.m_x -= 1;
+			s.m_ta -= 1;
+		}
+
+		while (fsb.m_x + 0.5f < fa.m_x)
+		{
+			fsb.m_x += 1;
+			s.m_ta += 1;			
+		}
+
+		while (fsb.m_y - 0.5f > fa.m_y)
+		{
+			fsb.m_y -= 1;
+			s.m_tb -= 1;
+		}
+
+		while (fsb.m_y + 0.5f < fa.m_y)
+		{
+			fsb.m_y += 1;
+			s.m_tb += 1;			
+		}
+
+		while (fsb.m_z - 0.5f > fa.m_z)
+		{
+			fsb.m_z -= 1;
+			s.m_tc -= 1;
+		}
+
+		while (fsb.m_z + 0.5f < fa.m_z)
+		{
+			fsb.m_z += 1;
+			s.m_tc += 1;			
+		}
+
+		auto p = orthogonal(fsb, c);
+		auto dsq = distance_squared(a, p);
+		if (result_d > dsq)
+		{
+			result_d = dsq;
+			result_p = p;
+			result_s = s;
+		}
+	}
+
+	return { std::sqrt(result_d), result_p, result_s };
 }
 
 } // namespace cif
