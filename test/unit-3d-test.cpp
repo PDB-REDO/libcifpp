@@ -360,3 +360,78 @@ BOOST_AUTO_TEST_CASE(symm_2bi3_1, *utf::tolerance(0.1f))
 		BOOST_TEST(so.string() == symm2);
 	}
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(eigen_1, *utf::tolerance(0.1f))
+{
+	cif::symmetric_matrix4x4<float> m;
+
+	m(0, 0) = 4;
+	m(0, 1) = -30;
+	m(0, 2) = 60;
+	m(0, 3) = -35;
+	m(1, 1) = 300;
+	m(1, 2) = -675;
+	m(1, 3) = 420;
+	m(2, 2) = 1620;
+	m(2, 3) = -1050;
+	m(3, 3) = 700;
+
+	cif::matrix4x4<float> m2;
+	m2 = m;
+
+	const auto &[ev, em] = cif::eigen(m2);
+
+	BOOST_TEST(ev[0] == 0.1666428611718905f);
+	BOOST_TEST(ev[1] == 1.4780548447781369f);
+	BOOST_TEST(ev[2] == 37.1014913651276582f);
+	BOOST_TEST(ev[3] == 2585.25381092892231f);
+
+
+
+
+
+
+// 	=== Example ===
+
+// Let 
+// <math>
+// 	S = \begin{pmatrix} 4 & -30 & 60 & -35 \\ -30 & 300 & -675 & 420 \\ 60 & -675 & 1620 & -1050 \\ -35 & 420 & -1050 & 700 \end{pmatrix}
+// </math>
+
+// Then ''jacobi'' produces the following eigenvalues and eigenvectors after 3 sweeps (19 iterations) :
+
+// <math>
+// 	e_1 = 2585.25381092892231
+// </math>
+
+// <math>
+// 	E_1 = \begin{pmatrix}0.0291933231647860588\\ -0.328712055763188997\\ 0.791411145833126331\\ -0.514552749997152907\end{pmatrix}
+// </math>
+
+// <math>
+// 	e_2 = 37.1014913651276582
+// </math>
+
+// <math>
+// 	E_2 = \begin{pmatrix}-0.179186290535454826\\ 0.741917790628453435\\ -0.100228136947192199\\ -0.638282528193614892\end{pmatrix}
+// </math>
+
+// <math>
+// 	e_3 = 1.4780548447781369
+// </math>
+
+// <math>
+// 	E_3 = \begin{pmatrix}-0.582075699497237650\\ 0.370502185067093058\\ 0.509578634501799626\\ 0.514048272222164294\end{pmatrix}
+// </math>
+
+// <math>
+// 	e_4 = 0.1666428611718905
+// </math>
+
+// <math>
+// 	E_4 = \begin{pmatrix}0.792608291163763585\\ 0.451923120901599794\\ 0.322416398581824992\\ 0.252161169688241933\end{pmatrix}
+// </math>
+
+}

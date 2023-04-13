@@ -28,8 +28,10 @@
 
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <ostream>
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -378,7 +380,7 @@ class matrix_matrix_multiplication : public matrix_expression<matrix_matrix_mult
 	const M2 &m_m2;
 };
 
-template<typename M, typename T>
+template <typename M, typename T>
 class matrix_scalar_multiplication : public matrix_expression<matrix_scalar_multiplication<M, T>>
 {
   public:
@@ -402,7 +404,6 @@ class matrix_scalar_multiplication : public matrix_expression<matrix_scalar_mult
 	const M &m_m;
 	value_type m_v;
 };
-
 
 template <typename M1, typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 auto operator*(const matrix_expression<M1> &m, T v)
@@ -450,6 +451,121 @@ matrix3x3<F> inverse(const matrix3x3<F> &m)
 	result(2, 2) = (m(0, 0) * m(1, 1) - m(0, 1) * m(1, 0)) / det;
 
 	return result;
+}
+
+template <typename M>
+auto eigen(const matrix_expression<M> &mat)
+{
+	using value_type = decltype(mat(0, 0));
+
+	assert(mat.dim_m() == mat.dim_n());
+
+	const size_t N = mat.dim_m();
+
+	matrix<float> m = mat;
+
+	matrix<value_type> em = identity_matrix(N);
+	std::vector<value_type> ev(N);
+	std::vector<value_type> b(N);
+
+	// Set ev & b to diagonal.
+	for (size_t i = 0; i < N; ++i)
+		ev[i] = b[i] = m(i, i);
+
+	for (int cyc = 1; cyc <= 50; ++cyc)
+	{
+		// calc sum of diagonal, off-diagonal
+		value_type spp = 0, spq = 0;
+
+		for (size_t i = 0; i < N - 1; i++)
+		{
+			for (size_t j = i + 1; j < N; j++)
+				spq += std::fabs(m(i, j));
+			spp += std::fabs(m(i, i));
+		}
+
+		if (spq <= 1.0e-12 * spp)
+			break;
+
+		std::vector<value_type> z(N);
+
+		// now try and reduce each off-diagonal element in turn
+		for (size_t i = 0; i < N - 1; i++)
+		{
+			for (size_t j = i + 1; j < N; j++)
+			{
+				value_type a_ij = m(i, j);
+				value_type h = ev[j] - ev[i];
+				value_type t;
+
+				if (std::fabs(a_ij) > 1.0e-12 * std::fabs(h))
+				{
+					value_type theta = 0.5 * h / a_ij;
+					t = 1.0 / (std::fabs(theta) + std::sqrt(1 + theta * theta));
+					if (theta < 0)
+						t = -t;
+				}
+				else
+					t = a_ij / h;
+
+				// calc trig properties
+				value_type c = 1.f / std::sqrt(1 + t * t);
+				value_type s = t * c;
+				value_type tau = s / (1 + c);
+				h = t * a_ij;
+
+				// update eigenvalues
+				z[i] -= h;
+				z[j] += h;
+				ev[i] -= h;
+				ev[j] += h;
+
+				// rotate the upper diagonal of the matrix
+				m(i, j) = 0;
+
+				for (size_t k = 0; k < i; k++)
+				{
+					value_type ai = m(k, i);
+					value_type aj = m(k, j);
+					m(k, i) = ai - s * (aj + ai * tau);
+					m(k, j) = aj + s * (ai - aj * tau);
+				}
+
+				for (size_t k = i + 1; k < j; k++)
+				{
+					value_type ai = m(i, k);
+					value_type aj = m(k, j);
+					m(i, k) = ai - s * (aj + ai * tau);
+					m(k, j) = aj + s * (ai - aj * tau);
+				}
+
+				for (size_t k = j + 1; k < N; k++)
+				{
+					value_type ai = m(i, k);
+					value_type aj = m(j, k);
+					m(i, k) = ai - s * (aj + ai * tau);
+					m(j, k) = aj + s * (ai - aj * tau);
+				}
+
+				// apply corresponding rotation to result
+				for (size_t k = 0; k < N; k++)
+				{
+					value_type ai = em(k, i);
+					value_type aj = em(k, j);
+					em(k, i) = ai - s * (aj + ai * tau);
+					em(k, j) = aj + s * (ai - aj * tau);
+				}
+			}
+		}
+
+		for (size_t p = 0; p < N; p++)
+		{
+			b[p] += z[p];
+			ev[p] = b[p];
+		}
+	}
+
+	return std::make_tuple(ev, em);
 }
 
 // --------------------------------------------------------------------

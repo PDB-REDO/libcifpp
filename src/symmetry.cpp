@@ -404,8 +404,6 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 	sym_op result_s;
 
 	auto o = offsetToOrigin(c, a);
-	transformation tlo(identity_matrix<float>(3), o);
-	auto itlo = cif::inverse(tlo);
 
 	a += o;
 	b += o;
