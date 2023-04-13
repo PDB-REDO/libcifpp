@@ -314,6 +314,8 @@ class spacegroup : public std::vector<transformation>
 
 	point operator()(const point &pt, const cell &c, sym_op symop) const;
 
+	point inverse(const point &pt, const cell &c, sym_op symop) const;
+
   private:
 	int m_nr;
 	size_t m_index;

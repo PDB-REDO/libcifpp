@@ -111,7 +111,7 @@ std::string sym_op::string() const
 	*r.ptr++ = '0' + m_tc;
 	*r.ptr = 0;
 
-	return { b, r.ptr - b };
+	return { b, static_cast<size_t>(r.ptr - b) };
 }
 
 // --------------------------------------------------------------------
@@ -232,7 +232,31 @@ point spacegroup::operator()(const point &pt, const cell &c, sym_op symop) const
 
 	auto o = offsetToOrigin(c, pt);
 	transformation tlo(identity_matrix<float>(3), o);
-	auto itlo = inverse(tlo);
+	auto itlo = cif::inverse(tlo);
+
+	point result = pt + o;
+	result = t_orth(result);
+	result = itlo(result);
+
+	return result;
+}
+
+point spacegroup::inverse(const point &pt, const cell &c, sym_op symop) const
+{
+	if (symop.m_nr < 1 or symop.m_nr > size())
+		throw std::out_of_range("symmetry operator number out of range");
+	
+	transformation t = at(symop.m_nr - 1);
+
+	t.m_translation.m_x += symop.m_ta - 5;
+	t.m_translation.m_y += symop.m_tb - 5;
+	t.m_translation.m_z += symop.m_tc - 5;
+
+	auto t_orth = cif::inverse(orthogonal(t, c));
+
+	auto o = offsetToOrigin(c, pt);
+	transformation tlo(identity_matrix<float>(3), o);
+	auto itlo = cif::inverse(tlo);
 
 	point result = pt + o;
 	result = t_orth(result);
@@ -378,6 +402,13 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 	point result_p;
 	float result_d = std::numeric_limits<float>::max();
 	sym_op result_s;
+
+	auto o = offsetToOrigin(c, a);
+	transformation tlo(identity_matrix<float>(3), o);
+	auto itlo = cif::inverse(tlo);
+
+	a += o;
+	b += o;
 
 	auto fa = fractional(a, c);
 	auto fb = fractional(b, c);
