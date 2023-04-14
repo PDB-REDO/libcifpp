@@ -67,6 +67,16 @@ class matrix_expression
 		}
 	}
 
+	void swap_col(uint32_t c1, uint32_t c2)
+	{
+		for (uint32_t r = 0; r < dim_n(); ++r)
+		{
+			auto &a = operator()(r, c1);
+			auto &b = operator()(r, c2);
+			std::swap(a, b);
+		}
+	}
+
 	friend std::ostream &operator<<(std::ostream &os, const matrix_expression &m)
 	{
 		os << '[';
@@ -585,7 +595,7 @@ auto eigen(const matrix_expression<M> &mat, bool sort)
 					j = q;
 
 			std::swap(ev[j], ev[p]);
-			em.swap_row(j, p);
+			em.swap_col(j, p);
 		}
 	}
 
