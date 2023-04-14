@@ -361,6 +361,31 @@ BOOST_AUTO_TEST_CASE(symm_2bi3_1, *utf::tolerance(0.1f))
 	}
 }
 
+
+BOOST_AUTO_TEST_CASE(symm_3bwh_1, *utf::tolerance(0.1f))
+{
+	cif::file f(gTestDir / "3bwh.cif.gz");
+
+	auto &db = f.front();
+
+	cif::spacegroup sg(db);
+	cif::cell c(db);
+	cif::mm::structure s(db);
+
+	for (auto a1 : s.atoms())
+	{
+		for (auto a2 : s.atoms())
+		{
+			if (a1 == a2)
+				continue;
+			
+			const auto&[ d, p, so ] = cif::closest_symmetry_copy(sg, c, a1.get_location(), a2.get_location());
+
+			BOOST_TEST(d == distance(a1.get_location(), p));
+		}
+	}
+}
+
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(eigen_1, *utf::tolerance(0.1f))
@@ -387,51 +412,4 @@ BOOST_AUTO_TEST_CASE(eigen_1, *utf::tolerance(0.1f))
 	BOOST_TEST(ev[1] == 1.4780548447781369f);
 	BOOST_TEST(ev[2] == 37.1014913651276582f);
 	BOOST_TEST(ev[3] == 2585.25381092892231f);
-
-
-
-
-
-
-// 	=== Example ===
-
-// Let 
-// <math>
-// 	S = \begin{pmatrix} 4 & -30 & 60 & -35 \\ -30 & 300 & -675 & 420 \\ 60 & -675 & 1620 & -1050 \\ -35 & 420 & -1050 & 700 \end{pmatrix}
-// </math>
-
-// Then ''jacobi'' produces the following eigenvalues and eigenvectors after 3 sweeps (19 iterations) :
-
-// <math>
-// 	e_1 = 2585.25381092892231
-// </math>
-
-// <math>
-// 	E_1 = \begin{pmatrix}0.0291933231647860588\\ -0.328712055763188997\\ 0.791411145833126331\\ -0.514552749997152907\end{pmatrix}
-// </math>
-
-// <math>
-// 	e_2 = 37.1014913651276582
-// </math>
-
-// <math>
-// 	E_2 = \begin{pmatrix}-0.179186290535454826\\ 0.741917790628453435\\ -0.100228136947192199\\ -0.638282528193614892\end{pmatrix}
-// </math>
-
-// <math>
-// 	e_3 = 1.4780548447781369
-// </math>
-
-// <math>
-// 	E_3 = \begin{pmatrix}-0.582075699497237650\\ 0.370502185067093058\\ 0.509578634501799626\\ 0.514048272222164294\end{pmatrix}
-// </math>
-
-// <math>
-// 	e_4 = 0.1666428611718905
-// </math>
-
-// <math>
-// 	E_4 = \begin{pmatrix}0.792608291163763585\\ 0.451923120901599794\\ 0.322416398581824992\\ 0.252161169688241933\end{pmatrix}
-// </math>
-
 }
