@@ -280,10 +280,16 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 	auto cf = matrix_cofactors(t);
 
 	int maxR = 0;
+	double maxCF = std::abs(cf(0, 0));
+
 	for (int r = 1; r < 4; ++r)
 	{
-		if (std::abs(cf(r, 0)) > std::abs(cf(maxR, 0)))
+		auto cfr = std::abs(cf(r, 0));
+		if (maxCF < cfr)
+		{
+			maxCF = cfr;
 			maxR = r;
+		}
 	}
 
 	quaternion q(
