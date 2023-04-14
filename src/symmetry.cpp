@@ -464,7 +464,10 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 		}
 	}
 
-	return { std::sqrt(result_d), result_p, result_s };
+	transformation tlo(identity_matrix<float>(3), o);
+	auto itlo = cif::inverse(tlo);
+
+	return { std::sqrt(result_d), itlo(result_p), result_s };
 }
 
 } // namespace cif

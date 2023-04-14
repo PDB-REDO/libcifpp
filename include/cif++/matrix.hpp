@@ -636,7 +636,7 @@ class matrix_cofactors : public matrix_expression<matrix_cofactors<M>>
 			m_m(ix[0], iy[1]) * m_m(ix[1], iy[0]) * m_m(ix[2], iy[2]) -
 			m_m(ix[0], iy[0]) * m_m(ix[1], iy[2]) * m_m(ix[2], iy[1]);
 
-		return i + j % 2 == 1 ? -result : result;
+		return (i + j) % 2 == 1 ? -result : result;
 	}
 
   private:
