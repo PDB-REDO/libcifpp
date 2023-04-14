@@ -57,6 +57,16 @@ class matrix_expression
 		return static_cast<const M &>(*this).operator()(i, j);
 	}
 
+	void swap_row(uint32_t r1, uint32_t r2)
+	{
+		for (uint32_t c = 0; c < dim_m(); ++c)
+		{
+			auto v = operator()(r1, c);
+			operator()(r1, c) = operator()(r2, c);
+			operator()(r2, c) = v;
+		}
+	}
+
 	friend std::ostream &operator<<(std::ostream &os, const matrix_expression &m)
 	{
 		os << '[';
@@ -454,7 +464,7 @@ matrix3x3<F> inverse(const matrix3x3<F> &m)
 }
 
 template <typename M>
-auto eigen(const matrix_expression<M> &mat)
+auto eigen(const matrix_expression<M> &mat, bool sort)
 {
 	using value_type = decltype(mat(0, 0));
 
@@ -562,6 +572,20 @@ auto eigen(const matrix_expression<M> &mat)
 		{
 			b[p] += z[p];
 			ev[p] = b[p];
+		}
+	}
+
+	if (sort)
+	{
+		for (size_t p = 0; p < N; ++p)
+		{
+			size_t j = p; // set j to index of largest remaining eval
+			for (size_t q = p + 1; q < N; ++q)
+				if (ev[q] < ev[j])
+					j = q;
+
+			std::swap(ev[j], ev[p]);
+			em.swap_row(j, p);
 		}
 	}
 

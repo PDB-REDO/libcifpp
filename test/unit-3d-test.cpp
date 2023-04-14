@@ -381,7 +381,7 @@ BOOST_AUTO_TEST_CASE(eigen_1, *utf::tolerance(0.1f))
 	cif::matrix4x4<float> m2;
 	m2 = m;
 
-	const auto &[ev, em] = cif::eigen(m2);
+	const auto &[ev, em] = cif::eigen(m2, true);
 
 	BOOST_TEST(ev[0] == 0.1666428611718905f);
 	BOOST_TEST(ev[1] == 1.4780548447781369f);
