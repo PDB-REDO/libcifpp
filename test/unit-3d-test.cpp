@@ -313,6 +313,38 @@ BOOST_AUTO_TEST_CASE(symm_4, *utf::tolerance(0.1f))
 	BOOST_TEST(distance(a, sb2) == 7.42f);	
 }
 
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(symm_4wvp_1, *utf::tolerance(0.1f))
+{
+	using namespace cif::literals;
+
+	cif::file f(gTestDir / "4wvp.cif.gz");
+
+	auto &db = f.front();
+	cif::mm::structure s(db);
+
+	cif::spacegroup sg(db);
+	cif::cell c(db);
+
+	cif::point p{ -78.722, 98.528,  11.994 };
+	auto a = s.get_residue("A", 10, "").get_atom_by_atom_id("O");
+
+	auto sp1 = cif::symmetry_copy(a.get_location(), sg, c, "2_565"_symop);
+	BOOST_TEST(sp1.m_x == p.m_x);
+	BOOST_TEST(sp1.m_y == p.m_y);
+	BOOST_TEST(sp1.m_z == p.m_z);
+
+	const auto &[d, sp2, so] = cif::closest_symmetry_copy(sg, c, p, a.get_location());
+
+	BOOST_TEST(d < 1);
+
+	BOOST_TEST(sp2.m_x == p.m_x);
+	BOOST_TEST(sp2.m_y == p.m_y);
+	BOOST_TEST(sp2.m_z == p.m_z);
+
+}
+
 BOOST_AUTO_TEST_CASE(symm_2bi3_1, *utf::tolerance(0.1f))
 {
 	cif::file f(gTestDir / "2bi3.cif.gz");
@@ -385,39 +417,6 @@ BOOST_AUTO_TEST_CASE(symm_3bwh_1, *utf::tolerance(0.1f))
 		}
 	}
 }
-
-// --------------------------------------------------------------------
-
-
-BOOST_AUTO_TEST_CASE(symm_4wvp_1, *utf::tolerance(0.1f))
-{
-	using namespace cif::literals;
-
-	cif::file f(gTestDir / "4wvp.cif.gz");
-
-	auto &db = f.front();
-	cif::mm::structure s(db);
-
-	cif::spacegroup sg(db);
-	cif::cell c(db);
-
-	cif::point p{ -78.722, 98.528,  11.994 };
-	auto a = s.get_residue("A", 10, "").get_atom_by_atom_id("O");
-
-	auto sp1 = cif::symmetry_copy(a.get_location(), sg, c, "2_565"_symop);
-	BOOST_TEST(sp1.m_x == p.m_x);
-	BOOST_TEST(sp1.m_y == p.m_y);
-	BOOST_TEST(sp1.m_z == p.m_z);
-
-
-
-	const auto &[d, sp, so] = cif::closest_symmetry_copy(sg, c, p, a.get_location());
-
-	BOOST_TEST(d < 1);
-
-}
-
-
 
 // --------------------------------------------------------------------
 

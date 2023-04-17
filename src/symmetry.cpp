@@ -189,33 +189,45 @@ point offsetToOrigin(const cell &c, const point &p)
 {
 	point d{};
 
-	while (p.m_x + d.m_x < (c.get_a() / 2))
+	while (p.m_x + d.m_x < -(c.get_a()))
 		d.m_x += c.get_a();
-	while (p.m_x + d.m_x > (c.get_a() / 2))
+	while (p.m_x + d.m_x > (c.get_a()))
 		d.m_x -= c.get_a();
 
-	while (p.m_y + d.m_y < (c.get_b() / 2))
+	while (p.m_y + d.m_y < -(c.get_b()))
 		d.m_y += c.get_b();
-	while (p.m_y + d.m_y > (c.get_b() / 2))
+	while (p.m_y + d.m_y > (c.get_b()))
 		d.m_y -= c.get_b();
 
-	while (p.m_z + d.m_z < (c.get_c() / 2))
+	while (p.m_z + d.m_z < -(c.get_c()))
 		d.m_z += c.get_c();
-	while (p.m_z + d.m_z > (c.get_c() / 2))
+	while (p.m_z + d.m_z > (c.get_c()))
 		d.m_z -= c.get_c();
 
 	return d;
 };
 
-std::tuple<int,int,int> offsetToOriginInt(const cell &c, const point &p)
+point offsetToOriginFractional(const point &p)
 {
-	auto o = offsetToOrigin(c, p);
-	return {
-		std::rintf(o.m_x / c.get_a()),
-		std::rintf(o.m_y / c.get_b()),
-		std::rintf(o.m_z / c.get_c())
-	};
-}
+	point d{};
+
+	while (p.m_x + d.m_x < -0.5f)
+		d.m_x += 1;
+	while (p.m_x + d.m_x > 0.5f)
+		d.m_x -= 1;
+
+	while (p.m_y + d.m_y < -0.5f)
+		d.m_y += 1;
+	while (p.m_y + d.m_y > 0.5f)
+		d.m_y -= 1;
+
+	while (p.m_z + d.m_z < -0.5f)
+		d.m_z += 1;
+	while (p.m_z + d.m_z > 0.5f)
+		d.m_z -= 1;
+
+	return d;
+};
 
 point spacegroup::operator()(const point &pt, const cell &c, sym_op symop) const
 {
@@ -228,17 +240,12 @@ point spacegroup::operator()(const point &pt, const cell &c, sym_op symop) const
 	t.m_translation.m_y += symop.m_tb - 5;
 	t.m_translation.m_z += symop.m_tc - 5;
 
-	auto t_orth = orthogonal(t, c);
+	auto fpt = fractional(pt, c);
+	auto o = offsetToOriginFractional(fpt);
 
-	auto o = offsetToOrigin(c, pt);
-	transformation tlo(identity_matrix<float>(3), o);
-	auto itlo = cif::inverse(tlo);
+	auto spt = t(fpt + o) - o;
 
-	point result = pt + o;
-	result = t_orth(result);
-	result = itlo(result);
-
-	return result;
+	return orthogonal(spt, c);
 }
 
 point spacegroup::inverse(const point &pt, const cell &c, sym_op symop) const
@@ -252,23 +259,14 @@ point spacegroup::inverse(const point &pt, const cell &c, sym_op symop) const
 	t.m_translation.m_y += symop.m_tb - 5;
 	t.m_translation.m_z += symop.m_tc - 5;
 
-	auto t_orth = cif::inverse(orthogonal(t, c));
+	auto it = cif::inverse(t);
 
-	auto o = offsetToOrigin(c, pt);
-	transformation tlo(identity_matrix<float>(3), o);
-	auto itlo = cif::inverse(tlo);
+	auto fpt = fractional(pt, c);
+	auto o = offsetToOriginFractional(fpt);
 
-	point result = pt + o;
-	result = t_orth(result);
-	result = itlo(result);
-
-	return result;
+	auto spt = it(fpt + o) - o;
+	return orthogonal(spt, c);
 }
-
-// --------------------------------------------------------------------
-// Unfortunately, clipper has a different numbering scheme than PDB
-// for rotation numbers. So we created a table to map those.
-// Perhaps a bit over the top, but hey....
 
 // --------------------------------------------------------------------
 
@@ -399,17 +397,19 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 	if (c.get_a() == 0 or c.get_b() == 0 or c.get_c() == 0)
 		throw std::runtime_error("Invalid cell, contains a dimension that is zero");
 
-	point result_p;
+	point result_fsb;
 	float result_d = std::numeric_limits<float>::max();
 	sym_op result_s;
 
-	auto o = offsetToOrigin(c, a);
-
-	a += o;
-	b += o;
-
 	auto fa = fractional(a, c);
 	auto fb = fractional(b, c);
+
+	auto o = offsetToOriginFractional(fa);
+
+	fa = fa + o;
+	fb = fb + o;
+
+	a = orthogonal(fa, c);
 
 	for (size_t i = 0; i < sg.size(); ++i)
 	{
@@ -459,15 +459,14 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 		if (result_d > dsq)
 		{
 			result_d = dsq;
-			result_p = p;
+			result_fsb = fsb;
 			result_s = s;
 		}
 	}
 
-	transformation tlo(identity_matrix<float>(3), o);
-	auto itlo = cif::inverse(tlo);
+	auto p = orthogonal(result_fsb - o, c);
 
-	return { std::sqrt(result_d), itlo(result_p), result_s };
+	return { std::sqrt(result_d), p, result_s };
 }
 
 } // namespace cif
