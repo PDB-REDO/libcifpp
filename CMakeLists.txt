@@ -429,7 +429,7 @@ if(ENABLE_TESTING)
 
 		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost Eigen3::Eigen)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
