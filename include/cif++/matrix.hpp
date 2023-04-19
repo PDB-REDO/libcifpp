@@ -518,7 +518,9 @@ auto eigen(const matrix_expression<M> &mat, bool sort)
 				value_type h = ev[j] - ev[i];
 				value_type t;
 
-				if (std::fabs(a_ij) > 1.0e-12 * std::fabs(h))
+				if (a_ij == 0 and h == 0)
+					t = 1;
+				else if (std::fabs(a_ij) > 1.0e-12 * std::fabs(h))
 				{
 					value_type theta = 0.5 * h / a_ij;
 					t = 1.0 / (std::fabs(theta) + std::sqrt(1 + theta * theta));
