@@ -269,13 +269,18 @@ BOOST_AUTO_TEST_CASE(m2q_1, *utf::tolerance(0.001f))
 	auto sin = std::sin(a1 / 2);
 	auto cos = std::cos(a1 / 2);
 
-	cif::quaternion q{ cos, 0, 0, sin };
+	cif::quaternion q = normalize(cif::quaternion{ cos, 0, 0, sin });
 
 	auto pr = pts[0];
 	pr.rotate(q);
 	BOOST_TEST(pr.m_x == pts[1].m_x);
 	BOOST_TEST(pr.m_y == pts[1].m_y);
 	BOOST_TEST(pr.m_z == pts[1].m_z);
+
+	auto &&[angle_r, axis_r] = cif::quaternion_to_angle_axis(q);
+	std::cout << angle_r << std::endl
+		 	  << axis_r << std::endl;
+
 
 	cif::matrix3x3<float> rot;
 	rot(0, 0) = 0;
@@ -293,64 +298,84 @@ BOOST_AUTO_TEST_CASE(m2q_1, *utf::tolerance(0.001f))
 	BOOST_TEST(pr.m_y == pts[1].m_y);
 	BOOST_TEST(pr.m_z == pts[1].m_z);
 
-	Eigen::Matrix3f em2;
-	em2(0, 0) = 0;
-	em2(0, 1) = -1;
-	em2(0, 2) = 0;
-	em2(1, 0) = 1;
-	em2(1, 1) = -1;
-	em2(1, 2) = 0;
-	em2(2, 0) = 0;
-	em2(2, 1) = 0;
-	em2(2, 2) = 1;
+	// Eigen::Matrix3f em2;
+	// em2(0, 0) = 0;
+	// em2(0, 1) = -1;
+	// em2(0, 2) = 0;
+	// em2(1, 0) = 1;
+	// em2(1, 1) = -1;
+	// em2(1, 2) = 0;
+	// em2(2, 0) = 0;
+	// em2(2, 1) = 0;
+	// em2(2, 2) = 1;
 
-	Eigen::EigenSolver<Eigen::Matrix3f> es(em2);
+	// Eigen::EigenSolver<Eigen::Matrix3f> es(em2);
 
-	auto eev = es.eigenvalues();
+	// auto eev = es.eigenvalues();
 
-	for (size_t i = 0; i < 3; ++i)
-	{
-		if (std::abs(eev[i].real() - 1) > 0.01)
-			continue;
+	// for (size_t i = 0; i < 3; ++i)
+	// {
+	// 	if (std::abs(eev[i].real() - 1) > 0.01)
+	// 		continue;
 
-		auto tr = em2(0, 0) + em2(1, 1) + em2(2, 2);
-		auto a2 = std::acos((tr - 1) / 2.0f);
-		BOOST_TEST(2 * std::cos(a2) + 1 == tr);
+	// 	auto tr = em2(0, 0) + em2(1, 1) + em2(2, 2);
+	// 	auto a2 = std::acos((tr - 1) / 2.0f);
+	// 	BOOST_TEST(2 * std::cos(a2) + 1 == tr);
 
-		// Nice, but not working.
+	// 	// Nice, but not working.
 
-		// axis is:
+	// 	// axis is:
 
-		auto c = es.eigenvectors().col(i);
-		cif::point axis{ c(0).real(), c(1).real(), c(2).real() };
+	// 	auto c = es.eigenvectors().col(i);
 
-		// take line perpendicular to this axis
+	// 	// cif::point axis{ c(0).real(), c(1).real(), c(2).real() };
+	// 	// take line perpendicular to this axis
 
-		
-
-
-		auto s2 = std::sin(a2 / 2);
-		auto c2 = std::cos(a2 / 2);
+	// 	auto s2 = std::sin(a2 / 2);
+	// 	auto c2 = std::cos(a2 / 2);
 
 
-		auto q2 = normalize(cif::quaternion{
-			static_cast<float>(c2),
-			static_cast<float>(s2 * c(0).real()),
-			static_cast<float>(s2 * c(1).real()),
-			static_cast<float>(s2 * c(2).real()) });
+	// 	auto q2 = normalize(cif::quaternion{
+	// 		static_cast<float>(c2),
+	// 		static_cast<float>(s2 * c(0).real()),
+	// 		static_cast<float>(s2 * c(1).real()),
+	// 		static_cast<float>(s2 * c(2).real()) });
 
-		pr = pts[0];
-		pr.rotate(q2);
-		BOOST_TEST(pr.m_x == pts[1].m_x);
-		BOOST_TEST(pr.m_y == pts[1].m_y);
-		BOOST_TEST(pr.m_z == pts[1].m_z);
-
-		break;
-
-	}
+	// 	auto &&[angle_r2, axis_r2] = cif::quaternion_to_angle_axis(q2);
+	// 		std::cout << angle_r2 << std::endl
+	// 				<< axis_r2 << std::endl;
 
 
 
+	// 	pr = pts[0];
+	// 	pr.rotate(q2);
+	// 	BOOST_TEST(pr.m_x == pts[1].m_x);
+	// 	BOOST_TEST(pr.m_y == pts[1].m_y);
+	// 	BOOST_TEST(pr.m_z == pts[1].m_z);
+
+	// 	break;
+
+	// }
+
+	cif::point t1{ 1, 1, 1 };
+	cif::point t2 = rot * t1;
+
+	float a2 = std::acos(dot_product(t1, t2) / (t1.length() * t2.length()));
+
+	auto sin2 = std::sin(a2 / 2);
+	auto cos2 = std::cos(a2 / 2);
+
+	cif::quaternion q2 = normalize(cif::quaternion{ cos2, 0, 0, sin2 });
+
+	pr = pts[0];
+	pr.rotate(q2);
+	BOOST_TEST(pr.m_x == pts[1].m_x);
+	BOOST_TEST(pr.m_y == pts[1].m_y);
+	BOOST_TEST(pr.m_z == pts[1].m_z);
+
+	auto &&[angle_r2, axis_r2] = cif::quaternion_to_angle_axis(q);
+	std::cout << angle_r2 << std::endl
+		 	  << axis_r2 << std::endl;
 
 
 
