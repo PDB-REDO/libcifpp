@@ -34,6 +34,10 @@
 #include <cstdint>
 #include <string>
 
+/// \file cif++/symmetry.hpp
+/// This file contains code to do symmetry operations based on the
+/// operations as specified in the International Tables.
+
 namespace cif
 {
 
@@ -265,7 +269,7 @@ class transformation
 	transformation &operator=(const transformation &) = default;
 	transformation &operator=(transformation &&) = default;
 
-	point operator()(const cell &c, const point &pt) const;
+	// point operator()(const cell &c, const point &pt) const;
 
 	point operator()(const point &pt) const
 	{
@@ -274,6 +278,11 @@ class transformation
 
 	friend transformation operator*(const transformation &lhs, const transformation &rhs);
 	friend transformation inverse(const transformation &t);
+
+	transformation operator-() const
+	{
+		return inverse(*this);
+	}
 
 	friend class spacegroup;
 
@@ -354,12 +363,23 @@ inline transformation fractional(const transformation &t, const cell &c)
 
 // --------------------------------------------------------------------
 
+/// @brief Return the symmetry copy of a point based on spacegroup \a sg, cell \a c and symmetry operation \a symop
+/// @param pt The point to transform
+/// @param sg The spacegroup
+/// @param c The cell
+/// @param symop The symmetry operation
+/// @return Newly calculated point
 inline point symmetry_copy(const point &pt, const spacegroup &sg, const cell &c, sym_op symop)
 {
 	return sg(pt, c, symop);
 }
 
+/// @brief Return the point and symmetry operation required to move point \a b as close as possible to point \a a
+/// @param sg The spacegroup
+/// @param c The cell
+/// @param a The point that acts as reference
+/// @param b The point that needs to be moved
+/// @return The calculated distance between the new point and \a a plus the symmetry operation required to operate on \a b
 std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const cell &c, point a, point b);
-
 
 } // namespace cif

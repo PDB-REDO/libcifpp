@@ -85,8 +85,7 @@ sym_op::sym_op(std::string_view s)
 	auto b = s.data();
 	auto e = b + s.length();
 
-	int rnri;
-
+	int rnri = 256;	// default to unexisting number
 	auto r = std::from_chars(b, e, rnri);
 	
 	m_nr = rnri;
@@ -259,12 +258,12 @@ point spacegroup::inverse(const point &pt, const cell &c, sym_op symop) const
 	t.m_translation.m_y += symop.m_tb - 5;
 	t.m_translation.m_z += symop.m_tc - 5;
 
-	auto it = cif::inverse(t);
-
 	auto fpt = fractional(pt, c);
 	auto o = offsetToOriginFractional(fpt);
 
+	auto it = cif::inverse(t);
 	auto spt = it(fpt + o) - o;
+
 	return orthogonal(spt, c);
 }
 
