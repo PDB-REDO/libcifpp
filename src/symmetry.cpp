@@ -391,29 +391,29 @@ int get_space_group_number(const datablock &db)
 
 // --------------------------------------------------------------------
 
-std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const cell &c, point a, point b)
+std::tuple<float,point,sym_op> crystal::closest_symmetry_copy(point a, point b) const
 {
-	if (c.get_a() == 0 or c.get_b() == 0 or c.get_c() == 0)
+	if (m_cell.get_a() == 0 or m_cell.get_b() == 0 or m_cell.get_c() == 0)
 		throw std::runtime_error("Invalid cell, contains a dimension that is zero");
 
 	point result_fsb;
 	float result_d = std::numeric_limits<float>::max();
 	sym_op result_s;
 
-	auto fa = fractional(a, c);
-	auto fb = fractional(b, c);
+	auto fa = fractional(a, m_cell);
+	auto fb = fractional(b, m_cell);
 
 	auto o = offsetToOriginFractional(fa);
 
 	fa = fa + o;
 	fb = fb + o;
 
-	a = orthogonal(fa, c);
+	a = orthogonal(fa, m_cell);
 
-	for (size_t i = 0; i < sg.size(); ++i)
+	for (size_t i = 0; i < m_spacegroup.size(); ++i)
 	{
 		sym_op s(i + 1);
-		auto &t = sg[i];
+		auto &t = m_spacegroup[i];
 
 		auto fsb = t(fb);
 
@@ -453,8 +453,9 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 			s.m_tc += 1;			
 		}
 
-		auto p = orthogonal(fsb, c);
+		auto p = orthogonal(fsb, m_cell);
 		auto dsq = distance_squared(a, p);
+
 		if (result_d > dsq)
 		{
 			result_d = dsq;
@@ -463,7 +464,7 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 		}
 	}
 
-	auto p = orthogonal(result_fsb - o, c);
+	auto p = orthogonal(result_fsb - o, m_cell);
 
 	return { std::sqrt(result_d), p, result_s };
 }
