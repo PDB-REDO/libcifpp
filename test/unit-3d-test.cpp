@@ -251,6 +251,79 @@ BOOST_AUTO_TEST_CASE(dh_q_1)
 
 // --------------------------------------------------------------------
 
+BOOST_AUTO_TEST_CASE(m2q_1, *utf::tolerance(0.001f))
+{
+	cif::point pts[3] = {
+		{ 1, 2, 1 },
+		{ -2, -1, 1 },
+		{ 0, 0, 0 }
+	};
+
+	auto v1 = pts[0] - pts[2];
+	auto v2 = pts[1] - pts[2];
+
+	float a1 = std::acos(dot_product(v1, v2) / (v1.length() * v2.length()));
+
+	auto s = std::sin(a1 / 2);
+	auto c = std::cos(a1 / 2);
+
+	cif::quaternion q{ c, 0, 0, s };
+
+	auto pr = pts[0];
+	pr.rotate(q);
+	BOOST_TEST(pr.m_x == pts[1].m_x);
+	BOOST_TEST(pr.m_y == pts[1].m_y);
+	BOOST_TEST(pr.m_z == pts[1].m_z);
+
+	cif::matrix3x3<float> rot;
+	rot(0, 0) = 0;
+	rot(0, 1) = -1;
+	rot(0, 2) = 0;
+	rot(1, 0) = 1;
+	rot(1, 1) = -1;
+	rot(1, 2) = 0;
+	rot(2, 0) = 0;
+	rot(2, 1) = 0;
+	rot(2, 2) = 1;
+
+	pr = rot * pts[0];
+	BOOST_TEST(pr.m_x == pts[1].m_x);
+	BOOST_TEST(pr.m_y == pts[1].m_y);
+	BOOST_TEST(pr.m_z == pts[1].m_z);
+
+	auto &&[ev, em] = eigen(rot, false);
+
+	for (size_t i = 0; i < 3; ++i)
+	{
+		if (ev[i] != 1)
+			continue;
+		
+		auto tr = rot(0, 0) + rot(1, 1) + rot(2, 2);
+		auto a2 = std::acos((tr - 1) / 2.0f);
+		BOOST_TEST(2 * std::cos(a2) + 1 == tr);
+
+		auto s2 = std::sin(a2 / 2);
+		auto c2 = std::cos(a2 / 2);
+
+		auto q2 = normalize(cif::quaternion{
+			static_cast<float>(c2),
+			static_cast<float>(s2 * em(0, i)),
+			static_cast<float>(s2 * em(1, i)),
+			static_cast<float>(s2 * em(2, i)) });
+
+		pr = pts[0];
+		pr.rotate(q2);
+		BOOST_TEST(pr.m_x == pts[1].m_x);
+		BOOST_TEST(pr.m_y == pts[1].m_y);
+		BOOST_TEST(pr.m_z == pts[1].m_z);
+
+		break;
+	}
+
+}
+
+// --------------------------------------------------------------------
+
 BOOST_AUTO_TEST_CASE(symm_1)
 {
 	cif::cell c(10, 10, 10);

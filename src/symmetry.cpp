@@ -129,9 +129,52 @@ transformation::transformation(const symop_data &data)
 	m_rotation(2, 1) = d[7];
 	m_rotation(2, 2) = d[8];
 
+	auto &&[ev, em] = eigen(m_rotation, false);
+
+	for (size_t i = 0; i < 3; ++i)
+	{
+		if (ev[i] != 1)
+			continue;
+		
+		auto tr = m_rotation(0, 0) + m_rotation(1, 1) + m_rotation(2, 2);
+		auto angle = std::acos((tr - 1) / 2.0f) / 2;
+
+		auto s = std::sin(angle);
+		auto c = std::cos(angle);
+
+		m_q = normalize(quaternion{
+			static_cast<float>(c),
+			static_cast<float>(s * em(0, i)),
+			static_cast<float>(s * em(1, i)),
+			static_cast<float>(s * em(2, i)) });
+
+		break;
+	}
+
 	m_translation.m_x = d[9] == 0 ? 0 : 1.0 * d[9] / d[10];
 	m_translation.m_y = d[11] == 0 ? 0 : 1.0 * d[11] / d[12];
 	m_translation.m_z = d[13] == 0 ? 0 : 1.0 * d[13] / d[14];
+}
+
+point transformation::operator()(const point &pt) const
+{
+	auto p = pt;
+	p.rotate(m_q);
+	p += m_translation;
+
+	auto p2 = m_rotation * pt + m_translation;
+
+	// return m_rotation * pt + m_translation;
+
+	assert(std::abs(p.m_x - p2.m_x) < 0.01);
+	assert(std::abs(p.m_y - p2.m_y) < 0.01);
+	assert(std::abs(p.m_z - p2.m_z) < 0.01);
+
+	return p;
+
+	// auto p = pt;
+	// p.rotate(m_q);
+	// return p + m_translation;
 }
 
 transformation operator*(const transformation &lhs, const transformation &rhs)

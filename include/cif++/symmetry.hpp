@@ -248,10 +248,12 @@ class transformation
 	transformation &operator=(const transformation &) = default;
 	transformation &operator=(transformation &&) = default;
 
-	point operator()(const point &pt) const
-	{
-		return m_rotation * pt + m_translation;
-	}
+	point operator()(const point &pt) const;
+
+	// point operator()(const point &pt) const
+	// {
+	// 	return m_rotation * pt + m_translation;
+	// }
 
 	friend transformation operator*(const transformation &lhs, const transformation &rhs);
 	friend transformation inverse(const transformation &t);
@@ -265,6 +267,7 @@ class transformation
 
   private:
 	matrix3x3<float> m_rotation;
+	quaternion m_q;
 	point m_translation;
 };
 
