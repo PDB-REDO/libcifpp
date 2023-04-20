@@ -237,23 +237,22 @@ class transformation
 {
   public:
 	transformation(const symop_data &data);
-	transformation(const matrix3x3<float> &r, const cif::point &t)
-		: m_rotation(r)
-		, m_translation(t)
-	{
-	}
+	transformation(const matrix3x3<float> &r, const cif::point &t);
 
 	transformation(const transformation &) = default;
 	transformation(transformation &&) = default;
 	transformation &operator=(const transformation &) = default;
 	transformation &operator=(transformation &&) = default;
 
-	point operator()(const point &pt) const;
+	point operator()(point pt) const
+	{
+		if (m_q)
+			pt.rotate(m_q);
+		else
+			pt = m_rotation * pt;
 
-	// point operator()(const point &pt) const
-	// {
-	// 	return m_rotation * pt + m_translation;
-	// }
+		return pt + m_translation;
+	}
 
 	friend transformation operator*(const transformation &lhs, const transformation &rhs);
 	friend transformation inverse(const transformation &t);
@@ -266,6 +265,13 @@ class transformation
 	friend class spacegroup;
 
   private:
+
+	// Most rotation matrices provided by the International Tables
+	// are really rotation matrices, in those cases we can construct
+	// a quaternion. Unfortunately, that doesn't work for all of them
+
+	void try_create_quaternion();
+
 	matrix3x3<float> m_rotation;
 	quaternion m_q;
 	point m_translation;
@@ -366,6 +372,11 @@ class crystal
 	point symmetry_copy(const point &pt, sym_op symop) const
 	{
 		return m_spacegroup(pt, m_cell, symop);
+	}
+
+	point inverse_symmetry_copy(const point &pt, sym_op symop) const
+	{
+		return m_spacegroup.inverse(pt, m_cell, symop);
 	}
 	
 	std::tuple<float,point,sym_op> closest_symmetry_copy(point a, point b) const;

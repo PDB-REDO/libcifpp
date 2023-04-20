@@ -121,15 +121,41 @@ transformation::transformation(const symop_data &data)
 {
 	const auto &d = data.data();
 
-	float Qxx = m_rotation(0, 0) = d[0];
-	float Qxy = m_rotation(0, 1) = d[1];
-	float Qxz = m_rotation(0, 2) = d[2];
-	float Qyx = m_rotation(1, 0) = d[3];
-	float Qyy = m_rotation(1, 1) = d[4];
-	float Qyz = m_rotation(1, 2) = d[5];
-	float Qzx = m_rotation(2, 0) = d[6];
-	float Qzy = m_rotation(2, 1) = d[7];
-	float Qzz = m_rotation(2, 2) = d[8];
+	m_rotation(0, 0) = d[0];
+	m_rotation(0, 1) = d[1];
+	m_rotation(0, 2) = d[2];
+	m_rotation(1, 0) = d[3];
+	m_rotation(1, 1) = d[4];
+	m_rotation(1, 2) = d[5];
+	m_rotation(2, 0) = d[6];
+	m_rotation(2, 1) = d[7];
+	m_rotation(2, 2) = d[8];
+
+	try_create_quaternion();
+
+	m_translation.m_x = d[9] == 0 ? 0 : 1.0 * d[9] / d[10];
+	m_translation.m_y = d[11] == 0 ? 0 : 1.0 * d[11] / d[12];
+	m_translation.m_z = d[13] == 0 ? 0 : 1.0 * d[13] / d[14];
+}
+
+transformation::transformation(const matrix3x3<float> &r, const cif::point &t)
+	: m_rotation(r)
+	, m_translation(t)
+{
+	try_create_quaternion();
+}
+
+void transformation::try_create_quaternion()
+{
+	float Qxx = m_rotation(0, 0);
+	float Qxy = m_rotation(0, 1);
+	float Qxz = m_rotation(0, 2);
+	float Qyx = m_rotation(1, 0);
+	float Qyy = m_rotation(1, 1);
+	float Qyz = m_rotation(1, 2);
+	float Qzx = m_rotation(2, 0);
+	float Qzy = m_rotation(2, 1);
+	float Qzz = m_rotation(2, 2);
 
 	Eigen::Matrix4f em;
 
@@ -157,22 +183,6 @@ transformation::transformation(const symop_data &data)
 
 		break;
 	}
-
-	m_translation.m_x = d[9] == 0 ? 0 : 1.0 * d[9] / d[10];
-	m_translation.m_y = d[11] == 0 ? 0 : 1.0 * d[11] / d[12];
-	m_translation.m_z = d[13] == 0 ? 0 : 1.0 * d[13] / d[14];
-}
-
-point transformation::operator()(const point &pt) const
-{
-	cif::point p = pt;
-
-	if (m_q)
-		p.rotate(m_q);
-	else
-		p = m_rotation * pt;
-		
-	return p + m_translation;
 }
 
 transformation operator*(const transformation &lhs, const transformation &rhs)
@@ -182,8 +192,6 @@ transformation operator*(const transformation &lhs, const transformation &rhs)
 	t = t + lhs.m_translation;
 
 	return transformation(r, t);
-
-	// return transformation(lhs.m_rotation * rhs.m_rotation, lhs.m_rotation * rhs.m_translation + lhs.m_translation);
 }
 
 transformation inverse(const transformation &t)
