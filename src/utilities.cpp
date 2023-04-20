@@ -179,7 +179,7 @@ void ProgressImpl::Run()
 	{
 		for (;;)
 		{
-			std::this_thread::sleep_for(2s);
+			std::this_thread::sleep_for(10ms);
 
 			std::unique_lock lock(mMutex);
 
