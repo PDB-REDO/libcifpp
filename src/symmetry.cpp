@@ -32,6 +32,8 @@
 
 #include "symop_table_data.hpp"
 
+#include <Eigen/Eigenvalues>
+
 namespace cif
 {
 
@@ -119,34 +121,39 @@ transformation::transformation(const symop_data &data)
 {
 	const auto &d = data.data();
 
-	m_rotation(0, 0) = d[0];
-	m_rotation(0, 1) = d[1];
-	m_rotation(0, 2) = d[2];
-	m_rotation(1, 0) = d[3];
-	m_rotation(1, 1) = d[4];
-	m_rotation(1, 2) = d[5];
-	m_rotation(2, 0) = d[6];
-	m_rotation(2, 1) = d[7];
-	m_rotation(2, 2) = d[8];
+	float Qxx = m_rotation(0, 0) = d[0];
+	float Qxy = m_rotation(0, 1) = d[1];
+	float Qxz = m_rotation(0, 2) = d[2];
+	float Qyx = m_rotation(1, 0) = d[3];
+	float Qyy = m_rotation(1, 1) = d[4];
+	float Qyz = m_rotation(1, 2) = d[5];
+	float Qzx = m_rotation(2, 0) = d[6];
+	float Qzy = m_rotation(2, 1) = d[7];
+	float Qzz = m_rotation(2, 2) = d[8];
 
-	auto &&[ev, em] = eigen(m_rotation, false);
+	Eigen::Matrix4f em;
 
-	for (size_t i = 0; i < 3; ++i)
+	em << Qxx - Qyy - Qzz, Qyx + Qxy, Qzx + Qxz, Qzy - Qyz,
+			Qyx + Qxy, Qyy - Qxx - Qzz, Qzy + Qyz, Qxz - Qzx,
+			Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, Qyx - Qxy,
+			Qzy - Qyz, Qxz - Qzx, Qyx - Qxy, Qxx + Qyy + Qzz;
+
+	Eigen::EigenSolver<Eigen::Matrix4f> es(em / 3);
+
+	auto ev = es.eigenvalues();
+
+	for (size_t j = 0; j < 4; ++j)
 	{
-		if (ev[i] != 1)
+		if (std::abs(ev[j].real() - 1) > 0.01)
 			continue;
 		
-		auto tr = m_rotation(0, 0) + m_rotation(1, 1) + m_rotation(2, 2);
-		auto angle = std::acos((tr - 1) / 2.0f) / 2;
+		auto col = es.eigenvectors().col(j);
 
-		auto s = std::sin(angle);
-		auto c = std::cos(angle);
-
-		m_q = normalize(quaternion{
-			static_cast<float>(c),
-			static_cast<float>(s * em(0, i)),
-			static_cast<float>(s * em(1, i)),
-			static_cast<float>(s * em(2, i)) });
+		m_q = normalize(cif::quaternion{
+			static_cast<float>(col(3).real()),
+			static_cast<float>(col(0).real()),
+			static_cast<float>(col(1).real()),
+			static_cast<float>(col(2).real()) });
 
 		break;
 	}
@@ -158,23 +165,14 @@ transformation::transformation(const symop_data &data)
 
 point transformation::operator()(const point &pt) const
 {
-	auto p = pt;
-	p.rotate(m_q);
-	p += m_translation;
+	cif::point p = pt;
 
-	auto p2 = m_rotation * pt + m_translation;
-
-	// return m_rotation * pt + m_translation;
-
-	assert(std::abs(p.m_x - p2.m_x) < 0.01);
-	assert(std::abs(p.m_y - p2.m_y) < 0.01);
-	assert(std::abs(p.m_z - p2.m_z) < 0.01);
-
-	return p;
-
-	// auto p = pt;
-	// p.rotate(m_q);
-	// return p + m_translation;
+	if (m_q)
+		p.rotate(m_q);
+	else
+		p = m_rotation * pt;
+		
+	return p + m_translation;
 }
 
 transformation operator*(const transformation &lhs, const transformation &rhs)

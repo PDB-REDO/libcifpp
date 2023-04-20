@@ -253,233 +253,68 @@ BOOST_AUTO_TEST_CASE(dh_q_1)
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(m2q_1, *utf::tolerance(0.001f))
+
+BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
 {
-	cif::point pts[3] = {
-		{ 1, 2, 0 },
-		{ -2, -1, 0 },
-		{ 0, 0, 0 }
-	};
+	for (size_t i = 0; i < cif::kSymopNrTableSize; ++i)
+	{
+		auto d = cif::kSymopNrTable[i].symop().data();
 
-	auto v1 = pts[0] - pts[2];
-	auto v2 = pts[1] - pts[2];
+		cif::matrix3x3<float> rot;
+		float Qxx = rot(0, 0) = d[0];
+		float Qxy = rot(0, 1) = d[1];
+		float Qxz = rot(0, 2) = d[2];
+		float Qyx = rot(1, 0) = d[3];
+		float Qyy = rot(1, 1) = d[4];
+		float Qyz = rot(1, 2) = d[5];
+		float Qzx = rot(2, 0) = d[6];
+		float Qzy = rot(2, 1) = d[7];
+		float Qzz = rot(2, 2) = d[8];
 
-	float a1 = std::acos(dot_product(v1, v2) / (v1.length() * v2.length()));
+		Eigen::Matrix4f em;
 
-	auto sin = std::sin(a1 / 2);
-	auto cos = std::cos(a1 / 2);
+		em << Qxx - Qyy - Qzz, Qyx + Qxy, Qzx + Qxz, Qzy - Qyz,
+		      Qyx + Qxy, Qyy - Qxx - Qzz, Qzy + Qyz, Qxz - Qzx,
+			  Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, Qyx - Qxy,
+			  Qzy - Qyz, Qxz - Qzx, Qyx - Qxy, Qxx + Qyy + Qzz;
 
-	cif::quaternion q = normalize(cif::quaternion{ cos, 0, 0, sin });
+		Eigen::EigenSolver<Eigen::Matrix4f> es(em / 3);
 
-	auto pr = pts[0];
-	pr.rotate(q);
-	BOOST_TEST(pr.m_x == pts[1].m_x);
-	BOOST_TEST(pr.m_y == pts[1].m_y);
-	BOOST_TEST(pr.m_z == pts[1].m_z);
+		auto ev = es.eigenvalues();
 
-	auto &&[angle_r, axis_r] = cif::quaternion_to_angle_axis(q);
-	std::cout << angle_r << std::endl
-		 	  << axis_r << std::endl;
+		size_t bestJ = 0;
+		float bestEV = -1;
 
+		for (size_t j = 0; j < 4; ++j)
+		{
+			if (bestEV < ev[j].real())
+			{
+				bestEV = ev[j].real();
+				bestJ = j;
+			}
+		}
 
-	cif::matrix3x3<float> rot;
-	rot(0, 0) = 0;
-	rot(0, 1) = -1;
-	rot(0, 2) = 0;
-	rot(1, 0) = 1;
-	rot(1, 1) = -1;
-	rot(1, 2) = 0;
-	rot(2, 0) = 0;
-	rot(2, 1) = 0;
-	rot(2, 2) = 1;
+		if (std::abs(bestEV - 1) > 0.01)
+			continue; // not a rotation matrix
 
-	pr = rot * pts[0];
-	BOOST_TEST(pr.m_x == pts[1].m_x);
-	BOOST_TEST(pr.m_y == pts[1].m_y);
-	BOOST_TEST(pr.m_z == pts[1].m_z);
+		auto col = es.eigenvectors().col(bestJ);
 
-	// Eigen::Matrix3f em2;
-	// em2(0, 0) = 0;
-	// em2(0, 1) = -1;
-	// em2(0, 2) = 0;
-	// em2(1, 0) = 1;
-	// em2(1, 1) = -1;
-	// em2(1, 2) = 0;
-	// em2(2, 0) = 0;
-	// em2(2, 1) = 0;
-	// em2(2, 2) = 1;
-
-	// Eigen::EigenSolver<Eigen::Matrix3f> es(em2);
-
-	// auto eev = es.eigenvalues();
-
-	// for (size_t i = 0; i < 3; ++i)
-	// {
-	// 	if (std::abs(eev[i].real() - 1) > 0.01)
-	// 		continue;
-
-	// 	auto tr = em2(0, 0) + em2(1, 1) + em2(2, 2);
-	// 	auto a2 = std::acos((tr - 1) / 2.0f);
-	// 	BOOST_TEST(2 * std::cos(a2) + 1 == tr);
-
-	// 	// Nice, but not working.
-
-	// 	// axis is:
-
-	// 	auto c = es.eigenvectors().col(i);
-
-	// 	// cif::point axis{ c(0).real(), c(1).real(), c(2).real() };
-	// 	// take line perpendicular to this axis
-
-	// 	auto s2 = std::sin(a2 / 2);
-	// 	auto c2 = std::cos(a2 / 2);
-
-
-	// 	auto q2 = normalize(cif::quaternion{
-	// 		static_cast<float>(c2),
-	// 		static_cast<float>(s2 * c(0).real()),
-	// 		static_cast<float>(s2 * c(1).real()),
-	// 		static_cast<float>(s2 * c(2).real()) });
-
-	// 	auto &&[angle_r2, axis_r2] = cif::quaternion_to_angle_axis(q2);
-	// 		std::cout << angle_r2 << std::endl
-	// 				<< axis_r2 << std::endl;
-
-
-
-	// 	pr = pts[0];
-	// 	pr.rotate(q2);
-	// 	BOOST_TEST(pr.m_x == pts[1].m_x);
-	// 	BOOST_TEST(pr.m_y == pts[1].m_y);
-	// 	BOOST_TEST(pr.m_z == pts[1].m_z);
-
-	// 	break;
-
-	// }
-
-	cif::point t1{ 1, 1, 1 };
-	cif::point t2 = rot * t1;
-
-	float a2 = std::acos(dot_product(t1, t2) / (t1.length() * t2.length()));
-
-	auto sin2 = std::sin(a2 / 2);
-	auto cos2 = std::cos(a2 / 2);
-
-	cif::quaternion q2 = normalize(cif::quaternion{ cos2, 0, 0, sin2 });
-
-	pr = pts[0];
-	pr.rotate(q2);
-	BOOST_TEST(pr.m_x == pts[1].m_x);
-	BOOST_TEST(pr.m_y == pts[1].m_y);
-	BOOST_TEST(pr.m_z == pts[1].m_z);
-
-	auto &&[angle_r2, axis_r2] = cif::quaternion_to_angle_axis(q);
-	std::cout << angle_r2 << std::endl
-		 	  << axis_r2 << std::endl;
-
-
-
-	// float t = rot(0, 0) + rot(1, 1) + rot(2, 2);
-	// float r = std::sqrt(t + 1);
-	
-	// cif::quaternion q2 = normalize(cif::quaternion{
-	// 	r / 2,
-	// 	(std::signbit(rot(2, 1) - rot(1, 2)) ? -1 : 1) * std::sqrt(1 + rot(0, 0) - rot(1, 1) - rot(2, 2)) / 2,
-	// 	(std::signbit(rot(0, 2) - rot(2, 0)) ? -1 : 1) * std::sqrt(1 - rot(0, 0) + rot(1, 1) - rot(2, 2)) / 2,
-	// 	(std::signbit(rot(1, 0) - rot(0, 1)) ? -1 : 1) * std::sqrt(1 + rot(0, 0) - rot(1, 1) + rot(2, 2)) / 2
-	// });
-
-	// float r = std::sqrt(1 + rot(0, 0) - rot(1, 1) - rot(2, 2));
-	// float s = 1 / (2 * r);
-	// float w = (rot(2, 1) - rot(1, 2)) * s;
-	// float x = r / 2;
-	// float y = (rot(0, 1) + rot(1, 0)) * s;
-	// float z = (rot(2, 0) + rot(0, 2)) * s;
-
-	// cif::quaternion q2 = normalize(cif::quaternion{w, x, y, z});
-
-	// pr = pts[0];
-	// pr.rotate(q2);
-	// BOOST_TEST(pr.m_x == pts[1].m_x);
-	// BOOST_TEST(pr.m_y == pts[1].m_y);
-	// BOOST_TEST(pr.m_z == pts[1].m_z);
-
-	
-
-
-	// auto &&[ev, em] = eigen(rot, false);
-
-	// for (size_t i = 0; i < 3; ++i)
-	// {
-	// 	if (ev[i] != 1)
-	// 		continue;
+		auto q = normalize(cif::quaternion{
+			static_cast<float>(col(3).real()),
+			static_cast<float>(col(0).real()),
+			static_cast<float>(col(1).real()),
+			static_cast<float>(col(2).real()) });
 		
-	// 	auto tr = rot(0, 0) + rot(1, 1) + rot(2, 2);
-	// 	auto a2 = std::acos((tr - 1) / 2.0f);
-	// 	BOOST_TEST(2 * std::cos(a2) + 1 == tr);
+		cif::point p1{ 1, 1, 1 };
+		cif::point p2 = p1;
+		p2.rotate(q);
 
-	// 	auto s2 = std::sin(a2 / 2);
-	// 	auto c2 = std::cos(a2 / 2);
+		cif::point p3 = rot * p1;
 
-	// 	auto q2 = normalize(cif::quaternion{
-	// 		static_cast<float>(c2),
-	// 		static_cast<float>(s2 * em(0, i)),
-	// 		static_cast<float>(s2 * em(1, i)),
-	// 		static_cast<float>(s2 * em(2, i)) });
-
-	// 	pr = pts[0];
-	// 	pr.rotate(q2);
-	// 	BOOST_TEST(pr.m_x == pts[1].m_x);
-	// 	BOOST_TEST(pr.m_y == pts[1].m_y);
-	// 	BOOST_TEST(pr.m_z == pts[1].m_z);
-
-	// 	break;
-	// }
-
-	// Eigen::Matrix3f em2;
-	// em2(0, 0) = 0;
-	// em2(0, 1) = -1;
-	// em2(0, 2) = 0;
-	// em2(1, 0) = 1;
-	// em2(1, 1) = -1;
-	// em2(1, 2) = 0;
-	// em2(2, 0) = 0;
-	// em2(2, 1) = 0;
-	// em2(2, 2) = 1;
-
-	// Eigen::EigenSolver<Eigen::Matrix3f> es(em2);
-
-	// auto eev = es.eigenvalues();
-
-	// for (size_t i = 0; i < 3; ++i)
-	// {
-	// 	if (std::abs(eev[i].real() - 1) > 0.01)
-	// 		continue;
-
-	// 	auto tr = em2(0, 0) + em2(1, 1) + em2(2, 2);
-	// 	auto a2 = std::acos((tr - 1) / 2.0f);
-	// 	BOOST_TEST(2 * std::cos(a2) + 1 == tr);
-
-	// 	auto s2 = std::sin(a2 / 2);
-	// 	auto c2 = std::cos(a2 / 2);
-
-	// 	auto c = es.eigenvectors().col(i);
-
-	// 	auto q2 = normalize(cif::quaternion{
-	// 		static_cast<float>(c2),
-	// 		static_cast<float>(s2 * c(0).real()),
-	// 		static_cast<float>(s2 * c(1).real()),
-	// 		static_cast<float>(s2 * c(2).real()) });
-
-	// 	pr = pts[0];
-	// 	pr.rotate(q2);
-	// 	BOOST_TEST(pr.m_x == pts[1].m_x);
-	// 	BOOST_TEST(pr.m_y == pts[1].m_y);
-	// 	BOOST_TEST(pr.m_z == pts[1].m_z);
-
-	// 	break;
-
-	// }
+		BOOST_TEST(p2.m_x == p3.m_x);
+		BOOST_TEST(p2.m_y == p3.m_y);
+		BOOST_TEST(p2.m_z == p3.m_z);
+	}
 }
 
 // --------------------------------------------------------------------
