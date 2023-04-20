@@ -518,7 +518,7 @@ auto eigen(const matrix_expression<M> &mat, bool sort)
 				value_type h = ev[j] - ev[i];
 				value_type t;
 
-				if (a_ij == 0 and h == 0)
+				if (h == 0 and a_ij == 0)
 					t = 1;
 				else if (std::fabs(a_ij) > 1.0e-12 * std::fabs(h))
 				{

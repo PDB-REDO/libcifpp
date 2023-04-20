@@ -168,6 +168,8 @@ if(MSVC)
 endif()
 find_package(ZLIB REQUIRED)
 
+find_package(Eigen3 )
+
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
 
@@ -277,7 +279,7 @@ target_include_directories(cifpp
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
+target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES} Eigen3::Eigen)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -425,7 +427,7 @@ if(ENABLE_TESTING)
 
 		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost Eigen3::Eigen)
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions

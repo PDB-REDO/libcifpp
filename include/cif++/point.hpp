@@ -320,7 +320,7 @@ class quaternion_type
 
 	constexpr operator bool() const
 	{
-		return operator!=({});
+		return a != 0 or b != 0 or c != 0 or d != 0;
 	}
 
   private:

@@ -31,6 +31,8 @@
 
 #include <cif++.hpp>
 
+#include <Eigen/Eigenvalues>
+
 namespace tt = boost::test_tools;
 namespace utf = boost::unit_test;
 
@@ -251,6 +253,72 @@ BOOST_AUTO_TEST_CASE(dh_q_1)
 
 // --------------------------------------------------------------------
 
+
+BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
+{
+	for (size_t i = 0; i < cif::kSymopNrTableSize; ++i)
+	{
+		auto d = cif::kSymopNrTable[i].symop().data();
+
+		cif::matrix3x3<float> rot;
+		float Qxx = rot(0, 0) = d[0];
+		float Qxy = rot(0, 1) = d[1];
+		float Qxz = rot(0, 2) = d[2];
+		float Qyx = rot(1, 0) = d[3];
+		float Qyy = rot(1, 1) = d[4];
+		float Qyz = rot(1, 2) = d[5];
+		float Qzx = rot(2, 0) = d[6];
+		float Qzy = rot(2, 1) = d[7];
+		float Qzz = rot(2, 2) = d[8];
+
+		Eigen::Matrix4f em;
+
+		em << Qxx - Qyy - Qzz, Qyx + Qxy, Qzx + Qxz, Qzy - Qyz,
+		      Qyx + Qxy, Qyy - Qxx - Qzz, Qzy + Qyz, Qxz - Qzx,
+			  Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, Qyx - Qxy,
+			  Qzy - Qyz, Qxz - Qzx, Qyx - Qxy, Qxx + Qyy + Qzz;
+
+		Eigen::EigenSolver<Eigen::Matrix4f> es(em / 3);
+
+		auto ev = es.eigenvalues();
+
+		size_t bestJ = 0;
+		float bestEV = -1;
+
+		for (size_t j = 0; j < 4; ++j)
+		{
+			if (bestEV < ev[j].real())
+			{
+				bestEV = ev[j].real();
+				bestJ = j;
+			}
+		}
+
+		if (std::abs(bestEV - 1) > 0.01)
+			continue; // not a rotation matrix
+
+		auto col = es.eigenvectors().col(bestJ);
+
+		auto q = normalize(cif::quaternion{
+			static_cast<float>(col(3).real()),
+			static_cast<float>(col(0).real()),
+			static_cast<float>(col(1).real()),
+			static_cast<float>(col(2).real()) });
+		
+		cif::point p1{ 1, 1, 1 };
+		cif::point p2 = p1;
+		p2.rotate(q);
+
+		cif::point p3 = rot * p1;
+
+		BOOST_TEST(p2.m_x == p3.m_x);
+		BOOST_TEST(p2.m_y == p3.m_y);
+		BOOST_TEST(p2.m_z == p3.m_z);
+	}
+}
+
+// --------------------------------------------------------------------
+
 BOOST_AUTO_TEST_CASE(symm_1)
 {
 	cif::cell c(10, 10, 10);
@@ -324,18 +392,17 @@ BOOST_AUTO_TEST_CASE(symm_4wvp_1, *utf::tolerance(0.1f))
 	auto &db = f.front();
 	cif::mm::structure s(db);
 
-	cif::spacegroup sg(db);
-	cif::cell c(db);
+	cif::crystal c(db);
 
 	cif::point p{ -78.722, 98.528,  11.994 };
 	auto a = s.get_residue("A", 10, "").get_atom_by_atom_id("O");
 
-	auto sp1 = cif::symmetry_copy(a.get_location(), sg, c, "2_565"_symop);
+	auto sp1 = c.symmetry_copy(a.get_location(), "2_565"_symop);
 	BOOST_TEST(sp1.m_x == p.m_x);
 	BOOST_TEST(sp1.m_y == p.m_y);
 	BOOST_TEST(sp1.m_z == p.m_z);
 
-	const auto &[d, sp2, so] = cif::closest_symmetry_copy(sg, c, p, a.get_location());
+	const auto &[d, sp2, so] = c.closest_symmetry_copy(p, a.get_location());
 
 	BOOST_TEST(d < 1);
 
@@ -352,8 +419,7 @@ BOOST_AUTO_TEST_CASE(symm_2bi3_1, *utf::tolerance(0.1f))
 	auto &db = f.front();
 	cif::mm::structure s(db);
 
-	cif::spacegroup sg(db);
-	cif::cell c(db);
+	cif::crystal c(db);
 
 	auto struct_conn = db["struct_conn"];
 	for (const auto &[
@@ -375,14 +441,14 @@ BOOST_AUTO_TEST_CASE(symm_2bi3_1, *utf::tolerance(0.1f))
 		auto a1 = r1.get_atom_by_atom_id(atomid1);
 		auto a2 = r2.get_atom_by_atom_id(atomid2);
 
-		auto sa1 = symmetry_copy(a1.get_location(), sg, c, cif::sym_op(symm1));
-		auto sa2 = symmetry_copy(a2.get_location(), sg, c, cif::sym_op(symm2));
+		auto sa1 = c.symmetry_copy(a1.get_location(), cif::sym_op(symm1));
+		auto sa2 = c.symmetry_copy(a2.get_location(), cif::sym_op(symm2));
 
 		BOOST_TEST(cif::distance(sa1, sa2) == dist);
 
 		auto pa1 = a1.get_location();
 
-		const auto &[d, p, so] = cif::closest_symmetry_copy(sg, c, pa1, a2.get_location());
+		const auto &[d, p, so] = c.closest_symmetry_copy(pa1, a2.get_location());
 
 		BOOST_TEST(p.m_x == sa2.m_x);
 		BOOST_TEST(p.m_y == sa2.m_y);
@@ -400,8 +466,7 @@ BOOST_AUTO_TEST_CASE(symm_3bwh_1, *utf::tolerance(0.1f))
 
 	auto &db = f.front();
 
-	cif::spacegroup sg(db);
-	cif::cell c(db);
+	cif::crystal c(db);
 	cif::mm::structure s(db);
 
 	for (auto a1 : s.atoms())
@@ -411,7 +476,7 @@ BOOST_AUTO_TEST_CASE(symm_3bwh_1, *utf::tolerance(0.1f))
 			if (a1 == a2)
 				continue;
 			
-			const auto&[ d, p, so ] = cif::closest_symmetry_copy(sg, c, a1.get_location(), a2.get_location());
+			const auto&[ d, p, so ] = c.closest_symmetry_copy(a1.get_location(), a2.get_location());
 
 			BOOST_TEST(d == distance(a1.get_location(), p));
 		}

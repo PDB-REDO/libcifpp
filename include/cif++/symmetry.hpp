@@ -182,34 +182,10 @@ class spacegroup;
 class rtop;
 class sym_op;
 
-// --------------------------------------------------------------------
-// class cell
-
-class cell
-{
-  public:
-	cell(float a, float b, float c, float alpha = 90.f, float beta = 90.f, float gamma = 90.f);
-	cell(const datablock &db);
-
-	float get_a() const { return m_a; }
-	float get_b() const { return m_b; }
-	float get_c() const { return m_c; }
-
-	float get_alpha() const { return m_alpha; }
-	float get_beta() const { return m_beta; }
-	float get_gamma() const { return m_gamma; }
-
-	matrix3x3<float> get_orthogonal_matrix() const { return m_orthogonal; }
-	matrix3x3<float> get_fractional_matrix() const { return m_fractional; }
-
-  private:
-	void init();
-
-	float m_a, m_b, m_c, m_alpha, m_beta, m_gamma;
-	matrix3x3<float> m_orthogonal, m_fractional;
-};
 
 /// @brief A class that encapsulates the symmetry operations as used in PDB files, i.e. a rotational number and a translation vector
+/// The syntax in string format follows the syntax as used in mmCIF files, i.e. rotational number followed by underscore and the
+/// three translations where 5 is no movement.
 struct sym_op
 {
   public:
@@ -254,26 +230,28 @@ namespace literals
 	}
 } // namespace literals
 
+// --------------------------------------------------------------------
+// The transformation class
+
 class transformation
 {
   public:
 	transformation(const symop_data &data);
-	transformation(const matrix3x3<float> &r, const cif::point &t)
-		: m_rotation(r)
-		, m_translation(t)
-	{
-	}
+	transformation(const matrix3x3<float> &r, const cif::point &t);
 
 	transformation(const transformation &) = default;
 	transformation(transformation &&) = default;
 	transformation &operator=(const transformation &) = default;
 	transformation &operator=(transformation &&) = default;
 
-	// point operator()(const cell &c, const point &pt) const;
-
-	point operator()(const point &pt) const
+	point operator()(point pt) const
 	{
-		return m_rotation * pt + m_translation;
+		if (m_q)
+			pt.rotate(m_q);
+		else
+			pt = m_rotation * pt;
+
+		return pt + m_translation;
 	}
 
 	friend transformation operator*(const transformation &lhs, const transformation &rhs);
@@ -287,8 +265,43 @@ class transformation
 	friend class spacegroup;
 
   private:
+
+	// Most rotation matrices provided by the International Tables
+	// are really rotation matrices, in those cases we can construct
+	// a quaternion. Unfortunately, that doesn't work for all of them
+
+	void try_create_quaternion();
+
 	matrix3x3<float> m_rotation;
+	quaternion m_q;
 	point m_translation;
+};
+
+// --------------------------------------------------------------------
+// class cell
+
+class cell
+{
+  public:
+	cell(float a, float b, float c, float alpha = 90.f, float beta = 90.f, float gamma = 90.f);
+	cell(const datablock &db);
+
+	float get_a() const { return m_a; }
+	float get_b() const { return m_b; }
+	float get_c() const { return m_c; }
+
+	float get_alpha() const { return m_alpha; }
+	float get_beta() const { return m_beta; }
+	float get_gamma() const { return m_gamma; }
+
+	matrix3x3<float> get_orthogonal_matrix() const { return m_orthogonal; }
+	matrix3x3<float> get_fractional_matrix() const { return m_fractional; }
+
+  private:
+	void init();
+
+	float m_a, m_b, m_c, m_alpha, m_beta, m_gamma;
+	matrix3x3<float> m_orthogonal, m_fractional;
 };
 
 // --------------------------------------------------------------------
@@ -331,15 +344,50 @@ class spacegroup : public std::vector<transformation>
 };
 
 // --------------------------------------------------------------------
-// Symmetry operations on points
+// A crystal combines a cell and a spacegroup.
 
-template <typename T>
-inline point_type<T> operator*(const matrix3x3<T> &m, const point_type<T> &pt)
+class crystal
 {
-	return point_type(m(0, 0) * pt.m_x + m(0, 1) * pt.m_y + m(0, 2) * pt.m_z,
-		m(1, 0) * pt.m_x + m(1, 1) * pt.m_y + m(1, 2) * pt.m_z,
-		m(2, 0) * pt.m_x + m(2, 1) * pt.m_y + m(2, 2) * pt.m_z);
-}
+  public:
+	crystal(const datablock &db)
+		: m_cell(db)
+		, m_spacegroup(db)
+	{
+	}
+
+	crystal(const cell &c, const spacegroup &sg)
+		: m_cell(c)
+		, m_spacegroup(sg)
+	{
+	}
+
+	crystal(const crystal &) = default;
+	crystal(crystal &&) = default;
+	crystal &operator=(const crystal &) = default;
+	crystal &operator=(crystal &&) = default;
+
+	const cell &get_cell() const { return m_cell; }
+	const spacegroup &get_spacegroup() const { return m_spacegroup; }
+
+	point symmetry_copy(const point &pt, sym_op symop) const
+	{
+		return m_spacegroup(pt, m_cell, symop);
+	}
+
+	point inverse_symmetry_copy(const point &pt, sym_op symop) const
+	{
+		return m_spacegroup.inverse(pt, m_cell, symop);
+	}
+	
+	std::tuple<float,point,sym_op> closest_symmetry_copy(point a, point b) const;
+
+  private:
+	cell m_cell;
+	spacegroup m_spacegroup;
+};
+
+// --------------------------------------------------------------------
+// Symmetry operations on points
 
 inline point orthogonal(const point &pt, const cell &c)
 {
@@ -351,35 +399,6 @@ inline point fractional(const point &pt, const cell &c)
 	return c.get_fractional_matrix() * pt;
 }
 
-inline transformation orthogonal(const transformation &t, const cell &c)
-{
-	return transformation(c.get_orthogonal_matrix(), {}) * t * transformation(c.get_fractional_matrix(), {});
-}
-
-inline transformation fractional(const transformation &t, const cell &c)
-{
-	return transformation(c.get_fractional_matrix(), {}) * t * transformation(c.get_orthogonal_matrix(), {});
-}
-
 // --------------------------------------------------------------------
-
-/// @brief Return the symmetry copy of a point based on spacegroup \a sg, cell \a c and symmetry operation \a symop
-/// @param pt The point to transform
-/// @param sg The spacegroup
-/// @param c The cell
-/// @param symop The symmetry operation
-/// @return Newly calculated point
-inline point symmetry_copy(const point &pt, const spacegroup &sg, const cell &c, sym_op symop)
-{
-	return sg(pt, c, symop);
-}
-
-/// @brief Return the point and symmetry operation required to move point \a b as close as possible to point \a a
-/// @param sg The spacegroup
-/// @param c The cell
-/// @param a The point that acts as reference
-/// @param b The point that needs to be moved
-/// @return The calculated distance between the new point and \a a plus the symmetry operation required to operate on \a b
-std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const cell &c, point a, point b);
 
 } // namespace cif

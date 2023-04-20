@@ -32,6 +32,8 @@
 
 #include "symop_table_data.hpp"
 
+#include <Eigen/Eigenvalues>
+
 namespace cif
 {
 
@@ -129,9 +131,58 @@ transformation::transformation(const symop_data &data)
 	m_rotation(2, 1) = d[7];
 	m_rotation(2, 2) = d[8];
 
+	try_create_quaternion();
+
 	m_translation.m_x = d[9] == 0 ? 0 : 1.0 * d[9] / d[10];
 	m_translation.m_y = d[11] == 0 ? 0 : 1.0 * d[11] / d[12];
 	m_translation.m_z = d[13] == 0 ? 0 : 1.0 * d[13] / d[14];
+}
+
+transformation::transformation(const matrix3x3<float> &r, const cif::point &t)
+	: m_rotation(r)
+	, m_translation(t)
+{
+	try_create_quaternion();
+}
+
+void transformation::try_create_quaternion()
+{
+	float Qxx = m_rotation(0, 0);
+	float Qxy = m_rotation(0, 1);
+	float Qxz = m_rotation(0, 2);
+	float Qyx = m_rotation(1, 0);
+	float Qyy = m_rotation(1, 1);
+	float Qyz = m_rotation(1, 2);
+	float Qzx = m_rotation(2, 0);
+	float Qzy = m_rotation(2, 1);
+	float Qzz = m_rotation(2, 2);
+
+	Eigen::Matrix4f em;
+
+	em << Qxx - Qyy - Qzz, Qyx + Qxy, Qzx + Qxz, Qzy - Qyz,
+			Qyx + Qxy, Qyy - Qxx - Qzz, Qzy + Qyz, Qxz - Qzx,
+			Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, Qyx - Qxy,
+			Qzy - Qyz, Qxz - Qzx, Qyx - Qxy, Qxx + Qyy + Qzz;
+
+	Eigen::EigenSolver<Eigen::Matrix4f> es(em / 3);
+
+	auto ev = es.eigenvalues();
+
+	for (size_t j = 0; j < 4; ++j)
+	{
+		if (std::abs(ev[j].real() - 1) > 0.01)
+			continue;
+		
+		auto col = es.eigenvectors().col(j);
+
+		m_q = normalize(cif::quaternion{
+			static_cast<float>(col(3).real()),
+			static_cast<float>(col(0).real()),
+			static_cast<float>(col(1).real()),
+			static_cast<float>(col(2).real()) });
+
+		break;
+	}
 }
 
 transformation operator*(const transformation &lhs, const transformation &rhs)
@@ -141,8 +192,6 @@ transformation operator*(const transformation &lhs, const transformation &rhs)
 	t = t + lhs.m_translation;
 
 	return transformation(r, t);
-
-	// return transformation(lhs.m_rotation * rhs.m_rotation, lhs.m_rotation * rhs.m_translation + lhs.m_translation);
 }
 
 transformation inverse(const transformation &t)
@@ -391,29 +440,29 @@ int get_space_group_number(const datablock &db)
 
 // --------------------------------------------------------------------
 
-std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const cell &c, point a, point b)
+std::tuple<float,point,sym_op> crystal::closest_symmetry_copy(point a, point b) const
 {
-	if (c.get_a() == 0 or c.get_b() == 0 or c.get_c() == 0)
+	if (m_cell.get_a() == 0 or m_cell.get_b() == 0 or m_cell.get_c() == 0)
 		throw std::runtime_error("Invalid cell, contains a dimension that is zero");
 
 	point result_fsb;
 	float result_d = std::numeric_limits<float>::max();
 	sym_op result_s;
 
-	auto fa = fractional(a, c);
-	auto fb = fractional(b, c);
+	auto fa = fractional(a, m_cell);
+	auto fb = fractional(b, m_cell);
 
 	auto o = offsetToOriginFractional(fa);
 
 	fa = fa + o;
 	fb = fb + o;
 
-	a = orthogonal(fa, c);
+	a = orthogonal(fa, m_cell);
 
-	for (size_t i = 0; i < sg.size(); ++i)
+	for (size_t i = 0; i < m_spacegroup.size(); ++i)
 	{
 		sym_op s(i + 1);
-		auto &t = sg[i];
+		auto &t = m_spacegroup[i];
 
 		auto fsb = t(fb);
 
@@ -453,8 +502,9 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 			s.m_tc += 1;			
 		}
 
-		auto p = orthogonal(fsb, c);
+		auto p = orthogonal(fsb, m_cell);
 		auto dsq = distance_squared(a, p);
+
 		if (result_d > dsq)
 		{
 			result_d = dsq;
@@ -463,7 +513,7 @@ std::tuple<float,point,sym_op> closest_symmetry_copy(const spacegroup &sg, const
 		}
 	}
 
-	auto p = orthogonal(result_fsb - o, c);
+	auto p = orthogonal(result_fsb - o, m_cell);
 
 	return { std::sqrt(result_d), p, result_s };
 }
