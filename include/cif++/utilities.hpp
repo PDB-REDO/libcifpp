@@ -157,11 +157,11 @@ inline auto coloured(std::basic_string<CharT, Traits, Alloc> &s, StringColour fo
 // --------------------------------------------------------------------
 //	A progress bar
 
-class Progress
+class progress_bar
 {
   public:
-	Progress(int64_t inMax, const std::string &inAction);
-	virtual ~Progress();
+	progress_bar(int64_t inMax, const std::string &inAction);
+	~progress_bar();
 
 	void consumed(int64_t inConsumed); // consumed is relative
 	void progress(int64_t inProgress); // progress is absolute
@@ -169,10 +169,10 @@ class Progress
 	void message(const std::string &inMessage);
 
   private:
-	Progress(const Progress &) = delete;
-	Progress &operator=(const Progress &) = delete;
+	progress_bar(const progress_bar &) = delete;
+	progress_bar &operator=(const progress_bar &) = delete;
 
-	struct ProgressImpl *m_impl;
+	struct progress_bar_impl *m_impl;
 };
 
 // --------------------------------------------------------------------
