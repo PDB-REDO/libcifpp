@@ -191,7 +191,7 @@ void progress_bar_impl::run()
 				continue;
 			
 			if (not printedAny and isatty(STDOUT_FILENO))
-				fputs("\e[?25l", stdout);
+				std::cout << "\e[?25l";
 
 			print_progress();
 
@@ -206,7 +206,7 @@ void progress_bar_impl::run()
 	{
 		print_done();
 		if (isatty(STDOUT_FILENO))
-			fputs("\e[?25h", stdout);
+			std::cout << "\e[?25h";
 	}
 }
 
