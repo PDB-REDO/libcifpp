@@ -172,6 +172,8 @@ class matrix_fixed : public matrix_expression<matrix_fixed<F, M, N>>
   public:
 	using value_type = F;
 
+	static constexpr size_t kSize = M * N;
+
 	template <typename M2>
 	matrix_fixed(const M2 &m)
 	{
@@ -185,13 +187,25 @@ class matrix_fixed : public matrix_expression<matrix_fixed<F, M, N>>
 
 	matrix_fixed(value_type v = 0)
 	{
-		std::fill(m_data.begin(), m_data.end(), v);
+		m_data.fill(v);
+	}
+
+	matrix_fixed(const F (&v)[kSize])
+	{
+		fill(v, std::make_index_sequence<kSize>{});
 	}
 
 	matrix_fixed(matrix_fixed &&m) = default;
 	matrix_fixed(const matrix_fixed &m) = default;
 	matrix_fixed &operator=(matrix_fixed &&m) = default;
 	matrix_fixed &operator=(const matrix_fixed &m) = default;
+
+	template<size_t... Ixs>
+	matrix_fixed& fill(const F (&a)[kSize], std::index_sequence<Ixs...>)
+	{
+		m_data = { a[Ixs]... };
+		return *this;
+	}
 
 	constexpr size_t dim_m() const { return M; }
 	constexpr size_t dim_n() const { return N; }

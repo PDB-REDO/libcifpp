@@ -253,7 +253,6 @@ BOOST_AUTO_TEST_CASE(dh_q_1)
 
 // --------------------------------------------------------------------
 
-
 BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
 {
 	for (size_t i = 0; i < cif::kSymopNrTableSize; ++i)
@@ -316,6 +315,65 @@ BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
 		BOOST_TEST(p2.m_z == p3.m_z);
 	}
 }
+
+// BOOST_AUTO_TEST_CASE(m2q_1, *utf::tolerance(0.001f))
+// {
+// 	for (size_t i = 0; i < cif::kSymopNrTableSize; ++i)
+// 	{
+// 		auto d = cif::kSymopNrTable[i].symop().data();
+
+// 		cif::matrix3x3<float> rot;
+// 		float Qxx = rot(0, 0) = d[0];
+// 		float Qxy = rot(0, 1) = d[1];
+// 		float Qxz = rot(0, 2) = d[2];
+// 		float Qyx = rot(1, 0) = d[3];
+// 		float Qyy = rot(1, 1) = d[4];
+// 		float Qyz = rot(1, 2) = d[5];
+// 		float Qzx = rot(2, 0) = d[6];
+// 		float Qzy = rot(2, 1) = d[7];
+// 		float Qzz = rot(2, 2) = d[8];
+
+// 		cif::matrix4x4<float> m({
+// 			Qxx - Qyy - Qzz, Qyx + Qxy, Qzx + Qxz, Qzy - Qyz,
+// 			Qyx + Qxy, Qyy - Qxx - Qzz, Qzy + Qyz, Qxz - Qzx,
+// 			Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, Qyx - Qxy,
+// 			Qzy - Qyz, Qxz - Qzx, Qyx - Qxy, Qxx + Qyy + Qzz
+// 		});
+
+// 		auto &&[ev, em] = cif::eigen(m * (1/3.0f), false);
+
+// 		size_t bestJ = 0;
+// 		float bestEV = -1;
+
+// 		for (size_t j = 0; j < 4; ++j)
+// 		{
+// 			if (bestEV < ev[j])
+// 			{
+// 				bestEV = ev[j];
+// 				bestJ = j;
+// 			}
+// 		}
+
+// 		if (std::abs(bestEV - 1) > 0.01)
+// 			continue; // not a rotation matrix
+
+// 		auto q = normalize(cif::quaternion{
+// 			static_cast<float>(em(bestJ, 3)),
+// 			static_cast<float>(em(bestJ, 0)),
+// 			static_cast<float>(em(bestJ, 1)),
+// 			static_cast<float>(em(bestJ, 2)) });
+		
+// 		cif::point p1{ 1, 1, 1 };
+// 		cif::point p2 = p1;
+// 		p2.rotate(q);
+
+// 		cif::point p3 = rot * p1;
+
+// 		BOOST_TEST(p2.m_x == p3.m_x);
+// 		BOOST_TEST(p2.m_y == p3.m_y);
+// 		BOOST_TEST(p2.m_z == p3.m_z);
+// 	}
+// }
 
 // --------------------------------------------------------------------
 
