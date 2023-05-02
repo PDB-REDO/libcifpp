@@ -147,8 +147,12 @@ struct progress_bar_impl
 	{
 	}
 
+	progress_bar_impl(const progress_bar_impl&) = delete;
+	progress_bar_impl &operator=(const progress_bar_impl &) = delete;
+
+	~progress_bar_impl();
+
 	void run();
-	void stop();
 
 	void consumed(int64_t n);
 	void progress(int64_t p);
@@ -164,11 +168,19 @@ struct progress_bar_impl
 	std::string m_action, m_message;
 	std::mutex m_mutex;
 	std::thread m_thread;
-	std::condition_variable m_cv;
 	std::chrono::time_point<std::chrono::system_clock>
 		m_start = std::chrono::system_clock::now();
 	bool m_stop = false;
 };
+
+progress_bar_impl::~progress_bar_impl()
+{
+	using namespace std::literals;
+	assert(m_thread.joinable());
+
+	m_stop = true;
+	m_thread.join();
+}
 
 void progress_bar_impl::run()
 {
@@ -178,18 +190,16 @@ void progress_bar_impl::run()
 
 	try
 	{
-		for (;;)
+		while (not m_stop)
 		{
-			std::unique_lock lock(m_mutex);
-
-			m_cv.wait_for(lock, 100ms);
-
-			if (m_stop or m_consumed >= m_max_value)
-				break;
-			
 			if (std::chrono::system_clock::now() - m_start < 2s)
+			{
+				std::this_thread::sleep_for(10ms);
 				continue;
-			
+			}
+
+			std::lock_guard lock(m_mutex);
+
 			if (not printedAny and isatty(STDOUT_FILENO))
 				std::cout << "\e[?25l";
 
@@ -210,41 +220,20 @@ void progress_bar_impl::run()
 	}
 }
 
-void progress_bar_impl::stop()
-{
-	{
-		std::unique_lock lock(m_mutex);
-
-		m_stop = true;
-		m_cv.notify_one();
-	}
-
-	if (m_thread.joinable())
-		m_thread.join();
-}
-
 void progress_bar_impl::consumed(int64_t n)
 {
-	std::unique_lock lock(m_mutex);
-
 	m_consumed += n;
-	m_cv.notify_one();
 }
 
 void progress_bar_impl::progress(int64_t p)
 {
-	std::unique_lock lock(m_mutex);
-
 	m_consumed = p;
-	m_cv.notify_one();
 }
 
 void progress_bar_impl::message(const std::string &msg)
 {
 	std::unique_lock lock(m_mutex);
-
 	m_message = msg;
-	m_cv.notify_one();
 }
 
 const char* kSpinner[] = {
@@ -374,9 +363,6 @@ progress_bar::progress_bar(int64_t inMax, const std::string &inAction)
 
 progress_bar::~progress_bar()
 {
-	if (m_impl != nullptr)
-		m_impl->stop();
-
 	delete m_impl;
 }
 
