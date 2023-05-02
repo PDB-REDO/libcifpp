@@ -2282,6 +2282,7 @@ void structure::remove_branch(branch &branch)
 
 	m_db["pdbx_branch_scheme"].erase("asym_id"_key == branch.get_asym_id());
 	m_db["struct_asym"].erase("id"_key == branch.get_asym_id());
+	m_db["struct_conn"].erase("ptnr1_label_asym_id"_key == branch.get_asym_id() or "ptnr2_label_asym_id"_key == branch.get_asym_id());
 
 	m_branches.erase(remove(m_branches.begin(), m_branches.end(), branch), m_branches.end());
 }
