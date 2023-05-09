@@ -2731,10 +2731,10 @@ std::string structure::create_entity_for_branch(branch &branch)
 		{
 			auto l2 = s1.get_link();
 
-			if (not l2)
+			if (not l2 or l2.get_auth_seq_id().empty())
 				continue;
 
-			auto &s2 = branch.at(std::stoi(l2.get_auth_seq_id()) - 1);
+			auto &s2 = branch.at(stoi(l2.get_auth_seq_id()) - 1);
 			auto l1 = s2.get_atom_by_atom_id("C1");
 
 			pdbx_entity_branch_link.emplace({
