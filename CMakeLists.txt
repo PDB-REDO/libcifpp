@@ -35,14 +35,15 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
+include(Dart)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 # set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
-
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
@@ -102,11 +103,22 @@ if(MSVC)
 	add_compile_options(/permissive-)
 
 	macro(get_WIN32_WINNT version)
-		if(WIN32 AND CMAKE_SYSTEM_VERSION)
+		if(CMAKE_SYSTEM_VERSION)
 			set(ver ${CMAKE_SYSTEM_VERSION})
-			string(REPLACE "." "" ver ${ver})
-			string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
+			string(REGEX MATCH "^([0-9]+).([0-9])" ver ${ver})
+			string(REGEX MATCH "^([0-9]+)" verMajor ${ver})
 
+			# Check for Windows 10, b/c we'll need to convert to hex 'A'.
+			if("${verMajor}" MATCHES "10")
+				set(verMajor "A")
+				string(REGEX REPLACE "^([0-9]+)" ${verMajor} ver ${ver})
+			endif()
+
+			# Remove all remaining '.' characters.
+			string(REPLACE "." "" ver ${ver})
+
+			# Prepend each digit with a zero.
+			string(REGEX REPLACE "([0-9A-Z])" "0\\1" ver ${ver})
 			set(${version} "0x${ver}")
 		endif()
 	endmacro()
@@ -157,15 +169,16 @@ if(MSVC)
 	set(_ZLIB_x86 "(x86)")
 	set(_ZLIB_SEARCH_NORMAL
 		PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\GnuWin32\\Zlib;InstallPath]"
-			"$ENV{ProgramFiles}/zlib"
-			"$ENV{ProgramFiles${_ZLIB_x86}}/zlib")
+		"$ENV{ProgramFiles}/zlib"
+		"$ENV{ProgramFiles${_ZLIB_x86}}/zlib")
 	unset(_ZLIB_x86)
 	list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
 
 	foreach(search ${_ZLIB_SEARCHES})
-    	find_library(ZLIB_LIBRARY NAMES zlibstatic NAMES_PER_DIR ${${search}} PATH_SUFFIXES lib)
+		find_library(ZLIB_LIBRARY NAMES zlibstatic NAMES_PER_DIR ${${search}} PATH_SUFFIXES lib)
 	endforeach()
 endif()
+
 find_package(ZLIB REQUIRED)
 
 find_package(Eigen3 REQUIRED)
@@ -448,7 +461,7 @@ endif()
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly")
-	elseif(UNIX)	# assume all others are like FreeBSD... 
+	elseif(UNIX) # assume all others are like FreeBSD...
 		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly")
 	else()
 		message(FATAL_ERROR "Don't know where to install the update script")

@@ -1545,15 +1545,31 @@ EntityType structure::get_entity_type_for_asym_id(const std::string asym_id) con
 
 bool structure::has_atom_id(const std::string &id) const
 {
-	bool result = true;
-	try
+	assert(m_atoms.size() == m_atom_index.size());
+
+	bool result = false;
+
+	int L = 0, R = static_cast<int>(m_atoms.size() - 1);
+	while (L <= R)
 	{
-		get_atom_by_id(id);
+		int i = (L + R) / 2;
+
+		const atom &atom = m_atoms[m_atom_index[i]];
+
+		int d = atom.id().compare(id);
+
+		if (d == 0)
+		{
+			result = true;
+			break;
+		}
+
+		if (d < 0)
+			L = i + 1;
+		else
+			R = i - 1;
 	}
-	catch (...)
-	{
-		result = false;
-	}
+
 	return result;
 }
 

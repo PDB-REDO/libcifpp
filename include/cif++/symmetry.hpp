@@ -216,6 +216,20 @@ struct sym_op
 
 	std::string string() const;
 
+#if defined(__cpp_impl_three_way_comparison)
+	constexpr auto operator<=>(const sym_op &rhs) const = default;
+#else
+	constexpr bool operator==(const sym_op &rhs) const
+	{
+		return m_nr == rhs.m_nr and m_ta == rhs.m_ta and m_tb == rhs.m_tb and m_tc == rhs.m_tc;
+	}
+
+	constexpr bool operator!=(const sym_op &rhs) const
+	{
+		return not operator==(rhs);
+	}
+#endif
+
 	uint8_t m_nr;
 	uint8_t m_ta, m_tb, m_tc;
 };
