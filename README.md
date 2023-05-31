@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
     if (argc != 2)
         exit(1);
 
+    // Read file, can be PDB or mmCIF and can even be compressed with gzip.
     cif::file file = cif::pdb::read(argv[1]);
 
     if (file.empty())
@@ -39,8 +40,8 @@ int main(int argc, char *argv[])
 
     for (const auto &[asym, comp, seqnr] :
             atom_site.find<std::string, std::string, int>(
-                cif::key("label_atom_id") == "OXT", "label_asym_id", "label_comp_id",
-                "label_seq_id"))
+                cif::key("label_atom_id") == "OXT",
+                "label_asym_id", "label_comp_id", "label_seq_id"))
     {
         std::cout << asym << ' ' << comp << ' ' << seqnr << std::endl;
     }
