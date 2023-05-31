@@ -7,14 +7,26 @@ Requirements
 ------------
 
 The code for this library was written in C++17. You therefore need a
-recent compiler to build it. For the development gcc 9.3 and clang 9.0
+recent compiler to build it. For the development gcc 9.4 and clang 9.0
 have been used as well as MSVC version 2019.
 
 Other requirements are:
 
 - [mrc](https://github.com/mhekkel/mrc), a resource compiler that
   allows including data files into the executable making them easier to
-  install. Strictly this is optional, but at the expense of functionality.
+  install. Strictly speaking this is optional, but at the expense of
+  functionality.
+- [libeigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a
+  library to do amongst others matrix calculations. This usually can be
+  installed using your package manager, in Debian/Ubuntu it is called
+  `libeigen3-dev`
+- zlib, the development version of this library. On Debian/Ubuntu this
+  is the package `zlib1g-dev`.
+- [boost](https://www.boost.org). The boost libraries are only needed if
+  you want to build the testing code.
+
+When building using MS Visual Studio, you will also need [libzeep](https://github.com/mhekkel/libzeep)
+since MSVC does not yet provide a C++ template required by libcifpp.
 
 Building
 --------
@@ -26,7 +38,7 @@ On linux e.g. you would issue the following commands to build and install
 libcifpp in your `$HOME/.local` folder:
 
 ```bash
- git clone https://github.com/PDB-REDO/libcifpp.git
+ git clone https://github.com/PDB-REDO/libcifpp.git --recurse-submodules
  cd libcifpp
  cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Release
  cmake --build build
