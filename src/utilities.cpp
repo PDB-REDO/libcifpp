@@ -911,6 +911,9 @@ std::unique_ptr<std::istream> resource_pool::load(fs::path name)
 	if (mLocalResources.count(name.string()))
 		result = open(mLocalResources[name.string()]);
 
+	if (fs::exists(p, ec) and not ec)
+		result = open(p);
+
 	for (auto di = mDirs.begin(); not result and di != mDirs.end(); ++di)
 	{
 		auto p2 = *di / p;

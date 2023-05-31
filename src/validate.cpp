@@ -24,10 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "cif++/dictionary_parser.hpp"
 #include "cif++/validate.hpp"
-#include "cif++/utilities.hpp"
+#include "cif++/dictionary_parser.hpp"
 #include "cif++/gzio.hpp"
+#include "cif++/utilities.hpp"
 
 #include <cassert>
 #include <fstream>
@@ -401,87 +401,94 @@ void validator::report_error(const std::string &msg, bool fatal) const
 
 const validator &validator_factory::operator[](std::string_view dictionary_name)
 {
-	std::lock_guard lock(m_mutex);
-
-	for (auto &validator : m_validators)
+	try
 	{
-		if (iequals(validator.name(), dictionary_name))
-			return validator;
-	}
-
-	// not found, try to see if it helps if we tweak the name a little
-
-	// too bad clang version 10 did not have a constructor for std::filesystem::path that accepts a std::string_view
-	std::filesystem::path dictionary(dictionary_name.data(), dictionary_name.data() + dictionary_name.length());
-
-	if (dictionary.extension() != ".dic")
-	{
-		auto dict_name = dictionary.filename().string() + ".dic";
+		std::lock_guard lock(m_mutex);
 
 		for (auto &validator : m_validators)
 		{
-			if (iequals(validator.name(), dict_name))
+			if (iequals(validator.name(), dictionary_name))
 				return validator;
 		}
-	}
 
-	// not found, add it
+		// not found, try to see if it helps if we tweak the name a little
 
+		// too bad clang version 10 did not have a constructor for std::filesystem::path that accepts a std::string_view
+		std::filesystem::path dictionary(dictionary_name.data(), dictionary_name.data() + dictionary_name.length());
 
-	auto data = load_resource(dictionary_name);
-
-	if (not data and dictionary.extension().string() != ".dic")
-		data = load_resource(dictionary.parent_path() / (dictionary.filename().string() + ".dic"));
-
-	if (data)
-		construct_validator(dictionary_name, *data);
-	else
-	{
-		std::error_code ec;
-
-		// might be a compressed dictionary on disk
-		std::filesystem::path p = dictionary;
-		if (p.extension() == ".dic")
-			p = p.parent_path() / (p.filename().string() + ".gz");
-		else
-			p = p.parent_path() / (p.filename().string() + ".dic.gz");
-
-#if defined(CACHE_DIR) or defined(DATA_DIR)
-		if (not std::filesystem::exists(p, ec) or ec)
+		if (dictionary.extension() != ".dic")
 		{
-			for (const char *dir : {
-#if defined(CACHE_DIR)
-					 CACHE_DIR,
-#endif
-#if defined(DATA_DIR)
-						 DATA_DIR
-#endif
-				 })
+			auto dict_name = dictionary.filename().string() + ".dic";
+
+			for (auto &validator : m_validators)
 			{
-				auto p2 = std::filesystem::path(dir) / p;
-				if (std::filesystem::exists(p2, ec) and not ec)
-				{
-					swap(p, p2);
-					break;
-				}
+				if (iequals(validator.name(), dict_name))
+					return validator;
 			}
 		}
+
+		// not found, add it
+		auto data = load_resource(dictionary_name);
+
+		if (not data and dictionary.extension().string() != ".dic")
+			data = load_resource(dictionary.parent_path() / (dictionary.filename().string() + ".dic"));
+
+		if (data)
+			construct_validator(dictionary_name, *data);
+		else
+		{
+			std::error_code ec;
+
+			// might be a compressed dictionary on disk
+			std::filesystem::path p = dictionary;
+			if (p.extension() == ".dic")
+				p = p.parent_path() / (p.filename().string() + ".gz");
+			else
+				p = p.parent_path() / (p.filename().string() + ".dic.gz");
+
+#if defined(CACHE_DIR) or defined(DATA_DIR)
+			if (not std::filesystem::exists(p, ec) or ec)
+			{
+				for (const char *dir : {
+#if defined(CACHE_DIR)
+						 CACHE_DIR,
+#endif
+#if defined(DATA_DIR)
+							 DATA_DIR
+#endif
+					 })
+				{
+					auto p2 = std::filesystem::path(dir) / p;
+					if (std::filesystem::exists(p2, ec) and not ec)
+					{
+						swap(p, p2);
+						break;
+					}
+				}
+			}
 #endif
 
-		if (std::filesystem::exists(p, ec) and not ec)
-		{
-			gzio::ifstream in(p);
+			if (std::filesystem::exists(p, ec) and not ec)
+			{
+				gzio::ifstream in(p);
 
-			if (not in.is_open())
-				throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
+				if (not in.is_open())
+					throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
 
-			construct_validator(dictionary_name, in);
+				construct_validator(dictionary_name, in);
+			}
+			else
+				throw std::runtime_error("Dictionary not found or defined (" + dictionary.string() + ")");
 		}
-		else
-			throw std::runtime_error("Dictionary not found or defined (" + dictionary.string() + ")");
-	}
 
-	return m_validators.back();
+		return m_validators.back();
+	}
+	catch (const std::exception &ex)
+	{
+		std::string msg = "Error while loading dictionary ";
+		msg += dictionary_name;
+		std::throw_with_nested(std::runtime_error(msg));
+	}
 }
 
 void validator_factory::construct_validator(std::string_view name, std::istream &is)
