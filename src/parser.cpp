@@ -54,6 +54,130 @@ sac_parser::sac_parser(std::istream &is, bool init)
 		m_lookahead = get_next_token();
 }
 
+bool sac_parser::is_unquoted_string(std::string_view text)
+{
+	bool result = text.empty() or is_ordinary(text.front());
+	int state = 1;
+
+	for (char ch : text)
+	{
+		if (not is_non_blank(ch))
+		{
+			result = false;
+			break;
+		}
+
+		switch (state)
+		{
+			case 0:
+				break;
+
+			case 1:
+				switch (ch & ~0x20)
+				{
+					case 'D':		// data_ 
+						state = 10;
+						break;
+					case 'G':
+						state = 20;	// global_
+						break;
+					case 'L':
+						state = 30;	// loop_
+						break;
+					case 'S':
+						state = 40;	// stop_ | save_
+						break;
+					default:
+						state = 0;
+						break;
+				}
+				break;
+			
+			case 10: state = ((ch & ~0x20) == 'A') ? state + 1 : 0; break;
+			case 11: state = ((ch & ~0x20) == 'T') ? state + 1 : 0; break;
+			case 12: state = ((ch & ~0x20) == 'A') ? 100 : 0; break;
+
+			case 20: state = ((ch & ~0x20) == 'L') ? state + 1 : 0; break;
+			case 21: state = ((ch & ~0x20) == 'O') ? state + 1 : 0; break;
+			case 22: state = ((ch & ~0x20) == 'B') ? state + 1 : 0; break;
+			case 23: state = ((ch & ~0x20) == 'A') ? state + 1 : 0; break;
+			case 24: state = ((ch & ~0x20) == 'L') ? 200 : 0; break;
+
+			case 30: state = ((ch & ~0x20) == 'O') ? state + 1 : 0; break;
+			case 31: state = ((ch & ~0x20) == 'O') ? state + 1 : 0; break;
+			case 32: state = ((ch & ~0x20) == 'P') ? 200 : 0; break;
+
+			case 40:
+				if ((ch & ~0x20) == 'A')
+					state = 41;
+				else if ((ch & ~0x20) == 'T')
+					state = 51;
+				else
+					state = 0;
+				break;
+
+			case 41: state = ((ch & ~0x20) == 'V') ? state + 1 : 0; break;
+			case 42: state = ((ch & ~0x20) == 'E') ? 100 : 0; break;
+
+			case 51: state = ((ch & ~0x20) == 'O') ? state + 1 : 0; break;
+			case 52: state = ((ch & ~0x20) == 'P') ? 200 : 0; break;
+
+			case 100:
+				state = ((ch & ~0x20) == '_') ? 101 : 0; break;
+			
+			case 101:
+				result = false;
+				state = 0;
+				break;
+
+			case 200:
+				if ((ch & ~0x20) == '_')
+				{
+					result = false;
+					state = 201;
+				}
+				else
+					state = 0;
+				break;
+			
+			case 201:
+				result = true;
+				break;
+		}
+	}
+
+	return result;
+
+
+	// bool result = text.empty() or is_ordinary(text.front());
+
+	// int state = 0;
+
+	// if (result)
+	// {
+	// 	for (auto ch : text)
+	// 	{
+	// 		switch (state)
+	// 		{
+	// 			case 0:
+	// 				switch 
+
+	// 		}
+
+
+	// 		if (is_non_blank(ch))
+	// 			continue;
+	// 		result = false;
+	// 		break;
+	// 	}
+	// }
+
+	// // static const std::regex kReservedRx(R"(loop_|stop_|global_|data_\S+|save_\S+)", std::regex_constants::icase);
+
+	// // but be careful it does not contain e.g. stop_
+	// return result and not std::regex_match(text.begin(), text.end(), kReservedRx);
+}
+
 // get_next_char takes a char from the buffer, or if it is empty
 // from the istream. This function also does carriage/linefeed
 // translation.

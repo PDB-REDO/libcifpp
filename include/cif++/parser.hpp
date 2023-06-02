@@ -92,26 +92,7 @@ class sac_parser
 		       (ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kAnyPrintMask) != 0);
 	}
 
-	static bool is_unquoted_string(std::string_view text)
-	{
-		bool result = text.empty() or is_ordinary(text.front());
-
-		if (result)
-		{
-			for (auto ch : text)
-			{
-				if (is_non_blank(ch))
-					continue;
-				result = false;
-				break;
-			}
-		}
-
-		static const std::regex kReservedRx(R"(loop_|stop_|global_|data_\S+|save_\S+)", std::regex_constants::icase);
-
-		// but be careful it does not contain e.g. stop_
-		return result and not std::regex_match(text.begin(), text.end(), kReservedRx);
-	}
+	static bool is_unquoted_string(std::string_view text);
 
   protected:
 	static constexpr uint8_t kCharTraitsTable[128] = {
