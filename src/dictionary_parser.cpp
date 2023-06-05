@@ -117,7 +117,7 @@ class dictionary_parser : public parser
 		if (not m_collected_item_types)
 			m_collected_item_types = collect_item_types();
 
-		std::string saveFrameName = m_token_value;
+		std::string saveFrameName { m_token_value };
 
 		if (saveFrameName.empty())
 			error("Invalid save frame, should contain more than just 'save_' here");

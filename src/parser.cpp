@@ -185,27 +185,24 @@ int sac_parser::get_next_char()
 {
 	int result = std::char_traits<char>::eof();
 
-	if (m_buffer.empty())
+	if (m_buffer_ptr == m_buffer)
 		result = m_source.sbumpc();
 	else
-	{
-		result = m_buffer.back();
-		m_buffer.pop_back();
-	}
+		result = *--m_buffer_ptr;
 
 	// very simple CR/LF translation into LF
 	if (result == '\r')
 	{
 		int lookahead = m_source.sbumpc();
 		if (lookahead != '\n')
-			m_buffer.push_back(lookahead);
+			*m_buffer_ptr++ = lookahead;
 		result = '\n';
 	}
 
 	if (result == std::char_traits<char>::eof())
-		m_token_value.push_back(0);
+		m_token_buffer.push_back(0);
 	else
-		m_token_value.push_back(std::char_traits<char>::to_char_type(result));
+		m_token_buffer.push_back(std::char_traits<char>::to_char_type(result));
 
 	if (result == '\n')
 		++m_line_nr;
@@ -224,21 +221,24 @@ int sac_parser::get_next_char()
 
 void sac_parser::retract()
 {
-	assert(not m_token_value.empty());
+	assert(not m_token_buffer.empty());
 
-	char ch = m_token_value.back();
+	char ch = m_token_buffer.back();
 	if (ch == '\n')
 		--m_line_nr;
 
-	m_buffer.push_back(ch == 0 ? std::char_traits<char>::eof() : std::char_traits<char>::to_int_type(ch));
-	m_token_value.pop_back();
+	if (m_buffer_ptr == m_buffer + kBufferSize)
+		throw cif::parse_error(m_line_nr, "Buffer overflow");
+
+	*m_buffer_ptr++ = ch == 0 ? std::char_traits<char>::eof() : std::char_traits<char>::to_int_type(ch);
+	m_token_buffer.pop_back();
 }
 
 int sac_parser::restart(int start)
 {
 	int result = 0;
 
-	while (not m_token_value.empty())
+	while (not m_token_buffer.empty())
 		retract();
 
 	switch (start)
@@ -252,6 +252,10 @@ int sac_parser::restart(int start)
 			break;
 
 		case State::Int:
+			result = State::Reserved;
+			break;
+		
+		case State::Reserved:
 			result = State::Value;
 			break;
 
@@ -273,8 +277,9 @@ sac_parser::CIFToken sac_parser::get_next_token()
 	int state = State::Start, start = State::Start;
 	m_bol = false;
 
-	m_token_value.clear();
-	mTokenType = CIFValue::Unknown;
+	m_token_buffer.clear();
+	// mTokenType = CIFValue::Unknown;
+	m_token_value = {};
 
 	while (result == CIFToken::Unknown)
 	{
@@ -298,6 +303,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::Tag;
 				else if (ch == ';' and m_bol)
 					state = State::TextField;
+				else if (ch == '?')
+					state = State::QuestionMark;
 				else if (ch == '\'' or ch == '"')
 				{
 					quoteChar = ch;
@@ -314,7 +321,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					state = State::Start;
 					retract();
-					m_token_value.clear();
+					m_token_buffer.clear();
 				}
 				else
 					m_bol = (ch == '\n');
@@ -325,12 +332,23 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					state = State::Start;
 					m_bol = true;
-					m_token_value.clear();
+					m_token_buffer.clear();
 				}
 				else if (ch == kEOF)
 					result = CIFToken::Eof;
 				else if (not is_any_print(ch))
 					error("invalid character in comment");
+				break;
+			
+			case State::QuestionMark:
+				if (not is_non_blank(ch))
+				{
+					retract();
+					result = CIFToken::Value;
+					// m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + 1);
+				}
+				else
+					state = start = restart(start);
 				break;
 
 			case State::TextField:
@@ -354,9 +372,9 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::TextField;
 				else if (ch == ';')
 				{
-					assert(m_token_value.length() >= 2);
-					m_token_value = m_token_value.substr(1, m_token_value.length() - 3);
-					mTokenType = CIFValue::TextField;
+					assert(m_token_buffer.size() >= 2);
+					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.data() + m_token_buffer.size() - 2);
+					// mTokenType = CIFValue::TextField;
 					result = CIFToken::Value;
 				}
 				else if (ch == kEOF)
@@ -379,12 +397,12 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					mTokenType = CIFValue::String;
+					// mTokenType = CIFValue::String;
 
-					if (m_token_value.length() < 2)
+					if (m_token_buffer.size() < 2)
 						error("Invalid quoted string token");
 
-					m_token_value = m_token_value.substr(1, m_token_value.length() - 2);
+					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.data() + m_token_buffer.size() - 1);
 				}
 				else if (ch == quoteChar)
 					;
@@ -401,6 +419,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Tag;
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				break;
 
@@ -427,7 +446,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					mTokenType = CIFValue::Int;
+					// mTokenType = CIFValue::Int;
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				else
 					state = start = restart(start);
@@ -441,7 +461,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					mTokenType = CIFValue::Float;
+					// mTokenType = CIFValue::Float;
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				else
 					state = start = restart(start);
@@ -469,7 +490,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					mTokenType = CIFValue::Float;
+					// mTokenType = CIFValue::Float;
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				else
 					state = start = restart(start);
@@ -487,63 +509,95 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					mTokenType = CIFValue::Int;
+					// mTokenType = CIFValue::Int;
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				else
 					state = start = restart(start);
 				break;
 
-			case State::Value:
-				if (ch == '_')
+			case State::Reserved:
+				switch (ch & ~0x20)
 				{
-					std::string s = to_lower_copy(m_token_value);
-
-					if (s == "data_")
-					{
-						state = State::DATA;
-						continue;
-					}
-					
-					if (s == "save_")
-					{
-						state = State::SAVE;
-						continue;
-					}
-				}
-
-				if (result == CIFToken::Unknown and not is_non_blank(ch))
-				{
-					retract();
-					result = CIFToken::Value;
-
-					if (m_token_value == ".")
-						mTokenType = CIFValue::Inapplicable;
-					else if (iequals(m_token_value, "global_"))
-						result = CIFToken::GLOBAL;
-					else if (iequals(m_token_value, "stop_"))
-						result = CIFToken::STOP;
-					else if (iequals(m_token_value, "loop_"))
-						result = CIFToken::LOOP;
-					else if (m_token_value == "?")
-					{
-						mTokenType = CIFValue::Unknown;
-						m_token_value.clear();
-					}
+					case 'D':		// data_ 
+						state = State::Reserved + 10;
+						break;
+					case 'G':
+						state = State::Reserved + 20;	// global_
+						break;
+					case 'L':
+						state = State::Reserved + 30;	// loop_
+						break;
+					case 'S':
+						state = State::Reserved + 40;	// stop_ | save_
+						break;
+					default:
+						state = start = restart(start);
+						break;
 				}
 				break;
-
-			case State::DATA:
-			case State::SAVE:
+			
+			case State::Reserved + 10: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
+			case State::Reserved + 11: if ((ch & ~0x20) == 'T') ++state; else state = start = restart(start); break;
+			case State::Reserved + 12: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
+			case State::Reserved + 13: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
+			case State::Reserved + 14: if (is_non_blank(ch)) ++state; else state = start = restart(start); break;
+			case State::Reserved + 15:
 				if (not is_non_blank(ch))
 				{
 					retract();
+					result = CIFToken::DATA;
+					m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
+				}
+				break;
 
-					if (state == State::DATA)
-						result = CIFToken::DATA;
-					else
-						result = CIFToken::SAVE;
+			case State::Reserved + 20: if ((ch & ~0x20) == 'L') ++state; else state = start = restart(start); break;
+			case State::Reserved + 21: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
+			case State::Reserved + 22: if ((ch & ~0x20) == 'B') ++state; else state = start = restart(start); break;
+			case State::Reserved + 23: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
+			case State::Reserved + 24: if ((ch & ~0x20) == 'L') ++state; else state = start = restart(start); break;
+			case State::Reserved + 25: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
+			case State::Reserved + 26: if (not is_non_blank(ch)) result = CIFToken::GLOBAL; else state = start = restart(start); break;
 
-					m_token_value.erase(m_token_value.begin(), m_token_value.begin() + 5);
+			case State::Reserved + 30: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
+			case State::Reserved + 31: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
+			case State::Reserved + 32: if ((ch & ~0x20) == 'P') ++state; else state = start = restart(start); break;
+			case State::Reserved + 33: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
+			case State::Reserved + 34: if (not is_non_blank(ch)) result = CIFToken::LOOP; else state = start = restart(start); break;
+
+			case State::Reserved + 40:
+				if ((ch & ~0x20) == 'A')
+					state = State::Reserved + 41;
+				else if ((ch & ~0x20) == 'T')
+					state = State::Reserved + 51;
+				else
+					state = start = restart(start);
+				break;
+
+			case State::Reserved + 41: if ((ch & ~0x20) == 'V') ++state; else state = start = restart(start); break;
+			case State::Reserved + 42: if ((ch & ~0x20) == 'E') ++state; else state = start = restart(start); break;
+			case State::Reserved + 43: if (is_non_blank(ch)) ++state; else state = start = restart(start); break;
+			case State::Reserved + 44:
+				if (not is_non_blank(ch))
+				{
+					retract();
+					result = CIFToken::SAVE;
+					m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
+				}
+				break;
+
+			case State::Reserved + 51: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
+			case State::Reserved + 52: if ((ch & ~0x20) == 'P') ++state; else state = start = restart(start); break;
+			case State::Reserved + 53: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
+			case State::Reserved + 54: if (not is_non_blank(ch)) result = CIFToken::STOP; else state = start = restart(start); break;
+
+			case State::Value:
+				if (not is_non_blank(ch))
+				{
+					retract();
+					result = CIFToken::Value;
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
+					break;
 				}
 				break;
 
@@ -557,8 +611,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 	if (VERBOSE >= 5)
 	{
 		std::cerr << get_token_name(result);
-		if (mTokenType != CIFValue::Unknown)
-			std::cerr << ' ' << get_value_name(mTokenType);
+		// if (mTokenType != CIFValue::Unknown)
+			// std::cerr << ' ' << get_value_name(mTokenType);
 		if (result != CIFToken::Eof)
 			std::cerr << " " << std::quoted(m_token_value);
 		std::cerr << std::endl;
@@ -903,7 +957,7 @@ void sac_parser::parse_save_frame()
 
 // --------------------------------------------------------------------
 
-void parser::produce_datablock(const std::string &name)
+void parser::produce_datablock(std::string_view name)
 {
 	if (VERBOSE >= 4)
 		std::cerr << "producing data_" << name << std::endl;
@@ -912,7 +966,7 @@ void parser::produce_datablock(const std::string &name)
 	m_datablock = &(*iter);
 }
 
-void parser::produce_category(const std::string &name)
+void parser::produce_category(std::string_view name)
 {
 	if (VERBOSE >= 4)
 		std::cerr << "producing category " << name << std::endl;
@@ -934,7 +988,7 @@ void parser::produce_row()
 	// m_row.lineNr(m_line_nr);
 }
 
-void parser::produce_item(const std::string &category, const std::string &item, const std::string &value)
+void parser::produce_item(std::string_view category, std::string_view item, std::string_view value)
 {
 	if (VERBOSE >= 4)
 		std::cerr << "producing _" << category << '.' << item << " -> " << value << std::endl;

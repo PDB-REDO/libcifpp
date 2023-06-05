@@ -54,8 +54,6 @@ class sac_parser
   public:
 	using datablock_index = std::map<std::string, std::size_t>;
 
-	sac_parser(std::istream &is, bool init = true);
-
 	virtual ~sac_parser() = default;
 
 	enum CharTraitsMask : uint8_t
@@ -186,6 +184,9 @@ class sac_parser
 	void parse_file();
 
   protected:
+
+	sac_parser(std::istream &is, bool init = true);
+
 	void parse_global();
 
 	void parse_datablock();
@@ -208,12 +209,13 @@ class sac_parser
 
 	// production methods, these are pure virtual here
 
-	virtual void produce_datablock(const std::string &name) = 0;
-	virtual void produce_category(const std::string &name) = 0;
+	virtual void produce_datablock(std::string_view name) = 0;
+	virtual void produce_category(std::string_view name) = 0;
 	virtual void produce_row() = 0;
-	virtual void produce_item(const std::string &category, const std::string &item, const std::string &value) = 0;
+	virtual void produce_item(std::string_view category, std::string_view item, std::string_view value) = 0;
 
   protected:
+
 	enum State
 	{
 		Start,
@@ -229,9 +231,8 @@ class sac_parser
 		TextField,
 		Float = 100,
 		Int = 110,
-		Value = 300,
-		DATA,
-		SAVE
+		Reserved = 300,
+		Value
 	};
 
 	std::streambuf &m_source;
@@ -241,9 +242,18 @@ class sac_parser
 	uint32_t m_line_nr;
 	bool m_bol;
 	CIFToken m_lookahead;
-	std::string m_token_value;
-	CIFValue mTokenType;
-	std::vector<int> m_buffer;	// retract buffer, used to be a stack<char>
+	// std::string m_token_value;
+	// CIFValue mTokenType;
+	// std::vector<int> m_buffer;	// retract buffer, used to be a stack<char>
+
+	static constexpr size_t kBufferSize = 128;
+
+	int m_buffer[kBufferSize];
+	int *m_buffer_ptr = m_buffer;
+
+	// token buffer
+	std::vector<char> m_token_buffer;
+	std::string_view m_token_value;
 };
 
 // --------------------------------------------------------------------
@@ -257,13 +267,13 @@ class parser : public sac_parser
 	{
 	}
 
-	void produce_datablock(const std::string &name) override;
+	void produce_datablock(std::string_view name) override;
 
-	void produce_category(const std::string &name) override;
+	void produce_category(std::string_view name) override;
 
 	void produce_row() override;
 
-	void produce_item(const std::string &category, const std::string &item, const std::string &value) override;
+	void produce_item(std::string_view category, std::string_view item, std::string_view value) override;
 
   protected:
 	file &m_file;
