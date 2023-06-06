@@ -112,7 +112,8 @@ class sac_parser
 		DATA,
 		LOOP,
 		GLOBAL,
-		SAVE,
+		SAVE_,
+		SAVE_NAME,
 		STOP,
 		Tag,
 		Value
@@ -127,37 +128,12 @@ class sac_parser
 			case CIFToken::DATA: return "DATA";
 			case CIFToken::LOOP: return "LOOP";
 			case CIFToken::GLOBAL: return "GLOBAL";
-			case CIFToken::SAVE: return "SAVE";
+			case CIFToken::SAVE_: return "SAVE";
+			case CIFToken::SAVE_NAME: return "SAVE+name";
 			case CIFToken::STOP: return "STOP";
 			case CIFToken::Tag: return "Tag";
 			case CIFToken::Value: return "Value";
 			default: return "Invalid token parameter";
-		}
-	}
-
-	enum class CIFValue
-	{
-		Int,
-		Float,
-		Numeric,
-		String,
-		TextField,
-		Inapplicable,
-		Unknown
-	};
-
-	static constexpr const char *get_value_name(CIFValue type)
-	{
-		switch (type)
-		{
-			case CIFValue::Int: return "Int";
-			case CIFValue::Float: return "Float";
-			case CIFValue::Numeric: return "Numeric";
-			case CIFValue::String: return "String";
-			case CIFValue::TextField: return "TextField";
-			case CIFValue::Inapplicable: return "Inapplicable";
-			case CIFValue::Unknown: return "Unknown";
-			default: return "Invalid type parameter";
 		}
 	}
 

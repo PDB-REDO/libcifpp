@@ -127,7 +127,7 @@ class dictionary_parser : public parser
 		datablock dict(m_token_value);
 		datablock::iterator cat = dict.end();
 
-		match(CIFToken::SAVE);
+		match(CIFToken::SAVE_NAME);
 		while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::Tag)
 		{
 			if (m_lookahead == CIFToken::LOOP)
@@ -183,7 +183,7 @@ class dictionary_parser : public parser
 			}
 		}
 
-		match(CIFToken::SAVE);
+		match(CIFToken::SAVE_);
 
 		if (isCategorySaveFrame)
 		{

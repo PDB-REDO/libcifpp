@@ -40,6 +40,144 @@ namespace cif
 
 // --------------------------------------------------------------------
 
+class reserved_words_automaton
+{
+  public:
+	reserved_words_automaton() {}
+
+	enum move_result
+	{
+		undefined,
+		no_keyword,
+		data,
+		global,
+		loop,
+		save,
+		save_plus,
+		stop
+	};
+
+	constexpr bool finished() const
+	{
+		return m_state <= 0; 
+	}
+
+	constexpr bool matched() const
+	{
+		return m_state < 0; 
+	}
+
+	constexpr move_result move(int ch)
+	{
+		move_result result = undefined;
+
+		switch (m_state)
+		{
+			case 0:
+				break;
+
+			case -1:		// data_
+				if (sac_parser::is_non_blank(ch))
+					m_seen_trailing_chars = true;
+				else if (m_seen_trailing_chars)
+					result = data;
+				else
+					result = no_keyword;
+				break;
+
+			case -2:		// global_
+				result = sac_parser::is_non_blank(ch) ? no_keyword : global;
+				break;
+
+			case -3:		// loop_
+				result = sac_parser::is_non_blank(ch) ? no_keyword : loop;
+				break;
+
+			case -4:		// save_
+				if (sac_parser::is_non_blank(ch))
+					m_seen_trailing_chars = true;
+				else if (m_seen_trailing_chars)
+					result = save_plus;
+				else
+					result = save;
+				break;
+
+			case -5:		// stop_
+				result = sac_parser::is_non_blank(ch) ? no_keyword : stop;
+				break;
+			
+			default:
+				assert(m_state > 0 and m_state < NODE_COUNT);
+
+				for (;;)
+				{
+					if (s_dag[m_state].ch == (ch & ~0x20))
+					{
+						m_state = s_dag[m_state].next_match;
+						break;
+					}
+
+					m_state = s_dag[m_state].next_nomatch;
+
+					if (m_state == 0)
+					{
+						result = no_keyword;
+						break;
+					}
+				}
+				break;
+		}
+
+		if (result != undefined)
+			m_state = 0;
+
+		return result;
+	}
+
+  private:
+	static constexpr struct node
+	{
+		int16_t ch;
+		int8_t next_match;
+		int8_t next_nomatch;
+	} s_dag[] = {
+		{ 0 },
+		{ 'D',  5, 2 },
+		{ 'G',  9, 3 },
+		{ 'L', 15, 4 },
+		{ 'S', 19, 0 },
+		{ 'A',  6, 0 },
+		{ 'T',  7, 0 },
+		{ 'A',  8, 0 },
+		{ '_', -1, 0 },
+		{ 'L', 10, 0 },
+		{ 'O', 11, 0 },
+		{ 'B', 12, 0 },
+		{ 'A', 13, 0 },
+		{ 'L', 14, 0 },
+		{ '_', -2, 0 },
+		{ 'O', 16, 0},
+		{ 'O', 17, 0 },
+		{ 'P', 18, 0 },
+		{ '_', -3, 0 },
+		{ 'A', 21, 20 },
+		{ 'T', 24, 0 },
+		{ 'V', 22, 0 },
+		{ 'E', 23, 0 },
+		{ '_', -4, 0 },
+		{ 'O', 25, 0 },
+		{ 'P', 26, 0 },
+		{ '_', -5, 0 },
+	};
+
+	static constexpr int NODE_COUNT = sizeof(s_dag) / sizeof(node);
+
+	int m_state = 1;
+	bool m_seen_trailing_chars = false;
+};
+
+// --------------------------------------------------------------------
+
 sac_parser::sac_parser(std::istream &is, bool init)
 	: m_source(*is.rdbuf())
 {
@@ -57,125 +195,26 @@ sac_parser::sac_parser(std::istream &is, bool init)
 bool sac_parser::is_unquoted_string(std::string_view text)
 {
 	bool result = text.empty() or is_ordinary(text.front());
-	int state = 1;
-
-	for (char ch : text)
+	if (result)
 	{
-		if (not is_non_blank(ch))
+		reserved_words_automaton automaton;
+
+		for (char ch : text)
 		{
-			result = false;
-			break;
-		}
-
-		switch (state)
-		{
-			case 0:
-				break;
-
-			case 1:
-				switch (ch & ~0x20)
-				{
-					case 'D':		// data_ 
-						state = 10;
-						break;
-					case 'G':
-						state = 20;	// global_
-						break;
-					case 'L':
-						state = 30;	// loop_
-						break;
-					case 'S':
-						state = 40;	// stop_ | save_
-						break;
-					default:
-						state = 0;
-						break;
-				}
-				break;
-			
-			case 10: state = ((ch & ~0x20) == 'A') ? state + 1 : 0; break;
-			case 11: state = ((ch & ~0x20) == 'T') ? state + 1 : 0; break;
-			case 12: state = ((ch & ~0x20) == 'A') ? 100 : 0; break;
-
-			case 20: state = ((ch & ~0x20) == 'L') ? state + 1 : 0; break;
-			case 21: state = ((ch & ~0x20) == 'O') ? state + 1 : 0; break;
-			case 22: state = ((ch & ~0x20) == 'B') ? state + 1 : 0; break;
-			case 23: state = ((ch & ~0x20) == 'A') ? state + 1 : 0; break;
-			case 24: state = ((ch & ~0x20) == 'L') ? 200 : 0; break;
-
-			case 30: state = ((ch & ~0x20) == 'O') ? state + 1 : 0; break;
-			case 31: state = ((ch & ~0x20) == 'O') ? state + 1 : 0; break;
-			case 32: state = ((ch & ~0x20) == 'P') ? 200 : 0; break;
-
-			case 40:
-				if ((ch & ~0x20) == 'A')
-					state = 41;
-				else if ((ch & ~0x20) == 'T')
-					state = 51;
-				else
-					state = 0;
-				break;
-
-			case 41: state = ((ch & ~0x20) == 'V') ? state + 1 : 0; break;
-			case 42: state = ((ch & ~0x20) == 'E') ? 100 : 0; break;
-
-			case 51: state = ((ch & ~0x20) == 'O') ? state + 1 : 0; break;
-			case 52: state = ((ch & ~0x20) == 'P') ? 200 : 0; break;
-
-			case 100:
-				state = ((ch & ~0x20) == '_') ? 101 : 0; break;
-			
-			case 101:
+			if (not is_non_blank(ch))
+			{
 				result = false;
-				state = 0;
 				break;
+			}
 
-			case 200:
-				if ((ch & ~0x20) == '_')
-				{
-					result = false;
-					state = 201;
-				}
-				else
-					state = 0;
-				break;
-			
-			case 201:
-				result = true;
-				break;
+			automaton.move(ch);
 		}
+
+		if (automaton.matched())
+			result = false;
 	}
 
 	return result;
-
-
-	// bool result = text.empty() or is_ordinary(text.front());
-
-	// int state = 0;
-
-	// if (result)
-	// {
-	// 	for (auto ch : text)
-	// 	{
-	// 		switch (state)
-	// 		{
-	// 			case 0:
-	// 				switch 
-
-	// 		}
-
-
-	// 		if (is_non_blank(ch))
-	// 			continue;
-	// 		result = false;
-	// 		break;
-	// 	}
-	// }
-
-	// // static const std::regex kReservedRx(R"(loop_|stop_|global_|data_\S+|save_\S+)", std::regex_constants::icase);
-
-	// // but be careful it does not contain e.g. stop_
-	// return result and not std::regex_match(text.begin(), text.end(), kReservedRx);
 }
 
 // get_next_char takes a char from the buffer, or if it is empty
@@ -280,6 +319,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 	m_token_buffer.clear();
 	// mTokenType = CIFValue::Unknown;
 	m_token_value = {};
+
+	reserved_words_automaton dag;
 
 	while (result == CIFToken::Unknown)
 	{
@@ -517,79 +558,122 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				break;
 
 			case State::Reserved:
-				switch (ch & ~0x20)
+				switch (dag.move(ch))
 				{
-					case 'D':		// data_ 
-						state = State::Reserved + 10;
+					case reserved_words_automaton::undefined:
 						break;
-					case 'G':
-						state = State::Reserved + 20;	// global_
-						break;
-					case 'L':
-						state = State::Reserved + 30;	// loop_
-						break;
-					case 'S':
-						state = State::Reserved + 40;	// stop_ | save_
-						break;
-					default:
+
+					case reserved_words_automaton::no_keyword:
 						state = start = restart(start);
 						break;
+
+					case reserved_words_automaton::data:
+						retract();
+						m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
+						result = CIFToken::DATA;
+						break;
+
+					case reserved_words_automaton::global:
+						retract();
+						result = CIFToken::GLOBAL;
+						break;
+
+					case reserved_words_automaton::loop:
+						retract();
+						result = CIFToken::LOOP;
+						break;
+
+					case reserved_words_automaton::save:
+						retract();
+						result = CIFToken::SAVE_;
+						break;
+
+					case reserved_words_automaton::save_plus:
+						retract();
+						m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
+						result = CIFToken::SAVE_NAME;
+						break;
+
+					case reserved_words_automaton::stop:
+						retract();
+						result = CIFToken::STOP;
+						break;
 				}
 				break;
+
+			// 	switch (ch & ~0x20)
+			// 	{
+			// 		case 'D':		// data_ 
+			// 			state = State::Reserved + 10;
+			// 			break;
+			// 		case 'G':
+			// 			state = State::Reserved + 20;	// global_
+			// 			break;
+			// 		case 'L':
+			// 			state = State::Reserved + 30;	// loop_
+			// 			break;
+			// 		case 'S':
+			// 			state = State::Reserved + 40;	// stop_ | save_
+			// 			break;
+			// 		default:
+			// 			state = start = restart(start);
+			// 			break;
+			// 	}
+			// 	break;
 			
-			case State::Reserved + 10: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
-			case State::Reserved + 11: if ((ch & ~0x20) == 'T') ++state; else state = start = restart(start); break;
-			case State::Reserved + 12: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
-			case State::Reserved + 13: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
-			case State::Reserved + 14: if (is_non_blank(ch)) ++state; else state = start = restart(start); break;
-			case State::Reserved + 15:
-				if (not is_non_blank(ch))
-				{
-					retract();
-					result = CIFToken::DATA;
-					m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
-				}
-				break;
+			// case State::Reserved + 10: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 11: if ((ch & ~0x20) == 'T') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 12: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 13: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 14: if (is_non_blank(ch)) ++state; else state = start = restart(start); break;
+			// case State::Reserved + 15:
+			// 	if (not is_non_blank(ch))
+			// 	{
+			// 		retract();
+			// 		result = CIFToken::DATA;
+			// 		m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
+			// 	}
+			// 	break;
 
-			case State::Reserved + 20: if ((ch & ~0x20) == 'L') ++state; else state = start = restart(start); break;
-			case State::Reserved + 21: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
-			case State::Reserved + 22: if ((ch & ~0x20) == 'B') ++state; else state = start = restart(start); break;
-			case State::Reserved + 23: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
-			case State::Reserved + 24: if ((ch & ~0x20) == 'L') ++state; else state = start = restart(start); break;
-			case State::Reserved + 25: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
-			case State::Reserved + 26: if (not is_non_blank(ch)) result = CIFToken::GLOBAL; else state = start = restart(start); break;
+			// case State::Reserved + 20: if ((ch & ~0x20) == 'L') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 21: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 22: if ((ch & ~0x20) == 'B') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 23: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 24: if ((ch & ~0x20) == 'L') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 25: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 26: if (not is_non_blank(ch)) result = CIFToken::GLOBAL; else state = start = restart(start); break;
 
-			case State::Reserved + 30: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
-			case State::Reserved + 31: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
-			case State::Reserved + 32: if ((ch & ~0x20) == 'P') ++state; else state = start = restart(start); break;
-			case State::Reserved + 33: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
-			case State::Reserved + 34: if (not is_non_blank(ch)) result = CIFToken::LOOP; else state = start = restart(start); break;
+			// case State::Reserved + 30: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 31: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 32: if ((ch & ~0x20) == 'P') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 33: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 34: if (not is_non_blank(ch)) result = CIFToken::LOOP; else state = start = restart(start); break;
 
-			case State::Reserved + 40:
-				if ((ch & ~0x20) == 'A')
-					state = State::Reserved + 41;
-				else if ((ch & ~0x20) == 'T')
-					state = State::Reserved + 51;
-				else
-					state = start = restart(start);
-				break;
+			// case State::Reserved + 40:
+			// 	if ((ch & ~0x20) == 'A')
+			// 		state = State::Reserved + 41;
+			// 	else if ((ch & ~0x20) == 'T')
+			// 		state = State::Reserved + 51;
+			// 	else
+			// 		state = start = restart(start);
+			// 	break;
 
-			case State::Reserved + 41: if ((ch & ~0x20) == 'V') ++state; else state = start = restart(start); break;
-			case State::Reserved + 42: if ((ch & ~0x20) == 'E') ++state; else state = start = restart(start); break;
-			case State::Reserved + 43: if (is_non_blank(ch)) ++state; else state = start = restart(start); break;
-			case State::Reserved + 44:
-				if (not is_non_blank(ch))
-				{
-					retract();
-					result = CIFToken::SAVE;
-					m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
-				}
-				break;
+			// case State::Reserved + 41: if ((ch & ~0x20) == 'V') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 42: if ((ch & ~0x20) == 'E') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 43: if (is_non_blank(ch)) ++state; else state = start = restart(start); break;
+			// case State::Reserved + 44:
+			// 	if (not is_non_blank(ch))
+			// 	{
+			// 		retract();
+			// 		result = CIFToken::SAVE;
+			// 		m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
+			// 	}
+			// 	break;
 
-			case State::Reserved + 51: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
-			case State::Reserved + 52: if ((ch & ~0x20) == 'P') ++state; else state = start = restart(start); break;
-			case State::Reserved + 53: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
-			case State::Reserved + 54: if (not is_non_blank(ch)) result = CIFToken::STOP; else state = start = restart(start); break;
+			// case State::Reserved + 51: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 52: if ((ch & ~0x20) == 'P') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 53: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
+			// case State::Reserved + 54: if (not is_non_blank(ch)) result = CIFToken::STOP; else state = start = restart(start); break;
 
 			case State::Value:
 				if (not is_non_blank(ch))
@@ -608,7 +692,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 		}
 	}
 
-	if (VERBOSE >= 5)
+	// if (VERBOSE >= 5)
 	{
 		std::cerr << get_token_name(result);
 		// if (mTokenType != CIFValue::Unknown)
@@ -874,7 +958,7 @@ void sac_parser::parse_datablock()
 	static const std::string kUnitializedCategory("<invalid>");
 	std::string cat = kUnitializedCategory;	// intial value acts as a guard for empty category names
 
-	while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::Tag or m_lookahead == CIFToken::SAVE)
+	while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::Tag or m_lookahead == CIFToken::SAVE_NAME)
 	{
 		switch (m_lookahead)
 		{
@@ -939,7 +1023,7 @@ void sac_parser::parse_datablock()
 				break;
 			}
 
-			case CIFToken::SAVE:
+			case CIFToken::SAVE_NAME:
 				parse_save_frame();
 				break;
 
