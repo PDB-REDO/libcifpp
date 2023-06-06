@@ -2357,8 +2357,6 @@ _test.text ??
 
 BOOST_AUTO_TEST_CASE(output_test_1)
 {
-	cif::VERBOSE = 5;
-
 	auto data1 = R"(
 data_Q
 loop_
