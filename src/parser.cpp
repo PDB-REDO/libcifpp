@@ -181,6 +181,8 @@ class reserved_words_automaton
 sac_parser::sac_parser(std::istream &is, bool init)
 	: m_source(*is.rdbuf())
 {
+	m_token_buffer.reserve(8192);
+
 	if (is.rdbuf() == nullptr)
 		throw std::runtime_error("Attempt to read from uninitialised stream");
 
@@ -692,7 +694,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 		}
 	}
 
-	// if (VERBOSE >= 5)
+	if (VERBOSE >= 5)
 	{
 		std::cerr << get_token_name(result);
 		// if (mTokenType != CIFValue::Unknown)
