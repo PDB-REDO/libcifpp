@@ -416,7 +416,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else if (ch == ';')
 				{
 					assert(m_token_buffer.size() >= 2);
-					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.data() + m_token_buffer.size() - 2);
+					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.size() - 3);
 					// mTokenType = CIFValue::TextField;
 					result = CIFToken::Value;
 				}
@@ -445,7 +445,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					if (m_token_buffer.size() < 2)
 						error("Invalid quoted string token");
 
-					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.data() + m_token_buffer.size() - 1);
+					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.size() - 2);
 				}
 				else if (ch == quoteChar)
 					;
@@ -462,7 +462,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Tag;
-					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 				}
 				break;
 
@@ -490,7 +490,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					retract();
 					result = CIFToken::Value;
 					// mTokenType = CIFValue::Int;
-					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 				}
 				else
 					state = start = restart(start);
@@ -505,7 +505,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					retract();
 					result = CIFToken::Value;
 					// mTokenType = CIFValue::Float;
-					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 				}
 				else
 					state = start = restart(start);
@@ -534,7 +534,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					retract();
 					result = CIFToken::Value;
 					// mTokenType = CIFValue::Float;
-					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 				}
 				else
 					state = start = restart(start);
@@ -553,7 +553,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					retract();
 					result = CIFToken::Value;
 					// mTokenType = CIFValue::Int;
-					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 				}
 				else
 					state = start = restart(start);
@@ -571,7 +571,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 
 					case reserved_words_automaton::data:
 						retract();
-						m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
+						m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.size() - 5);
 						result = CIFToken::DATA;
 						break;
 
@@ -592,7 +592,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 
 					case reserved_words_automaton::save_plus:
 						retract();
-						m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
+						m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.size() - 5);
 						result = CIFToken::SAVE_NAME;
 						break;
 
@@ -682,7 +682,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
+					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 					break;
 				}
 				break;
