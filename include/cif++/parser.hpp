@@ -29,7 +29,6 @@
 #include "cif++/row.hpp"
 
 #include <map>
-#include <regex>
 
 namespace cif
 {
@@ -214,18 +213,14 @@ class sac_parser
 	std::streambuf &m_source;
 
 	// Parser state
-	bool m_validate;
 	uint32_t m_line_nr;
 	bool m_bol;
 	CIFToken m_lookahead;
-	// std::string m_token_value;
-	// CIFValue mTokenType;
-	// std::vector<int> m_buffer;	// retract buffer, used to be a stack<char>
 
-	static constexpr size_t kBufferSize = 128;
+	static constexpr size_t kRetractBufferSize = 128;
 
-	int m_buffer[kBufferSize];
-	int *m_buffer_ptr = m_buffer;
+	int m_retract_buffer[kRetractBufferSize];
+	int *m_retract_buffer_ptr = m_retract_buffer;
 
 	// token buffer
 	std::vector<char> m_token_buffer;

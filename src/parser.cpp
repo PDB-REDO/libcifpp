@@ -32,7 +32,6 @@
 #include <cassert>
 #include <iostream>
 #include <map>
-#include <regex>
 #include <stack>
 
 namespace cif
@@ -186,7 +185,6 @@ sac_parser::sac_parser(std::istream &is, bool init)
 	if (is.rdbuf() == nullptr)
 		throw std::runtime_error("Attempt to read from uninitialised stream");
 
-	m_validate = true;
 	m_line_nr = 1;
 	m_bol = true;
 
@@ -224,19 +222,19 @@ bool sac_parser::is_unquoted_string(std::string_view text)
 // translation.
 int sac_parser::get_next_char()
 {
-	int result = std::char_traits<char>::eof();
+	int result;
 
-	if (m_buffer_ptr == m_buffer)
+	if (m_retract_buffer_ptr == m_retract_buffer)
 		result = m_source.sbumpc();
 	else
-		result = *--m_buffer_ptr;
+		result = *--m_retract_buffer_ptr;
 
 	// very simple CR/LF translation into LF
 	if (result == '\r')
 	{
 		int lookahead = m_source.sbumpc();
 		if (lookahead != '\n')
-			*m_buffer_ptr++ = lookahead;
+			*m_retract_buffer_ptr++ = lookahead;
 		result = '\n';
 	}
 
@@ -247,15 +245,6 @@ int sac_parser::get_next_char()
 
 	if (result == '\n')
 		++m_line_nr;
-
-	if (VERBOSE >= 6)
-	{
-		std::cerr << "get_next_char => ";
-		if (iscntrl(result) or not isprint(result))
-			std::cerr << int(result) << std::endl;
-		else
-			std::cerr << char(result) << std::endl;
-	}
 
 	return result;
 }
@@ -268,10 +257,10 @@ void sac_parser::retract()
 	if (ch == '\n')
 		--m_line_nr;
 
-	if (m_buffer_ptr == m_buffer + kBufferSize)
+	if (m_retract_buffer_ptr == m_retract_buffer + kRetractBufferSize)
 		throw cif::parse_error(m_line_nr, "Buffer overflow");
 
-	*m_buffer_ptr++ = ch == 0 ? std::char_traits<char>::eof() : std::char_traits<char>::to_int_type(ch);
+	*m_retract_buffer_ptr++ = ch == 0 ? std::char_traits<char>::eof() : std::char_traits<char>::to_int_type(ch);
 	m_token_buffer.pop_back();
 }
 
@@ -293,7 +282,7 @@ int sac_parser::restart(int start)
 			break;
 
 		case State::Int:
-			result = State::Reserved;
+			result = State::Value;
 			break;
 		
 		case State::Reserved:
@@ -319,7 +308,6 @@ sac_parser::CIFToken sac_parser::get_next_token()
 	m_bol = false;
 
 	m_token_buffer.clear();
-	// mTokenType = CIFValue::Unknown;
 	m_token_value = {};
 
 	reserved_words_automaton dag;
@@ -353,6 +341,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					quoteChar = ch;
 					state = State::QuotedString;
 				}
+				else if (dag.move(ch) == reserved_words_automaton::undefined)
+					state = State::Reserved;
 				else
 					state = start = restart(start);
 				break;
@@ -388,7 +378,6 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					// m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + 1);
 				}
 				else
 					state = start = restart(start);
@@ -399,16 +388,9 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::TextField + 1;
 				else if (ch == kEOF)
 					error("unterminated textfield");
-				// else if (ch == '\\')
-				// 	state = State::Esc;
 				else if (not is_any_print(ch) and cif::VERBOSE > 2)
 					warning("invalid character in text field '" + std::string({static_cast<char>(ch)}) + "' (" + std::to_string((int)ch) + ")");
 				break;
-
-			// case State::Esc:
-			// 	if (ch == '\n')
-
-			// 	break;
 
 			case State::TextField + 1:
 				if (is_text_lead(ch) or ch == ' ' or ch == '\t')
@@ -417,7 +399,6 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					assert(m_token_buffer.size() >= 2);
 					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.data() + m_token_buffer.size() - 2);
-					// mTokenType = CIFValue::TextField;
 					result = CIFToken::Value;
 				}
 				else if (ch == kEOF)
@@ -440,8 +421,6 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					// mTokenType = CIFValue::String;
-
 					if (m_token_buffer.size() < 2)
 						error("Invalid quoted string token");
 
@@ -468,28 +447,22 @@ sac_parser::CIFToken sac_parser::get_next_token()
 
 			case State::Float:
 				if (ch == '+' or ch == '-')
-				{
 					state = State::Float + 1;
-				}
-				else if (isdigit(ch))
+				else if ((ch >= '0' and ch <= '9'))
 					state = State::Float + 1;
 				else
 					state = start = restart(start);
 				break;
 
 			case State::Float + 1:
-				//				if (ch == '(')	// numeric???
-				//					mState = State::NumericSuffix;
-				//				else
 				if (ch == '.')
 					state = State::Float + 2;
-				else if (tolower(ch) == 'e')
+				else if ((ch & ~0x20) == 'E')
 					state = State::Float + 3;
 				else if (is_white(ch) or ch == kEOF)
 				{
 					retract();
 					result = CIFToken::Value;
-					// mTokenType = CIFValue::Int;
 					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				else
@@ -498,13 +471,12 @@ sac_parser::CIFToken sac_parser::get_next_token()
 
 			// parsed '.'
 			case State::Float + 2:
-				if (tolower(ch) == 'e')
+				if ((ch & ~0x20) == 'E')
 					state = State::Float + 3;
 				else if (is_white(ch) or ch == kEOF)
 				{
 					retract();
 					result = CIFToken::Value;
-					// mTokenType = CIFValue::Float;
 					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				else
@@ -515,14 +487,14 @@ sac_parser::CIFToken sac_parser::get_next_token()
 			case State::Float + 3:
 				if (ch == '-' or ch == '+')
 					state = State::Float + 4;
-				else if (isdigit(ch))
+				else if ((ch >= '0' and ch <= '9'))
 					state = State::Float + 5;
 				else
 					state = start = restart(start);
 				break;
 
 			case State::Float + 4:
-				if (isdigit(ch))
+				if ((ch >= '0' and ch <= '9'))
 					state = State::Float + 5;
 				else
 					state = start = restart(start);
@@ -533,7 +505,6 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					// mTokenType = CIFValue::Float;
 					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				else
@@ -541,7 +512,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				break;
 
 			case State::Int:
-				if (isdigit(ch) or ch == '+' or ch == '-')
+				if ((ch >= '0' and ch <= '9') or ch == '+' or ch == '-')
 					state = State::Int + 1;
 				else
 					state = start = restart(start);
@@ -552,7 +523,6 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					retract();
 					result = CIFToken::Value;
-					// mTokenType = CIFValue::Int;
 					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size());
 				}
 				else
@@ -603,80 +573,6 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				}
 				break;
 
-			// 	switch (ch & ~0x20)
-			// 	{
-			// 		case 'D':		// data_ 
-			// 			state = State::Reserved + 10;
-			// 			break;
-			// 		case 'G':
-			// 			state = State::Reserved + 20;	// global_
-			// 			break;
-			// 		case 'L':
-			// 			state = State::Reserved + 30;	// loop_
-			// 			break;
-			// 		case 'S':
-			// 			state = State::Reserved + 40;	// stop_ | save_
-			// 			break;
-			// 		default:
-			// 			state = start = restart(start);
-			// 			break;
-			// 	}
-			// 	break;
-			
-			// case State::Reserved + 10: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 11: if ((ch & ~0x20) == 'T') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 12: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 13: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 14: if (is_non_blank(ch)) ++state; else state = start = restart(start); break;
-			// case State::Reserved + 15:
-			// 	if (not is_non_blank(ch))
-			// 	{
-			// 		retract();
-			// 		result = CIFToken::DATA;
-			// 		m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
-			// 	}
-			// 	break;
-
-			// case State::Reserved + 20: if ((ch & ~0x20) == 'L') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 21: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 22: if ((ch & ~0x20) == 'B') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 23: if ((ch & ~0x20) == 'A') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 24: if ((ch & ~0x20) == 'L') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 25: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 26: if (not is_non_blank(ch)) result = CIFToken::GLOBAL; else state = start = restart(start); break;
-
-			// case State::Reserved + 30: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 31: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 32: if ((ch & ~0x20) == 'P') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 33: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 34: if (not is_non_blank(ch)) result = CIFToken::LOOP; else state = start = restart(start); break;
-
-			// case State::Reserved + 40:
-			// 	if ((ch & ~0x20) == 'A')
-			// 		state = State::Reserved + 41;
-			// 	else if ((ch & ~0x20) == 'T')
-			// 		state = State::Reserved + 51;
-			// 	else
-			// 		state = start = restart(start);
-			// 	break;
-
-			// case State::Reserved + 41: if ((ch & ~0x20) == 'V') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 42: if ((ch & ~0x20) == 'E') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 43: if (is_non_blank(ch)) ++state; else state = start = restart(start); break;
-			// case State::Reserved + 44:
-			// 	if (not is_non_blank(ch))
-			// 	{
-			// 		retract();
-			// 		result = CIFToken::SAVE;
-			// 		m_token_value = std::string_view(m_token_buffer.data() + 5, m_token_buffer.data() + m_token_buffer.size());
-			// 	}
-			// 	break;
-
-			// case State::Reserved + 51: if ((ch & ~0x20) == 'O') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 52: if ((ch & ~0x20) == 'P') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 53: if ((ch & ~0x20) == '_') ++state; else state = start = restart(start); break;
-			// case State::Reserved + 54: if (not is_non_blank(ch)) result = CIFToken::STOP; else state = start = restart(start); break;
-
 			case State::Value:
 				if (not is_non_blank(ch))
 				{
@@ -697,8 +593,6 @@ sac_parser::CIFToken sac_parser::get_next_token()
 	if (VERBOSE >= 5)
 	{
 		std::cerr << get_token_name(result);
-		// if (mTokenType != CIFValue::Unknown)
-			// std::cerr << ' ' << get_value_name(mTokenType);
 		if (result != CIFToken::Eof)
 			std::cerr << " " << std::quoted(m_token_value);
 		std::cerr << std::endl;
