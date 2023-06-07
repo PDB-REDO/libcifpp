@@ -382,6 +382,16 @@ install(FILES
 	DESTINATION ${CIFPP_DATA_DIR}
 )
 
+if(${CIFPP_CACHE_DIR})
+	install(FILES
+		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
+		${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
+		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
+		${COMPONENTS_CIF}
+		DESTINATION ${CIFPP_CACHE_DIR}
+	)
+endif()
+
 set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in)
 
 configure_package_config_file(
