@@ -1227,23 +1227,37 @@ std::string category::get_unique_id(std::function<std::string(int)> generator)
 {
 	using namespace cif::literals;
 
-	std::string id_tag = "id";
-	if (m_cat_validator != nullptr and m_cat_validator->m_keys.size() == 1)
-		id_tag = m_cat_validator->m_keys.front();
-
 	// calling size() often is a waste of resources
 	if (m_last_unique_num == 0)
 		m_last_unique_num = static_cast<uint32_t>(size());
 
-	for (;;)
+	std::string result = generator(static_cast<int>(m_last_unique_num++));
+
+	std::string id_tag = "id";
+	if (m_cat_validator != nullptr and m_cat_validator->m_keys.size() == 1)
 	{
-		std::string result = generator(static_cast<int>(m_last_unique_num++));
-
-		if (exists(key(id_tag) == result))
-			continue;
-
-		return result;
+		if (m_index == nullptr and m_cat_validator != nullptr)
+			m_index = new category_index(this);
+		
+		for (;;)
+		{
+			if (m_index->find_by_value({{ id_tag, result }}) == nullptr)
+				break;
+			result = generator(static_cast<int>(m_last_unique_num++));
+		}
 	}
+	else
+	{
+		for (;;)
+		{
+			if (not exists(key(id_tag) == result))
+				break;
+			
+			result = generator(static_cast<int>(m_last_unique_num++));
+		}
+	}
+
+	return result;
 }
 
 void category::update_value(const std::vector<row_handle> &rows, std::string_view tag, std::string_view value)

@@ -481,4 +481,11 @@ validator parse_dictionary(std::string_view name, std::istream &is)
 	return result;
 }
 
+void extend_dictionary(validator &v, std::istream &is)
+{
+	file f;
+	dictionary_parser p(v, is, f);
+	p.load_dictionary();
+}
+
 } // namespace cif

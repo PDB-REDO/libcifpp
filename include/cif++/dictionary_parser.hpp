@@ -32,5 +32,6 @@ namespace cif
 {
 
 validator parse_dictionary(std::string_view name, std::istream &is);
+void extend_dictionary(validator &v, std::istream &is);
 
 } // namespace cif
