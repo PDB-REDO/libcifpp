@@ -2861,7 +2861,7 @@ save__cat_1.name
 
 	std::istream is_dict(&buffer);
 
-	auto validator = cif::parse_dictionary("test_dict.dic", is_dict);
+	auto &validator = cif::validator_factory::instance().construct_validator("test_dict.dic", is_dict);
 
 	cif::file f;
 	f.set_validator(&validator);
@@ -2899,8 +2899,6 @@ _cat_1.name
 	ss << f;
 
 	cif::file f2(ss);
-
-	f2.set_validator(&validator);
 	BOOST_ASSERT(f2.is_valid());
 
 	auto &audit_conform = f2.front()["audit_conform"];

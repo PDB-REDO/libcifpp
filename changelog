@@ -1,3 +1,7 @@
+Version 5.0.10
+- Fix in progress_bar, was using too much CPU
+- Optimised mmCIF parser
+
 Version 5.0.9
 - Fix in dihedral angle calculations
 - Added create_water to model

@@ -228,8 +228,9 @@ class validator_factory
 
 	const validator &operator[](std::string_view dictionary_name);
 
+	const validator &construct_validator(std::string_view name, std::istream &is);
+
   private:
-	void construct_validator(std::string_view name, std::istream &is);
 
 	// --------------------------------------------------------------------
 

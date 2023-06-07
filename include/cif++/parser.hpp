@@ -63,9 +63,14 @@ class sac_parser
 		kAnyPrintMask = 1 << 3
 	};
 
-	static bool is_white(int ch)
+	static constexpr bool is_space(int ch)
 	{
-		return std::isspace(ch) or ch == '#';
+		return ch == ' ' or ch == '\t' or ch == '\r' or ch == '\n';
+	}
+
+	static constexpr bool is_white(int ch)
+	{
+		return is_space(ch) or ch == '#';
 	}
 
 	static constexpr bool is_ordinary(int ch)
@@ -136,14 +141,12 @@ class sac_parser
 		}
 	}
 
-	// get_next_char takes a char from the buffer, or if it is empty
-	// from the istream. This function also does carriage/linefeed
-	// translation.
+	// get_next_char takes the next character from the istream.
+	// This function also does carriage/linefeed translation.
 	int get_next_char();
 
+	// Put the last read character back into the istream
 	void retract();
-
-	int restart(int start);
 
 	CIFToken get_next_token();
 
@@ -191,7 +194,7 @@ class sac_parser
 
   protected:
 
-	enum State
+	enum class State
 	{
 		Start,
 		White,
@@ -204,9 +207,8 @@ class sac_parser
 		UnquotedString,
 		Tag,
 		TextField,
-		Float = 100,
-		Int = 110,
-		Reserved = 300,
+		TextFieldNL,
+		Reserved,
 		Value
 	};
 
@@ -216,11 +218,6 @@ class sac_parser
 	uint32_t m_line_nr;
 	bool m_bol;
 	CIFToken m_lookahead;
-
-	static constexpr size_t kRetractBufferSize = 128;
-
-	int m_retract_buffer[kRetractBufferSize];
-	int *m_retract_buffer_ptr = m_retract_buffer;
 
 	// token buffer
 	std::vector<char> m_token_buffer;
