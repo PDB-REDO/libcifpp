@@ -75,6 +75,30 @@ bool init_unit_test()
 
 // --------------------------------------------------------------------
 
+BOOST_AUTO_TEST_CASE(id_1)
+{
+	BOOST_TEST(cif::cif_id_for_number(0) == "A");
+	BOOST_TEST(cif::cif_id_for_number(25) == "Z");
+	BOOST_TEST(cif::cif_id_for_number(26) == "AA");
+	BOOST_TEST(cif::cif_id_for_number(26 + 1) == "AB");
+
+	BOOST_TEST(cif::cif_id_for_number(26 + 26 * 26 - 1) == "ZZ");
+	BOOST_TEST(cif::cif_id_for_number(26 + 26 * 26) == "AAA");
+	BOOST_TEST(cif::cif_id_for_number(26 + 26 * 26 + 1) == "AAB");
+
+	std::set<std::string> testset;
+
+	for (int i = 0; i < 100000; ++i)
+	{
+		std::string id = cif::cif_id_for_number(i);
+		BOOST_TEST(testset.count(id) == 0);
+		testset.insert(id);
+	}
+	BOOST_TEST(testset.size() == 100000);
+}
+
+// --------------------------------------------------------------------
+
 BOOST_AUTO_TEST_CASE(cc_1)
 {
 	std::tuple<std::string_view, float, char> tests[] = {
