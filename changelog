@@ -1,3 +1,7 @@
+Version 5.1
+- New parser, optimised for speed
+- Fix in unique ID generator
+
 Version 5.0.10
 - Fix in progress_bar, was using too much CPU
 - Optimised mmCIF parser
