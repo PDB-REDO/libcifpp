@@ -40,7 +40,6 @@
 #include <iostream>
 #include <map>
 #include <mutex>
-#include <regex>
 #include <sstream>
 #include <thread>
 
@@ -161,6 +160,8 @@ struct progress_bar_impl
 	void print_progress();
 	void print_done();
 
+	using time_point = std::chrono::time_point<std::chrono::system_clock>;
+
 	int64_t m_max_value;
 	std::atomic<int64_t> m_consumed;
 	int64_t m_last_consumed = 0;
@@ -168,8 +169,8 @@ struct progress_bar_impl
 	std::string m_action, m_message;
 	std::mutex m_mutex;
 	std::thread m_thread;
-	std::chrono::time_point<std::chrono::system_clock>
-		m_start = std::chrono::system_clock::now();
+	time_point m_start = std::chrono::system_clock::now();
+	time_point m_last = std::chrono::system_clock::now();
 	bool m_stop = false;
 };
 
@@ -192,7 +193,9 @@ void progress_bar_impl::run()
 	{
 		while (not m_stop)
 		{
-			if (std::chrono::system_clock::now() - m_start < 2s)
+			auto now = std::chrono::system_clock::now();
+
+			if (now - m_start < 2s or now - m_last < 100ms)
 			{
 				std::this_thread::sleep_for(10ms);
 				continue;
@@ -206,6 +209,7 @@ void progress_bar_impl::run()
 			print_progress();
 
 			printedAny = true;
+			m_last = std::chrono::system_clock::now();
 		}
 	}
 	catch (...)

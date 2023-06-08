@@ -236,28 +236,19 @@ std::string cif_id_for_number(int number)
 {
 	std::string result;
 
-	if (number >= 26 * 26 * 26)
-		result = 'L' + std::to_string(number);
-	else
+	do
 	{
-		if (number >= 26 * 26)
-		{
-			int v = number / (26 * 26);
-			result += char('A' - 1 + v);
-			number %= (26 * 26);
-		}
+		int r = number % 26;
+		result += 'A' + r;
 
-		if (number >= 26)
-		{
-			int v = number / 26;
-			result += char('A' - 1 + v);
-			number %= 26;
-		}
-
-		result += char('A' + number);
+		number = (number - r) / 26 - 1;
 	}
+	while (number >= 0);
+
+	std::reverse(result.begin(), result.end());
 
 	assert(not result.empty());
+
 	return result;
 }
 

@@ -75,6 +75,30 @@ bool init_unit_test()
 
 // --------------------------------------------------------------------
 
+BOOST_AUTO_TEST_CASE(id_1)
+{
+	BOOST_TEST(cif::cif_id_for_number(0) == "A");
+	BOOST_TEST(cif::cif_id_for_number(25) == "Z");
+	BOOST_TEST(cif::cif_id_for_number(26) == "AA");
+	BOOST_TEST(cif::cif_id_for_number(26 + 1) == "AB");
+
+	BOOST_TEST(cif::cif_id_for_number(26 + 26 * 26 - 1) == "ZZ");
+	BOOST_TEST(cif::cif_id_for_number(26 + 26 * 26) == "AAA");
+	BOOST_TEST(cif::cif_id_for_number(26 + 26 * 26 + 1) == "AAB");
+
+	std::set<std::string> testset;
+
+	for (int i = 0; i < 100000; ++i)
+	{
+		std::string id = cif::cif_id_for_number(i);
+		BOOST_TEST(testset.count(id) == 0);
+		testset.insert(id);
+	}
+	BOOST_TEST(testset.size() == 100000);
+}
+
+// --------------------------------------------------------------------
+
 BOOST_AUTO_TEST_CASE(cc_1)
 {
 	std::tuple<std::string_view, float, char> tests[] = {
@@ -2357,8 +2381,6 @@ _test.text ??
 
 BOOST_AUTO_TEST_CASE(output_test_1)
 {
-	cif::VERBOSE = 5;
-
 	auto data1 = R"(
 data_Q
 loop_
@@ -2863,7 +2885,7 @@ save__cat_1.name
 
 	std::istream is_dict(&buffer);
 
-	auto validator = cif::parse_dictionary("test_dict.dic", is_dict);
+	auto &validator = cif::validator_factory::instance().construct_validator("test_dict.dic", is_dict);
 
 	cif::file f;
 	f.set_validator(&validator);
@@ -2901,8 +2923,6 @@ _cat_1.name
 	ss << f;
 
 	cif::file f2(ss);
-
-	f2.set_validator(&validator);
 	BOOST_ASSERT(f2.is_valid());
 
 	auto &audit_conform = f2.front()["audit_conform"];

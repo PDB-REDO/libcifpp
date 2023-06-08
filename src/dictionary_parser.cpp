@@ -117,7 +117,7 @@ class dictionary_parser : public parser
 		if (not m_collected_item_types)
 			m_collected_item_types = collect_item_types();
 
-		std::string saveFrameName = m_token_value;
+		std::string saveFrameName { m_token_value };
 
 		if (saveFrameName.empty())
 			error("Invalid save frame, should contain more than just 'save_' here");
@@ -127,7 +127,7 @@ class dictionary_parser : public parser
 		datablock dict(m_token_value);
 		datablock::iterator cat = dict.end();
 
-		match(CIFToken::SAVE);
+		match(CIFToken::SAVE_NAME);
 		while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::Tag)
 		{
 			if (m_lookahead == CIFToken::LOOP)
@@ -183,7 +183,7 @@ class dictionary_parser : public parser
 			}
 		}
 
-		match(CIFToken::SAVE);
+		match(CIFToken::SAVE_);
 
 		if (isCategorySaveFrame)
 		{
@@ -479,6 +479,13 @@ validator parse_dictionary(std::string_view name, std::istream &is)
 	p.load_dictionary();
 
 	return result;
+}
+
+void extend_dictionary(validator &v, std::istream &is)
+{
+	file f;
+	dictionary_parser p(v, is, f);
+	p.load_dictionary();
 }
 
 } // namespace cif

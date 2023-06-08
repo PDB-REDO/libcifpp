@@ -491,9 +491,9 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 	}
 }
 
-void validator_factory::construct_validator(std::string_view name, std::istream &is)
+const validator &validator_factory::construct_validator(std::string_view name, std::istream &is)
 {
-	m_validators.emplace_back(parse_dictionary(name, is));
+	return m_validators.emplace_back(parse_dictionary(name, is));
 }
 
 } // namespace cif
