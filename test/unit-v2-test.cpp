@@ -3151,3 +3151,13 @@ _test.value
 	v = test.find1<std::optional<float>>("id"_key == 4, "value");
 	BOOST_CHECK(v.has_value() == false);
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(compound_test_1)
+{
+	cif::compound_factory::instance().push_dictionary(gTestDir / "REA_v2.cif");
+	auto compound = cif::compound_factory::instance().create("REA_v2");
+	BOOST_ASSERT(compound != nullptr);
+	BOOST_CHECK(compound->id() == "REA_v2");
+}

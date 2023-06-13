@@ -313,7 +313,7 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 		{
 			for (auto cmp : impl->m_compounds)
 			{
-				if (cmp->id() == id)
+				if (iequals(cmp->id(), id))
 				{
 					result = cmp;
 					break;
@@ -582,12 +582,12 @@ CCP4_compound_factory_impl::CCP4_compound_factory_impl(const fs::path &clibd_mon
 
 	auto &chemComps = m_file["comp_list"]["chem_comp"];
 
-	for (const auto &[group, threeLetterCode] : chemComps.rows<std::string, std::string>("group", "three_letter_code"))
+	for (const auto &[group, comp_id] : chemComps.rows<std::string, std::string>("group", "id"))
 	{
 		if (std::regex_match(group, peptideRx))
-			m_known_peptides.insert(threeLetterCode);
+			m_known_peptides.insert(comp_id);
 		else if (cif::iequals(group, "DNA") or cif::iequals(group, "RNA"))
-			m_known_bases.insert(threeLetterCode);
+			m_known_bases.insert(comp_id);
 	}
 }
 
@@ -597,7 +597,7 @@ compound *CCP4_compound_factory_impl::create(const std::string &id)
 
 	auto &cat = m_file["comp_list"]["chem_comp"];
 
-	auto rs = cat.find(cif::key("three_letter_code") == id);
+	auto rs = cat.find(cif::key("id") == id);
 
 	if (rs.size() == 1)
 	{
