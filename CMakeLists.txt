@@ -307,18 +307,7 @@ if(CIFPP_DOWNLOAD_CCD)
 			file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 		endif()
 
-		find_program(GUNZIP gunzip)
-
-		if(GUNZIP)
-			file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
-				SHOW_PROGRESS)
-			add_custom_command(OUTPUT ${COMPONENTS_CIF}
-				COMMAND ${GUNZIP} ${COMPONENTS_CIF}.gz
-				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
-		else()
-			file(DOWNLOAD ftp://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
-				SHOW_PROGRESS)
-		endif()
+		file(DOWNLOAD https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF} SHOW_PROGRESS)
 	endif()
 
 	add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
