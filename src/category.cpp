@@ -1708,8 +1708,7 @@ void category::reorder_by_index()
 
 namespace detail
 {
-
-	size_t write_value(std::ostream &os, std::string_view value, size_t offset, size_t width)
+	size_t write_value(std::ostream &os, std::string_view value, size_t offset, size_t width, bool right_aligned)
 	{
 		if (value.find('\n') != std::string::npos or width == 0 or value.length() > 132) // write as text field
 		{
@@ -1733,17 +1732,33 @@ namespace detail
 		}
 		else if (sac_parser::is_unquoted_string(value))
 		{
+			if (right_aligned)
+			{
+				if (value.length() < width)
+				{
+					os << std::string(width - value.length() - 1, ' ');
+					offset += width;
+				}
+				else
+					offset += value.length() + 1;
+			}
+
 			os << value;
 
-			if (value.length() < width)
-			{
-				os << std::string(width - value.length(), ' ');
-				offset += width;
-			}
+			if (right_aligned)
+				os << ' ';
 			else
 			{
-				os << ' ';
-				offset += value.length() + 1;
+				if (value.length() < width)
+				{
+					os << std::string(width - value.length(), ' ');
+					offset += width;
+				}
+				else
+				{
+					os << ' ';
+					offset += value.length() + 1;
+				}
 			}
 		}
 		else
@@ -1837,6 +1852,19 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 	// If the first Row has a next, we need a loop_
 	bool needLoop = (m_head->m_next != nullptr);
 
+	std::vector<bool> right_aligned(m_columns.size(), false);
+
+	if (m_cat_validator != nullptr)
+	{
+		for (auto cix : order)
+		{
+			auto &col = m_columns[cix];
+			right_aligned[cix] = col.m_validator != nullptr and
+				col.m_validator->m_type != nullptr and
+				col.m_validator->m_type->m_primitive_type == cif::DDL_PrimitiveType::Numb;
+		}
+	}
+
 	if (needLoop)
 	{
 		os << "loop_" << '\n';
@@ -1905,7 +1933,7 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 					offset = 0;
 				}
 
-				offset = detail::write_value(os, s, offset, w);
+				offset = detail::write_value(os, s, offset, w, right_aligned[cix]);
 
 				if (offset > 132)
 				{
@@ -1933,6 +1961,30 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 		l += 3;
 
+		size_t width = 1;
+
+		for (auto cix : order)
+		{
+			if (not right_aligned[cix])
+				continue;
+
+			std::string_view s;
+			auto iv = m_head->get(cix);
+			if (iv != nullptr)
+				s = iv->text();
+
+			if (s.empty())
+				s = "?";
+
+			size_t l = s.length();
+
+			if (not sac_parser::is_unquoted_string(s))
+				l += 2;
+
+			if (width < l)
+				width = l;
+		}
+
 		for (uint16_t cix : order)
 		{
 			auto &col = m_columns[cix];
@@ -1957,7 +2009,7 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 				offset = 0;
 			}
 
-			if (detail::write_value(os, s, offset, 1) != 0)
+			if (detail::write_value(os, s, offset, width, s.empty() or right_aligned[cix]) != 0)
 				os << '\n';
 		}
 	}
