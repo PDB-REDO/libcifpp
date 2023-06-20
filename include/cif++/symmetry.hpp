@@ -31,6 +31,7 @@
 #include "cif++/point.hpp"
 
 #include <array>
+#include <compare>
 #include <cstdint>
 #include <string>
 
