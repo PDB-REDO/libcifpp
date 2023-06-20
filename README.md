@@ -30,14 +30,21 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    // Take the first datablock in the file
     auto &db = file.front();
+
+    // Use the atom_site category
     auto &atom_site = db["atom_site"];
-    auto n = atom_site.find(cif::key("label_atom_id") == "OXT").size();
+
+    // Count the atoms with atom-id "OXT"
+    auto n = atom_site.count(cif::key("label_atom_id") == "OXT");
 
     std::cout << "File contains " << atom_site.size() << " atoms of which "
               << n << (n == 1 ? " is" : " are") << " OXT" << std::endl
               << "residues with an OXT are:" << std::endl;
 
+    // Loop over all atoms with atom-id "OXT" and print out some info.
+    // That info is extracted using structured binding in C++
     for (const auto &[asym, comp, seqnr] :
             atom_site.find<std::string, std::string, int>(
                 cif::key("label_atom_id") == "OXT",
