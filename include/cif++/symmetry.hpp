@@ -31,9 +31,12 @@
 #include "cif++/point.hpp"
 
 #include <array>
-#include <compare>
 #include <cstdint>
 #include <string>
+
+#if defined(__cpp_impl_three_way_comparison)
+#include <compare>
+#endif
 
 /// \file cif++/symmetry.hpp
 /// This file contains code to do symmetry operations based on the
