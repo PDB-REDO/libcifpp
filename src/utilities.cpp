@@ -43,7 +43,7 @@
 #include <sstream>
 #include <thread>
 
-#if not defined(_MSC_VER)
+#if not (defined(_MSC_VER) || defined(__MINGW32__))
 #include <sys/ioctl.h>
 #include <termios.h>
 #endif
@@ -68,9 +68,9 @@ std::string get_version_nr()
 
 // --------------------------------------------------------------------
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
 }
-#include <Windows.h>
+#include <windows.h>
 #include <libloaderapi.h>
 #include <wincon.h>
 
