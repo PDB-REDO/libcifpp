@@ -458,7 +458,7 @@ endif()
 
 # Optionally install the update scripts for CCD and dictionary files
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
-	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "GNU")
 		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly")
 	elseif(UNIX) # assume all others are like FreeBSD...
 		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly")
