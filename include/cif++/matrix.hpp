@@ -47,6 +47,8 @@ class matrix_expression
 	constexpr uint32_t dim_m() const { return static_cast<const M &>(*this).dim_m(); }
 	constexpr uint32_t dim_n() const { return static_cast<const M &>(*this).dim_n(); }
 
+	constexpr bool empty() const { return dim_m() == 0 or dim_n() == 0; }
+
 	constexpr auto &operator()(uint32_t i, uint32_t j)
 	{
 		return static_cast<M &>(*this).operator()(i, j);

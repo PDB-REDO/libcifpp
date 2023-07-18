@@ -34,7 +34,7 @@
 #define STDOUT_FILENO 1
 #endif
 
-#if _MSC_VER
+#if _WIN32
 #include <io.h>
 #define isatty _isatty
 #else
