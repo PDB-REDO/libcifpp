@@ -4,6 +4,7 @@ include(CMakeFindDependencyMacro)
 find_dependency(Threads)
 
 find_dependency(ZLIB REQUIRED)
+find_dependency(Eigen3 REQUIRED)
 
 if(MSVC)
 	find_dependency(zeep REQUIRED)
