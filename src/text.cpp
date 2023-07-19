@@ -239,7 +239,7 @@ std::string cif_id_for_number(int number)
 	do
 	{
 		int r = number % 26;
-		result += 'A' + r;
+		result += static_cast<char>('A' + r);
 
 		number = (number - r) / 26 - 1;
 	}

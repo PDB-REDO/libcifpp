@@ -61,7 +61,7 @@ quaternion_type<T> normalize(quaternion_type<T> q)
 
 quaternion construct_from_angle_axis(float angle, point axis)
 {
-	angle = (angle * kPI / 180) / 2;
+	angle = static_cast<float>((angle * kPI / 180) / 2);
 	auto s = std::sin(angle);
 	auto c = std::cos(angle);
 
@@ -119,7 +119,7 @@ point center_points(std::vector<point> &Points)
 }
 
 quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
-	float angle, float esd)
+	float angle, float /*esd*/)
 {
 	p1 -= p3;
 	p2 -= p3;

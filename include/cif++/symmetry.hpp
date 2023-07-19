@@ -184,7 +184,7 @@ class datablock;
 class cell;
 class spacegroup;
 class rtop;
-class sym_op;
+struct sym_op;
 
 
 /// @brief A class that encapsulates the symmetry operations as used in PDB files, i.e. a rotational number and a translation vector

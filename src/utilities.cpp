@@ -204,7 +204,7 @@ void progress_bar_impl::run()
 			std::lock_guard lock(m_mutex);
 
 			if (not printedAny and isatty(STDOUT_FILENO))
-				std::cout << "\e[?25l";
+				std::cout << "\x1b[?25l";
 
 			print_progress();
 
@@ -220,7 +220,7 @@ void progress_bar_impl::run()
 	{
 		print_done();
 		if (isatty(STDOUT_FILENO))
-			std::cout << "\e[?25h";
+			std::cout << "\x1b[?25h";
 	}
 }
 

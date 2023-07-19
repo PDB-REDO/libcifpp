@@ -44,24 +44,24 @@ template <typename M>
 class matrix_expression
 {
   public:
-	constexpr uint32_t dim_m() const { return static_cast<const M &>(*this).dim_m(); }
-	constexpr uint32_t dim_n() const { return static_cast<const M &>(*this).dim_n(); }
+	constexpr size_t dim_m() const { return static_cast<const M &>(*this).dim_m(); }
+	constexpr size_t dim_n() const { return static_cast<const M &>(*this).dim_n(); }
 
 	constexpr bool empty() const { return dim_m() == 0 or dim_n() == 0; }
 
-	constexpr auto &operator()(uint32_t i, uint32_t j)
+	constexpr auto &operator()(size_t i, size_t j)
 	{
 		return static_cast<M &>(*this).operator()(i, j);
 	}
 
-	constexpr auto operator()(uint32_t i, uint32_t j) const
+	constexpr auto operator()(size_t i, size_t j) const
 	{
 		return static_cast<const M &>(*this).operator()(i, j);
 	}
 
-	void swap_row(uint32_t r1, uint32_t r2)
+	void swap_row(size_t r1, size_t r2)
 	{
-		for (uint32_t c = 0; c < dim_m(); ++c)
+		for (size_t c = 0; c < dim_m(); ++c)
 		{
 			auto v = operator()(r1, c);
 			operator()(r1, c) = operator()(r2, c);
@@ -69,9 +69,9 @@ class matrix_expression
 		}
 	}
 
-	void swap_col(uint32_t c1, uint32_t c2)
+	void swap_col(size_t c1, size_t c2)
 	{
-		for (uint32_t r = 0; r < dim_n(); ++r)
+		for (size_t r = 0; r < dim_n(); ++r)
 		{
 			auto &a = operator()(r, c1);
 			auto &b = operator()(r, c2);
@@ -122,9 +122,9 @@ class matrix : public matrix_expression<matrix<F>>
 		, m_n(m.dim_n())
 		, m_data(m_m * m_n)
 	{
-		for (uint32_t i = 0; i < m_m; ++i)
+		for (size_t i = 0; i < m_m; ++i)
 		{
-			for (uint32_t j = 0; j < m_n; ++j)
+			for (size_t j = 0; j < m_n; ++j)
 				operator()(i, j) = m(i, j);
 		}
 	}
@@ -180,9 +180,9 @@ class matrix_fixed : public matrix_expression<matrix_fixed<F, M, N>>
 	matrix_fixed(const M2 &m)
 	{
 		assert(M == m.dim_m() and N == m.dim_n());
-		for (uint32_t i = 0; i < M; ++i)
+		for (size_t i = 0; i < M; ++i)
 		{
-			for (uint32_t j = 0; j < N; ++j)
+			for (size_t j = 0; j < N; ++j)
 				operator()(i, j) = m(i, j);
 		}
 	}
@@ -244,7 +244,7 @@ class symmetric_matrix : public matrix_expression<symmetric_matrix<F>>
   public:
 	using value_type = F;
 
-	symmetric_matrix(uint32_t n, value_type v = 0)
+	symmetric_matrix(size_t n, value_type v = 0)
 		: m_n(n)
 		, m_data((m_n * (m_n + 1)) / 2)
 	{
@@ -257,17 +257,17 @@ class symmetric_matrix : public matrix_expression<symmetric_matrix<F>>
 	symmetric_matrix &operator=(symmetric_matrix &&m) = default;
 	symmetric_matrix &operator=(const symmetric_matrix &m) = default;
 
-	constexpr uint32_t dim_m() const { return m_n; }
-	constexpr uint32_t dim_n() const { return m_n; }
+	constexpr size_t dim_m() const { return m_n; }
+	constexpr size_t dim_n() const { return m_n; }
 
-	constexpr value_type operator()(uint32_t i, uint32_t j) const
+	constexpr value_type operator()(size_t i, size_t j) const
 	{
 		return i < j
 		           ? m_data[(j * (j + 1)) / 2 + i]
 		           : m_data[(i * (i + 1)) / 2 + j];
 	}
 
-	constexpr value_type &operator()(uint32_t i, uint32_t j)
+	constexpr value_type &operator()(size_t i, size_t j)
 	{
 		if (i > j)
 			std::swap(i, j);
@@ -276,7 +276,7 @@ class symmetric_matrix : public matrix_expression<symmetric_matrix<F>>
 	}
 
   private:
-	uint32_t m_n;
+	size_t m_n;
 	std::vector<value_type> m_data;
 };
 
@@ -298,17 +298,17 @@ class symmetric_matrix_fixed : public matrix_expression<symmetric_matrix_fixed<F
 	symmetric_matrix_fixed &operator=(symmetric_matrix_fixed &&m) = default;
 	symmetric_matrix_fixed &operator=(const symmetric_matrix_fixed &m) = default;
 
-	constexpr uint32_t dim_m() const { return M; }
-	constexpr uint32_t dim_n() const { return M; }
+	constexpr size_t dim_m() const { return M; }
+	constexpr size_t dim_n() const { return M; }
 
-	constexpr value_type operator()(uint32_t i, uint32_t j) const
+	constexpr value_type operator()(size_t i, size_t j) const
 	{
 		return i < j
 		           ? m_data[(j * (j + 1)) / 2 + i]
 		           : m_data[(i * (i + 1)) / 2 + j];
 	}
 
-	constexpr value_type &operator()(uint32_t i, uint32_t j)
+	constexpr value_type &operator()(size_t i, size_t j)
 	{
 		if (i > j)
 			std::swap(i, j);
@@ -334,21 +334,21 @@ class identity_matrix : public matrix_expression<identity_matrix<F>>
   public:
 	using value_type = F;
 
-	identity_matrix(uint32_t n)
+	identity_matrix(size_t n)
 		: m_n(n)
 	{
 	}
 
-	constexpr uint32_t dim_m() const { return m_n; }
-	constexpr uint32_t dim_n() const { return m_n; }
+	constexpr size_t dim_m() const { return m_n; }
+	constexpr size_t dim_n() const { return m_n; }
 
-	constexpr value_type operator()(uint32_t i, uint32_t j) const
+	constexpr value_type operator()(size_t i, size_t j) const
 	{
-		return i == j ? 1 : 0;
+		return static_cast<value_type>(i == j ? 1 : 0);
 	}
 
   private:
-	uint32_t m_n;
+	size_t m_n;
 };
 
 // --------------------------------------------------------------------
@@ -366,10 +366,10 @@ class matrix_subtraction : public matrix_expression<matrix_subtraction<M1, M2>>
 		assert(m_m1.dim_n() == m_m2.dim_n());
 	}
 
-	constexpr uint32_t dim_m() const { return m_m1.dim_m(); }
-	constexpr uint32_t dim_n() const { return m_m1.dim_n(); }
+	constexpr size_t dim_m() const { return m_m1.dim_m(); }
+	constexpr size_t dim_n() const { return m_m1.dim_n(); }
 
-	constexpr auto operator()(uint32_t i, uint32_t j) const
+	constexpr auto operator()(size_t i, size_t j) const
 	{
 		return m_m1(i, j) - m_m2(i, j);
 	}
@@ -396,16 +396,16 @@ class matrix_matrix_multiplication : public matrix_expression<matrix_matrix_mult
 		assert(m1.dim_m() == m2.dim_n());
 	}
 
-	constexpr uint32_t dim_m() const { return m_m1.dim_m(); }
-	constexpr uint32_t dim_n() const { return m_m1.dim_n(); }
+	constexpr size_t dim_m() const { return m_m1.dim_m(); }
+	constexpr size_t dim_n() const { return m_m1.dim_n(); }
 
-	constexpr auto operator()(uint32_t i, uint32_t j) const
+	constexpr auto operator()(size_t i, size_t j) const
 	{
 		using value_type = decltype(m_m1(0, 0));
 
 		value_type result = {};
 
-		for (uint32_t k = 0; k < m_m1.dim_m(); ++k)
+		for (size_t k = 0; k < m_m1.dim_m(); ++k)
 			result += m_m1(i, k) * m_m2(k, j);
 
 		return result;
@@ -428,10 +428,10 @@ class matrix_scalar_multiplication : public matrix_expression<matrix_scalar_mult
 	{
 	}
 
-	constexpr uint32_t dim_m() const { return m_m.dim_m(); }
-	constexpr uint32_t dim_n() const { return m_m.dim_n(); }
+	constexpr size_t dim_m() const { return m_m.dim_m(); }
+	constexpr size_t dim_n() const { return m_m.dim_n(); }
 
-	constexpr auto operator()(uint32_t i, uint32_t j) const
+	constexpr auto operator()(size_t i, size_t j) const
 	{
 		return m_m(i, j) * m_v;
 	}
@@ -500,10 +500,10 @@ class matrix_cofactors : public matrix_expression<matrix_cofactors<M>>
 	{
 	}
 
-	constexpr uint32_t dim_m() const { return m_m.dim_m(); }
-	constexpr uint32_t dim_n() const { return m_m.dim_n(); }
+	constexpr size_t dim_m() const { return m_m.dim_m(); }
+	constexpr size_t dim_n() const { return m_m.dim_n(); }
 
-	constexpr auto operator()(uint32_t i, uint32_t j) const
+	constexpr auto operator()(size_t i, size_t j) const
 	{
 		const size_t ixs[4][3] = {
 			{ 1, 2, 3 },

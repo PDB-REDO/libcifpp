@@ -70,12 +70,12 @@ void cell::init()
 
 	m_orthogonal = identity_matrix(3);
 
-	m_orthogonal(0, 0) = m_a;
-	m_orthogonal(0, 1) = m_b * std::cos(gamma);
-	m_orthogonal(0, 2) = m_c * std::cos(beta);
-	m_orthogonal(1, 1) = m_b * std::sin(gamma);
-	m_orthogonal(1, 2) = -m_c * std::sin(beta) * std::cos(alpha_star);
-	m_orthogonal(2, 2) = m_c * std::sin(beta) * std::sin(alpha_star);
+	m_orthogonal(0, 0) = static_cast<float>(m_a);
+	m_orthogonal(0, 1) = static_cast<float>(m_b * std::cos(gamma));
+	m_orthogonal(0, 2) = static_cast<float>(m_c * std::cos(beta));
+	m_orthogonal(1, 1) = static_cast<float>(m_b * std::sin(gamma));
+	m_orthogonal(1, 2) = static_cast<float>(-m_c * std::sin(beta) * std::cos(alpha_star));
+	m_orthogonal(2, 2) = static_cast<float>(m_c * std::sin(beta) * std::sin(alpha_star));
 
 	m_fractional = inverse(m_orthogonal);
 }
@@ -90,7 +90,7 @@ sym_op::sym_op(std::string_view s)
 	int rnri = 256;	// default to unexisting number
 	auto r = std::from_chars(b, e, rnri);
 	
-	m_nr = rnri;
+	m_nr = static_cast<uint8_t>(rnri);
 	m_ta = r.ptr[1] - '0';
 	m_tb = r.ptr[2] - '0';
 	m_tc = r.ptr[3] - '0';
@@ -121,21 +121,21 @@ transformation::transformation(const symop_data &data)
 {
 	const auto &d = data.data();
 
-	m_rotation(0, 0) = d[0];
-	m_rotation(0, 1) = d[1];
-	m_rotation(0, 2) = d[2];
-	m_rotation(1, 0) = d[3];
-	m_rotation(1, 1) = d[4];
-	m_rotation(1, 2) = d[5];
-	m_rotation(2, 0) = d[6];
-	m_rotation(2, 1) = d[7];
-	m_rotation(2, 2) = d[8];
+	m_rotation(0, 0) = static_cast<float>(d[0]);
+	m_rotation(0, 1) = static_cast<float>(d[1]);
+	m_rotation(0, 2) = static_cast<float>(d[2]);
+	m_rotation(1, 0) = static_cast<float>(d[3]);
+	m_rotation(1, 1) = static_cast<float>(d[4]);
+	m_rotation(1, 2) = static_cast<float>(d[5]);
+	m_rotation(2, 0) = static_cast<float>(d[6]);
+	m_rotation(2, 1) = static_cast<float>(d[7]);
+	m_rotation(2, 2) = static_cast<float>(d[8]);
 
 	try_create_quaternion();
 
-	m_translation.m_x = d[9] == 0 ? 0 : 1.0 * d[9] / d[10];
-	m_translation.m_y = d[11] == 0 ? 0 : 1.0 * d[11] / d[12];
-	m_translation.m_z = d[13] == 0 ? 0 : 1.0 * d[13] / d[14];
+	m_translation.m_x = static_cast<float>(d[9] == 0 ? 0 : 1.0 * d[9] / d[10]);
+	m_translation.m_y = static_cast<float>(d[11] == 0 ? 0 : 1.0 * d[11] / d[12]);
+	m_translation.m_z = static_cast<float>(d[13] == 0 ? 0 : 1.0 * d[13] / d[14]);
 }
 
 transformation::transformation(const matrix3x3<float> &r, const cif::point &t)
@@ -461,7 +461,7 @@ std::tuple<float,point,sym_op> crystal::closest_symmetry_copy(point a, point b) 
 
 	for (size_t i = 0; i < m_spacegroup.size(); ++i)
 	{
-		sym_op s(i + 1);
+		sym_op s(static_cast<uint8_t>(i + 1));
 		auto &t = m_spacegroup[i];
 
 		auto fsb = t(fb);

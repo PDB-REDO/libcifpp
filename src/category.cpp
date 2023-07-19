@@ -1976,13 +1976,13 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 			if (s.empty())
 				s = "?";
 
-			size_t l = s.length();
+			size_t l2 = s.length();
 
 			if (not sac_parser::is_unquoted_string(s))
-				l += 2;
+				l2 += 2;
 
-			if (width < l)
-				width = l;
+			if (width < l2)
+				width = l2;
 		}
 
 		for (uint16_t cix : order)
