@@ -670,9 +670,13 @@ void category::set_validator(const validator *v, datablock &db)
 
 			if (missing.empty())
 				m_index = new category_index(this);
-			else if (VERBOSE > 0)
-				std::cerr << "Cannot construct index since the key field" << (missing.size() > 1 ? "s" : "") << " "
-							<< cif::join(missing, ", ") + " in " + m_name + " " + (missing.size() == 1 ? "is" : "are") << " missing" << std::endl;
+			else
+			{
+				std::ostringstream msg;
+				msg << "Cannot construct index since the key field" << (missing.size() > 1 ? "s" : "") << " "
+							<< cif::join(missing, ", ") << " in " << m_name << " " << (missing.size() == 1 ? "is" : "are") << " missing" << std::endl;
+				throw std::runtime_error(msg.str());
+			}
 		}
 	}
 	else
