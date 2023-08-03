@@ -1170,6 +1170,8 @@ void PDBFileParser::PreParseInput(std::istream &is)
 		std::string value;
 		if (lookahead.length() > 6)
 			value = cif::trim_right_copy(lookahead.substr(6));
+		
+		lookahead.clear();
 
 		uint32_t curLineNr = lineNr;
 		getline(is, lookahead);

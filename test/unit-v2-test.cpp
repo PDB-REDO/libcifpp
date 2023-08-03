@@ -3161,3 +3161,49 @@ BOOST_AUTO_TEST_CASE(compound_test_1)
 	BOOST_ASSERT(compound != nullptr);
 	BOOST_CHECK(compound->id() == "REA_v2");
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(pdb_parser_test_1)
+{
+	char k1CBS[] = R"(HEADER    RETINOIC-ACID TRANSPORT                 28-SEP-94   1CBS
+TITLE     CRYSTAL STRUCTURE OF CELLULAR RETINOIC-ACID-BINDING
+TITLE    2 PROTEINS I AND II IN COMPLEX WITH ALL-TRANS-RETINOIC ACID
+TITLE    3 AND A SYNTHETIC RETINOID
+COMPND    MOL_ID: 1;
+COMPND   2 MOLECULE: CELLULAR RETINOIC ACID BINDING PROTEIN TYPE II;
+COMPND   3 CHAIN: A;
+COMPND   4 ENGINEERED: YES
+SOURCE    MOL_ID: 1;
+SOURCE   2 ORGANISM_SCIENTIFIC: HOMO SAPIENS;
+SOURCE   3 ORGANISM_COMMON: HUMAN;
+SOURCE   4 ORGANISM_TAXID: 9606;
+SOURCE   5 CELL_LINE: BL21;
+SOURCE   6 GENE: HUMAN CRABP-II;
+SOURCE   7 EXPRESSION_SYSTEM: ESCHERICHIA COLI BL21(DE3);
+SOURCE   8 EXPRESSION_SYSTEM_TAXID: 469008;
+SOURCE   9 EXPRESSION_SYSTEM_STRAIN: BL21 (DE3);
+SOURCE  10 EXPRESSION_SYSTEM_PLASMID: PET-3A
+KEYWDS    RETINOIC-ACID TRANSPORT
+EXPDTA    X-RAY DIFFRACTION
+AUTHOR    G.J.KLEYWEGT,T.BERGFORS,T.A.JONES
+ATOM      1  N   PRO A   1      16.979  13.301  44.555  1.00 30.05           N
+ATOM      2  CA  PRO A   1      18.150  13.525  43.680  1.00 28.82           C
+ATOM      3  C   PRO A   1      18.656  14.966  43.784  1.00 26.59           C
+ATOM      4  O   PRO A   1      17.890  15.889  44.078  1.00 26.84           O
+ATOM      5  CB  PRO A   1      17.678  13.270  42.255  1.00 29.24           C
+ATOM      6  CG  PRO A   1      16.248  13.734  42.347  1.00 29.29           C
+ATOM      7  CD  PRO A   1      15.762  13.216  43.724  1.00 30.71           C)";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(k1CBS, sizeof(k1CBS) - 1);
+
+	std::istream is(&buffer);
+
+	auto f = cif::pdb::read(is);
+}
