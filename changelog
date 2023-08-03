@@ -1,6 +1,8 @@
 Version 5.1.1
 - Added missing include <compare> in symmetry.hpp
 - Added empty() to matrix
+- Fix for parsing PDB files with a last line that does not end with
+  a new line character.
 
 Version 5.1
 - New parser, optimised for speed
