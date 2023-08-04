@@ -246,10 +246,13 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 					zstream.avail_in = static_cast<uInt>(this->m_upstream->sgetn(m_in_buffer.data(), m_in_buffer.size()));
 				}
 
+				if (zstream.avail_in == 0)
+					break;
+
 				int err = ::inflate(&zstream, Z_SYNC_FLUSH);
 				std::streamsize n = kBufferByteSize - zstream.avail_out;
 
-				if (err == Z_STREAM_END or (err == Z_OK and n > 0))
+				if (n > 0)
 				{
 					this->setg(
 						m_out_buffer.data(),
@@ -257,6 +260,9 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 						m_out_buffer.data() + n);
 					break;
 				}
+
+				if (err == Z_STREAM_END and zstream.avail_in > 0)
+					err = ::inflateReset2(&zstream, 47);
 
 				if (err < Z_OK)
 					break;
