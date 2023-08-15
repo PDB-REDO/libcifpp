@@ -1,5 +1,12 @@
 @PACKAGE_INIT@
 
+include("${CMAKE_CURRENT_LIST_DIR}/cifppTargets.cmake")
+
+# Note that this set_and_check needs te be executed before
+# find_dependency of Eigen3, otherwise the path is
+# not found....
+set_and_check(CIFPP_SHARE_DIR "@PACKAGE_CIFPP_DATA_DIR@")
+
 include(CMakeFindDependencyMacro)
 find_dependency(Threads)
 
@@ -9,9 +16,5 @@ find_dependency(Eigen3 REQUIRED)
 if(MSVC)
 	find_dependency(zeep REQUIRED)
 endif()
-
-INCLUDE("${CMAKE_CURRENT_LIST_DIR}/cifppTargets.cmake")
-
-set_and_check(CIFPP_SHARE_DIR "@PACKAGE_CIFPP_DATA_DIR@")
 
 check_required_components(cifpp)

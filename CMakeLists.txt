@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(cifpp VERSION 5.1.1 LANGUAGES CXX)
+project(libcifpp VERSION 5.1.2 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -197,7 +197,7 @@ endif()
 
 # Create a revision file, containing the current git version info
 include(VersionString)
-write_version_header(${PROJECT_SOURCE_DIR}/src/ "LibCIFPP")
+write_version_header(${PROJECT_SOURCE_DIR}/src/ LIB_NAME "LibCIFPP")
 
 # SymOp data table
 if(CIFPP_RECREATE_SYMOP_DATA)
