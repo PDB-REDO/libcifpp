@@ -56,7 +56,6 @@ extern CIFPP_EXPORT int VERBOSE;
 
 // the git 'build' number
 std::string get_version_nr();
-// std::string get_version_date();
 
 // --------------------------------------------------------------------
 //	Code helping with terminal i/o
