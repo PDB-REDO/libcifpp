@@ -412,18 +412,6 @@ write_basic_package_version_file(
 	COMPATIBILITY AnyNewerVersion
 )
 
-# pkgconfig support
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
-set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libcifpp.pc.in
-	${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc.in @ONLY)
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc
-	INPUT ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc.in)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-
 if(ENABLE_TESTING)
 	enable_testing()
 
