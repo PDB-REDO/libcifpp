@@ -35,7 +35,6 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
-include(Dart)
 include(GenerateExportHeader)
 
 set(CXX_EXTENSIONS OFF)
