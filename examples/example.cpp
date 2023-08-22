@@ -8,7 +8,10 @@ namespace fs = std::filesystem;
 int main(int argc, char *argv[])
 {
 	if (argc != 2)
+	{
+		std::cerr << "Usage: example <inputfile>" << std::endl;
 		exit(1);
+	}
 
 	cif::file file = cif::pdb::read(argv[1]);
 
