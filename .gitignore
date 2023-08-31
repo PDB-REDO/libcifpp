@@ -8,3 +8,5 @@ msvc/
 src/revision.hpp
 test/test-create_sugar_?.cif
 Testing/
+docs/api
+

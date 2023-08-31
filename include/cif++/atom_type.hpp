@@ -35,8 +35,11 @@
 namespace cif
 {
 
+/// Atom type as an integer. All known elements are available as a constant.
+
 enum atom_type : uint8_t
 {
+/// @cond
 	Nn = 0, // Unknown
 
 	H = 1,  // Hydro­gen
@@ -168,6 +171,8 @@ enum atom_type : uint8_t
 
 	D = 119, // Deuterium
 };
+
+/// @endcond
 
 // --------------------------------------------------------------------
 // atom_type_info
