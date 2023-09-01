@@ -1,9 +1,9 @@
 EXCLUDE_SYMBOLS        = cif::detail::*, std*
 FILE_PATTERNS          = *.hpp
+STRIP_FROM_PATH        = @DOXYGEN_INPUT_DIR@
 RECURSIVE              = YES
 GENERATE_XML           = YES
 PREDEFINED             += and=&& or=|| not=!
-PREDEFINED             += CIFPP_EXPORT=
 GENERATE_HTML          = NO
 GENERATE_TODOLIST      = NO
 INPUT                  = @DOXYGEN_INPUT_DIR@

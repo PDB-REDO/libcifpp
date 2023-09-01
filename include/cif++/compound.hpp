@@ -26,10 +26,12 @@
 
 #pragma once
 
-/// \file This file contains the definition for the class compound, encapsulating
+/// \file compound.hpp cif++/compound.hpp
+/// This file contains the definition for the class compound, encapsulating
 /// the information found for compounds in the CCD.
 
 #include "cif++/atom_type.hpp"
+#include "cif++/exports.hpp"
 #include "cif++/point.hpp"
 
 #include <map>
