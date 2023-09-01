@@ -24,13 +24,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Lib for working with structures as contained in mmCIF and PDB files
+/// \file
+
+/// This file contains information about all known elements
 
 #pragma once
 
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+
+#include "exports.hpp"
 
 namespace cif
 {
@@ -175,7 +179,8 @@ enum atom_type : uint8_t
 /// @endcond
 
 // --------------------------------------------------------------------
-// atom_type_info
+
+/// An enum used to select the desired radius for an atom
 
 enum class radius_type
 {
@@ -194,30 +199,53 @@ enum class radius_type
 
 constexpr size_t kRadiusTypeCount = static_cast<size_t>(radius_type::type_count);
 
+/// An enum used to select either the effective or the crystal radius of an ion
+
 enum class ionic_radius_type
 {
 	effective, crystal
 };
 
+/// A struct holding the known information for all elements defined in @ref atom_type
+
 struct atom_type_info
 {
+	/// The type as an @ref atom_type
 	atom_type type;
+
+	/// The official name for this element
 	std::string name;
+
+	/// The official symbol for this element
 	std::string symbol;
+
+	/// The weight of this element
 	float weight;
+
+	/// A flag indicating whether the element is a metal
 	bool metal;
+
+	/// Array containing all known radii for this element. A value of std::nanf("1") is 
+	/// stored for unknown values
 	float radii[kRadiusTypeCount];
 };
+
+/// Array of @ref atom_type_info struct for each of the defined elements in @ref atom_type
 
 extern CIFPP_EXPORT const atom_type_info kKnownAtoms[];
 
 // --------------------------------------------------------------------
 // AtomTypeTraits
 
+/// A traits class to access information on known elements
+
 class atom_type_traits
 {
   public:
+	/// Constructor taking an @ref atom_type \a a
 	atom_type_traits(atom_type a);
+
+	/// Constructor based on the element as a string in \a symbol
 	atom_type_traits(const std::string &symbol);
 
 	atom_type type() const { return m_info->type; }
@@ -227,7 +255,10 @@ class atom_type_traits
 
 	bool is_metal() const { return m_info->metal; }
 
+	/// Return true if the symbol in \a symbol actually exists in the list of known elements in @ref atom_type
 	static bool is_element(const std::string &symbol);
+
+	/// Return true if the symbol in \a symbol exists and is a metal
 	static bool is_metal(const std::string &symbol);
 
 	float radius(radius_type type = radius_type::single_bond) const
