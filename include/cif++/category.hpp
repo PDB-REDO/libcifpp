@@ -26,6 +26,12 @@
 
 #pragma once
 
+/// \file category.hpp cif++/category.hpp
+/// Documentation for the cif::category class
+///
+/// The category class should meet the requirements of Container and
+/// SequenceContainer.
+
 #include "cif++/forward_decl.hpp"
 
 #include "cif++/condition.hpp"
@@ -44,7 +50,12 @@ namespace cif
 {
 
 // --------------------------------------------------------------------
-// special exception
+// special exceptions
+
+/// @brief A duplicate_key_error is thrown when an attempt is made
+/// to insert a row with values that would introduce a duplicate key
+/// in the index. Of course, this can only happen if a @ref category_validator
+/// has been defined for this category.
 class duplicate_key_error : public std::runtime_error
 {
   public:
@@ -54,6 +65,8 @@ class duplicate_key_error : public std::runtime_error
 	}
 };
 
+/// @brief A multiple_results_error is throw when you request a single
+/// row using a query but the query contains more than exactly one row.
 class multiple_results_error : public std::runtime_error
 {
   public:
@@ -66,18 +79,31 @@ class multiple_results_error : public std::runtime_error
 // --------------------------------------------------------------------
 // These should be moved elsewhere, one day.
 
-template<typename _Tp> inline constexpr bool is_optional_v = false;
-template<typename _Tp> inline constexpr bool is_optional_v<std::optional<_Tp>> = true;
+/// \cond
+template <typename _Tp>
+inline constexpr bool is_optional_v = false;
+template <typename _Tp>
+inline constexpr bool is_optional_v<std::optional<_Tp>> = true;
+/// \endcond
 
 // --------------------------------------------------------------------
+
+/// The class category is a sequence container for rows of data values.
+/// You could think of it as a std::vector<cif::row_handle> like class.
+///
+/// A @ref category_validator can be assigned to an object of category
+/// after which this class can validate contained data and use an
+/// index to keep key values unique.
 
 class category
 {
   public:
+	/// \cond
 	friend class row_handle;
 
 	template <typename, typename...>
 	friend class iterator_impl;
+	/// \endcond
 
 	using value_type = row_handle;
 	using reference = value_type;
@@ -85,38 +111,66 @@ class category
 	using iterator = iterator_impl<category>;
 	using const_iterator = iterator_impl<const category>;
 
-	category() = default;
+	category() = default;                     ///< Default constructor
+	category(std::string_view name);          ///< Constructor taking a \a name
+	category(const category &rhs);            ///< Copy constructor
+	category(category &&rhs);                 ///< Move constructor
+	category &operator=(const category &rhs); ///< Copy assignement operator
+	category &operator=(category &&rhs);      ///< Move assignement operator
 
-	category(std::string_view name);
-
-	category(const category &rhs);
-
-	category(category &&rhs);
-
-	category &operator=(const category &rhs);
-
-	category &operator=(category &&rhs);
-
+	/// @brief Destructor
+	/// @note Please note that the destructor is not virtual. It is assumed that
+	/// you will not derive from this class.
 	~category();
 
 	// --------------------------------------------------------------------
 
-	const std::string &name() const { return m_name; }
+	const std::string &name() const { return m_name; } ///< Returns the name of the category
+	iset key_fields() const; ///< Returns the @ref iset of key field names. Retrieved from the @ref category_validator for this category
+	std::set<uint16_t> key_field_indices() const; ///< Returns a set of indices for the key fields.
 
-	iset key_fields() const;
-
-	std::set<uint16_t> key_field_indices() const;
-
+	/// @brief Set the validator for this category to @a v
+	/// @param v The category_validator to assign. A nullptr value is allowed.
+	/// @param db The enclosing @ref datablock
 	void set_validator(const validator *v, datablock &db);
+
+	/// @brief Update the links in this category
+	/// @param db The enclosing @ref datablock
 	void update_links(datablock &db);
 
+	/// @brief Return the global @ref validator for the data
+	/// @return The @ref validator or nullptr if not assigned
 	const validator *get_validator() const { return m_validator; }
+
+	/// @brief Return the category validator for this category
+	/// @return The @ref category_validator or nullptr if not assigned
 	const category_validator *get_cat_validator() const { return m_cat_validator; }
 
+	/// @brief Validate the data stored using the assigned @ref category_validator
+	/// @return Returns true is all validations pass
 	bool is_valid() const;
+
+	/// @brief Validate links, that means, values in this category should have an
+	/// accompanying value in parent categories.
+	/// 
+	/// @note
+	/// The code makes one exception when validating missing links and that's between
+	/// *atom_site* and a parent *pdbx_poly_seq_scheme* or *entity_poly_seq*.
+	/// This particular case should be skipped because it is wrong:
+	/// there are atoms that are not part of a polymer, and thus will have no
+	/// parent in those categories.
+	///
+	/// @return Returns true is all validations pass
 	bool validate_links() const;
 
+	/// @brief Equality operator, returns true if @a rhs is equal to this
+	/// @param rhs The object to compare with
+	/// @return True if the data contained is equal
 	bool operator==(const category &rhs) const;
+
+	/// @brief Unequality operator, returns true if @a rhs is not equal to this
+	/// @param rhs The object to compare with
+	/// @return True if the data contained is not equal
 	bool operator!=(const category &rhs) const
 	{
 		return not operator==(rhs);
@@ -124,21 +178,33 @@ class category
 
 	// --------------------------------------------------------------------
 
+	/// @brief Return a reference to the first row in this category.
+	/// @return Reference to the first row in this category. The result is undefined if
+	/// the category is empty.
 	reference front()
 	{
 		return { *this, *m_head };
 	}
 
+	/// @brief Return a const reference to the first row in this category.
+	/// @return const reference to the first row in this category. The result is undefined if
+	/// the category is empty.
 	const_reference front() const
 	{
 		return { const_cast<category &>(*this), const_cast<row &>(*m_head) };
 	}
 
+	/// @brief Return a reference to the last row in this category.
+	/// @return Reference to the last row in this category. The result is undefined if
+	/// the category is empty.
 	reference back()
 	{
 		return { *this, *m_tail };
 	}
 
+	/// @brief Return a const reference to the last row in this category.
+	/// @return const reference to the last row in this category. The result is undefined if
+	/// the category is empty.
 	const_reference back() const
 	{
 		return { const_cast<category &>(*this), const_cast<row &>(*m_tail) };
@@ -174,11 +240,19 @@ class category
 		return { *this, nullptr };
 	}
 
+	/// Return a count of the rows in this container
 	size_t size() const
 	{
 		return std::distance(cbegin(), cend());
 	}
 
+	/// Return the theoretical maximum number or rows that can be stored
+	size_t max_size() const
+	{
+		return std::numeric_limits<size_t>::max();	// this is a bit optimistic, I guess
+	}
+
+	/// Return true if the category is empty
 	bool empty() const
 	{
 		return m_head == nullptr;
@@ -195,6 +269,9 @@ class category
 	/// @return The row found in the index, or an undefined row_handle
 	row_handle operator[](const key_type &key);
 
+	/// @brief Return a const row_handle for the row specified by \a key
+	/// @param key The value for the key, fields specified in the dictionary should have a value
+	/// @return The row found in the index, or an undefined row_handle
 	const row_handle operator[](const key_type &key) const
 	{
 		return const_cast<category *>(this)->operator[](key);
@@ -202,12 +279,39 @@ class category
 
 	// --------------------------------------------------------------------
 
+	/// @brief Return a special const iterator for all rows in this category.
+	/// This iterator can be used in a structured binding context. E.g.:
+	///
+	/// @code{.cpp}
+	/// for (const auto &[name, value] : cat.rows<std::string,int>("item_name", "item_value"))
+	///   std::cout << name << ": " << value << std::endl;
+	/// @endcode 
+	///
+	/// @tparam Ts The types for the columns requested
+	/// @param names The names for the columns requested
+
 	template <typename... Ts, typename... Ns>
 	iterator_proxy<const category, Ts...> rows(Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
 		return iterator_proxy<const category, Ts...>(*this, begin(), { names... });
 	}
+
+	/// @brief Return a special iterator for all rows in this category.
+	/// This iterator can be used in a structured binding context. E.g.:
+	///
+	/// @code{.cpp}
+	/// for (const auto &[name, value] : cat.rows<std::string,int>("item_name", "item_value"))
+	///   std::cout << name << ": " << value << std::endl;
+	///
+	/// // or in case we only need one column:
+	///
+	/// for (int id : cat.rows<int>("id"))
+	///   std::cout << id << std::endl;
+	/// @endcode 
+	///
+	/// @tparam Ts The types for the columns requested
+	/// @param names The names for the columns requested
 
 	template <typename... Ts, typename... Ns>
 	iterator_proxy<category, Ts...> rows(Ns... names)
@@ -218,25 +322,71 @@ class category
 
 	// --------------------------------------------------------------------
 
+	/// @brief Return a special iterator to loop over all rows that conform to @a cond
+	///
+	/// @code{.cpp}
+	/// for (row_handle rh : cat.find(cif::key("first_name") == "John" and cif::key("last_name") == "Doe"))
+	///    .. // do something with rh
+	/// @endcode 
+	///
+	/// @param cond The @ref condition for the query
+	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
+	/// to a @ref row_handle
+
 	conditional_iterator_proxy<category> find(condition &&cond)
 	{
 		return find(begin(), std::move(cond));
 	}
+
+	/// @brief Return a special iterator to loop over all rows that conform to @a cond
+	/// starting at @a pos
+	///
+	/// @param pos Where to start searching
+	/// @param cond The @ref condition for the query
+	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
+	/// to a @ref row_handle
 
 	conditional_iterator_proxy<category> find(iterator pos, condition &&cond)
 	{
 		return { *this, pos, std::move(cond) };
 	}
 
+	/// @brief Return a special const iterator to loop over all rows that conform to @a cond
+	///
+	/// @param cond The @ref condition for the query
+	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
+	/// to a @ref const row_handle
+
 	conditional_iterator_proxy<const category> find(condition &&cond) const
 	{
 		return find(cbegin(), std::move(cond));
 	}
 
+	/// @brief Return a special const iterator to loop over all rows that conform to @a cond
+	/// starting at @a pos
+	///
+	/// @param pos Where to start searching
+	/// @param cond The @ref condition for the query
+	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
+	/// to a @ref const row_handle
+
 	conditional_iterator_proxy<const category> find(const_iterator pos, condition &&cond) const
 	{
 		return conditional_iterator_proxy<const category>{ *this, pos, std::move(cond) };
 	}
+
+	/// @brief Return a special iterator to loop over all rows that conform to @a cond. The resulting
+	/// iterator can be used in a structured binding context.
+	///
+	/// @code{.cpp}
+	/// for (const auto &[name, value] : cat.find<std::string,int>(cif::key("item_value") > 10, "item_name", "item_value"))
+	///    std::cout << name << ": " << value << std::endl;
+	/// @endcode 
+	///
+	/// @param cond The @ref condition for the query
+	/// @tparam Ts The types for the columns requested
+	/// @param names The names for the columns requested
+	/// @return A special iterator that loops over all elements that match.
 
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<category, Ts...> find(condition &&cond, Ns... names)
@@ -245,6 +395,14 @@ class category
 		return find<Ts...>(cbegin(), std::move(cond), std::forward<Ns>(names)...);
 	}
 
+	/// @brief Return a special const iterator to loop over all rows that conform to @a cond. The resulting
+	/// iterator can be used in a structured binding context.
+	///
+	/// @param cond The @ref condition for the query
+	/// @tparam Ts The types for the columns requested
+	/// @param names The names for the columns requested
+	/// @return A special iterator that loops over all elements that match.
+
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<const category, Ts...> find(condition &&cond, Ns... names) const
 	{
@@ -252,12 +410,30 @@ class category
 		return find<Ts...>(cbegin(), std::move(cond), std::forward<Ns>(names)...);
 	}
 
+	/// @brief Return a special iterator to loop over all rows that conform to @a cond starting at @a pos.
+	/// The resulting iterator can be used in a structured binding context.
+	///
+	/// @param pos Iterator pointing to the location where to start
+	/// @param cond The @ref condition for the query
+	/// @tparam Ts The types for the columns requested
+	/// @param names The names for the columns requested
+	/// @return A special iterator that loops over all elements that match.
+
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<category, Ts...> find(const_iterator pos, condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of column titles should be equal to the number of types to return");
 		return { *this, pos, std::move(cond), std::forward<Ns>(names)... };
 	}
+
+	/// @brief Return a special const iterator to loop over all rows that conform to @a cond starting at @a pos.
+	/// The resulting iterator can be used in a structured binding context.
+	///
+	/// @param pos Iterator pointing to the location where to start
+	/// @param cond The @ref condition for the query
+	/// @tparam Ts The types for the columns requested
+	/// @param names The names for the columns requested
+	/// @return A special iterator that loops over all elements that match.
 
 	template <typename... Ts, typename... Ns>
 	conditional_iterator_proxy<const category, Ts...> find(const_iterator pos, condition &&cond, Ns... names) const
@@ -269,11 +445,20 @@ class category
 	// --------------------------------------------------------------------
 	// if you only expect a single row
 
+	/// @brief Return the row handle for the row that matches @a cond Throws @a multiple_results_error if
+	/// there are is not exactly one row matching @a cond
+	/// @param cond The condition to search for
+	/// @return Row handle to the row found
 	row_handle find1(condition &&cond)
 	{
 		return find1(begin(), std::move(cond));
 	}
 
+	/// @brief Return the row handle for the row that matches @a cond starting at @a pos
+	/// Throws @a multiple_results_error if there are is not exactly one row matching @a cond
+	/// @param pos The position to start the search
+	/// @param cond The condition to search for
+	/// @return Row handle to the row found
 	row_handle find1(iterator pos, condition &&cond)
 	{
 		auto h = find(pos, std::move(cond));
@@ -284,11 +469,20 @@ class category
 		return *h.begin();
 	}
 
+	/// @brief Return the const row handle for the row that matches @a cond Throws @a multiple_results_error if
+	/// there are is not exactly one row matching @a cond
+	/// @param cond The condition to search for
+	/// @return Row handle to the row found
 	const row_handle find1(condition &&cond) const
 	{
 		return find1(cbegin(), std::move(cond));
 	}
 
+	/// @brief Return const the row handle for the row that matches @a cond starting at @a pos
+	/// Throws @a multiple_results_error if there are is not exactly one row matching @a cond
+	/// @param pos The position to start the search
+	/// @param cond The condition to search for
+	/// @return Row handle to the row found
 	const row_handle find1(const_iterator pos, condition &&cond) const
 	{
 		auto h = find(pos, std::move(cond));
@@ -299,12 +493,26 @@ class category
 		return *h.begin();
 	}
 
+	/// @brief Return value for the column named @a column for the single row that
+	/// matches @a cond. Throws @a multiple_results_error if there are is not exactly one row
+	/// @tparam The type to use for the result
+	/// @param cond The condition to search for
+	/// @param column The name of the column to return the value for
+	/// @return The value found
 	template <typename T>
 	T find1(condition &&cond, const char *column) const
 	{
 		return find1<T>(cbegin(), std::move(cond), column);
 	}
 
+	/// @brief Return value for the column named @a column for the single row that
+	/// matches @a cond when starting to search at @a pos.
+	/// Throws @a multiple_results_error if there are is not exactly one row
+	/// @tparam The type to use for the result
+	/// @param pos The location to start the search
+	/// @param cond The condition to search for
+	/// @param column The name of the column to return the value for
+	/// @return The value found
 	template <typename T, std::enable_if_t<not is_optional_v<T>, int> = 0>
 	T find1(const_iterator pos, condition &&cond, const char *column) const
 	{
@@ -316,6 +524,14 @@ class category
 		return *h.begin();
 	}
 
+	/// @brief Return a value of type std::optional<T> for the column named @a column for the single row that
+	/// matches @a cond when starting to search at @a pos.
+	/// If the row was not found, an empty value is returned.
+	/// @tparam The type to use for the result
+	/// @param pos The location to start the search
+	/// @param cond The condition to search for
+	/// @param column The name of the column to return the value for
+	/// @return The value found, can be empty if no row matches the condition
 	template <typename T, std::enable_if_t<is_optional_v<T>, int> = 0>
 	T find1(const_iterator pos, condition &&cond, const char *column) const
 	{
@@ -330,6 +546,13 @@ class category
 		return *h.begin();
 	}
 
+	/// @brief Return a std::tuple for the values for the columns named in @a columns
+	/// for the single row that matches @a cond
+	/// Throws @a multiple_results_error if there are is not exactly one row
+	/// @tparam The types to use for the resulting tuple
+	/// @param cond The condition to search for
+	/// @param columns The names of the columns to return the value for
+	/// @return The values found as a single tuple of type std::tuple<Ts...>
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
 	std::tuple<Ts...> find1(condition &&cond, Cs... columns) const
 	{
@@ -338,6 +561,14 @@ class category
 		return find1<Ts...>(cbegin(), std::move(cond), std::forward<Cs>(columns)...);
 	}
 
+	/// @brief Return a std::tuple for the values for the columns named in @a columns
+	/// for the single row that matches @a cond when starting to search at @a pos
+	/// Throws @a multiple_results_error if there are is not exactly one row
+	/// @tparam The types to use for the resulting tuple
+	/// @param pos The location to start the search
+	/// @param cond The condition to search for
+	/// @param columns The names of the columns to return the value for
+	/// @return The values found as a single tuple of type std::tuple<Ts...>
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
 	std::tuple<Ts...> find1(const_iterator pos, condition &&cond, Cs... columns) const
 	{
@@ -353,11 +584,18 @@ class category
 	// --------------------------------------------------------------------
 	// if you want only a first hit
 
+	/// @brief Return a row handle to the first row that matches @a cond
+	/// @param cond The condition to search for
+	/// @return The handle to the row that matches or an empty row_handle
 	row_handle find_first(condition &&cond)
 	{
 		return find_first(begin(), std::move(cond));
 	}
 
+	/// @brief Return a row handle to the first row that matches @a cond starting at @a pos
+	/// @param pos The location to start searching
+	/// @param cond The condition to search for
+	/// @return The handle to the row that matches or an empty row_handle
 	row_handle find_first(iterator pos, condition &&cond)
 	{
 		auto h = find(pos, std::move(cond));
@@ -365,11 +603,18 @@ class category
 		return h.empty() ? row_handle{} : *h.begin();
 	}
 
+	/// @brief Return a const row handle to the first row that matches @a cond
+	/// @param cond The condition to search for
+	/// @return The const handle to the row that matches or an empty row_handle
 	const row_handle find_first(condition &&cond) const
 	{
 		return find_first(cbegin(), std::move(cond));
 	}
 
+	/// @brief Return a const row handle to the first row that matches @a cond starting at @a pos
+	/// @param pos The location to start searching
+	/// @param cond The condition to search for
+	/// @return The const handle to the row that matches or an empty row_handle
 	const row_handle find_first(const_iterator pos, condition &&cond) const
 	{
 		auto h = find(pos, std::move(cond));
@@ -377,12 +622,22 @@ class category
 		return h.empty() ? row_handle{} : *h.begin();
 	}
 
+	/// @brief Return the value for column @a column for the first row that matches condition @a cond
+	/// @tparam The type of the value to return
+	/// @param cond The condition to search for
+	/// @return The value found or a default constructed value if not found
 	template <typename T>
 	T find_first(condition &&cond, const char *column) const
 	{
 		return find_first<T>(cbegin(), std::move(cond), column);
 	}
 
+	/// @brief Return the value for column @a column for the first row that matches condition @a cond
+	/// when starting the search at @a pos
+	/// @tparam The type of the value to return
+	/// @param pos The location to start searching
+	/// @param cond The condition to search for
+	/// @return The value found or a default constructed value if not found
 	template <typename T>
 	T find_first(const_iterator pos, condition &&cond, const char *column) const
 	{
@@ -391,6 +646,10 @@ class category
 		return h.empty() ? T{} : *h.begin();
 	}
 
+	/// @brief Return a tuple containing the values for the columns @a columns for the first row that matches condition @a cond
+	/// @tparam The types of the values to return
+	/// @param cond The condition to search for
+	/// @return The values found or default constructed values if not found
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
 	std::tuple<Ts...> find_first(condition &&cond, Cs... columns) const
 	{
@@ -399,6 +658,12 @@ class category
 		return find_first<Ts...>(cbegin(), std::move(cond), std::forward<Cs>(columns)...);
 	}
 
+	/// @brief Return a tuple containing the values for the columns @a columns for the first row that matches condition @a cond
+	/// when starting the search at @a pos
+	/// @tparam The types of the values to return
+	/// @param pos The location to start searching
+	/// @param cond The condition to search for
+	/// @return The values found or default constructed values if not found
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
 	std::tuple<Ts...> find_first(const_iterator pos, condition &&cond, Cs... columns) const
 	{
@@ -410,6 +675,11 @@ class category
 
 	// --------------------------------------------------------------------
 
+	/// @brief Return the maximum value for column @a column for all rows that match condition @a cond
+	/// @tparam The type of the value to return
+	/// @param column The column to use for the value
+	/// @param cond The condition to search for
+	/// @return The value found or the minimal value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
 	T find_max(const char *column, condition &&cond) const
 	{
@@ -424,12 +694,21 @@ class category
 		return result;
 	}
 
+	/// @brief Return the maximum value for column @a column for all rows
+	/// @tparam The type of the value to return
+	/// @param column The column to use for the value
+	/// @return The value found or the minimal value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
 	T find_max(const char *column) const
 	{
 		return find_max<T>(column, all());
 	}
 
+	/// @brief Return the minimum value for column @a column for all rows that match condition @a cond
+	/// @tparam The type of the value to return
+	/// @param column The column to use for the value
+	/// @param cond The condition to search for
+	/// @return The value found or the maximum value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
 	T find_min(const char *column, condition &&cond) const
 	{
@@ -444,12 +723,20 @@ class category
 		return result;
 	}
 
+	/// @brief Return the maximum value for column @a column for all rows
+	/// @tparam The type of the value to return
+	/// @param column The column to use for the value
+	/// @param cond The condition to search for
+	/// @return The value found or the maximum value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
 	T find_min(const char *column) const
 	{
 		return find_min<T>(column, all());
 	}
 
+	/// @brief Return whether a row exists that matches condition @a cond
+	/// @param cond The condition to match
+	/// @return True if a row exists
 	bool exists(condition &&cond) const
 	{
 		bool result = false;
@@ -478,6 +765,9 @@ class category
 		return result;
 	}
 
+	/// @brief Return the total number of rows that match condition @a cond
+	/// @param cond The condition to match
+	/// @return The count
 	size_t count(condition &&cond) const
 	{
 		size_t result = 0;
