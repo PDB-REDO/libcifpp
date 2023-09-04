@@ -8,5 +8,6 @@ msvc/
 src/revision.hpp
 test/test-create_sugar_?.cif
 Testing/
+include/cif++/exports.hpp
 docs/api
-
+docs/conf.py

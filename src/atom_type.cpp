@@ -34,8 +34,6 @@ namespace cif
 namespace data
 {
 
-const float kNA = std::nanf("1");
-
 const atom_type_info kKnownAtoms[] =
 {
 	{ Nn,	"Unknown",			"Nn",	0,			false, {	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },  //	0	Nn	 Unknown        
@@ -1145,7 +1143,7 @@ auto atom_type_traits::elsf() const -> const SFData&
 
 float atom_type_traits::crystal_ionic_radius(int charge) const
 {
-	float result = data::kNA;
+	float result = kNA;
 
 	if (charge >= -3 and charge <= 8)
 	{
@@ -1164,7 +1162,7 @@ float atom_type_traits::crystal_ionic_radius(int charge) const
 
 float atom_type_traits::effective_ionic_radius(int charge) const
 {
-	float result = data::kNA;
+	float result = kNA;
 
 	if (charge >= -3 and charge <= 8)
 	{

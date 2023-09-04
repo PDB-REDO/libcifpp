@@ -1,4 +1,4 @@
-project = 'libmcfp'
+project = '@PROJECT_NAME@'
 copyright = '2023, Maarten L. Hekkelman'
 author = 'Maarten L. Hekkelman'
 release = '@PROJECT_VERSION@'
