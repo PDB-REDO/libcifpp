@@ -29,10 +29,16 @@
 /// \file compound.hpp cif++/compound.hpp
 /// This file contains the definition for the class compound, encapsulating
 /// the information found for compounds in the CCD.
+///
+/// The data is loaded by default from a file called `components.cif`. This file
+/// is located using @ref cif::load_resource which searches the default directories
+/// See documentation on @ref cif::load_resource for more information
 
 #include "cif++/atom_type.hpp"
+#include "cif++/datablock.hpp"
 #include "cif++/exports.hpp"
 #include "cif++/point.hpp"
+#include "cif++/utilities.hpp"
 
 #include <map>
 #include <set>
@@ -51,17 +57,20 @@ class compound_factory_impl;
 /// \brief The bond type as defined in the CCD, possible values taken from the mmcif_pdbx file
 enum class bond_type
 {
-	sing, // 'single bond'
-	doub, // 'double bond'
-	trip, // 'triple bond'
-	quad, // 'quadruple bond'
-	arom, // 'aromatic bond'
-	poly, // 'polymeric bond'
-	delo, // 'delocalized double bond'
-	pi,   // 'pi bond'
+	sing, ///< single bond
+	doub, ///< double bond
+	trip, ///< triple bond
+	quad, ///< quadruple bond
+	arom, ///< aromatic bond
+	poly, ///< polymeric bond
+	delo, ///< delocalized double bond
+	pi,   ///< pi bond
 };
 
+/// @brief return the string representation of @ref bond_type @a bondType
 std::string to_string(bond_type bondType);
+
+/// @brief return the @ref bond_type for the string representation @a bondType
 bond_type from_string(const std::string &bondType);
 
 /// --------------------------------------------------------------------

@@ -129,7 +129,7 @@ class category
 	// --------------------------------------------------------------------
 
 	const std::string &name() const { return m_name; } ///< Returns the name of the category
-	iset key_fields() const; ///< Returns the @ref iset of key field names. Retrieved from the @ref category_validator for this category
+	iset key_fields() const; ///< Returns the @ref cif::iset of key field names. Retrieved from the @ref category_validator for this category
 	std::set<uint16_t> key_field_indices() const; ///< Returns a set of indices for the key fields.
 
 	/// @brief Set the validator for this category to @a v
@@ -364,7 +364,7 @@ class category
 	///
 	/// @param cond The condition for the query
 	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
-	/// to a @ref const row_handle
+	/// to a const @ref row_handle
 
 	conditional_iterator_proxy<const category> find(condition &&cond) const
 	{
@@ -377,7 +377,7 @@ class category
 	/// @param pos Where to start searching
 	/// @param cond The condition for the query
 	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
-	/// to a @ref const row_handle
+	/// to a const @ref row_handle
 
 	conditional_iterator_proxy<const category> find(const_iterator pos, condition &&cond) const
 	{

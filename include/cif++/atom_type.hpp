@@ -314,7 +314,7 @@ class atom_type_traits
 	///
 	/// The coefficients from Waasmaier & Kirfel (1995), Acta Cryst. A51, 416-431.
 	///
-	/// @param charge The charge for which the structure values should be returned, use @ref kWSKFVal to return the Cval and Siva values
+	/// @param charge The charge for which the structure values should be returned, use @ref cif::atom_type_traits::kWSKFVal to return the Cval and Siva values
 	/// @return The scattering factors as a @ref SFData struct
 	const SFData &wksf(int charge = 0) const;
 

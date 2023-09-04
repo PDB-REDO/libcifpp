@@ -225,7 +225,7 @@ class quaternion_type
 		return *this;
 	}
 
-	constexpr friend quaternion_type operator*(const quaternion_type &a, const quaternion_type &b)
+	friend constexpr quaternion_type operator*(const quaternion_type &a, const quaternion_type &b)
 	{
 		auto result = a;
 		result *= b;
@@ -278,7 +278,7 @@ class quaternion_type
 		return *this;
 	}
 
-	constexpr friend quaternion_type normalize(quaternion_type q)
+	friend constexpr quaternion_type normalize(quaternion_type q)
 	{
 		std::valarray<value_type> t(4);
 
@@ -299,7 +299,7 @@ class quaternion_type
 		return q;
 	}
 
-	constexpr friend quaternion_type conj(quaternion_type q)
+	friend constexpr quaternion_type conj(quaternion_type q)
 	{
 		return quaternion_type{ +q.a, -q.b, -q.c, -q.d };
 	}
