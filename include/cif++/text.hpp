@@ -188,7 +188,7 @@ struct iless
 	}
 };
 
-typedef std::set<std::string, iless> iset;
+using iset = std::set<std::string, iless>;
 
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
