@@ -28,10 +28,12 @@
 
 #include <string>
 
-/// \file format.hpp
-/// File containing a basic reimplementation of boost::format
-/// but then a bit more simplistic. Still this allowed me to move my code
-/// from using boost::format to something without external dependency easily.
+/**  \file format.hpp
+ * 
+ * File containing a basic reimplementation of boost::format
+ * but then a bit more simplistic. Still this allowed me to move my code
+ * from using boost::format to something without external dependency easily.
+ */
 
 namespace cif
 {
@@ -85,6 +87,8 @@ namespace detail
 
 } // namespace
 
+/** @cond */
+
 template <typename... Args>
 class format_plus_arg
 {
@@ -132,6 +136,23 @@ class format_plus_arg
 	vargs_vector_type m_vargs;
 };
 
+/** @endcond */
+
+/**
+ * @brief A simplistic reimplementation of boost::format, in fact it is
+ * actually a way to call the C function snprintf to format the arguments
+ * in @a args into the format string @a fmt
+ * 
+ * The string in @a fmt should thus be a C style format string.
+ * 
+ * TODO: Move to C++23 style of printing.
+ * 
+ * @tparam Args The types of the arguments
+ * @param fmt The format string
+ * @param args The arguments
+ * @return An object that can be written out to a std::ostream using operator<<
+ */
+
 template <typename... Args>
 constexpr auto format(std::string_view fmt, Args... args)
 {
@@ -144,11 +165,20 @@ constexpr auto format(std::string_view fmt, Args... args)
 class fill_out_streambuf : public std::streambuf
 {
   public:
+
+	/** @cond */
+
 	using base_type = std::streambuf;
 	using int_type = base_type::int_type;
 	using char_type = base_type::char_type;
 	using traits_type = base_type::traits_type;
 
+	/** @endcond */
+
+	/**
+	 * @brief Construct a new fill out streambuf object based on ostream @a os and a
+	 * width to fill out to of @a width
+	 */
 	fill_out_streambuf(std::ostream &os, int width = 80)
 		: m_os(os)
 		, m_upstream(os.rdbuf())
@@ -156,11 +186,21 @@ class fill_out_streambuf : public std::streambuf
 	{
 	}
 
+	/** @cond */
+
 	~fill_out_streambuf()
 	{
 		m_os.rdbuf(m_upstream);
 	}
 
+	/** @endcond */
+
+	/**
+	 * @brief The magic happens here. Write out a couple of spaces when
+	 * the last character to write is a newline to make the line as
+	 * wide as the requested width.
+	 */
+	
 	virtual int_type
 	overflow(int_type ic = traits_type::eof())
 	{
@@ -191,8 +231,10 @@ class fill_out_streambuf : public std::streambuf
 		return result;
 	}
 
+	/** Return the upstream streambuf */
 	std::streambuf *get_upstream() const { return m_upstream; }
 
+	/** Return how many lines have been written */
 	int get_line_count() const { return m_line_count; }
 
   private:

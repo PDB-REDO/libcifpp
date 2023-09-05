@@ -32,30 +32,60 @@
 #include "cif++/datablock.hpp"
 #include "cif++/parser.hpp"
 
-/// \file file.hpp
-/// The file class defined here encapsulates the contents of an mmCIF file
-/// It is mainly a list of @ref cif::datablock objects
+/** \file file.hpp
+ * 
+ * The file class defined here encapsulates the contents of an mmCIF file
+ * It is mainly a list of @ref cif::datablock objects
+ * 
+ * The class file has methods to load dictionaries. These dictionaries are
+ * loaded from resources (if available) or from disk from several locations.
+ * 
+ * See the documentation on load_resource() in file: utilities.hpp for more
+ * information on how data is loaded. 
+ */
 
 namespace cif
 {
 
 // --------------------------------------------------------------------
 
+/**
+ * @brief The class file is actually a list of datablock objects
+ * 
+ */
+
 class file : public std::list<datablock>
 {
   public:
 	file() = default;
 
+	/**
+	 * @brief Construct a new file object using the data in the file @a p as content
+	 * 
+	 * @param p Path to a file containing the data to load
+	 */
 	explicit file(const std::filesystem::path &p)
 	{
 		load(p);
 	}
 
+	/**
+	 * @brief Construct a new file object using the data in the std::istream @a is
+	 * 
+	 * @param is The istream containing the data to load
+	 */
 	explicit file(std::istream &is)
 	{
 		load(is);
 	}
 
+	/**
+	 * @brief Construct a new file object with data in the constant string defined
+	 * by @a data and @a length
+	 * 
+	 * @param data The pointer to the character string with data to load
+	 * @param length The length of the data
+	 */
 	explicit file(const char *data, size_t length)
 	{
 		struct membuf : public std::streambuf
@@ -75,45 +105,129 @@ class file : public std::list<datablock>
 	file &operator=(const file &) = default;
 	file &operator=(file &&) = default;
 
+	/**
+	 * @brief Set the validator object to @a v
+	 */
 	void set_validator(const validator *v);
 
+	/**
+	 * @brief Get the validator object
+	 */
 	const validator *get_validator() const
 	{
 		return m_validator;
 	}
 
+	/**
+	 * @brief Validate the content and return true if everything was valid.
+	 * 
+	 * Will throw an exception if there is no validator defined.
+	 * 
+	 * If each category was valid, validate_links will also be called.
+	 * 
+	 * @return true If the content is valid
+	 * @return false If the content is not valid
+	 */
 	bool is_valid() const;
+
+	/**
+	 * @brief Validate the content and return true if everything was valid.
+	 * 
+	 * Will attempt to load the referenced dictionary if none was specified.
+	 * 
+	 * If each category was valid, validate_links will also be called.
+	 * 
+	 * @return true If the content is valid
+	 * @return false If the content is not valid
+	 */
 	bool is_valid();
+
+	/**
+	 * @brief Validate the links for all datablocks contained.
+	 * 
+	 * Will throw an exception if no validator was specified.
+	 * 
+	 * @return true If all links were valid
+	 * @return false If all links were not valid
+	 */
 	bool validate_links() const;
 
+	/**
+	 * @brief Attempt to load a dictionary (validator) based on
+	 * the contents of the *audit_conform* category, if available.
+	 */
 	void load_dictionary();
+
+
+	/**
+	 * @brief Attempt to load the named dictionary @a name and
+	 * create a validator based on it.
+	 * 
+	 * @param name The name of the dictionary to load
+	 */
 	void load_dictionary(std::string_view name);
 
+	/**
+	 * @brief Return true if a datablock with the name @a name is part of this file
+	 */
 	bool contains(std::string_view name) const;
 
+	/**
+	 * @brief return a reference to the first datablock in the file
+	 */
 	datablock &front()
 	{
 		assert(not empty());
 		return std::list<datablock>::front();
 	}
 
+	/**
+	 * @brief return a const reference to the first datablock in the file
+	 */
 	const datablock &front() const
 	{
 		assert(not empty());
 		return std::list<datablock>::front();
 	}
 
+	/**
+	 * @brief return a reference to the datablock named @a name
+	 */
 	datablock &operator[](std::string_view name);
+
+	/**
+	 * @brief return a const reference to the datablock named @a name
+	 */
 	const datablock &operator[](std::string_view name) const;
 
+	/**
+	 * @brief Tries to find a datablock with name @a name and will create a
+	 * new one if it is not found. The result is a tuple of an iterator
+	 * pointing to the datablock and a boolean indicating whether the datablock
+	 * was created or not.
+	 * 
+	 * @param name The name for the datablock
+	 * @return std::tuple<iterator, bool> A tuple containing an iterator pointing
+	 * at the datablock and a boolean indicating whether the datablock was newly
+	 * created.
+	 */
 	std::tuple<iterator, bool> emplace(std::string_view name);
 
+	/** Load the data from the file specified by @a p */
 	void load(const std::filesystem::path &p);
+
+	/** Load the data from @a is */
 	void load(std::istream &is);
 
+	/** Save the data to the file specified by @a p */
 	void save(const std::filesystem::path &p) const;
+
+	/** Save the data to @a is */
 	void save(std::ostream &os) const;
 
+	/**
+	 * @brief Friend operator<< to write file @a f to std::ostream @a os
+	 */
 	friend std::ostream &operator<<(std::ostream &os, const file &f)
 	{
 		f.save(os);

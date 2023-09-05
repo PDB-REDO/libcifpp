@@ -26,12 +26,6 @@
 
 #pragma once
 
-/// \file category.hpp
-/// Documentation for the cif::category class
-///
-/// The category class should meet the requirements of Container and
-/// SequenceContainer.
-
 #include "cif++/forward_decl.hpp"
 
 #include "cif++/condition.hpp"
@@ -42,10 +36,17 @@
 
 #include <array>
 
-// TODO: implement all of:
-// https://en.cppreference.com/w/cpp/named_req/Container
-// https://en.cppreference.com/w/cpp/named_req/SequenceContainer
-// and more?
+/** \file category.hpp
+  * Documentation for the cif::category class
+  *
+  * The category class should meet the requirements of Container and
+  * SequenceContainer.
+  * 
+  * TODO: implement all of:
+  * https://en.cppreference.com/w/cpp/named_req/Container
+  * https://en.cppreference.com/w/cpp/named_req/SequenceContainer
+  * and more?
+  */
 
 namespace cif
 {

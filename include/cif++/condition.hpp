@@ -165,7 +165,10 @@ namespace detail
 class condition
 {
   public:
+
+	/** @cond */
 	using condition_impl = detail::condition_impl;
+	/** @endcond */
 
 	/**
 	 * @brief Construct a new, empty condition object
@@ -188,6 +191,9 @@ class condition
 
 	condition(const condition &) = delete;
 
+	/**
+	 * @brief Construct a new condition object moving the data from @a rhs
+	 */
 	condition(condition &&rhs) noexcept
 		: m_impl(nullptr)
 	{
@@ -196,6 +202,9 @@ class condition
 
 	condition &operator=(const condition &) = delete;
 
+	/**
+	 * @brief Assignment operator moving the data from @a rhs
+	 */
 	condition &operator=(condition &&rhs) noexcept
 	{
 		std::swap(m_impl, rhs.m_impl);

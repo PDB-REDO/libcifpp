@@ -24,9 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/// \file atom_type.hpp
-
-/// This file contains information about all known elements
+/** \file atom_type.hpp
+ * 
+ * This file contains information about all known elements
+ */
 
 #pragma once
 
@@ -40,7 +41,7 @@
 namespace cif
 {
 
-/// Atom type as an integer. All known elements are available as a constant.
+/** Atom type as an integer. All known elements are available as a constant. */
 
 enum atom_type : uint8_t
 {
