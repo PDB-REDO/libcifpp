@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/// \file atom_type.hpp cif++/atom_type.hpp
+/// \file atom_type.hpp
 
 /// This file contains information about all known elements
 
@@ -293,6 +293,7 @@ class atom_type_traits
 	/// \brief Return the radius for a charged version of this atom, returns the effective radius by default
 	///
 	/// \param charge  The charge of the ion
+	/// \param type    The requested ion radius type
 	/// \return        The radius of the ion
 	float ionic_radius(int charge, ionic_radius_type type = ionic_radius_type::effective) const
 	{
@@ -314,7 +315,7 @@ class atom_type_traits
 	///
 	/// The coefficients from Waasmaier & Kirfel (1995), Acta Cryst. A51, 416-431.
 	///
-	/// @param charge The charge for which the structure values should be returned, use @ref cif::atom_type_traits::kWSKFVal to return the Cval and Siva values
+	/// @param charge The charge for which the structure values should be returned, use kWSKFVal to return the *Cval* and *Siva* values
 	/// @return The scattering factors as a @ref SFData struct
 	const SFData &wksf(int charge = 0) const;
 

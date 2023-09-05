@@ -17,6 +17,7 @@ configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
 
 file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}) #Doxygen won't create this for us
 add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
+				   BYPRODUCTS ${DOXYGEN_OUTPUT_DIR}/xml
                    DEPENDS ${CIFPP_PUBLIC_HEADERS} ${DOXYFILE_OUT}
                    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
                    MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
@@ -35,6 +36,7 @@ add_custom_target(Sphinx ALL
 				  -Dbreathe_projects.${PROJECT_NAME}=${DOXYGEN_OUTPUT_DIR}/xml
                   ${SPHINX_SOURCE} ${SPHINX_BUILD}
 				  DEPENDS ${DOXYGEN_INDEX_FILE}
+				  BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/api
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                   COMMENT "Generating documentation with Sphinx")
 

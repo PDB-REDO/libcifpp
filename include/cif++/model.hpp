@@ -27,8 +27,11 @@
 #pragma once
 
 #include "cif++/atom_type.hpp"
+#include "cif++/datablock.hpp"
+#include "cif++/point.hpp"
 
 #include <numeric>
+#include <memory>
 
 #if __cpp_lib_format
 #include <format>
@@ -794,6 +797,7 @@ class structure
 	///
 	/// \param asym_id     The asym ID
 	/// \param seq_id      The sequence ID
+	/// \param auth_seq_id The auth sequence ID
 	void remove_residue(const std::string &asym_id, int seq_id, const std::string &auth_seq_id);
 
 	/// \brief Create a new non-polymer entity, returns new ID

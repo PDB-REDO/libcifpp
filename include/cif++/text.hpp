@@ -188,6 +188,9 @@ struct iless
 	}
 };
 
+
+/// iset is a std::set of std::string but with a comparator that
+/// ignores character case.
 using iset = std::set<std::string, iless>;
 
 // --------------------------------------------------------------------

@@ -32,6 +32,10 @@
 #include "cif++/datablock.hpp"
 #include "cif++/parser.hpp"
 
+/// \file file.hpp
+/// The file class defined here encapsulates the contents of an mmCIF file
+/// It is mainly a list of @ref cif::datablock objects
+
 namespace cif
 {
 

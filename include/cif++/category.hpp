@@ -26,7 +26,7 @@
 
 #pragma once
 
-/// \file category.hpp cif++/category.hpp
+/// \file category.hpp
 /// Documentation for the cif::category class
 ///
 /// The category class should meet the requirements of Container and
@@ -634,6 +634,7 @@ class category
 	/// @brief Return the value for column @a column for the first row that matches condition @a cond
 	/// @tparam The type of the value to return
 	/// @param cond The condition to search for
+	/// @param column The column for which the value should be returned
 	/// @return The value found or a default constructed value if not found
 	template <typename T>
 	T find_first(condition &&cond, const char *column) const
@@ -646,6 +647,7 @@ class category
 	/// @tparam The type of the value to return
 	/// @param pos The location to start searching
 	/// @param cond The condition to search for
+	/// @param column The column for which the value should be returned
 	/// @return The value found or a default constructed value if not found
 	template <typename T>
 	T find_first(const_iterator pos, condition &&cond, const char *column) const
@@ -658,6 +660,7 @@ class category
 	/// @brief Return a tuple containing the values for the columns @a columns for the first row that matches condition @a cond
 	/// @tparam The types of the values to return
 	/// @param cond The condition to search for
+	/// @param columns The columns for which the values should be returned
 	/// @return The values found or default constructed values if not found
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
 	std::tuple<Ts...> find_first(condition &&cond, Cs... columns) const
@@ -672,6 +675,7 @@ class category
 	/// @tparam The types of the values to return
 	/// @param pos The location to start searching
 	/// @param cond The condition to search for
+	/// @param columns The columns for which the values should be returned
 	/// @return The values found or default constructed values if not found
 	template <typename... Ts, typename... Cs, typename U = std::enable_if_t<sizeof...(Ts) != 1>>
 	std::tuple<Ts...> find_first(const_iterator pos, condition &&cond, Cs... columns) const
@@ -735,7 +739,6 @@ class category
 	/// @brief Return the maximum value for column @a column for all rows
 	/// @tparam The type of the value to return
 	/// @param column The column to use for the value
-	/// @param cond The condition to search for
 	/// @return The value found or the maximum value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
 	T find_min(const char *column) const

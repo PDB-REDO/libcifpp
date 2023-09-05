@@ -29,6 +29,8 @@
 #include "cif++/category.hpp"
 #include "cif++/forward_decl.hpp"
 
+/// \file datablock.hpp
+
 namespace cif
 {
 

@@ -40,6 +40,10 @@
 #include <clipper/core/coords.h>
 #endif
 
+/// \file point.hpp
+/// This file contains the definition for *cif::point* as well as
+/// lots of routines and classes that can manipulate points.
+
 namespace cif
 {
 

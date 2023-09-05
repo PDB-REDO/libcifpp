@@ -49,6 +49,10 @@
 #define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING 1
 #endif
 
+/// \file utilities.hpp
+/// This file contains code that is very generic in nature like a progress_bar 
+
+/// The cif namespace
 namespace cif
 {
 
