@@ -30,22 +30,46 @@
 
 #include <array>
 
+/**
+ * @file iterator.hpp
+ *
+ * This file contains several implementations of generic iterators.
+ *
+ * Using partial specialization we can have implementation for
+ * iterators that return row_handles, a single value or tuples of
+ * multiple values.
+ *
+ */
+
 namespace cif
 {
 
 // --------------------------------------------------------------------
 
+/**
+ * @brief Implementation of an iterator that can return
+ * multiple values in a tuple. Of course, that tuple can
+ * then used in structured binding to receive the values
+ * in a for loop e.g.
+ *
+ * @tparam Category The category for this iterator
+ * @tparam Ts The types this iterator can be dereferenced to
+ */
 template <typename Category, typename... Ts>
 class iterator_impl
 {
   public:
+	/** @cond */
 	template <typename, typename...>
 	friend class iterator_impl;
 
 	friend class category;
+	/** @endcond */
 
+	/** variable that contains the number of elements in the tuple */
 	static constexpr size_t N = sizeof...(Ts);
 
+	/** @cond */
 	using category_type = std::remove_cv_t<Category>;
 	using row_type = std::conditional_t<std::is_const_v<Category>, const row, row>;
 
@@ -152,14 +176,16 @@ class iterator_impl
 		return m_current != rhs.m_current;
 	}
 
+	/** @endcond */
+
   private:
 	template <size_t... Is>
 	tuple_type get(std::index_sequence<Is...>) const
 	{
 		if (m_current != nullptr)
 		{
-			row_handle rh{*m_category, *m_current};
-			return tuple_type{rh[m_column_ix[Is]].template as<Ts>()...};
+			row_handle rh{ *m_category, *m_current };
+			return tuple_type{ rh[m_column_ix[Is]].template as<Ts>()... };
 		}
 
 		return {};
@@ -171,10 +197,18 @@ class iterator_impl
 	std::array<uint16_t, N> m_column_ix;
 };
 
-template<typename Category>
+/**
+ * @brief Implementation of an iterator that returns
+ * only row_handles
+ *
+ * @tparam Category The category for this iterator
+ */
+template <typename Category>
 class iterator_impl<Category>
 {
   public:
+	/** @cond */
+
 	template <typename, typename...>
 	friend class iterator_impl;
 
@@ -195,7 +229,7 @@ class iterator_impl<Category>
 	template <typename C2>
 	iterator_impl(const iterator_impl<C2> &rhs)
 		: m_category(rhs.m_category)
-		, m_current(const_cast<row_type*>(rhs.m_current))
+		, m_current(const_cast<row_type *>(rhs.m_current))
 	{
 	}
 
@@ -223,7 +257,7 @@ class iterator_impl<Category>
 
 	reference operator*()
 	{
-		return {*m_category, *m_current};
+		return { *m_category, *m_current };
 	}
 
 	pointer operator->()
@@ -271,16 +305,26 @@ class iterator_impl<Category>
 		return m_current != rhs.m_current;
 	}
 
+	/** @endcond */
+
   private:
 	category_type *m_category = nullptr;
 	row_type *m_current = nullptr;
 };
 
+/**
+ * @brief Implementation of an iterator that can return
+ * a single value.
+ *
+ * @tparam Category The category for this iterator
+ * @tparam T The type this iterator can be dereferenced to
+ */
 
-template<typename Category, typename T>
+template <typename Category, typename T>
 class iterator_impl<Category, T>
 {
   public:
+	/** @cond */
 	template <typename, typename...>
 	friend class iterator_impl;
 
@@ -390,12 +434,14 @@ class iterator_impl<Category, T>
 		return m_current != rhs.m_current;
 	}
 
+	/** @endcond */
+
   private:
 	value_type get() const
 	{
 		if (m_current != nullptr)
 		{
-			row_handle rh{*m_category, *m_current};
+			row_handle rh{ *m_category, *m_current };
 			return rh[m_column_ix].template as<T>();
 		}
 
@@ -411,10 +457,23 @@ class iterator_impl<Category, T>
 // --------------------------------------------------------------------
 // iterator proxy
 
+/**
+ * @brief An iterator_proxy is used as a result type for methods that
+ * return a range of values you want to iterate over.
+ *
+ * E.g. the class cif::category contains the method cif::category::rows()
+ * that returns an iterator_proxy that allows you to iterate over
+ * all the rows in the category.
+ *
+ * @tparam Category The category for the iterators
+ * @tparam Ts The types the iterators return. See class: iterator
+ */
+
 template <typename Category, typename... Ts>
 class iterator_proxy
 {
   public:
+	/** @cond */
 	static constexpr const size_t N = sizeof...(Ts);
 
 	using category_type = Category;
@@ -431,21 +490,21 @@ class iterator_proxy
 
 	iterator_proxy(const iterator_proxy &) = delete;
 	iterator_proxy &operator=(const iterator_proxy &) = delete;
+	/** @endcond */
 
-	iterator begin() const { return iterator(m_begin, m_column_ix); }
-	iterator end() const { return iterator(m_end, m_column_ix); }
+	iterator begin() const { return iterator(m_begin, m_column_ix); } ///< Return the iterator pointing to the first row
+	iterator end() const { return iterator(m_end, m_column_ix); }     ///< Return the iterator pointing past the last row
 
-	bool empty() const { return m_begin == m_end; }
-
-	explicit operator bool() const { return not empty(); }
-
-	size_t size() const { return std::distance(begin(), end()); }
+	bool empty() const { return m_begin == m_end; }               ///< Return true if the range is empty
+	explicit operator bool() const { return not empty(); }        ///< Easy way to detect if the range is empty
+	size_t size() const { return std::distance(begin(), end()); } ///< Return size of the range
 
 	// row front() { return *begin(); }
 	// row back() { return *(std::prev(end())); }
 
-	category_type &category() const { return *m_category; }
+	category_type &category() const { return *m_category; } ///< Return the category the iterator belong to
 
+	/** swap */
 	void swap(iterator_proxy &rhs)
 	{
 		std::swap(m_category, rhs.m_category);
@@ -463,10 +522,20 @@ class iterator_proxy
 // --------------------------------------------------------------------
 // conditional iterator proxy
 
+/**
+ * @brief A conditional iterator proxy is similar to an iterator_proxy
+ * in that it can be used to return a range of rows you can iterate over.
+ * In the case of an conditional_iterator_proxy a cif::condition is used
+ * to filter out only those rows that match the condition.
+ *
+ * @tparam CategoryType The category the iterators belong to
+ * @tparam Ts The types to which the iterators can be dereferenced
+ */
 template <typename CategoryType, typename... Ts>
 class conditional_iterator_proxy
 {
   public:
+	/** @cond */
 	static constexpr const size_t N = sizeof...(Ts);
 
 	using category_type = std::remove_cv_t<CategoryType>;
@@ -549,20 +618,21 @@ class conditional_iterator_proxy
 	conditional_iterator_proxy(const conditional_iterator_proxy &) = delete;
 	conditional_iterator_proxy &operator=(const conditional_iterator_proxy &) = delete;
 
-	iterator begin() const;
-	iterator end() const;
+	/** @endcond */
 
-	bool empty() const;
+	iterator begin() const; ///< Return the iterator pointing to the first row
+	iterator end() const;   ///< Return the iterator pointing past the last row
 
-	explicit operator bool() const { return not empty(); }
+	bool empty() const;                                           ///< Return true if the range is empty
+	explicit operator bool() const { return not empty(); }        ///< Easy way to detect if the range is empty
+	size_t size() const { return std::distance(begin(), end()); } ///< Return size of the range
 
-	size_t size() const { return std::distance(begin(), end()); }
-
-	row_handle front() { return *begin(); }
+	row_handle front() { return *begin(); } ///< Return reference to the first row
 	// row_handle back() { return *begin(); }
 
-	CategoryType &category() const { return *m_cat; }
+	CategoryType &category() const { return *m_cat; } ///< Category the iterators belong to
 
+	/** swap */
 	void swap(conditional_iterator_proxy &rhs);
 
   private:
@@ -574,6 +644,7 @@ class conditional_iterator_proxy
 
 // --------------------------------------------------------------------
 
+/** @cond */
 template <typename Category, typename... Ts>
 iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos, char const *const columns[N])
 	: m_category(&cat)
@@ -674,5 +745,7 @@ void conditional_iterator_proxy<Category, Ts...>::swap(conditional_iterator_prox
 	std::swap(mCEnd, rhs.mCEnd);
 	std::swap(mCix, rhs.mCix);
 }
+
+/** @endcond */
 
 } // namespace cif

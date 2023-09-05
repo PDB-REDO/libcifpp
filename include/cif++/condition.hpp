@@ -262,8 +262,8 @@ class condition
 		return m_impl ? m_impl->single() : std::optional<row_handle>();
 	}
 
-	friend condition operator||(condition &&a, condition &&b); /**< Operator OR */
-	friend condition operator&&(condition &&a, condition &&b); /**< Operator AND */
+	friend condition operator||(condition &&a, condition &&b); /**< Return a condition which is the logical OR or condition @a and @b */
+	friend condition operator&&(condition &&a, condition &&b); /**< Return a condition which is the logical AND or condition @a and @b */
 
 	/// @cond
 	friend struct detail::or_condition_impl;
