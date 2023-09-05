@@ -72,10 +72,10 @@ enum class bond_type
 };
 
 /// @brief return the string representation of @ref bond_type @a bondType
-std::string to_string(bond_type bondType);
+std::string bond_type_to_string(bond_type bondType);
 
 /// @brief return the @ref bond_type for the string representation @a bondType
-bond_type from_string(const std::string &bondType);
+bond_type parse_bond_type_from_string(const std::string &bondType);
 
 /// \brief The possible stereo config values for a compound_atom.
 ///
@@ -89,10 +89,16 @@ bond_type from_string(const std::string &bondType);
 /// > referred to ‘S isomers’.
 enum class stereo_config_type : uint8_t
 {
-	N = 'N',
-	R = 'R',
-	S = 'S'
+	N = 'N', ///< Not polarizing
+	R = 'R', ///< Rectus
+	S = 'S'  ///< Sinister
 };
+
+/// @brief return the string representation of @ref stereo_config_type @a stereo_config
+std::string to_string(stereo_config_type stereo_config);
+
+/// @brief return the @ref stereo_config_type for the string representation @a stereo_config
+stereo_config_type parse_stereo_config_from_string(const std::string &stereo_config);
 
 /// --------------------------------------------------------------------
 /// \brief struct containing information about an atom in a chemical compound.

@@ -56,7 +56,7 @@ std::string to_string(bond_type bondType)
 	throw std::invalid_argument("Invalid bondType");
 }
 
-bond_type from_string(const std::string &bondType)
+bond_type parse_bond_type_from_string(const std::string &bondType)
 {
 	if (cif::iequals(bondType, "sing"))
 		return bond_type::sing;
@@ -75,6 +75,28 @@ bond_type from_string(const std::string &bondType)
 	if (cif::iequals(bondType, "pi"))
 		return bond_type::pi;
 	throw std::invalid_argument("Invalid bondType: " + bondType);
+}
+
+std::string to_string(stereo_config_type stereoConfig)
+{
+	switch (stereoConfig)
+	{
+		case stereo_config_type::N: return "N";
+		case stereo_config_type::R: return "R";
+		case stereo_config_type::S: return "S";
+	}
+	throw std::invalid_argument("Invalid stereoConfig");
+}
+
+stereo_config_type parse_stereo_config_from_string(const std::string &stereoConfig)
+{
+	if (cif::iequals(stereoConfig, "N"))
+		return stereo_config_type::N;
+	if (cif::iequals(stereoConfig, "R"))
+		return stereo_config_type::R;
+	if (cif::iequals(stereoConfig, "S"))
+		return stereo_config_type::S;
+	throw std::invalid_argument("Invalid stereoConfig: " + stereoConfig);
 }
 
 // --------------------------------------------------------------------
@@ -126,11 +148,12 @@ compound::compound(cif::datablock &db)
 	for (auto row : chemCompAtom)
 	{
 		compound_atom atom;
-		std::string type_symbol;
-		cif::tie(atom.id, type_symbol, atom.charge, atom.aromatic, atom.leaving_atom, atom.stereo_config, atom.x, atom.y, atom.z) =
+		std::string type_symbol, stereo_config;
+		cif::tie(atom.id, type_symbol, atom.charge, atom.aromatic, atom.leaving_atom, stereo_config, atom.x, atom.y, atom.z) =
 			row.get("atom_id", "type_symbol", "charge", "pdbx_aromatic_flag", "pdbx_leaving_atom_flag", "pdbx_stereo_config",
 				"model_Cartn_x", "model_Cartn_y", "model_Cartn_z");
 		atom.type_symbol = atom_type_traits(type_symbol).type();
+		atom.stereo_config = parse_stereo_config_from_string(stereo_config);
 		m_atoms.push_back(std::move(atom));
 	}
 
@@ -140,7 +163,7 @@ compound::compound(cif::datablock &db)
 		compound_bond bond;
 		std::string valueOrder;
 		cif::tie(bond.atom_id[0], bond.atom_id[1], valueOrder, bond.aromatic, bond.stereo_config) = row.get("atom_id_1", "atom_id_2", "value_order", "pdbx_aromatic_flag", "pdbx_stereo_config");
-		bond.type = from_string(valueOrder);
+		bond.type = parse_bond_type_from_string(valueOrder);
 		m_bonds.push_back(std::move(bond));
 	}
 }
