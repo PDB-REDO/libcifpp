@@ -31,6 +31,13 @@
 #include <string>
 #include <vector>
 
+/**
+ * @file forward_decl.hpp
+ * 
+ * File containing only forward declarations
+ * 
+ */
+
 namespace cif
 {
 

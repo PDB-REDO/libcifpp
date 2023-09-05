@@ -59,11 +59,13 @@ class datablock : public std::list<category>
 	{
 	}
 
+	/** @cond */
 	datablock(const datablock &);
 	datablock(datablock &&) = default;
 
 	datablock &operator=(const datablock &);
 	datablock &operator=(datablock &&) = default;
+	/** @endcond */
 
 	// --------------------------------------------------------------------
 

@@ -100,10 +100,12 @@ class file : public std::list<datablock>
 		load(is);
 	}
 
+	/** @cond */
 	file(const file &) = default;
 	file(file &&) = default;
 	file &operator=(const file &) = default;
 	file &operator=(file &&) = default;
+	/** @endcond */
 
 	/**
 	 * @brief Set the validator object to @a v

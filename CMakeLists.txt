@@ -275,14 +275,7 @@ set(project_headers
 
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
 add_library(cifpp::cifpp ALIAS cifpp)
-set(EXPORT_DOXYGEN_CONTENT [[
-
-/** @file exports.hpp */
-
-]])
-
-generate_export_header(cifpp EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/include/cif++/exports.hpp
-	CUSTOM_CONTENT_FROM_VARIABLE EXPORT_DOXYGEN_CONTENT)
+generate_export_header(cifpp EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/include/cif++/exports.hpp)
 
 if(BOOST_REGEX)
 	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)

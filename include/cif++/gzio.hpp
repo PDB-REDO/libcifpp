@@ -13,27 +13,29 @@
 
 #include <zlib.h>
 
-/// \file gzio.hpp
-///
-/// Single header file for the implementation of stream classes
-/// that can transparently read and write compressed files.
-///
-/// The gzio::istream_buf class sniffs the input and decides whether to use
-/// a decompressor if a signature was recognized.
-///
-/// There's also an ifstream and ofstream class here that can
-/// read and write compressed files. In this case the decission
-/// whether to use a compressions/decompression algorithm is
-/// based on the extension of the \a filename argument.
-
-// This is a stripped down version of the gxrio library from
-// https://github.com/mhekkel/gxrio.git
-// Most notably, the lzma support has been removed since getting
-// that to work in Windows proved to be too much work.
+/** \file gzio.hpp
+ * 
+ * Single header file for the implementation of stream classes
+ * that can transparently read and write compressed files.
+ * 
+ * The gzio::istream_buf class sniffs the input and decides whether to use
+ * a decompressor if a signature was recognized.
+ * 
+ * There's also an ifstream and ofstream class here that can
+ * read and write compressed files. In this case the decission
+ * whether to use a compressions/decompression algorithm is
+ * based on the extension of the \a filename argument.
+ *
+ * This is a stripped down version of the gxrio library from
+ * https://github.com/mhekkel/gxrio.git
+ * Most notably, the lzma support has been removed since getting
+ * that to work in Windows proved to be too much work.
+ */
 
 namespace cif::gzio
 {
 
+/** The default buffer size to use */
 const size_t kDefaultBufferSize = 256;
 
 // --------------------------------------------------------------------
@@ -50,6 +52,8 @@ template <typename CharT, typename Traits>
 class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 {
   public:
+	/** @cond */
+
 	using char_type = CharT;
 	using traits_type = Traits;
 
@@ -77,13 +81,20 @@ class basic_streambuf : public std::basic_streambuf<CharT, Traits>
 		return *this;
 	}
 
+	/** @endcond */
+
+	/** Set the upstream streambuf to @a upstream */
 	void set_upstream(streambuf_type *upstream)
 	{
 		m_upstream = upstream;
 	}
 
+	/** @cond */
+
 	virtual basic_streambuf *init(streambuf_type *sb) = 0;
 	virtual basic_streambuf *close() = 0;
+
+	/** @endcond */
 
   protected:
 	/// \brief The upstream streambuf object, usually this is a basic_filebuf
@@ -105,6 +116,8 @@ template <typename CharT, typename Traits, size_t BufferSize = kDefaultBufferSiz
 class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 {
   public:
+	/** @cond */
+
 	static_assert(sizeof(CharT) == 1, "Unfortunately, support for wide characters is not implemented yet.");
 
 	using char_type = CharT;
@@ -120,6 +133,8 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 	basic_igzip_streambuf() = default;
 
 	basic_igzip_streambuf(const basic_igzip_streambuf &) = delete;
+
+	/** @endcond */
 
 	/// \brief Move constructor
 	basic_igzip_streambuf(basic_igzip_streambuf &&rhs)
@@ -140,6 +155,8 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 			m_zstream->next_in = m_in_buffer.data();
 		}
 	}
+
+	/** @cond */
 
 	basic_igzip_streambuf &operator=(const basic_igzip_streambuf &) = delete;
 
@@ -170,6 +187,8 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 	{
 		close();
 	}
+
+	/** @endcond */
 
 	/// \brief This closes the zlib stream and sets the get pointers to null.
 	base_type *close() override
@@ -302,6 +321,8 @@ template <typename CharT, typename Traits, size_t BufferSize = kDefaultBufferSiz
 class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 {
   public:
+	/** @cond */
+
 	static_assert(sizeof(CharT) == 1, "Unfortunately, support for wide characters is not implemented yet.");
 
 	using char_type = CharT;
@@ -331,6 +352,8 @@ class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 	}
 
 	basic_ogzip_streambuf &operator=(const basic_ogzip_streambuf &) = delete;
+
+	/** @endcond */
 
 	/// \brief Move operator=
 	basic_ogzip_streambuf &operator=(basic_ogzip_streambuf &&rhs)
@@ -487,6 +510,8 @@ template <typename CharT, typename Traits>
 class basic_istream : public std::basic_istream<CharT, Traits>
 {
   public:
+	/** @cond */
+
 	using base_type = std::basic_istream<CharT, Traits>;
 
 	using traits_type = Traits;
@@ -497,6 +522,8 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 	using upstreambuf_type = std::basic_streambuf<char_type, traits_type>;
 
 	using gzip_streambuf_type = basic_igzip_streambuf<char_type, traits_type>;
+
+	/** @endcond */
 
 	/// \brief Regular move constructor
 	basic_istream(basic_istream &&rhs)
@@ -591,6 +618,8 @@ template <typename CharT, typename Traits>
 class basic_ifstream : public basic_istream<CharT, Traits>
 {
   public:
+	/** @cond */
+
 	using base_type = basic_istream<CharT, Traits>;
 
 	using char_type = CharT;
@@ -607,6 +636,8 @@ class basic_ifstream : public basic_istream<CharT, Traits>
 	{
 		close();
 	}
+
+	/** @endcond */
 
 	/// \brief Construct an ifstream
 	/// \param filename Null terminated string specifying the file to open
@@ -647,9 +678,12 @@ class basic_ifstream : public basic_istream<CharT, Traits>
 			this->rdbuf(&m_filebuf);
 	}
 
+	/** @cond */
 	basic_ifstream(const basic_ifstream &) = delete;
 
 	basic_ifstream &operator=(const basic_ifstream &) = delete;
+
+	/** @endcond */
 
 	/// \brief Move version of operator=
 	basic_ifstream &operator=(basic_ifstream &&rhs)
@@ -777,6 +811,8 @@ template <typename CharT, typename Traits>
 class basic_ostream : public std::basic_ostream<CharT, Traits>
 {
   public:
+	/** @cond */
+
 	using base_type = std::basic_ostream<CharT, Traits>;
 
 	using char_type = CharT;
@@ -784,6 +820,8 @@ class basic_ostream : public std::basic_ostream<CharT, Traits>
 
 	using z_streambuf_type = basic_streambuf<char_type, traits_type>;
 	using upstreambuf_type = std::basic_streambuf<char_type, traits_type>;
+
+	/** @endcond */
 
 	/// \brief Regular move constructor
 	basic_ostream(basic_ostream &&rhs)
@@ -846,6 +884,8 @@ template <typename CharT, typename Traits>
 class basic_ofstream : public basic_ostream<CharT, Traits>
 {
   public:
+	/** @cond */
+
 	using base_type = basic_ostream<CharT, Traits>;
 
 	using char_type = CharT;
@@ -860,6 +900,8 @@ class basic_ofstream : public basic_ostream<CharT, Traits>
 	{
 		close();
 	}
+
+	/** @endcond */
 
 	/// \brief Construct an ofstream
 	/// \param filename Null terminated string specifying the file to open
@@ -899,9 +941,13 @@ class basic_ofstream : public basic_ostream<CharT, Traits>
 			this->rdbuf(&m_filebuf);
 	}
 
+	/** @cond */
+
 	basic_ofstream(const basic_ofstream &) = delete;
 
 	basic_ofstream &operator=(const basic_ofstream &) = delete;
+
+	/** @endcond */
 
 	/// \brief Move operator=
 	basic_ofstream &operator=(basic_ofstream &&rhs)
@@ -1032,11 +1078,13 @@ class basic_ofstream : public basic_ostream<CharT, Traits>
 
 // --------------------------------------------------------------------
 
-/// \brief Convenience typedefs
+/// \brief Convenience typedef for a regular istream
 using istream = basic_istream<char, std::char_traits<char>>;
+
+/// \brief Convenience typedef for a file ifstream
 using ifstream = basic_ifstream<char, std::char_traits<char>>;
 
-// using ostream = basic_ostream<char, std::char_traits<char>>;
+/// \brief Convenience typedef for a file ofstream
 using ofstream = basic_ofstream<char, std::char_traits<char>>;
 
 } // namespace gzio

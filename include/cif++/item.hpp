@@ -41,16 +41,18 @@
 #include <optional>
 #include <utility>
 
-/// \file item.hpp
-/// This file contains the declaration of item but also the item_value and item_handle
-/// These handle the storage of and access to the data for a single data field. 
+/** \file item.hpp
+ *
+ * This file contains the declaration of item but also the item_value and item_handle
+ * These handle the storage of and access to the data for a single data field.
+ */
 
 namespace cif
 {
 
 // --------------------------------------------------------------------
 /// \brief item is a transient class that is used to pass data into rows
-///        but it also takes care of formatting data. 
+///        but it also takes care of formatting data.
 class item
 {
   public:
@@ -109,7 +111,7 @@ class item
 
 	/// \brief constructor for an item with name \a name and as
 	/// content a the formatted integral value \a value
-	template <typename T, std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T,bool>, int> = 0>
+	template <typename T, std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T, bool>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
 	{
@@ -126,7 +128,7 @@ class item
 
 	/// \brief constructor for an item with name \a name and as
 	/// content a the formatted boolean value \a value
-	template <typename T, std::enable_if_t<std::is_same_v<T,bool>, int> = 0>
+	template <typename T, std::enable_if_t<std::is_same_v<T, bool>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
 	{
@@ -141,16 +143,15 @@ class item
 	{
 	}
 
+	/** @cond */
 	item(const item &rhs) = default;
-
 	item(item &&rhs) noexcept = default;
-
 	item &operator=(const item &rhs) = default;
-
 	item &operator=(item &&rhs) noexcept = default;
+	/** @endcond */
 
-	std::string_view name() const { return m_name; }
-	std::string_view value() const { return m_value; }
+	std::string_view name() const { return m_name; }   ///< Return the name of the item
+	std::string_view value() const { return m_value; } ///< Return the value of the item
 
 	/// \brief replace the content of the stored value with \a v
 	void value(std::string_view v) { m_value = v; }
@@ -168,11 +169,13 @@ class item
 	size_t length() const { return m_value.length(); }
 
 	/// \brief support for structured binding
-	template<size_t N>
+	template <size_t N>
 	decltype(auto) get() const
 	{
-		     if constexpr (N == 0) return name();
-		else if constexpr (N == 1) return value();
+		if constexpr (N == 0)
+			return name();
+		else if constexpr (N == 1)
+			return value();
 	}
 
   private:
@@ -190,7 +193,9 @@ class item
 
 struct item_value
 {
+	/** @cond */
 	item_value() = default;
+	/** @endcond */
 
 	/// \brief constructor
 	item_value(std::string_view text)
@@ -210,6 +215,7 @@ struct item_value
 		}
 	}
 
+	/** @cond */
 	item_value(item_value &&rhs)
 		: m_length(std::exchange(rhs.m_length, 0))
 		, m_storage(std::exchange(rhs.m_storage, 0))
@@ -236,24 +242,29 @@ struct item_value
 
 	item_value(const item_value &) = delete;
 	item_value &operator=(const item_value &) = delete;
+	/** @endcond */
 
+	/** operator bool, allows easy checking for empty items */
 	explicit operator bool() const
 	{
 		return m_length != 0;
 	}
 
-	size_t m_length = 0;
+	size_t m_length = 0; ///< Length of the data
 	union
 	{
-		char m_local_data[8];
-		char *m_data;
-		uint64_t m_storage;
+		char m_local_data[8]; ///< Storage area for small strings (strings smaller than kBufferSize)
+		char *m_data;         ///< Pointer to a string stored in the heap
+		uint64_t m_storage;   ///< Alternative storage of the data, used in move operations
 	};
 
+	/** The maximum length of locally stored strings */
 	static constexpr size_t kBufferSize = sizeof(m_local_data);
 
 	// By using std::string_view instead of c_str we obain a
 	// nice performance gain since we avoid many calls to strlen.
+
+	/** Return the content of the item as a std::string_view */
 	constexpr inline std::string_view text() const
 	{
 		return { m_length >= kBufferSize ? m_data : m_local_data, m_length };
@@ -268,6 +279,7 @@ struct item_value
 struct item_handle
 {
   public:
+	/** @cond */
 	// conversion helper class
 	template <typename T, typename = void>
 	struct item_value_as;
@@ -279,7 +291,22 @@ struct item_handle
 		assign_value(v);
 		return *this;
 	}
+	/** @endcond */
 
+	/**
+	 * @brief A method with a variable number of arguments that will be concatenated and
+	 * assigned as a string. Use it like this:
+	 *
+	 * @code{.cpp}
+	 * cif::item_handle ih;
+	 * is.os("The result of ", 1, " * ", 42, " is of course ", 42);
+	 * @endcode
+	 *
+	 * And the content will then be `The result of 1 * 42 is of course 42`.
+	 *
+	 * @tparam Ts Types of the parameters
+	 * @param v The parameters to concatenate
+	 */
 	template <typename... Ts>
 	void os(const Ts &...v)
 	{
@@ -288,8 +315,10 @@ struct item_handle
 		this->operator=(ss.str());
 	}
 
+	/** Swap contents of this and @a b */
 	void swap(item_handle &b);
 
+	/** Return the contents of this item as type @tparam T */
 	template <typename T = std::string>
 	auto as() const -> T
 	{
@@ -297,18 +326,36 @@ struct item_handle
 		return item_value_as<value_type>::convert(*this);
 	}
 
+	/** Return the contents of this item as type @tparam T or, if not
+	 * set, use @a dv as the default value.
+	 */
 	template <typename T>
 	auto value_or(const T &dv) const
 	{
 		return empty() ? dv : this->as<T>();
 	}
 
+	/**
+	 * @brief Compare the contents of this item with value @a value
+	 * optionally ignoring character case, if @a icase is true.
+	 * Returns 0 if both are equal, -1 if this sorts before @a value
+	 * and 1 if this sorts after @a value
+	 *
+	 * @tparam T Type of the value @a value
+	 * @param value The value to compare with
+	 * @param icase Flag indicating if we should compare character case sensitive
+	 * @return -1, 0 or 1
+	 */
 	template <typename T>
 	int compare(const T &value, bool icase = true) const
 	{
 		return item_value_as<T>::compare(*this, value, icase);
 	}
 
+	/**
+	 * @brief Compare the value contained with the value @a value and
+	 * return true if both are equal.
+	 */
 	template <typename T>
 	bool operator==(const T &value) const
 	{
@@ -323,39 +370,53 @@ struct item_handle
 		return not operator==(value);
 	}
 
-	// empty means either null or unknown
+	/**
+	 * @brief Returns true if the content string is empty or
+	 * only contains '.' meaning null or '?' meaning unknown
+	 * in a mmCIF context
+	 */
 	bool empty() const
 	{
 		auto txt = text();
 		return txt.empty() or (txt.length() == 1 and (txt.front() == '.' or txt.front() == '?'));
 	}
 
+	/** Easy way to test for an empty item */
 	explicit operator bool() const { return not empty(); }
 
-	// is_null means the field contains '.'
+	/// is_null return true if the field contains '.'
 	bool is_null() const
 	{
 		auto txt = text();
 		return txt.length() == 1 and txt.front() == '.';
 	}
 
-	// is_unknown means the field contains '?'
+	/// is_unknown returns true if the field contains '?'
 	bool is_unknown() const
 	{
 		auto txt = text();
 		return txt.length() == 1 and txt.front() == '?';
 	}
 
+	/** Return a std::string_view for the contents */
 	std::string_view text() const;
 
+	/**
+	 * @brief Construct a new item handle object
+	 *
+	 * @param column Column index
+	 * @param row Reference to the row
+	 */
 	item_handle(uint16_t column, row_handle &row)
 		: m_column(column)
 		, m_row_handle(row)
 	{
 	}
 
-	static CIFPP_EXPORT const item_handle s_null_item;
+	/** A variable holding an empty item */
+	CIFPP_EXPORT static const item_handle s_null_item;
 
+	/** friend to swap two item handles */
 	friend void swap(item_handle a, item_handle b)
 	{
 		a.swap(b);
@@ -372,6 +433,7 @@ struct item_handle
 
 // So sad that older gcc implementations of from_chars did not support floats yet...
 
+/** @cond */
 template <typename T>
 struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> and not std::is_same_v<T, bool>>>
 {
@@ -546,22 +608,33 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_same_v<T, std::str
 	}
 };
 
+/** @endcond */
+
 } // namespace cif
 
 namespace std
 {
 
-template<> struct tuple_size<::cif::item>
-            : public std::integral_constant<std::size_t, 2> {};
+/** @cond */
 
-template<> struct tuple_element<0, ::cif::item>
+template <>
+struct tuple_size<::cif::item>
+	: public std::integral_constant<std::size_t, 2>
+{
+};
+
+template <>
+struct tuple_element<0, ::cif::item>
 {
 	using type = decltype(std::declval<::cif::item>().name());
 };
 
-template<> struct tuple_element<1, ::cif::item>
+template <>
+struct tuple_element<1, ::cif::item>
 {
 	using type = decltype(std::declval<::cif::item>().value());
 };
 
-}
+/** @endcond */
+
+} // namespace std
