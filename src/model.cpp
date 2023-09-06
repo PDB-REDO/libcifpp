@@ -327,37 +327,6 @@ residue::residue(structure &structure, const std::vector<atom> &atoms)
 		m_atoms.push_back(atom);
 }
 
-// residue::residue(residue &&rhs)
-// 	: m_structure(rhs.m_structure)
-// 	, m_compound_id(std::move(rhs.m_compound_id))
-// 	, m_asym_id(std::move(rhs.m_asym_id))
-// 	, m_seq_id(rhs.m_seq_id)
-// 	, m_auth_seq_id(rhs.m_auth_seq_id)
-// 	, m_atoms(std::move(rhs.m_atoms))
-// {
-// 	// std::cerr << "move constructor residue" << std::endl;
-// 	rhs.m_structure = nullptr;
-// }
-
-// residue &residue::operator=(residue &&rhs)
-// {
-// 	// std::cerr << "move assignment residue" << std::endl;
-// 	m_structure = rhs.m_structure;
-// 	rhs.m_structure = nullptr;
-// 	m_compound_id = std::move(rhs.m_compound_id);
-// 	m_asym_id = std::move(rhs.m_asym_id);
-// 	m_seq_id = rhs.m_seq_id;
-// 	m_auth_seq_id = rhs.m_auth_seq_id;
-// 	m_atoms = std::move(rhs.m_atoms);
-
-// 	return *this;
-// }
-
-// residue::~residue()
-// {
-// 	// std::cerr << "~residue" << std::endl;
-// }
-
 std::string residue::get_entity_id() const
 {
 	std::string result;
@@ -381,68 +350,13 @@ EntityType residue::entity_type() const
 	return m_structure->get_entity_type_for_entity_id(get_entity_id());
 }
 
-// std::string residue::authInsCode() const
-// {
-// 	assert(m_structure);
-
-// 	std::string result;
-// 	if (not m_atoms.empty())
-// 		result = m_atoms.front().get_property("pdbx_PDB_ins_code");
-
-// 	return result;
-// }
-
-// std::string residue::get_auth_asym_id() const
-// {
-// 	assert(m_structure);
-
-// 	std::string result;
-// 	if (not m_atoms.empty())
-// 		result = m_atoms.front().get_property("auth_asym_id");
-
-// 	return result;
-// }
-
-// std::string residue::authSeqID() const
-// {
-// 	return m_auth_seq_id;
-// }
-
-// const Compound &residue::compound() const
-// {
-// 	auto result = compound_factory::instance().create(m_compound_id);
-// 	if (result == nullptr)
-// 		throw std::runtime_error("Failed to create compound " + m_compound_id);
-// 	return *result;
-// }
-
-// std::string residue::unique_alt_id() const
-// {
-// 	if (m_structure == nullptr)
-// 		throw std::runtime_error("Invalid residue object");
-
-// 	auto firstAlt = std::find_if(m_atoms.begin(), m_atoms.end(), [](auto &a)
-// 		{ return not a.get_label_alt_id().empty(); });
-
-// 	return firstAlt != m_atoms.end() ? firstAlt->get_label_alt_id() : "";
-// }
-
 void residue::add_atom(atom &atom)
 {
-	// atom.set_property("label_comp_id", m_compound_id);
-	// atom.set_property("label_asym_id", m_asym_id);
-	// if (m_seq_id != 0)
-	// 	atom.set_property("label_seq_id", std::to_string(m_seq_id));
-	// atom.set_property("auth_seq_id", m_auth_seq_id);
-
 	m_atoms.push_back(atom);
 }
 
 std::vector<atom> residue::unique_atoms() const
 {
-	// if (m_structure == nullptr)
-	// 	throw std::runtime_error("Invalid residue object");
-
 	std::vector<atom> result;
 	std::string firstAlt;
 
@@ -1494,7 +1408,7 @@ EntityType structure::get_entity_type_for_entity_id(const std::string entityID) 
 	EntityType result;
 
 	if (iequals(entity_type, "polymer"))
-		result = EntityType::polymer;
+		result = EntityType::Polymer;
 	else if (iequals(entity_type, "non-polymer"))
 		result = EntityType::NonPolymer;
 	else if (iequals(entity_type, "macrolide"))
@@ -2162,7 +2076,7 @@ void structure::remove_residue(residue &res)
 
 	switch (res.entity_type())
 	{
-		case EntityType::polymer:
+		case EntityType::Polymer:
 		{
 			auto &m = dynamic_cast<monomer &>(res);
 
