@@ -3,7 +3,7 @@ FILE_PATTERNS          = *.hpp
 STRIP_FROM_PATH        = @DOXYGEN_INPUT_DIR@
 RECURSIVE              = YES
 GENERATE_XML           = YES
-PREDEFINED             += and=&& or=|| not=! CIFPP_EXPORT=
+PREDEFINED             += and=&& or=|| not=! CIFPP_EXPORT= HAVE_LIBCLIPPER=1
 GENERATE_HTML          = NO
 GENERATE_TODOLIST      = NO
 INPUT                  = @DOXYGEN_INPUT_DIR@

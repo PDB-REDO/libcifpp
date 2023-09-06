@@ -301,12 +301,15 @@ class atom_type_traits
 		return type == ionic_radius_type::effective ? effective_ionic_radius(charge) : crystal_ionic_radius(charge);
 	}
 
-	// data type encapsulating the Waasmaier & Kirfel scattering factors
-	// in a simplified form (only a and b).
-	// Added the electrion scattering factors as well
+	/**
+	 * @brief data type encapsulating the scattering factors
+	 * in a simplified form (only a and b).
+	 */
 	struct SFData
 	{
+		/** @cond */
 		double a[6], b[6];
+		/** @endcond */
 	};
 
 	// to get the Cval and Siva scattering factor values, use this constant as charge:
