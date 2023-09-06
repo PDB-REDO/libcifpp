@@ -964,7 +964,7 @@ class structure
 		return get_residue(atom.get_label_asym_id(), atom.get_label_comp_id(), atom.get_label_seq_id(), atom.get_auth_seq_id());
 	}
 
-	// Actions
+	// Actions. Originally a lot more actions were expected here
 
 	/// \brief Remove atom @a a
 	void remove_atom(atom &a)
