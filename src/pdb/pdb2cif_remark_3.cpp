@@ -1056,7 +1056,11 @@ bool Remark3Parser::match(const char *expr, int nextState)
 	if (result)
 		mState = nextState;
 	else if (cif::VERBOSE >= 3)
-		std::cerr << cif::coloured("No match:", cif::StringColour::WHITE, cif::StringColour::RED) << " '" << expr << '\'' << std::endl;
+	{
+		using namespace colour;
+
+		std::cerr << coloured(white, red, bold) << "No match:" << reset << " '" << expr << '\'' << std::endl;
+	}
 
 	return result;
 }
@@ -1116,7 +1120,11 @@ float Remark3Parser::parse()
 		}
 
 		if (cif::VERBOSE >= 2)
-			std::cerr << cif::coloured("Dropping line:", cif::StringColour::WHITE, cif::StringColour::RED) << " '" << mLine << '\'' << std::endl;
+		{
+			using namespace colour;
+
+			std::cerr << coloured(white, red, bold) << "Dropping line:" << reset << " '" << mLine << '\'' << std::endl;
+		}
 
 		++dropped;
 	}

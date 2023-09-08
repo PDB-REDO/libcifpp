@@ -136,10 +136,8 @@ void dump_selection(const std::vector<tls_residue> &selected, size_t indentLevel
 
 	if (first)
 	{
-		if (isatty(STDOUT_FILENO))
-			std::cout << indent << cif::coloured("Empty selection") << std::endl;
-		else
-			std::cout << indent << "Empty selection" << std::endl;
+		using namespace colour;
+		std::cout << indent << coloured(white, red, bold) << "Empty selection" << reset << std::endl;
 	}
 }
 
