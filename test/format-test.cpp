@@ -83,3 +83,18 @@ BOOST_AUTO_TEST_CASE(fmt_1)
 	BOOST_CHECK_EQUAL(cif::format("Hello, %-10.10s, the magic number is %d and pi is %g", world, 42, cif::kPI).str(),
 		"Hello, world     , the magic number is 42 and pi is 3.14159");
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(clr_1)
+{
+	using namespace cif::colour;
+
+	std::cout << "Hello, " << cif::coloured(white, red, regular) <<  "world!" << reset << std::endl
+			  << "Hello, " << cif::coloured(white, red, bold) <<  "world!" << reset << std::endl
+			  << "Hello, " << cif::coloured(black, red) <<  "world!" << reset << std::endl
+			  << "Hello, " << cif::coloured(white, green) <<  "world!" << reset << std::endl
+			  << "Hello, " << cif::coloured(white, blue) <<  "world!" << reset << std::endl
+			  << "Hello, " << cif::coloured(blue, white) <<  "world!" << reset << std::endl
+			  << "Hello, " << cif::coloured(red, white, bold) <<  "world!" << reset << std::endl;
+}

@@ -29,9 +29,14 @@
 #include "cif++/exports.hpp"
 
 #include <filesystem>
+#include <iostream>
 
 #ifndef STDOUT_FILENO
 #define STDOUT_FILENO 1
+#endif
+
+#ifndef STDERR_FILENO
+#define STDERR_FILENO 2
 #endif
 
 #if _WIN32
@@ -49,43 +54,125 @@
 #define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING 1
 #endif
 
-/// \file utilities.hpp
-/// This file contains code that is very generic in nature like a progress_bar 
+/** \file utilities.hpp
+ * 
+ * This file contains code that is very generic in nature like a progress_bar 
+ */
 
-/// The cif namespace
 namespace cif
 {
 
 extern CIFPP_EXPORT int VERBOSE;
 
-// the git 'build' number
+/// return the git 'build' number
 std::string get_version_nr();
 
 // --------------------------------------------------------------------
-//	Code helping with terminal i/o
 
+///	Return the width of the current output terminal, or the default 80 in case output is not to a terminal
 uint32_t get_terminal_width();
 
 // --------------------------------------------------------------------
-//	Path of the current executable
 
+///	Return the path of the current executable
 std::string get_executable_path();
 
 // --------------------------------------------------------------------
 //	some manipulators to write coloured text to terminals
 
-enum StringColour
+/// @brief The defined string colours 
+enum class StringColour
 {
-	scBLACK = 0,
-	scRED,
-	scGREEN,
-	scYELLOW,
-	scBLUE,
-	scMAGENTA,
-	scCYAN,
-	scWHITE,
-	scNONE = 9
+	BLACK = 0,
+	RED,
+	GREEN,
+	YELLOW,
+	BLUE,
+	MAGENTA,
+	CYAN,
+	WHITE,
+	NONE = 9
 };
+
+template<StringColour C>
+struct ColourDefinition
+{
+	static constexpr StringColour value = C;
+};
+
+enum class TextStyle
+{
+	REGULAR = 22,
+	BOLD = 1
+};
+
+template<TextStyle S>
+struct StyleDefinition
+{
+	static constexpr TextStyle value = S;
+};
+
+template<typename ForeColour, typename BackColour, typename Style>
+struct ColourAndStyle
+{
+	static constexpr StringColour fore_colour = ForeColour::value;
+	static constexpr StringColour back_colour = BackColour::value;
+	static constexpr TextStyle text_style = Style::value;
+	
+	static constexpr int fore_colour_number = static_cast<int>(fore_colour) + 30;
+	static constexpr int back_colour_number = static_cast<int>(back_colour) + 40;
+	static constexpr int style_number = static_cast<int>(text_style);
+	
+	friend std::ostream &operator<<(std::ostream &os, ColourAndStyle clr)
+	{
+		bool use_colour = false;
+
+		if (os.rdbuf() == std::cout.rdbuf() and isatty(STDOUT_FILENO))
+			use_colour = true;
+		else if (os.rdbuf() == std::cerr.rdbuf() and isatty(STDERR_FILENO))
+			use_colour = true;
+
+		if (use_colour)
+		{
+			if (fore_colour == StringColour::NONE and back_colour == StringColour::NONE)
+				os << "\033[0m";
+			else
+				os << "\033[" << fore_colour_number << ';' << style_number << ';' << back_colour_number << 'm';
+		}
+
+		return os;
+	}
+};
+
+template<typename ForeColour, typename BackColour>
+constexpr auto coloured(const ForeColour fore, const BackColour back)
+{
+	return ColourAndStyle<ForeColour, BackColour, StyleDefinition<TextStyle::REGULAR>>{};
+}
+
+template<typename ForeColour, typename BackColour, typename Style>
+constexpr auto coloured(const ForeColour fore, const BackColour back, Style style)
+{
+	return ColourAndStyle<ForeColour, BackColour, Style>{};
+}
+
+namespace colour
+{
+	constexpr ColourDefinition<StringColour::BLACK> black = ColourDefinition<StringColour::BLACK>();
+	constexpr ColourDefinition<StringColour::RED> red = ColourDefinition<StringColour::RED>();
+	constexpr ColourDefinition<StringColour::GREEN> green = ColourDefinition<StringColour::GREEN>();
+	constexpr ColourDefinition<StringColour::YELLOW> yellow = ColourDefinition<StringColour::YELLOW>();
+	constexpr ColourDefinition<StringColour::BLUE> blue = ColourDefinition<StringColour::BLUE>();
+	constexpr ColourDefinition<StringColour::MAGENTA> magenta = ColourDefinition<StringColour::MAGENTA>();
+	constexpr ColourDefinition<StringColour::CYAN> cyan = ColourDefinition<StringColour::CYAN>();
+	constexpr ColourDefinition<StringColour::WHITE> white = ColourDefinition<StringColour::WHITE>();
+	constexpr ColourDefinition<StringColour::NONE> none = ColourDefinition<StringColour::NONE>();
+
+	constexpr StyleDefinition<TextStyle::REGULAR> regular = StyleDefinition<TextStyle::REGULAR>();
+	constexpr StyleDefinition<TextStyle::BOLD> bold = StyleDefinition<TextStyle::BOLD>();
+
+	constexpr auto reset = cif::coloured(none, none, regular);
+}
 
 template <typename String, typename CharT>
 struct ColouredString
@@ -94,8 +181,8 @@ struct ColouredString
 
 	ColouredString(String s, StringColour fore, StringColour back, bool bold = true)
 		: m_s(s)
-		, m_fore(fore)
-		, m_back(back)
+		, m_fore(30 + static_cast<int>(fore))
+		, m_back(40 + static_cast<int>(back))
 		, m_bold(bold)
 	{
 	}
@@ -103,7 +190,7 @@ struct ColouredString
 	ColouredString &operator=(const ColouredString &) = delete;
 
 	String m_s;
-	StringColour m_fore, m_back;
+	int m_fore, m_back;
 	bool m_bold;
 };
 
@@ -113,7 +200,7 @@ std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> 
 	if (isatty(STDOUT_FILENO))
 	{
 		std::basic_ostringstream<CharT, Traits> ostr;
-		ostr << "\033[" << (30 + s.m_fore) << ';' << (s.m_bold ? "1" : "22") << ';' << (40 + s.m_back) << 'm'
+		ostr << "\033[" << s.m_fore << ';' << (s.m_bold ? "1" : "22") << ';' << s.m_back << 'm'
 			 << s.m_s
 			 << "\033[0m";
 
@@ -129,7 +216,7 @@ std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> 
 	if (isatty(STDOUT_FILENO))
 	{
 		std::basic_ostringstream<CharT, Traits> ostr;
-		ostr << "\033[" << (30 + s.m_fore) << ';' << (s.m_bold ? "1" : "22") << ';' << (40 + s.m_back) << 'm'
+		ostr << "\033[" << s.m_fore << ';' << (s.m_bold ? "1" : "22") << ';' << s.m_back << 'm'
 			 << s.m_s
 			 << "\033[0m";
 
@@ -140,19 +227,19 @@ std::basic_ostream<CharT, Traits> &operator<<(std::basic_ostream<CharT, Traits> 
 }
 
 template <typename CharT>
-inline auto coloured(const CharT *s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+inline auto coloured(const CharT *s, StringColour fore = StringColour::WHITE, StringColour back = StringColour::RED, bool bold = true)
 {
 	return ColouredString<const CharT *, CharT>(s, fore, back, bold);
 }
 
 template <typename CharT, typename Traits, typename Alloc>
-inline auto coloured(const std::basic_string<CharT, Traits, Alloc> &s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+inline auto coloured(const std::basic_string<CharT, Traits, Alloc> &s, StringColour fore = StringColour::WHITE, StringColour back = StringColour::RED, bool bold = true)
 {
 	return ColouredString<const std::basic_string<CharT, Traits, Alloc>, CharT>(s, fore, back, bold);
 }
 
 template <typename CharT, typename Traits, typename Alloc>
-inline auto coloured(std::basic_string<CharT, Traits, Alloc> &s, StringColour fore = scWHITE, StringColour back = scRED, bool bold = true)
+inline auto coloured(std::basic_string<CharT, Traits, Alloc> &s, StringColour fore = StringColour::WHITE, StringColour back = StringColour::RED, bool bold = true)
 {
 	return ColouredString<std::basic_string<CharT, Traits, Alloc>, CharT>(s, fore, back, bold);
 }
