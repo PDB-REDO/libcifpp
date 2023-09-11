@@ -26,9 +26,7 @@
 
 #include "pdb2cif_remark_3.hpp"
 
-#include <cif++.hpp>
-#include <cif++/pdb/pdb2cif.hpp>
-#include <cif++/gzio.hpp>
+#include "cif++.hpp"
 
 #include <iomanip>
 #include <map>
@@ -39,10 +37,8 @@ using cif::category;
 using cif::datablock;
 using cif::iequals;
 using cif::key;
-// using cif::row;
 using cif::to_lower;
 using cif::to_lower_copy;
-// using cif::compound_factory;
 
 // --------------------------------------------------------------------
 // attempt to come up with better error handling
@@ -6054,7 +6050,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	// C++ is getting closer to Pascal :-)
 	auto printAlignment = [&tb, highX, highY, &rx, &ry, this]()
 	{
-		std::cerr << std::string(cif::get_terminal_width(), '-') << std::endl
+		std::cerr << std::string(22, '-') << std::endl
 				  << "Alignment for chain " << mDbref.chainID << std::endl
 				  << std::endl;
 		std::vector<std::pair<std::string, std::string>> alignment;
@@ -6186,7 +6182,7 @@ bool PDBFileParser::PDBChain::SameSequence(const PDBChain &rhs) const
 
 // --------------------------------------------------------------------
 
-void ReadPDBFile(std::istream &pdbFile, cif::file &cifFile)
+void read_pdb_file(std::istream &pdbFile, cif::file &cifFile)
 {
 	PDBFileParser p;
 
@@ -6214,7 +6210,7 @@ file read(std::istream &is)
 		// is 'H'. It is as simple as that.
 
 		if (ch == 'h' or ch == 'H')
-			ReadPDBFile(is, result);
+			read_pdb_file(is, result);
 		else
 		{
 			try

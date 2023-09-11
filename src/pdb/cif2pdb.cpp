@@ -25,8 +25,6 @@
  */
 
 #include "cif++.hpp"
-#include "cif++/pdb/cif2pdb.hpp"
-#include "cif++/gzio.hpp"
 
 #include <cmath>
 #include <deque>

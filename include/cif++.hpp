@@ -37,5 +37,5 @@
 
 #include "cif++/model.hpp"
 
-#include "cif++/pdb/io.hpp"
+#include "cif++/pdb.hpp"
 #include "cif++/gzio.hpp"

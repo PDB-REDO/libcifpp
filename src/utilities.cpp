@@ -86,23 +86,6 @@ uint32_t get_terminal_width()
     return csbi.srWindow.Right - csbi.srWindow.Left + 1;
 }
 
-std::string GetExecutablePath()
-{
-	WCHAR buffer[4096];
-
-	DWORD n = ::GetModuleFileNameW(nullptr, buffer, sizeof(buffer) / sizeof(WCHAR));
-	if (n == 0)
-		throw std::runtime_error("could not get exe path");
-
-	std::wstring ws(buffer);
-
-	// convert from utf16 to utf8
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv1;
-	std::string u8str = conv1.to_bytes(ws);
-
-	return u8str;
-}
-
 #else
 
 #include <limits.h>
@@ -118,17 +101,6 @@ uint32_t get_terminal_width()
 		result = w.ws_col;
 	}
 	return result;
-}
-
-std::string get_executable_path()
-{
-	using namespace std::literals;
-
-	// This used to be PATH_MAX, but lets simply assume 1024 is enough...
-	char path[1024] = "";
-	if (readlink("/proc/self/exe", path, sizeof(path)) == -1)
-		throw std::runtime_error("could not get exe path "s + strerror(errno));
-	return {path};
 }
 
 #endif

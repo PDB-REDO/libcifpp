@@ -243,7 +243,6 @@ set(project_sources
 	${PROJECT_SOURCE_DIR}/src/pdb/pdb_record.hpp
 	${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.hpp
 	${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp
-	${PROJECT_SOURCE_DIR}/src/pdb/tls.cpp
 )
 
 set(project_headers
@@ -267,6 +266,8 @@ set(project_headers
 	${PROJECT_SOURCE_DIR}/include/cif++/symmetry.hpp
 
 	${PROJECT_SOURCE_DIR}/include/cif++/model.hpp
+
+	${PROJECT_SOURCE_DIR}/include/cif++/pdb.hpp
 
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/cif2pdb.hpp
 	${PROJECT_SOURCE_DIR}/include/cif++/pdb/io.hpp

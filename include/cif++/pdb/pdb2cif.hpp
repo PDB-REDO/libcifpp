@@ -26,13 +26,7 @@
 
 #pragma once
 
-#include "cif++/file.hpp"
-
 /// \file pdb2cif.hpp
+/// \deprecated This file is no longer used. Please use "cif++/pdb.hpp" instead
 
-namespace cif::pdb
-{
-
-void ReadPDBFile(std::istream &pdbFile, file &cifFile);
-
-} // namespace cif::pdb
+#warning "Use of this file is deprecated, please use "cif++/pdb.hpp"

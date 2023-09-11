@@ -1060,7 +1060,7 @@ bool Remark3Parser::match(const char *expr, int nextState)
 	{
 		using namespace colour;
 
-		std::cerr << coloured(white, red, bold) << "No match:" << reset << " '" << expr << '\'' << std::endl;
+		std::cerr << coloured("No match:", white, red, bold) << " '" << expr << '\'' << std::endl;
 	}
 
 	return result;
@@ -1124,7 +1124,7 @@ float Remark3Parser::parse()
 		{
 			using namespace colour;
 
-			std::cerr << coloured(white, red, bold) << "Dropping line:" << reset << " '" << mLine << '\'' << std::endl;
+			std::cerr << coloured("Dropping line:", white, red, bold) << " '" << mLine << '\'' << std::endl;
 		}
 
 		++dropped;

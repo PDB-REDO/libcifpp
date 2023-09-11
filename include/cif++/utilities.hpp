@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2020 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -55,13 +55,21 @@
 #endif
 
 /** \file utilities.hpp
- * 
- * This file contains code that is very generic in nature like a progress_bar 
+ *
+ * This file contains code that is very generic in nature like a progress_bar
+ * and classes you can use to colourise output text.
  */
 
 namespace cif
 {
 
+/**
+ * @brief The global variable VERBOSE contains the level of verbosity
+ * requested. A value of 0 is normal, with some output on error conditions.
+ * A value > 0 will result in more output, the higher the value, the more
+ * output. A value < 0 will make the library silent, even in error
+ * conditions.
+ */
 extern CIFPP_EXPORT int VERBOSE;
 
 /// return the git 'build' number
@@ -69,109 +77,138 @@ std::string get_version_nr();
 
 // --------------------------------------------------------------------
 
-///	Return the width of the current output terminal, or the default 80 in case output is not to a terminal
-uint32_t get_terminal_width();
-
-// --------------------------------------------------------------------
-
-///	Return the path of the current executable
-std::string get_executable_path();
-
-// --------------------------------------------------------------------
-//	some manipulators to write coloured text to terminals
-
-/// @brief The defined string colours 
-enum class StringColour
-{
-	BLACK = 0,
-	RED,
-	GREEN,
-	YELLOW,
-	BLUE,
-	MAGENTA,
-	CYAN,
-	WHITE,
-	NONE = 9
-};
-
-template<StringColour C>
-struct ColourDefinition
-{
-	static constexpr StringColour value = C;
-};
-
-enum class TextStyle
-{
-	REGULAR = 22,
-	BOLD = 1
-};
-
-template<TextStyle S>
-struct StyleDefinition
-{
-	static constexpr TextStyle value = S;
-};
-
-template<typename ForeColour, typename BackColour, typename Style>
-struct ColourAndStyle
-{
-	static constexpr StringColour fore_colour = ForeColour::value;
-	static constexpr StringColour back_colour = BackColour::value;
-	static constexpr TextStyle text_style = Style::value;
-	
-	static constexpr int fore_colour_number = static_cast<int>(fore_colour) + 30;
-	static constexpr int back_colour_number = static_cast<int>(back_colour) + 40;
-	static constexpr int style_number = static_cast<int>(text_style);
-	
-	friend std::ostream &operator<<(std::ostream &os, ColourAndStyle clr)
-	{
-		bool use_colour = false;
-
-		if (os.rdbuf() == std::cout.rdbuf() and isatty(STDOUT_FILENO))
-			use_colour = true;
-		else if (os.rdbuf() == std::cerr.rdbuf() and isatty(STDERR_FILENO))
-			use_colour = true;
-
-		if (use_colour)
-		{
-			if (fore_colour == StringColour::NONE and back_colour == StringColour::NONE)
-				os << "\033[0m";
-			else
-				os << "\033[" << fore_colour_number << ';' << style_number << ';' << back_colour_number << 'm';
-		}
-
-		return os;
-	}
-};
-
-template<typename ForeColour, typename BackColour>
-constexpr auto coloured(const ForeColour fore, const BackColour back)
-{
-	return ColourAndStyle<ForeColour, BackColour, StyleDefinition<TextStyle::REGULAR>>{};
-}
-
-template<typename ForeColour, typename BackColour, typename Style>
-constexpr auto coloured(const ForeColour fore, const BackColour back, Style style)
-{
-	return ColourAndStyle<ForeColour, BackColour, Style>{};
-}
+/**
+ * When writing out text to the terminal it is often useful to have
+ * some of the text colourised. But only if the output is really a
+ * terminal since colouring text is done using escape sequences
+ * an if output is redirected to a file, these escape sequences end up
+ * in the file making the real text less easy to read.
+ *
+ * The code presented here is rather basic. It mimics the std::quoted
+ * manipulator in that it will colour a string with optionally
+ * requested colours and text style.
+ *
+ * Example:
+ *
+ * @code {.cpp}
+ * using namespace cif::colour;
+ * std::cout << cif::coloured("Hello, world!", white, red, bold) << '\n';
+ * @endcode
+ *
+ */
 
 namespace colour
 {
-	constexpr ColourDefinition<StringColour::BLACK> black = ColourDefinition<StringColour::BLACK>();
-	constexpr ColourDefinition<StringColour::RED> red = ColourDefinition<StringColour::RED>();
-	constexpr ColourDefinition<StringColour::GREEN> green = ColourDefinition<StringColour::GREEN>();
-	constexpr ColourDefinition<StringColour::YELLOW> yellow = ColourDefinition<StringColour::YELLOW>();
-	constexpr ColourDefinition<StringColour::BLUE> blue = ColourDefinition<StringColour::BLUE>();
-	constexpr ColourDefinition<StringColour::MAGENTA> magenta = ColourDefinition<StringColour::MAGENTA>();
-	constexpr ColourDefinition<StringColour::CYAN> cyan = ColourDefinition<StringColour::CYAN>();
-	constexpr ColourDefinition<StringColour::WHITE> white = ColourDefinition<StringColour::WHITE>();
-	constexpr ColourDefinition<StringColour::NONE> none = ColourDefinition<StringColour::NONE>();
+	/// @brief The defined colours
+	enum colour_type
+	{
+		black = 0,
+		red,
+		green,
+		yellow,
+		blue,
+		magenta,
+		cyan,
+		white,
+		none = 9
+	};
 
-	constexpr StyleDefinition<TextStyle::REGULAR> regular = StyleDefinition<TextStyle::REGULAR>();
-	constexpr StyleDefinition<TextStyle::BOLD> bold = StyleDefinition<TextStyle::BOLD>();
+	enum style_type
+	{
+		bold = 1,
+		underlined = 4,
+		blink = 5,
+		inverse = 7,
+		regular = 22,
+	};
 
-	constexpr auto reset = cif::coloured(none, none, regular);
+	namespace detail
+	{
+		/**
+		 * @brief Struct for delimited strings.
+		 */
+		template <typename StringType>
+		struct coloured_string_t
+		{
+			static_assert(std::is_reference_v<StringType> or std::is_pointer_v<StringType>,
+				"String type must be pointer or reference");
+
+			coloured_string_t(StringType s, colour_type fc, colour_type bc, style_type st)
+				: m_str(s)
+				, m_fore_colour(static_cast<int>(fc) + 30)
+				, m_back_colour(static_cast<int>(bc) + 40)
+				, m_style(static_cast<int>(st))
+			{
+			}
+
+			coloured_string_t &operator=(coloured_string_t &) = delete;
+
+			template <typename char_type, typename traits_type>
+			friend std::basic_ostream<char_type, traits_type> &operator<<(
+				std::basic_ostream<char_type, traits_type> &os, const coloured_string_t &cs)
+			{
+				bool use_colour = false;
+
+				if (os.rdbuf() == std::cout.rdbuf() and isatty(STDOUT_FILENO))
+					use_colour = true;
+				else if (os.rdbuf() == std::cerr.rdbuf() and isatty(STDERR_FILENO))
+					use_colour = true;
+
+				if (use_colour)
+				{
+					os << "\033[" << cs.m_fore_colour << ';' << cs.m_style << ';' << cs.m_back_colour << 'm'
+					   << cs.m_str
+					   << "\033[0m";
+				}
+
+				return os;
+			}
+
+			StringType m_str;
+			int m_fore_colour, m_back_colour;
+			int m_style;
+		};
+
+	} // namespace detail
+} // namespace colour
+
+/**
+ * @brief Manipulator for coloured strings.
+ * @param str String to quote.
+ * @param fg Foreground (=text) colour to use
+ * @param bg Background colour to use
+ * @param st Text style to use
+ */
+template <typename char_type>
+inline auto coloured(const char_type *str,
+	colour::colour_type fg, colour::colour_type bg = colour::colour_type::none,
+	colour::style_type st = colour::style_type::regular)
+{
+	return colour::detail::coloured_string_t<const char_type *>(str, fg, bg, st);
+}
+
+template <typename char_type, typename traits_type, typename allocator_type>
+inline auto coloured(const std::basic_string<char_type, traits_type, allocator_type> &str,
+	colour::colour_type fg, colour::colour_type bg = colour::colour_type::none,
+	colour::style_type st = colour::style_type::regular)
+{
+	return colour::detail::coloured_string_t<const std::basic_string<char_type, traits_type, allocator_type> &>(str, fg, bg, st);
+}
+
+template <typename char_type, typename traits_type, typename allocator_type>
+inline auto coloured(std::basic_string<char_type, traits_type, allocator_type> &str,
+	colour::colour_type fg, colour::colour_type bg = colour::colour_type::none,
+	colour::style_type st = colour::style_type::regular)
+{
+	return colour::detail::coloured_string_t<std::basic_string<char_type, traits_type, allocator_type> &>(str, fg, bg, st);
+}
+
+template <typename char_type, typename traits_type>
+inline auto coloured(std::basic_string_view<char_type, traits_type> &str,
+	colour::colour_type fg, colour::colour_type bg = colour::colour_type::none,
+	colour::style_type st = colour::style_type::regular)
+{
+	return colour::detail::coloured_string_t<std::basic_string_view<char_type, traits_type> &>(str, fg, bg, st);
 }
 
 // --------------------------------------------------------------------
