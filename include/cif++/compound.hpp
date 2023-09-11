@@ -71,10 +71,10 @@ enum class bond_type
 	pi,   ///< pi bond
 };
 
-/// @brief return the string representation of @ref bond_type @a bondType
+/// @brief return the string representation of @a bondType
 std::string bond_type_to_string(bond_type bondType);
 
-/// @brief return the @ref bond_type for the string representation @a bondType
+/// @brief return the cif::bond_type for the string representation @a bondType
 bond_type parse_bond_type_from_string(const std::string &bondType);
 
 /// \brief The possible stereo config values for a compound_atom.
@@ -94,10 +94,10 @@ enum class stereo_config_type : uint8_t
 	S = 'S'  ///< Sinister
 };
 
-/// @brief return the string representation of @ref stereo_config_type @a stereo_config
+/// @brief return the string representation of @a stereo_config
 std::string to_string(stereo_config_type stereo_config);
 
-/// @brief return the @ref stereo_config_type for the string representation @a stereo_config
+/// @brief return the cif::stereo_config_type for the string representation @a stereo_config
 stereo_config_type parse_stereo_config_from_string(const std::string &stereo_config);
 
 /// --------------------------------------------------------------------

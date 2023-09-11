@@ -199,7 +199,7 @@ enum class radius_type
 	type_count ///< Number of radii
 };
 
-/// @brief The number of radii per element which can be requested from @ref atom_type_info
+/// @brief The number of radii per element which can be requested from atom_type_info
 constexpr size_t kRadiusTypeCount = static_cast<size_t>(radius_type::type_count);
 
 /// An enum used to select either the effective or the crystal radius of an ion.
@@ -214,11 +214,11 @@ enum class ionic_radius_type
 /// Requests for an unknown radius value return kNA
 constexpr float kNA = std::numeric_limits<float>::quiet_NaN();
 
-/// A struct holding the known information for all elements defined in @ref atom_type
+/// A struct holding the known information for all elements defined in atom_type
 
 struct atom_type_info
 {
-	/// The type as an @ref atom_type
+	/// The type as an atom_type
 	atom_type type;
 
 	/// The official name for this element
@@ -233,12 +233,12 @@ struct atom_type_info
 	/// A flag indicating whether the element is a metal
 	bool metal;
 
-	/// Array containing all known radii for this element. A value of @ref cif::kNA is
+	/// Array containing all known radii for this element. A value of kNA is
 	/// stored for unknown values
 	float radii[kRadiusTypeCount];
 };
 
-/// Array of @ref atom_type_info struct for each of the defined elements in @ref atom_type
+/// Array of atom_type_info struct for each of the defined elements in atom_type
 
 extern CIFPP_EXPORT const atom_type_info kKnownAtoms[];
 
@@ -250,20 +250,20 @@ extern CIFPP_EXPORT const atom_type_info kKnownAtoms[];
 class atom_type_traits
 {
   public:
-	/// Constructor taking an @ref atom_type \a a
+	/// Constructor taking an atom_type \a a
 	atom_type_traits(atom_type a);
 
 	/// Constructor based on the element as a string in \a symbol
 	atom_type_traits(const std::string &symbol);
 
-	atom_type type() const { return m_info->type; }       ///< Returns the @ref atom_type
+	atom_type type() const { return m_info->type; }       ///< Returns the atom_type
 	std::string name() const { return m_info->name; }     ///< Returns the name of the element
 	std::string symbol() const { return m_info->symbol; } ///< Returns the symbol of the element
 	float weight() const { return m_info->weight; }       ///< Returns the average weight of the element
 
 	bool is_metal() const { return m_info->metal; } ///< Returns true if the element is a metal
 
-	/// Return true if the symbol in \a symbol actually exists in the list of known elements in @ref atom_type
+	/// Return true if the symbol in \a symbol actually exists in the list of known elements in atom_type
 	static bool is_element(const std::string &symbol);
 
 	/// Return true if the symbol in \a symbol exists and is a metal
@@ -271,7 +271,7 @@ class atom_type_traits
 
 	/// @brief Return the radius for the element, use \a type to select which radius to return
 	/// @param type The selector for which radius to return
-	/// @return The requested radius or @ref cif::kNA if not known (or applicable)
+	/// @return The requested radius or kNA if not known (or applicable)
 	float radius(radius_type type = radius_type::single_bond) const
 	{
 		if (type >= radius_type::type_count)
@@ -312,7 +312,7 @@ class atom_type_traits
 		/** @endcond */
 	};
 
-	// to get the Cval and Siva scattering factor values, use this constant as charge:
+	/// @brief to get the Cval and Siva scattering factor values, use this constant as charge:
 	static constexpr int kWKSFVal = -99;
 
 	/// @brief Return the Waasmaier & Kirfel scattering factor values for the element
@@ -320,12 +320,12 @@ class atom_type_traits
 	/// The coefficients from Waasmaier & Kirfel (1995), Acta Cryst. A51, 416-431.
 	///
 	/// @param charge The charge for which the structure values should be returned, use kWSKFVal to return the *Cval* and *Siva* values
-	/// @return The scattering factors as a @ref SFData struct
+	/// @return The scattering factors as a SFData struct
 	const SFData &wksf(int charge = 0) const;
 
 	/// @brief Return the electron scattering factor values for the element
 	///
-	/// @return The scattering factors as a @ref SFData struct
+	/// @return The scattering factors as a SFData struct
 	const SFData &elsf() const;
 
 	/// Clipper doesn't like atoms with charges that do not have a scattering factor. And

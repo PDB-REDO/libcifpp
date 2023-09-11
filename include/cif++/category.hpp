@@ -61,6 +61,9 @@ namespace cif
 class duplicate_key_error : public std::runtime_error
 {
   public:
+    /**
+     * @brief Construct a new duplicate key error object
+     */
 	duplicate_key_error(const std::string &msg)
 		: std::runtime_error(msg)
 	{
@@ -72,6 +75,9 @@ class duplicate_key_error : public std::runtime_error
 class multiple_results_error : public std::runtime_error
 {
   public:
+    /**
+     * @brief Construct a new multiple results error object
+     */
 	multiple_results_error()
 		: std::runtime_error("query should have returned exactly one row")
 	{
@@ -130,7 +136,7 @@ class category
 	// --------------------------------------------------------------------
 
 	const std::string &name() const { return m_name; } ///< Returns the name of the category
-	iset key_fields() const; ///< Returns the @ref cif::iset of key field names. Retrieved from the @ref category_validator for this category
+	iset key_fields() const; ///< Returns the cif::iset of key field names. Retrieved from the @ref category_validator for this category
 	std::set<uint16_t> key_field_indices() const; ///< Returns a set of indices for the key fields.
 
 	/// @brief Set the validator for this category to @a v
@@ -1006,7 +1012,7 @@ class category
 		return get_column_ix(name) < m_columns.size();
 	}
 
-	/// @brief Return the @ref cif::iset of columns in this category
+	/// @brief Return the cif::iset of columns in this category
 	iset get_columns() const;
 
 	// --------------------------------------------------------------------

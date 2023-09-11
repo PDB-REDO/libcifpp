@@ -157,11 +157,17 @@ class row : public std::vector<item_value>
   public:
 	row() = default;
 
+	/**
+	 * @brief Return the item_value pointer for item at index @a ix
+	 */
 	item_value* get(uint16_t ix)
 	{
 		return ix < size() ? &data()[ix] : nullptr;
 	}
 
+	/**
+	 * @brief Return the const item_value pointer for item at index @a ix
+	 */
 	const item_value* get(uint16_t ix) const
 	{
 		return ix < size() ? &data()[ix] : nullptr;

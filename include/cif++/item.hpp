@@ -364,6 +364,11 @@ struct item_handle
 	}
 
 	// We may not have C++20 yet...
+
+	/**
+	 * @brief Compare the value contained with the value @a value and
+	 * return true if both are not equal.
+	 */
 	template <typename T>
 	bool operator!=(const T &value) const
 	{

@@ -267,19 +267,23 @@ struct sym_op
 	/// \brief a default spaceship operator
 	constexpr auto operator<=>(const sym_op &rhs) const = default;
 #else
+	/// \brief a default equals operator
 	constexpr bool operator==(const sym_op &rhs) const
 	{
 		return m_nr == rhs.m_nr and m_ta == rhs.m_ta and m_tb == rhs.m_tb and m_tc == rhs.m_tc;
 	}
 
+	/// \brief a default not-equals operator
 	constexpr bool operator!=(const sym_op &rhs) const
 	{
 		return not operator==(rhs);
 	}
 #endif
 
+	/// @cond
 	uint8_t m_nr;
 	uint8_t m_ta, m_tb, m_tc;
+	/// @endcond
 };
 
 static_assert(sizeof(sym_op) == 4, "Sym_op should be four bytes");

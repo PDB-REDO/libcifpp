@@ -213,10 +213,15 @@ void progress_bar_impl::message(const std::string &msg)
 }
 
 const char* kSpinner[] = {
-	// "▉", "▊", "▋", "▌", "▍", "▎", "▏", "▎", "▍", "▌", "▋", "▊", "▉"
-	".", "o", "O", "0", "O", "o", ".", " "
+	// ".", "o", "O", "0", "O", "o", ".", " "
+	// "⢄", "⢂", "⢁", "⡁", "⡈", "⡐", "⡠"
+	 ".", "o", "O", "0", "@", "*", " "
 };
+
 const size_t kSpinnerCount = sizeof(kSpinner) / sizeof(char*);
+
+const int kSpinnerTimeInterval = 100;
+
 const uint32_t kMinBarWidth = 40, kMinMsgWidth = 12;
 
 void progress_bar_impl::print_progress()
@@ -269,7 +274,7 @@ void progress_bar_impl::print_progress()
 		msg << std::setw(3) << static_cast<int>(std::ceil(progress * 100)) << "% ";
 
 		auto now = std::chrono::system_clock::now();
-		m_spinner_index = (std::chrono::duration_cast<std::chrono::milliseconds>(now - m_start).count() / 200) % kSpinnerCount;
+		m_spinner_index = (std::chrono::duration_cast<std::chrono::milliseconds>(now - m_start).count() / kSpinnerTimeInterval) % kSpinnerCount;
 
 		msg << kSpinner[m_spinner_index];
 

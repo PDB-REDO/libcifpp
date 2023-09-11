@@ -537,11 +537,13 @@ std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_f
 template <typename T>
 struct my_charconv
 {
+	/// @brief Simply call our version of std::from_chars
 	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
 	{
 		return cif::from_chars(a, b, d);
 	}
 
+	/// @brief Simply call our version of std::to_chars
 	static std::to_chars_result to_chars(char *first, char *last, T &value, chars_format fmt)
 	{
 		return cif::to_chars(first, last, value, fmt);
@@ -552,11 +554,13 @@ struct my_charconv
 template <typename T>
 struct std_charconv
 {
+	/// @brief Simply call std::from_chars
 	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
 	{
 		return std::from_chars(a, b, d);
 	}
 
+	/// @brief Simply call std::to_chars
 	static std::to_chars_result to_chars(char *first, char *last, T &value, chars_format fmt)
 	{
 		return std::to_chars(first, last, value, fmt);
