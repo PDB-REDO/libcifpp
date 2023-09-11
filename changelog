@@ -1,3 +1,9 @@
+Version 5.2.0
+- With lots of documentation
+- Refactored coloured text output
+- Removed the subdirectory cif++/pdb, there now is a single
+  header file pdb.hpp for I/O of legacy PDB files.
+
 Version 5.1.3
 - Dropped pkgconfig support
 
@@ -8,8 +14,8 @@ Version 5.1.2
 Version 5.1.1
 - Added missing include <compare> in symmetry.hpp
 - Added empty() to matrix
-- Fix for parsing PDB files with a last line that does not end with
-  a new line character.
+- Fix for parsing legacy PDB files with a last line that does
+  not end with a new line character.
 
 Version 5.1
 - New parser, optimised for speed

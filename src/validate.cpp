@@ -97,24 +97,6 @@ type_validator::~type_validator()
 	delete m_rx;
 }
 
-template <typename T>
-struct my_from_chars
-{
-	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
-	{
-		return cif::from_chars(a, b, d);
-	}
-};
-
-template <typename T>
-struct std_from_chars
-{
-	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
-	{
-		return std::from_chars(a, b, d);
-	}
-};
-
 int type_validator::compare(std::string_view a, std::string_view b) const
 {
 	int result = 0;

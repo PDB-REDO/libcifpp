@@ -33,6 +33,16 @@
 #include <mutex>
 #include <utility>
 
+/**
+ * @file validate.hpp
+ *
+ * Support for validating mmCIF files based on a dictionary. These dictionaries
+ * contain information about the categories and items therein, what they may
+ * contain and how this should be formatted. There's also information on links
+ * between parent and child categories.
+ *
+ */
+
 namespace cif
 {
 
@@ -40,39 +50,67 @@ struct category_validator;
 
 // --------------------------------------------------------------------
 
+/**
+ * @brief The exception thrown when a validation error occurs
+ *
+ */
 class validation_error : public std::exception
 {
   public:
+	/// @brief Constructor
 	validation_error(const std::string &msg);
+
+	/// @brief Constructor
 	validation_error(const std::string &cat, const std::string &item,
 		const std::string &msg);
+
+	/// @brief The description of the error
 	const char *what() const noexcept { return m_msg.c_str(); }
+
+	/// @cond
 	std::string m_msg;
+	/// @endcond
 };
 
 // --------------------------------------------------------------------
 
+/** @brief the primitive types known */
 enum class DDL_PrimitiveType
 {
-	Char,
-	UChar,
-	Numb
+	Char,  ///< Text
+	UChar, ///< Text that is compared ignoring the character case
+	Numb   ///< Nummeric values
 };
 
+/// @brief Return the DDL_PrimitiveType encoded in @a s
 DDL_PrimitiveType map_to_primitive_type(std::string_view s);
 
 struct regex_impl;
 
+/**
+ * @brief For each defined type in a dictionary a type_validator is created
+ *
+ * A type validator can check if the contents of an item are conforming the
+ * specification. The check is done using regular expressions.
+ *
+ * A type_validator can also be used to compare two values that conform to
+ * this type. Comparison is of course based on the primitive type.
+ *
+ */
 struct type_validator
 {
-	std::string m_name;
-	DDL_PrimitiveType m_primitive_type;
-	regex_impl *m_rx;
+	std::string m_name;                 ///< The name of the type
+	DDL_PrimitiveType m_primitive_type; ///< The primitive_type of the type
+	regex_impl *m_rx;                   ///< The regular expression for the type
 
 	type_validator() = delete;
+
+	/// @brief Constructor
 	type_validator(std::string_view name, DDL_PrimitiveType type, std::string_view rx);
 
 	type_validator(const type_validator &) = delete;
+
+	/// @brief Copy constructor
 	type_validator(type_validator &&rhs)
 		: m_name(std::move(rhs.m_name))
 		, m_primitive_type(rhs.m_primitive_type)
@@ -81,6 +119,8 @@ struct type_validator
 	}
 
 	type_validator &operator=(const type_validator &) = delete;
+
+	/// @brief Move constructor
 	type_validator &operator=(type_validator &&rhs)
 	{
 		m_name = std::move(rhs.m_name);
@@ -90,46 +130,54 @@ struct type_validator
 		return *this;
 	}
 
+	/// @brief Destructor
 	~type_validator();
 
+	/// @brief Return the sorting order
 	bool operator<(const type_validator &rhs) const
 	{
 		return icompare(m_name, rhs.m_name) < 0;
 	}
 
+	/// @brief Compare the contents of @a a and @a b based on the
+	/// primitive type of this type. A value of zero indicates the
+	/// values are equal. Less than zero means @a a sorts before @a b
+	/// and a value larger than zero likewise means the opposite
 	int compare(std::string_view a, std::string_view b) const;
 };
 
+/**
+ * @brief An item_validator binds a type_validator to an item in
+ * a category along with other information found in the dictionary.
+ *
+ * mmCIF dictionaries may indicate an item is e.g. mandatory or
+ * consists of a certain list of allowed values. Even default
+ * values can be provided.
+ *
+ */
 struct item_validator
 {
-	std::string m_tag;
-	bool m_mandatory;
-	const type_validator *m_type;
-	cif::iset m_enums;
-	std::string m_default;
-	bool m_default_is_null;
-	category_validator *m_category = nullptr;
+	std::string m_tag;                        ///< The item name
+	bool m_mandatory;                         ///< Flag indicating this item is mandatory
+	const type_validator *m_type;             ///< The type for this item
+	cif::iset m_enums;                        ///< If filled, the set of allowed values
+	std::string m_default;                    ///< If filled, a default value for this item
+	category_validator *m_category = nullptr; ///< The category_validator this item_validator belongs to
 
-	// ItemLinked is used for non-key links
-	struct item_link
-	{
-		item_validator *m_parent;
-		std::string m_parent_item;
-		std::string m_child_item;
-	};
-
-	std::vector<item_link> mLinked;
-
+	/// @brief Compare based on the name 
 	bool operator<(const item_validator &rhs) const
 	{
 		return icompare(m_tag, rhs.m_tag) < 0;
 	}
 
+	/// @brief Compare based on the name 
 	bool operator==(const item_validator &rhs) const
 	{
 		return iequals(m_tag, rhs.m_tag);
 	}
 
+	/// @brief Validate the value in @a value for this item
+	/// Will throw a validation_error exception if it fails
 	void operator()(std::string_view value) const;
 };
 
@@ -231,7 +279,6 @@ class validator_factory
 	const validator &construct_validator(std::string_view name, std::istream &is);
 
   private:
-
 	// --------------------------------------------------------------------
 
 	validator_factory() = default;
