@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "pdb2cif.hpp"
+#include "pdb_record.hpp"
 
 // --------------------------------------------------------------------
 

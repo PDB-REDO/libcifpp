@@ -24,8 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "cif++.hpp"
-#include "cif++/pdb/pdb2cif_remark_3.hpp"
+#include "pdb2cif_remark_3.hpp"
+
+#include <cif++.hpp>
 
 #include <map>
 #include <set>

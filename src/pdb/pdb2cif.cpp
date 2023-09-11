@@ -24,9 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "pdb2cif_remark_3.hpp"
+
 #include <cif++.hpp>
 #include <cif++/pdb/pdb2cif.hpp>
-#include <cif++/pdb/pdb2cif_remark_3.hpp>
 #include <cif++/gzio.hpp>
 
 #include <iomanip>

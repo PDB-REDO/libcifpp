@@ -28,6 +28,8 @@
 
 #include "cif++/datablock.hpp"
 
+/// \file io.hpp
+
 namespace cif::pdb
 {
 

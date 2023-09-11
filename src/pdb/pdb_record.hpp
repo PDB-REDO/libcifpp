@@ -26,28 +26,38 @@
 
 #pragma once
 
-#include "cif++/datablock.hpp"
+#include "cif++/file.hpp"
 
-#include <string>
-#include <tuple>
-#include <vector>
+/// \file pdb_record.hpp
 
-/// \file tls.hpp
-
-namespace cif
+namespace cif::pdb
 {
 
-struct tls_selection;
-struct tls_residue;
+// --------------------------------------------------------------------
 
-struct tls_selection
+struct PDBRecord
 {
-	virtual ~tls_selection() {}
-	virtual void collect_residues(cif::datablock &db, std::vector<tls_residue> &residues, std::size_t indentLevel = 0) const = 0;
-	std::vector<std::tuple<std::string, int, int>> get_ranges(cif::datablock &db, bool pdbNamespace) const;
+	PDBRecord *mNext;
+	uint32_t mLineNr;
+	char mName[11];
+	size_t mVlen;
+	char mValue[1];
+
+	PDBRecord(uint32_t lineNr, const std::string &name, const std::string &value);
+	~PDBRecord();
+
+	void *operator new(size_t);
+	void *operator new(size_t size, size_t vLen);
+
+	void operator delete(void *p);
+	void operator delete(void *p, size_t vLen);
+
+	bool is(const char *name) const;
+
+	char vC(size_t column);
+	std::string vS(size_t columnFirst, size_t columnLast = std::numeric_limits<size_t>::max());
+	int vI(int columnFirst, int columnLast);
+	std::string vF(size_t columnFirst, size_t columnLast);
 };
 
-// Low level: get the selections
-std::unique_ptr<tls_selection> parse_tls_selection_details(const std::string &program, const std::string &selection);
-
-} // namespace cif
+} // namespace pdbx
