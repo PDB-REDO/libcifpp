@@ -331,52 +331,49 @@ class progress_bar
 // Resources
 
 /**
- * @brief Resources are files required to perform some action, e.g.
- * dictionary files or the entire CCD file.
+ * @brief Load a resource from disk or the compiled in resources
  * 
- * Resources can be compiled into the executable so that the resulting
- * application can be made portable to other machines. For this you
- * need to use https://github.com/mhekkel/mrc.git which only works
- * on Un*x like systems using the ELF executable format or on MS Windows
+ * @verbatim embed:rst
+.. note::
+
+   See the :doc:`documentation on resources </resources>` for more information.
+
+   @endverbatim
  * 
- * But resources may also be located as files on the filesytem at
- * specific locations. And you can specify your own location for
- * files (a directory) or even override named resources with your
- * own data.
- * 
- * The order in which resources are search for is:
- * 
- * * Use the resource that was defined by calling add_file_resource
- *   for this name.
- * 
- * * Search the paths specified by add_data_directory, last one
- *   added is searched first
- * 
- * * Search the so-called CACHE_DIR. This location is defined
- *   at compile time and based on the installation directory of
- *   libcifpp. Usually it is /var/cache/libcifpp.
- *   It is in this directory where the cron job for libcifpp will
- *   put the updated files weekly.
- * 
- * * If the CCP4 environment is available, the
- *   $ENV{CCP4}/share/libcifpp is searched.
- * 
- * * If the environment variable LIBCIFPP_DATA_DIR is set it
- *   is searched
- * 
- * * The DATA_DIR is searched, this is also a variable defined
- *   at compile time, also based on the installation directory
- *   of libcifpp. It usually is /usr/share/libcifpp
- * 
- * * As a last resort an attempt is made to load the data from
- *   resources compiled by mrc.
- * 
- * @param name 
- * @return std::unique_ptr<std::istream> 
+ * @param name The named resource to load
+ * @return std::unique_ptr<std::istream> A pointer to the std::istream or empty if not found
  */
 
 std::unique_ptr<std::istream> load_resource(std::filesystem::path name);
+
+/**
+ * @brief Add a file specified by @a dataFile as the data for resource @a name
+ * 
+ * @verbatim embed:rst
+.. note::
+
+   See the :doc:`documentation on resources </resources>` for more information.
+
+   @endverbatim
+ * 
+ * @param name The name of the resource to specify
+ * @param dataFile Path to a file containing the data
+ */
+
 void add_file_resource(const std::string &name, std::filesystem::path dataFile);
+
+/**
+ * @brief Add a directory to the list of search directories. This list is
+ * searched in a last-in-first-out order.
+ * 
+ * @verbatim embed:rst
+.. note::
+
+   See the :doc:`documentation on resources </resources>` for more information.
+
+   @endverbatim
+ */
+
 void add_data_directory(std::filesystem::path dataDir);
 
 } // namespace cif

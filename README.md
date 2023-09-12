@@ -92,7 +92,7 @@ and installing is to create a `build` directory and run cmake there.
 On linux e.g. you would issue the following commands to build and install
 libcifpp in your `$HOME/.local` folder:
 
-```bash
+```console
  git clone https://github.com/PDB-REDO/libcifpp.git --recurse-submodules
  cd libcifpp
  cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Release
