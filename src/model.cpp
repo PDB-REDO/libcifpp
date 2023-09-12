@@ -75,7 +75,7 @@ int atom::atom_impl::get_property_int(std::string_view name) const
 
 		std::from_chars_result r = std::from_chars(s.data(), s.data() + s.length(), result);
 		if (r.ec != std::errc() and VERBOSE > 0)
-			std::cerr << "Error converting " << s << " to number for property " << name << std::endl;
+			std::cerr << "Error converting " << s << " to number for property " << name << '\n';
 	}
 	return result;
 }
@@ -89,7 +89,7 @@ float atom::atom_impl::get_property_float(std::string_view name) const
 
 		std::from_chars_result r = cif::from_chars(s.data(), s.data() + s.length(), result);
 		if (r.ec != std::errc() and VERBOSE > 0)
-			std::cerr << "Error converting " << s << " to number for property " << name << std::endl;
+			std::cerr << "Error converting " << s << " to number for property " << name << '\n';
 	}
 	return result;
 }
@@ -219,7 +219,7 @@ int atom::atom_impl::get_charge() const
 // 	if (result == nullptr)
 // 	{
 // 		if (VERBOSE > 0)
-// 			std::cerr << "Compound not found: '" << get_property<std::string>("label_comp_id") << '\'' << std::endl;
+// 			std::cerr << "Compound not found: '" << get_property<std::string>("label_comp_id") << '\'' << '\n';
 
 // 		throw std::runtime_error("no compound");
 // 	}
@@ -374,7 +374,7 @@ std::vector<atom> residue::unique_atoms() const
 		else if (alt != firstAlt)
 		{
 			if (VERBOSE > 0)
-				std::cerr << "skipping alternate atom " << atom << std::endl;
+				std::cerr << "skipping alternate atom " << atom << '\n';
 			continue;
 		}
 
@@ -412,7 +412,7 @@ atom residue::get_atom_by_atom_id(const std::string &atom_id) const
 	}
 
 	if (not result and VERBOSE > 1)
-		std::cerr << "atom with atom_id " << atom_id << " not found in residue " << m_asym_id << ':' << m_seq_id << std::endl;
+		std::cerr << "atom with atom_id " << atom_id << " not found in residue " << m_asym_id << ':' << m_seq_id << '\n';
 
 	return result;
 }
@@ -595,7 +595,7 @@ float monomer::alpha() const
 	catch (const std::exception &ex)
 	{
 		if (VERBOSE > 0)
-			std::cerr << ex.what() << std::endl;
+			std::cerr << ex.what() << '\n';
 	}
 
 	return result;
@@ -624,7 +624,7 @@ float monomer::kappa() const
 	{
 		if (VERBOSE > 0)
 			std::cerr << "When trying to calculate kappa for " << m_asym_id << ':' << m_seq_id << ": "
-					  << ex.what() << std::endl;
+					  << ex.what() << '\n';
 	}
 
 	return result;
@@ -647,7 +647,7 @@ float monomer::tco() const
 	{
 		if (VERBOSE > 0)
 			std::cerr << "When trying to calculate tco for " << get_asym_id() << ':' << get_seq_id() << ": "
-					  << ex.what() << std::endl;
+					  << ex.what() << '\n';
 	}
 
 	return result;
@@ -666,7 +666,7 @@ float monomer::omega() const
 	{
 		if (VERBOSE > 0)
 			std::cerr << "When trying to calculate omega for " << get_asym_id() << ':' << get_seq_id() << ": "
-					  << ex.what() << std::endl;
+					  << ex.what() << '\n';
 	}
 
 	return result;
@@ -742,7 +742,7 @@ float monomer::chi(size_t nr) const
 	catch (const std::exception &e)
 	{
 		if (VERBOSE > 0)
-			std::cerr << e.what() << std::endl;
+			std::cerr << e.what() << '\n';
 		result = 0;
 	}
 
@@ -917,7 +917,7 @@ polymer::polymer(structure &s, const std::string &entityID, const std::string &a
 		else if (VERBOSE > 0)
 		{
 			monomer m{*this, index, seqID, authSeqID, pdbInsCode, compoundID};
-			std::cerr << "Dropping alternate residue " << m << std::endl;
+			std::cerr << "Dropping alternate residue " << m << '\n';
 		}
 	}
 }
@@ -1273,7 +1273,7 @@ structure::structure(datablock &db, size_t modelNr, StructureOpenOptions options
 		if (model_nr and *model_nr != m_model_nr)
 		{
 			if (VERBOSE > 0)
-				std::cerr << "No atoms loaded for model 1, trying model " << *model_nr << std::endl;
+				std::cerr << "No atoms loaded for model 1, trying model " << *model_nr << '\n';
 			m_model_nr = *model_nr;
 			load_atoms_for_model(options);
 		}
@@ -1282,7 +1282,7 @@ structure::structure(datablock &db, size_t modelNr, StructureOpenOptions options
 	if (m_atoms.empty())
 	{
 		if (VERBOSE >= 0)
-			std::cerr << "Warning: no atoms loaded" << std::endl;
+			std::cerr << "Warning: no atoms loaded\n";
 	}
 	else
 		load_data();
@@ -1373,7 +1373,7 @@ void structure::load_data()
 		if (ri == resMap.end())
 		{
 			if (VERBOSE > 0)
-				std::cerr << "Missing residue for atom " << atom << std::endl;
+				std::cerr << "Missing residue for atom " << atom << '\n';
 
 			// see if it might match a non poly
 			for (auto &res : m_non_polymers)
@@ -1815,7 +1815,7 @@ void structure::remove_atom(atom &a, bool removeFromResidue)
 		catch (const std::exception &ex)
 		{
 			if (VERBOSE > 0)
-				std::cerr << "Error removing atom from residue: " << ex.what() << std::endl;
+				std::cerr << "Error removing atom from residue: " << ex.what() << '\n';
 		}
 	}
 
@@ -1996,7 +1996,7 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 		if (i == atoms.end())
 		{
 			if (VERBOSE >= 0)
-				std::cerr << "Missing atom for atom ID " << a1 << std::endl;
+				std::cerr << "Missing atom for atom ID " << a1 << '\n';
 			continue;
 		}
 
@@ -2636,7 +2636,7 @@ std::string structure::create_entity_for_branch(branch &branch)
 		entityID = entity.get_unique_id("");
 
 		if (VERBOSE)
-			std::cout << "Creating new entity " << entityID << " for branched sugar " << entityName << std::endl;
+			std::cout << "Creating new entity " << entityID << " for branched sugar " << entityName << '\n';
 
 		entity.emplace({
 			{"id", entityID},

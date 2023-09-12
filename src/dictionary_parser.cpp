@@ -213,16 +213,16 @@ class dictionary_parser : public parser
 				ess.insert(e["value"].as<std::string>());
 
 			std::string defaultValue = dict["item_default"].front().get<std::string>("value");
-			bool defaultIsNull = false;
-			if (defaultValue.empty())
-			{
-				// TODO: Is this correct???
-				for (auto r : dict["_item_default"])
-				{
-					defaultIsNull = r["value"].is_null();
-					break;
-				}
-			}
+			// bool defaultIsNull = false;
+			// if (defaultValue.empty())
+			// {
+			// 	// TODO: Is this correct???
+			// 	for (auto r : dict["_item_default"])
+			// 	{
+			// 		defaultIsNull = r["value"].is_null();
+			// 		break;
+			// 	}
+			// }
 
 			// collect the dict from our dataBlock and construct validators
 			for (auto i : dict["item"])
@@ -245,7 +245,7 @@ class dictionary_parser : public parser
 
 				auto vi = find(ivs.begin(), ivs.end(), item_validator{ item_name });
 				if (vi == ivs.end())
-					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, defaultIsNull });
+					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue /*, defaultIsNull*/ });
 				else
 				{
 					// need to update the itemValidator?
@@ -253,12 +253,12 @@ class dictionary_parser : public parser
 					{
 						if (VERBOSE > 2)
 						{
-							std::cerr << "inconsistent mandatory value for " << tagName << " in dictionary" << std::endl;
+							std::cerr << "inconsistent mandatory value for " << tagName << " in dictionary\n";
 
 							if (iequals(tagName, saveFrameName))
-								std::cerr << "choosing " << mandatory << std::endl;
+								std::cerr << "choosing " << mandatory << '\n';
 							else
-								std::cerr << "choosing " << (vi->m_mandatory ? "Y" : "N") << std::endl;
+								std::cerr << "choosing " << (vi->m_mandatory ? "Y" : "N") << '\n';
 						}
 
 						if (iequals(tagName, saveFrameName))
@@ -268,7 +268,7 @@ class dictionary_parser : public parser
 					if (vi->m_type != nullptr and tv != nullptr and vi->m_type != tv)
 					{
 						if (VERBOSE > 1)
-							std::cerr << "inconsistent type for " << tagName << " in dictionary" << std::endl;
+							std::cerr << "inconsistent type for " << tagName << " in dictionary\n";
 					}
 
 					//				vi->mMandatory = (iequals(mandatory, "yes"));
@@ -410,7 +410,7 @@ class dictionary_parser : public parser
 			for (auto &iv : cv.m_item_validators)
 			{
 				if (iv.m_type == nullptr and cif::VERBOSE >= 0)
-					std::cerr << "Missing item_type for " << iv.m_tag << std::endl;
+					std::cerr << "Missing item_type for " << iv.m_tag << '\n';
 			}
 		}
 	}
@@ -452,7 +452,7 @@ class dictionary_parser : public parser
 			//			mFileImpl.mTypeValidators.erase(v);
 
 			if (VERBOSE >= 5)
-				std::cerr << "Added type " << code << " (" << primitiveCode << ") => " << construct << std::endl;
+				std::cerr << "Added type " << code << " (" << primitiveCode << ") => " << construct << '\n';
 
 			result = true;
 		}

@@ -485,7 +485,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 		std::cerr << get_token_name(result);
 		if (result != CIFToken::Eof)
 			std::cerr << " " << std::quoted(m_token_value);
-		std::cerr << std::endl;
+		std::cerr << '\n';
 	}
 
 	return result;
@@ -830,7 +830,7 @@ void sac_parser::parse_save_frame()
 void parser::produce_datablock(std::string_view name)
 {
 	if (VERBOSE >= 4)
-		std::cerr << "producing data_" << name << std::endl;
+		std::cerr << "producing data_" << name << '\n';
 
 	const auto &[iter, ignore] = m_file.emplace(name);
 	m_datablock = &(*iter);
@@ -839,7 +839,7 @@ void parser::produce_datablock(std::string_view name)
 void parser::produce_category(std::string_view name)
 {
 	if (VERBOSE >= 4)
-		std::cerr << "producing category " << name << std::endl;
+		std::cerr << "producing category " << name << '\n';
 
 	const auto &[cat, ignore] = m_datablock->emplace(name);
 	m_category = &*cat;
@@ -848,7 +848,7 @@ void parser::produce_category(std::string_view name)
 void parser::produce_row()
 {
 	if (VERBOSE >= 4 and m_category != nullptr)
-		std::cerr << "producing row for category " << m_category->name() << std::endl;
+		std::cerr << "producing row for category " << m_category->name() << '\n';
 
 	if (m_category == nullptr)
 		error("inconsistent categories in loop_");
@@ -861,7 +861,7 @@ void parser::produce_row()
 void parser::produce_item(std::string_view category, std::string_view item, std::string_view value)
 {
 	if (VERBOSE >= 4)
-		std::cerr << "producing _" << category << '.' << item << " -> " << value << std::endl;
+		std::cerr << "producing _" << category << '.' << item << " -> " << value << '\n';
 
 	if (m_category == nullptr or not iequals(category, m_category->name()))
 		error("inconsistent categories in loop_");

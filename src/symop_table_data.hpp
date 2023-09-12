@@ -364,7 +364,6 @@ const space_group kSpaceGroups[] =
 const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(space_group);
 
 const symop_datablock kSymopNrTable[] = {
-
     // P 1
     {   1,   1, {  1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, } },
     // P -1
@@ -5290,4 +5289,3 @@ const symop_datablock kSymopNrTable[] = {
 const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(symop_datablock);
 
 } // namespace mmcif
-

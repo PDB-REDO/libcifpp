@@ -1112,7 +1112,7 @@ auto atom_type_traits::wksf(int charge) const -> const SFData&
 		// Oops, not found. Fall back to zero charge and see if we can use that
 
 		if (cif::VERBOSE > 0)
-			std::cerr << "No scattering factor found for " << name() << " with charge " << charge << " will try to fall back to zero charge..." << std::endl;
+			std::cerr << "No scattering factor found for " << name() << " with charge " << charge << " will try to fall back to zero charge...\n";
 
 		for (auto& sf: data::kWKSFData)
 		{

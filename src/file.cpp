@@ -58,7 +58,7 @@ bool file::is_valid()
 	if (m_validator == nullptr)
 	{
 		if (VERBOSE > 0)
-			std::cerr << "No dictionary loaded explicitly, loading default" << std::endl;
+			std::cerr << "No dictionary loaded explicitly, loading default\n";
 
 		load_dictionary();
 	}
@@ -108,7 +108,7 @@ void file::load_dictionary()
 				catch (const std::exception &ex)
 				{
 					if (VERBOSE)
-						std::cerr << "Failed to load dictionary " << std::quoted(name) << ": " << ex.what() << std::endl;
+						std::cerr << "Failed to load dictionary " << std::quoted(name) << ": " << ex.what() << '\n';
 				}
 			}
 		}
@@ -219,7 +219,7 @@ void file::save(const std::filesystem::path &p) const
 void file::save(std::ostream &os) const
 {
 	// if (not is_valid())
-	// 	std::cout << "File is not valid!" << std::endl;
+	// 	std::cout << "File is not valid!\n";
 
 	for (auto &db : *this)
 		db.write(os);

@@ -27,6 +27,7 @@ The :cpp:class:`cif::file` class encapsulates, you guessed it, the contents of a
    :caption: Contents
 
    self
+   resources.rst
    api/library_root.rst
    genindex.rst
 

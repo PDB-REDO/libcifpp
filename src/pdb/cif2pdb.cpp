@@ -211,7 +211,7 @@ size_t WriteContinuedLine(std::ostream &pdbFile, std::string header, int &count,
 		else
 			pdbFile << std::fixed << std::setw(cLen) << std::right << count << ' ';
 
-		pdbFile << line << std::endl;
+		pdbFile << line << '\n';
 	}
 
 	return lines.size();
@@ -231,7 +231,7 @@ size_t WriteCitation(std::ostream &pdbFile, const datablock &db, row_handle r, i
 
 	if (reference > 0)
 	{
-		pdbFile << "REMARK   1 REFERENCE " << std::to_string(reference) << std::endl;
+		pdbFile << "REMARK   1 REFERENCE " << std::to_string(reference) << '\n';
 		result = 1;
 		s1 = "REMARK   1  ";
 	}
@@ -260,14 +260,14 @@ size_t WriteCitation(std::ostream &pdbFile, const datablock &db, row_handle r, i
 
 		const std::string kRefHeader = s1 + "REF %2.2s %-28.28s  %2.2s%4.4s %5.5s %4.4s";
 		pdbFile << cif::format(kRefHeader, "" /* continuation */, pubname, (volume.empty() ? "" : "V."), volume, pageFirst, year)
-				<< std::endl;
+				<< '\n';
 		++result;
 	}
 
 	if (not issn.empty())
 	{
 		const std::string kRefHeader = s1 + "REFN                   ISSN %-25.25s";
-		pdbFile << cif::format(kRefHeader, issn) << std::endl;
+		pdbFile << cif::format(kRefHeader, issn) << '\n';
 		++result;
 	}
 
@@ -283,20 +283,20 @@ size_t WriteCitation(std::ostream &pdbFile, const datablock &db, row_handle r, i
 	//						% astm
 	//						% country
 	//						% issn).str()
-	//					<< std::endl;
+	//					<< '\n';
 	//		}
 
 	if (not pmid.empty())
 	{
 		const std::string kPMID = s1 + "PMID   %-60.60s ";
-		pdbFile << cif::format(kPMID, pmid) << std::endl;
+		pdbFile << cif::format(kPMID, pmid) << '\n';
 		++result;
 	}
 
 	if (not doi.empty())
 	{
 		const std::string kDOI = s1 + "DOI    %-60.60s ";
-		pdbFile << cif::format(kDOI, doi) << std::endl;
+		pdbFile << cif::format(kDOI, doi) << '\n';
 		++result;
 	}
 
@@ -345,7 +345,7 @@ void write_header_lines(std::ostream &pdbFile, const datablock &db)
 		}
 	}
 
-	pdbFile << cif::format(kHeader, keywords, date, db.name()) << std::endl;
+	pdbFile << cif::format(kHeader, keywords, date, db.name()) << '\n';
 
 	// TODO: implement
 	// OBSLTE (skip for now)
@@ -562,7 +562,7 @@ void WriteTitle(std::ostream &pdbFile, const datablock &db)
 			pdbFile << cif::format(kRevDatFmt, revNum, cs, date, db.name(), modType);
 			for (size_t i = 0; i < 4; ++i)
 				pdbFile << cif::format(" %-6.6s", (i < types.size() ? types[i] : std::string()));
-			pdbFile << std::endl;
+			pdbFile << '\n';
 
 			if (types.size() > 4)
 				types.erase(types.begin(), types.begin() + 4);
@@ -591,7 +591,7 @@ void WriteRemark1(std::ostream &pdbFile, const datablock &db)
 		if (reference > 0)
 		{
 			if (reference == 1)
-				pdbFile << "REMARK   1" << std::endl;
+				pdbFile << "REMARK   1\n";
 
 			WriteCitation(pdbFile, db, r, reference);
 		}
@@ -605,16 +605,16 @@ void WriteRemark2(std::ostream &pdbFile, const datablock &db)
 	auto &refine = db["refine"];
 	if (refine.empty())
 	{
-		pdbFile << "REMARK   2" << std::endl
-				<< "REMARK   2 RESOLUTION. NOT APPLICABLE." << std::endl;
+		pdbFile << "REMARK   2\n"
+				<< "REMARK   2 RESOLUTION. NOT APPLICABLE.\n";
 	}
 	else
 	{
 		try
 		{
 			float resHigh = refine.front()["ls_d_res_high"].as<float>();
-			pdbFile << "REMARK   2" << std::endl
-					<< cif::format("REMARK   2 RESOLUTION. %7.2f ANGSTROMS.", resHigh) << std::endl;
+			pdbFile << "REMARK   2\n"
+					<< cif::format("REMARK   2 RESOLUTION. %7.2f ANGSTROMS.", resHigh) << '\n';
 		}
 		catch (...)
 		{ /* skip it */
@@ -684,7 +684,7 @@ class Fi : public FBase
 			if (r.ec != std::errc())
 			{
 				if (VERBOSE > 0)
-					std::cerr << "Failed to write '" << s << "' as a long from field " << mField << ", this indicates an error in the code for writing PDB files" << std::endl;
+					std::cerr << "Failed to write '" << s << "' as a long from field " << mField << ", this indicates an error in the code for writing PDB files\n";
 				os << s;
 			}
 			else
@@ -722,7 +722,7 @@ class Ff : public FBase
 			if (r.ec != std::errc())
 			{
 				if (VERBOSE > 0)
-					std::cerr << "Failed to write '" << s << "' as a double from field " << mField << ", this indicates an error in the code for writing PDB files" << std::endl;
+					std::cerr << "Failed to write '" << s << "' as a double from field " << mField << ", this indicates an error in the code for writing PDB files\n";
 				os << s;
 			}
 			else
@@ -760,7 +760,7 @@ class Fs : public FBase
 			os << s;
 		else
 		{
-			os << std::endl;
+			os << '\n';
 
 			std::stringstream ss;
 			ss << "REMARK " << std::setw(3) << std::right << mNr << ' ';
@@ -831,167 +831,167 @@ void WriteRemark3BusterTNT(std::ostream &pdbFile, const datablock &db)
 	//	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
 	//	auto pdbx_refine = db["pdbx_refine"].front();
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << std::endl
-			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << std::endl
-			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << std::endl
-			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 6, 1) << Ff(refine, "ls_percent_reflns_obs") << std::endl
-			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3(" DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << '\n'
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << '\n'
+			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << '\n'
+			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 6, 1) << Ff(refine, "ls_percent_reflns_obs") << '\n'
+			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << std::endl
-			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 3) << Ff(refine, "ls_R_factor_obs") << std::endl
-			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << std::endl
-			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << std::endl
-			<< RM3("  ESTIMATED ERROR OF FREE R VALUE  : ", 7, 3) << Ff(refine, "ls_R_factor_R_free_error") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << '\n'
+			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 3) << Ff(refine, "ls_R_factor_obs") << '\n'
+			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << '\n'
+			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << '\n'
+			<< RM3("  ESTIMATED ERROR OF FREE R VALUE  : ", 7, 3) << Ff(refine, "ls_R_factor_R_free_error") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT IN THE HIGHEST RESOLUTION BIN.") << std::endl
-			<< RM3("  TOTAL NUMBER OF BINS USED               : ", 12, 6) << Fi(ls_shell, "pdbx_total_number_of_bins_used") << std::endl
-			<< RM3("  BIN RESOLUTION RANGE HIGH   (ANGSTROMS) : ", 5, 2) << Ff(ls_shell, "d_res_high") << std::endl
-			<< RM3("  BIN RESOLUTION RANGE LOW    (ANGSTROMS) : ", 5, 2) << Ff(ls_shell, "d_res_low") << std::endl
-			<< RM3("  BIN COMPLETENESS     (WORKING+TEST) (%) : ", 6, 2) << Ff(ls_shell, "percent_reflns_obs") << std::endl
-			<< RM3("  REFLECTIONS IN BIN (WORKING + TEST SET) : ", 12, 6) << Fi(ls_shell, "number_reflns_all") << std::endl
-			<< RM3("  BIN R VALUE        (WORKING + TEST SET) : ", 8, 4) << Ff(ls_shell, "R_factor_all") << std::endl
-			<< RM3("  REFLECTIONS IN BIN        (WORKING SET) : ", 12, 6) << Fi(ls_shell, "number_reflns_R_work") << std::endl
-			<< RM3("  BIN R VALUE               (WORKING SET) : ", 8, 4) << Ff(ls_shell, "R_factor_R_work") << std::endl
-			<< RM3("  BIN FREE R VALUE                        : ", 8, 4) << Ff(ls_shell, "R_factor_R_free") << std::endl
-			<< RM3("  BIN FREE R VALUE TEST SET SIZE      (%) : ", 6, 2) << Ff(ls_shell, "percent_reflns_R_free") << std::endl
-			<< RM3("  BIN FREE R VALUE TEST SET COUNT         : ", 12, 7) << Fi(ls_shell, "number_reflns_R_free") << std::endl
-			<< RM3("  ESTIMATED ERROR OF BIN FREE R VALUE     : ", 7, 3) << Ff(ls_shell, "R_factor_R_free_error") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT IN THE HIGHEST RESOLUTION BIN.") << '\n'
+			<< RM3("  TOTAL NUMBER OF BINS USED               : ", 12, 6) << Fi(ls_shell, "pdbx_total_number_of_bins_used") << '\n'
+			<< RM3("  BIN RESOLUTION RANGE HIGH   (ANGSTROMS) : ", 5, 2) << Ff(ls_shell, "d_res_high") << '\n'
+			<< RM3("  BIN RESOLUTION RANGE LOW    (ANGSTROMS) : ", 5, 2) << Ff(ls_shell, "d_res_low") << '\n'
+			<< RM3("  BIN COMPLETENESS     (WORKING+TEST) (%) : ", 6, 2) << Ff(ls_shell, "percent_reflns_obs") << '\n'
+			<< RM3("  REFLECTIONS IN BIN (WORKING + TEST SET) : ", 12, 6) << Fi(ls_shell, "number_reflns_all") << '\n'
+			<< RM3("  BIN R VALUE        (WORKING + TEST SET) : ", 8, 4) << Ff(ls_shell, "R_factor_all") << '\n'
+			<< RM3("  REFLECTIONS IN BIN        (WORKING SET) : ", 12, 6) << Fi(ls_shell, "number_reflns_R_work") << '\n'
+			<< RM3("  BIN R VALUE               (WORKING SET) : ", 8, 4) << Ff(ls_shell, "R_factor_R_work") << '\n'
+			<< RM3("  BIN FREE R VALUE                        : ", 8, 4) << Ff(ls_shell, "R_factor_R_free") << '\n'
+			<< RM3("  BIN FREE R VALUE TEST SET SIZE      (%) : ", 6, 2) << Ff(ls_shell, "percent_reflns_R_free") << '\n'
+			<< RM3("  BIN FREE R VALUE TEST SET COUNT         : ", 12, 7) << Fi(ls_shell, "number_reflns_R_free") << '\n'
+			<< RM3("  ESTIMATED ERROR OF BIN FREE R VALUE     : ", 7, 3) << Ff(ls_shell, "R_factor_R_free_error") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << std::endl
-			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << std::endl
-			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << std::endl
-			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << std::endl
-			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << '\n'
+			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << '\n'
+			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << '\n'
+			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << '\n'
+			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" B VALUES.") << std::endl
-			//			<< RM3("  B VALUE TYPE                      : ")		<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << std::endl
-			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << std::endl
-			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" B VALUES.") << '\n'
+			//			<< RM3("  B VALUE TYPE                      : ")		<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << '\n'
+			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << '\n'
+			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << '\n'
 
-			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << std::endl
-			<< RM3("   B11 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][1]") << std::endl
-			<< RM3("   B22 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[2][2]") << std::endl
-			<< RM3("   B33 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[3][3]") << std::endl
-			<< RM3("   B12 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][2]") << std::endl
-			<< RM3("   B13 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][3]") << std::endl
-			<< RM3("   B23 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[2][3]") << std::endl
+			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << '\n'
+			<< RM3("   B11 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][1]") << '\n'
+			<< RM3("   B22 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[2][2]") << '\n'
+			<< RM3("   B33 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[3][3]") << '\n'
+			<< RM3("   B12 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][2]") << '\n'
+			<< RM3("   B13 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][3]") << '\n'
+			<< RM3("   B23 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[2][3]") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ESTIMATED COORDINATE ERROR.") << std::endl
-			<< RM3("  ESD FROM LUZZATI PLOT                    (A) : ", 7, 3) << Ff(analyze, "Luzzati_coordinate_error_obs") << std::endl
-			<< RM3("  DPI (BLOW EQ-10) BASED ON R VALUE        (A) : ", 5, 3) << Ff(refine, "pdbx_overall_SU_R_Blow_DPI") << std::endl
-			<< RM3("  DPI (BLOW EQ-9) BASED ON FREE R VALUE    (A) : ", 5, 3) << Ff(refine, "pdbx_overall_SU_R_free_Blow_DPI") << std::endl
-			<< RM3("  DPI (CRUICKSHANK) BASED ON R VALUE       (A) : ", 5, 3) << Ff(refine, "overall_SU_R_Cruickshank_DPI") << std::endl
-			<< RM3("  DPI (CRUICKSHANK) BASED ON FREE R VALUE  (A) : ", 5, 3) << Ff(refine, "pdbx_overall_SU_R_free_Cruickshank_DPI") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ESTIMATED COORDINATE ERROR.") << '\n'
+			<< RM3("  ESD FROM LUZZATI PLOT                    (A) : ", 7, 3) << Ff(analyze, "Luzzati_coordinate_error_obs") << '\n'
+			<< RM3("  DPI (BLOW EQ-10) BASED ON R VALUE        (A) : ", 5, 3) << Ff(refine, "pdbx_overall_SU_R_Blow_DPI") << '\n'
+			<< RM3("  DPI (BLOW EQ-9) BASED ON FREE R VALUE    (A) : ", 5, 3) << Ff(refine, "pdbx_overall_SU_R_free_Blow_DPI") << '\n'
+			<< RM3("  DPI (CRUICKSHANK) BASED ON R VALUE       (A) : ", 5, 3) << Ff(refine, "overall_SU_R_Cruickshank_DPI") << '\n'
+			<< RM3("  DPI (CRUICKSHANK) BASED ON FREE R VALUE  (A) : ", 5, 3) << Ff(refine, "pdbx_overall_SU_R_free_Cruickshank_DPI") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3("  REFERENCES: BLOW, D. (2002) ACTA CRYST D58, 792-797") << std::endl
-			<< RM3("              CRUICKSHANK, D.W.J. (1999) ACTA CRYST D55, 583-601") << std::endl
+			<< RM3("") << '\n'
+			<< RM3("  REFERENCES: BLOW, D. (2002) ACTA CRYST D58, 792-797") << '\n'
+			<< RM3("              CRUICKSHANK, D.W.J. (1999) ACTA CRYST D55, 583-601") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3("  CORRELATION COEFFICIENTS.") << std::endl
-			<< RM3("  CORRELATION COEFFICIENT FO-FC      : ", 5, 3) << Ff(refine, "correlation_coeff_Fo_to_Fc") << std::endl
-			<< RM3("  CORRELATION COEFFICIENT FO-FC FREE : ", 5, 3) << Ff(refine, "correlation_coeff_Fo_to_Fc_free") << std::endl
+			<< RM3("") << '\n'
+			<< RM3("  CORRELATION COEFFICIENTS.") << '\n'
+			<< RM3("  CORRELATION COEFFICIENT FO-FC      : ", 5, 3) << Ff(refine, "correlation_coeff_Fo_to_Fc") << '\n'
+			<< RM3("  CORRELATION COEFFICIENT FO-FC FREE : ", 5, 3) << Ff(refine, "correlation_coeff_Fo_to_Fc_free") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3("  NUMBER OF GEOMETRIC FUNCTION TERMS DEFINED : 15") << std::endl
-			<< RM3("  TERM                          COUNT    WEIGHT   FUNCTION.") << std::endl
+			<< RM3("") << '\n'
+			<< RM3("  NUMBER OF GEOMETRIC FUNCTION TERMS DEFINED : 15") << '\n'
+			<< RM3("  TERM                          COUNT    WEIGHT   FUNCTION.") << '\n'
 			<< RM3("   BOND LENGTHS              : ", 7, 0) << Ff(ls_restr, key("type") == "t_bond_d", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_bond_d", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_bond_d", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_bond_d", "pdbx_restraint_function") << '\n'
 			<< RM3("   BOND ANGLES               : ", 7, 0) << Ff(ls_restr, key("type") == "t_angle_deg", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_angle_deg", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_angle_deg", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_angle_deg", "pdbx_restraint_function") << '\n'
 			<< RM3("   TORSION ANGLES            : ", 7, 0) << Ff(ls_restr, key("type") == "t_dihedral_angle_d", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_dihedral_angle_d", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_dihedral_angle_d", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_dihedral_angle_d", "pdbx_restraint_function") << '\n'
 			<< RM3("   TRIGONAL CARBON PLANES    : ", 7, 0) << Ff(ls_restr, key("type") == "t_trig_c_planes", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_trig_c_planes", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_trig_c_planes", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_trig_c_planes", "pdbx_restraint_function") << '\n'
 			<< RM3("   GENERAL PLANES            : ", 7, 0) << Ff(ls_restr, key("type") == "t_gen_planes", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_gen_planes", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_gen_planes", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_gen_planes", "pdbx_restraint_function") << '\n'
 			<< RM3("   ISOTROPIC THERMAL FACTORS : ", 7, 0) << Ff(ls_restr, key("type") == "t_it", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_it", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_it", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_it", "pdbx_restraint_function") << '\n'
 			<< RM3("   BAD NON-BONDED CONTACTS   : ", 7, 0) << Ff(ls_restr, key("type") == "t_nbd", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_nbd", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_nbd", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_nbd", "pdbx_restraint_function") << '\n'
 			<< RM3("   IMPROPER TORSIONS         : ", 7, 0) << Ff(ls_restr, key("type") == "t_improper_torsion", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_improper_torsion", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_improper_torsion", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_improper_torsion", "pdbx_restraint_function") << '\n'
 			<< RM3("   PSEUDOROTATION ANGLES     : ", 7, 0) << Ff(ls_restr, key("type") == "t_pseud_angle", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_pseud_angle", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_pseud_angle", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_pseud_angle", "pdbx_restraint_function") << '\n'
 			<< RM3("   CHIRAL IMPROPER TORSION   : ", 7, 0) << Ff(ls_restr, key("type") == "t_chiral_improper_torsion", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_chiral_improper_torsion", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_chiral_improper_torsion", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_chiral_improper_torsion", "pdbx_restraint_function") << '\n'
 			<< RM3("   SUM OF OCCUPANCIES        : ", 7, 0) << Ff(ls_restr, key("type") == "t_sum_occupancies", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_sum_occupancies", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_sum_occupancies", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_sum_occupancies", "pdbx_restraint_function") << '\n'
 			<< RM3("   UTILITY DISTANCES         : ", 7, 0) << Ff(ls_restr, key("type") == "t_utility_distance", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_utility_distance", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_utility_distance", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_utility_distance", "pdbx_restraint_function") << '\n'
 			<< RM3("   UTILITY ANGLES            : ", 7, 0) << Ff(ls_restr, key("type") == "t_utility_angle", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_utility_angle", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_utility_angle", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_utility_angle", "pdbx_restraint_function") << '\n'
 			<< RM3("   UTILITY TORSION           : ", 7, 0) << Ff(ls_restr, key("type") == "t_utility_torsion", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_utility_torsion", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_utility_torsion", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_utility_torsion", "pdbx_restraint_function") << '\n'
 			<< RM3("   IDEAL-DIST CONTACT TERM   : ", 7, 0) << Ff(ls_restr, key("type") == "t_ideal_dist_contact", "number")
 			<< SEP("; ", 7, 3) << Ff(ls_restr, key("type") == "t_ideal_dist_contact", "weight")
-			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_ideal_dist_contact", "pdbx_restraint_function") << std::endl
+			<< SEP("; ", 12) << Fs(ls_restr, key("type") == "t_ideal_dist_contact", "pdbx_restraint_function") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << std::endl
-			<< RM3("  BOND LENGTHS                       (A) : ", 7, 3) << Ff(ls_restr, key("type") == "t_bond_d", "dev_ideal") << std::endl
-			<< RM3("  BOND ANGLES                  (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "t_angle_deg", "dev_ideal") << std::endl
-			<< RM3("  PEPTIDE OMEGA TORSION ANGLES (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "t_omega_torsion", "dev_ideal") << std::endl
-			<< RM3("  OTHER TORSION ANGLES         (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "t_other_torsion", "dev_ideal") << std::endl;
+			<< RM3("") << '\n'
+			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << '\n'
+			<< RM3("  BOND LENGTHS                       (A) : ", 7, 3) << Ff(ls_restr, key("type") == "t_bond_d", "dev_ideal") << '\n'
+			<< RM3("  BOND ANGLES                  (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "t_angle_deg", "dev_ideal") << '\n'
+			<< RM3("  PEPTIDE OMEGA TORSION ANGLES (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "t_omega_torsion", "dev_ideal") << '\n'
+			<< RM3("  OTHER TORSION ANGLES         (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "t_other_torsion", "dev_ideal") << '\n';
 
 	auto &tls = db["pdbx_refine_tls"];
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" TLS DETAILS") << std::endl
-			<< RM3("  NUMBER OF TLS GROUPS  : ") << (tls.size() ? std::to_string(tls.size()) : "NULL") << std::endl;
+	pdbFile << RM3("") << '\n'
+			<< RM3(" TLS DETAILS") << '\n'
+			<< RM3("  NUMBER OF TLS GROUPS  : ") << (tls.size() ? std::to_string(tls.size()) : "NULL") << '\n';
 
 	for (auto t : tls)
 	{
 		std::string id = t["id"].as<std::string>();
 		auto g = db["pdbx_refine_tls_group"].find_first(key("refine_tls_id") == id);
 
-		pdbFile << RM3("") << std::endl
-				<< RM3("  TLS GROUP : ") << id << std::endl
-				<< RM3("   SELECTION: ") << Fs(g, "selection_details") << std::endl;
+		pdbFile << RM3("") << '\n'
+				<< RM3("  TLS GROUP : ") << id << '\n'
+				<< RM3("   SELECTION: ") << Fs(g, "selection_details") << '\n';
 
 		pdbFile << RM3("   ORIGIN FOR THE GROUP (A):", -9, 4) << Ff(t, "origin_x")
 				<< SEP("", -9, 4) << Ff(t, "origin_y")
-				<< SEP("", -9, 4) << Ff(t, "origin_z") << std::endl
-				<< RM3("   T TENSOR") << std::endl
-				<< RM3("     T11:", -9, 4) << Ff(t, "T[1][1]") << SEP(" T22:", -9, 4) << Ff(t, "T[2][2]") << std::endl
-				<< RM3("     T33:", -9, 4) << Ff(t, "T[3][3]") << SEP(" T12:", -9, 4) << Ff(t, "T[1][2]") << std::endl
-				<< RM3("     T13:", -9, 4) << Ff(t, "T[1][3]") << SEP(" T23:", -9, 4) << Ff(t, "T[2][3]") << std::endl
-				<< RM3("   L TENSOR") << std::endl
-				<< RM3("     L11:", -9, 4) << Ff(t, "L[1][1]") << SEP(" L22:", -9, 4) << Ff(t, "L[2][2]") << std::endl
-				<< RM3("     L33:", -9, 4) << Ff(t, "L[3][3]") << SEP(" L12:", -9, 4) << Ff(t, "L[1][2]") << std::endl
-				<< RM3("     L13:", -9, 4) << Ff(t, "L[1][3]") << SEP(" L23:", -9, 4) << Ff(t, "L[2][3]") << std::endl
-				<< RM3("   S TENSOR") << std::endl
-				<< RM3("     S11:", -9, 4) << Ff(t, "S[1][1]") << SEP(" S12:", -9, 4) << Ff(t, "S[1][2]") << SEP(" S13:", -9, 4) << Ff(t, "S[1][3]") << std::endl
-				<< RM3("     S21:", -9, 4) << Ff(t, "S[2][1]") << SEP(" S22:", -9, 4) << Ff(t, "S[2][2]") << SEP(" S23:", -9, 4) << Ff(t, "S[2][3]") << std::endl
-				<< RM3("     S31:", -9, 4) << Ff(t, "S[3][1]") << SEP(" S32:", -9, 4) << Ff(t, "S[3][2]") << SEP(" S33:", -9, 4) << Ff(t, "S[3][3]") << std::endl;
+				<< SEP("", -9, 4) << Ff(t, "origin_z") << '\n'
+				<< RM3("   T TENSOR") << '\n'
+				<< RM3("     T11:", -9, 4) << Ff(t, "T[1][1]") << SEP(" T22:", -9, 4) << Ff(t, "T[2][2]") << '\n'
+				<< RM3("     T33:", -9, 4) << Ff(t, "T[3][3]") << SEP(" T12:", -9, 4) << Ff(t, "T[1][2]") << '\n'
+				<< RM3("     T13:", -9, 4) << Ff(t, "T[1][3]") << SEP(" T23:", -9, 4) << Ff(t, "T[2][3]") << '\n'
+				<< RM3("   L TENSOR") << '\n'
+				<< RM3("     L11:", -9, 4) << Ff(t, "L[1][1]") << SEP(" L22:", -9, 4) << Ff(t, "L[2][2]") << '\n'
+				<< RM3("     L33:", -9, 4) << Ff(t, "L[3][3]") << SEP(" L12:", -9, 4) << Ff(t, "L[1][2]") << '\n'
+				<< RM3("     L13:", -9, 4) << Ff(t, "L[1][3]") << SEP(" L23:", -9, 4) << Ff(t, "L[2][3]") << '\n'
+				<< RM3("   S TENSOR") << '\n'
+				<< RM3("     S11:", -9, 4) << Ff(t, "S[1][1]") << SEP(" S12:", -9, 4) << Ff(t, "S[1][2]") << SEP(" S13:", -9, 4) << Ff(t, "S[1][3]") << '\n'
+				<< RM3("     S21:", -9, 4) << Ff(t, "S[2][1]") << SEP(" S22:", -9, 4) << Ff(t, "S[2][2]") << SEP(" S23:", -9, 4) << Ff(t, "S[2][3]") << '\n'
+				<< RM3("     S31:", -9, 4) << Ff(t, "S[3][1]") << SEP(" S32:", -9, 4) << Ff(t, "S[3][2]") << SEP(" S33:", -9, 4) << Ff(t, "S[3][3]") << '\n';
 	}
 
-	pdbFile << RM3("") << std::endl;
+	pdbFile << RM3("") << '\n';
 }
 
 // --------------------------------------------------------------------
@@ -1008,128 +1008,128 @@ void WriteRemark3CNS(std::ostream &pdbFile, const datablock &db)
 	//	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
 	//	auto pdbx_refine = db["pdbx_refine"].front();
 
-	pdbFile << RM3("") << std::endl
-			<< RM3("REFINEMENT TARGET : ") << Fs(refine, "pdbx_stereochemistry_target_values") << std::endl
-			<< RM3("") << std::endl
-			<< RM3(" DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << std::endl
-			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << std::endl
-			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << std::endl
-			<< RM3("  DATA CUTOFF HIGH         (ABS(F)) : ", 6, 3) << Ff(refine, "pdbx_data_cutoff_high_absF") << std::endl
-			<< RM3("  DATA CUTOFF LOW          (ABS(F)) : ", 7, 4) << Ff(refine, "pdbx_data_cutoff_low_absF") << std::endl
-			<< RM3("  COMPLETENESS (WORKING+TEST)   (%) : ", 4, 1) << Ff(refine, "ls_percent_reflns_obs") << std::endl
-			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3("REFINEMENT TARGET : ") << Fs(refine, "pdbx_stereochemistry_target_values") << '\n'
+			<< RM3("") << '\n'
+			<< RM3(" DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << '\n'
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << '\n'
+			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << '\n'
+			<< RM3("  DATA CUTOFF HIGH         (ABS(F)) : ", 6, 3) << Ff(refine, "pdbx_data_cutoff_high_absF") << '\n'
+			<< RM3("  DATA CUTOFF LOW          (ABS(F)) : ", 7, 4) << Ff(refine, "pdbx_data_cutoff_low_absF") << '\n'
+			<< RM3("  COMPLETENESS (WORKING+TEST)   (%) : ", 4, 1) << Ff(refine, "ls_percent_reflns_obs") << '\n'
+			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << std::endl
-			//			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 5)	<< Ff(refine, "ls_R_factor_obs") << std::endl
-			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << std::endl
-			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << std::endl
-			<< RM3("  ESTIMATED ERROR OF FREE R VALUE  : ", 7, 3) << Ff(refine, "ls_R_factor_R_free_error") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << '\n'
+			//			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 5)	<< Ff(refine, "ls_R_factor_obs") << '\n'
+			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << '\n'
+			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << '\n'
+			<< RM3("  ESTIMATED ERROR OF FREE R VALUE  : ", 7, 3) << Ff(refine, "ls_R_factor_R_free_error") << '\n'
 
-			//			<< RM3("") << std::endl
-	        //			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << std::endl
-	        //			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ", 7, 3)	<< Ff(pdbx_refine, "R_factor_all_no_cutoff") << std::endl
-	        //			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ", 7, 3)	<< Ff(pdbx_refine, "R_factor_obs_no_cutoff") << std::endl
-	        //			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ", 7, 3)	<< Ff(pdbx_refine, "free_R_factor_no_cutoff") << std::endl
-	        //			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ", 7, 3)	<< Ff(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << std::endl
-	        //			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ", 12, 6)	<< Fi(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << std::endl
-	        //			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ", 12, 6)	<< Fi(refine, "ls_number_reflns_all") << std::endl
+			//			<< RM3("") << '\n'
+	        //			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << '\n'
+	        //			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ", 7, 3)	<< Ff(pdbx_refine, "R_factor_all_no_cutoff") << '\n'
+	        //			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ", 7, 3)	<< Ff(pdbx_refine, "R_factor_obs_no_cutoff") << '\n'
+	        //			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ", 7, 3)	<< Ff(pdbx_refine, "free_R_factor_no_cutoff") << '\n'
+	        //			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ", 7, 3)	<< Ff(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << '\n'
+	        //			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ", 12, 6)	<< Fi(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << '\n'
+	        //			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ", 12, 6)	<< Fi(refine, "ls_number_reflns_all") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT IN THE HIGHEST RESOLUTION BIN.") << std::endl
-			<< RM3("  TOTAL NUMBER OF BINS USED           : ", 12, 6) << Fi(ls_shell, "pdbx_total_number_of_bins_used") << std::endl
-			<< RM3("  BIN RESOLUTION RANGE HIGH       (A) : ", 5, 2) << Ff(ls_shell, "d_res_high") << std::endl
-			<< RM3("  BIN RESOLUTION RANGE LOW        (A) : ", 5, 2) << Ff(ls_shell, "d_res_low") << std::endl
-			<< RM3("  BIN COMPLETENESS (WORKING+TEST) (%) : ", 6, 2) << Ff(ls_shell, "percent_reflns_obs") << std::endl
-			<< RM3("  REFLECTIONS IN BIN    (WORKING SET) : ", 12, 6) << Fi(ls_shell, "number_reflns_R_work") << std::endl
-			<< RM3("  BIN R VALUE           (WORKING SET) : ", 8, 4) << Ff(ls_shell, "R_factor_R_work") << std::endl
-			<< RM3("  BIN FREE R VALUE                    : ", 8, 4) << Ff(ls_shell, "R_factor_R_free") << std::endl
-			<< RM3("  BIN FREE R VALUE TEST SET SIZE  (%) : ", 6, 2) << Ff(ls_shell, "percent_reflns_R_free") << std::endl
-			<< RM3("  BIN FREE R VALUE TEST SET COUNT     : ", 12, 7) << Fi(ls_shell, "number_reflns_R_free") << std::endl
-			<< RM3("  ESTIMATED ERROR OF BIN FREE R VALUE : ", 7, 3) << Ff(ls_shell, "R_factor_R_free_error") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT IN THE HIGHEST RESOLUTION BIN.") << '\n'
+			<< RM3("  TOTAL NUMBER OF BINS USED           : ", 12, 6) << Fi(ls_shell, "pdbx_total_number_of_bins_used") << '\n'
+			<< RM3("  BIN RESOLUTION RANGE HIGH       (A) : ", 5, 2) << Ff(ls_shell, "d_res_high") << '\n'
+			<< RM3("  BIN RESOLUTION RANGE LOW        (A) : ", 5, 2) << Ff(ls_shell, "d_res_low") << '\n'
+			<< RM3("  BIN COMPLETENESS (WORKING+TEST) (%) : ", 6, 2) << Ff(ls_shell, "percent_reflns_obs") << '\n'
+			<< RM3("  REFLECTIONS IN BIN    (WORKING SET) : ", 12, 6) << Fi(ls_shell, "number_reflns_R_work") << '\n'
+			<< RM3("  BIN R VALUE           (WORKING SET) : ", 8, 4) << Ff(ls_shell, "R_factor_R_work") << '\n'
+			<< RM3("  BIN FREE R VALUE                    : ", 8, 4) << Ff(ls_shell, "R_factor_R_free") << '\n'
+			<< RM3("  BIN FREE R VALUE TEST SET SIZE  (%) : ", 6, 2) << Ff(ls_shell, "percent_reflns_R_free") << '\n'
+			<< RM3("  BIN FREE R VALUE TEST SET COUNT     : ", 12, 7) << Fi(ls_shell, "number_reflns_R_free") << '\n'
+			<< RM3("  ESTIMATED ERROR OF BIN FREE R VALUE : ", 7, 3) << Ff(ls_shell, "R_factor_R_free_error") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << std::endl
-			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << std::endl
-			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << std::endl
-			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << std::endl
-			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << '\n'
+			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << '\n'
+			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << '\n'
+			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << '\n'
+			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" B VALUES.") << std::endl
-			<< RM3("  B VALUE TYPE                      : ") << Fs(refine, "pdbx_TLS_residual_ADP_flag") << std::endl
-			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << std::endl
-			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" B VALUES.") << '\n'
+			<< RM3("  B VALUE TYPE                      : ") << Fs(refine, "pdbx_TLS_residual_ADP_flag") << '\n'
+			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << '\n'
+			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << '\n'
 
-			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << std::endl
-			<< RM3("   B11 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][1]") << std::endl
-			<< RM3("   B22 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[2][2]") << std::endl
-			<< RM3("   B33 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[3][3]") << std::endl
-			<< RM3("   B12 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][2]") << std::endl
-			<< RM3("   B13 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][3]") << std::endl
-			<< RM3("   B23 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[2][3]") << std::endl
+			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << '\n'
+			<< RM3("   B11 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][1]") << '\n'
+			<< RM3("   B22 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[2][2]") << '\n'
+			<< RM3("   B33 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[3][3]") << '\n'
+			<< RM3("   B12 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][2]") << '\n'
+			<< RM3("   B13 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[1][3]") << '\n'
+			<< RM3("   B23 (A**2) : ", -8, 5) << Ff(refine, "aniso_B[2][3]") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ESTIMATED COORDINATE ERROR.") << std::endl
-			<< RM3("  ESD FROM LUZZATI PLOT        (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_obs") << std::endl
-			<< RM3("  ESD FROM SIGMAA              (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_obs") << std::endl
-			<< RM3("  LOW RESOLUTION CUTOFF        (A) : ", 7, 2) << Ff(analyze, "Luzzati_d_res_low_obs") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ESTIMATED COORDINATE ERROR.") << '\n'
+			<< RM3("  ESD FROM LUZZATI PLOT        (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_obs") << '\n'
+			<< RM3("  ESD FROM SIGMAA              (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_obs") << '\n'
+			<< RM3("  LOW RESOLUTION CUTOFF        (A) : ", 7, 2) << Ff(analyze, "Luzzati_d_res_low_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" CROSS-VALIDATED ESTIMATED COORDINATE ERROR.") << std::endl
-			<< RM3("  ESD FROM C-V LUZZATI PLOT    (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_free") << std::endl
-			<< RM3("  ESD FROM C-V SIGMAA          (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_free") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" CROSS-VALIDATED ESTIMATED COORDINATE ERROR.") << '\n'
+			<< RM3("  ESD FROM C-V LUZZATI PLOT    (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_free") << '\n'
+			<< RM3("  ESD FROM C-V SIGMAA          (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_free") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << std::endl
-			<< RM3("  BOND LENGTHS                 (A) : ", 7, 3) << Ff(ls_restr, key("type") == "c_bond_d", "dev_ideal") << std::endl
-			<< RM3("  BOND ANGLES            (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "c_angle_deg", "dev_ideal") << std::endl
-			<< RM3("  DIHEDRAL ANGLES        (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "c_dihedral_angle_d", "dev_ideal") << std::endl
-			<< RM3("  IMPROPER ANGLES        (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "c_improper_angle_d", "dev_ideal") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << '\n'
+			<< RM3("  BOND LENGTHS                 (A) : ", 7, 3) << Ff(ls_restr, key("type") == "c_bond_d", "dev_ideal") << '\n'
+			<< RM3("  BOND ANGLES            (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "c_angle_deg", "dev_ideal") << '\n'
+			<< RM3("  DIHEDRAL ANGLES        (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "c_dihedral_angle_d", "dev_ideal") << '\n'
+			<< RM3("  IMPROPER ANGLES        (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "c_improper_angle_d", "dev_ideal") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ISOTROPIC THERMAL MODEL : ") << Fs(refine, "pdbx_isotropic_thermal_model") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ISOTROPIC THERMAL MODEL : ") << Fs(refine, "pdbx_isotropic_thermal_model") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.    RMS    SIGMA") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.    RMS    SIGMA") << '\n'
 			<< RM3("  MAIN-CHAIN BOND              (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "c_mcbond_it", "dev_ideal") << SEP("; ", 7, 3)
-			<< Ff(ls_restr, key("type") == "c_mcbond_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "c_mcbond_it", "dev_ideal_target") << '\n'
 			<< RM3("  MAIN-CHAIN ANGLE             (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "c_mcangle_it", "dev_ideal") << SEP("; ", 7, 3)
-			<< Ff(ls_restr, key("type") == "c_mcangle_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "c_mcangle_it", "dev_ideal_target") << '\n'
 			<< RM3("  SIDE-CHAIN BOND              (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "c_scbond_it", "dev_ideal") << SEP("; ", 7, 3)
-			<< Ff(ls_restr, key("type") == "c_scbond_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "c_scbond_it", "dev_ideal_target") << '\n'
 			<< RM3("  SIDE-CHAIN ANGLE             (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "c_scangle_it", "dev_ideal") << SEP("; ", 7, 3)
-			<< Ff(ls_restr, key("type") == "c_scangle_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "c_scangle_it", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" BULK SOLVENT MODELING.") << std::endl
-			<< RM3("  METHOD USED        : ") << Fs(refine, "solvent_model_details") << std::endl
-			<< RM3("  KSOL               : ", 5, 2) << Ff(refine, "solvent_model_param_ksol") << std::endl
-			<< RM3("  BSOL               : ", 5, 2) << Ff(refine, "solvent_model_param_bsol") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" BULK SOLVENT MODELING.") << '\n'
+			<< RM3("  METHOD USED        : ") << Fs(refine, "solvent_model_details") << '\n'
+			<< RM3("  KSOL               : ", 5, 2) << Ff(refine, "solvent_model_param_ksol") << '\n'
+			<< RM3("  BSOL               : ", 5, 2) << Ff(refine, "solvent_model_param_bsol") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NCS MODEL : ") << Fs(ls_restr_ncs, "ncs_model_details") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NCS MODEL : ") << Fs(ls_restr_ncs, "ncs_model_details") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NCS RESTRAINTS.                         RMS   SIGMA/WEIGHT") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NCS RESTRAINTS.                         RMS   SIGMA/WEIGHT") << '\n'
 
 			// TODO: using only group 1 here, should this be fixed???
 			<< RM3("  GROUP  1  POSITIONAL            (A) : ", 4, 2) << Ff(ls_restr_ncs, "rms_dev_position") << SEP("; ", 6, 2)
-			<< Ff(ls_restr_ncs, "weight_position") << SEP("; ", 6, 2) << std::endl
+			<< Ff(ls_restr_ncs, "weight_position") << SEP("; ", 6, 2) << '\n'
 			<< RM3("  GROUP  1  B-FACTOR           (A**2) : ", 4, 2) << Ff(ls_restr_ncs, "rms_dev_B_iso") << SEP("; ", 6, 2)
-			<< Ff(ls_restr_ncs, "weight_B_iso") << SEP("; ", 6, 2) << std::endl
+			<< Ff(ls_restr_ncs, "weight_B_iso") << SEP("; ", 6, 2) << '\n'
 
 			// TODO: using only files from serial_no 1 here
-	        //			<< RM3("") << std::endl
-	        //			<< RM3(" PARAMETER FILE   1  : ") << Fs(pdbx_xplor_file, "param_file") << std::endl
-	        //			<< RM3(" TOPOLOGY FILE   1   : ") << Fs(pdbx_xplor_file, "topol_file") << std::endl
+	        //			<< RM3("") << '\n'
+	        //			<< RM3(" PARAMETER FILE   1  : ") << Fs(pdbx_xplor_file, "param_file") << '\n'
+	        //			<< RM3(" TOPOLOGY FILE   1   : ") << Fs(pdbx_xplor_file, "topol_file") << '\n'
 
-			<< RM3("") << std::endl;
+			<< RM3("") << '\n';
 }
 
 // --------------------------------------------------------------------
@@ -1147,207 +1147,207 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 	auto c = [](const char *t) -> condition
 	{ return key("type") == t; };
 
-	pdbFile << RM3("") << std::endl
-			<< RM3("REFINEMENT TARGET : ") << Fs(refine, "pdbx_stereochemistry_target_values") << std::endl
-			<< RM3("") << std::endl
-			<< RM3(" DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << std::endl
-			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << std::endl
-			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << std::endl
-			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << std::endl
-			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3("REFINEMENT TARGET : ") << Fs(refine, "pdbx_stereochemistry_target_values") << '\n'
+			<< RM3("") << '\n'
+			<< RM3(" DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << '\n'
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << '\n'
+			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << '\n'
+			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << '\n'
+			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << std::endl
-			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 5) << Ff(refine, "ls_R_factor_obs") << std::endl
-			<< RM3("  R VALUE            (WORKING SET) : ", 7, 5) << Ff(refine, "ls_R_factor_R_work") << std::endl
-			<< RM3("  FREE R VALUE                     : ", 7, 5) << Ff(refine, "ls_R_factor_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 1) << Ff(refine, "ls_percent_reflns_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << std::endl
-			<< RM3("  ESTIMATED ERROR OF FREE R VALUE  : ", 7, 3) << Ff(refine, "ls_R_factor_R_free_error") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << '\n'
+			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 5) << Ff(refine, "ls_R_factor_obs") << '\n'
+			<< RM3("  R VALUE            (WORKING SET) : ", 7, 5) << Ff(refine, "ls_R_factor_R_work") << '\n'
+			<< RM3("  FREE R VALUE                     : ", 7, 5) << Ff(refine, "ls_R_factor_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 1) << Ff(refine, "ls_percent_reflns_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << '\n'
+			<< RM3("  ESTIMATED ERROR OF FREE R VALUE  : ", 7, 3) << Ff(refine, "ls_R_factor_R_free_error") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT IN THE HIGHEST RESOLUTION BIN.") << std::endl
-			<< RM3("  TOTAL NUMBER OF BINS USED           : ") << Fi(ls_shell, "pdbx_total_number_of_bins_used") << std::endl
-			<< RM3("  BIN RESOLUTION RANGE HIGH       (A) : ", 5, 3) << Ff(ls_shell, "d_res_high") << std::endl
-			<< RM3("  BIN RESOLUTION RANGE LOW        (A) : ", 5, 3) << Ff(ls_shell, "d_res_low") << std::endl
-			<< RM3("  REFLECTION IN BIN     (WORKING SET) : ") << Fi(ls_shell, "number_reflns_R_work") << std::endl
-			<< RM3("  BIN COMPLETENESS (WORKING+TEST) (%) : ", 5, 2) << Ff(ls_shell, "percent_reflns_obs") << std::endl
-			<< RM3("  BIN R VALUE           (WORKING SET) : ", 7, 3) << Ff(ls_shell, "R_factor_R_work") << std::endl
-			<< RM3("  BIN FREE R VALUE SET COUNT          : ") << Fi(ls_shell, "number_reflns_R_free") << std::endl
-			<< RM3("  BIN FREE R VALUE                    : ", 7, 3) << Ff(ls_shell, "R_factor_R_free") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT IN THE HIGHEST RESOLUTION BIN.") << '\n'
+			<< RM3("  TOTAL NUMBER OF BINS USED           : ") << Fi(ls_shell, "pdbx_total_number_of_bins_used") << '\n'
+			<< RM3("  BIN RESOLUTION RANGE HIGH       (A) : ", 5, 3) << Ff(ls_shell, "d_res_high") << '\n'
+			<< RM3("  BIN RESOLUTION RANGE LOW        (A) : ", 5, 3) << Ff(ls_shell, "d_res_low") << '\n'
+			<< RM3("  REFLECTION IN BIN     (WORKING SET) : ") << Fi(ls_shell, "number_reflns_R_work") << '\n'
+			<< RM3("  BIN COMPLETENESS (WORKING+TEST) (%) : ", 5, 2) << Ff(ls_shell, "percent_reflns_obs") << '\n'
+			<< RM3("  BIN R VALUE           (WORKING SET) : ", 7, 3) << Ff(ls_shell, "R_factor_R_work") << '\n'
+			<< RM3("  BIN FREE R VALUE SET COUNT          : ") << Fi(ls_shell, "number_reflns_R_free") << '\n'
+			<< RM3("  BIN FREE R VALUE                    : ", 7, 3) << Ff(ls_shell, "R_factor_R_free") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << std::endl
-			<< RM3("  PROTEIN ATOMS            : ") << Fi(hist, "pdbx_number_atoms_protein") << std::endl
-			<< RM3("  NUCLEIC ACID ATOMS       : ") << Fi(hist, "pdbx_number_atoms_nucleic_acid") << std::endl
-			<< RM3("  HETEROGEN ATOMS          : ") << Fi(hist, "pdbx_number_atoms_ligand") << std::endl
-			<< RM3("  SOLVENT ATOMS            : ") << Fi(hist, "number_atoms_solvent") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << '\n'
+			<< RM3("  PROTEIN ATOMS            : ") << Fi(hist, "pdbx_number_atoms_protein") << '\n'
+			<< RM3("  NUCLEIC ACID ATOMS       : ") << Fi(hist, "pdbx_number_atoms_nucleic_acid") << '\n'
+			<< RM3("  HETEROGEN ATOMS          : ") << Fi(hist, "pdbx_number_atoms_ligand") << '\n'
+			<< RM3("  SOLVENT ATOMS            : ") << Fi(hist, "number_atoms_solvent") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" B VALUES.") << std::endl
-			<< RM3("  B VALUE TYPE                      : ") << Fs(refine, "pdbx_TLS_residual_ADP_flag") << std::endl
-			<< RM3("  FROM WILSON PLOT           (A**2) : ", 8, 3) << Ff(reflns, "B_iso_Wilson_estimate") << std::endl
-			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 8, 3) << Ff(refine, "B_iso_mean") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" B VALUES.") << '\n'
+			<< RM3("  B VALUE TYPE                      : ") << Fs(refine, "pdbx_TLS_residual_ADP_flag") << '\n'
+			<< RM3("  FROM WILSON PLOT           (A**2) : ", 8, 3) << Ff(reflns, "B_iso_Wilson_estimate") << '\n'
+			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 8, 3) << Ff(refine, "B_iso_mean") << '\n'
 
-			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << std::endl
-			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << std::endl
-			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << std::endl
-			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << std::endl
-			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << std::endl
-			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << std::endl
-			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << std::endl
+			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << '\n'
+			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << '\n'
+			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << '\n'
+			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << '\n'
+			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << '\n'
+			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << '\n'
+			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ESTIMATED OVERALL COORDINATE ERROR.") << std::endl
-			<< RM3("  ESU BASED ON R VALUE                            (A): ", 6, 3) << Ff(refine, "pdbx_overall_ESU_R") << std::endl
-			<< RM3("  ESU BASED ON FREE R VALUE                       (A): ", 6, 3) << Ff(refine, "pdbx_overall_ESU_R_Free") << std::endl
-			<< RM3("  ESU BASED ON MAXIMUM LIKELIHOOD                 (A): ", 6, 3) << Ff(refine, "overall_SU_ML") << std::endl
-			<< RM3("  ESU FOR B VALUES BASED ON MAXIMUM LIKELIHOOD (A**2): ", 6, 3) << Ff(refine, "overall_SU_B") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ESTIMATED OVERALL COORDINATE ERROR.") << '\n'
+			<< RM3("  ESU BASED ON R VALUE                            (A): ", 6, 3) << Ff(refine, "pdbx_overall_ESU_R") << '\n'
+			<< RM3("  ESU BASED ON FREE R VALUE                       (A): ", 6, 3) << Ff(refine, "pdbx_overall_ESU_R_Free") << '\n'
+			<< RM3("  ESU BASED ON MAXIMUM LIKELIHOOD                 (A): ", 6, 3) << Ff(refine, "overall_SU_ML") << '\n'
+			<< RM3("  ESU FOR B VALUES BASED ON MAXIMUM LIKELIHOOD (A**2): ", 6, 3) << Ff(refine, "overall_SU_B") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" CORRELATION COEFFICIENTS.") << std::endl
-			<< RM3("  CORRELATION COEFFICIENT FO-FC      : ", 6, 3) << Ff(refine, "correlation_coeff_Fo_to_Fc") << std::endl
-			<< RM3("  CORRELATION COEFFICIENT FO-FC FREE : ", 6, 3) << Ff(refine, "correlation_coeff_Fo_to_Fc_free") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" CORRELATION COEFFICIENTS.") << '\n'
+			<< RM3("  CORRELATION COEFFICIENT FO-FC      : ", 6, 3) << Ff(refine, "correlation_coeff_Fo_to_Fc") << '\n'
+			<< RM3("  CORRELATION COEFFICIENT FO-FC FREE : ", 6, 3) << Ff(refine, "correlation_coeff_Fo_to_Fc_free") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES        COUNT    RMS    WEIGHT") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES        COUNT    RMS    WEIGHT") << '\n'
 			<< RM3("  BOND LENGTHS REFINED ATOMS        (A): ", -5) << Fi(ls_restr, c("r_bond_refined_d"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_bond_refined_d"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_bond_refined_d"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_bond_refined_d"), "dev_ideal_target") << '\n'
 			<< RM3("  BOND LENGTHS OTHERS               (A): ", -5) << Fi(ls_restr, c("r_bond_other_d"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_bond_other_d"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_bond_other_d"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_bond_other_d"), "dev_ideal_target") << '\n'
 			<< RM3("  BOND ANGLES REFINED ATOMS   (DEGREES): ", -5) << Fi(ls_restr, c("r_angle_refined_deg"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_angle_refined_deg"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_angle_refined_deg"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_angle_refined_deg"), "dev_ideal_target") << '\n'
 			<< RM3("  BOND ANGLES OTHERS          (DEGREES): ", -5) << Fi(ls_restr, c("r_angle_other_deg"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_angle_other_deg"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_angle_other_deg"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_angle_other_deg"), "dev_ideal_target") << '\n'
 			<< RM3("  TORSION ANGLES, PERIOD 1    (DEGREES): ", -5) << Fi(ls_restr, c("r_dihedral_angle_1_deg"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_dihedral_angle_1_deg"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_dihedral_angle_1_deg"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_dihedral_angle_1_deg"), "dev_ideal_target") << '\n'
 			<< RM3("  TORSION ANGLES, PERIOD 2    (DEGREES): ", -5) << Fi(ls_restr, c("r_dihedral_angle_2_deg"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_dihedral_angle_2_deg"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_dihedral_angle_2_deg"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_dihedral_angle_2_deg"), "dev_ideal_target") << '\n'
 			<< RM3("  TORSION ANGLES, PERIOD 3    (DEGREES): ", -5) << Fi(ls_restr, c("r_dihedral_angle_3_deg"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_dihedral_angle_3_deg"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_dihedral_angle_3_deg"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_dihedral_angle_3_deg"), "dev_ideal_target") << '\n'
 			<< RM3("  TORSION ANGLES, PERIOD 4    (DEGREES): ", -5) << Fi(ls_restr, c("r_dihedral_angle_4_deg"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_dihedral_angle_4_deg"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_dihedral_angle_4_deg"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_dihedral_angle_4_deg"), "dev_ideal_target") << '\n'
 			<< RM3("  CHIRAL-CENTER RESTRAINTS       (A**3): ", -5) << Fi(ls_restr, c("r_chiral_restr"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_chiral_restr"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_chiral_restr"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_chiral_restr"), "dev_ideal_target") << '\n'
 			<< RM3("  GENERAL PLANES REFINED ATOMS      (A): ", -5) << Fi(ls_restr, c("r_gen_planes_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_gen_planes_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_gen_planes_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_gen_planes_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  GENERAL PLANES OTHERS             (A): ", -5) << Fi(ls_restr, c("r_gen_planes_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_gen_planes_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_gen_planes_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_gen_planes_other"), "dev_ideal_target") << '\n'
 			<< RM3("  NON-BONDED CONTACTS REFINED ATOMS (A): ", -5) << Fi(ls_restr, c("r_nbd_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_nbd_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_nbd_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_nbd_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  NON-BONDED CONTACTS OTHERS        (A): ", -5) << Fi(ls_restr, c("r_nbd_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_nbd_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_nbd_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_nbd_other"), "dev_ideal_target") << '\n'
 			<< RM3("  NON-BONDED TORSION REFINED ATOMS  (A): ", -5) << Fi(ls_restr, c("r_nbtor_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_nbtor_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_nbtor_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_nbtor_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  NON-BONDED TORSION OTHERS         (A): ", -5) << Fi(ls_restr, c("r_nbtor_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_nbtor_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_nbtor_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_nbtor_other"), "dev_ideal_target") << '\n'
 			<< RM3("  H-BOND (X...Y) REFINED ATOMS      (A): ", -5) << Fi(ls_restr, c("r_xyhbond_nbd_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_xyhbond_nbd_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_xyhbond_nbd_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_xyhbond_nbd_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  H-BOND (X...Y) OTHERS             (A): ", -5) << Fi(ls_restr, c("r_xyhbond_nbd_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_xyhbond_nbd_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_xyhbond_nbd_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_xyhbond_nbd_other"), "dev_ideal_target") << '\n'
 			<< RM3("  POTENTIAL METAL-ION REFINED ATOMS (A): ", -5) << Fi(ls_restr, c("r_metal_ion_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_metal_ion_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_metal_ion_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_metal_ion_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  POTENTIAL METAL-ION OTHERS        (A): ", -5) << Fi(ls_restr, c("r_metal_ion_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_metal_ion_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_metal_ion_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_metal_ion_other"), "dev_ideal_target") << '\n'
 			<< RM3("  SYMMETRY VDW REFINED ATOMS        (A): ", -5) << Fi(ls_restr, c("r_symmetry_vdw_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_symmetry_vdw_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_symmetry_vdw_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_symmetry_vdw_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  SYMMETRY VDW OTHERS               (A): ", -5) << Fi(ls_restr, c("r_symmetry_vdw_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_symmetry_vdw_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_symmetry_vdw_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_symmetry_vdw_other"), "dev_ideal_target") << '\n'
 			<< RM3("  SYMMETRY H-BOND REFINED ATOMS     (A): ", -5) << Fi(ls_restr, c("r_symmetry_hbond_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_symmetry_hbond_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_symmetry_hbond_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_symmetry_hbond_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  SYMMETRY H-BOND OTHERS            (A): ", -5) << Fi(ls_restr, c("r_symmetry_hbond_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_symmetry_hbond_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_symmetry_hbond_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_symmetry_hbond_other"), "dev_ideal_target") << '\n'
 			<< RM3("  SYMMETRY METAL-ION REFINED ATOMS  (A): ", -5) << Fi(ls_restr, c("r_symmetry_metal_ion_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_symmetry_metal_ion_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_symmetry_metal_ion_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_symmetry_metal_ion_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  SYMMETRY METAL-ION OTHERS         (A): ", -5) << Fi(ls_restr, c("r_symmetry_metal_ion_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_symmetry_metal_ion_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_symmetry_metal_ion_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_symmetry_metal_ion_other"), "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.     COUNT   RMS    WEIGHT") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.     COUNT   RMS    WEIGHT") << '\n'
 			<< RM3("  MAIN-CHAIN BOND REFINED ATOMS  (A**2): ", -5) << Fi(ls_restr, c("r_mcbond_it"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_mcbond_it"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_mcbond_it"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_mcbond_it"), "dev_ideal_target") << '\n'
 			<< RM3("  MAIN-CHAIN BOND OTHER ATOMS    (A**2): ", -5) << Fi(ls_restr, c("r_mcbond_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_mcbond_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_mcbond_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_mcbond_other"), "dev_ideal_target") << '\n'
 			<< RM3("  MAIN-CHAIN ANGLE REFINED ATOMS (A**2): ", -5) << Fi(ls_restr, c("r_mcangle_it"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_mcangle_it"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_mcangle_it"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_mcangle_it"), "dev_ideal_target") << '\n'
 			<< RM3("  MAIN-CHAIN ANGLE OTHER ATOMS   (A**2): ", -5) << Fi(ls_restr, c("r_mcangle_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_mcangle_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_mcangle_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_mcangle_other"), "dev_ideal_target") << '\n'
 			<< RM3("  SIDE-CHAIN BOND REFINED ATOMS  (A**2): ", -5) << Fi(ls_restr, c("r_scbond_it"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_scbond_it"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_scbond_it"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_scbond_it"), "dev_ideal_target") << '\n'
 			<< RM3("  SIDE-CHAIN BOND OTHER ATOMS    (A**2): ", -5) << Fi(ls_restr, c("r_scbond_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_scbond_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_scbond_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_scbond_other"), "dev_ideal_target") << '\n'
 			<< RM3("  SIDE-CHAIN ANGLE REFINED ATOMS (A**2): ", -5) << Fi(ls_restr, c("r_scangle_it"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_scangle_it"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_scangle_it"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_scangle_it"), "dev_ideal_target") << '\n'
 			<< RM3("  SIDE-CHAIN ANGLE OTHER ATOMS   (A**2): ", -5) << Fi(ls_restr, c("r_scangle_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_scangle_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_scangle_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_scangle_other"), "dev_ideal_target") << '\n'
 			<< RM3("  LONG RANGE B REFINED ATOMS     (A**2): ", -5) << Fi(ls_restr, c("r_long_range_B_refined"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_long_range_B_refined"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_long_range_B_refined"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_long_range_B_refined"), "dev_ideal_target") << '\n'
 			<< RM3("  LONG RANGE B OTHER ATOMS       (A**2): ", -5) << Fi(ls_restr, c("r_long_range_B_other"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_long_range_B_other"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_long_range_B_other"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_long_range_B_other"), "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ANISOTROPIC THERMAL FACTOR RESTRAINTS.   COUNT   RMS    WEIGHT") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ANISOTROPIC THERMAL FACTOR RESTRAINTS.   COUNT   RMS    WEIGHT") << '\n'
 			<< RM3("  RIGID-BOND RESTRAINTS          (A**2): ", -5) << Fi(ls_restr, c("r_rigid_bond_restr"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_rigid_bond_restr"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_rigid_bond_restr"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_rigid_bond_restr"), "dev_ideal_target") << '\n'
 			<< RM3("  SPHERICITY; FREE ATOMS         (A**2): ", -5) << Fi(ls_restr, c("r_sphericity_free"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_sphericity_free"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_sphericity_free"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_sphericity_free"), "dev_ideal_target") << '\n'
 			<< RM3("  SPHERICITY; BONDED ATOMS       (A**2): ", -5) << Fi(ls_restr, c("r_sphericity_bonded"), "number") << SEP(" ;", -6, 3)
 			<< Ff(ls_restr, c("r_sphericity_bonded"), "dev_ideal") << SEP(" ;", -6, 3)
-			<< Ff(ls_restr, c("r_sphericity_bonded"), "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, c("r_sphericity_bonded"), "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NCS RESTRAINTS STATISTICS") << std::endl;
+			<< RM3("") << '\n'
+			<< RM3(" NCS RESTRAINTS STATISTICS") << '\n';
 
 	auto &ncs_dom = db["struct_ncs_dom"];
 	if (ncs_dom.empty())
-		pdbFile << RM3("  NUMBER OF DIFFERENT NCS GROUPS : NULL") << std::endl;
+		pdbFile << RM3("  NUMBER OF DIFFERENT NCS GROUPS : NULL") << '\n';
 	else
 	{
 		std::set<std::string> ncs_groups;
 		for (auto i : ncs_dom)
 			ncs_groups.insert(i["pdbx_ens_id"].as<std::string>());
 
-		pdbFile << RM3("  NUMBER OF DIFFERENT NCS GROUPS : ") << ncs_groups.size() << std::endl;
+		pdbFile << RM3("  NUMBER OF DIFFERENT NCS GROUPS : ") << ncs_groups.size() << '\n';
 
 		for (auto ens_id : ncs_groups)
 		{
@@ -1362,11 +1362,11 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 				component_ids.insert(l["pdbx_component_id"].as<int>());
 			}
 
-			pdbFile << RM3("") << std::endl
-					<< RM3(" NCS GROUP NUMBER               : ") << ens_id << std::endl
-					<< RM3("    CHAIN NAMES                    : ") << join(chains, " ") << std::endl
-					<< RM3("    NUMBER OF COMPONENTS NCS GROUP : ") << component_ids.size() << std::endl
-					<< RM3("      COMPONENT C  SSSEQI  TO  C   SSSEQI   CODE") << std::endl;
+			pdbFile << RM3("") << '\n'
+					<< RM3(" NCS GROUP NUMBER               : ") << ens_id << '\n'
+					<< RM3("    CHAIN NAMES                    : ") << join(chains, " ") << '\n'
+					<< RM3("    NUMBER OF COMPONENTS NCS GROUP : ") << component_ids.size() << '\n'
+					<< RM3("      COMPONENT C  SSSEQI  TO  C   SSSEQI   CODE") << '\n';
 
 			for (auto l : lim)
 			{
@@ -1376,10 +1376,10 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 						<< SEP("   ", -5) << Fs(l, "end_auth_asym_id")
 						<< SEP("   ", -5) << Fi(l, "end_auth_seq_id")
 						<< SEP("  ", -5) << Fs(l, "pdbx_refine_code")
-						<< std::endl;
+						<< '\n';
 			}
 
-			pdbFile << RM3("                  GROUP CHAIN        COUNT   RMS     WEIGHT") << std::endl;
+			pdbFile << RM3("                  GROUP CHAIN        COUNT   RMS     WEIGHT") << '\n';
 			for (auto l : db["refine_ls_restr_ncs"].find(key("pdbx_ens_id") == ens_id))
 			{
 				std::string type = l["pdbx_type"].as<std::string>();
@@ -1399,45 +1399,45 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 						<< SEP(unit.c_str(), -6) << Fi(l, "pdbx_number")
 						<< SEP(" ;", -6, 3) << Ff(l, "rms_dev_position")
 						<< SEP(" ;", -6, 3) << Ff(l, "weight_position")
-						<< std::endl;
+						<< '\n';
 			}
 		}
 	}
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" TWIN DETAILS") << std::endl;
+	pdbFile << RM3("") << '\n'
+			<< RM3(" TWIN DETAILS") << '\n';
 
 	auto &twins = db["pdbx_reflns_twin"];
 	if (twins.empty())
-		pdbFile << RM3("  NUMBER OF TWIN DOMAINS  : NULL") << std::endl;
+		pdbFile << RM3("  NUMBER OF TWIN DOMAINS  : NULL") << '\n';
 	else
 	{
-		pdbFile << RM3("  NUMBER OF TWIN DOMAINS  :    ") << twins.size() << std::endl;
+		pdbFile << RM3("  NUMBER OF TWIN DOMAINS  :    ") << twins.size() << '\n';
 
 		int nr = 1;
 		for (auto twin : twins)
 		{
-			pdbFile << RM3("     TWIN DOMAIN   : ") << nr++ << std::endl
-					<< RM3("     TWIN OPERATOR : ") << Fs(twin, "operator") << std::endl
-					<< RM3("     TWIN FRACTION : ") << SEP("", -6, 3) << Ff(twin, "fraction") << std::endl;
+			pdbFile << RM3("     TWIN DOMAIN   : ") << nr++ << '\n'
+					<< RM3("     TWIN OPERATOR : ") << Fs(twin, "operator") << '\n'
+					<< RM3("     TWIN FRACTION : ") << SEP("", -6, 3) << Ff(twin, "fraction") << '\n';
 		}
 	}
 
 	auto &tls = db["pdbx_refine_tls"];
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" TLS DETAILS") << std::endl
-			<< RM3("  NUMBER OF TLS GROUPS  : ") << (tls.size() ? std::to_string(tls.size()) : "NULL") << std::endl;
+	pdbFile << RM3("") << '\n'
+			<< RM3(" TLS DETAILS") << '\n'
+			<< RM3("  NUMBER OF TLS GROUPS  : ") << (tls.size() ? std::to_string(tls.size()) : "NULL") << '\n';
 
 	for (auto t : tls)
 	{
 		std::string id = t["id"].as<std::string>();
 		auto g = db["pdbx_refine_tls_group"].find(key("refine_tls_id") == id);
 
-		pdbFile << RM3("") << std::endl
-				<< RM3("  TLS GROUP : ") << id << std::endl
-				<< RM3("   NUMBER OF COMPONENTS GROUP : ") << g.size() << std::endl
-				<< RM3("   COMPONENTS        C SSSEQI   TO  C SSSEQI") << std::endl;
+		pdbFile << RM3("") << '\n'
+				<< RM3("  TLS GROUP : ") << id << '\n'
+				<< RM3("   NUMBER OF COMPONENTS GROUP : ") << g.size() << '\n'
+				<< RM3("   COMPONENTS        C SSSEQI   TO  C SSSEQI") << '\n';
 
 		for (auto gi : g)
 		{
@@ -1445,35 +1445,35 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 					<< SEP("", -6) << Fi(gi, "beg_auth_seq_id")
 					<< SEP("", -9) << Fs(gi, "end_auth_asym_id")
 					<< SEP("", -6) << Fi(gi, "end_auth_seq_id")
-					<< std::endl;
+					<< '\n';
 		}
 
 		pdbFile << RM3("   ORIGIN FOR THE GROUP (A):", -9, 4) << Ff(t, "origin_x")
 				<< SEP("", -9, 4) << Ff(t, "origin_y")
-				<< SEP("", -9, 4) << Ff(t, "origin_z") << std::endl
-				<< RM3("   T TENSOR") << std::endl
-				<< RM3("     T11:", -9, 4) << Ff(t, "T[1][1]") << SEP(" T22:", -9, 4) << Ff(t, "T[2][2]") << std::endl
-				<< RM3("     T33:", -9, 4) << Ff(t, "T[3][3]") << SEP(" T12:", -9, 4) << Ff(t, "T[1][2]") << std::endl
-				<< RM3("     T13:", -9, 4) << Ff(t, "T[1][3]") << SEP(" T23:", -9, 4) << Ff(t, "T[2][3]") << std::endl
-				<< RM3("   L TENSOR") << std::endl
-				<< RM3("     L11:", -9, 4) << Ff(t, "L[1][1]") << SEP(" L22:", -9, 4) << Ff(t, "L[2][2]") << std::endl
-				<< RM3("     L33:", -9, 4) << Ff(t, "L[3][3]") << SEP(" L12:", -9, 4) << Ff(t, "L[1][2]") << std::endl
-				<< RM3("     L13:", -9, 4) << Ff(t, "L[1][3]") << SEP(" L23:", -9, 4) << Ff(t, "L[2][3]") << std::endl
-				<< RM3("   S TENSOR") << std::endl
-				<< RM3("     S11:", -9, 4) << Ff(t, "S[1][1]") << SEP(" S12:", -9, 4) << Ff(t, "S[1][2]") << SEP(" S13:", -9, 4) << Ff(t, "S[1][3]") << std::endl
-				<< RM3("     S21:", -9, 4) << Ff(t, "S[2][1]") << SEP(" S22:", -9, 4) << Ff(t, "S[2][2]") << SEP(" S23:", -9, 4) << Ff(t, "S[2][3]") << std::endl
-				<< RM3("     S31:", -9, 4) << Ff(t, "S[3][1]") << SEP(" S32:", -9, 4) << Ff(t, "S[3][2]") << SEP(" S33:", -9, 4) << Ff(t, "S[3][3]") << std::endl;
+				<< SEP("", -9, 4) << Ff(t, "origin_z") << '\n'
+				<< RM3("   T TENSOR") << '\n'
+				<< RM3("     T11:", -9, 4) << Ff(t, "T[1][1]") << SEP(" T22:", -9, 4) << Ff(t, "T[2][2]") << '\n'
+				<< RM3("     T33:", -9, 4) << Ff(t, "T[3][3]") << SEP(" T12:", -9, 4) << Ff(t, "T[1][2]") << '\n'
+				<< RM3("     T13:", -9, 4) << Ff(t, "T[1][3]") << SEP(" T23:", -9, 4) << Ff(t, "T[2][3]") << '\n'
+				<< RM3("   L TENSOR") << '\n'
+				<< RM3("     L11:", -9, 4) << Ff(t, "L[1][1]") << SEP(" L22:", -9, 4) << Ff(t, "L[2][2]") << '\n'
+				<< RM3("     L33:", -9, 4) << Ff(t, "L[3][3]") << SEP(" L12:", -9, 4) << Ff(t, "L[1][2]") << '\n'
+				<< RM3("     L13:", -9, 4) << Ff(t, "L[1][3]") << SEP(" L23:", -9, 4) << Ff(t, "L[2][3]") << '\n'
+				<< RM3("   S TENSOR") << '\n'
+				<< RM3("     S11:", -9, 4) << Ff(t, "S[1][1]") << SEP(" S12:", -9, 4) << Ff(t, "S[1][2]") << SEP(" S13:", -9, 4) << Ff(t, "S[1][3]") << '\n'
+				<< RM3("     S21:", -9, 4) << Ff(t, "S[2][1]") << SEP(" S22:", -9, 4) << Ff(t, "S[2][2]") << SEP(" S23:", -9, 4) << Ff(t, "S[2][3]") << '\n'
+				<< RM3("     S31:", -9, 4) << Ff(t, "S[3][1]") << SEP(" S32:", -9, 4) << Ff(t, "S[3][2]") << SEP(" S33:", -9, 4) << Ff(t, "S[3][3]") << '\n';
 	}
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" BULK SOLVENT MODELLING.") << std::endl
-			<< RM3("  METHOD USED : ") << Fs(refine, "solvent_model_details") << std::endl
-			<< RM3("  PARAMETERS FOR MASK CALCULATION") << std::endl
-			<< RM3("  VDW PROBE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_vdw_probe_radii") << std::endl
-			<< RM3("  ION PROBE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_ion_probe_radii") << std::endl
-			<< RM3("  SHRINKAGE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_shrinkage_radii") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3(" BULK SOLVENT MODELLING.") << '\n'
+			<< RM3("  METHOD USED : ") << Fs(refine, "solvent_model_details") << '\n'
+			<< RM3("  PARAMETERS FOR MASK CALCULATION") << '\n'
+			<< RM3("  VDW PROBE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_vdw_probe_radii") << '\n'
+			<< RM3("  ION PROBE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_ion_probe_radii") << '\n'
+			<< RM3("  SHRINKAGE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_shrinkage_radii") << '\n'
 
-			<< RM3("") << std::endl;
+			<< RM3("") << '\n';
 }
 
 void WriteRemark3Shelxl(std::ostream &pdbFile, const datablock &db)
@@ -1490,70 +1490,70 @@ void WriteRemark3Shelxl(std::ostream &pdbFile, const datablock &db)
 	auto c = [](const char *t) -> condition
 	{ return key("type") == t; };
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << std::endl
-			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << std::endl
-			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << std::endl
-			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << std::endl
-			<< RM3("  CROSS-VALIDATION METHOD           : ") << Fs(refine, "pdbx_ls_cross_valid_method") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SELECTION   : ") << Fs(refine, "pdbx_R_Free_selection_details") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3(" DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << '\n'
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << '\n'
+			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << '\n'
+			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << '\n'
+			<< RM3("  CROSS-VALIDATION METHOD           : ") << Fs(refine, "pdbx_ls_cross_valid_method") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SELECTION   : ") << Fs(refine, "pdbx_R_Free_selection_details") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT (NO CUTOFF).") << std::endl
-			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ", 7, 3) << Ff(pdbx_refine, "R_factor_all_no_cutoff") << std::endl
-			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ", 7, 3) << Ff(pdbx_refine, "R_factor_obs_no_cutoff") << std::endl
-			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ", 7, 3) << Ff(pdbx_refine, "free_R_factor_no_cutoff") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ", 7, 3) << Ff(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ", 12, 6) << Fi(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << std::endl
-			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ", 12, 6) << Fi(refine, "ls_number_reflns_all") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT (NO CUTOFF).") << '\n'
+			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ", 7, 3) << Ff(pdbx_refine, "R_factor_all_no_cutoff") << '\n'
+			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ", 7, 3) << Ff(pdbx_refine, "R_factor_obs_no_cutoff") << '\n'
+			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ", 7, 3) << Ff(pdbx_refine, "free_R_factor_no_cutoff") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ", 7, 3) << Ff(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ", 12, 6) << Fi(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << '\n'
+			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ", 12, 6) << Fi(refine, "ls_number_reflns_all") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT/AGREEMENT OF MODEL FOR DATA WITH F>4SIG(F).") << std::endl
-			<< RM3("  R VALUE   (WORKING + TEST SET, F>4SIG(F)) : ", 7, 3) << Ff(pdbx_refine, "R_factor_all_4sig_cutoff") << std::endl
-			<< RM3("  R VALUE          (WORKING SET, F>4SIG(F)) : ", 7, 3) << Ff(pdbx_refine, "R_factor_obs_4sig_cutoff") << std::endl
-			<< RM3("  FREE R VALUE                  (F>4SIG(F)) : ", 7, 3) << Ff(pdbx_refine, "free_R_factor_4sig_cutoff") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE (%, F>4SIG(F)) : ", 7, 3) << Ff(pdbx_refine, "free_R_val_test_set_size_perc_4sig_cutoff") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT   (F>4SIG(F)) : ") << Fi(pdbx_refine, "free_R_val_test_set_ct_4sig_cutoff") << std::endl
-			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (F>4SIG(F)) : ") << Fi(pdbx_refine, "number_reflns_obs_4sig_cutoff") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT/AGREEMENT OF MODEL FOR DATA WITH F>4SIG(F).") << '\n'
+			<< RM3("  R VALUE   (WORKING + TEST SET, F>4SIG(F)) : ", 7, 3) << Ff(pdbx_refine, "R_factor_all_4sig_cutoff") << '\n'
+			<< RM3("  R VALUE          (WORKING SET, F>4SIG(F)) : ", 7, 3) << Ff(pdbx_refine, "R_factor_obs_4sig_cutoff") << '\n'
+			<< RM3("  FREE R VALUE                  (F>4SIG(F)) : ", 7, 3) << Ff(pdbx_refine, "free_R_factor_4sig_cutoff") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE (%, F>4SIG(F)) : ", 7, 3) << Ff(pdbx_refine, "free_R_val_test_set_size_perc_4sig_cutoff") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT   (F>4SIG(F)) : ") << Fi(pdbx_refine, "free_R_val_test_set_ct_4sig_cutoff") << '\n'
+			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (F>4SIG(F)) : ") << Fi(pdbx_refine, "number_reflns_obs_4sig_cutoff") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << std::endl
-			<< RM3("  PROTEIN ATOMS      : ") << Fi(refine_hist, "pdbx_number_atoms_protein") << std::endl
-			<< RM3("  NUCLEIC ACID ATOMS : ") << Fi(refine_hist, "pdbx_number_atoms_nucleic_acid") << std::endl
-			<< RM3("  HETEROGEN ATOMS    : ") << Fi(refine_hist, "pdbx_number_atoms_ligand") << std::endl
-			<< RM3("  SOLVENT ATOMS      : ") << Fi(refine_hist, "number_atoms_solvent") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << '\n'
+			<< RM3("  PROTEIN ATOMS      : ") << Fi(refine_hist, "pdbx_number_atoms_protein") << '\n'
+			<< RM3("  NUCLEIC ACID ATOMS : ") << Fi(refine_hist, "pdbx_number_atoms_nucleic_acid") << '\n'
+			<< RM3("  HETEROGEN ATOMS    : ") << Fi(refine_hist, "pdbx_number_atoms_ligand") << '\n'
+			<< RM3("  SOLVENT ATOMS      : ") << Fi(refine_hist, "number_atoms_solvent") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" MODEL REFINEMENT.") << std::endl
-			<< RM3("  OCCUPANCY SUM OF NON-HYDROGEN ATOMS      : ", 7, 3) << Ff(refine_analyze, "occupancy_sum_non_hydrogen") << std::endl
-			<< RM3("  OCCUPANCY SUM OF HYDROGEN ATOMS          : ", 7, 3) << Ff(refine_analyze, "occupancy_sum_hydrogen") << std::endl
-			<< RM3("  NUMBER OF DISCRETELY DISORDERED RESIDUES : ") << Fi(refine_analyze, "number_disordered_residues") << std::endl
-			<< RM3("  NUMBER OF LEAST-SQUARES PARAMETERS       : ") << Fi(refine, "ls_number_parameters") << std::endl
-			<< RM3("  NUMBER OF RESTRAINTS                     : ") << Fi(refine, "ls_number_restraints") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" MODEL REFINEMENT.") << '\n'
+			<< RM3("  OCCUPANCY SUM OF NON-HYDROGEN ATOMS      : ", 7, 3) << Ff(refine_analyze, "occupancy_sum_non_hydrogen") << '\n'
+			<< RM3("  OCCUPANCY SUM OF HYDROGEN ATOMS          : ", 7, 3) << Ff(refine_analyze, "occupancy_sum_hydrogen") << '\n'
+			<< RM3("  NUMBER OF DISCRETELY DISORDERED RESIDUES : ") << Fi(refine_analyze, "number_disordered_residues") << '\n'
+			<< RM3("  NUMBER OF LEAST-SQUARES PARAMETERS       : ") << Fi(refine, "ls_number_parameters") << '\n'
+			<< RM3("  NUMBER OF RESTRAINTS                     : ") << Fi(refine, "ls_number_restraints") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" RMS DEVIATIONS FROM RESTRAINT TARGET VALUES.") << std::endl
-			<< RM3("  BOND LENGTHS                         (A) : ", 7, 3) << Ff(ls_restr, c("s_bond_d"), "dev_ideal") << std::endl
-			<< RM3("  ANGLE DISTANCES                      (A) : ", 7, 3) << Ff(ls_restr, c("s_angle_d"), "dev_ideal") << std::endl
-			<< RM3("  SIMILAR DISTANCES (NO TARGET VALUES) (A) : ", 7, 3) << Ff(ls_restr, c("s_similar_dist"), "dev_ideal") << std::endl
-			<< RM3("  DISTANCES FROM RESTRAINT PLANES      (A) : ", 7, 3) << Ff(ls_restr, c("s_from_restr_planes"), "dev_ideal") << std::endl
-			<< RM3("  ZERO CHIRAL VOLUMES               (A**3) : ", 7, 3) << Ff(ls_restr, c("s_zero_chiral_vol"), "dev_ideal") << std::endl
-			<< RM3("  NON-ZERO CHIRAL VOLUMES           (A**3) : ", 7, 3) << Ff(ls_restr, c("s_non_zero_chiral_vol"), "dev_ideal") << std::endl
-			<< RM3("  ANTI-BUMPING DISTANCE RESTRAINTS     (A) : ", 7, 3) << Ff(ls_restr, c("s_anti_bump_dis_restr"), "dev_ideal") << std::endl
-			<< RM3("  RIGID-BOND ADP COMPONENTS         (A**2) : ", 7, 3) << Ff(ls_restr, c("s_rigid_bond_adp_cmpnt"), "dev_ideal") << std::endl
-			<< RM3("  SIMILAR ADP COMPONENTS            (A**2) : ", 7, 3) << Ff(ls_restr, c("s_similar_adp_cmpnt"), "dev_ideal") << std::endl
-			<< RM3("  APPROXIMATELY ISOTROPIC ADPS      (A**2) : ", 7, 3) << Ff(ls_restr, c("s_approx_iso_adps"), "dev_ideal") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" RMS DEVIATIONS FROM RESTRAINT TARGET VALUES.") << '\n'
+			<< RM3("  BOND LENGTHS                         (A) : ", 7, 3) << Ff(ls_restr, c("s_bond_d"), "dev_ideal") << '\n'
+			<< RM3("  ANGLE DISTANCES                      (A) : ", 7, 3) << Ff(ls_restr, c("s_angle_d"), "dev_ideal") << '\n'
+			<< RM3("  SIMILAR DISTANCES (NO TARGET VALUES) (A) : ", 7, 3) << Ff(ls_restr, c("s_similar_dist"), "dev_ideal") << '\n'
+			<< RM3("  DISTANCES FROM RESTRAINT PLANES      (A) : ", 7, 3) << Ff(ls_restr, c("s_from_restr_planes"), "dev_ideal") << '\n'
+			<< RM3("  ZERO CHIRAL VOLUMES               (A**3) : ", 7, 3) << Ff(ls_restr, c("s_zero_chiral_vol"), "dev_ideal") << '\n'
+			<< RM3("  NON-ZERO CHIRAL VOLUMES           (A**3) : ", 7, 3) << Ff(ls_restr, c("s_non_zero_chiral_vol"), "dev_ideal") << '\n'
+			<< RM3("  ANTI-BUMPING DISTANCE RESTRAINTS     (A) : ", 7, 3) << Ff(ls_restr, c("s_anti_bump_dis_restr"), "dev_ideal") << '\n'
+			<< RM3("  RIGID-BOND ADP COMPONENTS         (A**2) : ", 7, 3) << Ff(ls_restr, c("s_rigid_bond_adp_cmpnt"), "dev_ideal") << '\n'
+			<< RM3("  SIMILAR ADP COMPONENTS            (A**2) : ", 7, 3) << Ff(ls_restr, c("s_similar_adp_cmpnt"), "dev_ideal") << '\n'
+			<< RM3("  APPROXIMATELY ISOTROPIC ADPS      (A**2) : ", 7, 3) << Ff(ls_restr, c("s_approx_iso_adps"), "dev_ideal") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" BULK SOLVENT MODELING.") << std::endl
-			<< RM3("  METHOD USED: ") << Fs(refine, "solvent_model_details") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" BULK SOLVENT MODELING.") << '\n'
+			<< RM3("  METHOD USED: ") << Fs(refine, "solvent_model_details") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" STEREOCHEMISTRY TARGET VALUES : ") << Fs(refine, "pdbx_stereochemistry_target_values") << std::endl
-			<< RM3("  SPECIAL CASE: ") << Fs(refine, "pdbx_stereochem_target_val_spec_case") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" STEREOCHEMISTRY TARGET VALUES : ") << Fs(refine, "pdbx_stereochemistry_target_values") << '\n'
+			<< RM3("  SPECIAL CASE: ") << Fs(refine, "pdbx_stereochem_target_val_spec_case") << '\n'
 
-			<< RM3("") << std::endl;
+			<< RM3("") << '\n';
 }
 
 void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
@@ -1570,26 +1570,26 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 	auto c = [](const char *t) -> condition
 	{ return key("type") == t; };
 
-	pdbFile << RM3("") << std::endl
-			<< RM3("   REFINEMENT TARGET : ") << Fs(refine, "pdbx_stereochemistry_target_values") << std::endl
-			<< RM3("") << std::endl
-			<< RM3(" DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << std::endl
-			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << std::endl
-			<< RM3("  MIN(FOBS/SIGMA_FOBS)              : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << std::endl
-			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << std::endl
-			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << std::endl
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 5) << Ff(refine, "ls_R_factor_obs") << std::endl
-			<< RM3("  R VALUE            (WORKING SET) : ", 7, 5) << Ff(refine, "ls_R_factor_R_work") << std::endl
-			<< RM3("  FREE R VALUE                     : ", 7, 5) << Ff(refine, "ls_R_factor_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3("   REFINEMENT TARGET : ") << Fs(refine, "pdbx_stereochemistry_target_values") << '\n'
+			<< RM3("") << '\n'
+			<< RM3(" DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << '\n'
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << '\n'
+			<< RM3("  MIN(FOBS/SIGMA_FOBS)              : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << '\n'
+			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << '\n'
+			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << '\n'
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 5) << Ff(refine, "ls_R_factor_obs") << '\n'
+			<< RM3("  R VALUE            (WORKING SET) : ", 7, 5) << Ff(refine, "ls_R_factor_R_work") << '\n'
+			<< RM3("  FREE R VALUE                     : ", 7, 5) << Ff(refine, "ls_R_factor_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT (IN BINS).") << std::endl
-			<< RM3("  BIN  RESOLUTION RANGE  COMPL.    NWORK NFREE   RWORK  RFREE") << std::endl;
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT (IN BINS).") << '\n'
+			<< RM3("  BIN  RESOLUTION RANGE  COMPL.    NWORK NFREE   RWORK  RFREE") << '\n';
 
 	int bin = 1;
 	std::vector<row_handle> bins;
@@ -1617,64 +1617,64 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 
 		percent_reflns_obs /= 100;
 
-		pdbFile << RM3("  ") << cif::format("%3d %7.4f - %7.4f    %4.2f %8d %5d  %6.4f %6.4f", bin++, d_res_low, d_res_high, percent_reflns_obs, number_reflns_R_work, number_reflns_R_free, R_factor_R_work, R_factor_R_free) << std::endl;
+		pdbFile << RM3("  ") << cif::format("%3d %7.4f - %7.4f    %4.2f %8d %5d  %6.4f %6.4f", bin++, d_res_low, d_res_high, percent_reflns_obs, number_reflns_R_work, number_reflns_R_free, R_factor_R_work, R_factor_R_free) << '\n';
 	}
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" BULK SOLVENT MODELLING.") << std::endl
-			<< RM3("  METHOD USED        : ") << Fs(refine, "solvent_model_details") << std::endl
-			<< RM3("  SOLVENT RADIUS     : ", 5, 2) << Ff(refine, "pdbx_solvent_vdw_probe_radii") << std::endl
-			<< RM3("  SHRINKAGE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_shrinkage_radii") << std::endl
-			<< RM3("  K_SOL              : ", 5, 2) << Ff(refine, "solvent_model_param_ksol") << std::endl
-			<< RM3("  B_SOL              : ", 5, 2) << Ff(refine, "solvent_model_param_bsol") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3(" BULK SOLVENT MODELLING.") << '\n'
+			<< RM3("  METHOD USED        : ") << Fs(refine, "solvent_model_details") << '\n'
+			<< RM3("  SOLVENT RADIUS     : ", 5, 2) << Ff(refine, "pdbx_solvent_vdw_probe_radii") << '\n'
+			<< RM3("  SHRINKAGE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_shrinkage_radii") << '\n'
+			<< RM3("  K_SOL              : ", 5, 2) << Ff(refine, "solvent_model_param_ksol") << '\n'
+			<< RM3("  B_SOL              : ", 5, 2) << Ff(refine, "solvent_model_param_bsol") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ERROR ESTIMATES.") << std::endl
-			<< RM3("  COORDINATE ERROR (MAXIMUM-LIKELIHOOD BASED)     : ", 6, 3) << Ff(refine, "overall_SU_ML") << std::endl
-			<< RM3("  PHASE ERROR (DEGREES, MAXIMUM-LIKELIHOOD BASED) : ", 6, 3) << Ff(refine, "pdbx_overall_phase_error") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ERROR ESTIMATES.") << '\n'
+			<< RM3("  COORDINATE ERROR (MAXIMUM-LIKELIHOOD BASED)     : ", 6, 3) << Ff(refine, "overall_SU_ML") << '\n'
+			<< RM3("  PHASE ERROR (DEGREES, MAXIMUM-LIKELIHOOD BASED) : ", 6, 3) << Ff(refine, "pdbx_overall_phase_error") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" B VALUES.") << std::endl
-			<< RM3("  B VALUE TYPE                      : ") << Fs(refine, "pdbx_TLS_residual_ADP_flag") << std::endl
-			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 4) << Ff(reflns, "B_iso_Wilson_estimate") << std::endl
-			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 4) << Ff(refine, "B_iso_mean") << std::endl
-			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << std::endl
-			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << std::endl
-			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << std::endl
-			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << std::endl
-			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << std::endl
-			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << std::endl
-			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" B VALUES.") << '\n'
+			<< RM3("  B VALUE TYPE                      : ") << Fs(refine, "pdbx_TLS_residual_ADP_flag") << '\n'
+			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 4) << Ff(reflns, "B_iso_Wilson_estimate") << '\n'
+			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 4) << Ff(refine, "B_iso_mean") << '\n'
+			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << '\n'
+			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << '\n'
+			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << '\n'
+			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << '\n'
+			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << '\n'
+			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << '\n'
+			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" TWINNING INFORMATION.") << std::endl
-			<< RM3("  FRACTION: ") << Fs(pdbx_reflns_twin, "fraction") << std::endl
-			<< RM3("  OPERATOR: ") << Fs(pdbx_reflns_twin, "operator") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" TWINNING INFORMATION.") << '\n'
+			<< RM3("  FRACTION: ") << Fs(pdbx_reflns_twin, "fraction") << '\n'
+			<< RM3("  OPERATOR: ") << Fs(pdbx_reflns_twin, "operator") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" DEVIATIONS FROM IDEAL VALUES.") << std::endl
-			<< RM3("                RMSD          COUNT") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" DEVIATIONS FROM IDEAL VALUES.") << '\n'
+			<< RM3("                RMSD          COUNT") << '\n'
 			<< RM3("  BOND      : ", -6, 3) << Ff(ls_restr, c("f_bond_d"), "dev_ideal") << SEP("        ", -7)
 			<< Fi(ls_restr, c("f_bond_d"), "number")
-			<< std::endl
+			<< '\n'
 			<< RM3("  ANGLE     : ", -6, 3) << Ff(ls_restr, c("f_angle_d"), "dev_ideal") << SEP("        ", -7)
 			<< Fi(ls_restr, c("f_angle_d"), "number")
-			<< std::endl
+			<< '\n'
 			<< RM3("  CHIRALITY : ", -6, 3) << Ff(ls_restr, c("f_chiral_restr"), "dev_ideal") << SEP("        ", -7)
 			<< Fi(ls_restr, c("f_chiral_restr"), "number")
-			<< std::endl
+			<< '\n'
 			<< RM3("  PLANARITY : ", -6, 3) << Ff(ls_restr, c("f_plane_restr"), "dev_ideal") << SEP("        ", -7)
 			<< Fi(ls_restr, c("f_plane_restr"), "number")
-			<< std::endl
+			<< '\n'
 			<< RM3("  DIHEDRAL  : ", -6, 3) << Ff(ls_restr, c("f_dihedral_angle_d"), "dev_ideal") << SEP("        ", -7)
 			<< Fi(ls_restr, c("f_dihedral_angle_d"), "number")
-			<< std::endl;
+			<< '\n';
 
 	auto &tls = db["pdbx_refine_tls"];
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" TLS DETAILS") << std::endl
-			<< RM3("  NUMBER OF TLS GROUPS  : ") << (tls.size() ? std::to_string(tls.size()) : "NULL") << std::endl;
+	pdbFile << RM3("") << '\n'
+			<< RM3(" TLS DETAILS") << '\n'
+			<< RM3("  NUMBER OF TLS GROUPS  : ") << (tls.size() ? std::to_string(tls.size()) : "NULL") << '\n';
 
 	for (auto t : tls)
 	{
@@ -1682,38 +1682,38 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 
 		auto pdbx_refine_tls_group = db["pdbx_refine_tls_group"].find_first(key("refine_tls_id") == id);
 
-		pdbFile << RM3("  TLS GROUP : ") << id << std::endl
-				<< RM3("   SELECTION: ") << Fs(pdbx_refine_tls_group, "selection_details") << std::endl
+		pdbFile << RM3("  TLS GROUP : ") << id << '\n'
+				<< RM3("   SELECTION: ") << Fs(pdbx_refine_tls_group, "selection_details") << '\n'
 				<< RM3("   ORIGIN FOR THE GROUP (A):", -9, 4) << Ff(t, "origin_x")
 				<< SEP("", -9, 4) << Ff(t, "origin_y")
-				<< SEP("", -9, 4) << Ff(t, "origin_z") << std::endl
-				<< RM3("   T TENSOR") << std::endl
-				<< RM3("     T11:", -9, 4) << Ff(t, "T[1][1]") << SEP(" T22:", -9, 4) << Ff(t, "T[2][2]") << std::endl
-				<< RM3("     T33:", -9, 4) << Ff(t, "T[3][3]") << SEP(" T12:", -9, 4) << Ff(t, "T[1][2]") << std::endl
-				<< RM3("     T13:", -9, 4) << Ff(t, "T[1][3]") << SEP(" T23:", -9, 4) << Ff(t, "T[2][3]") << std::endl
-				<< RM3("   L TENSOR") << std::endl
-				<< RM3("     L11:", -9, 4) << Ff(t, "L[1][1]") << SEP(" L22:", -9, 4) << Ff(t, "L[2][2]") << std::endl
-				<< RM3("     L33:", -9, 4) << Ff(t, "L[3][3]") << SEP(" L12:", -9, 4) << Ff(t, "L[1][2]") << std::endl
-				<< RM3("     L13:", -9, 4) << Ff(t, "L[1][3]") << SEP(" L23:", -9, 4) << Ff(t, "L[2][3]") << std::endl
-				<< RM3("   S TENSOR") << std::endl
-				<< RM3("     S11:", -9, 4) << Ff(t, "S[1][1]") << SEP(" S12:", -9, 4) << Ff(t, "S[1][2]") << SEP(" S13:", -9, 4) << Ff(t, "S[1][3]") << std::endl
-				<< RM3("     S21:", -9, 4) << Ff(t, "S[2][1]") << SEP(" S22:", -9, 4) << Ff(t, "S[2][2]") << SEP(" S23:", -9, 4) << Ff(t, "S[2][3]") << std::endl
-				<< RM3("     S31:", -9, 4) << Ff(t, "S[3][1]") << SEP(" S32:", -9, 4) << Ff(t, "S[3][2]") << SEP(" S33:", -9, 4) << Ff(t, "S[3][3]") << std::endl;
+				<< SEP("", -9, 4) << Ff(t, "origin_z") << '\n'
+				<< RM3("   T TENSOR") << '\n'
+				<< RM3("     T11:", -9, 4) << Ff(t, "T[1][1]") << SEP(" T22:", -9, 4) << Ff(t, "T[2][2]") << '\n'
+				<< RM3("     T33:", -9, 4) << Ff(t, "T[3][3]") << SEP(" T12:", -9, 4) << Ff(t, "T[1][2]") << '\n'
+				<< RM3("     T13:", -9, 4) << Ff(t, "T[1][3]") << SEP(" T23:", -9, 4) << Ff(t, "T[2][3]") << '\n'
+				<< RM3("   L TENSOR") << '\n'
+				<< RM3("     L11:", -9, 4) << Ff(t, "L[1][1]") << SEP(" L22:", -9, 4) << Ff(t, "L[2][2]") << '\n'
+				<< RM3("     L33:", -9, 4) << Ff(t, "L[3][3]") << SEP(" L12:", -9, 4) << Ff(t, "L[1][2]") << '\n'
+				<< RM3("     L13:", -9, 4) << Ff(t, "L[1][3]") << SEP(" L23:", -9, 4) << Ff(t, "L[2][3]") << '\n'
+				<< RM3("   S TENSOR") << '\n'
+				<< RM3("     S11:", -9, 4) << Ff(t, "S[1][1]") << SEP(" S12:", -9, 4) << Ff(t, "S[1][2]") << SEP(" S13:", -9, 4) << Ff(t, "S[1][3]") << '\n'
+				<< RM3("     S21:", -9, 4) << Ff(t, "S[2][1]") << SEP(" S22:", -9, 4) << Ff(t, "S[2][2]") << SEP(" S23:", -9, 4) << Ff(t, "S[2][3]") << '\n'
+				<< RM3("     S31:", -9, 4) << Ff(t, "S[3][1]") << SEP(" S32:", -9, 4) << Ff(t, "S[3][2]") << SEP(" S33:", -9, 4) << Ff(t, "S[3][3]") << '\n';
 	}
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" NCS DETAILS") << std::endl;
+	pdbFile << RM3("") << '\n'
+			<< RM3(" NCS DETAILS") << '\n';
 
 	auto &ncs_dom = db["struct_ncs_dom"];
 	if (ncs_dom.empty())
-		pdbFile << RM3("  NUMBER OF NCS GROUPS : NULL") << std::endl;
+		pdbFile << RM3("  NUMBER OF NCS GROUPS : NULL") << '\n';
 	else
 	{
 		std::set<std::string> ncs_groups;
 		for (auto i : ncs_dom)
 			ncs_groups.insert(i["pdbx_ens_id"].as<std::string>());
 
-		pdbFile << RM3("  NUMBER OF NCS GROUPS : ") << ncs_groups.size() << std::endl;
+		pdbFile << RM3("  NUMBER OF NCS GROUPS : ") << ncs_groups.size() << '\n';
 		//
 		//			for (auto ens_id: ncs_groups)
 		//			{
@@ -1728,11 +1728,11 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 		//					component_ids.insert(l["pdbx_component_id"].as<int>());
 		//				}
 		//
-		//				pdbFile << RM3("") << std::endl
-		//						<< RM3(" NCS GROUP NUMBER               : ") << ens_id << std::endl
-		//						<< RM3("    CHAIN NAMES                    : ") << join(chains, " ") << std::endl
-		//						<< RM3("    NUMBER OF COMPONENTS NCS GROUP : ") << component_ids.size() << std::endl
-		//						<< RM3("      COMPONENT C  SSSEQI  TO  C   SSSEQI   CODE") << std::endl;
+		//				pdbFile << RM3("") << '\n'
+		//						<< RM3(" NCS GROUP NUMBER               : ") << ens_id << '\n'
+		//						<< RM3("    CHAIN NAMES                    : ") << join(chains, " ") << '\n'
+		//						<< RM3("    NUMBER OF COMPONENTS NCS GROUP : ") << component_ids.size() << '\n'
+		//						<< RM3("      COMPONENT C  SSSEQI  TO  C   SSSEQI   CODE") << '\n';
 		//
 		//				for (auto l: lim)
 		//				{
@@ -1742,10 +1742,10 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 		//							<< SEP("   ", -5)			<< Fs(l, "end_auth_asym_id")
 		//							<< SEP("   ", -5)			<< Fi(l, "end_auth_seq_id")
 		//							<< SEP("  ", -5)			<< Fs(l, "pdbx_refine_code")
-		//							<< std::endl;
+		//							<< '\n';
 		//				}
 		//
-		//				pdbFile << RM3("                  GROUP CHAIN        COUNT   RMS     WEIGHT") << std::endl;
+		//				pdbFile << RM3("                  GROUP CHAIN        COUNT   RMS     WEIGHT") << '\n';
 		//				for (auto l: db["refine_ls_restr_ncs"].find(key("pdbx_ens_id") == ens_id))
 		//				{
 		//					std::string type = l["pdbx_type"];
@@ -1765,22 +1765,22 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 		//							<< SEP(unit.c_str(), -6)	<< Fi(l, "pdbx_number")
 		//							<< SEP(" ;", -6, 3)		<< Ff(l, "rms_dev_position")
 		//							<< SEP(" ;", -6, 3)		<< Ff(l, "weight_position")
-		//							<< std::endl;
+		//							<< '\n';
 		//				}
 		//			}
 	}
 
-	//	pdbFile << RM3("") << std::endl
-	//			<< RM3(" BULK SOLVENT MODELLING.") << std::endl
-	//			<< RM3("  METHOD USED : ") << Fs(refine, "solvent_model_details") << std::endl
-	//			<< RM3("  PARAMETERS FOR MASK CALCULATION") << std::endl
-	//			<< RM3("  VDW PROBE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_vdw_probe_radii") << std::endl
-	//			<< RM3("  ION PROBE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_ion_probe_radii") << std::endl
-	//			<< RM3("  SHRINKAGE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_shrinkage_radii") << std::endl
+	//	pdbFile << RM3("") << '\n'
+	//			<< RM3(" BULK SOLVENT MODELLING.") << '\n'
+	//			<< RM3("  METHOD USED : ") << Fs(refine, "solvent_model_details") << '\n'
+	//			<< RM3("  PARAMETERS FOR MASK CALCULATION") << '\n'
+	//			<< RM3("  VDW PROBE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_vdw_probe_radii") << '\n'
+	//			<< RM3("  ION PROBE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_ion_probe_radii") << '\n'
+	//			<< RM3("  SHRINKAGE RADIUS   : ", 5, 2) << Ff(refine, "pdbx_solvent_shrinkage_radii") << '\n'
 	//
-	//			<< RM3("") << std::endl;
+	//			<< RM3("") << '\n';
 
-	pdbFile << RM3("") << std::endl;
+	pdbFile << RM3("") << '\n';
 }
 
 void WriteRemark3XPlor(std::ostream &pdbFile, const datablock &db)
@@ -1794,108 +1794,108 @@ void WriteRemark3XPlor(std::ostream &pdbFile, const datablock &db)
 	auto ls_restr_ncs = db["refine_ls_restr_ncs"].front();
 	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << std::endl
-			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << std::endl
-			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << std::endl
-			<< RM3("  DATA CUTOFF HIGH         (ABS(F)) : ", 6, 3) << Ff(refine, "pdbx_data_cutoff_high_absF") << std::endl
-			<< RM3("  DATA CUTOFF LOW          (ABS(F)) : ", 6, 3) << Ff(refine, "pdbx_data_cutoff_low_absF") << std::endl
-			<< RM3("  COMPLETENESS (WORKING+TEST)   (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << std::endl
-			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3(" DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << '\n'
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << '\n'
+			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << '\n'
+			<< RM3("  DATA CUTOFF HIGH         (ABS(F)) : ", 6, 3) << Ff(refine, "pdbx_data_cutoff_high_absF") << '\n'
+			<< RM3("  DATA CUTOFF LOW          (ABS(F)) : ", 6, 3) << Ff(refine, "pdbx_data_cutoff_low_absF") << '\n'
+			<< RM3("  COMPLETENESS (WORKING+TEST)   (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << '\n'
+			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << std::endl
-			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << std::endl
-			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << std::endl
-			<< RM3("  ESTIMATED ERROR OF FREE R VALUE  : ", 7, 3) << Ff(refine, "ls_R_factor_R_free_error") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << '\n'
+			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << '\n'
+			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << '\n'
+			<< RM3("  ESTIMATED ERROR OF FREE R VALUE  : ", 7, 3) << Ff(refine, "ls_R_factor_R_free_error") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT IN THE HIGHEST RESOLUTION BIN.") << std::endl
-			<< RM3("  TOTAL NUMBER OF BINS USED           : ", 12, 6) << Fi(ls_shell, "pdbx_total_number_of_bins_used") << std::endl
-			<< RM3("  BIN RESOLUTION RANGE HIGH       (A) : ", 5, 2) << Ff(ls_shell, "d_res_high") << std::endl
-			<< RM3("  BIN RESOLUTION RANGE LOW        (A) : ", 5, 2) << Ff(ls_shell, "d_res_low") << std::endl
-			<< RM3("  BIN COMPLETENESS (WORKING+TEST) (%) : ", 5, 1) << Ff(ls_shell, "percent_reflns_obs") << std::endl
-			<< RM3("  REFLECTIONS IN BIN    (WORKING SET) : ", 12, 6) << Fi(ls_shell, "number_reflns_R_work") << std::endl
-			<< RM3("  BIN R VALUE           (WORKING SET) : ", 7, 3) << Ff(ls_shell, "R_factor_R_work") << std::endl
-			<< RM3("  BIN FREE R VALUE                    : ", 7, 3) << Ff(ls_shell, "R_factor_R_free") << std::endl
-			<< RM3("  BIN FREE R VALUE TEST SET SIZE  (%) : ", 5, 1) << Ff(ls_shell, "percent_reflns_R_free") << std::endl
-			<< RM3("  BIN FREE R VALUE TEST SET COUNT     : ", 12, 6) << Fi(ls_shell, "number_reflns_R_free") << std::endl
-			<< RM3("  ESTIMATED ERROR OF BIN FREE R VALUE : ", 7, 3) << Ff(ls_shell, "R_factor_R_free_error") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT IN THE HIGHEST RESOLUTION BIN.") << '\n'
+			<< RM3("  TOTAL NUMBER OF BINS USED           : ", 12, 6) << Fi(ls_shell, "pdbx_total_number_of_bins_used") << '\n'
+			<< RM3("  BIN RESOLUTION RANGE HIGH       (A) : ", 5, 2) << Ff(ls_shell, "d_res_high") << '\n'
+			<< RM3("  BIN RESOLUTION RANGE LOW        (A) : ", 5, 2) << Ff(ls_shell, "d_res_low") << '\n'
+			<< RM3("  BIN COMPLETENESS (WORKING+TEST) (%) : ", 5, 1) << Ff(ls_shell, "percent_reflns_obs") << '\n'
+			<< RM3("  REFLECTIONS IN BIN    (WORKING SET) : ", 12, 6) << Fi(ls_shell, "number_reflns_R_work") << '\n'
+			<< RM3("  BIN R VALUE           (WORKING SET) : ", 7, 3) << Ff(ls_shell, "R_factor_R_work") << '\n'
+			<< RM3("  BIN FREE R VALUE                    : ", 7, 3) << Ff(ls_shell, "R_factor_R_free") << '\n'
+			<< RM3("  BIN FREE R VALUE TEST SET SIZE  (%) : ", 5, 1) << Ff(ls_shell, "percent_reflns_R_free") << '\n'
+			<< RM3("  BIN FREE R VALUE TEST SET COUNT     : ", 12, 6) << Fi(ls_shell, "number_reflns_R_free") << '\n'
+			<< RM3("  ESTIMATED ERROR OF BIN FREE R VALUE : ", 7, 3) << Ff(ls_shell, "R_factor_R_free_error") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << std::endl
-			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << std::endl
-			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << std::endl
-			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << std::endl
-			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << '\n'
+			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << '\n'
+			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << '\n'
+			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << '\n'
+			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" B VALUES.") << std::endl
-			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << std::endl
-			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" B VALUES.") << '\n'
+			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << '\n'
+			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << '\n'
 
-			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << std::endl
-			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << std::endl
-			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << std::endl
-			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << std::endl
-			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << std::endl
-			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << std::endl
-			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << std::endl
+			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << '\n'
+			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << '\n'
+			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << '\n'
+			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << '\n'
+			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << '\n'
+			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << '\n'
+			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ESTIMATED COORDINATE ERROR.") << std::endl
-			<< RM3("  ESD FROM LUZZATI PLOT        (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_obs") << std::endl
-			<< RM3("  ESD FROM SIGMAA              (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_obs") << std::endl
-			<< RM3("  LOW RESOLUTION CUTOFF        (A) : ", 7, 2) << Ff(analyze, "Luzzati_d_res_low_obs") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ESTIMATED COORDINATE ERROR.") << '\n'
+			<< RM3("  ESD FROM LUZZATI PLOT        (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_obs") << '\n'
+			<< RM3("  ESD FROM SIGMAA              (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_obs") << '\n'
+			<< RM3("  LOW RESOLUTION CUTOFF        (A) : ", 7, 2) << Ff(analyze, "Luzzati_d_res_low_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" CROSS-VALIDATED ESTIMATED COORDINATE ERROR.") << std::endl
-			<< RM3("  ESD FROM C-V LUZZATI PLOT    (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_free") << std::endl
-			<< RM3("  ESD FROM C-V SIGMAA          (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_free") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" CROSS-VALIDATED ESTIMATED COORDINATE ERROR.") << '\n'
+			<< RM3("  ESD FROM C-V LUZZATI PLOT    (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_free") << '\n'
+			<< RM3("  ESD FROM C-V SIGMAA          (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_free") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << std::endl
-			<< RM3("  BOND LENGTHS                 (A) : ", 7, 3) << Ff(ls_restr, key("type") == "x_bond_d", "dev_ideal") << std::endl
-			<< RM3("  BOND ANGLES            (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "x_angle_deg", "dev_ideal") << std::endl
-			<< RM3("  DIHEDRAL ANGLES        (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "x_dihedral_angle_d", "dev_ideal") << std::endl
-			<< RM3("  IMPROPER ANGLES        (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "x_improper_angle_d", "dev_ideal") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << '\n'
+			<< RM3("  BOND LENGTHS                 (A) : ", 7, 3) << Ff(ls_restr, key("type") == "x_bond_d", "dev_ideal") << '\n'
+			<< RM3("  BOND ANGLES            (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "x_angle_deg", "dev_ideal") << '\n'
+			<< RM3("  DIHEDRAL ANGLES        (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "x_dihedral_angle_d", "dev_ideal") << '\n'
+			<< RM3("  IMPROPER ANGLES        (DEGREES) : ", 7, 2) << Ff(ls_restr, key("type") == "x_improper_angle_d", "dev_ideal") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ISOTROPIC THERMAL MODEL : ") << Fs(refine, "pdbx_isotropic_thermal_model") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ISOTROPIC THERMAL MODEL : ") << Fs(refine, "pdbx_isotropic_thermal_model") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.    RMS    SIGMA") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.    RMS    SIGMA") << '\n'
 			<< RM3("  MAIN-CHAIN BOND              (A**2) : ", 6, 2) << Ff(ls_restr, key("type") == "x_mcbond_it", "dev_ideal") << SEP("; ", 6, 2)
-			<< Ff(ls_restr, key("type") == "x_mcbond_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "x_mcbond_it", "dev_ideal_target") << '\n'
 			<< RM3("  MAIN-CHAIN ANGLE             (A**2) : ", 6, 2) << Ff(ls_restr, key("type") == "x_mcangle_it", "dev_ideal") << SEP("; ", 6, 2)
-			<< Ff(ls_restr, key("type") == "x_mcangle_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "x_mcangle_it", "dev_ideal_target") << '\n'
 			<< RM3("  SIDE-CHAIN BOND              (A**2) : ", 6, 2) << Ff(ls_restr, key("type") == "x_scbond_it", "dev_ideal") << SEP("; ", 6, 2)
-			<< Ff(ls_restr, key("type") == "x_scbond_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "x_scbond_it", "dev_ideal_target") << '\n'
 			<< RM3("  SIDE-CHAIN ANGLE             (A**2) : ", 6, 2) << Ff(ls_restr, key("type") == "x_scangle_it", "dev_ideal") << SEP("; ", 6, 2)
-			<< Ff(ls_restr, key("type") == "x_scangle_it", "dev_ideal_target") << std::endl
-			<< RM3("") << std::endl
-			<< RM3(" NCS MODEL : ") << Fs(ls_restr_ncs, "ncs_model_details") << std::endl
+			<< Ff(ls_restr, key("type") == "x_scangle_it", "dev_ideal_target") << '\n'
+			<< RM3("") << '\n'
+			<< RM3(" NCS MODEL : ") << Fs(ls_restr_ncs, "ncs_model_details") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NCS RESTRAINTS.                         RMS   SIGMA/WEIGHT") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NCS RESTRAINTS.                         RMS   SIGMA/WEIGHT") << '\n'
 
 			// TODO: using only group 1 here, should this be fixed???
 			<< RM3("  GROUP  1  POSITIONAL            (A) : ", 4, 2) << Ff(ls_restr_ncs, "rms_dev_position") << SEP("; ", 6, 2)
-			<< Ff(ls_restr_ncs, "weight_position") << SEP("; ", 6, 2) << std::endl
+			<< Ff(ls_restr_ncs, "weight_position") << SEP("; ", 6, 2) << '\n'
 			<< RM3("  GROUP  1  B-FACTOR           (A**2) : ", 4, 2) << Ff(ls_restr_ncs, "rms_dev_B_iso") << SEP("; ", 6, 2)
-			<< Ff(ls_restr_ncs, "weight_B_iso") << SEP("; ", 6, 2) << std::endl
+			<< Ff(ls_restr_ncs, "weight_B_iso") << SEP("; ", 6, 2) << '\n'
 
 			// TODO: using only files from serial_no 1 here
-			<< RM3("") << std::endl
-			<< RM3(" PARAMETER FILE   1  : ") << Fs(pdbx_xplor_file, "param_file") << std::endl
-			<< RM3(" TOPOLOGY FILE   1   : ") << Fs(pdbx_xplor_file, "topol_file") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" PARAMETER FILE   1  : ") << Fs(pdbx_xplor_file, "param_file") << '\n'
+			<< RM3(" TOPOLOGY FILE   1   : ") << Fs(pdbx_xplor_file, "topol_file") << '\n'
 
-			<< RM3("") << std::endl;
+			<< RM3("") << '\n';
 }
 
 void WriteRemark3NuclSQ(std::ostream &pdbFile, const datablock &db)
@@ -1907,99 +1907,99 @@ void WriteRemark3NuclSQ(std::ostream &pdbFile, const datablock &db)
 	auto analyze = db["refine_analyze"].front();
 	auto &ls_restr = db["refine_ls_restr"];
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" DATA USED IN REFINEMENT.") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3(" DATA USED IN REFINEMENT.") << '\n'
 
-			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << std::endl
-			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << std::endl
-			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << std::endl
-			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << std::endl
-			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << std::endl
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << '\n'
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << '\n'
+			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << '\n'
+			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << '\n'
+			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << std::endl
-			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 3) << Ff(refine, "ls_R_factor_obs") << std::endl
-			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << std::endl
-			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << '\n'
+			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 3) << Ff(refine, "ls_R_factor_obs") << '\n'
+			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << '\n'
+			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << std::endl
-			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ") << Fs(refine, "ls_R_factor_all") << std::endl
-			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ") << Fs(pdbx_refine, "R_factor_obs_no_cutoff") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << '\n'
+			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ") << Fs(refine, "ls_R_factor_all") << '\n'
+			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ") << Fs(pdbx_refine, "R_factor_obs_no_cutoff") << '\n'
 
-			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_factor_no_cutoff") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << std::endl
-			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ") << Fs(refine, "ls_number_reflns_all") << std::endl
+			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_factor_no_cutoff") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << '\n'
+			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ") << Fs(refine, "ls_number_reflns_all") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << std::endl
-			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << std::endl
-			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << std::endl
-			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << std::endl
-			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << std::endl
-			//			<< RM3("  ALL ATOMS                : ", 12, 6)	<< Fi(hist, "pdbx_number_atoms_protein") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << '\n'
+			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << '\n'
+			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << '\n'
+			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << '\n'
+			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << '\n'
+			//			<< RM3("  ALL ATOMS                : ", 12, 6)	<< Fi(hist, "pdbx_number_atoms_protein") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" B VALUES.") << std::endl
-			//			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << std::endl
-			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << std::endl
-			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << std::endl
-			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << std::endl
-			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << std::endl
-			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << std::endl
-			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << std::endl
-			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << std::endl
-			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << std::endl
-			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" B VALUES.") << '\n'
+			//			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << '\n'
+			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << '\n'
+			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << '\n'
+			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << '\n'
+			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << '\n'
+			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << '\n'
+			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << '\n'
+			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << '\n'
+			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << '\n'
+			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ESTIMATED COORDINATE ERROR.") << std::endl
-			<< RM3("  ESD FROM LUZZATI PLOT        (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_obs") << std::endl
-			<< RM3("  ESD FROM SIGMAA              (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_obs") << std::endl
-			<< RM3("  LOW RESOLUTION CUTOFF        (A) : ", 7, 2) << Ff(analyze, "Luzzati_d_res_low_obs") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ESTIMATED COORDINATE ERROR.") << '\n'
+			<< RM3("  ESD FROM LUZZATI PLOT        (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_obs") << '\n'
+			<< RM3("  ESD FROM SIGMAA              (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_obs") << '\n'
+			<< RM3("  LOW RESOLUTION CUTOFF        (A) : ", 7, 2) << Ff(analyze, "Luzzati_d_res_low_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << std::endl
-			<< RM3("  DISTANCE RESTRAINTS.                    RMS     SIGMA") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << '\n'
+			<< RM3("  DISTANCE RESTRAINTS.                    RMS     SIGMA") << '\n'
 			<< RM3("   SUGAR-BASE BOND DISTANCE        (A) : ", 7, 3) << Ff(ls_restr, key("type") == "n_sugar_bond_d", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_sugar_bond_d", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_sugar_bond_d", "dev_ideal_target") << '\n'
 			<< RM3("   SUGAR-BASE BOND ANGLE DISTANCE  (A) : ", 7, 3) << Ff(ls_restr, key("type") == "n_sugar_bond_angle_d", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_sugar_bond_angle_d", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_sugar_bond_angle_d", "dev_ideal_target") << '\n'
 			<< RM3("   PHOSPHATE BONDS DISTANCE        (A) : ", 7, 3) << Ff(ls_restr, key("type") == "n_phos_bond_d", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_phos_bond_d", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_phos_bond_d", "dev_ideal_target") << '\n'
 			<< RM3("   PHOSPHATE BOND ANGLE, H-BOND    (A) : ", 7, 3) << Ff(ls_restr, key("type") == "n_phos_bond_angle_d", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_phos_bond_angle_d", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_phos_bond_angle_d", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
+			<< RM3("") << '\n'
 			<< RM3("  PLANE RESTRAINT                  (A) : ", 7, 3) << Ff(ls_restr, key("type") == "n_plane_restr", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_plane_restr", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_plane_restr", "dev_ideal_target") << '\n'
 			<< RM3("  CHIRAL-CENTER RESTRAINT       (A**3) : ", 7, 3) << Ff(ls_restr, key("type") == "n_chiral_restr", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_chiral_restr", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_chiral_restr", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3("  NON-BONDED CONTACT RESTRAINTS.") << std::endl
+			<< RM3("") << '\n'
+			<< RM3("  NON-BONDED CONTACT RESTRAINTS.") << '\n'
 			<< RM3("   SINGLE TORSION CONTACT          (A) : ", 7, 3) << Ff(ls_restr, key("type") == "n_singtor_nbd", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_singtor_nbd", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_singtor_nbd", "dev_ideal_target") << '\n'
 			<< RM3("   MULTIPLE TORSION CONTACT        (A) : ", 7, 3) << Ff(ls_restr, key("type") == "n_multtor_nbd", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_multtor_nbd", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_multtor_nbd", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.    RMS     SIGMA") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ISOTROPIC THERMAL FACTOR RESTRAINTS.    RMS     SIGMA") << '\n'
 			<< RM3("  SUGAR-BASE BONDS             (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "n_sugar_bond_it", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_sugar_bond_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_sugar_bond_it", "dev_ideal_target") << '\n'
 			<< RM3("  SUGAR-BASE ANGLES            (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "n_sugar_angle_it", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_sugar_angle_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_sugar_angle_it", "dev_ideal_target") << '\n'
 			<< RM3("  PHOSPHATE BONDS              (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "n_phos_bond_it", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_phos_bond_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_phos_bond_it", "dev_ideal_target") << '\n'
 			<< RM3("  PHOSPHATE BOND ANGLE, H-BOND (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "n_phos_angle_it", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "n_phos_angle_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "n_phos_angle_it", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl;
+			<< RM3("") << '\n';
 }
 
 void WriteRemark3ProlSQ(std::ostream &pdbFile, const datablock &db)
@@ -2011,114 +2011,114 @@ void WriteRemark3ProlSQ(std::ostream &pdbFile, const datablock &db)
 	auto analyze = db["refine_analyze"].front();
 	auto &ls_restr = db["refine_ls_restr"];
 
-	pdbFile << RM3("") << std::endl
-			<< RM3(" DATA USED IN REFINEMENT.") << std::endl
+	pdbFile << RM3("") << '\n'
+			<< RM3(" DATA USED IN REFINEMENT.") << '\n'
 
-			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << std::endl
-			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << std::endl
-			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << std::endl
-			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << std::endl
-			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << std::endl
+			<< RM3("  RESOLUTION RANGE HIGH (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_high") << '\n'
+			<< RM3("  RESOLUTION RANGE LOW  (ANGSTROMS) : ", 5, 2) << Ff(refine, "ls_d_res_low") << '\n'
+			<< RM3("  DATA CUTOFF            (SIGMA(F)) : ", 6, 3) << Ff(refine, "pdbx_ls_sigma_F") << '\n'
+			<< RM3("  COMPLETENESS FOR RANGE        (%) : ", 5, 2) << Ff(refine, "ls_percent_reflns_obs") << '\n'
+			<< RM3("  NUMBER OF REFLECTIONS             : ", 12, 6) << Fi(refine, "ls_number_reflns_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << std::endl
-			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << std::endl
-			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 3) << Ff(refine, "ls_R_factor_obs") << std::endl
-			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << std::endl
-			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT TO DATA USED IN REFINEMENT.") << '\n'
+			<< RM3("  CROSS-VALIDATION METHOD          : ") << Fs(refine, "pdbx_ls_cross_valid_method") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SELECTION  : ") << Fs(refine, "pdbx_R_Free_selection_details") << '\n'
+			<< RM3("  R VALUE     (WORKING + TEST SET) : ", 7, 3) << Ff(refine, "ls_R_factor_obs") << '\n'
+			<< RM3("  R VALUE            (WORKING SET) : ", 7, 3) << Ff(refine, "ls_R_factor_R_work") << '\n'
+			<< RM3("  FREE R VALUE                     : ", 7, 3) << Ff(refine, "ls_R_factor_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE   (%) : ", 7, 3) << Ff(refine, "ls_percent_reflns_R_free") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT      : ", 12, 6) << Fi(refine, "ls_number_reflns_R_free") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << std::endl
-			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ") << Fs(refine, "ls_R_factor_all") << std::endl
-			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ") << Fs(pdbx_refine, "R_factor_obs_no_cutoff") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" FIT/AGREEMENT OF MODEL WITH ALL DATA.") << '\n'
+			<< RM3("  R VALUE   (WORKING + TEST SET, NO CUTOFF) : ") << Fs(refine, "ls_R_factor_all") << '\n'
+			<< RM3("  R VALUE          (WORKING SET, NO CUTOFF) : ") << Fs(pdbx_refine, "R_factor_obs_no_cutoff") << '\n'
 
-			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_factor_no_cutoff") << std::endl
-			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << std::endl
-			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << std::endl
-			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ") << Fs(refine, "ls_number_reflns_all") << std::endl
+			<< RM3("  FREE R VALUE                  (NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_factor_no_cutoff") << '\n'
+			<< RM3("  FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_val_test_set_size_perc_no_cutoff") << '\n'
+			<< RM3("  FREE R VALUE TEST SET COUNT   (NO CUTOFF) : ") << Fs(pdbx_refine, "free_R_val_test_set_ct_no_cutoff") << '\n'
+			<< RM3("  TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : ") << Fs(refine, "ls_number_reflns_all") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << std::endl
-			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << std::endl
-			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << std::endl
-			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << std::endl
-			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << std::endl
-			//			<< RM3("  ALL ATOMS                : ", 12, 6)	<< Fi(hist, "pdbx_number_atoms_protein") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.") << '\n'
+			<< RM3("  PROTEIN ATOMS            : ", 12, 6) << Fi(hist, "pdbx_number_atoms_protein") << '\n'
+			<< RM3("  NUCLEIC ACID ATOMS       : ", 12, 6) << Fi(hist, "pdbx_number_atoms_nucleic_acid") << '\n'
+			<< RM3("  HETEROGEN ATOMS          : ", 12, 6) << Fi(hist, "pdbx_number_atoms_ligand") << '\n'
+			<< RM3("  SOLVENT ATOMS            : ", 12, 6) << Fi(hist, "number_atoms_solvent") << '\n'
+			//			<< RM3("  ALL ATOMS                : ", 12, 6)	<< Fi(hist, "pdbx_number_atoms_protein") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" B VALUES.") << std::endl
-			//			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << std::endl
-			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << std::endl
-			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << std::endl
-			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << std::endl
-			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << std::endl
-			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << std::endl
-			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << std::endl
-			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << std::endl
-			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << std::endl
-			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" B VALUES.") << '\n'
+			//			<< RM3("  B VALUE TYPE                      : ", 7, 2)	<< Fs(refine, "pdbx_TLS_residual_ADP_flag") << '\n'
+			<< RM3("  FROM WILSON PLOT           (A**2) : ", 7, 2) << Ff(reflns, "B_iso_Wilson_estimate") << '\n'
+			<< RM3("  MEAN B VALUE      (OVERALL, A**2) : ", 7, 2) << Ff(refine, "B_iso_mean") << '\n'
+			<< RM3("  OVERALL ANISOTROPIC B VALUE.") << '\n'
+			<< RM3("   B11 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][1]") << '\n'
+			<< RM3("   B22 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][2]") << '\n'
+			<< RM3("   B33 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[3][3]") << '\n'
+			<< RM3("   B12 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][2]") << '\n'
+			<< RM3("   B13 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[1][3]") << '\n'
+			<< RM3("   B23 (A**2) : ", -7, 2) << Ff(refine, "aniso_B[2][3]") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" ESTIMATED COORDINATE ERROR.") << std::endl
-			<< RM3("  ESD FROM LUZZATI PLOT        (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_obs") << std::endl
-			<< RM3("  ESD FROM SIGMAA              (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_obs") << std::endl
-			<< RM3("  LOW RESOLUTION CUTOFF        (A) : ", 7, 2) << Ff(analyze, "Luzzati_d_res_low_obs") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" ESTIMATED COORDINATE ERROR.") << '\n'
+			<< RM3("  ESD FROM LUZZATI PLOT        (A) : ", 7, 2) << Ff(analyze, "Luzzati_coordinate_error_obs") << '\n'
+			<< RM3("  ESD FROM SIGMAA              (A) : ", 7, 2) << Ff(analyze, "Luzzati_sigma_a_obs") << '\n'
+			<< RM3("  LOW RESOLUTION CUTOFF        (A) : ", 7, 2) << Ff(analyze, "Luzzati_d_res_low_obs") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << std::endl
-			<< RM3("  DISTANCE RESTRAINTS.                    RMS    SIGMA") << std::endl
+			<< RM3("") << '\n'
+			<< RM3(" RMS DEVIATIONS FROM IDEAL VALUES.") << '\n'
+			<< RM3("  DISTANCE RESTRAINTS.                    RMS    SIGMA") << '\n'
 			<< RM3("   BOND LENGTH                     (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_bond_d", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_bond_d", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_bond_d", "dev_ideal_target") << '\n'
 			<< RM3("   ANGLE DISTANCE                  (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_angle_d", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_angle_d", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_angle_d", "dev_ideal_target") << '\n'
 			<< RM3("   INTRAPLANAR 1-4 DISTANCE        (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_planar_d", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_planar_d", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_planar_d", "dev_ideal_target") << '\n'
 			<< RM3("   H-BOND OR METAL COORDINATION    (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_hb_or_metal_coord", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_hb_or_metal_coord", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_hb_or_metal_coord", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
+			<< RM3("") << '\n'
 			<< RM3("  PLANE RESTRAINT                 (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_plane_restr", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_plane_restr", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_plane_restr", "dev_ideal_target") << '\n'
 			<< RM3("  CHIRAL-CENTER RESTRAINT      (A**3) : ", 7, 3) << Ff(ls_restr, key("type") == "p_chiral_restr", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_chiral_restr", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_chiral_restr", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3("  NON-BONDED CONTACT RESTRAINTS.") << std::endl
+			<< RM3("") << '\n'
+			<< RM3("  NON-BONDED CONTACT RESTRAINTS.") << '\n'
 			<< RM3("   SINGLE TORSION                  (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_singtor_nbd", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_singtor_nbd", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_singtor_nbd", "dev_ideal_target") << '\n'
 			<< RM3("   MULTIPLE TORSION                (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_multtor_nbd", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_multtor_nbd", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_multtor_nbd", "dev_ideal_target") << '\n'
 			<< RM3("   H-BOND (X...Y)                  (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_xyhbond_nbd", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_xyhbond_nbd", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_xyhbond_nbd", "dev_ideal_target") << '\n'
 			<< RM3("   H-BOND (X-H...Y)                (A) : ", 7, 3) << Ff(ls_restr, key("type") == "p_xhyhbond_nbd", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_xhyhbond_nbd", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_xhyhbond_nbd", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3("  CONFORMATIONAL TORSION ANGLE RESTRAINTS.") << std::endl
+			<< RM3("") << '\n'
+			<< RM3("  CONFORMATIONAL TORSION ANGLE RESTRAINTS.") << '\n'
 			<< RM3("   SPECIFIED                 (DEGREES) : ", 7, 3) << Ff(ls_restr, key("type") == "p_special_tor", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_special_tor", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_special_tor", "dev_ideal_target") << '\n'
 			<< RM3("   PLANAR                    (DEGREES) : ", 7, 3) << Ff(ls_restr, key("type") == "p_planar_tor", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_planar_tor", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_planar_tor", "dev_ideal_target") << '\n'
 			<< RM3("   STAGGERED                 (DEGREES) : ", 7, 3) << Ff(ls_restr, key("type") == "p_staggered_tor", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_staggered_tor", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_staggered_tor", "dev_ideal_target") << '\n'
 			<< RM3("   TRANSVERSE                (DEGREES) : ", 7, 3) << Ff(ls_restr, key("type") == "p_transverse_tor", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_transverse_tor", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_transverse_tor", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl
-			<< RM3("  ISOTROPIC THERMAL FACTOR RESTRAINTS. RMS SIGMA") << std::endl
+			<< RM3("") << '\n'
+			<< RM3("  ISOTROPIC THERMAL FACTOR RESTRAINTS. RMS SIGMA") << '\n'
 			<< RM3("   MAIN-CHAIN BOND              (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "p_mcbond_it", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_mcbond_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_mcbond_it", "dev_ideal_target") << '\n'
 			<< RM3("   MAIN-CHAIN ANGLE             (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "p_mcangle_it", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_mcangle_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_mcangle_it", "dev_ideal_target") << '\n'
 			<< RM3("   SIDE-CHAIN BOND              (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "p_scbond_it", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_scbond_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_scbond_it", "dev_ideal_target") << '\n'
 			<< RM3("   SIDE-CHAIN ANGLE             (A**2) : ", 7, 3) << Ff(ls_restr, key("type") == "p_scangle_it", "dev_ideal") << " ; "
-			<< Ff(ls_restr, key("type") == "p_scangle_it", "dev_ideal_target") << std::endl
+			<< Ff(ls_restr, key("type") == "p_scangle_it", "dev_ideal_target") << '\n'
 
-			<< RM3("") << std::endl;
+			<< RM3("") << '\n';
 }
 
 void WriteRemark3(std::ostream &pdbFile, const datablock &db)
@@ -2154,16 +2154,16 @@ void WriteRemark3(std::ostream &pdbFile, const datablock &db)
 
 	if (not program.empty())
 	{
-		pdbFile << RM3("") << std::endl
-				<< RM3("REFINEMENT.") << std::endl;
+		pdbFile << RM3("") << '\n'
+				<< RM3("REFINEMENT.") << '\n';
 
 		int l = 0;
 		for (auto s : word_wrap(program, 52))
-			pdbFile << RM3(++l == 1 ? "  PROGRAM     : " : "                ") << s << std::endl;
+			pdbFile << RM3(++l == 1 ? "  PROGRAM     : " : "                ") << s << '\n';
 
 		l = 0;
 		for (auto s : word_wrap(authors, 52))
-			pdbFile << RM3(++l == 1 ? "  AUTHORS     : " : "                ") << s << std::endl;
+			pdbFile << RM3(++l == 1 ? "  AUTHORS     : " : "                ") << s << '\n';
 	}
 
 	if (not db["refine"].empty())
@@ -2259,49 +2259,49 @@ void WriteRemark200(std::ostream &pdbFile, const datablock &db)
 			if (type.empty())
 				type = "NULL";
 
-			pdbFile << RM("") << std::endl
-					<< RM("EXPERIMENTAL DETAILS") << std::endl
-					<< RM(" EXPERIMENT TYPE                : ") << Fs(exptl, "method") << std::endl
-					<< RM(" DATE OF DATA COLLECTION        : ") << date << std::endl
-					<< RM(" TEMPERATURE           (KELVIN) : ", 5, 1) << Ff(diffrn, "ambient_temp") << std::endl
-					<< RM(" PH                             : ", 4, 1) << Ff(exptl_crystal_grow, "ph") << std::endl
-					<< RM(" NUMBER OF CRYSTALS USED        : ") << Fi(exptl, "crystals_number") << std::endl
-					<< RM("") << std::endl
-					<< RM(" SYNCHROTRON              (Y/N) : ") << synchrotron << std::endl
-					<< RM(" RADIATION SOURCE               : ") << source << std::endl
-					<< RM(" BEAMLINE                       : ") << Fs(diffrn_source, "pdbx_synchrotron_beamline") << std::endl
-					<< RM(" X-RAY GENERATOR MODEL          : ") << type << std::endl
-					<< RM(" MONOCHROMATIC OR LAUE    (M/L) : ") << Fs(diffrn_radiation, "pdbx_monochromatic_or_laue_m_l") << std::endl
-					<< RM(" WAVELENGTH OR RANGE        (A) : ", 7, 4) << Ff(diffrn_radiation_wavelength, "wavelength") << std::endl
-					<< RM(" MONOCHROMATOR                  : ") << Fs(diffrn_radiation, "monochromator") << std::endl
-					<< RM(" OPTICS                         : ") << Fs(diffrn_detector, "details") << std::endl
-					<< RM("") << std::endl
-					<< RM(" DETECTOR TYPE                  : ") << Fs(diffrn_detector, "detector") << std::endl
-					<< RM(" DETECTOR MANUFACTURER          : ") << Fs(diffrn_detector, "type") << std::endl
-					<< RM(" INTENSITY-INTEGRATION SOFTWARE : ") << iis << std::endl
-					<< RM(" DATA SCALING SOFTWARE          : ") << dss << std::endl
-					<< RM(" ") << std::endl
-					<< RM(" NUMBER OF UNIQUE REFLECTIONS   : ") << Fi(reflns, "number_obs") << std::endl
-					<< RM(" RESOLUTION RANGE HIGH      (A) : ", 7, 3) << Ff(reflns, "d_resolution_high") << std::endl
-					<< RM(" RESOLUTION RANGE LOW       (A) : ", 7, 3) << Ff(reflns, "d_resolution_low") << std::endl
-					<< RM(" REJECTION CRITERIA  (SIGMA(I)) : ", 7, 3) << Ff(reflns, "observed_criterion_sigma_I") << std::endl
-					<< RM("") << std::endl
-					<< RM("OVERALL.") << std::endl
-					<< RM(" COMPLETENESS FOR RANGE     (%) : ", 7, 1) << Ff(reflns, "percent_possible_obs") << std::endl
-					<< RM(" DATA REDUNDANCY                : ", 7, 3) << Ff(reflns, "pdbx_redundancy") << std::endl
-					<< RM(" R MERGE                    (I) : ", 7, 5) << Ff(reflns, "pdbx_Rmerge_I_obs") << std::endl
-					<< RM(" R SYM                      (I) : ", 7, 5) << Ff(reflns, "pdbx_Rsym_value") << std::endl
-					<< RM(" <I/SIGMA(I)> FOR THE DATA SET  : ", 7, 4) << Ff(reflns, "pdbx_netI_over_sigmaI") << std::endl
-					<< RM("") << std::endl
-					<< RM("IN THE HIGHEST RESOLUTION SHELL.") << std::endl
-					<< RM(" HIGHEST RESOLUTION SHELL, RANGE HIGH (A) : ", 7, 2) << Ff(reflns_shell, "d_res_high") << std::endl
-					<< RM(" HIGHEST RESOLUTION SHELL, RANGE LOW  (A) : ", 7, 2) << Ff(reflns_shell, "d_res_low") << std::endl
-					<< RM(" COMPLETENESS FOR SHELL     (%) : ", 7, 1) << Ff(reflns_shell, "percent_possible_all") << std::endl
-					<< RM(" DATA REDUNDANCY IN SHELL       : ", 7, 2) << Ff(reflns_shell, "pdbx_redundancy") << std::endl
-					<< RM(" R MERGE FOR SHELL          (I) : ", 7, 5) << Ff(reflns_shell, "Rmerge_I_obs") << std::endl
-					<< RM(" R SYM FOR SHELL            (I) : ", 7, 5) << Ff(reflns_shell, "pdbx_Rsym_value") << std::endl
-					<< RM(" <I/SIGMA(I)> FOR SHELL         : ", 7, 3) << Ff(reflns_shell, "meanI_over_sigI_obs") << std::endl
-					<< RM("") << std::endl;
+			pdbFile << RM("") << '\n'
+					<< RM("EXPERIMENTAL DETAILS") << '\n'
+					<< RM(" EXPERIMENT TYPE                : ") << Fs(exptl, "method") << '\n'
+					<< RM(" DATE OF DATA COLLECTION        : ") << date << '\n'
+					<< RM(" TEMPERATURE           (KELVIN) : ", 5, 1) << Ff(diffrn, "ambient_temp") << '\n'
+					<< RM(" PH                             : ", 4, 1) << Ff(exptl_crystal_grow, "ph") << '\n'
+					<< RM(" NUMBER OF CRYSTALS USED        : ") << Fi(exptl, "crystals_number") << '\n'
+					<< RM("") << '\n'
+					<< RM(" SYNCHROTRON              (Y/N) : ") << synchrotron << '\n'
+					<< RM(" RADIATION SOURCE               : ") << source << '\n'
+					<< RM(" BEAMLINE                       : ") << Fs(diffrn_source, "pdbx_synchrotron_beamline") << '\n'
+					<< RM(" X-RAY GENERATOR MODEL          : ") << type << '\n'
+					<< RM(" MONOCHROMATIC OR LAUE    (M/L) : ") << Fs(diffrn_radiation, "pdbx_monochromatic_or_laue_m_l") << '\n'
+					<< RM(" WAVELENGTH OR RANGE        (A) : ", 7, 4) << Ff(diffrn_radiation_wavelength, "wavelength") << '\n'
+					<< RM(" MONOCHROMATOR                  : ") << Fs(diffrn_radiation, "monochromator") << '\n'
+					<< RM(" OPTICS                         : ") << Fs(diffrn_detector, "details") << '\n'
+					<< RM("") << '\n'
+					<< RM(" DETECTOR TYPE                  : ") << Fs(diffrn_detector, "detector") << '\n'
+					<< RM(" DETECTOR MANUFACTURER          : ") << Fs(diffrn_detector, "type") << '\n'
+					<< RM(" INTENSITY-INTEGRATION SOFTWARE : ") << iis << '\n'
+					<< RM(" DATA SCALING SOFTWARE          : ") << dss << '\n'
+					<< RM(" ") << '\n'
+					<< RM(" NUMBER OF UNIQUE REFLECTIONS   : ") << Fi(reflns, "number_obs") << '\n'
+					<< RM(" RESOLUTION RANGE HIGH      (A) : ", 7, 3) << Ff(reflns, "d_resolution_high") << '\n'
+					<< RM(" RESOLUTION RANGE LOW       (A) : ", 7, 3) << Ff(reflns, "d_resolution_low") << '\n'
+					<< RM(" REJECTION CRITERIA  (SIGMA(I)) : ", 7, 3) << Ff(reflns, "observed_criterion_sigma_I") << '\n'
+					<< RM("") << '\n'
+					<< RM("OVERALL.") << '\n'
+					<< RM(" COMPLETENESS FOR RANGE     (%) : ", 7, 1) << Ff(reflns, "percent_possible_obs") << '\n'
+					<< RM(" DATA REDUNDANCY                : ", 7, 3) << Ff(reflns, "pdbx_redundancy") << '\n'
+					<< RM(" R MERGE                    (I) : ", 7, 5) << Ff(reflns, "pdbx_Rmerge_I_obs") << '\n'
+					<< RM(" R SYM                      (I) : ", 7, 5) << Ff(reflns, "pdbx_Rsym_value") << '\n'
+					<< RM(" <I/SIGMA(I)> FOR THE DATA SET  : ", 7, 4) << Ff(reflns, "pdbx_netI_over_sigmaI") << '\n'
+					<< RM("") << '\n'
+					<< RM("IN THE HIGHEST RESOLUTION SHELL.") << '\n'
+					<< RM(" HIGHEST RESOLUTION SHELL, RANGE HIGH (A) : ", 7, 2) << Ff(reflns_shell, "d_res_high") << '\n'
+					<< RM(" HIGHEST RESOLUTION SHELL, RANGE LOW  (A) : ", 7, 2) << Ff(reflns_shell, "d_res_low") << '\n'
+					<< RM(" COMPLETENESS FOR SHELL     (%) : ", 7, 1) << Ff(reflns_shell, "percent_possible_all") << '\n'
+					<< RM(" DATA REDUNDANCY IN SHELL       : ", 7, 2) << Ff(reflns_shell, "pdbx_redundancy") << '\n'
+					<< RM(" R MERGE FOR SHELL          (I) : ", 7, 5) << Ff(reflns_shell, "Rmerge_I_obs") << '\n'
+					<< RM(" R SYM FOR SHELL            (I) : ", 7, 5) << Ff(reflns_shell, "pdbx_Rsym_value") << '\n'
+					<< RM(" <I/SIGMA(I)> FOR SHELL         : ", 7, 3) << Ff(reflns_shell, "meanI_over_sigI_obs") << '\n'
+					<< RM("") << '\n';
 
 			struct
 			{
@@ -2337,7 +2337,7 @@ void WriteRemark200(std::ostream &pdbFile, const datablock &db)
 	catch (const std::exception &ex)
 	{
 		if (VERBOSE >= 0)
-			std::cerr << ex.what() << std::endl;
+			std::cerr << ex.what() << '\n';
 	}
 }
 
@@ -2353,11 +2353,11 @@ void WriteRemark280(std::ostream &pdbFile, const datablock &db)
 			auto exptl_crystal_grow = db["exptl_crystal_grow"].find_first(key("crystal_id") == crystal_id);
 
 			pdbFile
-				<< RM("") << std::endl
-				<< RM("CRYSTAL") << std::endl
-				<< RM("SOLVENT CONTENT, VS   (%): ", 6, 2) << Ff(exptl_crystal, "density_percent_sol") << std::endl
-				<< RM("MATTHEWS COEFFICIENT, VM (ANGSTROMS**3/DA): ", 6, 2) << Ff(exptl_crystal, "density_Matthews") << std::endl
-				<< RM("") << std::endl;
+				<< RM("") << '\n'
+				<< RM("CRYSTAL") << '\n'
+				<< RM("SOLVENT CONTENT, VS   (%): ", 6, 2) << Ff(exptl_crystal, "density_percent_sol") << '\n'
+				<< RM("MATTHEWS COEFFICIENT, VM (ANGSTROMS**3/DA): ", 6, 2) << Ff(exptl_crystal, "density_Matthews") << '\n'
+				<< RM("") << '\n';
 
 			std::vector<std::string> conditions;
 			auto add = [&conditions](const std::string c)
@@ -2398,7 +2398,7 @@ void WriteRemark280(std::ostream &pdbFile, const datablock &db)
 	catch (const std::exception &ex)
 	{
 		if (VERBOSE >= 0)
-			std::cerr << ex.what() << std::endl;
+			std::cerr << ex.what() << '\n';
 	}
 }
 
@@ -2424,16 +2424,16 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 
 	// write out the mandatory REMARK 300 first
 
-	pdbFile << RM<300>("") << std::endl
-			<< RM<300>("BIOMOLECULE: ") << join(biomolecules, ", ") << std::endl
-			<< RM<300>("SEE REMARK 350 FOR THE AUTHOR PROVIDED AND/OR PROGRAM") << std::endl
-			<< RM<300>("GENERATED ASSEMBLY INFORMATION FOR THE STRUCTURE IN") << std::endl
-			<< RM<300>("THIS ENTRY. THE REMARK MAY ALSO PROVIDE INFORMATION ON") << std::endl
-			<< RM<300>("BURIED SURFACE AREA.") << std::endl;
+	pdbFile << RM<300>("") << '\n'
+			<< RM<300>("BIOMOLECULE: ") << join(biomolecules, ", ") << '\n'
+			<< RM<300>("SEE REMARK 350 FOR THE AUTHOR PROVIDED AND/OR PROGRAM") << '\n'
+			<< RM<300>("GENERATED ASSEMBLY INFORMATION FOR THE STRUCTURE IN") << '\n'
+			<< RM<300>("THIS ENTRY. THE REMARK MAY ALSO PROVIDE INFORMATION ON") << '\n'
+			<< RM<300>("BURIED SURFACE AREA.") << '\n';
 
 	if (not details.empty())
 	{
-		pdbFile << RM<300>("REMARK:") << std::endl;
+		pdbFile << RM<300>("REMARK:") << '\n';
 
 		for (auto detail : details)
 			WriteOneContinuedLine(pdbFile, "REMARK 300", 0, detail);
@@ -2441,31 +2441,31 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 
 	typedef RM<350> RM;
 
-	pdbFile << RM("") << std::endl
-			<< RM("COORDINATES FOR A COMPLETE MULTIMER REPRESENTING THE KNOWN") << std::endl
-			<< RM("BIOLOGICALLY SIGNIFICANT OLIGOMERIZATION STATE OF THE") << std::endl
-			<< RM("MOLECULE CAN BE GENERATED BY APPLYING BIOMT TRANSFORMATIONS") << std::endl
-			<< RM("GIVEN BELOW.  BOTH NON-CRYSTALLOGRAPHIC AND") << std::endl
-			<< RM("CRYSTALLOGRAPHIC OPERATIONS ARE GIVEN.") << std::endl;
+	pdbFile << RM("") << '\n'
+			<< RM("COORDINATES FOR A COMPLETE MULTIMER REPRESENTING THE KNOWN") << '\n'
+			<< RM("BIOLOGICALLY SIGNIFICANT OLIGOMERIZATION STATE OF THE") << '\n'
+			<< RM("MOLECULE CAN BE GENERATED BY APPLYING BIOMT TRANSFORMATIONS") << '\n'
+			<< RM("GIVEN BELOW.  BOTH NON-CRYSTALLOGRAPHIC AND") << '\n'
+			<< RM("CRYSTALLOGRAPHIC OPERATIONS ARE GIVEN.") << '\n';
 
 	for (auto bm : c1)
 	{
 		std::string id, detail, method, oligomer;
 		cif::tie(id, detail, method, oligomer) = bm.get("id", "details", "method_details", "oligomeric_details");
 
-		pdbFile << RM("") << std::endl
-				<< RM("BIOMOLECULE: ") << id << std::endl;
+		pdbFile << RM("") << '\n'
+				<< RM("BIOMOLECULE: ") << id << '\n';
 
 		to_upper(oligomer);
 
 		if (detail == "author_defined_assembly" or detail == "author_and_software_defined_assembly")
-			pdbFile << RM("AUTHOR DETERMINED BIOLOGICAL UNIT: ") << oligomer << std::endl;
+			pdbFile << RM("AUTHOR DETERMINED BIOLOGICAL UNIT: ") << oligomer << '\n';
 
 		if (detail == "software_defined_assembly" or detail == "author_and_software_defined_assembly")
-			pdbFile << RM("SOFTWARE DETERMINED QUATERNARY STRUCTURE: ") << oligomer << std::endl;
+			pdbFile << RM("SOFTWARE DETERMINED QUATERNARY STRUCTURE: ") << oligomer << '\n';
 
 		if (not method.empty())
-			pdbFile << RM("SOFTWARE USED: ") << method << std::endl;
+			pdbFile << RM("SOFTWARE USED: ") << method << '\n';
 
 		for (std::string type : { "ABSA (A^2)", "SSA (A^2)", "MORE" })
 		{
@@ -2474,11 +2474,11 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 				std::string value = prop["value"].as<std::string>();
 
 				if (iequals(type, "ABSA (A^2)"))
-					pdbFile << RM("TOTAL BURIED SURFACE AREA: ") << value << " ANGSTROM**2" << std::endl;
+					pdbFile << RM("TOTAL BURIED SURFACE AREA: ") << value << " ANGSTROM**2\n";
 				else if (iequals(type, "SSA (A^2)"))
-					pdbFile << RM("SURFACE AREA OF THE COMPLEX: ") << value << " ANGSTROM**2" << std::endl;
+					pdbFile << RM("SURFACE AREA OF THE COMPLEX: ") << value << " ANGSTROM**2\n";
 				else if (iequals(type, "MORE"))
-					pdbFile << RM("CHANGE IN SOLVENT FREE ENERGY: ") << value << " KCAL/MOL" << std::endl;
+					pdbFile << RM("CHANGE IN SOLVENT FREE ENERGY: ") << value << " KCAL/MOL\n";
 			}
 		}
 
@@ -2492,7 +2492,7 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 			auto asyms = split<std::string>(asym_id_list, ",");
 
 			std::vector<std::string> chains = MapAsymIDs2ChainIDs(asyms, db);
-			pdbFile << RM("APPLY THE FOLLOWING TO CHAINS: ") << join(chains, ", ") << std::endl;
+			pdbFile << RM("APPLY THE FOLLOWING TO CHAINS: ") << join(chains, ", ") << '\n';
 
 			for (auto oper_id : split<std::string>(oper_id_list, ",", true))
 			{
@@ -2503,19 +2503,19 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[1][2]")
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[1][3]")
 						<< SEP(" ", -14, 5) << Ff(r, "vector[1]")
-						<< std::endl
+						<< '\n'
 						<< RM("  BIOMT2 ", -3) << Fs(r, "id")
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[2][1]")
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[2][2]")
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[2][3]")
 						<< SEP(" ", -14, 5) << Ff(r, "vector[2]")
-						<< std::endl
+						<< '\n'
 						<< RM("  BIOMT3 ", -3) << Fs(r, "id")
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[3][1]")
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[3][2]")
 						<< SEP(" ", -9, 6) << Ff(r, "matrix[3][3]")
 						<< SEP(" ", -14, 5) << Ff(r, "vector[3]")
-						<< std::endl;
+						<< '\n';
 			}
 		}
 	}
@@ -2569,13 +2569,13 @@ void WriteRemark465(std::ostream &pdbFile, const datablock &db)
 	{
 		if (first)
 		{
-			pdbFile << RM("") << std::endl
-					<< RM("MISSING RESIDUES") << std::endl
-					<< RM("THE FOLLOWING RESIDUES WERE NOT LOCATED IN THE") << std::endl
-					<< RM("EXPERIMENT. (M=MODEL NUMBER; RES=RESIDUE NAME; C=CHAIN") << std::endl
-					<< RM("IDENTIFIER; SSSEQ=SEQUENCE NUMBER; I=INSERTION CODE.)") << std::endl
-					<< RM("") << std::endl
-					<< RM("  M RES C SSSEQI") << std::endl;
+			pdbFile << RM("") << '\n'
+					<< RM("MISSING RESIDUES") << '\n'
+					<< RM("THE FOLLOWING RESIDUES WERE NOT LOCATED IN THE") << '\n'
+					<< RM("EXPERIMENT. (M=MODEL NUMBER; RES=RESIDUE NAME; C=CHAIN") << '\n'
+					<< RM("IDENTIFIER; SSSEQ=SEQUENCE NUMBER; I=INSERTION CODE.)") << '\n'
+					<< RM("") << '\n'
+					<< RM("  M RES C SSSEQI") << '\n';
 			first = false;
 		}
 
@@ -2585,7 +2585,7 @@ void WriteRemark465(std::ostream &pdbFile, const datablock &db)
 		cif::tie(modelNr, resName, chainID, iCode, seqNr) =
 			r.get("PDB_model_num", "auth_comp_id", "auth_asym_id", "PDB_ins_code", "auth_seq_id");
 
-		pdbFile << cif::format("REMARK 465 %3.3s %3.3s %1.1s %5d%1.1s", modelNr, resName, chainID, seqNr, iCode) << std::endl;
+		pdbFile << cif::format("REMARK 465 %3.3s %3.3s %1.1s %5d%1.1s", modelNr, resName, chainID, seqNr, iCode) << '\n';
 	}
 }
 
@@ -2616,12 +2616,12 @@ void WriteRemark470(std::ostream &pdbFile, const datablock &db)
 
 	if (not data.empty())
 	{
-		pdbFile << RM("") << std::endl
-				<< RM("MISSING ATOM") << std::endl
-				<< RM("THE FOLLOWING RESIDUES HAVE MISSING ATOMS (M=MODEL NUMBER;") << std::endl
-				<< RM("RES=RESIDUE NAME; C=CHAIN IDENTIFIER; SSEQ=SEQUENCE NUMBER;") << std::endl
-				<< RM("I=INSERTION CODE):") << std::endl
-				<< RM("  M RES CSSEQI  ATOMS") << std::endl;
+		pdbFile << RM("") << '\n'
+				<< RM("MISSING ATOM") << '\n'
+				<< RM("THE FOLLOWING RESIDUES HAVE MISSING ATOMS (M=MODEL NUMBER;") << '\n'
+				<< RM("RES=RESIDUE NAME; C=CHAIN IDENTIFIER; SSEQ=SEQUENCE NUMBER;") << '\n'
+				<< RM("I=INSERTION CODE):") << '\n'
+				<< RM("  M RES CSSEQI  ATOMS") << '\n';
 
 		for (auto &a : data)
 		{
@@ -2640,7 +2640,7 @@ void WriteRemark470(std::ostream &pdbFile, const datablock &db)
 					a.second.pop_front();
 				}
 
-				pdbFile << std::endl;
+				pdbFile << '\n';
 			}
 		}
 	}
@@ -2656,10 +2656,10 @@ void WriteRemark800(std::ostream &pdbFile, const datablock &db)
 	int nr = 0;
 	for (auto r : db["struct_site"])
 	{
-		pdbFile << "REMARK 800" << std::endl;
+		pdbFile << "REMARK 800\n";
 		if (++nr == 1)
 		{
-			pdbFile << "REMARK 800 SITE" << std::endl;
+			pdbFile << "REMARK 800 SITE\n";
 			++nr;
 		}
 
@@ -2671,7 +2671,7 @@ void WriteRemark800(std::ostream &pdbFile, const datablock &db)
 		for (auto l : { "SITE_IDENTIFIER: " + ident, "EVIDENCE_CODE: " + code, "SITE_DESCRIPTION: " + desc })
 		{
 			for (auto s : word_wrap(l, 69))
-				pdbFile << "REMARK 800 " << s << std::endl;
+				pdbFile << "REMARK 800 " << s << '\n';
 		};
 	}
 }
@@ -2732,16 +2732,16 @@ int WritePrimaryStructure(std::ostream &pdbFile, const datablock &db)
 				pdbFile << cif::format(
 							   "DBREF1 %4.4s %1.1s %4.4s%1.1s %4.4s%1.1s %-6.6s               %-20.20s",
 							   idCode, chainID, seqBegin, insertBegin, seqEnd, insertEnd, db_name, db_code)
-						<< std::endl
+						<< '\n'
 						<< cif::format(
 							   "DBREF2 %4.4s %1.1s     %-22.22s     %10.10s  %10.10s",
 							   idCode, chainID, dbAccession, dbseqBegin, dbseqEnd)
-						<< std::endl;
+						<< '\n';
 			else
 				pdbFile << cif::format(
 							   "DBREF  %4.4s %1.1s %4.4s%1.1s %4.4s%1.1s %-6.6s %-8.8s %-12.12s %5.5s%1.1s %5.5s%1.1s",
 							   idCode, chainID, seqBegin, insertBegin, seqEnd, insertEnd, db_name, dbAccession, db_code, dbseqBegin, dbinsBeg, dbseqEnd, dbinsEnd)
-						<< std::endl;
+						<< '\n';
 		}
 	}
 
@@ -2761,7 +2761,7 @@ int WritePrimaryStructure(std::ostream &pdbFile, const datablock &db)
 					   "SEQADV %4.4s %3.3s %1.1s %4.4s%1.1s %-4.4s %-9.9s %3.3s %5.5s %-21.21s",
 					   idCode, resName, chainID, seqNum, iCode, database, dbAccession, dbRes, dbSeq, conflict)
 					   .str()
-				<< std::endl;
+				<< '\n';
 	}
 
 	// SEQRES
@@ -2790,7 +2790,7 @@ int WritePrimaryStructure(std::ostream &pdbFile, const datablock &db)
 			pdbFile << cif::format(
 						   "SEQRES %3d %1.1s %4d  %-51.51s          ",
 						   n++, std::string{ chainID }, seqresl[chainID], join(seq.begin(), seq.begin() + t, " "))
-					<< std::endl;
+					<< '\n';
 
 			++numSeq;
 
@@ -2811,7 +2811,7 @@ int WritePrimaryStructure(std::ostream &pdbFile, const datablock &db)
 					   "MODRES %4.4s %3.3s %1.1s %4.4s%1.1s %3.3s  %-41.41s",
 					   db.name(), resName, chainID, seqNum, iCode, stdRes, comment)
 					   .str()
-				<< std::endl;
+				<< '\n';
 	}
 
 	return numSeq;
@@ -2919,13 +2919,13 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 	}
 
 	if (VERBOSE > 1 and not missingHetNames.empty())
-		std::cerr << "Missing het name(s) for " << join(missingHetNames, ", ") << std::endl;
+		std::cerr << "Missing het name(s) for " << join(missingHetNames, ", ") << '\n';
 
 	for (auto h : hets)
 	{
 		if (h.water)
 			continue;
-		pdbFile << cif::format("HET    %3.3s  %c%4d%c  %5d", h.hetID, h.chainID, h.seqNum, h.iCode, h.numHetAtoms) << std::endl;
+		pdbFile << cif::format("HET    %3.3s  %c%4d%c  %5d", h.hetID, h.chainID, h.seqNum, h.iCode, h.numHetAtoms) << '\n';
 		++numHet;
 	}
 
@@ -2950,7 +2950,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 				{
 					if (ispunct(*e))
 					{
-						pdbFile << std::string(name.begin(), e) << std::endl;
+						pdbFile << std::string(name.begin(), e) << '\n';
 						name.erase(name.begin(), e);
 						done = true;
 						break;
@@ -2959,14 +2959,14 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 
 				if (not done)
 				{
-					pdbFile << std::string(name.begin(), name.begin() + 55) << std::endl;
+					pdbFile << std::string(name.begin(), name.begin() + 55) << '\n';
 					name.erase(name.begin(), name.begin() + 55);
 				}
 
 				continue;
 			}
 
-			pdbFile << name << std::endl;
+			pdbFile << name << '\n';
 			break;
 		}
 	}
@@ -3042,7 +3042,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 					{
 						if (ispunct(*e))
 						{
-							pdbFile << std::string(formula.begin(), e) << std::endl;
+							pdbFile << std::string(formula.begin(), e) << '\n';
 							formula.erase(formula.begin(), e);
 							done = true;
 							break;
@@ -3051,14 +3051,14 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 
 					if (not done)
 					{
-						pdbFile << std::string(formula.begin(), formula.begin() + 55) << std::endl;
+						pdbFile << std::string(formula.begin(), formula.begin() + 55) << '\n';
 						formula.erase(formula.begin(), formula.begin() + 55);
 					}
 
 					continue;
 				}
 
-				fs << formula << std::endl;
+				fs << formula << '\n';
 
 				formulas.push_back(fs.str());
 				break;
@@ -3101,7 +3101,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 		++numHelix;
 		pdbFile << cif::format("HELIX  %3d %3.3s %3.3s %1.1s %4d%1.1s %3.3s %1.1s %4d%1.1s%2d%-30.30s %5d",
 					   numHelix, pdbx_PDB_helix_id, beg_label_comp_id, beg_auth_asym_id, beg_auth_seq_id, pdbx_beg_PDB_ins_code, end_label_comp_id, end_auth_asym_id, end_auth_seq_id, pdbx_end_PDB_ins_code, pdbx_PDB_helix_class, details, pdbx_PDB_helix_length)
-				<< std::endl;
+				<< '\n';
 	}
 
 	for (auto r : db["struct_sheet"])
@@ -3136,7 +3136,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 					"pdbx_end_PDB_ins_code", "beg_auth_comp_id", "beg_auth_asym_id", "beg_auth_seq_id",
 					"end_auth_comp_id", "end_auth_asym_id", "end_auth_seq_id");
 
-				pdbFile << cif::format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d", rangeID1, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, 0) << std::endl;
+				pdbFile << cif::format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d", rangeID1, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, 0) << '\n';
 
 				first = false;
 			}
@@ -3155,7 +3155,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 
 			if (h.empty())
 			{
-				pdbFile << cif::format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d", rangeID2, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, sense) << std::endl;
+				pdbFile << cif::format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d", rangeID2, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, sense) << '\n';
 			}
 			else
 			{
@@ -3171,7 +3171,7 @@ std::tuple<int, int> WriteSecondaryStructure(std::ostream &pdbFile, const databl
 				pdbFile << cif::format("SHEET  %3.3s %3.3s%2d %3.3s %1.1s%4d%1.1s %3.3s %1.1s%4d%1.1s%2d "
 										"%-4.4s%3.3s %1.1s%4d%1.1s %-4.4s%3.3s %1.1s%4d%1.1s",
 							   rangeID2, sheetID, numStrands, initResName, initChainID, initSeqNum, initICode, endResName, endChainID, endSeqNum, endICode, sense, curAtom, curResName, curChainID, curResSeq, curICode, prevAtom, prevResName, prevChainID, prevResSeq, prevICode)
-						<< std::endl;
+						<< '\n';
 			}
 
 			++numSheet;
@@ -3207,7 +3207,7 @@ void WriteConnectivity(std::ostream &pdbFile, const datablock &db)
 		sym1 = cif2pdbSymmetry(sym1);
 		sym2 = cif2pdbSymmetry(sym2);
 
-		pdbFile << cif::format("SSBOND %3d CYS %1.1s %4d%1.1s   CYS %1.1s %4d%1.1s                       %6.6s %6.6s %5.2f", nr, chainID1, seqNum1, icode1, chainID2, seqNum2, icode2, sym1, sym2, Length) << std::endl;
+		pdbFile << cif::format("SSBOND %3d CYS %1.1s %4d%1.1s   CYS %1.1s %4d%1.1s                       %6.6s %6.6s %5.2f", nr, chainID1, seqNum1, icode1, chainID2, seqNum2, icode2, sym1, sym2, Length) << '\n';
 
 		++nr;
 	}
@@ -3239,7 +3239,7 @@ void WriteConnectivity(std::ostream &pdbFile, const datablock &db)
 		if (not Length.empty())
 			pdbFile << cif::format(" %5.2f", stod(Length));
 
-		pdbFile << std::endl;
+		pdbFile << '\n';
 	}
 
 	// CISPEP
@@ -3256,7 +3256,7 @@ void WriteConnectivity(std::ostream &pdbFile, const datablock &db)
 				"pdbx_PDB_model_num", "pdbx_omega_angle");
 
 		pdbFile << cif::format("CISPEP %3.3s %3.3s %1.1s %4d%1.1s   %3.3s %1.1s %4d%1.1s       %3.3s       %6.2f",
-			serNum, pep1, chainID1, seqNum1, icode1, pep2, chainID2, seqNum2, icode2, modNum, measure) << std::endl;
+			serNum, pep1, chainID1, seqNum1, icode1, pep2, chainID2, seqNum2, icode2, modNum, measure) << '\n';
 	}
 }
 
@@ -3302,7 +3302,7 @@ int WriteMiscellaneousFeatures(std::ostream &pdbFile, const datablock &db)
 					pdbFile << std::string(11, ' ');
 			}
 
-			pdbFile << std::endl;
+			pdbFile << '\n';
 			++nr;
 			++numSite;
 		}
@@ -3318,7 +3318,7 @@ void WriteCrystallographic(std::ostream &pdbFile, const datablock &db)
 
 	r = db["cell"].find_first(key("entry_id") == db.name());
 
-	pdbFile << cif::format("CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11.11s%4d", r["length_a"].as<double>(), r["length_b"].as<double>(), r["length_c"].as<double>(), r["angle_alpha"].as<double>(), r["angle_beta"].as<double>(), r["angle_gamma"].as<double>(), symmetry, r["Z_PDB"].as<int>()) << std::endl;
+	pdbFile << cif::format("CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11.11s%4d", r["length_a"].as<double>(), r["length_b"].as<double>(), r["length_c"].as<double>(), r["angle_alpha"].as<double>(), r["angle_beta"].as<double>(), r["angle_gamma"].as<double>(), symmetry, r["Z_PDB"].as<int>()) << '\n';
 }
 
 int WriteCoordinateTransformation(std::ostream &pdbFile, const datablock &db)
@@ -3327,18 +3327,18 @@ int WriteCoordinateTransformation(std::ostream &pdbFile, const datablock &db)
 
 	for (auto r : db["database_PDB_matrix"])
 	{
-		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 1, r["origx[1][1]"].as<float>(), r["origx[1][2]"].as<float>(), r["origx[1][3]"].as<float>(), r["origx_vector[1]"].as<float>()) << std::endl;
-		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 2, r["origx[2][1]"].as<float>(), r["origx[2][2]"].as<float>(), r["origx[2][3]"].as<float>(), r["origx_vector[2]"].as<float>()) << std::endl;
-		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 3, r["origx[3][1]"].as<float>(), r["origx[3][2]"].as<float>(), r["origx[3][3]"].as<float>(), r["origx_vector[3]"].as<float>()) << std::endl;
+		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 1, r["origx[1][1]"].as<float>(), r["origx[1][2]"].as<float>(), r["origx[1][3]"].as<float>(), r["origx_vector[1]"].as<float>()) << '\n';
+		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 2, r["origx[2][1]"].as<float>(), r["origx[2][2]"].as<float>(), r["origx[2][3]"].as<float>(), r["origx_vector[2]"].as<float>()) << '\n';
+		pdbFile << cif::format("ORIGX%1d    %10.6f%10.6f%10.6f     %10.5f", 3, r["origx[3][1]"].as<float>(), r["origx[3][2]"].as<float>(), r["origx[3][3]"].as<float>(), r["origx_vector[3]"].as<float>()) << '\n';
 		result += 3;
 		break;
 	}
 
 	for (auto r : db["atom_sites"])
 	{
-		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 1, r["fract_transf_matrix[1][1]"].as<float>(), r["fract_transf_matrix[1][2]"].as<float>(), r["fract_transf_matrix[1][3]"].as<float>(), r["fract_transf_vector[1]"].as<float>()) << std::endl;
-		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 2, r["fract_transf_matrix[2][1]"].as<float>(), r["fract_transf_matrix[2][2]"].as<float>(), r["fract_transf_matrix[2][3]"].as<float>(), r["fract_transf_vector[2]"].as<float>()) << std::endl;
-		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 3, r["fract_transf_matrix[3][1]"].as<float>(), r["fract_transf_matrix[3][2]"].as<float>(), r["fract_transf_matrix[3][3]"].as<float>(), r["fract_transf_vector[3]"].as<float>()) << std::endl;
+		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 1, r["fract_transf_matrix[1][1]"].as<float>(), r["fract_transf_matrix[1][2]"].as<float>(), r["fract_transf_matrix[1][3]"].as<float>(), r["fract_transf_vector[1]"].as<float>()) << '\n';
+		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 2, r["fract_transf_matrix[2][1]"].as<float>(), r["fract_transf_matrix[2][2]"].as<float>(), r["fract_transf_matrix[2][3]"].as<float>(), r["fract_transf_vector[2]"].as<float>()) << '\n';
+		pdbFile << cif::format("SCALE%1d    %10.6f%10.6f%10.6f     %10.5f", 3, r["fract_transf_matrix[3][1]"].as<float>(), r["fract_transf_matrix[3][2]"].as<float>(), r["fract_transf_matrix[3][3]"].as<float>(), r["fract_transf_vector[3]"].as<float>()) << '\n';
 		result += 3;
 		break;
 	}
@@ -3348,9 +3348,9 @@ int WriteCoordinateTransformation(std::ostream &pdbFile, const datablock &db)
 	{
 		std::string given = r["code"] == "given" ? "1" : "";
 
-		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 1, nr, r["matrix[1][1]"].as<float>(), r["matrix[1][2]"].as<float>(), r["matrix[1][3]"].as<float>(), r["vector[1]"].as<float>(), given) << std::endl;
-		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 2, nr, r["matrix[2][1]"].as<float>(), r["matrix[2][2]"].as<float>(), r["matrix[2][3]"].as<float>(), r["vector[2]"].as<float>(), given) << std::endl;
-		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 3, nr, r["matrix[3][1]"].as<float>(), r["matrix[3][2]"].as<float>(), r["matrix[3][3]"].as<float>(), r["vector[3]"].as<float>(), given) << std::endl;
+		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 1, nr, r["matrix[1][1]"].as<float>(), r["matrix[1][2]"].as<float>(), r["matrix[1][3]"].as<float>(), r["vector[1]"].as<float>(), given) << '\n';
+		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 2, nr, r["matrix[2][1]"].as<float>(), r["matrix[2][2]"].as<float>(), r["matrix[2][3]"].as<float>(), r["vector[2]"].as<float>(), given) << '\n';
+		pdbFile << cif::format("MTRIX%1d %3d%10.6f%10.6f%10.6f     %10.5f    %1.1s", 3, nr, r["matrix[3][1]"].as<float>(), r["matrix[3][2]"].as<float>(), r["matrix[3][3]"].as<float>(), r["vector[3]"].as<float>(), given) << '\n';
 
 		++nr;
 		result += 3;
@@ -3396,7 +3396,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 			if (r.ec != std::errc())
 			{
 				if (VERBOSE > 0)
-					std::cerr << "Model number '" << modelNum << "' is not a valid integer" << std::endl;
+					std::cerr << "Model number '" << modelNum << "' is not a valid integer\n";
 			}
 
 			if (nr != model_nr)
@@ -3417,7 +3417,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 
 			if (terminate)
 			{
-				pdbFile << cif::format("TER   %5d      %3.3s %1.1s%4d%1.1s",  serial,  resName,  chainID,  resSeq,  iCode) << std::endl;
+				pdbFile << cif::format("TER   %5d      %3.3s %1.1s%4d%1.1s",  serial,  resName,  chainID,  resSeq,  iCode) << '\n';
 
 				++serial;
 				terminatedChains.insert(chainID);
@@ -3462,7 +3462,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 			}
 			catch (const std::exception &ex)
 			{
-				std::cerr << "Oops, there was not exactly one entity with id " << entity_id << std::endl;
+				std::cerr << "Oops, there was not exactly one entity with id " << entity_id << '\n';
 			}
 		}
 		
@@ -3476,7 +3476,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 		if (charge != 0)
 			sCharge = std::to_string(charge) + (charge > 0 ? '+' : '-');
 
-		pdbFile << cif::format("%-6.6s%5d %-4.4s%1.1s%3.3s %1.1s%4d%1.1s   %8.3f%8.3f%8.3f%6.2f%6.2f          %2.2s%2.2s", group, serial, name, altLoc, resName, chainID, resSeq, iCode, x, y, z, occupancy, tempFactor, element, sCharge) << std::endl;
+		pdbFile << cif::format("%-6.6s%5d %-4.4s%1.1s%3.3s %1.1s%4d%1.1s   %8.3f%8.3f%8.3f%6.2f%6.2f          %2.2s%2.2s", group, serial, name, altLoc, resName, chainID, resSeq, iCode, x, y, z, occupancy, tempFactor, element, sCharge) << '\n';
 
 		++numCoord;
 
@@ -3491,7 +3491,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 			tie(u11, u22, u33, u12, u13, u23) =
 				ai.get("U[1][1]", "U[2][2]", "U[3][3]", "U[1][2]", "U[1][3]", "U[2][3]");
 
-			pdbFile << cif::format("ANISOU%5d %-4.4s%1.1s%3.3s %1.1s%4d%1.1s %7d%7d%7d%7d%7d%7d      %2.2s%2.2s", serial, name, altLoc, resName, chainID, resSeq, iCode, std::lrintf(u11 * 10000), std::lrintf(u22 * 10000), std::lrintf(u33 * 10000), std::lrintf(u12 * 10000), std::lrintf(u13 * 10000), std::lrintf(u23 * 10000), element, sCharge) << std::endl;
+			pdbFile << cif::format("ANISOU%5d %-4.4s%1.1s%3.3s %1.1s%4d%1.1s %7d%7d%7d%7d%7d%7d      %2.2s%2.2s", serial, name, altLoc, resName, chainID, resSeq, iCode, std::lrintf(u11 * 10000), std::lrintf(u22 * 10000), std::lrintf(u33 * 10000), std::lrintf(u12 * 10000), std::lrintf(u13 * 10000), std::lrintf(u23 * 10000), element, sCharge) << '\n';
 		}
 
 		++serial;
@@ -3543,7 +3543,7 @@ std::tuple<int, int> WriteCoordinate(std::ostream &pdbFile, const datablock &db)
 		for (int model_nr : models)
 		{
 			if (models.size() > 1)
-				pdbFile << cif::format("MODEL     %4d",  model_nr) << std::endl;
+				pdbFile << cif::format("MODEL     %4d",  model_nr) << '\n';
 
 			std::set<std::string> TERminatedChains;
 			auto n = WriteCoordinatesForModel(pdbFile, db, last_resseq_for_chain_map, TERminatedChains, model_nr);
@@ -3551,7 +3551,7 @@ std::tuple<int, int> WriteCoordinate(std::ostream &pdbFile, const datablock &db)
 				result = n;
 
 			if (models.size() > 1)
-				pdbFile << "ENDMDL" << std::endl;
+				pdbFile << "ENDMDL\n";
 		}
 	}
 
@@ -3788,8 +3788,8 @@ void write(std::ostream &os, const datablock &db)
 	numXform = WriteCoordinateTransformation(os, db);
 	std::tie(numCoord, numTer) = WriteCoordinate(os, db);
 
-	os << cif::format("MASTER    %5d    0%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d",  numRemark,  numHet,  numHelix,  numSheet,  numTurn,  numSite,  numXform,  numCoord,  numTer,  numConect,  numSeq) << std::endl
-			<< "END" << std::endl;
+	os << cif::format("MASTER    %5d    0%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d",  numRemark,  numHet,  numHelix,  numSheet,  numTurn,  numSite,  numXform,  numCoord,  numTer,  numConect,  numSeq) << '\n'
+			<< "END\n";
 }
 
 void write(const std::filesystem::path &p, const datablock &db)

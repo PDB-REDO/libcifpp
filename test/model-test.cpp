@@ -194,9 +194,9 @@ _atom_type.symbol   C
 	if (not (expected.front() == structure.get_datablock()))
 	{
 		BOOST_TEST(false);
-		std::cout << expected.front() << std::endl
-				<< std::endl
-				<< structure.get_datablock() << std::endl;
+		std::cout << expected.front() << '\n'
+				<< '\n'
+				<< structure.get_datablock() << '\n';
 	}
 }
 
@@ -306,9 +306,9 @@ _atom_type.symbol   C
 	if (not (expected.front() == structure.get_datablock()))
 	{
 		BOOST_TEST(false);
-		std::cout << expected.front() << std::endl
-				<< std::endl
-				<< structure.get_datablock() << std::endl;
+		std::cout << expected.front() << '\n'
+				<< '\n'
+				<< structure.get_datablock() << '\n';
 		
 
 		expected.save("/tmp/a");

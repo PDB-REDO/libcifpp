@@ -198,8 +198,8 @@ std::vector<std::string> datablock::get_tag_order() const
 
 void datablock::write(std::ostream &os) const
 {
-	os << "data_" << m_name << std::endl
-	   << "# " << std::endl;
+	os << "data_" << m_name << '\n'
+	   << "# \n";
 
 	// mmcif support, sort of. First write the 'entry' Category
 	// and if it exists, _AND_ we have a Validator, write out the
@@ -237,8 +237,8 @@ void datablock::write(std::ostream &os) const
 
 void datablock::write(std::ostream &os, const std::vector<std::string> &tag_order)
 {
-	os << "data_" << m_name << std::endl
-	   << "# " << std::endl;
+	os << "data_" << m_name << '\n'
+	   << "# \n";
 
 	std::vector<std::string> cat_order;
 	for (auto &o : tag_order)

@@ -242,7 +242,7 @@ void category_validator::addItemValidator(item_validator &&v)
 
 	auto r = m_item_validators.insert(std::move(v));
 	if (not r.second and VERBOSE >= 4)
-		std::cout << "Could not add validator for item " << v.m_tag << " to category " << m_name << std::endl;
+		std::cout << "Could not add validator for item " << v.m_tag << " to category " << m_name << '\n';
 }
 
 const item_validator *category_validator::get_validator_for_item(std::string_view tag) const
@@ -252,7 +252,7 @@ const item_validator *category_validator::get_validator_for_item(std::string_vie
 	if (i != m_item_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
-		std::cout << "No validator for tag " << tag << std::endl;
+		std::cout << "No validator for tag " << tag << '\n';
 	return result;
 }
 
@@ -262,7 +262,7 @@ void validator::add_type_validator(type_validator &&v)
 {
 	auto r = m_type_validators.insert(std::move(v));
 	if (not r.second and VERBOSE > 4)
-		std::cout << "Could not add validator for type " << v.m_name << std::endl;
+		std::cout << "Could not add validator for type " << v.m_name << '\n';
 }
 
 const type_validator *validator::get_validator_for_type(std::string_view typeCode) const
@@ -273,7 +273,7 @@ const type_validator *validator::get_validator_for_type(std::string_view typeCod
 	if (i != m_type_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
-		std::cout << "No validator for type " << typeCode << std::endl;
+		std::cout << "No validator for type " << typeCode << '\n';
 	return result;
 }
 
@@ -281,7 +281,7 @@ void validator::add_category_validator(category_validator &&v)
 {
 	auto r = m_category_validators.insert(std::move(v));
 	if (not r.second and VERBOSE > 4)
-		std::cout << "Could not add validator for category " << v.m_name << std::endl;
+		std::cout << "Could not add validator for category " << v.m_name << '\n';
 }
 
 const category_validator *validator::get_validator_for_category(std::string_view category) const
@@ -291,7 +291,7 @@ const category_validator *validator::get_validator_for_category(std::string_view
 	if (i != m_category_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
-		std::cout << "No validator for category " << category << std::endl;
+		std::cout << "No validator for category " << category << '\n';
 	return result;
 }
 
@@ -307,7 +307,7 @@ item_validator *validator::get_validator_for_item(std::string_view tag) const
 		result = const_cast<item_validator *>(cv->get_validator_for_item(item));
 
 	if (result == nullptr and VERBOSE > 4)
-		std::cout << "No validator for item " << tag << std::endl;
+		std::cout << "No validator for item " << tag << '\n';
 
 	return result;
 }
@@ -376,7 +376,7 @@ void validator::report_error(const std::string &msg, bool fatal) const
 	if (m_strict or fatal)
 		throw validation_error(msg);
 	else if (VERBOSE > 0)
-		std::cerr << msg << std::endl;
+		std::cerr << msg << '\n';
 }
 
 // --------------------------------------------------------------------

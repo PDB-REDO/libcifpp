@@ -233,7 +233,7 @@ int main(int argc, char* const argv[])
 	{
 		if (argc != 4)
 		{
-			std::cerr << "Usage symop-map-generator <syminfo.lib-file> <symop.lib-file> < <output-file>" << std::endl;
+			std::cerr << "Usage symop-map-generator <syminfo.lib-file> <symop.lib-file> < <output-file>\n";
 			exit(1);
 		}
 
@@ -420,7 +420,7 @@ const space_group kSpaceGroups[] =
 
 			Hall = '"' + Hall + '"' + std::string(40 - Hall.length(), ' ');
 
-			out << "\t{ " << old << ", " << xHM << ", " << Hall << ", " << nr << " }," << std::endl;
+			out << "\t{ " << old << ", " << xHM << ", " << Hall << ", " << nr << " },\n";
 		}
 
 out << R"(
@@ -429,7 +429,7 @@ out << R"(
 const size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(space_group);
 
 const symop_datablock kSymopNrTable[] = {
-)" << std::endl;
+)";
 
 		int spacegroupNr = 0;
 		for (auto& sd: data)
@@ -438,14 +438,14 @@ const symop_datablock kSymopNrTable[] = {
 			std::tie(sp, o, std::ignore) = sd;
 
 			if (sp > spacegroupNr)
-				out << "    // " << symInfo[sp].xHM << std::endl;
+				out << "    // " << symInfo[sp].xHM << '\n';
 			spacegroupNr = sp;
 
 			out << "    { " << std::setw(3) << sp
 					<< ", " << std::setw(3) << o << ", { ";
 			for (auto& i: std::get<2>(sd))
 				out << std::setw(2) << i << ',';
-			out << " } }," << std::endl;
+			out << " } },\n";
 		}
 
 		out << R"(};
@@ -453,16 +453,16 @@ const symop_datablock kSymopNrTable[] = {
 const size_t kSymopNrTableSize = sizeof(kSymopNrTable) / sizeof(symop_datablock);
 
 } // namespace mmcif
-)" << std::endl;
+)";
 
 		out.close();
 		fs::rename(tmpFile, output);
 	}
 	catch (const std::exception& ex)
 	{
-		std::cerr << std::endl
-			 << "Program terminated due to error:" << std::endl
-			 << ex.what() << std::endl;
+		std::cerr << '\n'
+			 << "Program terminated due to error:\n"
+			 << ex.what() << '\n';
 	}
 	
 	return 0;

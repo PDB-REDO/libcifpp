@@ -209,7 +209,7 @@ compound::compound(cif::datablock &db, const std::string &id, const std::string 
 		else
 		{
 			if (cif::VERBOSE > 0)
-				std::cerr << "Unimplemented chem_comp_bond.type " << btype << " in " << id << std::endl;
+				std::cerr << "Unimplemented chem_comp_bond.type " << btype << " in " << id << '\n';
 			bond.type = bond_type::sing;
 		}
 		m_bonds.push_back(std::move(bond));
@@ -466,15 +466,15 @@ compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_p
 
 			if (not cifFile.is_valid())
 			{
-				std::cerr << "The components file " << file << " is not valid" << std::endl;
+				std::cerr << "The components file " << file << " is not valid\n";
 				if (cif::VERBOSE < 1)
-					std::cerr << "(use --verbose to see why)" << std::endl;
+					std::cerr << "(use --verbose to see why)\n";
 			}
 		}
 		catch (const std::exception &e)
 		{
-			std::cerr << "When trying to load the components file " << file << " there was an exception:" << std::endl
-					  << e.what() << std::endl;
+			std::cerr << "When trying to load the components file " << file << " there was an exception:\n"
+					  << e.what() << '\n';
 		}
 
 		for (auto &db : cifFile)
@@ -516,7 +516,7 @@ compound *CCD_compound_factory_impl::create(const std::string &id)
 		ccd = cif::load_resource("components.cif");
 		if (not ccd)
 		{
-			std::cerr << "Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data." << std::endl;
+			std::cerr << "Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data.\n";
 			return nullptr;
 		}
 	}
@@ -576,7 +576,7 @@ compound *CCD_compound_factory_impl::create(const std::string &id)
 	}
 
 	if (result == nullptr and cif::VERBOSE > 0)
-		std::cerr << "Could not locate compound " << id << " in the CCD components file" << std::endl;
+		std::cerr << "Could not locate compound " << id << " in the CCD components file\n";
 
 	return result;
 }
@@ -701,13 +701,13 @@ compound_factory::compound_factory()
 	if (ccd)
 		m_impl = std::make_shared<CCD_compound_factory_impl>(m_impl);
 	else if (cif::VERBOSE > 0)
-		std::cerr << "CCD components.cif file was not found" << std::endl;
+		std::cerr << "CCD components.cif file was not found\n";
 
 	const char *clibd_mon = getenv("CLIBD_MON");
 	if (clibd_mon != nullptr and fs::is_directory(clibd_mon))
 		m_impl = std::make_shared<CCP4_compound_factory_impl>(clibd_mon, m_impl);
 	else if (cif::VERBOSE > 0)
-		std::cerr << "CCP4 monomers library not found, CLIBD_MON is not defined" << std::endl;
+		std::cerr << "CCP4 monomers library not found, CLIBD_MON is not defined\n";
 }
 
 compound_factory::~compound_factory()

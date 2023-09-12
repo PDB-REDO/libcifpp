@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(t1)
 
 	BOOST_TEST(rmsd < 1e-5);
 
-	// std::cout << "rmsd: " << RMSd(p1, p2) << std::endl;
+	// std::cout << "rmsd: " << RMSd(p1, p2) << '\n';
 }
 
 BOOST_AUTO_TEST_CASE(t2)
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(t3)
 	v.rotate(q);
 	v += p[0];
 
-	std::cout << v << std::endl;
+	std::cout << v << '\n';
 
 	double a = cif::angle(v, p[0], p[1]);
 

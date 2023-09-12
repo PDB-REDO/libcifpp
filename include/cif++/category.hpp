@@ -300,7 +300,7 @@ class category
 	///
 	/// @code{.cpp}
 	/// for (const auto &[name, value] : cat.rows<std::string,int>("item_name", "item_value"))
-	///   std::cout << name << ": " << value << std::endl;
+	///   std::cout << name << ": " << value << '\n';
 	/// @endcode 
 	///
 	/// @tparam Ts The types for the columns requested
@@ -318,12 +318,12 @@ class category
 	///
 	/// @code{.cpp}
 	/// for (const auto &[name, value] : cat.rows<std::string,int>("item_name", "item_value"))
-	///   std::cout << name << ": " << value << std::endl;
+	///   std::cout << name << ": " << value << '\n';
 	///
 	/// // or in case we only need one column:
 	///
 	/// for (int id : cat.rows<int>("id"))
-	///   std::cout << id << std::endl;
+	///   std::cout << id << '\n';
 	/// @endcode 
 	///
 	/// @tparam Ts The types for the columns requested
@@ -396,7 +396,7 @@ class category
 	///
 	/// @code{.cpp}
 	/// for (const auto &[name, value] : cat.find<std::string,int>(cif::key("item_value") > 10, "item_name", "item_value"))
-	///    std::cout << name << ": " << value << std::endl;
+	///    std::cout << name << ": " << value << '\n';
 	/// @endcode 
 	///
 	/// @param cond The condition for the query
@@ -961,7 +961,7 @@ class category
 		{
 			auto iv = m_cat_validator->get_validator_for_item(column_name);
 			if (iv == nullptr)
-				std::cerr << "Invalid name used '" << column_name << "' is not a known column in " + m_name << std::endl;
+				std::cerr << "Invalid name used '" << column_name << "' is not a known column in " + m_name << '\n';
 		}
 
 		return result;

@@ -460,9 +460,9 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 				if (cif::VERBOSE)
 				{
 					if (r.ec == std::errc::invalid_argument)
-						std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
+						std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number\n";
 					else if (r.ec == std::errc::result_out_of_range)
-						std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
+						std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small\n";
 				}
 			}
 		}
@@ -489,9 +489,9 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 				if (cif::VERBOSE)
 				{
 					if (r.ec == std::errc::invalid_argument)
-						std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number" << std::endl;
+						std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number\n";
 					else if (r.ec == std::errc::result_out_of_range)
-						std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small" << std::endl;
+						std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small\n";
 				}
 				result = 1;
 			}
