@@ -103,7 +103,7 @@ class dictionary_parser : public parser
 		{
 			auto r = info->front();
 			m_validator.set_name(r["title"].as<std::string>());
-			m_validator.version(r["version"].as<std::string>());
+			m_validator.set_version(r["version"].as<std::string>());
 		}
 
 		m_datablock = savedDatablock;

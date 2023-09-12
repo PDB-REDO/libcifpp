@@ -164,13 +164,13 @@ struct item_validator
 	std::string m_default;                    ///< If filled, a default value for this item
 	category_validator *m_category = nullptr; ///< The category_validator this item_validator belongs to
 
-	/// @brief Compare based on the name 
+	/// @brief Compare based on the name
 	bool operator<(const item_validator &rhs) const
 	{
 		return icompare(m_tag, rhs.m_tag) < 0;
 	}
 
-	/// @brief Compare based on the name 
+	/// @brief Compare based on the name
 	bool operator==(const item_validator &rhs) const
 	{
 		return iequals(m_tag, rhs.m_tag);
@@ -181,76 +181,115 @@ struct item_validator
 	void operator()(std::string_view value) const;
 };
 
+/**
+ * @brief A validator for categories
+ *
+ * Categories can have a key, a set of items that in combination
+ * should be unique.
+ */
 struct category_validator
 {
-	std::string m_name;
-	std::vector<std::string> m_keys;
-	cif::iset m_groups;
-	cif::iset m_mandatory_fields;
-	std::set<item_validator> m_item_validators;
+	std::string m_name;                         ///< The name of the category
+	std::vector<std::string> m_keys;            ///< The list of items that make up the key
+	cif::iset m_mandatory_fields;               ///< The mandatory fields for this category
+	std::set<item_validator> m_item_validators; ///< The item validators for the items in this category
 
+	/// @brief return true if this category sorts before @a rhs
 	bool operator<(const category_validator &rhs) const
 	{
 		return icompare(m_name, rhs.m_name) < 0;
 	}
 
+	/// @brief Add item_validator @a v to the list of item validators
 	void addItemValidator(item_validator &&v);
 
+	/// @brief Return the item_validator for item @a tag, may return nullptr
 	const item_validator *get_validator_for_item(std::string_view tag) const;
-
-	const std::set<item_validator> &item_validators() const
-	{
-		return m_item_validators;
-	}
 };
 
+/**
+ * @brief A validator for links between categories
+ *
+ * Links are defined as a set of pairs of item names in a
+ * parent category and a corresponding item in a child
+ * category. This means that the size of m_parent_keys
+ * is always equal to the size of m_child_keys.
+ *
+ * Multiple links may be defined between two categories.
+ *
+ */
 struct link_validator
 {
-	int m_link_group_id;
-	std::string m_parent_category;
-	std::vector<std::string> m_parent_keys;
-	std::string m_child_category;
-	std::vector<std::string> m_child_keys;
-	std::string m_link_group_label;
+	int m_link_group_id;                    ///< The link group ID
+	std::string m_parent_category;          ///< The name of the parent category
+	std::vector<std::string> m_parent_keys; ///< The items in the parent category making up the set of linked items
+	std::string m_child_category;           ///< The name of the child category
+	std::vector<std::string> m_child_keys;  ///< The items in the child category making up the set of linked items
+	std::string m_link_group_label;         ///< The group label assigned to this link
 };
 
 // --------------------------------------------------------------------
 
+/**
+ * @brief The validator class combines all the link, category and item validator classes
+ *
+ */
 class validator
 {
   public:
+	/**
+	 * @brief Construct a new validator object
+	 *
+	 * @param name The name of the underlying dictionary
+	 */
 	validator(std::string_view name)
 		: m_name(name)
 	{
 	}
 
+	/// @brief destructor
 	~validator() = default;
 
 	validator(const validator &rhs) = delete;
 	validator &operator=(const validator &rhs) = delete;
 
+	/// @brief move constructor
 	validator(validator &&rhs) = default;
+
+	/// @brief move assignment operator
 	validator &operator=(validator &&rhs) = default;
 
 	friend class dictionary_parser;
 
+	/// @brief Add type_validator @a v to the list of type validators
 	void add_type_validator(type_validator &&v);
+
+	/// @brief Return the type validator for @a type_code, may return nullptr
 	const type_validator *get_validator_for_type(std::string_view type_code) const;
 
+	/// @brief Add category_validator @a v to the list of category validators
 	void add_category_validator(category_validator &&v);
+
+	/// @brief Return the category validator for @a category, may return nullptr
 	const category_validator *get_validator_for_category(std::string_view category) const;
 
+	/// @brief Add link_validator @a v to the list of link validators
 	void add_link_validator(link_validator &&v);
+
+	/// @brief Return the list of link validators for which the parent is @a category
 	std::vector<const link_validator *> get_links_for_parent(std::string_view category) const;
+
+	/// @brief Return the list of link validators for which the child is @a category
 	std::vector<const link_validator *> get_links_for_child(std::string_view category) const;
 
+	/// @brief Bottleneck function to report an error in validation
 	void report_error(const std::string &msg, bool fatal) const;
 
-	const std::string &name() const { return m_name; }
-	void set_name(const std::string &name) { m_name = name; }
+	const std::string &name() const { return m_name; }        ///< Get the name of this validator
+	void set_name(const std::string &name) { m_name = name; } ///< Set the name of this validator
 
-	const std::string &version() const { return m_version; }
-	void version(const std::string &version) { m_version = version; }
+	const std::string &version() const { return m_version; }              ///< Get the version of this validator
+	void set_version(const std::string &version) { m_version = version; } ///< Set the version of this validator
 
   private:
 	// name is fully qualified here:
@@ -265,17 +304,26 @@ class validator
 };
 
 // --------------------------------------------------------------------
+
+/**
+ * @brief Validators are globally unique objects, use the validator_factory
+ * class to construct them. This class is a singleton.
+ */
+
 class validator_factory
 {
   public:
+	/// @brief Return the singleton instance
 	static validator_factory &instance()
 	{
 		static validator_factory s_instance;
 		return s_instance;
 	}
 
+	/// @brief Return the validator with name @a dictionary_name
 	const validator &operator[](std::string_view dictionary_name);
 
+	/// @brief Construct a new validator with name @a name from the data in @a is
 	const validator &construct_validator(std::string_view name, std::istream &is);
 
   private:
