@@ -15,7 +15,7 @@ set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 #Replace variables inside @@ with the current values
 configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
 
-file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}) #Doxygen won't create this for us
+file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/xml) #Doxygen won't create this for us
 add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
 				   BYPRODUCTS ${DOXYGEN_OUTPUT_DIR}/xml
                    DEPENDS ${CIFPP_PUBLIC_HEADERS} ${DOXYFILE_OUT}
