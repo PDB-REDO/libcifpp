@@ -361,12 +361,6 @@ install(
 	COMPONENT Devel
 )
 
-install(
-	FILES ${PROJECT_BINARY_DIR}/cif++/exports.hpp
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cif++
-	COMPONENT Devel
-)
-
 install(FILES
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
