@@ -161,6 +161,50 @@ Returning a complete set if often not required, if you only want to have the fir
 
 There are cases when you really need exactly one result. The :cpp:func:`cif::category::find1` can be used in that case, it will throw an exception if the query does not result in exactly one row.
 
+NULL and ANY
+------------
+
+Sometimes items may be empty. The trouble is a bit that empty comes in two flavors: unknown and null. Null in *CIF* parlance means the item should not contain a value since it makes no sense in this case, the value stored in the file is a single dot character: ``'.'``. E.g. *atom_site* records may have a NULL value for label_seq_id for atoms that are part of a *non-polymer*.
+
+The other empty value is indicated by a question mark character: ``'?'``. This means the value is simply unknown.
+
+Both these are NULL in *libcifpp* conditions and can be searched for using :cpp:var:`cif::null`.
+
+So you can search for:
+
+.. code-block:: cpp
+
+    cif::condition c = "label_seq_id"_key == cif::null;
+
+You might also want to look for a certain value and don't care in which item it is stored, in that case you can use :cpp:var:`cif::any`.
+
+.. code-block:: cpp
+
+    cif::condition c = cif::any == "foo";
+
+And in linked record you might have the items that have a value in both parent and child or both should be NULL. For that, you can request the value to return by find to be of type std::optional and then use that value to build the query. An example to explain this, let's find the location of the atom that is referenced as the first atom in a struct_conn record:
+
+.. code-block:: cpp
+
+    // Take references to the two categories we need
+    auto struct_conn = db["struct_conn"];
+    auto atom_site = db["atom_site"];
+
+    // Loop over all rows in struct_conn taking only the values we need
+    // Note that the label_seq_id is returned as a std::optional<int>
+    // That means it may contain an integer or may be empty
+    for (const auto &[asym1, seqid1, authseqid1, atomid1] :
+        struct_conn.rows<std::string,std::optional<int>,std::string,std::string,std::string>(
+            "ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr1_auth_seq_id", "ptnr1_label_atom_id"
+        ))
+    {
+        // Find the location of the first atom
+        cif::point p1 = atom_site.find1<float,float,float>(
+            "label_asym_id"_key == asym1 and "label_seq_id"_key == seqid1 and "auth_seq_id"_key == authseqid1 and "label_atom_id"_key == atomid1,
+            "cartn_x", "cartn_y", "cartn_z");
+    }
+    
+
 Validation
 ----------
 

@@ -527,14 +527,14 @@ BOOST_AUTO_TEST_CASE(symm_2bi3_1a, *utf::tolerance(0.1f))
 
 	cif::crystal c(db);
 	auto struct_conn = db["struct_conn"];
-	auto atom_site = db["struct_conn"];
+	auto atom_site = db["atom_site"];
 
 	for (const auto &[
 			asym1, seqid1, authseqid1, atomid1, symm1,
 			asym2, seqid2, authseqid2, atomid2, symm2,
 			dist] : struct_conn.find<
-				std::string,int,std::string,std::string,std::string,
-				std::string,int,std::string,std::string,std::string,
+				std::string,std::optional<int>,std::string,std::string,std::string,
+				std::string,std::optional<int>,std::string,std::string,std::string,
 				float>(
 			cif::key("ptnr1_symmetry") != "1_555" or cif::key("ptnr2_symmetry") != "1_555",
 			"ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr1_auth_seq_id", "ptnr1_label_atom_id", "ptnr1_symmetry", 
