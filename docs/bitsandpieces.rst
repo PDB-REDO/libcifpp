@@ -31,7 +31,7 @@ You can also use the :cpp:class:`cif::gzio:istream` and feed it a *std::streambu
 A progress bar
 --------------
 
-Applications based on *libcifpp* may have a longer run time. To give some feedback to the user running your application in a terminal you can use the :cif:class:`cif::progress_bar`. This class will display an ASCII progress bar along with optional status messages, but only if output is to a real TTY (terminal).
+Applications based on *libcifpp* may have a longer run time. To give some feedback to the user running your application in a terminal you can use the :cpp:class:`cif::progress_bar`. This class will display an ASCII progress bar along with optional status messages, but only if output is to a real TTY (terminal).
 
 A progress bar is also shown only if the duration is more than two seconds. To avoid having flashing progress bars for short actions.
 
