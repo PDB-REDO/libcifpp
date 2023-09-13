@@ -53,7 +53,7 @@ endif()
 option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 
 # Build documentation?
-option(BUILD_DOC "Build the documentation" OFF)
+option(BUILD_DOCUMENTATION "Build the documentation" OFF)
 
 # We do not want to write an export file for all our symbols...
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -480,7 +480,7 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 endif()
 
-if(BUILD_DOC)
+if(BUILD_DOCUMENTATION)
 	add_subdirectory(docs)
 endif()
 

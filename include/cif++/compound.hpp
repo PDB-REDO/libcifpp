@@ -48,6 +48,9 @@
 /// may also be generated from the CCP4 monomer library.
 ///
 /// Note that the information in CCP4 and CCD is not equal.
+///
+
+/// See also :doc:`/compound` for more information.
 
 namespace cif
 {

@@ -1031,17 +1031,17 @@ class structure
 	/// \brief Create a new and empty (sugar) branch
 	branch &create_branch();
 
-	/// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a atoms
-	branch &create_branch(std::vector<row_initializer> atoms);
+	// /// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a atoms
+	// branch &create_branch(std::vector<row_initializer> atoms);
 
-	/// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms constructed from \a atom_info
-	///
-	/// \param asym_id      The asym id of the branch to extend
-	/// \param atom_info    Array containing the info for the atoms to construct for the new sugar
-	/// \param link_sugar   The sugar to link to, note: this is the sugar number (1 based)
-	/// \param link_atom    The atom id of the atom linked in the sugar
-	branch &extend_branch(const std::string &asym_id, std::vector<row_initializer> atom_info,
-		int link_sugar, const std::string &link_atom);
+	// /// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms constructed from \a atom_info
+	// ///
+	// /// \param asym_id      The asym id of the branch to extend
+	// /// \param atom_info    Array containing the info for the atoms to construct for the new sugar
+	// /// \param link_sugar   The sugar to link to, note: this is the sugar number (1 based)
+	// /// \param link_atom    The atom id of the atom linked in the sugar
+	// branch &extend_branch(const std::string &asym_id, std::vector<row_initializer> atom_info,
+	// 	int link_sugar, const std::string &link_atom);
 
 	/// \brief Remove \a branch
 	void remove_branch(branch &branch);

@@ -36,8 +36,11 @@ Using *libcifpp* is easy, if you are familiar with modern C++:
 
    self
    basics.rst
+   compound.rst
+   model.rst
    resources.rst
    symmetry.rst
+   bitsandpieces.rst
    api/library_root.rst
    genindex.rst
 
