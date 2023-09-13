@@ -1,7 +1,7 @@
 libcifpp
 ========
 
-This library contains code to work with mmCIF and PDB files.
+This library contains code to work with mmCIF and legacy PDB files.
 
 Synopsis
 --------
@@ -55,7 +55,6 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
 ```
 
 Requirements

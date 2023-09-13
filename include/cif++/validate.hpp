@@ -191,6 +191,7 @@ struct category_validator
 {
 	std::string m_name;                         ///< The name of the category
 	std::vector<std::string> m_keys;            ///< The list of items that make up the key
+	cif::iset m_groups;							///< The category groups this category belongs to
 	cif::iset m_mandatory_fields;               ///< The mandatory fields for this category
 	std::set<item_validator> m_item_validators; ///< The item validators for the items in this category
 

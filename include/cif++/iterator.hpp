@@ -576,7 +576,7 @@ class conditional_iterator_proxy
 			{
 				if (++mBegin == mEnd)
 					break;
-
+				
 				if (m_condition->operator()(mBegin))
 					break;
 			}
@@ -678,6 +678,8 @@ conditional_iterator_proxy<Category, Ts...>::conditional_iterator_impl::conditio
 	, mEnd(cat.end(), cix)
 	, m_condition(&cond)
 {
+	if (m_condition == nullptr or m_condition->empty())
+		mBegin = mEnd;
 }
 
 template <typename Category, typename... Ts>
@@ -702,10 +704,15 @@ conditional_iterator_proxy<Category, Ts...>::conditional_iterator_proxy(Category
 {
 	static_assert(sizeof...(Ts) == sizeof...(Ns), "Number of column names should be equal to number of requested value types");
 
-	m_condition.prepare(cat);
+	if (m_condition)
+	{
+		m_condition.prepare(cat);
 
-	while (mCBegin != mCEnd and not m_condition(*mCBegin))
-		++mCBegin;
+		while (mCBegin != mCEnd and not m_condition(*mCBegin))
+			++mCBegin;
+	}
+	else
+		mCBegin == mCEnd;
 
 	uint16_t i = 0;
 	((mCix[i++] = m_cat->get_column_ix(names)), ...);

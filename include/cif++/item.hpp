@@ -283,7 +283,15 @@ struct item_handle
 	// conversion helper class
 	template <typename T, typename = void>
 	struct item_value_as;
+	/** @endcond */
 
+	/**
+	 * @brief Assign value @a value to the item referenced
+	 * 
+	 * @tparam T Type of the value
+	 * @param value The value
+	 * @return reference to this item_handle
+	 */
 	template <typename T>
 	item_handle &operator=(const T &value)
 	{
@@ -291,7 +299,6 @@ struct item_handle
 		assign_value(v);
 		return *this;
 	}
-	/** @endcond */
 
 	/**
 	 * @brief A method with a variable number of arguments that will be concatenated and

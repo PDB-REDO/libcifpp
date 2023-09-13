@@ -921,25 +921,30 @@ condition category::get_parents_condition(row_handle rh, const category &parentC
 
 	condition result;
 
-	for (auto &link : m_validator->get_links_for_child(m_name))
+	auto links = m_validator->get_links_for_child(m_name);
+	links.erase(remove_if(links.begin(), links.end(), [n=parentCat.m_name](auto &l) { return l->m_parent_category != n; }), links.end());
+
+	if (not links.empty())
 	{
-		if (link->m_parent_category != parentCat.m_name)
-			continue;
-
-		condition cond;
-
-		for (size_t ix = 0; ix < link->m_child_keys.size(); ++ix)
+		for (auto &link : links)
 		{
-			auto childValue = rh[link->m_child_keys[ix]];
+			condition cond;
 
-			if (childValue.empty())
-				continue;
+			for (size_t ix = 0; ix < link->m_child_keys.size(); ++ix)
+			{
+				auto childValue = rh[link->m_child_keys[ix]];
 
-			cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.text();
+				if (childValue.empty())
+					continue;
+
+				cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.text();
+			}
+
+			result = std::move(result) or std::move(cond);
 		}
-
-		result = std::move(result) or std::move(cond);
 	}
+	else if (cif::VERBOSE > 0)
+		std::cerr << "warning: no child to parent links were found for child " << parentCat.name() << " and parent " << name() << '\n';
 
 	return result;
 }
@@ -956,30 +961,35 @@ condition category::get_children_condition(row_handle rh, const category &childC
 	if (childCatValidator != nullptr)
 		mandatoryChildFields = childCatValidator->m_mandatory_fields;
 
-	for (auto &link : m_validator->get_links_for_parent(m_name))
+	auto links = m_validator->get_links_for_parent(m_name);
+	links.erase(remove_if(links.begin(), links.end(), [n=childCat.m_name](auto &l) { return l->m_child_category != n; }), links.end());
+
+	if (not links.empty())
 	{
-		if (link->m_child_category != childCat.m_name)
-			continue;
-
-		condition cond;
-
-		for (size_t ix = 0; ix < link->m_parent_keys.size(); ++ix)
+		for (auto &link : links)
 		{
-			auto childKey = link->m_child_keys[ix];
-			auto parentKey = link->m_parent_keys[ix];
+			condition cond;
 
-			auto parentValue = rh[parentKey];
+			for (size_t ix = 0; ix < link->m_parent_keys.size(); ++ix)
+			{
+				auto childKey = link->m_child_keys[ix];
+				auto parentKey = link->m_parent_keys[ix];
 
-			if (parentValue.empty())
-				cond = std::move(cond) and key(childKey) == null;
-			else if (link->m_parent_keys.size() > 1 and not mandatoryChildFields.contains(childKey))
-				cond = std::move(cond) and (key(childKey) == parentValue.text() or key(childKey) == null);
-			else
-				cond = std::move(cond) and key(childKey) == parentValue.text();
+				auto parentValue = rh[parentKey];
+
+				if (parentValue.empty())
+					cond = std::move(cond) and key(childKey) == null;
+				else if (link->m_parent_keys.size() > 1 and not mandatoryChildFields.contains(childKey))
+					cond = std::move(cond) and (key(childKey) == parentValue.text() or key(childKey) == null);
+				else
+					cond = std::move(cond) and key(childKey) == parentValue.text();
+			}
+
+			result = std::move(result) or std::move(cond);
 		}
-
-		result = std::move(result) or std::move(cond);
 	}
+	else if (cif::VERBOSE > 0)
+		std::cerr << "warning: no parent to child links were found for parent " << name() << " and child " << childCat.name() << '\n';
 
 	return result;
 }

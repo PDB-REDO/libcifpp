@@ -1865,6 +1865,15 @@ _test.name
 	BOOST_TEST(db["test"].find_first<int>(cif::key("id") == 1, "id") == 1);
 	BOOST_TEST(db["test"].find_first<int>(cif::all(), "id") == 1);
 
+	std::optional<int> v;
+
+	v = db["test"].find_first<std::optional<int>>(cif::key("id") == 1, "id");
+	BOOST_TEST(v.has_value());
+	BOOST_TEST(*v == 1);
+
+	v = db["test"].find_first<std::optional<int>>(cif::key("id") == 6, "id");
+	BOOST_TEST(not v.has_value());
+
 	// find1 tests
 	BOOST_TEST(db["test"].find1<int>(cif::key("id") == 1, "id") == 1);
 	BOOST_CHECK_THROW(db["test"].find1<int>(cif::all(), "id"), cif::multiple_results_error);
@@ -1882,7 +1891,7 @@ BOOST_AUTO_TEST_CASE(r1)
 	    of pdbx_nonpoly_scheme which itself is a parent of pdbx_entity_nonpoly. If I want to rename a residue
 	    I cannot update pdbx_nonpoly_scheme since changing a parent changes children, but not vice versa.
 
-	    But if I change the comp_id in atom_site, the pdbx_nonpoly_scheme is update, that's good, and then
+	    But if I change the comp_id in atom_site, the pdbx_nonpoly_scheme is updated, that's good, and then
 	    pdbx_entity_nonpoly is updated and that's bad.
 
 	    The idea is now that if we update a parent and a child that must change as well, we first check
@@ -2166,6 +2175,228 @@ _cat_3.num
 	}
 
 	// f.save(std::cout);
+}
+
+BOOST_AUTO_TEST_CASE(pc_1)
+{
+	/*
+	    Parent/child tests
+
+		Note that the dictionary is different than the one in test r1
+	*/
+
+	const char dict[] = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+
+               int       numb
+               '[+-]?[0-9]+'
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    _category_key.name        '_cat_1.id'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_linked.child_name   '_cat_2.parent_id'
+    _item_linked.parent_name  '_cat_1.id'
+    _item_type.code           int
+    save_
+
+save__cat_1.name
+    _item.name                '_cat_1.name'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_1.desc
+    _item.name                '_cat_1.desc'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_type.code           text
+    save_
+
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
+
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.name
+    _item.name                '_cat_2.name'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_2.num
+    _item.name                '_cat_2.num'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_2.desc
+    _item.name                '_cat_2.desc'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_type.code           text
+    save_
+
+save_cat_3
+    _category.description     'A third simple test category'
+    _category.id              cat_3
+    _category.mandatory_code  no
+    _category_key.name        '_cat_3.id'
+    save_
+
+save__cat_3.id
+    _item.name                '_cat_3.id'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+save__cat_3.name
+    _item.name                '_cat_3.name'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           code
+    save_
+
+save__cat_3.num
+    _item.name                '_cat_3.num'
+    _item.category_id         cat_3
+    _item.mandatory_code      yes
+    _item_type.code           int
+    save_
+
+loop_
+_pdbx_item_linked_group_list.parent_category_id
+_pdbx_item_linked_group_list.link_group_id
+_pdbx_item_linked_group_list.parent_name
+_pdbx_item_linked_group_list.child_name
+_pdbx_item_linked_group_list.child_category_id
+cat_1 1 '_cat_1.name' '_cat_2.name' cat_2
+cat_2 1 '_cat_2.name' '_cat_3.name' cat_3
+cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
+
+    )";
+
+	struct membuf : public std::streambuf
+	{
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
+
+	std::istream is_dict(&buffer);
+
+	auto validator = cif::parse_dictionary("test", is_dict);
+
+	cif::file f;
+	f.set_validator(&validator);
+
+	// --------------------------------------------------------------------
+
+	const char data[] = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.name
+_cat_1.desc
+1 aap  Aap
+2 noot Noot
+3 mies Mies
+
+loop_
+_cat_2.id
+_cat_2.name
+_cat_2.num
+_cat_2.desc
+1 aap  1 'Een dier'
+2 aap  2 'Een andere aap'
+3 noot 1 'walnoot bijvoorbeeld'
+
+loop_
+_cat_3.id
+_cat_3.name
+_cat_3.num
+1 aap 1
+2 aap 2
+    )";
+
+	using namespace cif::literals;
+
+	struct data_membuf : public std::streambuf
+	{
+		data_membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
+
+	std::istream is_data(&data_buffer);
+	f.load(is_data);
+
+	auto &cat1 = f.front()["cat_1"];
+	auto &cat2 = f.front()["cat_2"];
+	auto &cat3 = f.front()["cat_3"];
+
+	// some parent/child tests
+
+	// find all children in cat2 for the row with id == 1 in cat1
+	auto rs1 = cat1.get_children(cat1.find1("id"_key == 1), cat2);
+	BOOST_TEST(rs1.size() == 2);
+
+	auto rs2 = cat1.get_children(cat1.find1("id"_key == 2), cat2);
+	BOOST_TEST(rs2.size() == 1);
+
+	auto rs3 = cat1.get_children(cat1.find1("id"_key == 3), cat2);
+	BOOST_TEST(rs3.size() == 0);
+
+	// finding parents
+	auto rs4 = cat2.get_parents(cat2.find1("id"_key == 1), cat1);
+	BOOST_TEST(rs4.size() == 1);
+
+	auto rs5 = cat3.get_parents(cat3.find1("id"_key == 1), cat2);
+	BOOST_TEST(rs5.size() == 1);
+
+	// This link is not defined:
+	auto rs6 = cat3.get_parents(cat3.find1("id"_key == 1), cat1);
+	BOOST_TEST(rs6.size() == 0);
 }
 
 // --------------------------------------------------------------------

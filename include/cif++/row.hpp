@@ -300,7 +300,7 @@ class row_handle
 	/** \brief assign the value @a value to the column named @a name 
 	 * 
 	 * If updateLinked it true, linked records are updated as well.
-	 * That means that if column @name is part of the link definition
+	 * That means that if column @a name is part of the link definition
 	 * and the link results in a linked record in another category
 	 * this record in the linked category is updated as well.
 	 * 
