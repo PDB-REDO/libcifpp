@@ -523,10 +523,10 @@ struct point_type
 	}
 
 	/// \brief Add the points @a lhs and @a rhs and return the result
-	template <typename F1, typename F2>
-	friend constexpr auto operator+(const point_type<F1> &lhs, const point_type<F2> &rhs)
+	template <typename F2>
+	friend constexpr auto operator+(const point_type &lhs, const point_type<F2> &rhs)
 	{
-		return point_type<std::common_type_t<F1, F2>>(lhs.m_x + rhs.m_x, lhs.m_y + rhs.m_y, lhs.m_z + rhs.m_z);
+		return point_type<std::common_type_t<value_type, F2>>(lhs.m_x + rhs.m_x, lhs.m_y + rhs.m_y, lhs.m_z + rhs.m_z);
 	}
 
 	/// \brief subtract @a rhs
@@ -550,17 +550,16 @@ struct point_type
 	}
 
 	/// \brief Subtract the points @a lhs and @a rhs and return the result
-	template <typename F1, typename F2>
-	friend constexpr auto operator-(const point_type<F1> &lhs, const point_type<F2> &rhs)
+	template <typename F2>
+	friend constexpr auto operator-(const point_type &lhs, const point_type<F2> &rhs)
 	{
-		return point_type<std::common_type_t<F1, F2>>(lhs.m_x - rhs.m_x, lhs.m_y - rhs.m_y, lhs.m_z - rhs.m_z);
+		return point_type<std::common_type_t<value_type, F2>>(lhs.m_x - rhs.m_x, lhs.m_y - rhs.m_y, lhs.m_z - rhs.m_z);
 	}
 
 	/// \brief Return the negative copy of @a pt
-	template <typename F1>
-	friend constexpr point_type<F1> operator-(const point_type<F1> &pt)
+	friend constexpr point_type operator-(const point_type &pt)
 	{
-		return point_type<F>(-pt.m_x, -pt.m_y, -pt.m_z);
+		return point_type(-pt.m_x, -pt.m_y, -pt.m_z);
 	}
 
 	/// \brief multiply all members with @a rhs
@@ -573,17 +572,17 @@ struct point_type
 	}
 
 	/// \brief multiply point @a pt with value @a f and return the result
-	template <typename F1, typename F2>
-	friend constexpr auto operator*(const point_type<F1> &pt, F2 f)
+	template <typename F2>
+	friend constexpr auto operator*(const point_type &pt, F2 f)
 	{
-		return point_type<std::common_type_t<F1, F2>>(pt.m_x * f, pt.m_y * f, pt.m_z * f);
+		return point_type<std::common_type_t<value_type, F2>>(pt.m_x * f, pt.m_y * f, pt.m_z * f);
 	}
 
 	/// \brief multiply point @a pt with value @a f and return the result
-	template <typename F1, typename F2>
-	friend constexpr auto operator*(F1 f, const point_type<F2> &pt)
+	template <typename F2>
+	friend constexpr auto operator*(F2 f, const point_type &pt)
 	{
-		return point_type<std::common_type_t<F1, F2>>(pt.m_x * f, pt.m_y * f, pt.m_z * f);
+		return point_type<std::common_type_t<value_type, F2>>(pt.m_x * f, pt.m_y * f, pt.m_z * f);
 	}
 
 	/// \brief divide all members by @a rhs
@@ -596,10 +595,10 @@ struct point_type
 	}
 
 	/// \brief divide point @a pt by value @a f and return the result
-	template <typename F1, typename F2>
-	friend constexpr auto operator/(const point_type<F1> &pt, F2 f)
+	template <typename F2>
+	friend constexpr auto operator/(const point_type &pt, F2 f)
 	{
-		return point_type<std::common_type_t<F1, F2>>(pt.m_x / f, pt.m_y / f, pt.m_z / f);
+		return point_type<std::common_type_t<value_type, F2>>(pt.m_x / f, pt.m_y / f, pt.m_z / f);
 	}
 
 	/**
@@ -683,8 +682,7 @@ struct point_type
 	}
 
 	/// \brief Print out the point @a pt to @a os
-	template <typename F1>
-	friend std::ostream &operator<<(std::ostream &os, const point_type<F1> &pt)
+	friend std::ostream &operator<<(std::ostream &os, const point_type &pt)
 	{
 		os << '(' << pt.m_x << ',' << pt.m_y << ',' << pt.m_z << ')';
 		return os;
