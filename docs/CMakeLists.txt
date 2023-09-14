@@ -12,19 +12,19 @@ set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/index.xml)
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
 set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-#Replace variables inside @@ with the current values
+# Replace variables inside @@ with the current values
 configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
 
 add_custom_command(
 	OUTPUT ${DOXYGEN_OUTPUT_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${DOXYGEN_OUTPUT_DIR})
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${DOXYGEN_OUTPUT_DIR})
 
 add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-				   BYPRODUCTS ${DOXYGEN_OUTPUT_DIR}
-                   DEPENDS ${DOXYGEN_OUTPUT_DIR} ${CIFPP_PUBLIC_HEADERS} ${DOXYFILE_OUT}
-                   COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
-                   MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
-                   COMMENT "Generating docs")
+	BYPRODUCTS ${DOXYGEN_OUTPUT_DIR}
+	DEPENDS ${DOXYGEN_OUTPUT_DIR} ${CIFPP_PUBLIC_HEADERS} ${DOXYFILE_OUT}
+	COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
+	MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
+	COMMENT "Generating docs")
 
 add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
 
@@ -34,12 +34,12 @@ set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
 
 add_custom_target(Sphinx ALL
-                  COMMAND ${SPHINX_EXECUTABLE} -b html
-				  -Dbreathe_projects.${PROJECT_NAME}=${DOXYGEN_OUTPUT_DIR}
-                  ${SPHINX_SOURCE} ${SPHINX_BUILD}
-				  DEPENDS ${DOXYGEN_INDEX_FILE}
-				  BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/api
-                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                  COMMENT "Generating documentation with Sphinx")
+	COMMAND ${SPHINX_EXECUTABLE} -b html
+	-Dbreathe_projects.${PROJECT_NAME}=${DOXYGEN_OUTPUT_DIR}
+	${SPHINX_SOURCE} ${SPHINX_BUILD}
+	DEPENDS ${DOXYGEN_INDEX_FILE}
+	BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/api
+	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	COMMENT "Generating documentation with Sphinx")
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/sphinx/ DESTINATION ${CMAKE_INSTALL_DOCDIR} PATTERN .doctrees EXCLUDE)

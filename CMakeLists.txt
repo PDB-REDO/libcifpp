@@ -411,8 +411,6 @@ write_basic_package_version_file(
 )
 
 if(BUILD_TESTING)
-	enable_testing()
-
 	find_package(Boost REQUIRED)
 
 	list(APPEND CIFPP_tests unit-v2 unit-3d format model rename-compound sugar spinner)
