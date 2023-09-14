@@ -108,13 +108,9 @@ This checks out the source code from github, creates a new directory
 where cmake stores its files. Run a configure, build the code and then
 it installs the library and auxiliary files.
 
-If you want to run the tests before installing, you should add `-DENABLE_TESTING=ON`
-to the first cmake command. So that would be:
+Tests are created by default, and to test the code you can run:
 
 ```console
- git clone https://github.com/PDB-REDO/libcifpp.git --recurse-submodules
- cd libcifpp
- cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=ON
  cmake --build build
  ctest --test-dir build
 ```
