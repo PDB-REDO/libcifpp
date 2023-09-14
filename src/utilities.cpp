@@ -43,11 +43,6 @@
 #include <sstream>
 #include <thread>
 
-#if not defined(_WIN32)
-#include <sys/ioctl.h>
-#include <termios.h>
-#endif
-
 namespace fs = std::filesystem;
 
 // --------------------------------------------------------------------
@@ -88,6 +83,8 @@ uint32_t get_terminal_width()
 
 #else
 
+#include <sys/ioctl.h>
+#include <termios.h>
 #include <limits.h>
 
 uint32_t get_terminal_width()

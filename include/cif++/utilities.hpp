@@ -77,6 +77,9 @@ extern CIFPP_EXPORT int VERBOSE;
 /// return the git 'build' number
 std::string get_version_nr();
 
+/// return the width of the current output terminal, or 80 if it cannot be determined
+uint32_t get_terminal_width();
+
 // --------------------------------------------------------------------
 
 namespace colour
