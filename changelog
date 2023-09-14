@@ -1,3 +1,8 @@
+Version 5.2.1
+- New versionstring module
+- small fixes for generating documentation
+- correctly setting SONAME
+
 Version 5.2.0
 - With lots of documentation
 - Refactored coloured text output
