@@ -26,7 +26,7 @@ Writing is equally easy:
 	file << "Hello, world!";
 	file.close();
 
-You can also use the :cpp:class:`cif::gzio:istream` and feed it a *std::streambuf* object that may or may not contain compressed data. In that case the first bytes of the input are sniffed and if it is gzip compressed data, decompression will be done.
+You can also use the :cpp:class:`cif::gzio::istream` and feed it a *std::streambuf* object that may or may not contain compressed data. In that case the first bytes of the input are sniffed and if it is gzip compressed data, decompression will be done.
 
 A progress bar
 --------------

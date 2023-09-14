@@ -1,3 +1,8 @@
+Version 5.2.2
+- Remove dependency on Eigen3 for users of libcifpp
+- Fix typos in documentation
+- Do not build latex files in documentation
+
 Version 5.2.1
 - New versionstring module
 - small fixes for generating documentation
