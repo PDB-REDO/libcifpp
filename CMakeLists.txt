@@ -36,6 +36,7 @@ include(CheckLibraryExists)
 include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
 include(GenerateExportHeader)
+include(CTest)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -83,8 +84,6 @@ else()
 endif()
 
 # Unit tests
-option(ENABLE_TESTING "Build test exectuables" OFF)
-
 if(BUILD_FOR_CCP4)
 	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
 		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
@@ -411,7 +410,7 @@ write_basic_package_version_file(
 	COMPATIBILITY AnyNewerVersion
 )
 
-if(ENABLE_TESTING)
+if(BUILD_TESTING)
 	enable_testing()
 
 	find_package(Boost REQUIRED)
