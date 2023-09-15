@@ -2,6 +2,10 @@
 
 This library contains code to work with mmCIF and legacy PDB files.
 
+## Documentation
+
+The documentation can be found at https://www.hekkelman.com/libcifpp-doc/
+
 ## Synopsis
 
 ```c++
