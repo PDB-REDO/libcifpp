@@ -882,7 +882,7 @@ class spherical_dots
 
 	spherical_dots()
 	{
-		constexpr double
+		const double
 			kGoldenRatio = (1 + std::sqrt(5.0)) / 2;
 
 		auto p = m_points.begin();
