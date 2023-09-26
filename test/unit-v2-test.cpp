@@ -150,6 +150,31 @@ BOOST_AUTO_TEST_CASE(cc_2)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(cc_3)
+{
+	cif::category c("foo");
+	c.emplace({
+		{ "f-1", 1 },
+		{ "f-2", "-1" },
+		{ "f-3", "+1" },
+		{ "f-4", " 1" },
+		{ "f-5", " +1" },
+		{ "f-6", "1 " },
+	});
+
+	auto row = c.front();
+	BOOST_CHECK_EQUAL(row["f-1"].as<int>(), 1);
+	BOOST_CHECK_EQUAL(row["f-2"].as<int>(), -1);
+	BOOST_CHECK_EQUAL(row["f-3"].as<int>(), 1);
+
+	// BOOST_CHECK_THROW(row["f-4"].as<int>(), std::exception);
+	// BOOST_CHECK_THROW(row["f-5"].as<int>(), std::exception);
+	// BOOST_CHECK_THROW(row["f-6"].as<int>(), std::exception);
+	BOOST_CHECK_EQUAL(row["f-4"].as<int>(), 0);
+	BOOST_CHECK_EQUAL(row["f-5"].as<int>(), 0);
+	BOOST_CHECK_EQUAL(row["f-6"].as<int>(), 0);
+}
+
 BOOST_AUTO_TEST_CASE(item_1)
 {
 	using namespace cif;
