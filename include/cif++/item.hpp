@@ -459,9 +459,14 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 		{
 			auto txt = ref.text();
 
-			std::from_chars_result r = selected_charconv<value_type>::from_chars(txt.data(), txt.data() + txt.size(), result);
+			auto b = txt.data();
+			auto e = txt.data() + txt.size();
 
-			if (r.ec != std::errc())
+			std::from_chars_result r = (b + 1 < e and *b == '+' and std::isdigit(b[1])) ?
+				selected_charconv<value_type>::from_chars(b + 1, e, result) :
+				selected_charconv<value_type>::from_chars(b, e, result);
+
+			if (r.ec != std::errc() or r.ptr != e)
 			{
 				result = {};
 				if (cif::VERBOSE)
@@ -470,6 +475,8 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 						std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number\n";
 					else if (r.ec == std::errc::result_out_of_range)
 						std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small\n";
+					else
+						std::cerr << "Not a valid number " << std::quoted(txt) << '\n';
 				}
 			}
 		}
@@ -489,9 +496,14 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 		{
 			value_type v = {};
 
-			std::from_chars_result r = selected_charconv<value_type>::from_chars(txt.data(), txt.data() + txt.size(), v);
+			auto b = txt.data();
+			auto e = txt.data() + txt.size();
 
-			if (r.ec != std::errc())
+			std::from_chars_result r = (b + 1 < e and *b == '+' and std::isdigit(b[1])) ?
+				selected_charconv<value_type>::from_chars(b + 1, e, v) :
+				selected_charconv<value_type>::from_chars(b, e, v);
+
+			if (r.ec != std::errc() or r.ptr != e)
 			{
 				if (cif::VERBOSE)
 				{
@@ -499,6 +511,8 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 						std::cerr << "Attempt to convert " << std::quoted(txt) << " into a number\n";
 					else if (r.ec == std::errc::result_out_of_range)
 						std::cerr << "Conversion of " << std::quoted(txt) << " into a type that is too small\n";
+					else
+						std::cerr << "Not a valid number " << std::quoted(txt) << '\n';
 				}
 				result = 1;
 			}
