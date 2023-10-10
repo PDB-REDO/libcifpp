@@ -182,17 +182,17 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 
 void file::load(const std::filesystem::path &p)
 {
+	gzio::ifstream in(p);
+	if (not in.is_open())
+		throw std::runtime_error("Could not open file '" + p.string() + '\'');
+
 	try
 	{
-		gzio::ifstream in(p);
-		if (not in.is_open())
-			throw std::runtime_error("Could not open file " + p.string());
-
 		load(in);
 	}
 	catch (const std::exception &)
 	{
-		throw_with_nested(std::runtime_error("Error reading file " + p.string()));
+		throw_with_nested(std::runtime_error("Error reading file '" + p.string() + '\''));
 	}
 }
 

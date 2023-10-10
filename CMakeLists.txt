@@ -37,6 +37,7 @@ include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
 include(GenerateExportHeader)
 include(CTest)
+include(CMakeDependentOption)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -50,9 +51,6 @@ elseif(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-# Building shared libraries?
-option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
-
 # Build documentation?
 option(BUILD_DOCUMENTATION "Build the documentation" OFF)
 
@@ -61,6 +59,10 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Optionally build a version to be installed inside CCP4
 option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
+
+# Building shared libraries?
+cmake_policy(SET CMP0127 NEW)
+cmake_dependent_option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF "NOT (BUILD_FOR_CCP4 AND WIN32)" ON)
 
 # Lots of code depend on the availability of the components.cif file
 option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
@@ -317,11 +319,12 @@ if(CIFPP_DOWNLOAD_CCD)
 endif()
 
 # Installation directories
-set(CIFPP_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp")
+set(CIFPP_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp" CACHE PATH "The directory where dictionary files are stored")
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
 
 if(UNIX)
-	set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp")
+	set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp"
+		CACHE PATH "The directory where the update script stores new dictionary files")
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 
 	set(CIFPP_ETC_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
