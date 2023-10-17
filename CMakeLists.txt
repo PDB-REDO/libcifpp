@@ -65,7 +65,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
 	cmake_policy(SET CMP0127 NEW)
 	cmake_dependent_option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF "NOT (BUILD_FOR_CCP4 AND WIN32)" ON)
 else()
-	cmake_dependent_option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
+	option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 endif()
 
 # Lots of code depend on the availability of the components.cif file
