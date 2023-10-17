@@ -3,6 +3,7 @@ Version 5.2.2
 - Fix typos in documentation
 - Do not build latex files in documentation
 - Fixed conversion from string to integer, would fail on +2 e.g.
+- sqrt is not constexpr, thus kGoldenRatio should be const, not constexpr
 
 Version 5.2.1
 - New versionstring module
