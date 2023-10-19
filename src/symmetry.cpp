@@ -80,6 +80,22 @@ void cell::init()
 	m_fractional = inverse(m_orthogonal);
 }
 
+float cell::get_volume() const
+{
+	auto alpha = (m_alpha * kPI) / 180;
+	auto beta = (m_beta * kPI) / 180;
+	auto gamma = (m_gamma * kPI) / 180;
+
+	auto cos_alpha = std::cos(alpha);
+	auto cos_beta = std::cos(beta);
+	auto cos_gamma = std::cos(gamma);
+
+	auto vol = m_a * m_b * m_c;
+	vol *= std::sqrt(1.0f - cos_alpha * cos_alpha - cos_beta * cos_beta - cos_gamma * cos_gamma + 2.0f * cos_alpha * cos_beta * cos_gamma);
+
+	return vol;
+}
+
 // --------------------------------------------------------------------
 
 sym_op::sym_op(std::string_view s)

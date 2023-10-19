@@ -565,8 +565,6 @@ BOOST_AUTO_TEST_CASE(symm_2bi3_1a, *utf::tolerance(0.1f))
 	}
 }
 
-
-
 BOOST_AUTO_TEST_CASE(symm_3bwh_1, *utf::tolerance(0.1f))
 {
 	cif::file f(gTestDir / "3bwh.cif.gz");
@@ -589,3 +587,15 @@ BOOST_AUTO_TEST_CASE(symm_3bwh_1, *utf::tolerance(0.1f))
 		}
 	}
 }
+
+BOOST_AUTO_TEST_CASE(volume_3bwh_1, *utf::tolerance(0.1f))
+{
+	cif::file f(gTestDir / "1juh.cif.gz");
+
+	auto &db = f.front();
+
+	cif::crystal c(db);
+
+	BOOST_CHECK_EQUAL(c.get_cell().get_volume(), 741009.625f);
+}
+

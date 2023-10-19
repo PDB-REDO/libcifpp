@@ -397,6 +397,8 @@ class cell
 	float get_beta() const { return m_beta; }   ///< return angle beta
 	float get_gamma() const { return m_gamma; } ///< return angle gamma
 
+	float get_volume() const; ///< return the calculated volume for this cell
+
 	matrix3x3<float> get_orthogonal_matrix() const { return m_orthogonal; } ///< return the matrix to use to transform coordinates from fractional to orthogonal
 	matrix3x3<float> get_fractional_matrix() const { return m_fractional; } ///< return the matrix to use to transform coordinates from orthogonal to fractional
 
