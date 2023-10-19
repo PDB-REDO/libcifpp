@@ -1,3 +1,7 @@
+Version 5.2.3
+- New constructors for cif::item, one taking std::optional values
+  and another taking only a name resulting in a value '.' (i.e. inapplicable).
+
 Version 5.2.2
 - Remove dependency on Eigen3 for users of libcifpp
 - Fix typos in documentation

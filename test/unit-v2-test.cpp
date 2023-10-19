@@ -204,6 +204,26 @@ BOOST_AUTO_TEST_CASE(item_1)
 	BOOST_CHECK(ci3.empty());
 }
 
+BOOST_AUTO_TEST_CASE(item_2)
+{
+	using namespace cif;
+
+	cif::item i0("test1");
+	BOOST_CHECK(i0.value() == ".");
+
+	cif::item i1("test1", std:: optional<float>());
+	BOOST_CHECK(i1.value() == "?");
+
+	cif::item i2("test1", std::make_optional<float>(1));
+	BOOST_CHECK(i2.value() == "1");
+
+	cif::item i3("test1", std::optional<float>(), 2);
+	BOOST_CHECK(i3.value() == "?");
+
+	cif::item i4("test1", std::make_optional<float>(1), 2);
+	BOOST_CHECK(i4.value() == "1.00");
+}
+
 // --------------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(r_1)

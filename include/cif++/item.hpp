@@ -51,13 +51,50 @@ namespace cif
 {
 
 // --------------------------------------------------------------------
-/// \brief item is a transient class that is used to pass data into rows
-///        but it also takes care of formatting data.
+/** @brief item is a transient class that is used to pass data into rows
+ * but it also takes care of formatting data.
+ * 
+ * 
+ * 
+ * The class cif::item is often used implicitly when creating a row in a category
+ * using the emplace function.
+ * 
+ * @code{.cpp}
+ * cif::category cat("my-cat");
+ * cat.emplace({
+ *   { "item-1", 1 },                             // <- stores an item with value 1
+ *   { "item-2", 1.0, 2 },                        // <- stores an item with value 1.00
+ *   { "item-3", std::optional<int>() },          // <- stores an item with value ?
+ *   { "item-4", std::make_optional<int>(42) },   // <- stores an item with value 42
+ *   { "item-5" }                                 // <- stores an item with value .
+ * });
+ * 
+ * std::cout << cat << '\n';
+ * @endcode
+ * 
+ * Will result in:
+ * 
+ * @code{.txt}
+ * _my-cat.item-1 1
+ * _my-cat.item-2 1.00
+ * _my-cat.item-3 ?
+ * _my-cat.item-4 42
+ * _my-cat.item-5 .
+ * @endcode
+ */
 class item
 {
   public:
 	/// \brief Default constructor, empty item
 	item() = default;
+
+	/// \brief constructor for an item with name \a name and as
+	/// content the character '.', i.e. an inapplicable value.
+	item(std::string_view name)
+		: m_name(name)
+		, m_value({ '.' })
+	{
+	}
 
 	/// \brief constructor for an item with name \a name and as
 	/// content a single character string with content \a value
@@ -68,7 +105,7 @@ class item
 	}
 
 	/// \brief constructor for an item with name \a name and as
-	/// content a the formatted floating point value \a value with
+	/// content the formatted floating point value \a value with
 	/// precision \a precision
 	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
 	item(std::string_view name, const T &value, int precision)
@@ -110,7 +147,7 @@ class item
 	}
 
 	/// \brief constructor for an item with name \a name and as
-	/// content a the formatted integral value \a value
+	/// content the formatted integral value \a value
 	template <typename T, std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T, bool>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
@@ -127,7 +164,7 @@ class item
 	}
 
 	/// \brief constructor for an item with name \a name and as
-	/// content a the formatted boolean value \a value
+	/// content the formatted boolean value \a value
 	template <typename T, std::enable_if_t<std::is_same_v<T, bool>, int> = 0>
 	item(const std::string_view name, const T &value)
 		: m_name(name)
@@ -141,6 +178,37 @@ class item
 		: m_name(name)
 		, m_value(value)
 	{
+	}
+
+	/// \brief constructor for an item with name \a name and as
+	/// content the optional value \a value
+	template <typename T>
+	item(const std::string_view name, const std::optional<T> &value)
+		: m_name(name)
+	{
+		if (value.has_value())
+		{
+			item tmp(name, *value);
+			std::swap(tmp.m_value, m_value);
+		}
+		else
+			m_value.assign("?");
+	}
+
+	/// \brief constructor for an item with name \a name and as
+	/// content the formatted floating point value \a value with
+	/// precision \a precision
+	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+	item(std::string_view name, const std::optional<T> &value, int precision)
+		: m_name(name)
+	{
+		if (value.has_value())
+		{
+			item tmp(name, *value, precision);
+			std::swap(tmp.m_value, m_value);
+		}
+		else
+			m_value.assign("?");
 	}
 
 	/** @cond */
@@ -287,7 +355,7 @@ struct item_handle
 
 	/**
 	 * @brief Assign value @a value to the item referenced
-	 * 
+	 *
 	 * @tparam T Type of the value
 	 * @param value The value
 	 * @return reference to this item_handle
@@ -462,9 +530,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 			auto b = txt.data();
 			auto e = txt.data() + txt.size();
 
-			std::from_chars_result r = (b + 1 < e and *b == '+' and std::isdigit(b[1])) ?
-				selected_charconv<value_type>::from_chars(b + 1, e, result) :
-				selected_charconv<value_type>::from_chars(b, e, result);
+			std::from_chars_result r = (b + 1 < e and *b == '+' and std::isdigit(b[1])) ? selected_charconv<value_type>::from_chars(b + 1, e, result) : selected_charconv<value_type>::from_chars(b, e, result);
 
 			if (r.ec != std::errc() or r.ptr != e)
 			{
@@ -499,9 +565,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 			auto b = txt.data();
 			auto e = txt.data() + txt.size();
 
-			std::from_chars_result r = (b + 1 < e and *b == '+' and std::isdigit(b[1])) ?
-				selected_charconv<value_type>::from_chars(b + 1, e, v) :
-				selected_charconv<value_type>::from_chars(b, e, v);
+			std::from_chars_result r = (b + 1 < e and *b == '+' and std::isdigit(b[1])) ? selected_charconv<value_type>::from_chars(b + 1, e, v) : selected_charconv<value_type>::from_chars(b, e, v);
 
 			if (r.ec != std::errc() or r.ptr != e)
 			{
