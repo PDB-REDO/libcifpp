@@ -125,7 +125,8 @@ endif()
 
 if(MSVC)
     # make msvc standards compliant...
-    add_compile_options(/permissive-)
+    add_compile_options(/permissive- /bigobj)
+	add_link_options(/NODEFAULTLIB:library)
 
 	if(BUILD_SHARED_LIBS)
 		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
@@ -297,11 +298,11 @@ set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
 	PUBLIC
-	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include;${PROJECT_BINARY_DIR};${EIGEN3_INCLUDE_DIR}>"
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include;${PROJECT_BINARY_DIR}>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
+target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES} PRIVATE Eigen3::Eigen)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -344,7 +345,7 @@ install(TARGETS cifpp
 
 if(MSVC AND BUILD_SHARED_LIBS)
 	install(
-		FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+		FILES $<TARGET_PDB_FILE:cifpp>
 		DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		OPTIONAL)
 endif()

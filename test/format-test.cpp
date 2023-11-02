@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(clr_1)
 {
 	using namespace cif::colour;
 
-	std::cout << "Hello, " << cif::coloured("world!", white, red, regular) << '\n'
+	std::cout << "Hello, " << cif::coloured("world!", white, red, cif::colour::regular) << '\n'
 			  << "Hello, " << cif::coloured("world!", white, red, bold) << '\n'
 			  << "Hello, " << cif::coloured("world!", black, red) << '\n'
 			  << "Hello, " << cif::coloured("world!", white, green) << '\n'

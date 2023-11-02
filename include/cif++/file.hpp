@@ -28,7 +28,6 @@
 
 #include <list>
 
-#include "cif++/exports.hpp"
 #include "cif++/datablock.hpp"
 #include "cif++/parser.hpp"
 
