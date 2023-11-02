@@ -1,3 +1,6 @@
+Version 5.2.4
+- Changes required to build on Windows
+
 Version 5.2.3
 - New constructors for cif::item, one taking std::optional values
   and another taking only a name resulting in a value '.' (i.e. inapplicable).
