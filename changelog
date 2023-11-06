@@ -1,3 +1,6 @@
+Version 5.2.5
+- Correctly import the Eigen3 library
+
 Version 5.2.4
 - Changes required to build on Windows
 
