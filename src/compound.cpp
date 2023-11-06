@@ -592,18 +592,17 @@ class CCP4_compound_factory_impl : public compound_factory_impl
 	compound *create(const std::string &id) override;
 
   private:
-	cif::file m_file;
 	fs::path m_CLIBD_MON;
 };
 
 CCP4_compound_factory_impl::CCP4_compound_factory_impl(const fs::path &clibd_mon, std::shared_ptr<compound_factory_impl> next)
 	: compound_factory_impl(next)
-	, m_file((clibd_mon / "list" / "mon_lib_list.cif").string())
 	, m_CLIBD_MON(clibd_mon)
 {
 	const std::regex peptideRx("(?:[lmp]-)?peptide", std::regex::icase);
 
-	auto &chemComps = m_file["comp_list"]["chem_comp"];
+	cif::file file(m_CLIBD_MON / "list" / "mon_lib_list.cif");
+	auto &chemComps = file["comp_list"]["chem_comp"];
 
 	for (const auto &[group, comp_id] : chemComps.rows<std::string, std::string>("group", "id"))
 	{
@@ -618,27 +617,24 @@ compound *CCP4_compound_factory_impl::create(const std::string &id)
 {
 	compound *result = nullptr;
 
-	auto &cat = m_file["comp_list"]["chem_comp"];
+	fs::path resFile = m_CLIBD_MON / cif::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
 
-	auto rs = cat.find(cif::key("id") == id);
+	if (not fs::exists(resFile) and (id == "COM" or id == "CON" or "PRN")) // seriously...
+		resFile = m_CLIBD_MON / cif::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");
 
-	if (rs.size() == 1)
+	if (fs::exists(resFile))
 	{
-		auto row = rs.front();
+		cif::file cf(resFile.string());
 
-		std::string name, group;
-		uint32_t numberAtomsAll, numberAtomsNh;
-		cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
-			row.get("name", "group", "number_atoms_all", "number_atoms_nh");
-
-		fs::path resFile = m_CLIBD_MON / cif::to_lower_copy(id.substr(0, 1)) / (id + ".cif");
-
-		if (not fs::exists(resFile) and (id == "COM" or id == "CON" or "PRN")) // seriously...
-			resFile = m_CLIBD_MON / cif::to_lower_copy(id.substr(0, 1)) / (id + '_' + id + ".cif");
-
-		if (fs::exists(resFile))
+		auto &db_list = cf["comp_list"];
+		auto list = db_list["chem_comp"];
+		
+		if (list.size() == 1)
 		{
-			cif::file cf(resFile.string());
+			std::string name, group;
+			uint32_t numberAtomsAll, numberAtomsNh;
+			cif::tie(name, group, numberAtomsAll, numberAtomsNh) =
+				list.front().get("name", "group", "number_atoms_all", "number_atoms_nh");
 
 			// locate the datablock
 			auto &db = cf["comp_" + id];
