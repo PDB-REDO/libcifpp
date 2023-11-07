@@ -71,6 +71,9 @@ endif()
 # Lots of code depend on the availability of the components.cif file
 option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
+# Sometimes, a build does not want to install the data files
+option(WRITE_DATA_FILES "Install default data files (components.cif, mmcif dictionaries)" ON)
+
 # An optional cron script can be installed to keep the data files up-to-date
 if(UNIX)
 	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
@@ -369,22 +372,24 @@ install(
 	COMPONENT Devel
 )
 
-install(FILES
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
-	${COMPONENTS_CIF}
-	DESTINATION ${CIFPP_DATA_DIR}
-)
-
-if(${CIFPP_CACHE_DIR})
+if(WRITE_DATA_FILES)
 	install(FILES
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
 		${COMPONENTS_CIF}
-		DESTINATION ${CIFPP_CACHE_DIR}
+		DESTINATION ${CIFPP_DATA_DIR}
 	)
+
+	if(${CIFPP_CACHE_DIR})
+		install(FILES
+			${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
+			${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
+			${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
+			${COMPONENTS_CIF}
+			DESTINATION ${CIFPP_CACHE_DIR}
+		)
+	endif()
 endif()
 
 set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in)
