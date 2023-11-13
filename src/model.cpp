@@ -2006,7 +2006,10 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 			continue;
 
 		if (a2.empty() or a2 == ".")
+		{
+			i->set_property("label_comp_id", newCompound);
 			remove_atom(*i);
+		}
 		else if (a1 != a2)
 		{
 			auto ra = r.front();
