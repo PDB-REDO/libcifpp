@@ -44,11 +44,7 @@
 /// The data is loaded by default from a file called `components.cif`. This file
 /// is located using load_resource. (See documentation on cif::load_resource for more information)
 ///
-/// But if the CCP4 environment is available at runtime, the compound information
-/// may also be generated from the CCP4 monomer library.
-///
-/// Note that the information in CCP4 and CCD is not equal.
-///
+/// Note that since version 6 the CCP4 monomer library is no longer used.
 
 /// See also :doc:`/compound` for more information.
 
@@ -157,10 +153,6 @@ class compound
 	float formula_weight() const { return m_formula_weight; } ///< Return the formula mass of the chemical component in Daltons.
 	int formal_charge() const { return m_formal_charge; }     ///< Return the formal charge on the chemical component.
 
-	/// The group record is only available in CCP4 monomer library files.
-	/// For CCD entries this value will always contain 'non-polymer'
-	std::string group() const { return m_group; }
-
 	const std::vector<compound_atom> &atoms() const { return m_atoms; } ///< Return the list of atoms for this compound
 	const std::vector<compound_bond> &bonds() const { return m_bonds; } ///< Return the list of bonds for this compound
 
@@ -176,8 +168,6 @@ class compound
 
   private:
 	friend class compound_factory_impl;
-	friend class CCD_compound_factory_impl;
-	friend class CCP4_compound_factory_impl;
 
 	compound(cif::datablock &db);
 	compound(cif::datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group);
@@ -245,6 +235,8 @@ class compound_factory
 
 	CIFPP_EXPORT static const std::map<std::string, char> kAAMap, ///< Globally accessible static list of the default amino acids
 		kBaseMap;                                                 ///< Globally accessible static list of the default bases
+
+	void report_missing_compound(const std::string &compound_id);
 
   private:
 	compound_factory();

@@ -366,6 +366,14 @@ std::unique_ptr<std::istream> load_resource(std::filesystem::path name);
 void add_file_resource(const std::string &name, std::filesystem::path dataFile);
 
 /**
+ * @brief List all the file resources added with cif::add_file_resource.
+ * 
+ * @param os The std::ostream to write the directories to
+ */
+
+void list_file_resources(std::ostream &os);
+
+/**
  * @brief Add a directory to the list of search directories. This list is
  * searched in a last-in-first-out order.
  * 
@@ -378,5 +386,13 @@ void add_file_resource(const std::string &name, std::filesystem::path dataFile);
  */
 
 void add_data_directory(std::filesystem::path dataDir);
+
+/**
+ * @brief List all the data directories, for error reporting on missing resources.
+ * 
+ * @param os The std::ostream to write the directories to
+ */
+
+void list_data_directories(std::ostream &os);
 
 } // namespace cif

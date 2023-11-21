@@ -3483,3 +3483,11 @@ ATOM      7  CD  PRO A   1      15.762  13.216  43.724  1.00 30.71           C)"
 
 	auto f = cif::pdb::read(is);
 }
+
+// --------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(compound_not_found_test_1)
+{
+	auto cmp = cif::compound_factory::instance().create("&&&");
+	BOOST_CHECK(cmp == nullptr);
+}
