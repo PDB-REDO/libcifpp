@@ -59,7 +59,7 @@ option(BUILD_DOCUMENTATION "Build the documentation" OFF)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Optionally build a version to be installed inside CCP4
-option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
+option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4")
 
 # Building shared libraries?
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
@@ -73,9 +73,7 @@ endif()
 option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
 # An optional cron script can be installed to keep the data files up-to-date
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
-	cmake_dependent_option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON "NOT ${CMAKE_SYSTEM_NAME} STREQUAL \"Linux\"" OFF)
-else()
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
 endif()
 
@@ -158,7 +156,7 @@ if(GXX_LIBSTDCPP)
 	if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will use boost::regex instead")
 
-		find_package(Boost 1.79 QUIET COMPONENTS regex)
+		find_package(Boost QUIET COMPONENTS regex)
 		if (NOT Boost_FOUND)
 			FetchContent_Declare(
 				boost-rx
@@ -167,7 +165,6 @@ if(GXX_LIBSTDCPP)
 			)
 
 			FetchContent_MakeAvailable(boost-rx)
-			get_target_property(BOOST_RX_DIR boost_regex INTERFACE_INCLUDE_DIRECTORIES)
 		endif()
 
 		set(BOOST_REGEX ON)
@@ -202,7 +199,7 @@ endif()
 
 find_package(ZLIB REQUIRED)
 
-find_package(Eigen3 QUIET)
+find_package(Eigen3 REQUIRED)
 
 if(NOT Eigen3_FOUND)
 	FetchContent_Declare(
@@ -312,7 +309,7 @@ generate_export_header(cifpp EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/include/cif+
 
 if(BOOST_REGEX)
 	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
-	target_include_directories(cifpp PRIVATE regex/include)
+	target_link_libraries(cifpp PRIVATE Boost::regex)
 endif()
 
 if(MSVC)
@@ -323,8 +320,10 @@ set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
 	PUBLIC
-	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include;${PROJECT_BINARY_DIR};${EIGEN_INCLUDE_DIR}>"
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+	PRIVATE
+	"${EIGEN_INCLUDE_DIR}"
 )
 
 target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
@@ -350,7 +349,7 @@ endif()
 
 # Installation directories
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
-	cmake_dependent_option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" CACHE PATH "BUILD_FOR_CCP4" "$ENV{CCP4}/share/libcifpp")
+	cmake_dependent_option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" CACHE PATH "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp" "BUILD_FOR_CCP4" "$ENV{CCP4}/share/libcifpp")
 else()
 	option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" PATH)
 endif()
@@ -358,8 +357,12 @@ endif()
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
 
 if(UNIX)
-	set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp"
-		CACHE PATH "The directory where the update script stores new dictionary files")
+	if ("${CMAKE_PREFIX_PATH}" STREQUAL "/usr/local")
+		set(CIFPP_CACHE_DIR "/var/cache/libcifpp")
+	else()
+		set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp")
+	endif()
+	option(CIFPP_CACHE_DIR "The directory where the update script stores new dictionary files" PATH)
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 
 	set(CIFPP_ETC_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
