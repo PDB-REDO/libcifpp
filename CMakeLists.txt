@@ -39,6 +39,7 @@ include(GenerateExportHeader)
 include(CTest)
 include(CMakeDependentOption)
 include(FetchContent)
+include(ExternalProject)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -466,7 +467,8 @@ if(BUILD_TESTING)
 
 		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost Eigen3::Eigen)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
+		target_include_directories(${CIFPP_TEST} PRIVATE ${EIGEN_INCLUDE_DIR})
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
