@@ -451,17 +451,39 @@ write_basic_package_version_file(
 )
 
 if(BUILD_TESTING)
-	find_package(Boost REQUIRED)
+	set(CATCH_BUILD_TESTING OFF)
 
-	list(APPEND CIFPP_tests unit-v2 unit-3d format model rename-compound sugar spinner)
+	find_package(Catch2 3 QUIET)
+
+	if(NOT Catch2_FOUND)
+		Include(FetchContent)
+
+		FetchContent_Declare(
+			Catch2
+			GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+			GIT_TAG v3.4.0
+		)
+
+		FetchContent_MakeAvailable(Catch2)
+	endif()
+
+	list(APPEND CIFPP_tests
+		# unit-v2
+		unit-3d
+		format
+		model
+		rename-compound
+		sugar
+		spinner
+	)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")
 		set(CIFPP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test/${CIFPP_TEST}.cpp")
 
-		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
+		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE} "${CMAKE_CURRENT_SOURCE_DIR}/test/test-main.cpp")
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Catch2::Catch2)
 		target_include_directories(${CIFPP_TEST} PRIVATE ${EIGEN_INCLUDE_DIR})
 
 		if(MSVC)
@@ -476,7 +498,7 @@ if(BUILD_TESTING)
 			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_CURRENT_SOURCE_DIR}/test)
 
 		add_test(NAME ${CIFPP_TEST}
-			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_CURRENT_SOURCE_DIR}/test)
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}> --data-dir ${CMAKE_CURRENT_SOURCE_DIR}/test)
 	endforeach()
 endif()
 

@@ -24,57 +24,40 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "test-main.hpp"
+
 #include <cif++.hpp>
+
+#include <catch2/catch_test_macros.hpp>
 
 #include <iostream>
 #include <fstream>
 
-int main(int argc, char* argv[])
+TEST_CASE("rename")
 {
 	cif::VERBOSE = 3;
 
-	try
-	{
-		std::filesystem::path testdir = std::filesystem::current_path();
+	if (std::filesystem::exists(gTestDir / ".." / "data" / "ccd-subset.cif"))
+		cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
 
-		if (argc == 3)
-			testdir = argv[2];
-		else
-		{
-			while (not testdir.empty() and not std::filesystem::exists(testdir / "test"))
-				testdir = testdir.parent_path();
-			testdir /= "test";
-		}
+	if (std::filesystem::exists(gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic"))
+		cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
 
-		if (std::filesystem::exists(testdir / ".." / "data" / "ccd-subset.cif"))
-			cif::add_file_resource("components.cif", testdir / ".." / "data" / "ccd-subset.cif");
+	cif::compound_factory::instance().push_dictionary(gTestDir / "REA.cif");
+	cif::compound_factory::instance().push_dictionary(gTestDir / "RXA.cif");
 
-		if (std::filesystem::exists(testdir / ".." / "rsrc" / "mmcif_pdbx.dic"))
-			cif::add_file_resource("mmcif_pdbx.dic", testdir / ".." / "rsrc" / "mmcif_pdbx.dic");
+	cif::file f(gTestDir / ".."/"examples"/"1cbs.cif.gz");
+	cif::mm::structure structure(f);
 
-		cif::compound_factory::instance().push_dictionary(testdir / "REA.cif");
-		cif::compound_factory::instance().push_dictionary(testdir / "RXA.cif");
+	auto &res = structure.get_residue("B");
+	structure.change_residue(res, "RXA", {});
 
-		cif::file f(testdir / ".."/"examples"/"1cbs.cif.gz");
-		cif::mm::structure structure(f);
+	structure.cleanup_empty_categories();
 
-		auto &res = structure.get_residue("B");
-		structure.change_residue(res, "RXA", {});
+	f.save(std::cout);
 
-		structure.cleanup_empty_categories();
+	if (not f.is_valid())
+		throw std::runtime_error("Invalid");
 
-		f.save(std::cout);
-
-		if (not f.is_valid())
-			throw std::runtime_error("Invalid");
-
-		f.save(std::cout);
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		exit(1);
-	}
-	
-	return 0;	
+	f.save(std::cout);
 }

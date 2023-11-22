@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2021 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,8 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define BOOST_TEST_ALTERNATIVE_INIT_API
-#include <boost/test/included/unit_test.hpp>
+#include "test-main.hpp"
+
+#include <catch2/catch_test_macros.hpp>
 
 #include <stdexcept>
 
@@ -33,59 +34,30 @@
 
 // --------------------------------------------------------------------
 
-cif::file operator""_cf(const char* text, size_t length)
+cif::file operator""_cf(const char *text, size_t length)
 {
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(text), length);
-
-    std::istream is(&buffer);
-    return cif::file(is);
-}
-
-// --------------------------------------------------------------------
-
-std::filesystem::path gTestDir = std::filesystem::current_path();
-
-bool init_unit_test()
-{
-    cif::VERBOSE = 1;
-
-	// not a test, just initialize test dir
-	if (boost::unit_test::framework::master_test_suite().argc == 2)
-		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
-	else
+	struct membuf : public std::streambuf
 	{
-		while (not gTestDir.empty() and not std::filesystem::exists(gTestDir / "test"))
-			gTestDir = gTestDir.parent_path();
-		gTestDir /= "test";
-	}
+		membuf(char *text, size_t length)
+		{
+			this->setg(text, text, text + length);
+		}
+	} buffer(const_cast<char *>(text), length);
 
-	// do this now, avoids the need for installing
-	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
-
-	// initialize CCD location
-	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
-
-	cif::compound_factory::instance().push_dictionary(gTestDir / "HEM.cif");
-
-	return true;
+	std::istream is(&buffer);
+	return cif::file(is);
 }
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(create_nonpoly_1)
+TEST_CASE("create_nonpoly_1")
 {
-    cif::VERBOSE = 1;
+	cif::VERBOSE = 1;
 
 	cif::file file;
 	file.load_dictionary("mmcif_pdbx.dic");
-	file.emplace("TEST");	// create a datablock
-	
+	file.emplace("TEST"); // create a datablock
+
 	cif::mm::structure structure(file);
 
 	std::string entity_id = structure.create_non_poly_entity("HEM");
@@ -119,7 +91,7 @@ _atom_site.pdbx_formal_charge
 
 	auto hem_atoms = atom_site.rows();
 	std::vector<cif::mm::atom> atom_data;
-	for (auto hem_atom: hem_atoms)
+	for (auto hem_atom : hem_atoms)
 		atom_data.emplace_back(hem_data, hem_atom);
 
 	structure.create_non_poly(entity_id, atom_data);
@@ -191,25 +163,25 @@ _atom_type.symbol   C
 
 	expected.load_dictionary("mmcif_pdbx.dic");
 
-	if (not (expected.front() == structure.get_datablock()))
+	if (not(expected.front() == structure.get_datablock()))
 	{
-		BOOST_TEST(false);
+		REQUIRE(false);
 		std::cout << expected.front() << '\n'
-				<< '\n'
-				<< structure.get_datablock() << '\n';
+				  << '\n'
+				  << structure.get_datablock() << '\n';
 	}
 }
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(create_nonpoly_2)
+TEST_CASE("create_nonpoly_2")
 {
-    cif::VERBOSE = 1;
+	cif::VERBOSE = 1;
 
 	cif::file file;
 	file.load_dictionary("mmcif_pdbx.dic");
-	file.emplace("TEST");	// create a datablock
-	
+	file.emplace("TEST"); // create a datablock
+
 	cif::mm::structure structure(file);
 
 	cif::file lig(gTestDir / "HEM.cif");
@@ -218,8 +190,8 @@ BOOST_AUTO_TEST_CASE(create_nonpoly_2)
 	std::vector<cif::row_initializer> atoms;
 
 	for (const auto &[type_symbol, label_atom_id, Cartn_x, Cartn_y, Cartn_z] :
-		chem_comp_atom.rows<std::string,std::string,float,float,float>(
-				"type_symbol", "atom_id", "model_Cartn_x", "model_Cartn_y", "model_Cartn_z"))
+		chem_comp_atom.rows<std::string, std::string, float, float, float>(
+			"type_symbol", "atom_id", "model_Cartn_x", "model_Cartn_y", "model_Cartn_z"))
 	{
 		atoms.emplace_back(cif::row_initializer{
 			{ "type_symbol", type_symbol },
@@ -227,8 +199,7 @@ BOOST_AUTO_TEST_CASE(create_nonpoly_2)
 			{ "auth_atom_id", label_atom_id },
 			{ "Cartn_x", Cartn_x },
 			{ "Cartn_y", Cartn_y },
-			{ "Cartn_z", Cartn_z }
-		});
+			{ "Cartn_z", Cartn_z } });
 
 		if (atoms.size() == 4)
 			break;
@@ -303,23 +274,23 @@ _atom_type.symbol   C
 
 	expected.load_dictionary("mmcif_pdbx.dic");
 
-	if (not (expected.front() == structure.get_datablock()))
+	REQUIRE(expected.front() == structure.get_datablock());
+
+	if (not(expected.front() == structure.get_datablock()))
 	{
-		BOOST_TEST(false);
+		// REQUIRE(false);
 		std::cout << expected.front() << '\n'
-				<< '\n'
-				<< structure.get_datablock() << '\n';
-		
+				  << '\n'
+				  << structure.get_datablock() << '\n';
 
 		expected.save("/tmp/a");
 		file.save("/tmp/b");
 	}
 }
 
-
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(test_atom_id)
+TEST_CASE("test_atom_id")
 {
 	auto data = R"(
 data_TEST
@@ -389,15 +360,15 @@ _struct_asym.details                       ?
 
 	cif::mm::structure s(data);
 
-	BOOST_CHECK_EQUAL(s.get_atom_by_id("1").get_label_atom_id(), "CHA");
-	BOOST_CHECK_EQUAL(s.get_atom_by_id("2").get_label_atom_id(), "CHC");
-	BOOST_CHECK_EQUAL(s.get_atom_by_id("3").get_label_atom_id(), "CHB");
-	BOOST_CHECK_EQUAL(s.get_atom_by_id("4").get_label_atom_id(), "CHD");
+	REQUIRE(s.get_atom_by_id("1").get_label_atom_id() == "CHA");
+	REQUIRE(s.get_atom_by_id("2").get_label_atom_id() == "CHC");
+	REQUIRE(s.get_atom_by_id("3").get_label_atom_id() == "CHB");
+	REQUIRE(s.get_atom_by_id("4").get_label_atom_id() == "CHD");
 }
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(atom_numbers_1)
+TEST_CASE("atom_numbers_1")
 {
 	const std::filesystem::path test1(gTestDir / ".." / "examples" / "1cbs.cif.gz");
 	cif::file file(test1.string());
@@ -409,27 +380,27 @@ BOOST_AUTO_TEST_CASE(atom_numbers_1)
 	auto ai = atoms.begin();
 
 	for (const auto &[id, label_asym_id, label_seq_id, label_atom_id, auth_seq_id, label_comp_id] :
-		db["atom_site"].rows<std::string,std::string,int,std::string,std::string,std::string>("id", "label_asym_id", "label_seq_id", "label_atom_id", "auth_seq_id", "label_comp_id"))
+		db["atom_site"].rows<std::string, std::string, int, std::string, std::string, std::string>("id", "label_asym_id", "label_seq_id", "label_atom_id", "auth_seq_id", "label_comp_id"))
 	{
 		auto atom = structure.get_atom_by_id(id);
 
-		BOOST_CHECK_EQUAL(atom.get_label_asym_id(), label_asym_id);
-		BOOST_CHECK_EQUAL(atom.get_label_seq_id(), label_seq_id);
-		BOOST_CHECK_EQUAL(atom.get_label_atom_id(), label_atom_id);
-		BOOST_CHECK_EQUAL(atom.get_auth_seq_id(), auth_seq_id);
-		BOOST_CHECK_EQUAL(atom.get_label_comp_id(), label_comp_id);
+		REQUIRE(atom.get_label_asym_id() == label_asym_id);
+		REQUIRE(atom.get_label_seq_id() == label_seq_id);
+		REQUIRE(atom.get_label_atom_id() == label_atom_id);
+		REQUIRE(atom.get_auth_seq_id() == auth_seq_id);
+		REQUIRE(atom.get_label_comp_id() == label_comp_id);
 
-		BOOST_ASSERT(ai != atoms.end());
+		REQUIRE(ai != atoms.end());
 
-		BOOST_CHECK_EQUAL(ai->id(), id);
+		REQUIRE(ai->id() == id);
 		++ai;
 	}
 
-	BOOST_ASSERT(ai == atoms.end());
+	REQUIRE(ai == atoms.end());
 }
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(test_load_2)
+TEST_CASE("test_load_2")
 {
 	using namespace cif::literals;
 
@@ -440,17 +411,17 @@ BOOST_AUTO_TEST_CASE(test_load_2)
 
 	cif::mm::structure s(file);
 
-	BOOST_CHECK(s.polymers().size() == 1);
+	REQUIRE(s.polymers().size() == 1UL);
 
 	auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
 
 	for (auto &poly : s.polymers())
 	{
-		BOOST_CHECK_EQUAL(poly.size(), pdbx_poly_seq_scheme.find("asym_id"_key == poly.get_asym_id()).size());
+		REQUIRE(poly.size() == pdbx_poly_seq_scheme.find("asym_id"_key == poly.get_asym_id()).size());
 	}
 }
 
-BOOST_AUTO_TEST_CASE(remove_residue_1)
+TEST_CASE("remove_residue_1")
 {
 	using namespace cif::literals;
 
@@ -460,5 +431,5 @@ BOOST_AUTO_TEST_CASE(remove_residue_1)
 	cif::mm::structure s(file);
 	s.remove_residue(s.get_residue("B"));
 
-	BOOST_CHECK_NO_THROW(s.validate_atoms());
+	REQUIRE_NOTHROW(s.validate_atoms());
 }
