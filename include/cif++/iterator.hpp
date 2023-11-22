@@ -712,7 +712,7 @@ conditional_iterator_proxy<Category, Ts...>::conditional_iterator_proxy(Category
 			++mCBegin;
 	}
 	else
-		mCBegin == mCEnd;
+		mCBegin = mCEnd;
 
 	uint16_t i = 0;
 	((mCix[i++] = m_cat->get_column_ix(names)), ...);
