@@ -591,7 +591,16 @@ void compound_factory::report_missing_compound(const std::string &compound_id)
 		
 		cif::list_data_directories(std::clog);
 
-		std::clog << "\n(Note that you can add a directory to the search paths by setting the LIBCIFPP_DATA_DIR environmental variable)\n\n";
+		std::clog << "\n(Note that you can add a directory to the search paths by setting the LIBCIFPP_DATA_DIR environmental variable)\n\n"
+				  << "On Linux an optional cron script might have been installed that automatically updates\n"
+				  << "components.cif and mmCIF dictionary files. This script only works when the file\n"
+				  << "libcifpp.conf contains an uncommented line with the text:\n\n"
+				  << "update=true\n\n"
+				  << "If you do not have a working cron script, you can manually update the files\n"
+				  << "in /var/cache/libcifpp using the following commands:\n\n"
+				  << "curl -o " << CACHE_DIR << "/components.cif https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz\n" 
+				  << "curl -o " << CACHE_DIR << "/mmcif_pdbx.dic https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz\n" 
+				  << "curl -o " << CACHE_DIR << "/mmcif_ma.dic https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic\n\n";
 
 		if (m_impl)
 		{
