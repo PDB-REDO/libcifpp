@@ -72,7 +72,9 @@ endif()
 option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
 # An optional cron script can be installed to keep the data files up-to-date
-if(UNIX)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+	cmake_dependent_option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON "NOT ${CMAKE_SYSTEM_NAME} STREQUAL \"Linux\"" OFF)
+else()
 	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
 endif()
 
@@ -94,10 +96,9 @@ if(BUILD_FOR_CCP4)
 	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
 		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
 	else()
-		list(APPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
-		list(APPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
+		list(PREPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
+		list(PREPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
-		set(CMAKE_INSTALL_FULL_DATADIR "${CMAKE_INSTALL_PREFIX}/share/libcifpp")
 
 		if(WIN32)
 			set(BUILD_SHARED_LIBS ON)
@@ -325,7 +326,12 @@ if(CIFPP_DOWNLOAD_CCD)
 endif()
 
 # Installation directories
-set(CIFPP_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp" CACHE PATH "The directory where dictionary files are stored")
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+	cmake_dependent_option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" CACHE PATH "BUILD_FOR_CCP4" "$ENV{CCP4}/share/libcifpp")
+else()
+	option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" PATH)
+endif()
+
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
 
 if(UNIX)
