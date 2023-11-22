@@ -199,19 +199,21 @@ endif()
 
 find_package(ZLIB REQUIRED)
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 QUIET)
 
-if(NOT Eigen3_FOUND)
-	FetchContent_Declare(
-		eigen3
+if(Eigen3_FOUND)
+	get_target_property(EIGEN_INCLUDE_DIR Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+else()
+	ExternalProject_Add(
+		local_Eigen3
 		GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
 		GIT_TAG 3.4.0
+		CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/external
 	)
 
-	FetchContent_MakeAvailable(eigen3)
+	set(EIGEN3_D local_Eigen3)
+	set(EIGEN_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/include)
 endif()
-
-get_target_property(EIGEN_INCLUDE_DIR Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
 
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
@@ -355,6 +357,9 @@ else()
 endif()
 
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
+if(${EIGEN3_D})
+	add_dependencies(cifpp ${EIGEN3_D})
+endif()
 
 if(UNIX)
 	if ("${CMAKE_PREFIX_PATH}" STREQUAL "/usr/local")
