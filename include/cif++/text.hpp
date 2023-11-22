@@ -38,15 +38,44 @@
 #include <vector>
 
 #if __has_include(<experimental/type_traits>)
+
 #include <experimental/type_traits>
+namespace std_experimental = std::experimental;
+
 #else
-// sub optimal, but replicating the same code is worse
-#include <zeep/type-traits.hpp>
+
+// A quick hack to work around the missing is_detected in MSVC
+namespace std_experimental
+{
+
+namespace detail
+{
+	template <class AlwaysVoid, template <class...> class Op, class... Args>
+	struct detector
+	{
+		using value_t = std::false_type;
+	};
+
+	template <template <class...> class Op, class... Args>
+	struct detector<std::void_t<Op<Args...>>, Op, Args...>
+	{
+		using value_t = std::true_type;
+	};
+} // namespace detail
+
+template <template <class...> class Op, class... Args>
+using is_detected = typename detail::detector<void, Op, Args...>::value_t;
+
+template <template <class...> class Op, class... Args>
+const auto is_detected_v = is_detected<Op, Args...>::value;
+
+} // namespace std_experimental
+
 #endif
 
 /**
  * \file text.hpp
- * 
+ *
  * Various text manipulating routines
  */
 
@@ -82,15 +111,15 @@ void to_upper(std::string &s);
 /**
  * @brief Join the strings in the range [ @a a, @a e ) using
  * @a sep as separator
- * 
+ *
  * Example usage:
- * 
+ *
  * @code {.cpp}
  * std::vector<std::string> v{ "aap", "noot", "mies" };
- * 
+ *
  * assert(cif::join(v.begin(), v.end(), ", ") == "aap, noot, mies");
  * @endcode
- * 
+ *
  */
 template <typename IterType>
 std::string join(IterType b, IterType e, std::string_view sep)
@@ -121,15 +150,15 @@ std::string join(IterType b, IterType e, std::string_view sep)
 
 /**
  * @brief Join the strings in the array @a arr using @a sep as separator
- * 
+ *
  * Example usage:
- * 
+ *
  * @code {.cpp}
  * std::list<std::string> v{ "aap", "noot", "mies" };
- * 
+ *
  * assert(cif::join(v, ", ") == "aap, noot, mies");
  * @endcode
- * 
+ *
  */
 template <typename V>
 std::string join(const V &arr, std::string_view sep)
@@ -139,20 +168,20 @@ std::string join(const V &arr, std::string_view sep)
 
 /**
  * @brief Split the string in @a s based on the characters in @a separators
- * 
+ *
  * Each of the characters in @a separators induces a split.
- * 
+ *
  * When suppress_empty is true, empty strings are not produced in the
  * resulting array.
- * 
+ *
  * Example:
- * 
+ *
  * @code {.cpp}
  * auto v = cif::split("aap:noot,,mies", ":,", true);
- * 
+ *
  * assert(v == std::vector{"aap", "noot", "mies"});
  * @endcode
- * 
+ *
  */
 template <typename StringType = std::string_view>
 std::vector<StringType> split(std::string_view s, std::string_view separators, bool suppress_empty = false)
@@ -183,7 +212,7 @@ std::vector<StringType> split(std::string_view s, std::string_view separators, b
 
 /**
  * @brief Replace all occurrences of @a what in string @a s with the string @a with
- * 
+ *
  * The string @a with may be empty in which case each occurrence of @a what is simply
  * deleted.
  */
@@ -270,7 +299,6 @@ struct iless
 	}
 };
 
-
 /// iset is a std::set of std::string but with a comparator that
 /// ignores character case.
 using iset = std::set<std::string, iless>;
@@ -290,12 +318,12 @@ inline char tolower(int ch)
 // --------------------------------------------------------------------
 
 /** \brief return a tuple consisting of the category and item name for @a tag
- * 
+ *
  * The category name is stripped of its leading underscore character.
- * 
+ *
  * If no dot character was found, the category name is empty. That's for
  * cif 1.0 formatted data.
-*/
+ */
 
 std::tuple<std::string, std::string> split_tag_name(std::string_view tag);
 
@@ -307,7 +335,7 @@ std::string cif_id_for_number(int number);
 // --------------------------------------------------------------------
 
 /** \brief custom word wrapping routine.
- * 
+ *
  * Wrap the text in @a text based on a maximum line width @a width using
  * a dynamic programming approach to get the most efficient filling of
  * the space.
@@ -574,10 +602,10 @@ using from_chars_function = decltype(std::from_chars(std::declval<const char *>(
 /**
  * @brief Helper to select the best implementation of charconv based on availability of the
  * function in the std:: namespace
- * 
+ *
  * @tparam T The type for which we want to find a from_chars/to_chars function
  */
 template <typename T>
-using selected_charconv = typename std::conditional_t<std::experimental::is_detected_v<from_chars_function, T>, std_charconv<T>, my_charconv<T>>;
+using selected_charconv = typename std::conditional_t<std_experimental::is_detected_v<from_chars_function, T>, std_charconv<T>, my_charconv<T>>;
 
 } // namespace cif

@@ -87,9 +87,6 @@ Other requirements are:
   is the package `zlib1g-dev`.
 - [boost](https://www.boost.org).
 
-When building using MS Visual Studio, you will also need [libzeep](https://github.com/mhekkel/libzeep)
-since MSVC does not yet provide a C++ template required by libcifpp.
-
 The Boost libraries are only needed in case you want to build the test
 code or if you are using GCC. That last condition is due to a long
 standing bug in the implementation of std::regex. It simply crashes
