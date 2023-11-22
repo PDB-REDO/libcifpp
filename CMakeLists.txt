@@ -38,6 +38,7 @@ include(CheckCXXSourceCompiles)
 include(GenerateExportHeader)
 include(CTest)
 include(CMakeDependentOption)
+include(FetchContent)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -157,7 +158,18 @@ if(GXX_LIBSTDCPP)
 	if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will use boost::regex instead")
 
-		add_subdirectory(regex EXCLUDE_FROM_ALL)
+		find_package(Boost 1.79 QUIET COMPONENTS regex)
+		if (NOT Boost_FOUND)
+			FetchContent_Declare(
+				boost-rx
+				GIT_REPOSITORY https://github.com/boostorg/regex
+				GIT_TAG boost-1.83.0
+			)
+
+			FetchContent_MakeAvailable(boost-rx)
+			get_target_property(BOOST_RX_DIR boost_regex INTERFACE_INCLUDE_DIRECTORIES)
+		endif()
+
 		set(BOOST_REGEX ON)
 	endif()
 endif()
@@ -190,8 +202,19 @@ endif()
 
 find_package(ZLIB REQUIRED)
 
-find_package(Eigen3 REQUIRED)
-get_property(EIGEN_INCLUDE_DIR TARGET Eigen3::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+find_package(Eigen3 QUIET)
+
+if(NOT Eigen3_FOUND)
+	FetchContent_Declare(
+		eigen3
+		GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+		GIT_TAG 3.4.0
+	)
+
+	FetchContent_MakeAvailable(eigen3)
+endif()
+
+get_target_property(EIGEN_INCLUDE_DIR Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
 
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
