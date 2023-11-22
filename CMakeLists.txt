@@ -213,7 +213,7 @@ else()
 	)
 
 	set(EIGEN3_D local_Eigen3)
-	set(EIGEN_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/include)
+	set(EIGEN_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/include/eigen3)
 endif()
 
 include(FindFilesystem)
