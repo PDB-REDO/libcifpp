@@ -434,17 +434,17 @@ TEST_CASE("symm_4wvp_1, *utf::tolerance(0.1f)")
 	auto a = s.get_residue("A", 10, "").get_atom_by_atom_id("O");
 
 	auto sp1 = c.symmetry_copy(a.get_location(), "2_565"_symop);
-	REQUIRE_THAT(sp1.m_x, Catch::Matchers::WithinAbs(p.m_x, 1.0f));
-	REQUIRE_THAT(sp1.m_y, Catch::Matchers::WithinAbs(p.m_y, 1.0f));
-	REQUIRE_THAT(sp1.m_z, Catch::Matchers::WithinAbs(p.m_z, 1.0f));
+	REQUIRE_THAT(sp1.m_x, Catch::Matchers::WithinAbs(p.m_x, 0.5f));
+	REQUIRE_THAT(sp1.m_y, Catch::Matchers::WithinAbs(p.m_y, 0.5f));
+	REQUIRE_THAT(sp1.m_z, Catch::Matchers::WithinAbs(p.m_z, 0.5f));
 
 	const auto &[d, sp2, so] = c.closest_symmetry_copy(p, a.get_location());
 
 	REQUIRE(d < 1);
 
-	REQUIRE_THAT(sp2.m_x, Catch::Matchers::WithinAbs(p.m_x, 1.0f));
-	REQUIRE_THAT(sp2.m_y, Catch::Matchers::WithinAbs(p.m_y, 1.0f));
-	REQUIRE_THAT(sp2.m_z, Catch::Matchers::WithinAbs(p.m_z, 1.0f));
+	REQUIRE_THAT(sp2.m_x, Catch::Matchers::WithinAbs(p.m_x, 0.5f));
+	REQUIRE_THAT(sp2.m_y, Catch::Matchers::WithinAbs(p.m_y, 0.5f));
+	REQUIRE_THAT(sp2.m_z, Catch::Matchers::WithinAbs(p.m_z, 0.5f));
 
 }
 
@@ -480,17 +480,17 @@ TEST_CASE("symm_2bi3_1, *utf::tolerance(0.1f)")
 		auto sa1 = c.symmetry_copy(a1.get_location(), cif::sym_op(symm1));
 		auto sa2 = c.symmetry_copy(a2.get_location(), cif::sym_op(symm2));
 
-		REQUIRE_THAT(cif::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 1.0f));
+		REQUIRE_THAT(cif::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
 
 		auto pa1 = a1.get_location();
 
 		const auto &[d, p, so] = c.closest_symmetry_copy(pa1, a2.get_location());
 
-		REQUIRE_THAT(p.m_x, Catch::Matchers::WithinAbs(sa2.m_x, 1.0f));
-		REQUIRE_THAT(p.m_y, Catch::Matchers::WithinAbs(sa2.m_y, 1.0f));
-		REQUIRE_THAT(p.m_z, Catch::Matchers::WithinAbs(sa2.m_z, 1.0f));
+		REQUIRE_THAT(p.m_x, Catch::Matchers::WithinAbs(sa2.m_x, 0.5f));
+		REQUIRE_THAT(p.m_y, Catch::Matchers::WithinAbs(sa2.m_y, 0.5f));
+		REQUIRE_THAT(p.m_z, Catch::Matchers::WithinAbs(sa2.m_z, 0.5f));
 
-		REQUIRE_THAT(d, Catch::Matchers::WithinAbs(dist, 1.0f));
+		REQUIRE_THAT(d, Catch::Matchers::WithinAbs(dist, 0.5f));
 		REQUIRE(so.string() == symm2);
 	}
 }
@@ -530,15 +530,15 @@ TEST_CASE("symm_2bi3_1a, *utf::tolerance(0.1f)")
 		auto sa1 = c.symmetry_copy(p1, cif::sym_op(symm1));
 		auto sa2 = c.symmetry_copy(p2, cif::sym_op(symm2));
 
-		REQUIRE_THAT(cif::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 1.0f));
+		REQUIRE_THAT(cif::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
 
 		const auto &[d, p, so] = c.closest_symmetry_copy(p1, p2);
 
-		REQUIRE_THAT(p.m_x, Catch::Matchers::WithinAbs(sa2.m_x, 1.0f));
-		REQUIRE_THAT(p.m_y, Catch::Matchers::WithinAbs(sa2.m_y, 1.0f));
-		REQUIRE_THAT(p.m_z, Catch::Matchers::WithinAbs(sa2.m_z, 1.0f));
+		REQUIRE_THAT(p.m_x, Catch::Matchers::WithinAbs(sa2.m_x, 0.5f));
+		REQUIRE_THAT(p.m_y, Catch::Matchers::WithinAbs(sa2.m_y, 0.5f));
+		REQUIRE_THAT(p.m_z, Catch::Matchers::WithinAbs(sa2.m_z, 0.5f));
 
-		REQUIRE_THAT(d, Catch::Matchers::WithinAbs(dist, 1.0f));
+		REQUIRE_THAT(d, Catch::Matchers::WithinAbs(dist, 0.5f));
 		REQUIRE(so.string() == symm2);
 	}
 }
@@ -561,7 +561,7 @@ TEST_CASE("symm_3bwh_1, *utf::tolerance(0.1f)")
 			
 			const auto&[ d, p, so ] = c.closest_symmetry_copy(a1.get_location(), a2.get_location());
 
-			REQUIRE_THAT(d, Catch::Matchers::WithinAbs(distance(a1.get_location(), p), 1.0f));
+			REQUIRE_THAT(d, Catch::Matchers::WithinAbs(distance(a1.get_location(), p), 0.5f));
 		}
 	}
 }
