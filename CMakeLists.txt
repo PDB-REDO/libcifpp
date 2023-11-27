@@ -163,6 +163,8 @@ if(GXX_LIBSTDCPP)
 
 		find_package(Boost QUIET COMPONENTS regex)
 		if (NOT Boost_FOUND)
+			set(BOOST_REGEX_STANDALONE ON)
+
 			FetchContent_Declare(
 				boost-rx
 				GIT_REPOSITORY https://github.com/boostorg/regex
