@@ -45,8 +45,12 @@ set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-# set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+# When building with ninja-multiconfig, build both debug and release by default
+if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
+	set(CMAKE_CROSS_CONFIGS "Debug;Release")
+	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
+endif()
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
@@ -302,6 +306,10 @@ set(project_headers
 
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
 add_library(cifpp::cifpp ALIAS cifpp)
+
+set(CMAKE_DEBUG_POSTFIX d)
+set_target_properties(cifpp PROPERTIES DEBUG_POSTFIX "d")
+
 generate_export_header(cifpp EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/include/cif++/exports.hpp)
 
 if(BOOST_REGEX)
@@ -370,7 +378,7 @@ endif()
 
 # Install rules
 install(TARGETS cifpp
-	EXPORT cifppTargets
+	EXPORT cifpp-targets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -383,8 +391,18 @@ if(MSVC AND BUILD_SHARED_LIBS)
 		OPTIONAL)
 endif()
 
-install(EXPORT cifppTargets
-	FILE "cifppTargets.cmake"
+# Clean up old config files (with old names)
+file(GLOB OLD_CONFIG_FILES
+${CMAKE_INSTALL_FULL_LIBDIR}/cmake/cifpp/cifppConfig*.cmake
+${CMAKE_INSTALL_FULL_LIBDIR}/cmake/cifpp/cifppTargets*.cmake)
+
+if (OLD_CONFIG_FILES)
+message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
+install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
+endif()
+
+install(EXPORT cifpp-targets
+	FILE "cifpp-targets.cmake"
 	NAMESPACE cifpp::
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 )
@@ -419,18 +437,18 @@ if(${CIFPP_CACHE_DIR})
 	)
 endif()
 
-set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in)
+set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifpp-config.cmake.in)
 
 configure_package_config_file(
 	${CONFIG_TEMPLATE_FILE}
-	${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 	PATH_VARS CIFPP_DATA_DIR
 )
 
 install(FILES
-	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
-	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config-version.cmake"
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 	COMPONENT Devel
 )
@@ -445,7 +463,7 @@ set_property(TARGET cifpp APPEND PROPERTY
 )
 
 write_basic_package_version_file(
-	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config-version.cmake"
 	VERSION ${PROJECT_VERSION}
 	COMPATIBILITY AnyNewerVersion
 )
