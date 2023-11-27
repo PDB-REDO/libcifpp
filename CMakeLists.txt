@@ -356,7 +356,7 @@ endif()
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
 	cmake_dependent_option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" CACHE PATH "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp" "BUILD_FOR_CCP4" "$ENV{CCP4}/share/libcifpp")
 else()
-	option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" PATH)
+	option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp")
 endif()
 
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
