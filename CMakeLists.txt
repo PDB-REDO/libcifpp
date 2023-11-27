@@ -161,7 +161,7 @@ if(GXX_LIBSTDCPP)
 	if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will use boost::regex instead")
 
-		find_package(Boost QUIET COMPONENTS regex)
+		find_package(Boost 1.80 QUIET COMPONENTS regex)
 		if (NOT Boost_FOUND)
 			set(BOOST_REGEX_STANDALONE ON)
 
@@ -316,7 +316,7 @@ generate_export_header(cifpp EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/include/cif+
 
 if(BOOST_REGEX)
 	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
-	target_link_libraries(cifpp PRIVATE Boost::regex)
+	get_target_property(BOOST_REGEX_INCLUDE_DIR Boost::regex INTERFACE_INCLUDE_DIRECTORIES)
 endif()
 
 if(MSVC)
@@ -331,6 +331,7 @@ target_include_directories(cifpp
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	PRIVATE
 	"${EIGEN_INCLUDE_DIR}"
+	"${BOOST_REGEX_INCLUDE_DIR}"
 )
 
 target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
