@@ -473,6 +473,8 @@ write_basic_package_version_file(
 
 if(BUILD_TESTING)
 	set(CATCH_BUILD_TESTING OFF)
+	set(CATCH_INSTALL_DOCS OFF)
+	set(CATCH_INSTALL_EXTRAS OFF)
 
 	find_package(Catch2 3 QUIET)
 
