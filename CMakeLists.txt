@@ -344,12 +344,26 @@ if(CIFPP_DOWNLOAD_CCD)
 	# download the components.cif file from CCD
 	set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
 
+	if(EXISTS ${COMPONENTS_CIF})
+		file(SIZE ${COMPONENTS_CIF} CCD_FILE_SIZE)
+		if (CCD_FILE_SIZE EQUAL 0)
+			message(STATUS "Removing empty ${COMPONENTS_CIF} file")
+			file(REMOVE "${COMPONENTS_CIF}")
+		endif()
+	endif()
+
 	if(NOT EXISTS ${COMPONENTS_CIF})
 		if(NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
 			file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 		endif()
 
-		file(DOWNLOAD https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF} SHOW_PROGRESS)
+		message(STATUS "Trying to download the file https://files.wwpdb.org/pub/pdb/data/monomers/components.cif")
+		file(DOWNLOAD "https://files.wwpdb.org/pub/pdb/data/monomers/components.cif" "${COMPONENTS_CIF}" SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
+
+		list(POP_FRONT CCD_FETCH_STATUS CCD_FETCH_STATUS_CODE)
+		if(NOT CCD_FETCH_STATUS_CODE EQUAL 0)
+			message(FATAL_ERROR "Error trying to download CCD file: ${CCD_FETCH_STATUS}")
+		endif()
 	endif()
 
 	add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
@@ -473,22 +487,17 @@ write_basic_package_version_file(
 
 if(BUILD_TESTING)
 	set(CATCH_BUILD_TESTING OFF)
-	set(CATCH_INSTALL_DOCS OFF)
-	set(CATCH_INSTALL_EXTRAS OFF)
 
-	find_package(Catch2 3 QUIET)
+	# Use a private version of Catch2 since the one in the OS
+	# might not have been compiled with C++17 as standard
+	# resulting in link errors.
+	FetchContent_Declare(
+		Catch2
+		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+		GIT_TAG v3.4.0
+	)
 
-	if(NOT Catch2_FOUND)
-		Include(FetchContent)
-
-		FetchContent_Declare(
-			Catch2
-			GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-			GIT_TAG v3.4.0
-		)
-
-		FetchContent_MakeAvailable(Catch2)
-	endif()
+	FetchContent_MakeAvailable(Catch2)
 
 	list(APPEND CIFPP_tests
 		unit-v2
@@ -547,7 +556,6 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	)
 
 	install(DIRECTORY DESTINATION ${CIFPP_CACHE_DIR})
-	install(DIRECTORY DESTINATION "${CIFPP_ETC_DIR}/libcifpp/cache-update.d")
 
 	# a config file, to make it complete
 	if(NOT EXISTS "${CIFPP_ETC_DIR}/libcifpp.conf")
@@ -556,6 +564,8 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 ]])
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf DESTINATION "${CIFPP_ETC_DIR}")
 		install(CODE "message(\"A configuration file has been written to ${CIFPP_ETC_DIR}/libcifpp.conf, please edit this file to enable automatic updates\")")
+
+		install(DIRECTORY DESTINATION "${CIFPP_ETC_DIR}/libcifpp/cache-update.d")
 	endif()
 
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
