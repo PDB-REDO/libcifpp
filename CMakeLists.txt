@@ -102,7 +102,7 @@ if(BUILD_FOR_CCP4)
 	else()
 		list(PREPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
 		list(PREPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
-		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
+		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}" CACHE PATH "The directory containing CCP4")
 
 		if(WIN32)
 			set(BUILD_SHARED_LIBS ON)
@@ -357,9 +357,9 @@ endif()
 
 # Installation directories
 if(BUILD_FOR_CCP4)
-	option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" "$ENV{CCP4}/share/libcifpp")
+	set(CIFPP_DATA_DIR "$ENV{CCP4}/share/libcifpp" CACHE PATH "Directory where dictionary and other static data is stored")
 else()
-	option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp")
+	set(CIFPP_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp" CACHE PATH "Directory where dictionary and other static data is stored")
 endif()
 
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
@@ -368,15 +368,15 @@ if(${EIGEN3_D})
 endif()
 
 if(UNIX)
-	if ("${CMAKE_PREFIX_PATH}" STREQUAL "/usr/local")
-		set(CIFPP_CACHE_DIR "/var/cache/libcifpp")
+	if ("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
+		set(CIFPP_CACHE_DIR "/var/cache/libcifpp" CACHE PATH "The directory where downloaded data files are stored")
 	else()
-		set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp")
+		set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp" CACHE PATH "The directory where downloaded data files are stored")
 	endif()
-	option(CIFPP_CACHE_DIR "The directory where the update script stores new dictionary files" PATH)
+
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 
-	set(CIFPP_ETC_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+	set(CIFPP_ETC_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}" CACHE PATH "The directory where the update configuration file is stored")
 endif()
 
 # Install rules
@@ -526,9 +526,13 @@ endif()
 # Optionally install the update scripts for CCD and dictionary files
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "GNU")
-		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly")
+		if ("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
+			set(CIFPP_CRON_DIR "/etc/cron.weekly" CACHE PATH "The cron directory, for the update script")
+		else()
+			set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly" CACHE PATH "The cron directory, for the update script")
+		endif()
 	elseif(UNIX) # assume all others are like FreeBSD...
-		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly")
+		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly" CACHE PATH "The cron directory, for the update script")
 	else()
 		message(FATAL_ERROR "Don't know where to install the update script")
 	endif()
