@@ -357,8 +357,18 @@ if(CIFPP_DOWNLOAD_CCD)
 			file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 		endif()
 
-		message(STATUS "Trying to download the file https://files.wwpdb.org/pub/pdb/data/monomers/components.cif")
-		file(DOWNLOAD "https://files.wwpdb.org/pub/pdb/data/monomers/components.cif" "${COMPONENTS_CIF}" SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
+		find_program(GUNZIP gunzip)
+
+		if(GUNZIP)
+			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
+				SHOW_PROGRESS)
+			add_custom_command(OUTPUT ${COMPONENTS_CIF}
+				COMMAND ${GUNZIP} ${COMPONENTS_CIF}.gz
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
+		else()
+			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
+				SHOW_PROGRESS)
+		endif()
 
 		list(POP_FRONT CCD_FETCH_STATUS CCD_FETCH_STATUS_CODE)
 		if(NOT CCD_FETCH_STATUS_CODE EQUAL 0)
