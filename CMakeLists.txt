@@ -360,18 +360,20 @@ if(CIFPP_DOWNLOAD_CCD)
 		find_program(GUNZIP gunzip)
 
 		if(GUNZIP)
-			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
-				SHOW_PROGRESS)
+			if(NOT EXISTS "${COMPONENTS_CIF}.gz")
+				file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
+					SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
+			endif()
 			add_custom_command(OUTPUT ${COMPONENTS_CIF}
 				COMMAND ${GUNZIP} ${COMPONENTS_CIF}.gz
 				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 		else()
 			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
-				SHOW_PROGRESS)
+				SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
 		endif()
 
 		list(POP_FRONT CCD_FETCH_STATUS CCD_FETCH_STATUS_CODE)
-		if(NOT CCD_FETCH_STATUS_CODE EQUAL 0)
+		if(CCD_FETCH_STATUS_CODE)
 			message(FATAL_ERROR "Error trying to download CCD file: ${CCD_FETCH_STATUS}")
 		endif()
 	endif()
