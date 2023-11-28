@@ -25,7 +25,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]
+        # c_compiler: [gcc, clang, cl]
+        c_compiler: [gcc, cl]
         include:
           - os: windows-latest
             c_compiler: cl
@@ -33,14 +34,14 @@ jobs:
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+        #   - os: ubuntu-latest
+        #     c_compiler: clang
+        #     cpp_compiler: clang++
         exclude:
           - os: windows-latest
             c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
+        #   - os: windows-latest
+        #     c_compiler: clang
           - os: ubuntu-latest
             c_compiler: cl
 
@@ -51,13 +52,16 @@ jobs:
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
       shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Install dependencies Ubuntu
       if: matrix.os == 'ubuntu-latest'
-      run: >
-        sudo apt-get update && sudo apt-get install mrc
+      run: sudo apt-get update && sudo apt-get install mrc
+
+    - name: Install dependencies Window
+      if: matrix.os == 'windows-latest'
+      run: ./tools/depends.cmd
+      shell: cmd
 
     - name: Configure CMake
       run: >

@@ -204,10 +204,7 @@ if(MSVC)
 	endforeach()
 endif()
 
-find_package(ZLIB QUIET)
-if(NOT ZLIB_FOUND)
-	add_subdirectory(external/zlib EXCLUDE_FROM_ALL)
-endif()
+find_package(ZLIB REQUIRED)
 
 find_package(Eigen3 QUIET)
 
