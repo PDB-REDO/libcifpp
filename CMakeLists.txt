@@ -356,8 +356,8 @@ if(CIFPP_DOWNLOAD_CCD)
 endif()
 
 # Installation directories
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
-	cmake_dependent_option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" CACHE PATH "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp" "BUILD_FOR_CCP4" "$ENV{CCP4}/share/libcifpp")
+if(BUILD_FOR_CCP4)
+	option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" "$ENV{CCP4}/share/libcifpp")
 else()
 	option(CIFPP_DATA_DIR "Directory where dictionary and other static data is stored" "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp")
 endif()
@@ -489,7 +489,7 @@ if(BUILD_TESTING)
 	endif()
 
 	list(APPEND CIFPP_tests
-		# unit-v2
+		unit-v2
 		unit-3d
 		format
 		model
@@ -543,7 +543,7 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	install(DIRECTORY DESTINATION ${CIFPP_CACHE_DIR})
 	install(DIRECTORY DESTINATION "${CIFPP_ETC_DIR}/libcifpp/cache-update.d")
 
-	# a config to, to make it complete
+	# a config file, to make it complete
 	if(NOT EXISTS "${CIFPP_ETC_DIR}/libcifpp.conf")
 		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf [[# Uncomment the next line to enable automatic updates
 # update=true

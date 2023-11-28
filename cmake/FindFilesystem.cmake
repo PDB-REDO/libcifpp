@@ -67,6 +67,7 @@ endif()
 cmake_pop_check_state()
 
 set(Filesystem_FOUND ${_found} CACHE BOOL "TRUE if we can run a program using std::filesystem" FORCE)
+mark_as_advanced(Filesystem_FOUND)
 
 if(Filesystem_FIND_REQUIRED AND NOT Filesystem_FOUND)
     message(FATAL_ERROR "Cannot run simple program using std::filesystem")
