@@ -23,26 +23,14 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        # c_compiler: [gcc, clang, cl]
-        c_compiler: [gcc, cl]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: windows-latest
-            c_compiler: cl
             cpp_compiler: cl
           - os: ubuntu-latest
-            c_compiler: gcc
             cpp_compiler: g++
-        #   - os: ubuntu-latest
-        #     c_compiler: clang
-        #     cpp_compiler: clang++
-        exclude:
-          - os: windows-latest
-            c_compiler: gcc
-        #   - os: windows-latest
-        #     c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
+          - os: macos-latest
+            cpp_compiler: clang++
 
     steps:
     - uses: actions/checkout@v3
@@ -66,7 +54,6 @@ jobs:
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=Release
         -DCIFPP_DOWNLOAD_CCD=OFF
         -S ${{ github.workspace }}
@@ -81,31 +68,3 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest --build-config Release --output-on-failure
 
-  xcode_1:
-    runs-on: macos-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-
-    - name: Configure CMake
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_BUILD_TYPE=Release
-        -DCIFPP_DOWNLOAD_CCD=OFF
-        -S ${{ github.workspace }}
-        
-    - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release
-
-    - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config Release --output-on-failure
