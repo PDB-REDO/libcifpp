@@ -334,8 +334,7 @@ target_include_directories(cifpp
 	"${BOOST_REGEX_INCLUDE_DIR}"
 )
 
-target_link_libraries(cifpp PUBLIC Threads::Threads  ${CIFPP_REQUIRED_LIBRARIES})
-target_link_libraries(cifpp PRIVATE $<BUILD_INTERFACE:ZLIB::ZLIB>)
+target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)

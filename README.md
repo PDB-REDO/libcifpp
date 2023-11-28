@@ -83,8 +83,8 @@ Other requirements are:
   library to do amongst others matrix calculations. This usually can be
   installed using your package manager, in Debian/Ubuntu it is called
   `libeigen3-dev`
-- zlib, the development version of this library. On Debian/Ubuntu this
-  is the package `zlib1g-dev`.
+- [zlib](https://github.com/madler/zlib), the development version of this
+  library. On Debian/Ubuntu this is the package `zlib1g-dev`.
 - [boost](https://www.boost.org).
 
 The Boost libraries are only needed in case you want to build the test
