@@ -586,12 +586,13 @@ void compound_factory::report_missing_compound(const std::string &compound_id)
 
 		std::clog << "\n" << cif::coloured("Configuration error:", white, red) << "\n\n"
 				  << "The attempt to retrieve compound information for " << std::quoted(compound_id) << " failed.\n\n"
-				  << "This information is searched for in a CCD file called components.cif or components.cif.gz\n"
-				  << "which should be located in one of the following directories:\n\n";
+				  << "This information is searched for in a CCD file called components.cif or\n"
+				  << "components.cif.gz which should be located in one of the following directories:\n\n";
 		
 		cif::list_data_directories(std::clog);
 
-		std::clog << "\n(Note that you can add a directory to the search paths by setting the LIBCIFPP_DATA_DIR environmental variable)\n\n";
+		std::clog << "\n(Note that you can add a directory to the search paths by setting the \n"
+				  << "LIBCIFPP_DATA_DIR environmental variable)\n\n";
 
 #if defined(CACHE_DIR)		
 		std::clog << "On Linux an optional cron script might have been installed that automatically updates\n"

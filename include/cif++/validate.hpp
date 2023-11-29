@@ -315,11 +315,7 @@ class validator_factory
 {
   public:
 	/// @brief Return the singleton instance
-	static validator_factory &instance()
-	{
-		static validator_factory s_instance;
-		return s_instance;
-	}
+	static validator_factory &instance();
 
 	/// @brief Return the validator with name @a dictionary_name
 	const validator &operator[](std::string_view dictionary_name);

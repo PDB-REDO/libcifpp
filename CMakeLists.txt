@@ -29,7 +29,6 @@ project(libcifpp VERSION 6.0.0 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
@@ -37,7 +36,6 @@ include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
 include(GenerateExportHeader)
 include(CTest)
-include(CMakeDependentOption)
 include(FetchContent)
 include(ExternalProject)
 
@@ -60,17 +58,11 @@ endif()
 # Build documentation?
 option(BUILD_DOCUMENTATION "Build the documentation" OFF)
 
-# We do not want to write an export file for all our symbols...
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
 # Optionally build a version to be installed inside CCP4
 option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4")
 
 # Building shared libraries?
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
-	cmake_policy(SET CMP0127 NEW)
-	cmake_dependent_option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF "NOT (BUILD_FOR_CCP4 AND WIN32)" ON)
-else()
+if(NOT(BUILD_FOR_CCP4 AND WIN32))
 	option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 endif()
 
@@ -78,13 +70,13 @@ endif()
 option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
 # An optional cron script can be installed to keep the data files up-to-date
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" AND NOT BUILD_FOR_CCP4)
 	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
 endif()
 
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
 if(EXISTS "$ENV{CCP4}")
-	if(EXISTS "$ENV{CLIBD}/syminfo.lib")
+	if(EXISTS "$ENV{CCP4}/lib/data/syminfo.lib")
 		option(CIFPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 	else()
 		set(CIFPP_RECREATE_SYMOP_DATA OFF)
@@ -95,14 +87,14 @@ else()
 	message("Not trying to recreate symop_table_data.hpp since CCP4 is not defined")
 endif()
 
-# Unit tests
+# CCP4 build
 if(BUILD_FOR_CCP4)
 	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
 		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
 	else()
 		list(PREPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
 		list(PREPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
-		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}" CACHE PATH "The directory containing CCP4")
+		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
 
 		if(WIN32)
 			set(BUILD_SHARED_LIBS ON)
@@ -110,27 +102,33 @@ if(BUILD_FOR_CCP4)
 	endif()
 endif()
 
+# Now include the GNUInstallDirs module
+include(GNUInstallDirs)
+
 if(WIN32)
-    if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
-        add_definitions(-D _WIN32_WINNT=0x0A00)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
-        add_definitions(-D _WIN32_WINNT=0x0603)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
-        add_definitions(-D _WIN32_WINNT=0x0602)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
-        add_definitions(-D _WIN32_WINNT=0x0601)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
-        add_definitions(-D _WIN32_WINNT=0x0600)
-    else() # Windows XP (5.1)
-        add_definitions(-D _WIN32_WINNT=0x0501)
-    endif()
+	if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
+		add_definitions(-D _WIN32_WINNT=0x0A00)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
+		add_definitions(-D _WIN32_WINNT=0x0603)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
+		add_definitions(-D _WIN32_WINNT=0x0602)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
+		add_definitions(-D _WIN32_WINNT=0x0601)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
+		add_definitions(-D _WIN32_WINNT=0x0600)
+	else() # Windows XP (5.1)
+		add_definitions(-D _WIN32_WINNT=0x0501)
+	endif()
 
 	add_definitions(-DNOMINMAX)
+
+	# We do not want to write an export file for all our symbols...
+	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 if(MSVC)
-    # make msvc standards compliant...
-    add_compile_options(/permissive- /bigobj)
+	# make msvc standards compliant...
+	add_compile_options(/permissive- /bigobj)
 	add_link_options(/NODEFAULTLIB:library)
 
 	if(BUILD_SHARED_LIBS)
@@ -162,7 +160,8 @@ if(GXX_LIBSTDCPP)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will use boost::regex instead")
 
 		find_package(Boost 1.80 QUIET COMPONENTS regex)
-		if (NOT Boost_FOUND)
+
+		if(NOT Boost_FOUND)
 			set(BOOST_REGEX_STANDALONE ON)
 
 			FetchContent_Declare(
@@ -198,6 +197,10 @@ if(MSVC)
 		"$ENV{ProgramFiles${_ZLIB_x86}}/zlib")
 	unset(_ZLIB_x86)
 	list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
+
+	if(BUILD_FOR_CCP4)
+		list(PREPEND _ZLIB_SEARCHES "$ENV{CCP4}/lib")
+	endif()
 
 	foreach(search ${_ZLIB_SEARCHES})
 		find_library(ZLIB_LIBRARY NAMES zlibstatic NAMES_PER_DIR ${${search}} PATH_SUFFIXES lib)
@@ -336,6 +339,10 @@ target_include_directories(cifpp
 
 target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
 
+if(${EIGEN3_D})
+	add_dependencies(cifpp ${EIGEN3_D})
+endif()
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -346,7 +353,8 @@ if(CIFPP_DOWNLOAD_CCD)
 
 	if(EXISTS ${COMPONENTS_CIF})
 		file(SIZE ${COMPONENTS_CIF} CCD_FILE_SIZE)
-		if (CCD_FILE_SIZE EQUAL 0)
+
+		if(CCD_FILE_SIZE EQUAL 0)
 			message(STATUS "Removing empty ${COMPONENTS_CIF} file")
 			file(REMOVE "${COMPONENTS_CIF}")
 		endif()
@@ -357,6 +365,9 @@ if(CIFPP_DOWNLOAD_CCD)
 			file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
 		endif()
 
+		# Since the file(DOWNLOAD) command in cmake does not use
+		# compression, we try to download the gzipped version and
+		# decompress it ourselves.
 		find_program(GUNZIP gunzip)
 
 		if(GUNZIP)
@@ -364,6 +375,7 @@ if(CIFPP_DOWNLOAD_CCD)
 				file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
 					SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
 			endif()
+
 			add_custom_command(OUTPUT ${COMPONENTS_CIF}
 				COMMAND ${GUNZIP} ${COMPONENTS_CIF}.gz
 				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
@@ -372,7 +384,9 @@ if(CIFPP_DOWNLOAD_CCD)
 				SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
 		endif()
 
+		# Do not continue if downloading went wrong
 		list(POP_FRONT CCD_FETCH_STATUS CCD_FETCH_STATUS_CODE)
+
 		if(CCD_FETCH_STATUS_CODE)
 			message(FATAL_ERROR "Error trying to download CCD file: ${CCD_FETCH_STATUS}")
 		endif()
@@ -389,12 +403,9 @@ else()
 endif()
 
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
-if(${EIGEN3_D})
-	add_dependencies(cifpp ${EIGEN3_D})
-endif()
 
-if(UNIX)
-	if ("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
+if(UNIX AND NOT BUILD_FOR_CCP4)
+	if("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
 		set(CIFPP_CACHE_DIR "/var/cache/libcifpp" CACHE PATH "The directory where downloaded data files are stored")
 	else()
 		set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp" CACHE PATH "The directory where downloaded data files are stored")
@@ -403,6 +414,8 @@ if(UNIX)
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 
 	set(CIFPP_ETC_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}" CACHE PATH "The directory where the update configuration file is stored")
+else()
+	unset(CIFPP_CACHE_DIR)
 endif()
 
 # Install rules
@@ -422,12 +435,12 @@ endif()
 
 # Clean up old config files (with old names)
 file(GLOB OLD_CONFIG_FILES
-${CMAKE_INSTALL_FULL_LIBDIR}/cmake/cifpp/cifppConfig*.cmake
-${CMAKE_INSTALL_FULL_LIBDIR}/cmake/cifpp/cifppTargets*.cmake)
+	${CMAKE_INSTALL_FULL_LIBDIR}/cmake/cifpp/cifppConfig*.cmake
+	${CMAKE_INSTALL_FULL_LIBDIR}/cmake/cifpp/cifppTargets*.cmake)
 
-if (OLD_CONFIG_FILES)
-message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
-install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
+if(OLD_CONFIG_FILES)
+	message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
+	install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
 endif()
 
 install(EXPORT cifpp-targets
@@ -456,7 +469,7 @@ install(FILES
 	DESTINATION ${CIFPP_DATA_DIR}
 )
 
-if(${CIFPP_CACHE_DIR})
+if(CIFPP_CACHE_DIR)
 	install(FILES
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
@@ -498,15 +511,12 @@ write_basic_package_version_file(
 )
 
 if(BUILD_TESTING)
-	set(CATCH_BUILD_TESTING OFF)
 
-	# Use a private version of Catch2 since the one in the OS
-	# might not have been compiled with C++17 as standard
-	# resulting in link errors.
+	# We're using the older version 2 of Catch2
 	FetchContent_Declare(
 		Catch2
 		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG v3.4.0
+		GIT_TAG v2.13.9
 	)
 
 	FetchContent_MakeAvailable(Catch2)
@@ -549,7 +559,7 @@ endif()
 # Optionally install the update scripts for CCD and dictionary files
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "GNU")
-		if ("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
+		if("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
 			set(CIFPP_CRON_DIR "/etc/cron.weekly" CACHE PATH "The cron directory, for the update script")
 		else()
 			set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly" CACHE PATH "The cron directory, for the update script")
