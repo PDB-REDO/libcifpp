@@ -10,7 +10,7 @@ euid=${EUID:-$(id -u)}
 
 if [ "${euid}" -ne 0 ]; then
 	echo "Please run as root"
-	exit
+	exit 1
 fi
 
 if [ -f "@CIFPP_ETC_DIR@/libcifpp.conf" ]; then
@@ -19,12 +19,13 @@ fi
 
 # check to see if we're supposed to run at all
 if [ "$update" != "true" ]; then
-	exit
+	exit 0
 fi
 
 # if cache directory doesn't exist, exit.
 if ! [ -d "@CIFPP_CACHE_DIR@" ]; then
-	exit
+	echo "Cache directory '@CIFPP_CACHE_DIR@' does not exist"
+	exit 1
 fi
 
 # Create a temp file in the right directory and
@@ -60,12 +61,16 @@ update_dictionary() {
 
 # Update the dictionaries
 
-update_dictionary "@CIFPP_CACHE_DIR@/components.cif" "https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
+update_dictionary "@CIFPP_CACHE_DIR@/components.cif" "https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz"
 update_dictionary "@CIFPP_CACHE_DIR@/mmcif_pdbx.dic" "https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz"
 update_dictionary "@CIFPP_CACHE_DIR@/mmcif_ma.dic" "https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic"
 
-# notify subscribers, will fail on FreeBSD
+# notify subscribers, using find instead of run-parts to make it work on FreeBSD as well
 
-if [ -d "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" ] && [ -x /bin/run-parts ]; then
-	run-parts --arg "@CIFPP_CACHE_DIR@" -- "@CIFPP_ETC_DIR@/libcifpp/cache-update.d"
+if [ -d "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" ]; then
+	find "@CIFPP_ETC_DIR@/libcifpp/cache-update.d" \
+		-exec test -x {} \; -and -not -exec test -d {} \; \
+		-exec {} "@CIFPP_CACHE_DIR@" \;
 fi
+
+exit 0

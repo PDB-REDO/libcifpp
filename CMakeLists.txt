@@ -66,12 +66,17 @@ if(NOT(BUILD_FOR_CCP4 AND WIN32))
 	option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 endif()
 
-# Lots of code depend on the availability of the components.cif file
-option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
+if(BUILD_FOR_CCP4)
+	unset(CIFPP_DOWNLOAD_CCD)
+	unset(CIFPP_INSTALL_UPDATE_SCRIPT)
+else()
+	# Lots of code depend on the availability of the components.cif file
+	option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
-# An optional cron script can be installed to keep the data files up-to-date
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" AND NOT BUILD_FOR_CCP4)
-	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
+	# An optional cron script can be installed to keep the data files up-to-date
+	if(UNIX)
+		option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
+	endif()
 endif()
 
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
@@ -564,7 +569,7 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 		else()
 			set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly" CACHE PATH "The cron directory, for the update script")
 		endif()
-	elseif(UNIX) # assume all others are like FreeBSD...
+	elseif(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
 		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly" CACHE PATH "The cron directory, for the update script")
 	else()
 		message(FATAL_ERROR "Don't know where to install the update script")
