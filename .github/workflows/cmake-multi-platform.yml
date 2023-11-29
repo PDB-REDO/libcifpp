@@ -56,4 +56,5 @@ jobs:
       run: ctest --build-config Release --output-on-failure
 
     - name: Install
-      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --config Release
+      if: matrix.os != 'windows-latest'
+      run: sudo cmake --install ${{ steps.strings.outputs.build-output-dir }} --config Release

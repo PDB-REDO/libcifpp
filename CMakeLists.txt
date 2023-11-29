@@ -74,7 +74,7 @@ else()
 	option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
 	# An optional cron script can be installed to keep the data files up-to-date
-	if(UNIX)
+	if(UNIX AND NOT APPLE)
 		option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
 	endif()
 endif()
