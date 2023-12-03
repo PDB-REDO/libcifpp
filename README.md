@@ -1,3 +1,7 @@
+[![github CI](https://github.com/pdb-redo/libcifpp/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/pdb-redo/libcifpp/actions)
+[![GitHub License](https://img.shields.io/github/license/:user/:repo)](https://github.com/pdb-redo/libcifpp/LICENSE)
+
+
 # libcifpp
 
 This library contains code to work with mmCIF and legacy PDB files.
