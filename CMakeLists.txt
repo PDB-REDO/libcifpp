@@ -214,20 +214,29 @@ endif()
 
 find_package(ZLIB REQUIRED)
 
-find_package(Eigen3 QUIET)
+# Using Eigen3 is a bit of a thing. We don't want to build it completely since we
+# only need a couple of header files. Nothing special. But often, eigen3 is already
+# installed and then we prefer that.
+find_package(Eigen3 3.4 QUIET)
 
-if(NOT Eigen3_FOUND)
+if(Eigen3_FOUND AND TARGET Eigen3::Eigen)
+	get_target_property(EIGEN_INCLUDE_DIR Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+else()
+
+	# Create a private copy of eigen3 and populate it only, no need to build
 	FetchContent_Declare(
-		Eigen3
+		my-eigen3
 		GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
 		GIT_TAG 3.4.0
 	)
 
-	FetchContent_GetProperties(Eigen3)
-	if(NOT Eigen3_POPULATED)
-	  FetchContent_Populate(Eigen3)
-	  add_subdirectory(${Eigen3_SOURCE_DIR} ${Eigen3_BINARY_DIR} EXCLUDE_FROM_ALL)
+	FetchContent_GetProperties(my-eigen3)
+
+	if(NOT my-eigen3_POPULATED)
+		FetchContent_Populate(my-eigen3)
 	endif()
+
+	set(EIGEN_INCLUDE_DIR ${my-eigen3_SOURCE_DIR})
 endif()
 
 include(FindFilesystem)
@@ -339,11 +348,11 @@ target_include_directories(cifpp
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	PRIVATE
 	"${BOOST_REGEX_INCLUDE_DIR}"
+	"${EIGEN_INCLUDE_DIR}"
 )
 
 target_link_libraries(cifpp
-	PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES}
-	PRIVATE Eigen3::Eigen)
+	PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -539,7 +548,8 @@ if(BUILD_TESTING)
 
 		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE} "${CMAKE_CURRENT_SOURCE_DIR}/test/test-main.cpp")
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Catch2::Catch2 Eigen3::Eigen)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Catch2::Catch2)
+		target_include_directories(${CIFPP_TEST} PRIVATE "${EIGEN_INCLUDE_DIR}")
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
