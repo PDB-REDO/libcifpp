@@ -376,7 +376,10 @@ if(CIFPP_DOWNLOAD_CCD)
 		# decompress it ourselves.
 		find_program(GUNZIP gunzip)
 
-		if(NOT GUNZIP STREQUAL "GUNZIP-NOTFOUND")
+		if(WIN32 OR GUNZIP STREQUAL "GUNZIP-NOTFOUND")
+			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
+				SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
+		else()
 			if(NOT EXISTS "${COMPONENTS_CIF}.gz")
 				file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
 					SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
@@ -387,9 +390,6 @@ if(CIFPP_DOWNLOAD_CCD)
 				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/rsrc/)
 
 			add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
-		else()
-			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
-				SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
 		endif()
 
 		# Do not continue if downloading went wrong
