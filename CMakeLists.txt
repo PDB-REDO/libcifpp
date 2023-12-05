@@ -222,7 +222,6 @@ find_package(Eigen3 3.4 QUIET)
 if(Eigen3_FOUND AND TARGET Eigen3::Eigen)
 	get_target_property(EIGEN_INCLUDE_DIR Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
 else()
-
 	# Create a private copy of eigen3 and populate it only, no need to build
 	FetchContent_Declare(
 		my-eigen3
@@ -386,6 +385,8 @@ if(CIFPP_DOWNLOAD_CCD)
 			add_custom_command(OUTPUT ${COMPONENTS_CIF}
 				COMMAND ${GUNZIP} ${COMPONENTS_CIF}.gz
 				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/rsrc/)
+
+			add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
 		else()
 			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
 				SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
@@ -398,8 +399,6 @@ if(CIFPP_DOWNLOAD_CCD)
 			message(FATAL_ERROR "Error trying to download CCD file: ${CCD_FETCH_STATUS}")
 		endif()
 	endif()
-
-	add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
 endif()
 
 # Installation directories
@@ -518,7 +517,6 @@ write_basic_package_version_file(
 )
 
 if(BUILD_TESTING)
-
 	# We're using the older version 2 of Catch2
 	FetchContent_Declare(
 		Catch2
