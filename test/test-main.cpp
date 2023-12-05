@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
 
 	// initialize CCD location
-	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
+	cif::add_file_resource("components.cif", gTestDir / ".." / "rsrc" / "ccd-subset.cif");
 
 	cif::compound_factory::instance().push_dictionary(gTestDir / "HEM.cif");
 

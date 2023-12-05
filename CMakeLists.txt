@@ -360,7 +360,7 @@ endif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
 if(CIFPP_DOWNLOAD_CCD)
 	# download the components.cif file from CCD
-	set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
+	set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/rsrc/components.cif)
 
 	if(EXISTS ${COMPONENTS_CIF})
 		file(SIZE ${COMPONENTS_CIF} CCD_FILE_SIZE)
@@ -372,10 +372,6 @@ if(CIFPP_DOWNLOAD_CCD)
 	endif()
 
 	if(NOT EXISTS ${COMPONENTS_CIF})
-		if(NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
-			file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
-		endif()
-
 		# Since the file(DOWNLOAD) command in cmake does not use
 		# compression, we try to download the gzipped version and
 		# decompress it ourselves.
@@ -389,7 +385,7 @@ if(CIFPP_DOWNLOAD_CCD)
 
 			add_custom_command(OUTPUT ${COMPONENTS_CIF}
 				COMMAND ${GUNZIP} ${COMPONENTS_CIF}.gz
-				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/rsrc/)
 		else()
 			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
 				SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
@@ -613,7 +609,7 @@ set(CPACK_SOURCE_TGZ ON)
 set(CPACK_SOURCE_TBZ2 OFF)
 set(CPACK_SOURCE_TXZ OFF)
 set(CPACK_SOURCE_TZ OFF)
-set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git")
+set(CPACK_SOURCE_IGNORE_FILES "/rsrc/components.cif;/build;/.vscode;/.git")
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
 include(CPack)

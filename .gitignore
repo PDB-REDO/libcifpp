@@ -2,7 +2,7 @@ build/
 .vscode/
 .vs/
 tools/update-libcifpp-data
-data/components.cif*
+rsrc/components.cif*
 CMakeSettings.json
 msvc/
 src/revision.hpp

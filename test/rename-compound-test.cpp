@@ -37,8 +37,8 @@ TEST_CASE("rename")
 {
 	cif::VERBOSE = 3;
 
-	if (std::filesystem::exists(gTestDir / ".." / "data" / "ccd-subset.cif"))
-		cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
+	if (std::filesystem::exists(gTestDir / ".." / "rsrc" / "ccd-subset.cif"))
+		cif::add_file_resource("components.cif", gTestDir / ".." / "rsrc" / "ccd-subset.cif");
 
 	if (std::filesystem::exists(gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic"))
 		cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
