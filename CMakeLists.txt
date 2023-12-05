@@ -377,7 +377,7 @@ if(CIFPP_DOWNLOAD_CCD)
 		# decompress it ourselves.
 		find_program(GUNZIP gunzip)
 
-		if(GUNZIP)
+		if(NOT GUNZIP STREQUAL "GUNZIP-NOTFOUND")
 			if(NOT EXISTS "${COMPONENTS_CIF}.gz")
 				file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
 					SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
