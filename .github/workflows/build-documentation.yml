@@ -42,7 +42,7 @@ jobs:
 
     - name: Run Sphinx
       run: |
-        cmake --build ${{ steps.strings.outputs.build-output-dir }} --target Sphinx-libmcfp
+        cmake --build ${{ steps.strings.outputs.build-output-dir }} --target Sphinx-libcifpp
         ls -l ${{ steps.strings.outputs.build-output-dir }}
         ls -l ${{ steps.strings.outputs.build-output-dir }}/docs/sphinx
 
