@@ -1,14 +1,13 @@
 [![github CI](https://github.com/pdb-redo/libcifpp/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/pdb-redo/libcifpp/actions)
 [![GitHub License](https://img.shields.io/github/license/pdb-redo/libcifpp)](https://github.com/pdb-redo/libcifpp/LICENSE)
 
-
 # libcifpp
 
 This library contains code to work with mmCIF and legacy PDB files.
 
 ## Documentation
 
-The documentation can be found at https://www.hekkelman.com/libcifpp-doc/
+The documentation can be found at [github.io](https://pdb-redo.github.io/libcifpp/)
 
 ## Synopsis
 
