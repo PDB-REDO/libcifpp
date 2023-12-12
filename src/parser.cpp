@@ -608,6 +608,9 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 	std::string::size_type si = 0;
 	std::string datablock;
 
+	// Seek to beginning of file
+	m_source.pubseekpos(0);
+
 	for (auto ch = m_source.sbumpc(); ch != std::streambuf::traits_type::eof(); ch = m_source.sbumpc())
 	{
 		switch (state)
@@ -667,7 +670,7 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 
 			case data_name:
 				if (is_non_blank(ch))
-					datablock.insert(datablock.end(), char(ch));
+					datablock.insert(datablock.end(), (char)std::toupper(ch));
 				else if (is_space(ch))
 				{
 					if (not datablock.empty())

@@ -56,6 +56,7 @@ endif()
 cmake_pop_check_state()
 
 set(Atomic_FOUND ${_found} CACHE BOOL "TRUE if we can run a program using std::atomic" FORCE)
+mark_as_advanced(Atomic_FOUND)
 
 if(Atomic_FIND_REQUIRED AND NOT Atomic_FOUND)
     message(FATAL_ERROR "Cannot run simple program using std::atomic")

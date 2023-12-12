@@ -845,6 +845,9 @@ class resource_pool
 
 	std::unique_ptr<std::istream> load(fs::path name);
 
+	const auto data_directories() { return mDirs; }
+	const auto file_resources() { return mLocalResources; }
+
   private:
 	resource_pool();
 
@@ -935,6 +938,24 @@ void add_file_resource(const std::string &name, std::filesystem::path dataFile)
 std::unique_ptr<std::istream> load_resource(std::filesystem::path name)
 {
 	return resource_pool::instance().load(name);
+}
+
+void list_file_resources(std::ostream &os)
+{
+	auto &file_resources = resource_pool::instance().file_resources();
+
+	if (not file_resources.empty())
+	{
+		os << "\nThe following named resources were loaded:\n";
+		for (const auto &[name, path] : file_resources)
+			os << name << " -> " << std::quoted(path.string()) << '\n';
+	}
+}
+
+void list_data_directories(std::ostream &os)
+{
+	for (auto &p : resource_pool::instance().data_directories())
+		os << p << '\n';
 }
 
 } // namespace cif

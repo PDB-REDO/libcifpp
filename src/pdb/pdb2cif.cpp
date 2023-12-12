@@ -5146,7 +5146,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 
 			getCategory("struct_conn")->emplace({
 				{ "id", type + std::to_string(linkNr) },
-			{ "conn_type_id", type },
+				{ "conn_type_id", type },
 
 				// { "ccp4_link_id", ccp4LinkID },
 

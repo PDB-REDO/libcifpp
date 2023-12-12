@@ -25,11 +25,10 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(libcifpp VERSION 5.2.5 LANGUAGES CXX)
+project(libcifpp VERSION 6.0.0 LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-include(GNUInstallDirs)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
@@ -37,14 +36,19 @@ include(CMakePackageConfigHelpers)
 include(CheckCXXSourceCompiles)
 include(GenerateExportHeader)
 include(CTest)
-include(CMakeDependentOption)
+include(FetchContent)
+include(ExternalProject)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-# set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+# When building with ninja-multiconfig, build both debug and release by default
+if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
+	set(CMAKE_CROSS_CONFIGS "Debug;Release")
+	set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
+endif()
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
@@ -54,53 +58,40 @@ endif()
 # Build documentation?
 option(BUILD_DOCUMENTATION "Build the documentation" OFF)
 
-# We do not want to write an export file for all our symbols...
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
 # Optionally build a version to be installed inside CCP4
-option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
+option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4")
 
 # Building shared libraries?
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
-	cmake_policy(SET CMP0127 NEW)
-	cmake_dependent_option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF "NOT (BUILD_FOR_CCP4 AND WIN32)" ON)
-else()
+if(NOT(BUILD_FOR_CCP4 AND WIN32))
 	option(BUILD_SHARED_LIBS "Build a shared library instead of a static one" OFF)
 endif()
 
-# Lots of code depend on the availability of the components.cif file
-option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
+if(BUILD_FOR_CCP4)
+	unset(CIFPP_DOWNLOAD_CCD)
+	unset(CIFPP_INSTALL_UPDATE_SCRIPT)
+else()
+	# Lots of code depend on the availability of the components.cif file
+	option(CIFPP_DOWNLOAD_CCD "Download the CCD file components.cif during installation" ON)
 
-# Sometimes, a build does not want to install the data files
-option(WRITE_DATA_FILES "Install default data files (components.cif, mmcif dictionaries)" ON)
-
-# An optional cron script can be installed to keep the data files up-to-date
-if(UNIX)
-	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
+	# An optional cron script can be installed to keep the data files up-to-date
+	if(UNIX AND NOT APPLE)
+		option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
+	endif()
 endif()
 
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
-if(EXISTS "$ENV{CCP4}")
-	if(EXISTS "$ENV{CLIBD}/syminfo.lib")
-		option(CIFPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
-	else()
-		set(CIFPP_RECREATE_SYMOP_DATA OFF)
-		message(WARNING "Symop data table recreation requested, but file syminfo.lib was not found in $ENV{CLIBD}")
-	endif()
-else()
-	set(CIFPP_RECREATE_SYMOP_DATA OFF)
-	message("Not trying to recreate symop_table_data.hpp since CCP4 is not defined")
+if(EXISTS "$ENV{CCP4}/lib/data/syminfo.lib")
+	option(CIFPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 endif()
 
-# Unit tests
+# CCP4 build
 if(BUILD_FOR_CCP4)
 	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
 		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
 	else()
-		list(APPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
-		list(APPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
+		list(PREPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
+		list(PREPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
 		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
-		set(CMAKE_INSTALL_FULL_DATADIR "${CMAKE_INSTALL_PREFIX}/share/libcifpp")
 
 		if(WIN32)
 			set(BUILD_SHARED_LIBS ON)
@@ -108,27 +99,33 @@ if(BUILD_FOR_CCP4)
 	endif()
 endif()
 
+# Now include the GNUInstallDirs module
+include(GNUInstallDirs)
+
 if(WIN32)
-    if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
-        add_definitions(-D _WIN32_WINNT=0x0A00)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
-        add_definitions(-D _WIN32_WINNT=0x0603)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
-        add_definitions(-D _WIN32_WINNT=0x0602)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
-        add_definitions(-D _WIN32_WINNT=0x0601)
-    elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
-        add_definitions(-D _WIN32_WINNT=0x0600)
-    else() # Windows XP (5.1)
-        add_definitions(-D _WIN32_WINNT=0x0501)
-    endif()
+	if(${CMAKE_SYSTEM_VERSION} GREATER_EQUAL 10) # Windows 10
+		add_definitions(-D _WIN32_WINNT=0x0A00)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.3) # Windows 8.1
+		add_definitions(-D _WIN32_WINNT=0x0603)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.2) # Windows 8
+		add_definitions(-D _WIN32_WINNT=0x0602)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
+		add_definitions(-D _WIN32_WINNT=0x0601)
+	elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0) # Windows Vista
+		add_definitions(-D _WIN32_WINNT=0x0600)
+	else() # Windows XP (5.1)
+		add_definitions(-D _WIN32_WINNT=0x0501)
+	endif()
 
 	add_definitions(-DNOMINMAX)
+
+	# We do not want to write an export file for all our symbols...
+	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 if(MSVC)
-    # make msvc standards compliant...
-    add_compile_options(/permissive- /bigobj)
+	# make msvc standards compliant...
+	add_compile_options(/permissive- /bigobj)
 	add_link_options(/NODEFAULTLIB:library)
 
 	if(BUILD_SHARED_LIBS)
@@ -159,7 +156,20 @@ if(GXX_LIBSTDCPP)
 	if(STD_REGEX_RUNNING STREQUAL FAILED_TO_RUN)
 		message(STATUS "You are probably trying to compile using the g++ standard library which contains a crashing std::regex implementation. Will use boost::regex instead")
 
-		add_subdirectory(regex EXCLUDE_FROM_ALL)
+		find_package(Boost 1.80 QUIET COMPONENTS regex)
+
+		if(NOT Boost_FOUND)
+			set(BOOST_REGEX_STANDALONE ON)
+
+			FetchContent_Declare(
+				boost-rx
+				GIT_REPOSITORY https://github.com/boostorg/regex
+				GIT_TAG boost-1.83.0
+			)
+
+			FetchContent_MakeAvailable(boost-rx)
+		endif()
+
 		set(BOOST_REGEX ON)
 	endif()
 endif()
@@ -185,6 +195,10 @@ if(MSVC)
 	unset(_ZLIB_x86)
 	list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
 
+	if(BUILD_FOR_CCP4)
+		list(PREPEND _ZLIB_SEARCHES "$ENV{CCP4}/lib")
+	endif()
+
 	foreach(search ${_ZLIB_SEARCHES})
 		find_library(ZLIB_LIBRARY NAMES zlibstatic NAMES_PER_DIR ${${search}} PATH_SUFFIXES lib)
 	endforeach()
@@ -192,20 +206,35 @@ endif()
 
 find_package(ZLIB REQUIRED)
 
-find_package(Eigen3 REQUIRED)
-get_property(EIGEN_INCLUDE_DIR TARGET Eigen3::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+# Using Eigen3 is a bit of a thing. We don't want to build it completely since we
+# only need a couple of header files. Nothing special. But often, eigen3 is already
+# installed and then we prefer that.
+find_package(Eigen3 3.4 QUIET)
+
+if(Eigen3_FOUND AND TARGET Eigen3::Eigen)
+	get_target_property(EIGEN_INCLUDE_DIR Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+else()
+	# Create a private copy of eigen3 and populate it only, no need to build
+	FetchContent_Declare(
+		my-eigen3
+		GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+		GIT_TAG 3.4.0
+	)
+
+	FetchContent_GetProperties(my-eigen3)
+
+	if(NOT my-eigen3_POPULATED)
+		FetchContent_Populate(my-eigen3)
+	endif()
+
+	set(EIGEN_INCLUDE_DIR ${my-eigen3_SOURCE_DIR})
+endif()
 
 include(FindFilesystem)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
 
 include(FindAtomic)
 list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
-
-if(MSVC)
-	# this dependency can go once MSVC supports std::experimental::is_detected
-	find_package(zeep 5.1.8 REQUIRED)
-	list(APPEND CIFPP_REQUIRED_LIBRARIES zeep::zeep)
-endif()
 
 # Create a revision file, containing the current git version info
 include(VersionString)
@@ -287,11 +316,15 @@ set(project_headers
 
 add_library(cifpp ${project_sources} ${project_headers} ${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
 add_library(cifpp::cifpp ALIAS cifpp)
+
+set(CMAKE_DEBUG_POSTFIX d)
+set_target_properties(cifpp PROPERTIES DEBUG_POSTFIX "d")
+
 generate_export_header(cifpp EXPORT_FILE_NAME ${PROJECT_SOURCE_DIR}/include/cif++/exports.hpp)
 
 if(BOOST_REGEX)
 	target_compile_definitions(cifpp PRIVATE USE_BOOST_REGEX=1 BOOST_REGEX_STANDALONE=1)
-	target_include_directories(cifpp PRIVATE regex/include)
+	get_target_property(BOOST_REGEX_INCLUDE_DIR Boost::regex INTERFACE_INCLUDE_DIRECTORIES)
 endif()
 
 if(MSVC)
@@ -302,11 +335,15 @@ set_target_properties(cifpp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(cifpp
 	PUBLIC
-	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include;${PROJECT_BINARY_DIR};${EIGEN_INCLUDE_DIR}>"
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+	PRIVATE
+	"${BOOST_REGEX_INCLUDE_DIR}"
+	"${EIGEN_INCLUDE_DIR}"
 )
 
-target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
+target_link_libraries(cifpp
+	PUBLIC Threads::Threads ZLIB::ZLIB ${CIFPP_REQUIRED_LIBRARIES})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
@@ -314,34 +351,74 @@ endif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 
 if(CIFPP_DOWNLOAD_CCD)
 	# download the components.cif file from CCD
-	set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/data/components.cif)
+	set(COMPONENTS_CIF ${PROJECT_SOURCE_DIR}/rsrc/components.cif)
 
-	if(NOT EXISTS ${COMPONENTS_CIF})
-		if(NOT EXISTS ${PROJECT_SOURCE_DIR}/data)
-			file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/data/)
+	if(EXISTS ${COMPONENTS_CIF})
+		file(SIZE ${COMPONENTS_CIF} CCD_FILE_SIZE)
+
+		if(CCD_FILE_SIZE EQUAL 0)
+			message(STATUS "Removing empty ${COMPONENTS_CIF} file")
+			file(REMOVE "${COMPONENTS_CIF}")
 		endif()
-
-		file(DOWNLOAD https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF} SHOW_PROGRESS)
 	endif()
 
-	add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
+	if(NOT EXISTS ${COMPONENTS_CIF})
+		# Since the file(DOWNLOAD) command in cmake does not use
+		# compression, we try to download the gzipped version and
+		# decompress it ourselves.
+		find_program(GUNZIP gunzip)
+
+		if(WIN32 OR GUNZIP STREQUAL "GUNZIP-NOTFOUND")
+			file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif ${COMPONENTS_CIF}
+				SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
+		else()
+			if(NOT EXISTS "${COMPONENTS_CIF}.gz")
+				file(DOWNLOAD https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz ${COMPONENTS_CIF}.gz
+					SHOW_PROGRESS STATUS CCD_FETCH_STATUS)
+			endif()
+
+			add_custom_command(OUTPUT ${COMPONENTS_CIF}
+				COMMAND "${GUNZIP}" ${COMPONENTS_CIF}.gz
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/rsrc/)
+
+			add_custom_target(COMPONENTS ALL DEPENDS ${COMPONENTS_CIF})
+		endif()
+
+		# Do not continue if downloading went wrong
+		list(POP_FRONT CCD_FETCH_STATUS CCD_FETCH_STATUS_CODE)
+
+		if(CCD_FETCH_STATUS_CODE)
+			message(FATAL_ERROR "Error trying to download CCD file: ${CCD_FETCH_STATUS}")
+		endif()
+	endif()
 endif()
 
 # Installation directories
-set(CIFPP_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp" CACHE PATH "The directory where dictionary files are stored")
+if(BUILD_FOR_CCP4)
+	set(CIFPP_DATA_DIR "$ENV{CCP4}/share/libcifpp" CACHE PATH "Directory where dictionary and other static data is stored")
+else()
+	set(CIFPP_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp" CACHE PATH "Directory where dictionary and other static data is stored")
+endif()
+
 target_compile_definitions(cifpp PUBLIC DATA_DIR="${CIFPP_DATA_DIR}")
 
-if(UNIX)
-	set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp"
-		CACHE PATH "The directory where the update script stores new dictionary files")
+if(UNIX AND NOT BUILD_FOR_CCP4)
+	if("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
+		set(CIFPP_CACHE_DIR "/var/cache/libcifpp" CACHE PATH "The directory where downloaded data files are stored")
+	else()
+		set(CIFPP_CACHE_DIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/cache/libcifpp" CACHE PATH "The directory where downloaded data files are stored")
+	endif()
+
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
 
-	set(CIFPP_ETC_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+	set(CIFPP_ETC_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}" CACHE PATH "The directory where the update configuration file is stored")
+else()
+	unset(CIFPP_CACHE_DIR)
 endif()
 
 # Install rules
 install(TARGETS cifpp
-	EXPORT cifppTargets
+	EXPORT cifpp-targets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -354,8 +431,18 @@ if(MSVC AND BUILD_SHARED_LIBS)
 		OPTIONAL)
 endif()
 
-install(EXPORT cifppTargets
-	FILE "cifppTargets.cmake"
+# Clean up old config files (with old names)
+file(GLOB OLD_CONFIG_FILES
+	${CMAKE_INSTALL_FULL_LIBDIR}/cmake/cifpp/cifppConfig*.cmake
+	${CMAKE_INSTALL_FULL_LIBDIR}/cmake/cifpp/cifppTargets*.cmake)
+
+if(OLD_CONFIG_FILES)
+	message(STATUS "Installation will remove old config files: ${OLD_CONFIG_FILES}")
+	install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
+endif()
+
+install(EXPORT cifpp-targets
+	FILE "cifpp-targets.cmake"
 	NAMESPACE cifpp::
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 )
@@ -372,38 +459,36 @@ install(
 	COMPONENT Devel
 )
 
-if(WRITE_DATA_FILES)
+install(FILES
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
+	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
+	${COMPONENTS_CIF}
+	DESTINATION ${CIFPP_DATA_DIR}
+)
+
+if(CIFPP_CACHE_DIR)
 	install(FILES
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
 		${COMPONENTS_CIF}
-		DESTINATION ${CIFPP_DATA_DIR}
+		DESTINATION ${CIFPP_CACHE_DIR}
 	)
-
-	if(${CIFPP_CACHE_DIR})
-		install(FILES
-			${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
-			${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
-			${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
-			${COMPONENTS_CIF}
-			DESTINATION ${CIFPP_CACHE_DIR}
-		)
-	endif()
 endif()
 
-set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifppConfig.cmake.in)
+set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifpp-config.cmake.in)
 
 configure_package_config_file(
 	${CONFIG_TEMPLATE_FILE}
-	${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 	PATH_VARS CIFPP_DATA_DIR
 )
 
 install(FILES
-	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfig.cmake"
-	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config-version.cmake"
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
 	COMPONENT Devel
 )
@@ -418,23 +503,39 @@ set_property(TARGET cifpp APPEND PROPERTY
 )
 
 write_basic_package_version_file(
-	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifppConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config-version.cmake"
 	VERSION ${PROJECT_VERSION}
 	COMPATIBILITY AnyNewerVersion
 )
 
 if(BUILD_TESTING)
-	find_package(Boost REQUIRED)
+	# We're using the older version 2 of Catch2
+	FetchContent_Declare(
+		Catch2
+		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+		GIT_TAG v2.13.9
+	)
 
-	list(APPEND CIFPP_tests unit-v2 unit-3d format model rename-compound sugar spinner)
+	FetchContent_MakeAvailable(Catch2)
+
+	list(APPEND CIFPP_tests
+		unit-v2
+		unit-3d
+		format
+		model
+		rename-compound
+		sugar
+		spinner
+	)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
 		set(CIFPP_TEST "${CIFPP_TEST}-test")
 		set(CIFPP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test/${CIFPP_TEST}.cpp")
 
-		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE})
+		add_executable(${CIFPP_TEST} ${CIFPP_TEST_SOURCE} "${CMAKE_CURRENT_SOURCE_DIR}/test/test-main.cpp")
 
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Boost::boost Eigen3::Eigen)
+		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp Catch2::Catch2)
+		target_include_directories(${CIFPP_TEST} PRIVATE "${EIGEN_INCLUDE_DIR}")
 
 		if(MSVC)
 			# Specify unwind semantics so that MSVC knowns how to handle exceptions
@@ -445,19 +546,23 @@ if(BUILD_TESTING)
 
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch
-			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_CURRENT_SOURCE_DIR}/test)
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}> --data-dir ${CMAKE_CURRENT_SOURCE_DIR}/test)
 
 		add_test(NAME ${CIFPP_TEST}
-			COMMAND $<TARGET_FILE:${CIFPP_TEST}> -- ${CMAKE_CURRENT_SOURCE_DIR}/test)
+			COMMAND $<TARGET_FILE:${CIFPP_TEST}> --data-dir ${CMAKE_CURRENT_SOURCE_DIR}/test)
 	endforeach()
 endif()
 
 # Optionally install the update scripts for CCD and dictionary files
 if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "GNU")
-		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly")
-	elseif(UNIX) # assume all others are like FreeBSD...
-		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly")
+		if("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
+			set(CIFPP_CRON_DIR "/etc/cron.weekly" CACHE PATH "The cron directory, for the update script")
+		else()
+			set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/cron.weekly" CACHE PATH "The cron directory, for the update script")
+		endif()
+	elseif(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+		set(CIFPP_CRON_DIR "${CIFPP_ETC_DIR}/periodic/weekly" CACHE PATH "The cron directory, for the update script")
 	else()
 		message(FATAL_ERROR "Don't know where to install the update script")
 	endif()
@@ -470,15 +575,16 @@ if(CIFPP_INSTALL_UPDATE_SCRIPT)
 	)
 
 	install(DIRECTORY DESTINATION ${CIFPP_CACHE_DIR})
-	install(DIRECTORY DESTINATION "${CIFPP_ETC_DIR}/libcifpp/cache-update.d")
 
-	# a config to, to make it complete
+	# a config file, to make it complete
 	if(NOT EXISTS "${CIFPP_ETC_DIR}/libcifpp.conf")
 		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf [[# Uncomment the next line to enable automatic updates
 # update=true
 ]])
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcifpp.conf DESTINATION "${CIFPP_ETC_DIR}")
 		install(CODE "message(\"A configuration file has been written to ${CIFPP_ETC_DIR}/libcifpp.conf, please edit this file to enable automatic updates\")")
+
+		install(DIRECTORY DESTINATION "${CIFPP_ETC_DIR}/libcifpp/cache-update.d")
 	endif()
 
 	target_compile_definitions(cifpp PUBLIC CACHE_DIR="${CIFPP_CACHE_DIR}")
@@ -493,7 +599,7 @@ set(CPACK_SOURCE_TGZ ON)
 set(CPACK_SOURCE_TBZ2 OFF)
 set(CPACK_SOURCE_TXZ OFF)
 set(CPACK_SOURCE_TZ OFF)
-set(CPACK_SOURCE_IGNORE_FILES "/data/components.cif;/build;/.vscode;/.git")
+set(CPACK_SOURCE_IGNORE_FILES "/rsrc/components.cif;/build;/.vscode;/.git")
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
 include(CPack)

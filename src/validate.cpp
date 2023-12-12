@@ -381,6 +381,12 @@ void validator::report_error(const std::string &msg, bool fatal) const
 
 // --------------------------------------------------------------------
 
+validator_factory &validator_factory::instance()
+{
+	static validator_factory s_instance;
+	return s_instance;
+}
+
 const validator &validator_factory::operator[](std::string_view dictionary_name)
 {
 	try

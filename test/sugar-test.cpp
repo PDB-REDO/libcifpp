@@ -24,8 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define BOOST_TEST_ALTERNATIVE_INIT_API
-#include <boost/test/included/unit_test.hpp>
+#include "test-main.hpp"
+
+#include <catch2/catch.hpp>
 
 #include <stdexcept>
 
@@ -49,30 +50,7 @@ cif::file operator""_cf(const char* text, size_t length)
 
 // --------------------------------------------------------------------
 
-std::filesystem::path gTestDir = std::filesystem::current_path();
-
-bool init_unit_test()
-{
-    cif::VERBOSE = 1;
-
-	// not a test, just initialize test dir
-	if (boost::unit_test::framework::master_test_suite().argc == 2)
-		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
-
-	// do this now, avoids the need for installing
-	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
-
-	// initialize CCD location
-	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
-
-	cif::compound_factory::instance().push_dictionary(gTestDir / "HEM.cif");
-
-	return true;
-}
-
-// --------------------------------------------------------------------
-
-BOOST_AUTO_TEST_CASE(sugar_name_1)
+TEST_CASE("sugar_name_1")
 {
 	using namespace cif::literals;
 
@@ -85,20 +63,20 @@ BOOST_AUTO_TEST_CASE(sugar_name_1)
 
 	auto &branches = s.branches();
 
-	BOOST_CHECK_EQUAL(branches.size(), 4);
+	REQUIRE(branches.size() == 4UL);
 
 	for (auto &branch : branches)
 	{
 		auto entityID = branch.front().get_entity_id();
 
 		auto name = entity.find1<std::string>("id"_key == entityID, "pdbx_description");
-		BOOST_CHECK_EQUAL(branch.name(), name);
+		REQUIRE(branch.name() == name);
 	}
 }
 
 // // --------------------------------------------------------------------
 
-// BOOST_AUTO_TEST_CASE(create_sugar_1)
+// TEST_CASE("create_sugar_1")
 // {
 // 	using namespace cif::literals;
 
@@ -125,19 +103,19 @@ BOOST_AUTO_TEST_CASE(sugar_name_1)
 
 // 	auto &branch = s.create_branch(ai);
 
-// 	BOOST_CHECK_EQUAL(branch.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
-// 	BOOST_CHECK_EQUAL(branch.size(), 1);
+// 	REQUIRE(branch.name() == "2-acetamido-2-deoxy-beta-D-glucopyranose");
+// 	REQUIRE(branch.size() == 1);
 
-// 	BOOST_CHECK_EQUAL(branch[0].atoms().size(), nagAtoms.size());
+// 	REQUIRE(branch[0].atoms().size() == nagAtoms.size());
 
-// 	BOOST_CHECK(file.is_valid());
+// 	REQUIRE(file.is_valid());
 
 // 	file.save(gTestDir / "test-create_sugar_1.cif");
 // }
 
 // // --------------------------------------------------------------------
 
-// BOOST_AUTO_TEST_CASE(create_sugar_2)
+// TEST_CASE("create_sugar_2")
 // {
 // 	using namespace cif::literals;
 
@@ -148,7 +126,7 @@ BOOST_AUTO_TEST_CASE(sugar_name_1)
 // 	// Get branch for H
 // 	auto &bH = s.get_branch_by_asym_id("H");
 
-// 	BOOST_CHECK_EQUAL(bH.size(), 2);
+// 	REQUIRE(bH.size() == 2);
 
 // 	std::vector<cif::row_initializer> ai[2];
 
@@ -163,24 +141,24 @@ BOOST_AUTO_TEST_CASE(sugar_name_1)
 
 // 	s.remove_branch(bH);
 
-// 	BOOST_CHECK(file.is_valid());
+// 	REQUIRE(file.is_valid());
 
 // 	auto &bN = s.create_branch(ai[0]);
 // 	s.extend_branch(bN.get_asym_id(), ai[1], 1, "O4");
 
-// 	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose-(1-4)-2-acetamido-2-deoxy-beta-D-glucopyranose");
-// 	BOOST_CHECK_EQUAL(bN.size(), 2);
+// 	REQUIRE(bN.name() == "2-acetamido-2-deoxy-beta-D-glucopyranose-(1-4)-2-acetamido-2-deoxy-beta-D-glucopyranose");
+// 	REQUIRE(bN.size() == 2);
 
-// 	BOOST_CHECK(file.is_valid());
+// 	REQUIRE(file.is_valid());
 
 // 	file.save(gTestDir / "test-create_sugar_2.cif");
 
-// 	BOOST_CHECK_NO_THROW(cif::mm::structure s2(file));
+// 	REQUIRE_NO_THROW(cif::mm::structure s2(file));
 // }
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(delete_sugar_1)
+TEST_CASE("delete_sugar_1")
 {
 	using namespace cif::literals;
 
@@ -191,20 +169,20 @@ BOOST_AUTO_TEST_CASE(delete_sugar_1)
 	// Get branch for H
 	auto &bG = s.get_branch_by_asym_id("G");
 
-	BOOST_CHECK_EQUAL(bG.size(), 4);
+	REQUIRE(bG.size() == 4UL);
 
 	s.remove_residue(bG[1]);
 
-	BOOST_CHECK_EQUAL(bG.size(), 1);
+	REQUIRE(bG.size() == 1UL);
 
 	auto &bN = s.get_branch_by_asym_id("G");
 
-	BOOST_CHECK_EQUAL(bN.name(), "2-acetamido-2-deoxy-beta-D-glucopyranose");
-	BOOST_CHECK_EQUAL(bN.size(), 1);
+	REQUIRE(bN.name() == "2-acetamido-2-deoxy-beta-D-glucopyranose");
+	REQUIRE(bN.size() == 1UL);
 
-	BOOST_CHECK(file.is_valid());
+	REQUIRE(file.is_valid());
 
 	// file.save(gTestDir / "test-create_sugar_3.cif");
 
-	BOOST_CHECK_NO_THROW(cif::mm::structure s2(file));
+	cif::mm::structure s2(file);
 }
