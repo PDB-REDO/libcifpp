@@ -80,16 +80,8 @@ else()
 endif()
 
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
-if(EXISTS "$ENV{CCP4}")
-	if(EXISTS "$ENV{CCP4}/lib/data/syminfo.lib")
-		option(CIFPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
-	else()
-		set(CIFPP_RECREATE_SYMOP_DATA OFF)
-		message(WARNING "Symop data table recreation requested, but file syminfo.lib was not found in $ENV{CLIBD}")
-	endif()
-else()
-	set(CIFPP_RECREATE_SYMOP_DATA OFF)
-	message("Not trying to recreate symop_table_data.hpp since CCP4 is not defined")
+if(EXISTS "$ENV{CCP4}/lib/data/syminfo.lib")
+	option(CIFPP_RECREATE_SYMOP_DATA "Recreate SymOp data table in case it is out of date" ON)
 endif()
 
 # CCP4 build

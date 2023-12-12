@@ -4,7 +4,7 @@ name: publish docs
 
 on:
   push:
-    branches: [ "trunk", "develop" ]
+    branches: [ "trunk" ]
 
 permissions:
   contents: read
