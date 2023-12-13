@@ -3468,3 +3468,22 @@ TEST_CASE("compound_not_found_test_1")
 	auto cmp = cif::compound_factory::instance().create("&&&");
 	REQUIRE(cmp == nullptr);
 }
+
+// --------------------------------------------------------------------
+// PDB2CIF tests
+
+TEST_CASE("pdb2cif_formula_weight")
+{
+	cif::compound_factory::instance().push_dictionary(gTestDir / "REA.cif");
+
+	cif::file a = cif::pdb::read(gTestDir / "pdb1cbs.ent.gz");
+	
+	auto fw = a.front()["entity"].find1<float>(cif::key("id") == 1, "formula_weight");
+	CHECK(std::abs(fw - 15581.802f) < 0.1f);
+
+	fw = a.front()["entity"].find1<float>(cif::key("id") == 2, "formula_weight");
+	CHECK(fw == 300.435f);
+
+	fw = a.front()["entity"].find1<float>(cif::key("id") == 3, "formula_weight");
+	CHECK(fw == 18.015f);
+}

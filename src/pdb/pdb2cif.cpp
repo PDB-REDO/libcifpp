@@ -4511,6 +4511,47 @@ void PDBFileParser::ConstructEntities()
 			}
 		}
 	}
+
+	// Finish by calculating the formula_weight for each entity
+	for (auto entity : *getCategory("entity"))
+	{
+		auto entity_id = entity["id"].as<std::string>();
+		float formula_weight = 0;
+
+		if (entity["type"] == "polymer")
+		{
+			int n = 0;
+
+			for (std::string comp_id : getCategory("pdbx_poly_seq_scheme")->find<std::string>(cif::key("entity_id") == entity_id, "mon_id"))
+			{
+				auto compound = cif::compound_factory::instance().create(comp_id);
+				assert(compound);
+				if (not compound)
+					throw std::runtime_error("missing information for compound " + comp_id);
+				formula_weight += compound->formula_weight();
+				++n;
+			}
+
+			formula_weight -= (n - 1) * 18.015;
+		}
+		else if (entity["type"] == "water")
+			formula_weight = 18.015;
+		else
+		{
+			auto comp_id = getCategory("pdbx_nonpoly_scheme")->find_first<std::optional<std::string>>(cif::key("entity_id") == entity_id, "mon_id");
+			if (comp_id.has_value())
+			{
+				auto compound = cif::compound_factory::instance().create(*comp_id);
+				assert(compound);
+				if (not compound)
+					throw std::runtime_error("missing information for compound " + *comp_id);
+				formula_weight = compound->formula_weight();
+			}
+		}
+
+		if (formula_weight > 0)
+			entity["formula_weight"] = formula_weight;
+	}
 }
 
 void PDBFileParser::ConstructSugarTrees(int &asymNr)
