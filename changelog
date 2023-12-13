@@ -1,3 +1,6 @@
+Version 6.0.1
+- Add formula weight to entity in pdb2cif
+
 Version 6.0.0
 - Drop the use of CCP4's monomer library for compound information
 
