@@ -290,6 +290,13 @@ class row_handle
 		return operator[](get_column_ix(column)).template as<T>();
 	}
 
+	/// \brief Get the value of column @a column cast to type @a T
+	template <typename T>
+	T get(std::string_view column) const
+	{
+		return operator[](get_column_ix(column)).template as<T>();
+	}
+
 	/// \brief assign each of the columns named in @a values to their respective value
 	void assign(const std::vector<item> &values)
 	{
