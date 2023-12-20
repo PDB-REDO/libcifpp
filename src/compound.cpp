@@ -142,8 +142,6 @@ compound::compound(cif::datablock &db)
 	// The name should not contain newline characters since that triggers validation errors later on
 	cif::replace_all(m_name, "\n", "");
 
-	m_group = "non-polymer";
-
 	auto &chemCompAtom = db["chem_comp_atom"];
 	for (auto row : chemCompAtom)
 	{
@@ -153,6 +151,9 @@ compound::compound(cif::datablock &db)
 			row.get("atom_id", "type_symbol", "charge", "pdbx_aromatic_flag", "pdbx_leaving_atom_flag", "pdbx_stereo_config",
 				"model_Cartn_x", "model_Cartn_y", "model_Cartn_z");
 		atom.type_symbol = atom_type_traits(type_symbol).type();
+		if (stereo_config.empty())
+			atom.stereo_config = stereo_config_type::N;
+		else
 		atom.stereo_config = parse_stereo_config_from_string(stereo_config);
 		m_atoms.push_back(std::move(atom));
 	}
@@ -163,17 +164,28 @@ compound::compound(cif::datablock &db)
 		compound_bond bond;
 		std::string valueOrder;
 		cif::tie(bond.atom_id[0], bond.atom_id[1], valueOrder, bond.aromatic, bond.stereo_config) = row.get("atom_id_1", "atom_id_2", "value_order", "pdbx_aromatic_flag", "pdbx_stereo_config");
+		if (valueOrder.empty())
+			bond.type = bond_type::sing;
+		else
 		bond.type = parse_bond_type_from_string(valueOrder);
 		m_bonds.push_back(std::move(bond));
 	}
 }
 
-compound::compound(cif::datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group)
-	: m_id(id)
-	, m_name(name)
-	, m_type(type)
-	, m_group(group)
+compound::compound(cif::datablock &db, int)
 {
+	auto &chemComp = db["chem_comp"];
+
+	if (chemComp.size() != 1)
+		throw std::runtime_error("Invalid compound file, chem_comp should contain a single row");
+
+	cif::tie(m_id, m_name) =
+		chemComp.front().get("id", "name");
+	
+	cif::trim(m_name);
+
+	m_type = "NON-POLYMER";
+
 	auto &chemCompAtom = db["chem_comp_atom"];
 	for (auto row : chemCompAtom)
 	{
@@ -184,7 +196,6 @@ compound::compound(cif::datablock &db, const std::string &id, const std::string 
 		atom.type_symbol = atom_type_traits(type_symbol).type();
 
 		m_formal_charge += atom.charge;
-		m_formula_weight += atom_type_traits(atom.type_symbol).weight();
 
 		m_atoms.push_back(std::move(atom));
 	}
@@ -209,11 +220,39 @@ compound::compound(cif::datablock &db, const std::string &id, const std::string 
 		else
 		{
 			if (cif::VERBOSE > 0)
-				std::cerr << "Unimplemented chem_comp_bond.type " << btype << " in " << id << '\n';
+				std::cerr << "Unimplemented chem_comp_bond.type " << btype << " in " << db.name() << '\n';
 			bond.type = bond_type::sing;
 		}
 		m_bonds.push_back(std::move(bond));
 	}
+
+	// reconstruct a formula and weight
+
+	m_formula_weight = 0;
+
+	std::map<atom_type, int> f;
+	for (auto &atom : m_atoms)
+		f[atom.type_symbol] += 1;
+	
+	if (f.count(atom_type::C))
+	{
+		atom_type_traits att(atom_type::C);
+		m_formula += att.symbol() + std::to_string(f[atom_type::C]) + ' ';
+		m_formula_weight += att.weight() * f[atom_type::C];
+	}
+
+	for (const auto &[type, count] : f)
+	{
+		if (type == atom_type::C)
+			continue;
+
+		atom_type_traits att(type);
+		m_formula += att.symbol() + std::to_string(count) + ' ';
+		m_formula_weight += att.weight() * count;
+	}
+	
+	if (not m_formula.empty())
+		m_formula.pop_back();
 }
 
 compound_atom compound::get_atom_by_atom_id(const std::string &atom_id) const
@@ -260,12 +299,11 @@ float compound::bond_length(const std::string &atomId_1, const std::string &atom
 		auto a = get_atom_by_atom_id(atomId_1);
 		auto b = get_atom_by_atom_id(atomId_2);
 
-		result = distance(point{a.x, a.y, a.z}, point{b.x, b.y, b.z});
+		result = distance(point{ a.x, a.y, a.z }, point{ b.x, b.y, b.z });
 	}
 
 	return result;
 }
-
 
 // --------------------------------------------------------------------
 // known amino acids and bases
@@ -316,7 +354,7 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 	compound_factory_impl();
 	compound_factory_impl(const fs::path &file, std::shared_ptr<compound_factory_impl> next);
 
-	~compound_factory_impl()
+	virtual ~compound_factory_impl()
 	{
 		for (auto c : m_compounds)
 			delete c;
@@ -373,13 +411,15 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 			os << "CCD components.cif resource\n";
 		else
 			os << "CCD components file: " << std::quoted(m_file.string()) << '\n';
-		
+
 		if (m_next)
 			m_next->describe(os);
 	}
 
-  private:
-	compound *create(const std::string &id);
+  protected:
+	compound_factory_impl(std::shared_ptr<compound_factory_impl> next);
+
+	virtual compound *create(const std::string &id);
 
 	std::shared_timed_mutex mMutex;
 
@@ -395,10 +435,15 @@ compound_factory_impl::compound_factory_impl()
 {
 }
 
-compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_ptr<compound_factory_impl> next)
-	: m_file(file)
-	, m_next(next)
+compound_factory_impl::compound_factory_impl(std::shared_ptr<compound_factory_impl> next)
+	: m_next(next)
 {
+}
+
+compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_ptr<compound_factory_impl> next)
+	: compound_factory_impl(next)
+{
+	m_file = file;
 }
 
 compound *compound_factory_impl::create(const std::string &id)
@@ -468,6 +513,45 @@ compound *compound_factory_impl::create(const std::string &id)
 
 			std::shared_lock lock(mMutex);
 			m_compounds.push_back(result);
+		}
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
+class local_compound_factory_impl : public compound_factory_impl
+{
+  public:
+	local_compound_factory_impl(const cif::file &file, std::shared_ptr<compound_factory_impl> next)
+		: compound_factory_impl(next)
+		, m_local_file(file)
+	{
+	}
+
+	compound *create(const std::string &id) override;
+
+  private:
+	const cif::file &m_local_file;
+};
+
+compound *local_compound_factory_impl::create(const std::string &id)
+{
+	compound *result = nullptr;
+
+	for (auto &db : m_local_file)
+	{
+		if (db.name() == "comp_" + id)
+		{
+			cif::datablock db_copy(db);
+
+			result = new compound(db_copy, 1);
+
+			std::shared_lock lock(mMutex);
+			m_compounds.push_back(result);
+
+			break;
 		}
 	}
 
@@ -553,6 +637,18 @@ void compound_factory::push_dictionary(const fs::path &inDictFile)
 	}
 }
 
+void compound_factory::push_dictionary(const cif::file &inDictFile)
+{
+	try
+	{
+		m_impl.reset(new local_compound_factory_impl(inDictFile, m_impl));
+	}
+	catch (const std::exception &)
+	{
+		std::throw_with_nested(std::runtime_error("Error loading dictionary from local mmCIF file"));
+	}
+}
+
 void compound_factory::pop_dictionary()
 {
 	if (m_impl)
@@ -584,25 +680,26 @@ void compound_factory::report_missing_compound(const std::string &compound_id)
 	{
 		using namespace cif::colour;
 
-		std::clog << "\n" << cif::coloured("Configuration error:", white, red) << "\n\n"
+		std::clog << "\n"
+				  << cif::coloured("Configuration error:", white, red) << "\n\n"
 				  << "The attempt to retrieve compound information for " << std::quoted(compound_id) << " failed.\n\n"
 				  << "This information is searched for in a CCD file called components.cif or\n"
 				  << "components.cif.gz which should be located in one of the following directories:\n\n";
-		
+
 		cif::list_data_directories(std::clog);
 
 		std::clog << "\n(Note that you can add a directory to the search paths by setting the \n"
 				  << "LIBCIFPP_DATA_DIR environmental variable)\n\n";
 
-#if defined(CACHE_DIR)		
+#if defined(CACHE_DIR)
 		std::clog << "On Linux an optional cron script might have been installed that automatically updates\n"
 				  << "components.cif and mmCIF dictionary files. This script only works when the file\n"
 				  << "libcifpp.conf contains an uncommented line with the text:\n\n"
 				  << "update=true\n\n"
 				  << "If you do not have a working cron script, you can manually update the files\n"
 				  << "in /var/cache/libcifpp using the following commands:\n\n"
-				  << "curl -o " << CACHE_DIR << "/components.cif https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz\n" 
-				  << "curl -o " << CACHE_DIR << "/mmcif_pdbx.dic https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz\n" 
+				  << "curl -o " << CACHE_DIR << "/components.cif https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz\n"
+				  << "curl -o " << CACHE_DIR << "/mmcif_pdbx.dic https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz\n"
 				  << "curl -o " << CACHE_DIR << "/mmcif_ma.dic https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic\n\n";
 #endif
 
@@ -613,9 +710,9 @@ void compound_factory::report_missing_compound(const std::string &compound_id)
 		}
 		else
 			std::clog << "No compound factory objects are created since none of the data sources is found.\n";
-		
+
 		cif::list_file_resources(std::clog);
-		
+
 		std::clog.flush();
 	}
 }
