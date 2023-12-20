@@ -1,5 +1,8 @@
 Version 6.0.1
 - Add formula weight to entity in pdb2cif
+- Change order of categories inside a datablock to match order in file
+- Change default order to write out categories in a file based on
+  parent/child relationship
 
 Version 6.0.0
 - Drop the use of CCP4's monomer library for compound information
