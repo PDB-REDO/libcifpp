@@ -91,7 +91,7 @@ bool datablock::validate_links() const
 
 	for (auto &cat : *this)
 		result = cat.validate_links() and result;
-	
+
 	return result;
 }
 
@@ -158,11 +158,12 @@ std::tuple<datablock::iterator, bool> datablock::emplace(std::string_view name)
 
 	if (is_new)
 	{
-		auto &c = emplace_front(name);
+		auto &c = emplace_back(name);
 		c.set_validator(m_validator, *this);
 	}
 
-	return std::make_tuple(begin(), is_new);
+	assert(end() != begin());
+	return std::make_tuple(std::prev(end()), is_new);
 }
 
 std::vector<std::string> datablock::get_tag_order() const
@@ -171,14 +172,16 @@ std::vector<std::string> datablock::get_tag_order() const
 
 	// for entry and audit_conform on top
 
-	auto ci = find_if(begin(), end(), [](const category &cat) { return cat.name() == "entry"; });
+	auto ci = find_if(begin(), end(), [](const category &cat)
+		{ return cat.name() == "entry"; });
 	if (ci != end())
 	{
 		auto cto = ci->get_tag_order();
 		result.insert(result.end(), cto.begin(), cto.end());
 	}
 
-	ci = find_if(begin(), end(), [](const category &cat) { return cat.name() == "audit_conform"; });
+	ci = find_if(begin(), end(), [](const category &cat)
+		{ return cat.name() == "audit_conform"; });
 	if (ci != end())
 	{
 		auto cto = ci->get_tag_order();
@@ -196,42 +199,131 @@ std::vector<std::string> datablock::get_tag_order() const
 	return result;
 }
 
+namespace
+{
+	using elem_t = std::tuple<std::string, int, bool>;
+	using cat_order_t = std::vector<elem_t>;
+	using iter_t = cat_order_t::iterator;
+
+	constexpr inline int get_count(iter_t i)
+	{
+		return std::get<1>(*i);
+	}
+
+	constexpr inline bool is_on_stack(iter_t i)
+	{
+		return std::get<2>(*i);
+	}
+
+	void calculate_cat_order(cat_order_t &cat_order, iter_t i, const validator &validator)
+	{
+		if (i == cat_order.end() or get_count(i) >= 0)
+			return;
+		
+		auto &&[cat, count, on_stack] = *i;
+
+		on_stack = true;
+
+		int parent_count = 0;
+
+		for (auto link : validator.get_links_for_child(cat))
+		{
+			auto ei = std::find_if(cat_order.begin(), cat_order.end(), [parent = link->m_parent_category](elem_t &a)
+				{ return std::get<0>(a) == parent; });
+
+			if (ei == cat_order.end())
+				continue;
+			
+			if (not is_on_stack(ei))
+				calculate_cat_order(cat_order, ei, validator);
+
+			parent_count += get_count(ei);
+		}
+
+		count = parent_count + 1;
+	}
+}
+
 void datablock::write(std::ostream &os) const
 {
 	os << "data_" << m_name << '\n'
 	   << "# \n";
 
-	// mmcif support, sort of. First write the 'entry' Category
-	// and if it exists, _AND_ we have a Validator, write out the
-	// audit_conform record.
-
-	for (auto &cat : *this)
+	if (m_validator and size() > 0)
 	{
-		if (cat.name() != "entry")
-			continue;
+		// If the dictionary declares an audit_conform category, put it in,
+		// but only if it does not exist already!
+		if (get("audit_conform") == nullptr and m_validator->get_validator_for_category("audit_conform") != nullptr)
+		{
+			category auditConform("audit_conform");
+			auditConform.emplace({ { "dict_name", m_validator->name() },
+				{ "dict_version", m_validator->version() } });
+			auditConform.write(os);
+		}
 
-		cat.write(os);
+		// base order on parent child relationships, parents first
 
-		break;
+		cat_order_t cat_order;
+
+		for (auto &cat : *this)
+			cat_order.emplace_back(cat.name(), -1, false);
+
+		for (auto i = cat_order.begin(); i != cat_order.end(); ++i)
+			calculate_cat_order(cat_order, i, *m_validator);
+
+		std::sort(cat_order.begin(), cat_order.end(), [](const elem_t &a, const elem_t &b)
+			{
+			const auto &[cat_a, count_a, on_stack_a] = a;
+			const auto &[cat_b, count_b, on_stack_b] = b;
+
+			int d = 0;
+
+			if (cat_a == "audit_conform")
+				d = -1;
+			else if (cat_b == "audit_conform")
+				d = 1;
+			else if (cat_a == "entry")
+				d = -1;
+			else if (cat_b == "entry")
+				d = 1;
+			else
+			{
+				d = std::get<1>(a) - std::get<1>(b);
+				if (d == 0)
+					d = cat_b.compare(cat_a);
+			}
+
+			return d < 0; });
+
+		for (auto &&[cat, count, on_stack] : cat_order)
+			get(cat)->write(os);
 	}
-
-	// If the dictionary declares an audit_conform category, put it in,
-	// but only if it does not exist already!
-	if (get("audit_conform"))
-		get("audit_conform")->write(os);
-	else if (m_validator != nullptr and m_validator->get_validator_for_category("audit_conform") != nullptr)
+	else
 	{
-		category auditConform("audit_conform");
-		auditConform.emplace({
-			{"dict_name", m_validator->name()},
-			{"dict_version", m_validator->version()}});
-		auditConform.write(os);
-	}
+		// mmcif support, sort of. First write the 'entry' Category
+		// and if it exists, _AND_ we have a Validator, write out the
+		// audit_conform record.
 
-	for (auto &cat : *this)
-	{
-		if (cat.name() != "entry" and cat.name() != "audit_conform")
+		for (auto &cat : *this)
+		{
+			if (cat.name() != "entry")
+				continue;
+
 			cat.write(os);
+
+			break;
+		}
+
+		// If the dictionary declares an audit_conform category, put it in,
+		// but only if it does not exist already!
+		if (get("audit_conform"))
+			get("audit_conform")->write(os);
+
+		for (auto &cat : *this)
+		{
+			if (cat.name() != "entry" and cat.name() != "audit_conform")
+				cat.write(os);
+		}
 	}
 }
 
@@ -337,7 +429,7 @@ bool datablock::operator==(const datablock &rhs) const
 			++catA_i;
 		else
 		{
-			if (not (*dbA.get(*catA_i) == *dbB.get(*catB_i)))
+			if (not(*dbA.get(*catA_i) == *dbB.get(*catB_i)))
 				return false;
 			++catA_i;
 			++catB_i;
@@ -347,4 +439,4 @@ bool datablock::operator==(const datablock &rhs) const
 	return true;
 }
 
-} // namespace cif::cif
+} // namespace cif
