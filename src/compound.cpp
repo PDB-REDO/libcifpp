@@ -601,7 +601,7 @@ void compound_factory::report_missing_compound(const std::string &compound_id)
 				  << "update=true\n\n"
 				  << "If you do not have a working cron script, you can manually update the files\n"
 				  << "in /var/cache/libcifpp using the following commands:\n\n"
-				  << "curl -o " << CACHE_DIR << "/components.cif https://ftp.wwpdb.org/pub/pdb/data/monomers/components.cif.gz\n" 
+				  << "curl -o " << CACHE_DIR << "/components.cif https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz\n" 
 				  << "curl -o " << CACHE_DIR << "/mmcif_pdbx.dic https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz\n" 
 				  << "curl -o " << CACHE_DIR << "/mmcif_ma.dic https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic\n\n";
 #endif
