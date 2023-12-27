@@ -168,14 +168,18 @@ class compound
 
   private:
 	friend class compound_factory_impl;
+	friend class local_compound_factory_impl;
 
 	compound(cif::datablock &db);
-	compound(cif::datablock &db, const std::string &id, const std::string &name, const std::string &type, const std::string &group);
+	compound(cif::datablock &db, int);
 
 	std::string m_id;
 	std::string m_name;
 	std::string m_type;
-	std::string m_group;
+	/// @cond
+	// m_group is no longer used
+	std::string __m_group;
+	/// @endcond
 	std::string m_formula;
 	float m_formula_weight = 0;
 	int m_formal_charge = 0;
@@ -214,6 +218,20 @@ class compound_factory
 	/// Override any previously loaded dictionary with @a inDictFile
 	void push_dictionary(const std::filesystem::path &inDictFile);
 
+	/** @brief Override any previously loaded dictionary with the data in @a file
+	 *
+	 * @note experimental feature
+	 *
+	 * Load the file @a file as a source for compound information. This may
+	 * be e.g. a regular mmCIF file with extra files containing compound
+	 * information.
+	 *
+	 * Be carefull to remove the block again, best use @ref cif::compound_source
+	 * as a stack based object.
+	 */
+
+	void push_dictionary(const file &file);
+
 	/// Remove the last pushed dictionary
 	void pop_dictionary();
 
@@ -249,6 +267,37 @@ class compound_factory
 	static bool s_use_thread_local_instance;
 
 	std::shared_ptr<compound_factory_impl> m_impl;
+};
+
+// --------------------------------------------------------------------
+
+/**
+ * @brief Stack based source for compound info.
+ *
+ * Use this class to temporarily add a compound source to the
+ * compound_factory.
+ *
+ * @code{.cpp}
+ * cif::file f("1cbs-with-custom-rea.cif");
+ * cif::compound_source cs(f);
+ *
+ * auto &cf = cif::compound_factory::instance();
+ * auto rea_compound = cf.create("REA");
+ * @endcode
+ */
+
+class compound_source
+{
+  public:
+	compound_source(const cif::file &file)
+	{
+		cif::compound_factory::instance().push_dictionary(file);
+	}
+
+	~compound_source()
+	{
+		cif::compound_factory::instance().pop_dictionary();
+	}
 };
 
 } // namespace cif

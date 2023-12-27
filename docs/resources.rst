@@ -18,7 +18,7 @@ Loading Resources
 
 No matter where the resource is located, you should always use the single libcifpp API call :cpp:func:`cif::load_resource` to load them. This function returns a *std::istream* wrapped inside a *std::unique_ptr*. 
 
-The order in which resources are search for is:
+The order in which resources are searched for is:
 
 * Use the resource that was defined by calling :cpp:func:`cif::add_file_resource`
   for this name.

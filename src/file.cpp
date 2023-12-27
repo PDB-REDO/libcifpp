@@ -173,11 +173,12 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 
 	if (is_new)
 	{
-		auto &db = emplace_front(name);
+		auto &db = emplace_back(name);
 		db.set_validator(m_validator);
 	}
 
-	return std::make_tuple(begin(), is_new);
+	assert(begin() != end());
+	return std::make_tuple(std::prev(end()), is_new);
 }
 
 void file::load(const std::filesystem::path &p)
