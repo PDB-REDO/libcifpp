@@ -300,6 +300,7 @@ set(project_sources
     ${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.hpp
     ${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp
 	${PROJECT_SOURCE_DIR}/src/pdb/reconstruct.cpp
+	${PROJECT_SOURCE_DIR}/src/pdb/validate-pdbx.cpp
 	)
 
 set(project_headers
@@ -562,7 +563,8 @@ if(BUILD_TESTING)
     model
     rename-compound
     sugar
-    spinner)
+    spinner
+	validate-pdbx)
 
   foreach(CIFPP_TEST IN LISTS CIFPP_tests)
     set(CIFPP_TEST "${CIFPP_TEST}-test")

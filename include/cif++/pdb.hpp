@@ -1,17 +1,17 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
- * 
+ *
  * Copyright (c) 2023 NKI/AVL, Netherlands Cancer Institute
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -30,13 +30,13 @@
 
 /**
  * @file pdb.hpp
- * 
+ *
  * This file presents the API to read and write files in the
  * legacy and ancient PDB format.
- * 
+ *
  * The code works on the basis of best effort since it is
  * impossible to have correct round trip fidelity.
- * 
+ *
  */
 
 namespace cif::pdb
@@ -81,7 +81,7 @@ inline void write(std::ostream &os, const file &f)
 /** @brief Write out the data in @a db to file @a file
  * in legacy PDB format or mmCIF format, depending on the
  * filename extension.
- * 
+ *
  * If extension of @a file is *.gz* the resulting file will
  * be written in gzip compressed format.
  */
@@ -90,7 +90,7 @@ void write(const std::filesystem::path &file, const datablock &db);
 /** @brief Write out the data in @a f to file @a file
  * in legacy PDB format or mmCIF format, depending on the
  * filename extension.
- * 
+ *
  * If extension of @a file is *.gz* the resulting file will
  * be written in gzip compressed format.
  */
@@ -102,13 +102,30 @@ inline void write(const std::filesystem::path &p, const file &f)
 // --------------------------------------------------------------------
 
 /** \brief Reconstruct all missing categories for an assumed PDBx file.
- * 
+ *
  * Some people believe that simply dumping some atom records is enough.
- * 
- * \param db The cif::datablock that hopefully contains some valid data
+ *
+ * \param file The cif::file that hopefully contains some valid data
+ * \param dictionary The mmcif dictionary to use
  */
 
-void reconstruct_pdbx(datablock &db);
+void reconstruct_pdbx(file &pdbx_file, std::string_view dictionary = "mmcif_pdbx");
+
+/** \brief This is an extension to cif::validator, use the logic in common
+ * PDBx files to see if the file is internally consistent.
+ *
+ * This function for now checks if the following categories are consistent:
+ *
+ * atom_site -> pdbx_poly_seq_scheme -> entity_poly_seq -> entity_poly -> entity
+ *
+ * Use the common \ref cif::VERBOSE flag to turn on diagnostic messages.
+ *
+ * \param file The input file
+ * \param dictionary The mmcif dictionary to use
+ * \result Returns true if the file was valid and consistent
+ */
+
+bool is_valid_pdbx_file(const file &pdbx_file, std::string_view dictionary = "mmcif_pdbx");
 
 // --------------------------------------------------------------------
 // Other I/O related routines
@@ -117,7 +134,7 @@ void reconstruct_pdbx(datablock &db);
  *
  * The line returned should be compatible with the legacy PDB
  * format and is e.g. used in the DSSP program.
- * 
+ *
  * @param data The datablock to use as source for the requested data
  * @param truncate_at The maximum length of the line returned
  */
@@ -127,7 +144,7 @@ std::string get_HEADER_line(const datablock &data, std::string::size_type trunca
  *
  * The line returned should be compatible with the legacy PDB
  * format and is e.g. used in the DSSP program.
- * 
+ *
  * @param data The datablock to use as source for the requested data
  * @param truncate_at The maximum length of the line returned
  */
@@ -137,7 +154,7 @@ std::string get_COMPND_line(const datablock &data, std::string::size_type trunca
  *
  * The line returned should be compatible with the legacy PDB
  * format and is e.g. used in the DSSP program.
- * 
+ *
  * @param data The datablock to use as source for the requested data
  * @param truncate_at The maximum length of the line returned
  */
@@ -147,12 +164,11 @@ std::string get_SOURCE_line(const datablock &data, std::string::size_type trunca
  *
  * The line returned should be compatible with the legacy PDB
  * format and is e.g. used in the DSSP program.
- * 
+ *
  * @param data The datablock to use as source for the requested data
  * @param truncate_at The maximum length of the line returned
  */
 
 std::string get_AUTHOR_line(const datablock &data, std::string::size_type truncate_at = 127);
 
-} // namespace pdbx
-
+} // namespace cif::pdb
