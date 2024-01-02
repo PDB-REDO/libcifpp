@@ -508,6 +508,11 @@ write_basic_package_version_file(
 	COMPATIBILITY AnyNewerVersion
 )
 
+# In case we're included as sub_directory:
+if(NOT PROJECT_IS_TOP_LEVEL)
+	set(CIFPP_SHARE_DIR ${PROJECT_SOURCE_DIR}/rsrc PARENT_SCOPE)
+endif()
+
 if(BUILD_TESTING)
 	# We're using the older version 2 of Catch2
 	FetchContent_Declare(
