@@ -232,17 +232,55 @@ A 1 5   GLY 5   5   5   GLY GLY A . n
 		REQUIRE_FALSE(cif::pdb::is_valid_pdbx_file(f));
 	}
 
+	SECTION("Missing hetero for record in atom_site")
+	{
+		auto &db = f.front();
+		
+		auto r1 = db["atom_site"].front();
+		cif::row_initializer cr(r1);
+		cr.set_value("id", "3");
+		cr.set_value("label_comp_id", "ALA");
+
+		db["atom_site"].emplace(std::move(cr));
+
+		REQUIRE_FALSE(cif::pdb::is_valid_pdbx_file(f));
+	}
+
+	SECTION("Missing letter in entity_poly.pdbx_seq_one_letter_code")
+	{
+		auto &db = f.front();
+		auto &entity_poly = db["entity_poly"];
+
+		entity_poly.front().assign({
+			{ "pdbx_seq_one_letter_code", "PNSG" }
+		});
+
+		REQUIRE_FALSE(cif::pdb::is_valid_pdbx_file(f));
+	}
+
+	SECTION("Too many letters in entity_poly.pdbx_seq_one_letter_code")
+	{
+		auto &db = f.front();
+		auto &entity_poly = db["entity_poly"];
+
+		entity_poly.front().assign({
+			{ "pdbx_seq_one_letter_code", "PNFSGX" }
+		});
+
+		REQUIRE_FALSE(cif::pdb::is_valid_pdbx_file(f));
+	}
+
+	SECTION("Mismatch in entity_poly.pdbx_seq_one_letter_code")
+	{
+		auto &db = f.front();
+		auto &entity_poly = db["entity_poly"];
+
+		entity_poly.front().assign({
+			{ "pdbx_seq_one_letter_code", "PNASG" }
+		});
+
+		REQUIRE_FALSE(cif::pdb::is_valid_pdbx_file(f));
+	}
+
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

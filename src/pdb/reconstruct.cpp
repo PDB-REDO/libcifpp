@@ -277,7 +277,8 @@ void createEntityPoly(datablock &db)
 
 			auto c = cf.create(comp_id);
 
-			std::string letter, letter_can;
+			std::string letter;
+			char letter_can;
 
 			// TODO: Perhaps we should improve this... 
 			if (type != "other")
@@ -296,16 +297,26 @@ void createEntityPoly(datablock &db)
 				else if (iequals(c->type(), "D-PEPTIDE LINKING"))
 				{
 					c_type = "polypeptide(D)";
-					letter = 'X';
-					letter_can = '(' + comp_id + ')';
+
+					letter_can = c->one_letter_code();
+					if (letter_can == 0)
+						letter_can = 'X';
+					
+					letter = '(' + comp_id + ')';
+
 					non_std_linkage = true;
 					non_std_monomer = true;
 				}
 				else if (iequals(c->type(), "L-PEPTIDE LINKING") or iequals(c->type(), "PEPTIDE LINKING"))
 				{
 					c_type = "polypeptide(L)";
-					letter = 'X';
-					letter_can = '(' + comp_id + ')';
+
+					letter_can = c->one_letter_code();
+					if (letter_can == 0)
+						letter_can = 'X';
+
+					letter = '(' + comp_id + ')';
+
 					non_std_monomer = true;
 				}
 

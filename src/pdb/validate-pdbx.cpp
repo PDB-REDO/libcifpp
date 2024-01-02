@@ -135,7 +135,7 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 			if (entity_poly.count("entity_id"_key == entity_id) != 1)
 				throw validation_error("There should be exactly one entity_poly record per polymer entity");
 
-			// const auto entity_poly_type = entity_poly.find1<std::string>("entity_id"_key == entity_id, "type");
+			const auto entity_poly_type = entity_poly.find1<std::string>("entity_id"_key == entity_id, "type");
 
 			std::map<int,std::set<std::string>> mon_per_seq_id;
 
@@ -177,12 +177,7 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 					condition cond;
 					
 					for (auto mon_id : mon_ids)
-					{
-						if (cond)
-							cond = std::move(cond) or "label_comp_id"_key == mon_id;
-						else
-							cond = "label_comp_id"_key == mon_id;
-					}
+						cond = std::move(cond) or "label_comp_id"_key == mon_id;
 
 					cond = "label_entity_id"_key == entity_id and
 						"label_asym_id"_key == asym_id and
@@ -192,6 +187,74 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 						throw validation_error("An atom_site record exists that has no parent in the poly seq scheme categories");
 				}
 			}
+
+			const auto &[seq, seq_can] = entity_poly.find1<std::optional<std::string>, std::optional<std::string>>("entity_id"_key == entity_id,
+				"pdbx_seq_one_letter_code", "pdbx_seq_one_letter_code_can");
+			
+			std::string::const_iterator si, sci, se, sce;
+
+			auto seq_match = [&](bool can, std::string::const_iterator si, std::string::const_iterator se)
+			{
+				for (const auto &[seq_id, comp_ids] : mon_per_seq_id)
+				{
+					if (si == se)
+						return false;
+
+					bool match = false;
+
+					for (auto comp_id : comp_ids)
+					{
+						std::string letter;
+						if (cf.is_known_base(comp_id))
+							letter = compound_factory::kBaseMap.at(comp_id);
+						else if (cf.is_known_peptide(comp_id))
+							letter = compound_factory::kAAMap.at(comp_id);
+						else
+						{
+							if (can)
+							{
+								auto c = cf.create(comp_id);
+								if (c and c->one_letter_code())
+									letter = c->one_letter_code();
+								else
+									letter = "X";
+							}
+							else
+								letter = '(' + comp_id + ')';
+						}
+						
+						if (iequals(std::string{si, si + letter.length()}, letter))
+						{
+							match = true;
+							si += letter.length();
+							break;
+						}
+						else
+							return false;
+					}
+
+					if (not match)
+						break;
+				}
+
+				return si == se;
+			};
+
+			if (not seq.has_value())
+			{
+				if (cif::VERBOSE > 0)
+					std::clog << "Warning: entity_poly has no sequence for entity_id " << entity_id << '\n';
+			}
+			else if (not seq_match(false, seq->begin(), seq->end()))
+				throw validation_error("Sequences do not match for entity " + entity_id);
+
+			if (not seq_can.has_value())
+			{
+				if (cif::VERBOSE > 0)
+					std::clog << "Warning: entity_poly has no sequence for entity_id " << entity_id << '\n';
+			}
+			else if (not seq_match(true, seq_can->begin(), seq_can->end()))
+				throw validation_error("Canonical sequences do not match for entity " + entity_id);
 		}
 
 		result = true;

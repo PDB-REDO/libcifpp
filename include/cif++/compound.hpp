@@ -166,6 +166,9 @@ class compound
 		return m_id == "HOH" or m_id == "H2O" or m_id == "WAT";
 	}
 
+	char one_letter_code() const { return m_one_letter_code; }; ///< Return the one letter code to use in a canonical sequence. If unknown the value '\0' is returned
+	std::string parent_id() const { return m_parent_id; };      ///< Return the parent id code in case a parent is specified (e.g. MET for MSE)
+
   private:
 	friend class compound_factory_impl;
 	friend class local_compound_factory_impl;
@@ -176,11 +179,9 @@ class compound
 	std::string m_id;
 	std::string m_name;
 	std::string m_type;
-	/// @cond
-	// m_group is no longer used
-	std::string __m_group;
-	/// @endcond
 	std::string m_formula;
+	char m_one_letter_code = 0;
+	std::string m_parent_id;
 	float m_formula_weight = 0;
 	int m_formal_charge = 0;
 	std::vector<compound_atom> m_atoms;
