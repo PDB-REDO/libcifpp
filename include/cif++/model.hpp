@@ -1115,11 +1115,4 @@ class structure
 	std::vector<residue> m_non_polymers;
 };
 
-// --------------------------------------------------------------------
-
-/// \brief Reconstruct all missing categories for an assumed PDBx file.
-/// Some people believe that simply dumping some atom records is enough.
-/// \param db The cif::datablock that hopefully contains some valid data
-void reconstruct_pdbx(datablock &db);
-
 } // namespace cif::mm

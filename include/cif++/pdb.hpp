@@ -100,6 +100,17 @@ inline void write(const std::filesystem::path &p, const file &f)
 }
 
 // --------------------------------------------------------------------
+
+/** \brief Reconstruct all missing categories for an assumed PDBx file.
+ * 
+ * Some people believe that simply dumping some atom records is enough.
+ * 
+ * \param db The cif::datablock that hopefully contains some valid data
+ */
+
+void reconstruct_pdbx(datablock &db);
+
+// --------------------------------------------------------------------
 // Other I/O related routines
 
 /** @brief Return the HEADER line for the data in @a data

@@ -298,7 +298,9 @@ set(project_sources
     ${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif.cpp
     ${PROJECT_SOURCE_DIR}/src/pdb/pdb_record.hpp
     ${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.hpp
-    ${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp)
+    ${PROJECT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp
+	${PROJECT_SOURCE_DIR}/src/pdb/reconstruct.cpp
+	)
 
 set(project_headers
     ${PROJECT_SOURCE_DIR}/include/cif++.hpp
