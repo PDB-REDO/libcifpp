@@ -223,7 +223,7 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 								letter = '(' + comp_id + ')';
 						}
 						
-						if (iequals(std::string_view{si, si + letter.length()}, letter))
+						if (iequals(std::string{si, si + letter.length()}, letter))
 						{
 							match = true;
 							si += letter.length();
