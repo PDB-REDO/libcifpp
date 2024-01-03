@@ -205,12 +205,12 @@ namespace
 	using cat_order_t = std::vector<elem_t>;
 	using iter_t = cat_order_t::iterator;
 
-	constexpr inline int get_count(iter_t i)
+	inline int get_count(iter_t i)
 	{
 		return std::get<1>(*i);
 	}
 
-	constexpr inline bool is_on_stack(iter_t i)
+	inline bool is_on_stack(iter_t i)
 	{
 		return std::get<2>(*i);
 	}
@@ -219,7 +219,7 @@ namespace
 	{
 		if (i == cat_order.end() or get_count(i) >= 0)
 			return;
-		
+
 		auto &&[cat, count, on_stack] = *i;
 
 		on_stack = true;
@@ -233,7 +233,7 @@ namespace
 
 			if (ei == cat_order.end())
 				continue;
-			
+
 			if (not is_on_stack(ei))
 				calculate_cat_order(cat_order, ei, validator);
 
@@ -242,7 +242,7 @@ namespace
 
 		count = parent_count + 1;
 	}
-}
+} // namespace
 
 void datablock::write(std::ostream &os) const
 {
