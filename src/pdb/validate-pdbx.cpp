@@ -188,7 +188,7 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 				}
 			}
 
-			const auto &[seq, seq_can] = entity_poly.find1<std::optional<std::string>, std::optional<std::string>>("entity_id"_key == entity_id,
+			auto &&[seq, seq_can] = entity_poly.find1<std::optional<std::string>, std::optional<std::string>>("entity_id"_key == entity_id,
 				"pdbx_seq_one_letter_code", "pdbx_seq_one_letter_code_can");
 			
 			std::string::const_iterator si, sci, se, sce;
@@ -245,16 +245,27 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 				if (cif::VERBOSE > 0)
 					std::clog << "Warning: entity_poly has no sequence for entity_id " << entity_id << '\n';
 			}
-			else if (not seq_match(false, seq->begin(), seq->end()))
-				throw validation_error("Sequences do not match for entity " + entity_id);
+			else
+			{
+				seq->erase(std::remove_if(seq->begin(), seq->end(), [](char ch) { return std::isspace(ch); }), seq->end());
+
+				if (not seq_match(false, seq->begin(), seq->end()))
+					throw validation_error("Sequences do not match for entity " + entity_id);
+			}
 
 			if (not seq_can.has_value())
 			{
 				if (cif::VERBOSE > 0)
 					std::clog << "Warning: entity_poly has no sequence for entity_id " << entity_id << '\n';
 			}
-			else if (not seq_match(true, seq_can->begin(), seq_can->end()))
-				throw validation_error("Canonical sequences do not match for entity " + entity_id);
+			else
+			{
+				seq_can->erase(std::remove_if(seq_can->begin(), seq_can->end(), [](char ch) { return std::isspace(ch); }), seq_can->end());
+				
+				if (not seq_match(true, seq_can->begin(), seq_can->end()))
+					throw validation_error("Canonical sequences do not match for entity " + entity_id);
+			}
+			
 		}
 
 		result = true;

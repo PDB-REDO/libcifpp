@@ -136,8 +136,13 @@ compound::compound(cif::datablock &db)
 	if (chemComp.size() != 1)
 		throw std::runtime_error("Invalid compound file, chem_comp should contain a single row");
 
-	cif::tie(m_id, m_name, m_type, m_formula, m_formula_weight, m_formal_charge, m_one_letter_code, m_parent_id) =
+	std::string one_letter_code;
+
+	cif::tie(m_id, m_name, m_type, m_formula, m_formula_weight, m_formal_charge, one_letter_code, m_parent_id) =
 		chemComp.front().get("id", "name", "type", "formula", "formula_weight", "pdbx_formal_charge", "one_letter_code", "mon_nstd_parent_comp_id");
+	
+	if (one_letter_code.length() == 1)
+		m_one_letter_code = one_letter_code.front();
 
 	// The name should not contain newline characters since that triggers validation errors later on
 	cif::replace_all(m_name, "\n", "");
