@@ -468,7 +468,11 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 	if (file.empty())
 		throw std::runtime_error("Cannot reconstruct PDBx, file seems to be empty");
 
+	// assuming the first datablock contains the entry ...
 	auto &db = file.front();
+
+	// ... and any additional datablock will contain compound information
+	cif::compound_source cs(file);
 
 	if (db.get("atom_site") == nullptr)
 		throw std::runtime_error("Cannot reconstruct PDBx file, atom data missing");
