@@ -1,4 +1,4 @@
-Version 6.0.1
+Version 6.1.0
 - Add formula weight to entity in pdb2cif
 - Change order of categories inside a datablock to match order in file
 - Change default order to write out categories in a file based on
