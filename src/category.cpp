@@ -508,12 +508,13 @@ category::category(std::string_view name)
 category::category(const category &rhs)
 	: m_name(rhs.m_name)
 	, m_columns(rhs.m_columns)
-	, m_validator(rhs.m_validator)
-	, m_cat_validator(rhs.m_cat_validator)
 	, m_cascade(rhs.m_cascade)
 {
 	for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
 		insert_impl(end(), clone_row(*r));
+
+	m_validator = rhs.m_validator;
+	m_cat_validator = rhs.m_cat_validator;
 
 	if (m_cat_validator != nullptr and m_index == nullptr)
 		m_index = new category_index(*this);
