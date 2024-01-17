@@ -568,7 +568,7 @@ _test.value
 	auto &test = db["test"];
 	REQUIRE(test.size() == 5);
 
-	REQUIRE(test.exists("value"_key == cif::null));
+	REQUIRE(test.contains("value"_key == cif::null));
 	REQUIRE(test.find("value"_key == cif::null).size() == 2);
 }
 

@@ -233,7 +233,7 @@ void item_validator::operator()(std::string_view value) const
 
 // --------------------------------------------------------------------
 
-void category_validator::addItemValidator(item_validator &&v)
+void category_validator::add_item_validator(item_validator &&v)
 {
 	if (v.m_mandatory)
 		m_mandatory_fields.insert(v.m_tag);

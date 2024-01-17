@@ -202,7 +202,7 @@ struct category_validator
 	}
 
 	/// @brief Add item_validator @a v to the list of item validators
-	void addItemValidator(item_validator &&v);
+	void add_item_validator(item_validator &&v);
 
 	/// @brief Return the item_validator for item @a tag, may return nullptr
 	const item_validator *get_validator_for_item(std::string_view tag) const;

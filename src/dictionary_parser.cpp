@@ -87,7 +87,7 @@ class dictionary_parser : public parser
 				error("Undefined category '" + iv.first);
 
 			for (auto &v : iv.second)
-				const_cast<category_validator *>(cv)->addItemValidator(std::move(v));
+				const_cast<category_validator *>(cv)->add_item_validator(std::move(v));
 		}
 
 		// check all item validators for having a typeValidator

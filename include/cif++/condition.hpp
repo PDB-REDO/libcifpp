@@ -934,6 +934,16 @@ struct key
 	{
 	}
 
+	/**
+	 * @brief Construct a new key object using @a itemTag as name
+	 * 
+	 * @param itemTag 
+	 */
+	explicit key(std::string_view itemTag)
+		: m_item_tag(itemTag)
+	{
+	}
+
 	key(const key &) = delete;
 	key &operator=(const key &) = delete;
 

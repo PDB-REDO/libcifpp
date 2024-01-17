@@ -70,6 +70,26 @@ class duplicate_key_error : public std::runtime_error
 	}
 };
 
+/// @brief A missing_key_error is thrown when an attempt is made
+/// to create an index when one of the key fields is missing.
+class missing_key_error : public std::runtime_error
+{
+  public:
+    /**
+     * @brief Construct a new duplicate key error object
+     */
+	missing_key_error(const std::string &msg, const std::string &key)
+		: std::runtime_error(msg)
+		, m_key(key)
+	{
+	}
+
+	const std::string &get_key() const noexcept { return m_key; }
+
+  private:
+	std::string m_key;
+};
+
 /// @brief A multiple_results_error is throw when you request a single
 /// row using a query but the query contains more than exactly one row.
 class multiple_results_error : public std::runtime_error
@@ -516,7 +536,7 @@ class category
 	/// @param column The name of the column to return the value for
 	/// @return The value found
 	template <typename T>
-	T find1(condition &&cond, const char *column) const
+	T find1(condition &&cond, std::string_view column) const
 	{
 		return find1<T>(cbegin(), std::move(cond), column);
 	}
@@ -530,7 +550,7 @@ class category
 	/// @param column The name of the column to return the value for
 	/// @return The value found
 	template <typename T, std::enable_if_t<not is_optional_v<T>, int> = 0>
-	T find1(const_iterator pos, condition &&cond, const char *column) const
+	T find1(const_iterator pos, condition &&cond, std::string_view column) const
 	{
 		auto h = find<T>(pos, std::move(cond), column);
 
@@ -549,7 +569,7 @@ class category
 	/// @param column The name of the column to return the value for
 	/// @return The value found, can be empty if no row matches the condition
 	template <typename T, std::enable_if_t<is_optional_v<T>, int> = 0>
-	T find1(const_iterator pos, condition &&cond, const char *column) const
+	T find1(const_iterator pos, condition &&cond, std::string_view column) const
 	{
 		auto h = find<typename T::value_type>(pos, std::move(cond), column);
 
@@ -644,7 +664,7 @@ class category
 	/// @param column The column for which the value should be returned
 	/// @return The value found or a default constructed value if not found
 	template <typename T>
-	T find_first(condition &&cond, const char *column) const
+	T find_first(condition &&cond, std::string_view column) const
 	{
 		return find_first<T>(cbegin(), std::move(cond), column);
 	}
@@ -657,7 +677,7 @@ class category
 	/// @param column The column for which the value should be returned
 	/// @return The value found or a default constructed value if not found
 	template <typename T>
-	T find_first(const_iterator pos, condition &&cond, const char *column) const
+	T find_first(const_iterator pos, condition &&cond, std::string_view column) const
 	{
 		auto h = find<T>(pos, std::move(cond), column);
 
@@ -701,7 +721,7 @@ class category
 	/// @param cond The condition to search for
 	/// @return The value found or the minimal value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	T find_max(const char *column, condition &&cond) const
+	T find_max(std::string_view column, condition &&cond) const
 	{
 		T result = std::numeric_limits<T>::min();
 
@@ -719,7 +739,7 @@ class category
 	/// @param column The column to use for the value
 	/// @return The value found or the minimal value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	T find_max(const char *column) const
+	T find_max(std::string_view column) const
 	{
 		return find_max<T>(column, all());
 	}
@@ -730,7 +750,7 @@ class category
 	/// @param cond The condition to search for
 	/// @return The value found or the maximum value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	T find_min(const char *column, condition &&cond) const
+	T find_min(std::string_view column, condition &&cond) const
 	{
 		T result = std::numeric_limits<T>::max();
 
@@ -748,7 +768,7 @@ class category
 	/// @param column The column to use for the value
 	/// @return The value found or the maximum value for the type
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	T find_min(const char *column) const
+	T find_min(std::string_view column) const
 	{
 		return find_min<T>(column, all());
 	}
@@ -756,7 +776,16 @@ class category
 	/// @brief Return whether a row exists that matches condition @a cond
 	/// @param cond The condition to match
 	/// @return True if a row exists
+	[[deprecated("Use contains instead")]]
 	bool exists(condition &&cond) const
+	{
+		return contains(std::move(cond));
+	}
+
+	/// @brief Return whether a row exists that matches condition @a cond
+	/// @param cond The condition to match
+	/// @return True if a row exists
+	bool contains(condition &&cond) const
 	{
 		bool result = false;
 
@@ -921,6 +950,11 @@ class category
 		return get_unique_id([prefix](int nr)
 			{ return prefix + std::to_string(nr + 1); });
 	}
+
+	/// @brief Generate a new, unique value for a item named @a tag
+	/// @param tag The name of the item
+	/// @return a new unique value
+	std::string get_unique_value(std::string_view tag);
 
 	// --------------------------------------------------------------------
 

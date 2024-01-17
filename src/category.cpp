@@ -675,7 +675,7 @@ void category::set_validator(const validator *v, datablock &db)
 				std::ostringstream msg;
 				msg << "Cannot construct index since the key field" << (missing.size() > 1 ? "s" : "") << " "
 							<< cif::join(missing, ", ") << " in " << m_name << " " << (missing.size() == 1 ? "is" : "are") << " missing\n";
-				throw std::runtime_error(msg.str());
+				throw missing_key_error(msg.str(), *missing.begin());
 			}
 		}
 	}
@@ -863,7 +863,7 @@ bool category::validate_links() const
 			auto cond = get_parents_condition(r, *parent);
 			if (not cond)
 				continue;
-			if (not parent->exists(std::move(cond)))
+			if (not parent->contains(std::move(cond)))
 			{
 				++missing;
 				if (VERBOSE and first_missing_rows.size() < 5)
@@ -1000,7 +1000,7 @@ bool category::has_children(row_handle r) const
 
 	for (auto &&[childCat, link] : m_child_links)
 	{
-		if (not childCat->exists(get_children_condition(r, *childCat)))
+		if (not childCat->contains(get_children_condition(r, *childCat)))
 			continue;
 
 		result = true;
@@ -1016,7 +1016,7 @@ bool category::has_parents(row_handle r) const
 
 	for (auto &&[parentCat, link] : m_parent_links)
 	{
-		if (not parentCat->exists(get_parents_condition(r, *parentCat)))
+		if (not parentCat->contains(get_parents_condition(r, *parentCat)))
 			continue;
 
 		result = true;
@@ -1217,7 +1217,7 @@ void category::erase_orphans(condition &&cond, category &parent)
 		if (not cond(r))
 			continue;
 		
-		if (parent.exists(get_parents_condition(r, parent)))
+		if (parent.contains(get_parents_condition(r, parent)))
 			continue;
 
 		if (VERBOSE > 1)
@@ -1264,10 +1264,40 @@ std::string category::get_unique_id(std::function<std::string(int)> generator)
 	{
 		for (;;)
 		{
-			if (not exists(key(id_tag) == result))
+			if (not contains(key(id_tag) == result))
 				break;
 			
 			result = generator(static_cast<int>(m_last_unique_num++));
+		}
+	}
+
+	return result;
+}
+
+std::string category::get_unique_value(std::string_view tag)
+{
+	std::string result;
+
+	if (m_validator and m_cat_validator)
+	{
+		auto iv = m_cat_validator->get_validator_for_item(tag);
+
+		if (iv and iv->m_type and iv->m_type->m_primitive_type == DDL_PrimitiveType::Numb)
+		{
+			uint64_t v = find_max<uint64_t>(tag);
+			result = std::to_string(v + 1);
+		}
+	}
+
+	if (result.empty())
+	{
+		// brain-dead implementation
+		for (size_t ix = 0; ix < size(); ++ix)
+		{
+			// result = m_name + "-" + std::to_string(ix);
+			result = cif_id_for_number(ix);
+			if (not contains(key(tag) == result))
+				break;
 		}
 	}
 
@@ -1377,7 +1407,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 						check = std::move(check) && key(ck) == parent[pk].text();
 				}
 
-				if (childCat->exists(std::move(check))) // phew..., narrow escape
+				if (childCat->contains(std::move(check))) // phew..., narrow escape
 					continue;
 
 				// create the actual copy, if we can...
@@ -1406,7 +1436,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 void category::update_value(row *row, uint16_t column, std::string_view value, bool updateLinked, bool validate)
 {
 	// make sure we have an index, if possible
-	if (m_index == nullptr and m_cat_validator != nullptr)
+	if ((updateLinked or validate) and m_index == nullptr and m_cat_validator != nullptr)
 		m_index = new category_index(this);
 
 	auto &col = m_columns[column];
@@ -1445,7 +1475,7 @@ void category::update_value(row *row, uint16_t column, std::string_view value, b
 	if (not value.empty())
 		row->append(column, { value });
 
-	if (reinsert)
+	if (reinsert and m_index != nullptr)
 		m_index->insert(row);
 
 	// see if we need to update any child categories that depend on this value

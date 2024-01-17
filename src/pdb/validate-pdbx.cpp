@@ -183,7 +183,7 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 						"label_asym_id"_key == asym_id and
 						"label_seq_id"_key == seq_id and not std::move(cond);
 					
-					if (atom_site.exists(std::move(cond)))
+					if (atom_site.contains(std::move(cond)))
 						throw validation_error("An atom_site record exists that has no parent in the poly seq scheme categories");
 				}
 			}
