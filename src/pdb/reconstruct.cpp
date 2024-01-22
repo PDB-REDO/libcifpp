@@ -239,7 +239,7 @@ void checkAtomRecords(datablock &db)
 		
 		// Rewrite the coordinates and other fields that look better in a fixed format
 		// Be careful not to nuke invalidly formatted data here
-		for (auto [tag, prec] : std::initializer_list<std::tuple<std::string_view,std::string::size_type>>{
+		for (auto [tag, prec] : std::vector<std::tuple<std::string_view,std::string::size_type>>{
 				{ "cartn_x", 3 },
 				{ "cartn_y", 3 },
 				{ "cartn_z", 3 },
@@ -260,7 +260,7 @@ void checkAtomRecords(datablock &db)
 				char b[12];
 
 				if (auto [ptr, ec] = cif::to_chars(b, b + sizeof(b), v, cif::chars_format::fixed, prec); ec == std::errc())
-					row.assign(tag, {b, ptr}, false, false);
+					row.assign(tag, {b, static_cast<std::string::size_type>(ptr - b)}, false, false);
 			}
 		}
 	}
