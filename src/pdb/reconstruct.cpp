@@ -239,7 +239,7 @@ void checkAtomRecords(datablock &db)
 		
 		// Rewrite the coordinates and other fields that look better in a fixed format
 		// Be careful not to nuke invalidly formatted data here
-		for (const auto &[tag, prec] : std::initializer_list<std::tuple<std::string_view,std::string::size_type>>{
+		for (auto [tag, prec] : std::initializer_list<std::tuple<std::string_view,std::string::size_type>>{
 				{ "cartn_x", 3 },
 				{ "cartn_y", 3 },
 				{ "cartn_z", 3 },
