@@ -236,6 +236,33 @@ void checkAtomRecords(datablock &db)
 			{ "auth_seq_id", auth_seq_id.value_or(std::to_string(*label_seq_id)) },
 			{ "auth_comp_id", auth_comp_id.value_or(*label_comp_id) },
 			{ "auth_atom_id", auth_atom_id.value_or(*label_atom_id) } });
+		
+		// Rewrite the coordinates and other fields that look better in a fixed format
+		// Be careful not to nuke invalidly formatted data here
+		for (const auto &[tag, prec] : std::initializer_list<std::tuple<std::string_view,std::string::size_type>>{
+				{ "cartn_x", 3 },
+				{ "cartn_y", 3 },
+				{ "cartn_z", 3 },
+				{ "occupancy", 2 },
+				{ "b_iso_or_equiv", 2 }
+			})
+		{
+			if (row[tag].empty())
+				continue;
+			
+			float v;
+			auto s = row.get<std::string>(tag);
+			if (auto [ptr, ec] = cif::from_chars(s.data(), s.data() + s.length(), v); ec != std::errc())
+				continue;
+
+			if (s.length() < prec + 1 or s[s.length() - prec - 1] != '.')
+			{
+				char b[12];
+
+				if (auto [ptr, ec] = cif::to_chars(b, b + sizeof(b), v, cif::chars_format::fixed, prec); ec == std::errc())
+					row.assign(tag, {b, ptr}, false, false);
+			}
+		}
 	}
 }
 
