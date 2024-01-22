@@ -556,7 +556,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 
 		auto txt = ref.text();
 
-		if (txt.empty())
+		if (ref.empty())
 			result = 1;
 		else
 		{

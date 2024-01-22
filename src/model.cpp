@@ -1783,7 +1783,7 @@ atom &structure::emplace_atom(atom &&atom)
 	std::string symbol = atom.get_property("type_symbol");
 
 	using namespace cif::literals;
-	if (not atom_type.exists("symbol"_key == symbol))
+	if (not atom_type.contains("symbol"_key == symbol))
 		atom_type.emplace({ { "symbol", symbol } });
 
 	return m_atoms.emplace_back(std::move(atom));
@@ -1969,7 +1969,7 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 
 		// create rest
 		auto &chemComp = m_db["chem_comp"];
-		if (not chemComp.exists(key("id") == newCompound))
+		if (not chemComp.contains(key("id") == newCompound))
 		{
 			chemComp.emplace({{"id", newCompound},
 				{"name", compound->name()},
@@ -2702,7 +2702,7 @@ void structure::cleanup_empty_categories()
 	for (auto chemComp : chem_comp)
 	{
 		std::string compID = chemComp["id"].as<std::string>();
-		if (atomSite.exists("label_comp_id"_key == compID or "auth_comp_id"_key == compID))
+		if (atomSite.contains("label_comp_id"_key == compID or "auth_comp_id"_key == compID))
 			continue;
 
 		obsoleteChemComps.push_back(chemComp);
@@ -2719,7 +2719,7 @@ void structure::cleanup_empty_categories()
 	for (auto entity : entities)
 	{
 		std::string entityID = entity["id"].as<std::string>();
-		if (atomSite.exists("label_entity_id"_key == entityID))
+		if (atomSite.contains("label_entity_id"_key == entityID))
 			continue;
 
 		obsoleteEntities.push_back(entity);
