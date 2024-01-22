@@ -151,6 +151,16 @@ struct type_validator
 
 struct item_alias
 {
+	item_alias(const std::string &alias_name, const std::string &dictionary, const std::string &version)
+		: m_name(alias_name)
+		, m_dict(dictionary)
+		, m_vers(version)
+	{
+	}
+
+	item_alias(const item_alias &) = default;
+	item_alias &operator=(const item_alias &) = default;
+
 	std::string m_name; ///< The alias_name
 	std::string m_dict; ///< The dictionary in which it was known
 	std::string m_vers; ///< The version of the dictionary
