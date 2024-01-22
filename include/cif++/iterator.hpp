@@ -562,22 +562,23 @@ class conditional_iterator_proxy
 
 		reference operator*()
 		{
-			return *mBegin;
+			return *m_begin;
 		}
 
 		pointer operator->()
 		{
-			return &*mBegin;
+			m_current = *m_begin;
+			return &m_current;
 		}
 
 		conditional_iterator_impl &operator++()
 		{
-			while (mBegin != mEnd)
+			while (m_begin != m_end)
 			{
-				if (++mBegin == mEnd)
+				if (++m_begin == m_end)
 					break;
 				
-				if (m_condition->operator()(mBegin))
+				if (m_condition->operator()(m_begin))
 					break;
 			}
 
@@ -591,18 +592,22 @@ class conditional_iterator_proxy
 			return result;
 		}
 
-		bool operator==(const conditional_iterator_impl &rhs) const { return mBegin == rhs.mBegin; }
-		bool operator!=(const conditional_iterator_impl &rhs) const { return mBegin != rhs.mBegin; }
+		bool operator==(const conditional_iterator_impl &rhs) const { return m_begin == rhs.m_begin; }
+		bool operator!=(const conditional_iterator_impl &rhs) const { return m_begin != rhs.m_begin; }
+
+		bool operator==(const row_iterator &rhs) const { return m_begin == rhs; }
+		bool operator!=(const row_iterator &rhs) const { return m_begin != rhs; }
 
 		template <typename IRowType, typename... ITs>
-		bool operator==(const iterator_impl<IRowType, ITs...> &rhs) const { return mBegin == rhs; }
+		bool operator==(const iterator_impl<IRowType, ITs...> &rhs) const { return m_begin == rhs; }
 
 		template <typename IRowType, typename... ITs>
-		bool operator!=(const iterator_impl<IRowType, ITs...> &rhs) const { return mBegin != rhs; }
+		bool operator!=(const iterator_impl<IRowType, ITs...> &rhs) const { return m_begin != rhs; }
 
 	  private:
-		CategoryType *mCat;
-		base_iterator mBegin, mEnd;
+		CategoryType *m_cat;
+		base_iterator m_begin, m_end;
+		value_type m_current;
 		const condition *m_condition;
 	};
 
@@ -673,13 +678,13 @@ iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos,
 template <typename Category, typename... Ts>
 conditional_iterator_proxy<Category, Ts...>::conditional_iterator_impl::conditional_iterator_impl(
 	Category &cat, row_iterator pos, const condition &cond, const std::array<uint16_t, N> &cix)
-	: mCat(&cat)
-	, mBegin(pos, cix)
-	, mEnd(cat.end(), cix)
+	: m_cat(&cat)
+	, m_begin(pos, cix)
+	, m_end(cat.end(), cix)
 	, m_condition(&cond)
 {
 	if (m_condition == nullptr or m_condition->empty())
-		mBegin = mEnd;
+		m_begin = m_end;
 }
 
 template <typename Category, typename... Ts>

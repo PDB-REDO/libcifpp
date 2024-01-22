@@ -563,6 +563,80 @@ void createPdbxPolySeqScheme(datablock &db)
 	}
 }
 
+// Some programs write out a ndb_poly_seq_scheme, which has been replaced by pdbx_poly_seq_scheme
+void comparePolySeqSchemes(datablock &db)
+{
+	auto &ndb_poly_seq_scheme = db["ndb_poly_seq_scheme"];
+	auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
+
+	// Since often ndb_poly_seq_scheme only contains an id and mon_id field
+	// we assume that it should match the accompanying pdbx_poly_seq
+
+	std::vector<std::string> asym_ids_ndb, asym_ids_pdbx;
+
+	for (auto asym_id : ndb_poly_seq_scheme.rows<std::string>("id"))
+	{
+		auto i = std::lower_bound(asym_ids_ndb.begin(), asym_ids_ndb.end(), asym_id);
+		if (i == asym_ids_ndb.end() or *i != asym_id)
+			asym_ids_ndb.insert(i, asym_id);
+	}
+	
+	for (auto asym_id : pdbx_poly_seq_scheme.rows<std::string>("asym_id"))
+	{
+		auto i = std::lower_bound(asym_ids_pdbx.begin(), asym_ids_pdbx.end(), asym_id);
+		if (i == asym_ids_pdbx.end() or *i != asym_id)
+			asym_ids_pdbx.insert(i, asym_id);
+	}
+	
+	// If we have different Asym ID's assume the ndb is invalid.
+	if (asym_ids_ndb != asym_ids_pdbx)
+	{
+		if (cif::VERBOSE > 0)
+			std::clog << "The asym ID's of ndb_poly_seq_scheme and pdbx_poly_seq_scheme are not equal, dropping ndb_poly_seq_scheme\n";
+		ndb_poly_seq_scheme.clear();
+	}
+	else
+	{
+		for (const auto &asym_id : asym_ids_ndb)
+		{
+			bool valid = true;
+
+			auto ndb_range = ndb_poly_seq_scheme.find(key("id") == asym_id);
+			auto pdbx_range = pdbx_poly_seq_scheme.find(key("asym_id") == asym_id);
+
+			for (auto ndb_i = ndb_range.begin(), pdbx_i = pdbx_range.begin();
+				ndb_i != ndb_range.end() or pdbx_i != pdbx_range.end(); ++ndb_i, ++pdbx_i)
+			{
+				if (ndb_i == ndb_range.end() or pdbx_i == pdbx_range.end())
+				{
+					if (cif::VERBOSE > 0)
+						std::clog << "The sequences in ndb_poly_seq_scheme and pdbx_poly_seq_scheme are unequal in size for asym ID " << asym_id << '\n';
+					valid = false;
+					break;
+				}
+
+				auto ndb_mon_id = ndb_i->get<std::string>("mon_id");
+				auto pdbx_mon_id = pdbx_i->get<std::string>("mon_id");
+
+				if (ndb_mon_id != pdbx_mon_id)
+				{
+					if (cif::VERBOSE > 0)
+						std::clog << "The sequences in ndb_poly_seq_scheme and pdbx_poly_seq_scheme contain different mon ID's for asym ID " << asym_id << '\n';
+					valid = false;
+					break;
+				}
+			}
+
+			if (not valid)
+			{
+				if (cif::VERBOSE > 0)
+					std::clog << "Dropping asym ID " << asym_id << " from ndb_poly_seq_scheme\n";
+				ndb_poly_seq_scheme.erase(key("id") == asym_id);
+			}
+		}
+	}
+}
+
 void reconstruct_pdbx(file &file, std::string_view dictionary)
 {
 	if (file.empty())
@@ -765,6 +839,9 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 
 	if (db.get("pdbx_poly_seq_scheme") == nullptr)
 		createPdbxPolySeqScheme(db);
+
+	if (db.get("ndb_poly_seq_scheme") != nullptr)
+		comparePolySeqSchemes(db);
 }
 
 } // namespace cif::pdb
