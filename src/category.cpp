@@ -614,6 +614,20 @@ void category::remove_column(std::string_view column_name)
 	}
 }
 
+void category::rename_column(std::string_view from_name, std::string_view to_name)
+{
+	for (size_t ix = 0; ix < m_columns.size(); ++ix)
+	{
+		if (not iequals(from_name, m_columns[ix].m_name))
+			continue;
+
+		m_columns[ix].m_name = to_name;
+		m_columns[ix].m_validator = m_cat_validator ? m_cat_validator->get_validator_for_item(to_name) : nullptr;
+
+		break;
+	}
+}
+
 iset category::get_columns() const
 {
 	iset result;

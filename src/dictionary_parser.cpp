@@ -224,6 +224,13 @@ class dictionary_parser : public parser
 			// 	}
 			// }
 
+			std::vector<item_alias> aliases;
+			for (const auto &[alias_name, dictionary, version] :
+				dict["item_aliases"].rows<std::string,std::string,std::string>("alias_name", "dictionary", "version"))
+			{
+				aliases.emplace_back(alias_name, dictionary, version);
+			}
+
 			// collect the dict from our dataBlock and construct validators
 			for (auto i : dict["item"])
 			{
@@ -245,7 +252,7 @@ class dictionary_parser : public parser
 
 				auto vi = find(ivs.begin(), ivs.end(), item_validator{ item_name });
 				if (vi == ivs.end())
-					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue /*, defaultIsNull*/ });
+					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, nullptr, std::move(aliases) });
 				else
 				{
 					// need to update the itemValidator?

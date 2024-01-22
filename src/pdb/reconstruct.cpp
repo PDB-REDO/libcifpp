@@ -683,9 +683,6 @@ void comparePolySeqSchemes(datablock &db)
 			}
 		}
 	}
-
-	if (ndb_poly_seq_scheme.empty())
-		db.erase(std::remove(db.begin(), db.end(), ndb_poly_seq_scheme), db.end());
 }
 
 void reconstruct_pdbx(file &file, std::string_view dictionary)
@@ -732,6 +729,23 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 			auto cv = validator.get_validator_for_category(cat.name());
 			if (not cv)
 				continue;
+			
+			// Start by renaming columns that may have old names based on alias info
+
+			for (auto tag : cat.get_columns())
+			{
+				auto iv = cv->get_validator_for_item(tag);
+				if (iv)	// know, must be OK then
+					continue;
+				
+				iv = cv->get_validator_for_aliased_item(tag);
+				if (not iv)
+					continue;
+				
+				if (cif::VERBOSE > 0)
+					std::clog << "Renaming " << tag << " to " << iv->m_tag << " in category " << cat.name() << '\n';
+				cat.rename_column(tag, iv->m_tag);
+			}
 
 			for (auto link : validator.get_links_for_child(cat.name()))
 			{

@@ -1041,6 +1041,9 @@ class category
 	 */
 	void remove_column(std::string_view column_name);
 
+	/** @brief Rename column @a from_name to @a to_name */
+	void rename_column(std::string_view from_name, std::string_view to_name);
+
 	/// @brief Return whether a column with name @a name exists in this category
 	/// @param name The name of the column
 	/// @return True if the column exists

@@ -256,6 +256,28 @@ const item_validator *category_validator::get_validator_for_item(std::string_vie
 	return result;
 }
 
+const item_validator *category_validator::get_validator_for_aliased_item(std::string_view tag) const
+{
+	const item_validator *result = nullptr;
+
+	for (auto &iv : m_item_validators)
+	{
+		for (auto &ai : iv.m_aliases)
+		{
+			const auto &[cat, name] = split_tag_name(ai.m_name);
+			if (name == tag and cat == m_name)
+			{
+				result = &iv;
+				break;
+			}
+		}
+		if (result)
+			break;
+	}
+
+	return result;
+}
+
 // --------------------------------------------------------------------
 
 void validator::add_type_validator(type_validator &&v)

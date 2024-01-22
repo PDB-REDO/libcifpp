@@ -146,6 +146,16 @@ struct type_validator
 	int compare(std::string_view a, std::string_view b) const;
 };
 
+/** @brief Item alias, items can be renamed over time
+ */
+
+struct item_alias
+{
+	std::string m_name; ///< The alias_name
+	std::string m_dict; ///< The dictionary in which it was known
+	std::string m_vers; ///< The version of the dictionary
+};
+
 /**
  * @brief An item_validator binds a type_validator to an item in
  * a category along with other information found in the dictionary.
@@ -163,6 +173,7 @@ struct item_validator
 	cif::iset m_enums;                        ///< If filled, the set of allowed values
 	std::string m_default;                    ///< If filled, a default value for this item
 	category_validator *m_category = nullptr; ///< The category_validator this item_validator belongs to
+	std::vector<item_alias> m_aliases;        ///< The aliases for this item
 
 	/// @brief Compare based on the name
 	bool operator<(const item_validator &rhs) const
@@ -191,7 +202,7 @@ struct category_validator
 {
 	std::string m_name;                         ///< The name of the category
 	std::vector<std::string> m_keys;            ///< The list of items that make up the key
-	cif::iset m_groups;							///< The category groups this category belongs to
+	cif::iset m_groups;                         ///< The category groups this category belongs to
 	cif::iset m_mandatory_fields;               ///< The mandatory fields for this category
 	std::set<item_validator> m_item_validators; ///< The item validators for the items in this category
 
@@ -206,6 +217,9 @@ struct category_validator
 
 	/// @brief Return the item_validator for item @a tag, may return nullptr
 	const item_validator *get_validator_for_item(std::string_view tag) const;
+
+	/// @brief Return the item_validator for an item that has as alias name @a tag, may return nullptr
+	const item_validator *get_validator_for_aliased_item(std::string_view tag) const;
 };
 
 /**
