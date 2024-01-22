@@ -143,13 +143,6 @@ std::tuple<datablock::iterator, bool> datablock::emplace(std::string_view name)
 		if (iequals(name, i->name()))
 		{
 			is_new = false;
-
-			if (i != begin())
-			{
-				auto n = std::next(i);
-				splice(begin(), *this, i, n);
-			}
-
 			break;
 		}
 
@@ -158,12 +151,12 @@ std::tuple<datablock::iterator, bool> datablock::emplace(std::string_view name)
 
 	if (is_new)
 	{
-		auto &c = emplace_back(name);
-		c.set_validator(m_validator, *this);
+		i = insert(end(), {name});
+		i->set_validator(m_validator, *this);
 	}
 
-	assert(end() != begin());
-	return std::make_tuple(std::prev(end()), is_new);
+	assert(i != end());
+	return std::make_tuple(i, is_new);
 }
 
 std::vector<std::string> datablock::get_tag_order() const
@@ -171,7 +164,6 @@ std::vector<std::string> datablock::get_tag_order() const
 	std::vector<std::string> result;
 
 	// for entry and audit_conform on top
-
 	auto ci = find_if(begin(), end(), [](const category &cat)
 		{ return cat.name() == "entry"; });
 	if (ci != end())
@@ -253,12 +245,31 @@ void datablock::write(std::ostream &os) const
 	{
 		// If the dictionary declares an audit_conform category, put it in,
 		// but only if it does not exist already!
-		if (get("audit_conform") == nullptr and m_validator->get_validator_for_category("audit_conform") != nullptr)
+
+		if (m_validator->get_validator_for_category("audit_conform") != nullptr)
 		{
-			category auditConform("audit_conform");
-			auditConform.emplace({ { "dict_name", m_validator->name() },
-				{ "dict_version", m_validator->version() } });
-			auditConform.write(os);
+			auto *audit_conform = get("audit_conform");
+			if (audit_conform == nullptr or audit_conform->size() != 1) // There should be one entry here, I guess
+				audit_conform = nullptr;
+			else
+			{
+				// And the name and version should be filled in of course
+				auto &e = audit_conform->front();
+				if (e["dict_name"].empty() or e["dict_version"].empty())
+					audit_conform = nullptr;
+			}
+
+			if (not audit_conform)
+			{
+				category auditConform("audit_conform");
+				// clang-format off
+				auditConform.emplace({
+					{ "dict_name", m_validator->name() },
+					{ "dict_version", m_validator->version() }
+				});
+				// clang-format on
+				auditConform.write(os);
+			}
 		}
 
 		// base order on parent child relationships, parents first
