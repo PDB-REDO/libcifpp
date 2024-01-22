@@ -1,3 +1,6 @@
+Version 6.2.0
+- Added repairSequenceInfo to repair invalid files
+
 Version 6.1.0
 - Add formula weight to entity in pdb2cif
 - Change order of categories inside a datablock to match order in file
