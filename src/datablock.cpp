@@ -374,6 +374,10 @@ void datablock::write(std::ostream &os, const std::vector<std::string> &tag_orde
 
 bool datablock::operator==(const datablock &rhs) const
 {
+	// shortcut
+	if (this == &rhs)
+		return true;
+
 	auto &dbA = *this;
 	auto &dbB = rhs;
 

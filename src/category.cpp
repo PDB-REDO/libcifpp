@@ -111,7 +111,7 @@ class row_comparator
 
 			if (d != 0)
 				break;
-			
+
 			++ai;
 		}
 
@@ -360,7 +360,8 @@ row *category_index::find_by_value(const category &cat, row_initializer k) const
 	{
 		auto fld = cat.get_column_name(f);
 
-		auto ki = find_if(k.begin(), k.end(), [&fld](auto &i) { return i.name() == fld; });
+		auto ki = find_if(k.begin(), k.end(), [&fld](auto &i)
+			{ return i.name() == fld; });
 		if (ki == k.end())
 			k2.emplace_back(fld, "");
 		else
@@ -594,6 +595,25 @@ category::~category()
 
 // --------------------------------------------------------------------
 
+void category::remove_column(std::string_view column_name)
+{
+	for (size_t ix = 0; ix < m_columns.size(); ++ix)
+	{
+		if (not iequals(column_name, m_columns[ix].m_name))
+			continue;
+
+		for (row *r = m_head; r != nullptr; r = r->m_next)
+		{
+			if (r->size() > ix)
+				r->erase(r->begin() + ix);
+		}
+
+		m_columns.erase(m_columns.begin() + ix);
+
+		break;
+	}
+}
+
 iset category::get_columns() const
 {
 	iset result;
@@ -671,7 +691,7 @@ void category::set_validator(const validator *v, datablock &db)
 			{
 				std::ostringstream msg;
 				msg << "Cannot construct index since the key field" << (missing.size() > 1 ? "s" : "") << " "
-							<< cif::join(missing, ", ") << " in " << m_name << " " << (missing.size() == 1 ? "is" : "are") << " missing\n";
+					<< cif::join(missing, ", ") << " in " << m_name << " " << (missing.size() == 1 ? "is" : "are") << " missing\n";
 				throw missing_key_error(msg.str(), *missing.begin());
 			}
 		}
@@ -873,12 +893,12 @@ bool category::validate_links() const
 			result = false;
 
 			std::cerr << "Links for " << link.v->m_link_group_label << " are incomplete\n"
-					<< "  There are " << missing << " items in " << m_name << " that don't have matching parent items in " << parent->m_name << '\n';
-			
+					  << "  There are " << missing << " items in " << m_name << " that don't have matching parent items in " << parent->m_name << '\n';
+
 			if (VERBOSE)
 			{
-				std::cerr << "showing first " << first_missing_rows.size() <<  " rows\n"
-						<< '\n';
+				std::cerr << "showing first " << first_missing_rows.size() << " rows\n"
+						  << '\n';
 
 				first_missing_rows.write(std::cerr, link.v->m_child_keys, false);
 
@@ -919,7 +939,9 @@ condition category::get_parents_condition(row_handle rh, const category &parentC
 	condition result;
 
 	auto links = m_validator->get_links_for_child(m_name);
-	links.erase(remove_if(links.begin(), links.end(), [n=parentCat.m_name](auto &l) { return l->m_parent_category != n; }), links.end());
+	links.erase(remove_if(links.begin(), links.end(), [n = parentCat.m_name](auto &l)
+					{ return l->m_parent_category != n; }),
+		links.end());
 
 	if (not links.empty())
 	{
@@ -959,7 +981,9 @@ condition category::get_children_condition(row_handle rh, const category &childC
 		mandatoryChildFields = childCatValidator->m_mandatory_fields;
 
 	auto links = m_validator->get_links_for_parent(m_name);
-	links.erase(remove_if(links.begin(), links.end(), [n=childCat.m_name](auto &l) { return l->m_child_category != n; }), links.end());
+	links.erase(remove_if(links.begin(), links.end(), [n = childCat.m_name](auto &l)
+					{ return l->m_child_category != n; }),
+		links.end());
 
 	if (not links.empty())
 	{
@@ -1123,7 +1147,7 @@ category::iterator category::erase(iterator pos)
 	return result;
 }
 
-template<typename T>
+template <typename T>
 class save_value
 {
   public:
@@ -1213,7 +1237,7 @@ void category::erase_orphans(condition &&cond, category &parent)
 	{
 		if (not cond(r))
 			continue;
-		
+
 		if (parent.contains(get_parents_condition(r, parent)))
 			continue;
 
@@ -1222,11 +1246,10 @@ void category::erase_orphans(condition &&cond, category &parent)
 			category c(m_name);
 			c.emplace(r);
 			std::cerr << "Removing orphaned record: \n"
-						<< c << '\n'
-						<< '\n';
-
+					  << c << '\n'
+					  << '\n';
 		}
-		
+
 		remove.emplace_back(r.m_row);
 	}
 
@@ -1251,10 +1274,10 @@ std::string category::get_unique_id(std::function<std::string(int)> generator)
 
 		if (m_index == nullptr and m_cat_validator != nullptr)
 			m_index = new category_index(*this);
-		
+
 		for (;;)
 		{
-			if (m_index->find_by_value(*this, {{ id_tag, result }}) == nullptr)
+			if (m_index->find_by_value(*this, { { id_tag, result } }) == nullptr)
 				break;
 			result = generator(static_cast<int>(m_last_unique_num++));
 		}
@@ -1265,7 +1288,7 @@ std::string category::get_unique_id(std::function<std::string(int)> generator)
 		{
 			if (not contains(key(id_tag) == result))
 				break;
-			
+
 			result = generator(static_cast<int>(m_last_unique_num++));
 		}
 	}
@@ -1571,8 +1594,8 @@ row *category::clone_row(const row &r)
 			auto &i = r[ix];
 			if (not i)
 				continue;
-			
-			result->append( ix, { i.text() });
+
+			result->append(ix, { i.text() });
 		}
 	}
 	catch (...)
@@ -1639,10 +1662,10 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 	if (n == nullptr)
 		throw std::runtime_error("Invalid pointer passed to insert");
 
-// #ifndef NDEBUG
-// 	if (m_validator)
-// 		is_valid();
-// #endif
+	// #ifndef NDEBUG
+	// 	if (m_validator)
+	// 		is_valid();
+	// #endif
 
 	try
 	{
@@ -1699,10 +1722,10 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 		throw;
 	}
 
-// #ifndef NDEBUG
-// 	if (m_validator)
-// 		is_valid();
-// #endif
+	// #ifndef NDEBUG
+	// 	if (m_validator)
+	// 		is_valid();
+	// #endif
 }
 
 void category::swap_item(uint16_t column_ix, row_handle &a, row_handle &b)
@@ -1716,7 +1739,7 @@ void category::swap_item(uint16_t column_ix, row_handle &a, row_handle &b)
 	std::swap(ra.at(column_ix), rb.at(column_ix));
 }
 
-void category::sort(std::function<int(row_handle,row_handle)> f)
+void category::sort(std::function<int(row_handle, row_handle)> f)
 {
 	if (m_head == nullptr)
 		return;
@@ -1740,7 +1763,7 @@ void category::sort(std::function<int(row_handle,row_handle)> f)
 	r->m_next = nullptr;
 
 	assert(r == m_tail);
-	assert(size() == rows.size());	
+	assert(size() == rows.size());
 }
 
 void category::reorder_by_index()
@@ -1903,8 +1926,8 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 		{
 			auto &col = m_columns[cix];
 			right_aligned[cix] = col.m_validator != nullptr and
-				col.m_validator->m_type != nullptr and
-				col.m_validator->m_type->m_primitive_type == cif::DDL_PrimitiveType::Numb;
+			                     col.m_validator->m_type != nullptr and
+			                     col.m_validator->m_type->m_primitive_type == cif::DDL_PrimitiveType::Numb;
 		}
 	}
 
@@ -2062,32 +2085,37 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 bool category::operator==(const category &rhs) const
 {
+	// shortcut
+	if (this == &rhs)
+		return true;
+
 	auto &a = *this;
 	auto &b = rhs;
 
-	using namespace std::placeholders; 
-	
-//	set<std::string> tagsA(a.fields()), tagsB(b.fields());
-//	
-//	if (tagsA != tagsB)
-//		std::cout << "Unequal number of fields\n";
+	using namespace std::placeholders;
+
+	//	set<std::string> tagsA(a.fields()), tagsB(b.fields());
+	//
+	//	if (tagsA != tagsB)
+	//		std::cout << "Unequal number of fields\n";
 
 	const category_validator *catValidator = nullptr;
 
 	auto validator = a.get_validator();
 	if (validator != nullptr)
 		catValidator = validator->get_validator_for_category(a.name());
-	
-	typedef std::function<int(std::string_view,std::string_view)> compType;
-	std::vector<std::tuple<std::string,compType>> tags;
+
+	typedef std::function<int(std::string_view, std::string_view)> compType;
+	std::vector<std::tuple<std::string, compType>> tags;
 	std::vector<std::string> keys;
 	std::vector<size_t> keyIx;
-	
+
 	if (catValidator == nullptr)
 	{
-		for (auto& tag: a.get_columns())
+		for (auto &tag : a.get_columns())
 		{
-			tags.push_back(std::make_tuple(tag, [](std::string_view va, std::string_view vb) { return va.compare(vb); }));
+			tags.push_back(std::make_tuple(tag, [](std::string_view va, std::string_view vb)
+				{ return va.compare(vb); }));
 			keyIx.push_back(keys.size());
 			keys.push_back(tag);
 		}
@@ -2096,7 +2124,7 @@ bool category::operator==(const category &rhs) const
 	{
 		keys = catValidator->m_keys;
 
-		for (auto& tag: a.key_fields())
+		for (auto &tag : a.key_fields())
 		{
 			auto iv = catValidator->get_validator_for_item(tag);
 			if (iv == nullptr)
@@ -2105,25 +2133,28 @@ bool category::operator==(const category &rhs) const
 			if (tv == nullptr)
 				throw std::runtime_error("missing type validator");
 			tags.push_back(std::make_tuple(tag, std::bind(&cif::type_validator::compare, tv, std::placeholders::_1, std::placeholders::_2)));
-			
-			auto pred = [tag](const std::string& s) -> bool { return cif::iequals(tag, s) == 0; };
+
+			auto pred = [tag](const std::string &s) -> bool
+			{
+				return cif::iequals(tag, s) == 0;
+			};
 			if (find_if(keys.begin(), keys.end(), pred) == keys.end())
 				keyIx.push_back(tags.size() - 1);
 		}
 	}
-	
+
 	// a.reorderByIndex();
 	// b.reorderByIndex();
-	
-	auto rowEqual = [&](const row_handle& a, const row_handle& b)
+
+	auto rowEqual = [&](const row_handle &a, const row_handle &b)
 	{
 		int d = 0;
 
-		for (auto kix: keyIx)
+		for (auto kix : keyIx)
 		{
 			std::string tag;
 			compType compare;
-			
+
 			std::tie(tag, compare) = tags[kix];
 
 			d = compare(a[tag].text(), b[tag].text());
@@ -2131,7 +2162,7 @@ bool category::operator==(const category &rhs) const
 			if (d != 0)
 				break;
 		}
-		
+
 		return d == 0;
 	};
 
@@ -2140,30 +2171,34 @@ bool category::operator==(const category &rhs) const
 	{
 		if (ai == a.end() or bi == b.end())
 			return false;
-		
+
 		auto ra = *ai, rb = *bi;
-		
+
 		if (not rowEqual(ra, rb))
 			return false;
-		
+
 		std::vector<std::string> missingA, missingB, different;
-		
-		for (auto& tt: tags)
+
+		for (auto &tt : tags)
 		{
 			std::string tag;
 			compType compare;
-			
+
 			std::tie(tag, compare) = tt;
-			
+
 			// make it an option to compare unapplicable to empty or something
-			
-			auto ta = ra[tag].text();	if (ta == "." or ta == "?") ta = "";
-			auto tb = rb[tag].text();	if (tb == "." or tb == "?") tb = "";
-			
+
+			auto ta = ra[tag].text();
+			if (ta == "." or ta == "?")
+				ta = "";
+			auto tb = rb[tag].text();
+			if (tb == "." or tb == "?")
+				tb = "";
+
 			if (compare(ta, tb) != 0)
 				return false;
 		}
-		
+
 		++ai;
 		++bi;
 	}

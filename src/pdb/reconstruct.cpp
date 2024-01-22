@@ -117,8 +117,8 @@ void fixNegativeSeqID(category &atom_site)
 			const auto &[auth_seq_id, label_seq_id] = poly_seq.front();
 
 			for (auto row : atom_site.find(key("label_asym_id") == asym_id and
-											key("auth_seq_id") == auth_seq_id and
-											key("label_seq_id") == label_seq_id))
+										   key("auth_seq_id") == auth_seq_id and
+										   key("label_seq_id") == label_seq_id))
 			{
 				row.assign("label_seq_id", ".", false, false);
 			}
@@ -236,20 +236,19 @@ void checkAtomRecords(datablock &db)
 			{ "auth_seq_id", auth_seq_id.value_or(std::to_string(*label_seq_id)) },
 			{ "auth_comp_id", auth_comp_id.value_or(*label_comp_id) },
 			{ "auth_atom_id", auth_atom_id.value_or(*label_atom_id) } });
-		
+
 		// Rewrite the coordinates and other fields that look better in a fixed format
 		// Be careful not to nuke invalidly formatted data here
-		for (auto [tag, prec] : std::vector<std::tuple<std::string_view,std::string::size_type>>{
-				{ "cartn_x", 3 },
-				{ "cartn_y", 3 },
-				{ "cartn_z", 3 },
-				{ "occupancy", 2 },
-				{ "b_iso_or_equiv", 2 }
-			})
+		for (auto [tag, prec] : std::vector<std::tuple<std::string_view, std::string::size_type>>{
+				 { "cartn_x", 3 },
+				 { "cartn_y", 3 },
+				 { "cartn_z", 3 },
+				 { "occupancy", 2 },
+				 { "b_iso_or_equiv", 2 } })
 		{
 			if (row[tag].empty())
 				continue;
-			
+
 			float v;
 			auto s = row.get<std::string>(tag);
 			if (auto [ptr, ec] = cif::from_chars(s.data(), s.data() + s.length(), v); ec != std::errc())
@@ -260,8 +259,30 @@ void checkAtomRecords(datablock &db)
 				char b[12];
 
 				if (auto [ptr, ec] = cif::to_chars(b, b + sizeof(b), v, cif::chars_format::fixed, prec); ec == std::errc())
-					row.assign(tag, {b, static_cast<std::string::size_type>(ptr - b)}, false, false);
+					row.assign(tag, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
 			}
+		}
+	}
+
+	auto *cv = atom_site.get_cat_validator();
+	if (cv)
+	{
+		// See if there are columns that are no longer known
+		for (auto tag : atom_site.get_columns())
+		{
+			if (cv->get_validator_for_item(tag) != nullptr)
+				continue;
+
+			auto r = atom_site.find_first(key(tag) != null);
+			if (not r)
+			{
+				if (cif::VERBOSE > 0)
+					std::clog << "Dropping unknown column " << tag << '\n';
+
+				atom_site.remove_column(tag);
+			}
+			else if (cif::VERBOSE > 0)
+				std::clog << "Keeping unknown column " << std::quoted(tag) << " in atom_site since it is not empty\n";
 		}
 	}
 }
@@ -607,14 +628,14 @@ void comparePolySeqSchemes(datablock &db)
 		if (i == asym_ids_ndb.end() or *i != asym_id)
 			asym_ids_ndb.insert(i, asym_id);
 	}
-	
+
 	for (auto asym_id : pdbx_poly_seq_scheme.rows<std::string>("asym_id"))
 	{
 		auto i = std::lower_bound(asym_ids_pdbx.begin(), asym_ids_pdbx.end(), asym_id);
 		if (i == asym_ids_pdbx.end() or *i != asym_id)
 			asym_ids_pdbx.insert(i, asym_id);
 	}
-	
+
 	// If we have different Asym ID's assume the ndb is invalid.
 	if (asym_ids_ndb != asym_ids_pdbx)
 	{
@@ -632,7 +653,7 @@ void comparePolySeqSchemes(datablock &db)
 			auto pdbx_range = pdbx_poly_seq_scheme.find(key("asym_id") == asym_id);
 
 			for (auto ndb_i = ndb_range.begin(), pdbx_i = pdbx_range.begin();
-				ndb_i != ndb_range.end() or pdbx_i != pdbx_range.end(); ++ndb_i, ++pdbx_i)
+				 ndb_i != ndb_range.end() or pdbx_i != pdbx_range.end(); ++ndb_i, ++pdbx_i)
 			{
 				if (ndb_i == ndb_range.end() or pdbx_i == pdbx_range.end())
 				{
@@ -662,6 +683,9 @@ void comparePolySeqSchemes(datablock &db)
 			}
 		}
 	}
+
+	if (ndb_poly_seq_scheme.empty())
+		db.erase(std::remove(db.begin(), db.end(), ndb_poly_seq_scheme), db.end());
 }
 
 void reconstruct_pdbx(file &file, std::string_view dictionary)

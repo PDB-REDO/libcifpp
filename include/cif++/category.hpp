@@ -31,22 +31,22 @@
 #include "cif++/condition.hpp"
 #include "cif++/iterator.hpp"
 #include "cif++/row.hpp"
-#include "cif++/validate.hpp"
 #include "cif++/text.hpp"
+#include "cif++/validate.hpp"
 
 #include <array>
 
 /** \file category.hpp
-  * Documentation for the cif::category class
-  *
-  * The category class should meet the requirements of Container and
-  * SequenceContainer.
-  * 
-  * TODO: implement all of:
-  * https://en.cppreference.com/w/cpp/named_req/Container
-  * https://en.cppreference.com/w/cpp/named_req/SequenceContainer
-  * and more?
-  */
+ * Documentation for the cif::category class
+ *
+ * The category class should meet the requirements of Container and
+ * SequenceContainer.
+ *
+ * TODO: implement all of:
+ * https://en.cppreference.com/w/cpp/named_req/Container
+ * https://en.cppreference.com/w/cpp/named_req/SequenceContainer
+ * and more?
+ */
 
 namespace cif
 {
@@ -61,9 +61,9 @@ namespace cif
 class duplicate_key_error : public std::runtime_error
 {
   public:
-    /**
-     * @brief Construct a new duplicate key error object
-     */
+	/**
+	 * @brief Construct a new duplicate key error object
+	 */
 	duplicate_key_error(const std::string &msg)
 		: std::runtime_error(msg)
 	{
@@ -75,9 +75,9 @@ class duplicate_key_error : public std::runtime_error
 class missing_key_error : public std::runtime_error
 {
   public:
-    /**
-     * @brief Construct a new duplicate key error object
-     */
+	/**
+	 * @brief Construct a new duplicate key error object
+	 */
 	missing_key_error(const std::string &msg, const std::string &key)
 		: std::runtime_error(msg)
 		, m_key(key)
@@ -95,9 +95,9 @@ class missing_key_error : public std::runtime_error
 class multiple_results_error : public std::runtime_error
 {
   public:
-    /**
-     * @brief Construct a new multiple results error object
-     */
+	/**
+	 * @brief Construct a new multiple results error object
+	 */
 	multiple_results_error()
 		: std::runtime_error("query should have returned exactly one row")
 	{
@@ -156,8 +156,8 @@ class category
 	// --------------------------------------------------------------------
 
 	const std::string &name() const { return m_name; } ///< Returns the name of the category
-	iset key_fields() const; ///< Returns the cif::iset of key field names. Retrieved from the @ref category_validator for this category
-	std::set<uint16_t> key_field_indices() const; ///< Returns a set of indices for the key fields.
+	iset key_fields() const;                           ///< Returns the cif::iset of key field names. Retrieved from the @ref category_validator for this category
+	std::set<uint16_t> key_field_indices() const;      ///< Returns a set of indices for the key fields.
 
 	/// @brief Set the validator for this category to @a v
 	/// @param v The category_validator to assign. A nullptr value is allowed.
@@ -182,7 +182,7 @@ class category
 
 	/// @brief Validate links, that means, values in this category should have an
 	/// accompanying value in parent categories.
-	/// 
+	///
 	/// @note
 	/// The code makes one exception when validating missing links and that's between
 	/// *atom_site* and a parent *pdbx_poly_seq_scheme* or *entity_poly_seq*.
@@ -285,7 +285,7 @@ class category
 	/// Return the theoretical maximum number or rows that can be stored
 	size_t max_size() const
 	{
-		return std::numeric_limits<size_t>::max();	// this is a bit optimistic, I guess
+		return std::numeric_limits<size_t>::max(); // this is a bit optimistic, I guess
 	}
 
 	/// Return true if the category is empty
@@ -321,7 +321,7 @@ class category
 	/// @code{.cpp}
 	/// for (const auto &[name, value] : cat.rows<std::string,int>("item_name", "item_value"))
 	///   std::cout << name << ": " << value << '\n';
-	/// @endcode 
+	/// @endcode
 	///
 	/// @tparam Ts The types for the columns requested
 	/// @param names The names for the columns requested
@@ -344,7 +344,7 @@ class category
 	///
 	/// for (int id : cat.rows<int>("id"))
 	///   std::cout << id << '\n';
-	/// @endcode 
+	/// @endcode
 	///
 	/// @tparam Ts The types for the columns requested
 	/// @param names The names for the columns requested
@@ -363,7 +363,7 @@ class category
 	/// @code{.cpp}
 	/// for (row_handle rh : cat.find(cif::key("first_name") == "John" and cif::key("last_name") == "Doe"))
 	///    .. // do something with rh
-	/// @endcode 
+	/// @endcode
 	///
 	/// @param cond The condition for the query
 	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
@@ -417,7 +417,7 @@ class category
 	/// @code{.cpp}
 	/// for (const auto &[name, value] : cat.find<std::string,int>(cif::key("item_value") > 10, "item_name", "item_value"))
 	///    std::cout << name << ": " << value << '\n';
-	/// @endcode 
+	/// @endcode
 	///
 	/// @param cond The condition for the query
 	/// @tparam Ts The types for the columns requested
@@ -776,8 +776,7 @@ class category
 	/// @brief Return whether a row exists that matches condition @a cond
 	/// @param cond The condition to match
 	/// @return True if a row exists
-	[[deprecated("Use contains instead")]]
-	bool exists(condition &&cond) const
+	[[deprecated("Use contains instead")]] bool exists(condition &&cond) const
 	{
 		return contains(std::move(cond));
 	}
@@ -875,7 +874,7 @@ class category
 	// 	insert_impl(pos, std::move(row));
 	// }
 
-	/// Erase the row pointed to by @a pos and return the iterator to the 
+	/// Erase the row pointed to by @a pos and return the iterator to the
 	/// row following pos.
 	iterator erase(iterator pos);
 
@@ -940,7 +939,6 @@ class category
 	/// based on a sequence number. This function will be called until the
 	/// result is unique in the context of this category
 	std::string get_unique_id(std::function<std::string(int)> generator = cif::cif_id_for_number);
-
 
 	/// @brief Generate a new, unique ID based on a string prefix followed by a number
 	/// @param prefix The string prefix
@@ -1038,6 +1036,11 @@ class category
 		return result;
 	}
 
+	/** @brief Remove column name @a colum_name
+	 * @param column_name The column to be removed
+	 */
+	void remove_column(std::string_view column_name);
+
 	/// @brief Return whether a column with name @a name exists in this category
 	/// @param name The name of the column
 	/// @return True if the column exists
@@ -1082,11 +1085,10 @@ class category
 	void write(std::ostream &os, const std::vector<uint16_t> &order, bool includeEmptyColumns) const;
 
   public:
-
 	/// friend function to make it possible to do:
 	/// @code {.cpp}
 	/// std::cout << my_category;
-	/// @endcode 
+	/// @endcode
 	friend std::ostream &operator<<(std::ostream &os, const category &cat)
 	{
 		cat.write(os);
