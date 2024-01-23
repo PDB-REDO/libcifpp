@@ -957,32 +957,32 @@ class category
 			{ return prefix + std::to_string(nr + 1); });
 	}
 
-	/// @brief Generate a new, unique value for a item named @a tag
-	/// @param tag The name of the item
+	/// @brief Generate a new, unique value for a item named @a item_name
+	/// @param item_name The name of the item
 	/// @return a new unique value
-	std::string get_unique_value(std::string_view tag);
+	std::string get_unique_value(std::string_view item_name);
 
 	// --------------------------------------------------------------------
 
-	/// \brief Update a single item named @a tag in the rows that match \a cond to value \a value
+	/// \brief Update a single item named @a item_name in the rows that match \a cond to value \a value
 	/// making sure the linked categories are updated according to the link.
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
 
-	void update_value(condition &&cond, std::string_view tag, std::string_view value)
+	void update_value(condition &&cond, std::string_view item_name, std::string_view value)
 	{
 		auto rs = find(std::move(cond));
 		std::vector<row_handle> rows;
 		std::copy(rs.begin(), rs.end(), std::back_inserter(rows));
-		update_value(rows, tag, value);
+		update_value(rows, item_name, value);
 	}
 
-	/// \brief Update a single item named @a tag in @a rows to value \a value
+	/// \brief Update a single item named @a item_name in @a rows to value \a value
 	/// making sure the linked categories are updated according to the link.
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
 
-	void update_value(const std::vector<row_handle> &rows, std::string_view tag, std::string_view value);
+	void update_value(const std::vector<row_handle> &rows, std::string_view item_name, std::string_view value);
 
 	// --------------------------------------------------------------------
 	// Naming used to be very inconsistent. For backward compatibility,
@@ -1140,7 +1140,15 @@ class category
 
 	/// This function returns effectively the list of fully qualified item
 	/// names, that is category_name + '.' + item_name for each item
-	std::vector<std::string> get_tag_order() const;
+	[[deprecated("use get_item_order instead")]]
+	std::vector<std::string> get_tag_order() const
+	{
+		return get_item_order();
+	}
+
+	/// This function returns effectively the list of fully qualified item
+	/// names, that is category_name + '.' + item_name for each item
+	std::vector<std::string> get_item_order() const;
 
 	/// Write the contents of the category to the std::ostream @a os
 	void write(std::ostream &os) const;

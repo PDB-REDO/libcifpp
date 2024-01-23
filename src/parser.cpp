@@ -269,7 +269,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 {
 	const auto kEOF = std::char_traits<char>::eof();
 
-	CIFToken result = CIFToken::Unknown;
+	CIFToken result = CIFToken::UNKNOWN;
 	int quoteChar = 0;
 	State state = State::Start;
 	m_bol = false;
@@ -279,7 +279,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 
 	reserved_words_automaton dag;
 
-	while (result == CIFToken::Unknown)
+	while (result == CIFToken::UNKNOWN)
 	{
 		auto ch = get_next_char();
 
@@ -287,7 +287,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 		{
 			case State::Start:
 				if (ch == kEOF)
-					result = CIFToken::Eof;
+					result = CIFToken::END_OF_FILE;
 				else if (ch == '\n')
 				{
 					m_bol = true;
@@ -298,7 +298,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else if (ch == '#')
 					state = State::Comment;
 				else if (ch == '_')
-					state = State::Tag;
+					state = State::ItemName;
 				else if (ch == ';' and m_bol)
 					state = State::TextItem;
 				else if (ch == '?')
@@ -316,7 +316,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 
 			case State::White:
 				if (ch == kEOF)
-					result = CIFToken::Eof;
+					result = CIFToken::END_OF_FILE;
 				else if (not is_space(ch))
 				{
 					state = State::Start;
@@ -335,7 +335,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					m_token_buffer.clear();
 				}
 				else if (ch == kEOF)
-					result = CIFToken::Eof;
+					result = CIFToken::END_OF_FILE;
 				else if (not is_any_print(ch))
 					error("invalid character in comment");
 				break;
@@ -344,7 +344,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				if (not is_non_blank(ch))
 				{
 					retract();
-					result = CIFToken::Value;
+					result = CIFToken::VALUE;
 				}
 				else
 					state = State::Value;
@@ -366,7 +366,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					assert(m_token_buffer.size() >= 2);
 					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.size() - 3);
-					result = CIFToken::Value;
+					result = CIFToken::VALUE;
 				}
 				else if (ch == kEOF)
 					error("unterminated textfield");
@@ -387,7 +387,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				if (is_white(ch))
 				{
 					retract();
-					result = CIFToken::Value;
+					result = CIFToken::VALUE;
 					if (m_token_buffer.size() < 2)
 						error("Invalid quoted string token");
 
@@ -403,11 +403,11 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					error("invalid character in quoted string");
 				break;
 
-			case State::Tag:
+			case State::ItemName:
 				if (not is_non_blank(ch))
 				{
 					retract();
-					result = CIFToken::Tag;
+					result = CIFToken::ITEM_NAME;
 					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 				}
 				break;
@@ -422,7 +422,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 						if (not is_non_blank(ch))
 						{
 							retract();
-							result = CIFToken::Value;
+							result = CIFToken::VALUE;
 							m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 						}
 						else
@@ -467,7 +467,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				if (not is_non_blank(ch))
 				{
 					retract();
-					result = CIFToken::Value;
+					result = CIFToken::VALUE;
 					m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 					break;
 				}
@@ -483,7 +483,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 	if (VERBOSE >= 5)
 	{
 		std::cerr << get_token_name(result);
-		if (result != CIFToken::Eof)
+		if (result != CIFToken::END_OF_FILE)
 			std::cerr << " " << std::quoted(m_token_value);
 		std::cerr << '\n';
 	}
@@ -710,7 +710,7 @@ bool sac_parser::parse_single_datablock(const std::string &datablock, const data
 
 void sac_parser::parse_file()
 {
-	while (m_lookahead != CIFToken::Eof)
+	while (m_lookahead != CIFToken::END_OF_FILE)
 	{
 		switch (m_lookahead)
 		{
@@ -735,10 +735,10 @@ void sac_parser::parse_file()
 void sac_parser::parse_global()
 {
 	match(CIFToken::GLOBAL);
-	while (m_lookahead == CIFToken::Tag)
+	while (m_lookahead == CIFToken::ITEM_NAME)
 	{
-		match(CIFToken::Tag);
-		match(CIFToken::Value);
+		match(CIFToken::ITEM_NAME);
+		match(CIFToken::VALUE);
 	}
 }
 
@@ -747,7 +747,7 @@ void sac_parser::parse_datablock()
 	static const std::string kUnitializedCategory("<invalid>");
 	std::string cat = kUnitializedCategory;	// intial value acts as a guard for empty category names
 
-	while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::Tag or m_lookahead == CIFToken::SAVE_NAME)
+	while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::ITEM_NAME or m_lookahead == CIFToken::SAVE_NAME)
 	{
 		switch (m_lookahead)
 		{
@@ -757,12 +757,12 @@ void sac_parser::parse_datablock()
 
 				match(CIFToken::LOOP);
 
-				std::vector<std::string> tags;
+				std::vector<std::string> item_names;
 
-				while (m_lookahead == CIFToken::Tag)
+				while (m_lookahead == CIFToken::ITEM_NAME)
 				{
 					std::string catName, itemName;
-					std::tie(catName, itemName) = split_tag_name(m_token_value);
+					std::tie(catName, itemName) = split_item_name(m_token_value);
 
 					if (cat == kUnitializedCategory)
 					{
@@ -772,19 +772,19 @@ void sac_parser::parse_datablock()
 					else if (not iequals(cat, catName))
 						error("inconsistent categories in loop_");
 
-					tags.push_back(itemName);
+					item_names.push_back(itemName);
 
-					match(CIFToken::Tag);
+					match(CIFToken::ITEM_NAME);
 				}
 
-				while (m_lookahead == CIFToken::Value)
+				while (m_lookahead == CIFToken::VALUE)
 				{
 					produce_row();
 
-					for (auto tag : tags)
+					for (auto item_name : item_names)
 					{
-						produce_item(cat, tag, m_token_value);
-						match(CIFToken::Value);
+						produce_item(cat, item_name, m_token_value);
+						match(CIFToken::VALUE);
 					}
 				}
 
@@ -792,10 +792,10 @@ void sac_parser::parse_datablock()
 				break;
 			}
 
-			case CIFToken::Tag:
+			case CIFToken::ITEM_NAME:
 			{
 				std::string catName, itemName;
-				std::tie(catName, itemName) = split_tag_name(m_token_value);
+				std::tie(catName, itemName) = split_item_name(m_token_value);
 
 				if (not iequals(cat, catName))
 				{
@@ -804,11 +804,11 @@ void sac_parser::parse_datablock()
 					produce_row();
 				}
 
-				match(CIFToken::Tag);
+				match(CIFToken::ITEM_NAME);
 
 				produce_item(cat, itemName, m_token_value);
 
-				match(CIFToken::Value);
+				match(CIFToken::VALUE);
 				break;
 			}
 

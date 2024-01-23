@@ -196,31 +196,11 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 
 // --------------------------------------------------------------------
 
-// void ValidateItem::addLinked(ValidateItem* parent, const std::string& parentItem, const std::string& childItem)
-//{
-////	if (mParent != nullptr and VERBOSE)
-////		cerr << "replacing parent in " << mCategory->m_name << " from " << mParent->mCategory->m_name << " to " << parent->mCategory->m_name << endl;
-////	mParent = parent;
-//
-//	if (m_type == nullptr and parent != nullptr)
-//		m_type = parent->m_type;
-//
-//	if (parent != nullptr)
-//	{
-//		mLinked.push_back({parent, parentItem, childItem});
-//
-//		parent->mChildren.insert(this);
-////
-////		if (mCategory->mKeys == std::vector<std::string>{mTag})
-////			parent->mForeignKeys.insert(this);
-//	}
-//}
-
 void item_validator::operator()(std::string_view value) const
 {
 	std::error_code ec;
 	if (not validate_value(value, ec))
-		throw std::system_error(ec, std::string{ value } + " does not match rx for " + m_tag);
+		throw std::system_error(ec, std::string{ value } + " does not match rx for " + m_item_name);
 }
 
 bool item_validator::validate_value(std::string_view value, std::error_code &ec) const noexcept
@@ -243,27 +223,27 @@ bool item_validator::validate_value(std::string_view value, std::error_code &ec)
 void category_validator::add_item_validator(item_validator &&v)
 {
 	if (v.m_mandatory)
-		m_mandatory_items.insert(v.m_tag);
+		m_mandatory_items.insert(v.m_item_name);
 
 	v.m_category = this;
 
 	auto r = m_item_validators.insert(std::move(v));
 	if (not r.second and VERBOSE >= 4)
-		std::cout << "Could not add validator for item " << v.m_tag << " to category " << m_name << '\n';
+		std::cout << "Could not add validator for item " << v.m_item_name << " to category " << m_name << '\n';
 }
 
-const item_validator *category_validator::get_validator_for_item(std::string_view tag) const
+const item_validator *category_validator::get_validator_for_item(std::string_view item_name) const
 {
 	const item_validator *result = nullptr;
-	auto i = m_item_validators.find(item_validator{ std::string(tag) });
+	auto i = m_item_validators.find(item_validator{ std::string(item_name) });
 	if (i != m_item_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
-		std::cout << "No validator for tag " << tag << '\n';
+		std::cout << "No validator for item " << item_name << '\n';
 	return result;
 }
 
-const item_validator *category_validator::get_validator_for_aliased_item(std::string_view tag) const
+const item_validator *category_validator::get_validator_for_aliased_item(std::string_view item_name) const
 {
 	const item_validator *result = nullptr;
 
@@ -271,8 +251,8 @@ const item_validator *category_validator::get_validator_for_aliased_item(std::st
 	{
 		for (auto &ai : iv.m_aliases)
 		{
-			const auto &[cat, name] = split_tag_name(ai.m_name);
-			if (iequals(name, tag) and iequals(cat, m_name))
+			const auto &[cat, name] = split_item_name(ai.m_name);
+			if (iequals(name, item_name) and iequals(cat, m_name))
 			{
 				result = &iv;
 				break;
@@ -324,19 +304,19 @@ const category_validator *validator::get_validator_for_category(std::string_view
 	return result;
 }
 
-item_validator *validator::get_validator_for_item(std::string_view tag) const
+item_validator *validator::get_validator_for_item(std::string_view item_name) const
 {
 	item_validator *result = nullptr;
 
 	std::string cat, item;
-	std::tie(cat, item) = split_tag_name(tag);
+	std::tie(cat, item) = split_item_name(item_name);
 
 	auto *cv = get_validator_for_category(cat);
 	if (cv != nullptr)
 		result = const_cast<item_validator *>(cv->get_validator_for_item(item));
 
 	if (result == nullptr and VERBOSE > 4)
-		std::cout << "No validator for item " << tag << '\n';
+		std::cout << "No validator for item " << item_name << '\n';
 
 	return result;
 }
@@ -361,11 +341,11 @@ void validator::add_link_validator(link_validator &&v)
 		auto piv = pcv->get_validator_for_item(v.m_parent_keys[i]);
 
 		if (piv == nullptr)
-			throw std::runtime_error("unknown parent tag _" + v.m_parent_category + '.' + v.m_parent_keys[i]);
+			throw std::runtime_error("unknown parent item _" + v.m_parent_category + '.' + v.m_parent_keys[i]);
 
 		auto civ = ccv->get_validator_for_item(v.m_child_keys[i]);
 		if (civ == nullptr)
-			throw std::runtime_error("unknown child tag _" + v.m_child_category + '.' + v.m_child_keys[i]);
+			throw std::runtime_error("unknown child item _" + v.m_child_category + '.' + v.m_child_keys[i]);
 
 		if (civ->m_type == nullptr and piv->m_type != nullptr)
 			const_cast<item_validator *>(civ)->m_type = piv->m_type;

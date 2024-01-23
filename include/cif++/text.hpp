@@ -317,7 +317,7 @@ inline char tolower(int ch)
 
 // --------------------------------------------------------------------
 
-/** \brief return a tuple consisting of the category and item name for @a tag
+/** \brief return a tuple consisting of the category and item name for @a item_name
  *
  * The category name is stripped of its leading underscore character.
  *
@@ -325,7 +325,19 @@ inline char tolower(int ch)
  * cif 1.0 formatted data.
  */
 
-std::tuple<std::string, std::string> split_tag_name(std::string_view tag);
+[[deprecated("use split_item_name instead")]]
+std::tuple<std::string, std::string> split_tag_name(std::string_view item_name);
+
+
+/** \brief return a tuple consisting of the category and item name for @a item_name
+ *
+ * The category name is stripped of its leading underscore character.
+ *
+ * If no dot character was found, the category name is empty. That's for
+ * cif 1.0 formatted data.
+ */
+
+std::tuple<std::string, std::string> split_item_name(std::string_view item_name);
 
 // --------------------------------------------------------------------
 

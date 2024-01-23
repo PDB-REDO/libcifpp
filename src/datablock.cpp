@@ -159,7 +159,7 @@ std::tuple<datablock::iterator, bool> datablock::emplace(std::string_view name)
 	return std::make_tuple(i, is_new);
 }
 
-std::vector<std::string> datablock::get_tag_order() const
+std::vector<std::string> datablock::get_item_order() const
 {
 	std::vector<std::string> result;
 
@@ -168,7 +168,7 @@ std::vector<std::string> datablock::get_tag_order() const
 		{ return cat.name() == "entry"; });
 	if (ci != end())
 	{
-		auto cto = ci->get_tag_order();
+		auto cto = ci->get_item_order();
 		result.insert(result.end(), cto.begin(), cto.end());
 	}
 
@@ -176,7 +176,7 @@ std::vector<std::string> datablock::get_tag_order() const
 		{ return cat.name() == "audit_conform"; });
 	if (ci != end())
 	{
-		auto cto = ci->get_tag_order();
+		auto cto = ci->get_item_order();
 		result.insert(result.end(), cto.begin(), cto.end());
 	}
 
@@ -184,7 +184,7 @@ std::vector<std::string> datablock::get_tag_order() const
 	{
 		if (cat.name() == "entry" or cat.name() == "audit_conform")
 			continue;
-		auto cto = cat.get_tag_order();
+		auto cto = cat.get_item_order();
 		result.insert(result.end(), cto.begin(), cto.end());
 	}
 
@@ -338,16 +338,16 @@ void datablock::write(std::ostream &os) const
 	}
 }
 
-void datablock::write(std::ostream &os, const std::vector<std::string> &tag_order)
+void datablock::write(std::ostream &os, const std::vector<std::string> &item_name_order)
 {
 	os << "data_" << m_name << '\n'
 	   << "# \n";
 
 	std::vector<std::string> cat_order;
-	for (auto &o : tag_order)
+	for (auto &o : item_name_order)
 	{
 		std::string cat_name, item_name;
-		std::tie(cat_name, item_name) = split_tag_name(o);
+		std::tie(cat_name, item_name) = split_item_name(o);
 		if (find_if(cat_order.rbegin(), cat_order.rend(), [cat_name](const std::string &s) -> bool
 				{ return iequals(cat_name, s); }) == cat_order.rend())
 			cat_order.push_back(cat_name);
@@ -360,10 +360,10 @@ void datablock::write(std::ostream &os, const std::vector<std::string> &tag_orde
 			continue;
 
 		std::vector<std::string> items;
-		for (auto &o : tag_order)
+		for (auto &o : item_name_order)
 		{
 			std::string cat_name, item_name;
-			std::tie(cat_name, item_name) = split_tag_name(o);
+			std::tie(cat_name, item_name) = split_item_name(o);
 
 			if (cat_name == c)
 				items.push_back(item_name);

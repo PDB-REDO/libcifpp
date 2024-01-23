@@ -63,14 +63,14 @@ namespace detail
 
 	condition_impl *key_equals_condition_impl::prepare(const category &c)
 	{
-		m_item_ix = c.get_item_ix(m_item_tag);
-		m_icase = is_item_type_uchar(c, m_item_tag);
+		m_item_ix = c.get_item_ix(m_item_name);
+		m_icase = is_item_type_uchar(c, m_item_name);
 
 		if (c.get_cat_validator() != nullptr and
 			c.key_item_indices().contains(m_item_ix) and
 			c.key_item_indices().size() == 1)
 		{
-			m_single_hit = c[{ { m_item_tag, m_value } }];
+			m_single_hit = c[{ { m_item_name, m_value } }];
 		}
 
 		return this;

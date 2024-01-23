@@ -239,18 +239,18 @@ void checkAtomRecords(datablock &db)
 
 		// Rewrite the coordinates and other items that look better in a fixed format
 		// Be careful not to nuke invalidly formatted data here
-		for (auto [tag, prec] : std::vector<std::tuple<std::string_view, std::string::size_type>>{
+		for (auto [item_name, prec] : std::vector<std::tuple<std::string_view, std::string::size_type>>{
 				 { "cartn_x", 3 },
 				 { "cartn_y", 3 },
 				 { "cartn_z", 3 },
 				 { "occupancy", 2 },
 				 { "b_iso_or_equiv", 2 } })
 		{
-			if (row[tag].empty())
+			if (row[item_name].empty())
 				continue;
 
 			float v;
-			auto s = row.get<std::string>(tag);
+			auto s = row.get<std::string>(item_name);
 			if (auto [ptr, ec] = cif::from_chars(s.data(), s.data() + s.length(), v); ec != std::errc())
 				continue;
 
@@ -259,7 +259,7 @@ void checkAtomRecords(datablock &db)
 				char b[12];
 
 				if (auto [ptr, ec] = cif::to_chars(b, b + sizeof(b), v, cif::chars_format::fixed, prec); ec == std::errc())
-					row.assign(tag, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
+					row.assign(item_name, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
 			}
 		}
 	}
@@ -268,21 +268,21 @@ void checkAtomRecords(datablock &db)
 	if (cv)
 	{
 		// See if there are items that are no longer known
-		for (auto tag : atom_site.get_items())
+		for (auto item_name : atom_site.get_items())
 		{
-			if (cv->get_validator_for_item(tag) != nullptr)
+			if (cv->get_validator_for_item(item_name) != nullptr)
 				continue;
 
-			auto r = atom_site.find_first(key(tag) != null);
+			auto r = atom_site.find_first(key(item_name) != null);
 			if (not r)
 			{
 				if (cif::VERBOSE > 0)
-					std::clog << "Dropping unknown item " << tag << '\n';
+					std::clog << "Dropping unknown item " << item_name << '\n';
 
-				atom_site.remove_item(tag);
+				atom_site.remove_item(item_name);
 			}
 			else if (cif::VERBOSE > 0)
-				std::clog << "Keeping unknown item " << std::quoted(tag) << " in atom_site since it is not empty\n";
+				std::clog << "Keeping unknown item " << std::quoted(item_name) << " in atom_site since it is not empty\n";
 		}
 	}
 }
@@ -733,19 +733,19 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 			
 			// Start by renaming items that may have old names based on alias info
 
-			for (auto tag : cat.get_items())
+			for (auto item_name : cat.get_items())
 			{
-				auto iv = cv->get_validator_for_item(tag);
+				auto iv = cv->get_validator_for_item(item_name);
 				if (iv)	// know, must be OK then`
 					continue;
 				
-				iv = cv->get_validator_for_aliased_item(tag);
+				iv = cv->get_validator_for_aliased_item(item_name);
 				if (not iv)
 					continue;
 				
 				if (cif::VERBOSE > 0)
-					std::clog << "Renaming " << tag << " to " << iv->m_tag << " in category " << cat.name() << '\n';
-				cat.rename_item(tag, iv->m_tag);
+					std::clog << "Renaming " << item_name << " to " << iv->m_item_name << " in category " << cat.name() << '\n';
+				cat.rename_item(item_name, iv->m_item_name);
 			}
 
 			for (auto link : validator.get_links_for_child(cat.name()))
@@ -780,13 +780,13 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 			}
 
 			// validate all values, and if they do not validate replace the content with an unknown flag
-			for (auto tag : cat.get_items())
+			for (auto item_name : cat.get_items())
 			{
-				auto iv = cv->get_validator_for_item(tag);
+				auto iv = cv->get_validator_for_item(item_name);
 				if (not iv)
 					continue;
 				
-				auto ix = cat.get_item_ix(tag);
+				auto ix = cat.get_item_ix(item_name);
 
 				for (auto row : cat)
 				{
@@ -796,7 +796,7 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 					if (not iv->validate_value(value, ec))
 					{
 						if (cif::VERBOSE > 0)
-							std::clog << "Replacing value (" << std::quoted(value) << ") for item " << tag << " since it does not validate\n";
+							std::clog << "Replacing value (" << std::quoted(value) << ") for item " << item_name << " since it does not validate\n";
 						
 						row[ix] = "?";
 					}

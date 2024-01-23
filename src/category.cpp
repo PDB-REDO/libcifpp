@@ -648,7 +648,7 @@ iset category::key_items() const
 
 	iset result;
 	for (auto &iv : m_cat_validator->m_item_validators)
-		result.insert(iv.m_tag);
+		result.insert(iv.m_item_name);
 
 	return result;
 }
@@ -1280,17 +1280,17 @@ std::string category::get_unique_id(std::function<std::string(int)> generator)
 
 	std::string result = generator(static_cast<int>(m_last_unique_num++));
 
-	std::string id_tag = "id";
+	std::string id_name = "id";
 	if (m_cat_validator != nullptr and m_cat_validator->m_keys.size() == 1)
 	{
-		id_tag = m_cat_validator->m_keys.front();
+		id_name = m_cat_validator->m_keys.front();
 
 		if (m_index == nullptr and m_cat_validator != nullptr)
 			m_index = new category_index(*this);
 
 		for (;;)
 		{
-			if (m_index->find_by_value(*this, { { id_tag, result } }) == nullptr)
+			if (m_index->find_by_value(*this, { { id_name, result } }) == nullptr)
 				break;
 			result = generator(static_cast<int>(m_last_unique_num++));
 		}
@@ -1299,7 +1299,7 @@ std::string category::get_unique_id(std::function<std::string(int)> generator)
 	{
 		for (;;)
 		{
-			if (not contains(key(id_tag) == result))
+			if (not contains(key(id_name) == result))
 				break;
 
 			result = generator(static_cast<int>(m_last_unique_num++));
@@ -1309,17 +1309,17 @@ std::string category::get_unique_id(std::function<std::string(int)> generator)
 	return result;
 }
 
-std::string category::get_unique_value(std::string_view tag)
+std::string category::get_unique_value(std::string_view item_name)
 {
 	std::string result;
 
 	if (m_validator and m_cat_validator)
 	{
-		auto iv = m_cat_validator->get_validator_for_item(tag);
+		auto iv = m_cat_validator->get_validator_for_item(item_name);
 
 		if (iv and iv->m_type and iv->m_type->m_primitive_type == DDL_PrimitiveType::Numb)
 		{
-			uint64_t v = find_max<uint64_t>(tag);
+			uint64_t v = find_max<uint64_t>(item_name);
 			result = std::to_string(v + 1);
 		}
 	}
@@ -1331,7 +1331,7 @@ std::string category::get_unique_value(std::string_view tag)
 		{
 			// result = m_name + "-" + std::to_string(ix);
 			result = cif_id_for_number(ix);
-			if (not contains(key(tag) == result))
+			if (not contains(key(item_name) == result))
 				break;
 		}
 	}
@@ -1339,14 +1339,14 @@ std::string category::get_unique_value(std::string_view tag)
 	return result;
 }
 
-void category::update_value(const std::vector<row_handle> &rows, std::string_view tag, std::string_view value)
+void category::update_value(const std::vector<row_handle> &rows, std::string_view item_name, std::string_view value)
 {
 	using namespace std::literals;
 
 	if (rows.empty())
 		return;
 
-	auto colIx = get_item_ix(tag);
+	auto colIx = get_item_ix(item_name);
 	if (colIx >= m_items.size())
 		throw std::runtime_error("Invalid item " + std::string{ value } + " for " + m_name);
 
@@ -1357,10 +1357,10 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 		(*col.m_validator)(value);
 
 	// first some sanity checks, what was the old value and is it the same for all rows?
-	std::string oldValue{ rows.front()[tag].text() };
+	std::string oldValue{ rows.front()[item_name].text() };
 	for (auto row : rows)
 	{
-		if (oldValue != row[tag].text())
+		if (oldValue != row[item_name].text())
 			throw std::runtime_error("Inconsistent old values in update_value");
 	}
 
@@ -1376,20 +1376,20 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 	{
 		for (auto &&[childCat, linked] : m_child_links)
 		{
-			if (std::find(linked->m_parent_keys.begin(), linked->m_parent_keys.end(), tag) == linked->m_parent_keys.end())
+			if (std::find(linked->m_parent_keys.begin(), linked->m_parent_keys.end(), item_name) == linked->m_parent_keys.end())
 				continue;
 
 			condition cond;
-			std::string childTag;
+			std::string childItemName;
 
 			for (size_t ix = 0; ix < linked->m_parent_keys.size(); ++ix)
 			{
 				std::string pk = linked->m_parent_keys[ix];
 				std::string ck = linked->m_child_keys[ix];
 
-				if (pk == tag)
+				if (pk == item_name)
 				{
-					childTag = ck;
+					childItemName = ck;
 					cond = std::move(cond) && key(ck) == oldValue;
 				}
 				else
@@ -1436,7 +1436,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 					std::string pk = linked->m_parent_keys[ix];
 					std::string ck = linked->m_child_keys[ix];
 
-					if (pk == tag)
+					if (pk == item_name)
 						check = std::move(check) && key(ck) == value;
 					else
 						check = std::move(check) && key(ck) == parent[pk].text();
@@ -1458,12 +1458,12 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 
 				// cannot update this...
 				if (cif::VERBOSE > 0)
-					std::cerr << "Cannot update child " << childCat->m_name << "." << childTag << " with value " << value << '\n';
+					std::cerr << "Cannot update child " << childCat->m_name << "." << childItemName << " with value " << value << '\n';
 			}
 
 			// finally, update the children
 			if (not process.empty())
-				childCat->update_value(process, childTag, value);
+				childCat->update_value(process, childItemName, value);
 		}
 	}
 }
@@ -1521,11 +1521,11 @@ void category::update_value(row *row, uint16_t item, std::string_view value, boo
 
 		for (auto &&[childCat, linked] : m_child_links)
 		{
-			if (std::find(linked->m_parent_keys.begin(), linked->m_parent_keys.end(), iv->m_tag) == linked->m_parent_keys.end())
+			if (std::find(linked->m_parent_keys.begin(), linked->m_parent_keys.end(), iv->m_item_name) == linked->m_parent_keys.end())
 				continue;
 
 			condition cond;
-			std::string childTag;
+			std::string childItemName;
 
 			for (size_t ix = 0; ix < linked->m_parent_keys.size(); ++ix)
 			{
@@ -1534,9 +1534,9 @@ void category::update_value(row *row, uint16_t item, std::string_view value, boo
 
 				// TODO: add code to *NOT* test mandatory items for Empty
 
-				if (pk == iv->m_tag)
+				if (pk == iv->m_item_name)
 				{
-					childTag = ck;
+					childItemName = ck;
 					cond = std::move(cond) and key(ck) == oldStrValue;
 				}
 				else
@@ -1569,7 +1569,7 @@ void category::update_value(row *row, uint16_t item, std::string_view value, boo
 				std::string pk = linked->m_parent_keys[ix];
 				std::string ck = linked->m_child_keys[ix];
 
-				if (pk == iv->m_tag)
+				if (pk == iv->m_item_name)
 					cond_n = std::move(cond_n) and key(ck) == value;
 				else
 				{
@@ -1591,7 +1591,7 @@ void category::update_value(row *row, uint16_t item, std::string_view value, boo
 			}
 
 			for (auto cr : rows)
-				cr.assign(childTag, value, false);
+				cr.assign(childItemName, value, false);
 		}
 	}
 }
@@ -1884,7 +1884,7 @@ namespace detail
 
 } // namespace detail
 
-std::vector<std::string> category::get_tag_order() const
+std::vector<std::string> category::get_item_order() const
 {
 	std::vector<std::string> result;
 	for (auto &c : m_items)
@@ -2032,10 +2032,10 @@ void category::write(std::ostream &os, const std::vector<uint16_t> &order, bool 
 
 		for (auto &col : m_items)
 		{
-			std::string tag = '_' + m_name + '.' + col.m_name;
+			std::string item_name = '_' + m_name + '.' + col.m_name;
 
-			if (l < tag.length())
-				l = tag.length();
+			if (l < item_name.length())
+				l = item_name.length();
 		}
 
 		l += 3;
@@ -2107,9 +2107,9 @@ bool category::operator==(const category &rhs) const
 
 	using namespace std::placeholders;
 
-	//	set<std::string> tagsA(a.items()), tagsB(b.items());
+	//	set<std::string> item_namesA(a.items()), item_namesB(b.items());
 	//
-	//	if (tagsA != tagsB)
+	//	if (item_namesA != item_namesB)
 	//		std::cout << "Unequal number of items\n";
 
 	const category_validator *catValidator = nullptr;
@@ -2119,40 +2119,40 @@ bool category::operator==(const category &rhs) const
 		catValidator = validator->get_validator_for_category(a.name());
 
 	typedef std::function<int(std::string_view, std::string_view)> compType;
-	std::vector<std::tuple<std::string, compType>> tags;
+	std::vector<std::tuple<std::string, compType>> item_names;
 	std::vector<std::string> keys;
 	std::vector<size_t> keyIx;
 
 	if (catValidator == nullptr)
 	{
-		for (auto &tag : a.get_items())
+		for (auto &item_name : a.get_items())
 		{
-			tags.push_back(std::make_tuple(tag, [](std::string_view va, std::string_view vb)
+			item_names.push_back(std::make_tuple(item_name, [](std::string_view va, std::string_view vb)
 				{ return va.compare(vb); }));
 			keyIx.push_back(keys.size());
-			keys.push_back(tag);
+			keys.push_back(item_name);
 		}
 	}
 	else
 	{
 		keys = catValidator->m_keys;
 
-		for (auto &tag : a.key_items())
+		for (auto &item_name : a.key_items())
 		{
-			auto iv = catValidator->get_validator_for_item(tag);
+			auto iv = catValidator->get_validator_for_item(item_name);
 			if (iv == nullptr)
 				throw std::runtime_error("missing item validator");
 			auto tv = iv->m_type;
 			if (tv == nullptr)
 				throw std::runtime_error("missing type validator");
-			tags.push_back(std::make_tuple(tag, std::bind(&cif::type_validator::compare, tv, std::placeholders::_1, std::placeholders::_2)));
+			item_names.push_back(std::make_tuple(item_name, std::bind(&cif::type_validator::compare, tv, std::placeholders::_1, std::placeholders::_2)));
 
-			auto pred = [tag](const std::string &s) -> bool
+			auto pred = [item_name](const std::string &s) -> bool
 			{
-				return cif::iequals(tag, s) == 0;
+				return cif::iequals(item_name, s) == 0;
 			};
 			if (find_if(keys.begin(), keys.end(), pred) == keys.end())
-				keyIx.push_back(tags.size() - 1);
+				keyIx.push_back(item_names.size() - 1);
 		}
 	}
 
@@ -2165,12 +2165,12 @@ bool category::operator==(const category &rhs) const
 
 		for (auto kix : keyIx)
 		{
-			std::string tag;
+			std::string item_name;
 			compType compare;
 
-			std::tie(tag, compare) = tags[kix];
+			std::tie(item_name, compare) = item_names[kix];
 
-			d = compare(a[tag].text(), b[tag].text());
+			d = compare(a[item_name].text(), b[item_name].text());
 
 			if (d != 0)
 				break;
@@ -2192,19 +2192,19 @@ bool category::operator==(const category &rhs) const
 
 		std::vector<std::string> missingA, missingB, different;
 
-		for (auto &tt : tags)
+		for (auto &tt : item_names)
 		{
-			std::string tag;
+			std::string item_name;
 			compType compare;
 
-			std::tie(tag, compare) = tt;
+			std::tie(item_name, compare) = tt;
 
 			// make it an option to compare unapplicable to empty or something
 
-			auto ta = ra[tag].text();
+			auto ta = ra[item_name].text();
 			if (ta == "." or ta == "?")
 				ta = "";
-			auto tb = rb[tag].text();
+			auto tb = rb[item_name].text();
 			if (tb == "." or tb == "?")
 				tb = "";
 

@@ -50,7 +50,7 @@ class dictionary_parser : public parser
 
 		try
 		{
-			while (m_lookahead != CIFToken::Eof)
+			while (m_lookahead != CIFToken::END_OF_FILE)
 			{
 				switch (m_lookahead)
 				{
@@ -128,7 +128,7 @@ class dictionary_parser : public parser
 		datablock::iterator cat = dict.end();
 
 		match(CIFToken::SAVE_NAME);
-		while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::Tag)
+		while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::ITEM_NAME)
 		{
 			if (m_lookahead == CIFToken::LOOP)
 			{
@@ -136,30 +136,30 @@ class dictionary_parser : public parser
 
 				match(CIFToken::LOOP);
 
-				std::vector<std::string> tags;
-				while (m_lookahead == CIFToken::Tag)
+				std::vector<std::string> item_names;
+				while (m_lookahead == CIFToken::ITEM_NAME)
 				{
 					std::string catName, item_name;
-					std::tie(catName, item_name) = split_tag_name(m_token_value);
+					std::tie(catName, item_name) = split_item_name(m_token_value);
 
 					if (cat == dict.end())
 						std::tie(cat, std::ignore) = dict.emplace(catName);
 					else if (not iequals(cat->name(), catName))
 						error("inconsistent categories in loop_");
 
-					tags.push_back(item_name);
-					match(CIFToken::Tag);
+					item_names.push_back(item_name);
+					match(CIFToken::ITEM_NAME);
 				}
 
-				while (m_lookahead == CIFToken::Value)
+				while (m_lookahead == CIFToken::VALUE)
 				{
 					cat->emplace({});
 					auto row = cat->back();
 
-					for (auto tag : tags)
+					for (auto item_name : item_names)
 					{
-						row[tag] = m_token_value;
-						match(CIFToken::Value);
+						row[item_name] = m_token_value;
+						match(CIFToken::VALUE);
 					}
 				}
 
@@ -168,18 +168,18 @@ class dictionary_parser : public parser
 			else
 			{
 				std::string catName, item_name;
-				std::tie(catName, item_name) = split_tag_name(m_token_value);
+				std::tie(catName, item_name) = split_item_name(m_token_value);
 
 				if (cat == dict.end() or not iequals(cat->name(), catName))
 					std::tie(cat, std::ignore) = dict.emplace(catName);
 
-				match(CIFToken::Tag);
+				match(CIFToken::ITEM_NAME);
 
 				if (cat->empty())
 					cat->emplace({});
 				cat->back()[item_name] = m_token_value;
 
-				match(CIFToken::Value);
+				match(CIFToken::VALUE);
 			}
 		}
 
@@ -191,7 +191,7 @@ class dictionary_parser : public parser
 
 			std::vector<std::string> keys;
 			for (auto k : dict["category_key"])
-				keys.push_back(std::get<1>(split_tag_name(k["name"].as<std::string>())));
+				keys.push_back(std::get<1>(split_item_name(k["name"].as<std::string>())));
 
 			iset groups;
 			for (auto g : dict["category_group"])
@@ -234,17 +234,17 @@ class dictionary_parser : public parser
 			// collect the dict from our dataBlock and construct validators
 			for (auto i : dict["item"])
 			{
-				std::string tagName, category, mandatory;
-				cif::tie(tagName, category, mandatory) = i.get("name", "category_id", "mandatory_code");
+				std::string item, category, mandatory;
+				cif::tie(item, category, mandatory) = i.get("name", "category_id", "mandatory_code");
 
 				std::string cat_name, item_name;
-				std::tie(cat_name, item_name) = split_tag_name(tagName);
+				std::tie(cat_name, item_name) = split_item_name(item);
 
 				if (cat_name.empty() or item_name.empty())
-					error("Invalid tag name in _item.name " + tagName);
+					error("Invalid item name in _item.name " + item);
 
 				if (not iequals(category, cat_name) and not(category.empty() or category == "?"))
-					error("specified category id does match the implicit category name for tag '" + tagName + '\'');
+					error("specified category id does match the implicit category name for item '" + item + '\'');
 				else
 					category = cat_name;
 
@@ -260,22 +260,22 @@ class dictionary_parser : public parser
 					{
 						if (VERBOSE > 2)
 						{
-							std::cerr << "inconsistent mandatory value for " << tagName << " in dictionary\n";
+							std::cerr << "inconsistent mandatory value for " << item << " in dictionary\n";
 
-							if (iequals(tagName, saveFrameName))
+							if (iequals(item, saveFrameName))
 								std::cerr << "choosing " << mandatory << '\n';
 							else
 								std::cerr << "choosing " << (vi->m_mandatory ? "Y" : "N") << '\n';
 						}
 
-						if (iequals(tagName, saveFrameName))
+						if (iequals(item, saveFrameName))
 							vi->m_mandatory = (iequals(mandatory, "yes"));
 					}
 
 					if (vi->m_type != nullptr and tv != nullptr and vi->m_type != tv)
 					{
 						if (VERBOSE > 1)
-							std::cerr << "inconsistent type for " << tagName << " in dictionary\n";
+							std::cerr << "inconsistent type for " << item << " in dictionary\n";
 					}
 
 					//				vi->mMandatory = (iequals(mandatory, "yes"));
@@ -358,7 +358,7 @@ class dictionary_parser : public parser
 			}
 
 			size_t ix = linkIndex.at(key);
-			addLink(ix, piv->m_tag, civ->m_tag);
+			addLink(ix, piv->m_item_name, civ->m_item_name);
 		}
 
 		// Only process inline linked items if the linked group list is absent
@@ -386,7 +386,7 @@ class dictionary_parser : public parser
 				}
 
 				size_t ix = linkIndex.at(key);
-				addLink(ix, piv->m_tag, civ->m_tag);
+				addLink(ix, piv->m_item_name, civ->m_item_name);
 			}
 		}
 
@@ -417,7 +417,7 @@ class dictionary_parser : public parser
 			for (auto &iv : cv.m_item_validators)
 			{
 				if (iv.m_type == nullptr and cif::VERBOSE >= 0)
-					std::cerr << "Missing item_type for " << iv.m_tag << '\n';
+					std::cerr << "Missing item_type for " << iv.m_item_name << '\n';
 			}
 		}
 	}

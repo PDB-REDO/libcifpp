@@ -266,7 +266,7 @@ struct item_alias
  */
 struct item_validator
 {
-	std::string m_tag;                        ///< The item name
+	std::string m_item_name;                  ///< The item name
 	bool m_mandatory;                         ///< Flag indicating this item is mandatory
 	const type_validator *m_type;             ///< The type for this item
 	cif::iset m_enums;                        ///< If filled, the set of allowed values
@@ -277,13 +277,13 @@ struct item_validator
 	/// @brief Compare based on the name
 	bool operator<(const item_validator &rhs) const
 	{
-		return icompare(m_tag, rhs.m_tag) < 0;
+		return icompare(m_item_name, rhs.m_item_name) < 0;
 	}
 
 	/// @brief Compare based on the name
 	bool operator==(const item_validator &rhs) const
 	{
-		return iequals(m_tag, rhs.m_tag);
+		return iequals(m_item_name, rhs.m_item_name);
 	}
 
 	/// @brief Validate the value in @a value for this item
@@ -305,7 +305,7 @@ struct category_validator
 	std::string m_name;                         ///< The name of the category
 	std::vector<std::string> m_keys;            ///< The list of items that make up the key
 	cif::iset m_groups;                         ///< The category groups this category belongs to
-	cif::iset m_mandatory_items;               ///< The mandatory items for this category
+	cif::iset m_mandatory_items;                ///< The mandatory items for this category
 	std::set<item_validator> m_item_validators; ///< The item validators for the items in this category
 
 	/// @brief return true if this category sorts before @a rhs
@@ -317,11 +317,11 @@ struct category_validator
 	/// @brief Add item_validator @a v to the list of item validators
 	void add_item_validator(item_validator &&v);
 
-	/// @brief Return the item_validator for item @a tag, may return nullptr
-	const item_validator *get_validator_for_item(std::string_view tag) const;
+	/// @brief Return the item_validator for item @a item_name, may return nullptr
+	const item_validator *get_validator_for_item(std::string_view item_name) const;
 
-	/// @brief Return the item_validator for an item that has as alias name @a tag, may return nullptr
-	const item_validator *get_validator_for_aliased_item(std::string_view tag) const;
+	/// @brief Return the item_validator for an item that has as alias name @a item_name, may return nullptr
+	const item_validator *get_validator_for_aliased_item(std::string_view item_name) const;
 };
 
 /**

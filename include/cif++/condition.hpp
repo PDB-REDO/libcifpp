@@ -314,14 +314,14 @@ namespace detail
 {
 	struct key_is_empty_condition_impl : public condition_impl
 	{
-		key_is_empty_condition_impl(const std::string &item_tag)
-			: m_item_tag(item_tag)
+		key_is_empty_condition_impl(const std::string &item_name)
+			: m_item_name(item_name)
 		{
 		}
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
 			return this;
 		}
 
@@ -332,23 +332,23 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << " IS NULL";
+			os << m_item_name << " IS NULL";
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 	};
 
 	struct key_is_not_empty_condition_impl : public condition_impl
 	{
-		key_is_not_empty_condition_impl(const std::string &item_tag)
-			: m_item_tag(item_tag)
+		key_is_not_empty_condition_impl(const std::string &item_name)
+			: m_item_name(item_name)
 		{
 		}
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
 			return this;
 		}
 
@@ -359,17 +359,17 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << " IS NOT NULL";
+			os << m_item_name << " IS NOT NULL";
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 	};
 
 	struct key_equals_condition_impl : public condition_impl
 	{
 		key_equals_condition_impl(item &&i)
-			: m_item_tag(i.name())
+			: m_item_name(i.name())
 			, m_value(i.value())
 		{
 		}
@@ -383,7 +383,7 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value;
+			os << m_item_name << (m_icase ? "^ " : " ") << " == " << m_value;
 		}
 
 		virtual std::optional<row_handle> single() const override
@@ -399,13 +399,13 @@ namespace detail
 				if (m_single_hit.has_value() or ri->m_single_hit.has_value())
 					return m_single_hit == ri->m_single_hit;
 				else
-					// watch out, both m_item_ix might be the same while tags might be diffent (in case they both do not exist in the category)
-					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_tag == ri->m_item_tag;
+					// watch out, both m_item_ix might be the same while item_names might be diffent (in case they both do not exist in the category)
+					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_name == ri->m_item_name;
 			}
 			return this == rhs;
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 		bool m_icase = false;
 		std::string m_value;
@@ -415,7 +415,7 @@ namespace detail
 	struct key_equals_or_empty_condition_impl : public condition_impl
 	{
 		key_equals_or_empty_condition_impl(key_equals_condition_impl *equals)
-			: m_item_tag(equals->m_item_tag)
+			: m_item_name(equals->m_item_name)
 			, m_value(equals->m_value)
 			, m_icase(equals->m_icase)
 			, m_single_hit(equals->m_single_hit)
@@ -424,8 +424,8 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_tag);
-			m_icase = is_item_type_uchar(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
+			m_icase = is_item_type_uchar(c, m_item_name);
 			return this;
 		}
 
@@ -441,7 +441,7 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << '(' << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value << " OR " << m_item_tag << " IS NULL)";
+			os << '(' << m_item_name << (m_icase ? "^ " : " ") << " == " << m_value << " OR " << m_item_name << " IS NULL)";
 		}
 
 		virtual std::optional<row_handle> single() const override
@@ -457,13 +457,13 @@ namespace detail
 				if (m_single_hit.has_value() or ri->m_single_hit.has_value())
 					return m_single_hit == ri->m_single_hit;
 				else
-					// watch out, both m_item_ix might be the same while tags might be diffent (in case they both do not exist in the category)
-					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_tag == ri->m_item_tag;
+					// watch out, both m_item_ix might be the same while item_names might be diffent (in case they both do not exist in the category)
+					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_name == ri->m_item_name;
 			}
 			return this == rhs;
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 		std::string m_value;
 		bool m_icase = false;
@@ -473,8 +473,8 @@ namespace detail
 	struct key_compare_condition_impl : public condition_impl
 	{
 		template <typename COMP>
-		key_compare_condition_impl(const std::string &item_tag, COMP &&comp, const std::string &s)
-			: m_item_tag(item_tag)
+		key_compare_condition_impl(const std::string &item_name, COMP &&comp, const std::string &s)
+			: m_item_name(item_name)
 			, m_compare(std::move(comp))
 			, m_str(s)
 		{
@@ -482,8 +482,8 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_tag);
-			m_icase = is_item_type_uchar(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
+			m_icase = is_item_type_uchar(c, m_item_name);
 			return this;
 		}
 
@@ -494,10 +494,10 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << (m_icase ? "^ " : " ") << m_str;
+			os << m_item_name << (m_icase ? "^ " : " ") << m_str;
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 		bool m_icase = false;
 		std::function<bool(row_handle, bool)> m_compare;
@@ -506,8 +506,8 @@ namespace detail
 
 	struct key_matches_condition_impl : public condition_impl
 	{
-		key_matches_condition_impl(const std::string &item_tag, const std::regex &rx)
-			: m_item_tag(item_tag)
+		key_matches_condition_impl(const std::string &item_name, const std::regex &rx)
+			: m_item_name(item_name)
 			, m_item_ix(0)
 			, mRx(rx)
 		{
@@ -515,7 +515,7 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
 			return this;
 		}
 
@@ -527,10 +527,10 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << " =~ expression";
+			os << m_item_name << " =~ expression";
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix;
 		std::regex mRx;
 	};
@@ -873,7 +873,7 @@ inline condition operator or(condition &&a, condition &&b)
 			auto ci = static_cast<detail::key_equals_condition_impl *>(a.m_impl);
 			auto ce = static_cast<detail::key_is_empty_condition_impl *>(b.m_impl);
 
-			if (ci->m_item_tag == ce->m_item_tag)
+			if (ci->m_item_name == ce->m_item_name)
 				return condition(new detail::key_equals_or_empty_condition_impl(ci));
 		}
 		else if (typeid(*b.m_impl) == typeid(detail::key_equals_condition_impl) and
@@ -882,7 +882,7 @@ inline condition operator or(condition &&a, condition &&b)
 			auto ci = static_cast<detail::key_equals_condition_impl *>(b.m_impl);
 			auto ce = static_cast<detail::key_is_empty_condition_impl *>(a.m_impl);
 
-			if (ci->m_item_tag == ce->m_item_tag)
+			if (ci->m_item_name == ce->m_item_name)
 				return condition(new detail::key_equals_or_empty_condition_impl(ci));
 		}
 
@@ -924,39 +924,39 @@ inline constexpr empty_type null = empty_type();
 struct key
 {
 	/**
-	 * @brief Construct a new key object using @a itemTag as name
+	 * @brief Construct a new key object using @a item_name as name
 	 * 
-	 * @param itemTag 
+	 * @param item_name 
 	 */
-	explicit key(const std::string &itemTag)
-		: m_item_tag(itemTag)
+	explicit key(const std::string &item_name)
+		: m_item_name(item_name)
 	{
 	}
 
 	/**
-	 * @brief Construct a new key object using @a itemTag as name
+	 * @brief Construct a new key object using @a item_name as name
 	 * 
-	 * @param itemTag 
+	 * @param item_name 
 	 */
-	explicit key(const char *itemTag)
-		: m_item_tag(itemTag)
+	explicit key(const char *item_name)
+		: m_item_name(item_name)
 	{
 	}
 
 	/**
-	 * @brief Construct a new key object using @a itemTag as name
+	 * @brief Construct a new key object using @a item_name as name
 	 * 
-	 * @param itemTag 
+	 * @param item_name 
 	 */
-	explicit key(std::string_view itemTag)
-		: m_item_tag(itemTag)
+	explicit key(std::string_view item_name)
+		: m_item_name(item_name)
 	{
 	}
 
 	key(const key &) = delete;
 	key &operator=(const key &) = delete;
 
-	std::string m_item_tag; ///< The item name
+	std::string m_item_name; ///< The item name
 };
 
 /**
@@ -965,7 +965,7 @@ struct key
 template <typename T>
 condition operator==(const key &key, const T &v)
 {
-	return condition(new detail::key_equals_condition_impl({ key.m_item_tag, v }));
+	return condition(new detail::key_equals_condition_impl({ key.m_item_name, v }));
 }
 
 /**
@@ -974,9 +974,9 @@ condition operator==(const key &key, const T &v)
 inline condition operator==(const key &key, std::string_view value)
 {
 	if (not value.empty())
-		return condition(new detail::key_equals_condition_impl({ key.m_item_tag, value }));
+		return condition(new detail::key_equals_condition_impl({ key.m_item_name, value }));
 	else
-		return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
+		return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
 /**
@@ -1006,8 +1006,8 @@ condition operator>(const key &key, const T &v)
 	s << " > " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) > 0; },
+		key.m_item_name, [item_name = key.m_item_name, v](row_handle r, bool icase)
+		{ return r[item_name].template compare<T>(v, icase) > 0; },
 		s.str()));
 }
 
@@ -1021,8 +1021,8 @@ condition operator>=(const key &key, const T &v)
 	s << " >= " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) >= 0; },
+		key.m_item_name, [item_name = key.m_item_name, v](row_handle r, bool icase)
+		{ return r[item_name].template compare<T>(v, icase) >= 0; },
 		s.str()));
 }
 
@@ -1036,8 +1036,8 @@ condition operator<(const key &key, const T &v)
 	s << " < " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) < 0; },
+		key.m_item_name, [item_name = key.m_item_name, v](row_handle r, bool icase)
+		{ return r[item_name].template compare<T>(v, icase) < 0; },
 		s.str()));
 }
 
@@ -1051,8 +1051,8 @@ condition operator<=(const key &key, const T &v)
 	s << " <= " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) <= 0; },
+		key.m_item_name, [item_name = key.m_item_name, v](row_handle r, bool icase)
+		{ return r[item_name].template compare<T>(v, icase) <= 0; },
 		s.str()));
 }
 
@@ -1061,7 +1061,7 @@ condition operator<=(const key &key, const T &v)
  */
 inline condition operator==(const key &key, const std::regex &rx)
 {
-	return condition(new detail::key_matches_condition_impl(key.m_item_tag, rx));
+	return condition(new detail::key_matches_condition_impl(key.m_item_name, rx));
 }
 
 /**
@@ -1069,7 +1069,7 @@ inline condition operator==(const key &key, const std::regex &rx)
  */
 inline condition operator==(const key &key, const empty_type &)
 {
-	return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
+	return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
 /**
@@ -1077,7 +1077,7 @@ inline condition operator==(const key &key, const empty_type &)
  */
 inline condition operator!=(const key &key, const empty_type &)
 {
-	return condition(new detail::key_is_not_empty_condition_impl(key.m_item_tag));
+	return condition(new detail::key_is_not_empty_condition_impl(key.m_item_name));
 }
 
 /**
@@ -1088,9 +1088,9 @@ template <typename T>
 condition operator==(const key &key, const std::optional<T> &v)
 {
 	if (v.has_value())
-		return condition(new detail::key_equals_condition_impl({ key.m_item_tag, *v }));
+		return condition(new detail::key_equals_condition_impl({ key.m_item_name, *v }));
 	else
-		return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
+		return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
 /**
