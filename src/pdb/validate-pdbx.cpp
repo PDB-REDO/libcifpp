@@ -71,9 +71,7 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 {
 	std::error_code ec;
 	bool result = is_valid_pdbx_file(file, dictionary, ec);
-	if (ec != std::errc())
-		throw std::system_error(ec);
-	return result;
+	return result and ec == std::errc();
 }
 
 bool is_valid_pdbx_file(const file &file, std::error_code &ec)
@@ -318,6 +316,9 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary, std::erro
 			std::clog << ex.what() << '\n';
 		ec = make_error_code(validation_error::not_valid_pdbx);
 	}
+
+	if (not result and ec == std::errc())
+		ec = make_error_code(validation_error::not_valid_pdbx);
 
 	return result;
 }
