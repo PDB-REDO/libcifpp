@@ -51,7 +51,7 @@
  * std::string name = rh["label_atom_id"].as<std::string>();
  * 
  * // by index:
- * uint16_t ix = atom_site.get_column_ix("label_atom_id");
+ * uint16_t ix = atom_site.get_item_ix("label_atom_id");
  * assert(rh[ix].as<std::string() == name);
  * @endcode
  * 
@@ -87,15 +87,15 @@ namespace detail
 	{
 		static constexpr size_t N = sizeof...(C);
 
-		get_row_result(const row_handle &r, std::array<uint16_t, N> &&columns)
+		get_row_result(const row_handle &r, std::array<uint16_t, N> &&items)
 			: m_row(r)
-			, m_columns(std::move(columns))
+			, m_items(std::move(items))
 		{
 		}
 
 		const item_handle operator[](uint16_t ix) const
 		{
-			return m_row[m_columns[ix]];
+			return m_row[m_items[ix]];
 		}
 
 		template <typename... Ts, std::enable_if_t<N == sizeof...(Ts), int> = 0>
@@ -107,11 +107,11 @@ namespace detail
 		template <typename... Ts, size_t... Is>
 		std::tuple<Ts...> get(std::index_sequence<Is...>) const
 		{
-			return std::tuple<Ts...>{ m_row[m_columns[Is]].template as<Ts>()... };
+			return std::tuple<Ts...>{ m_row[m_items[Is]].template as<Ts>()... };
 		}
 
 		const row_handle &m_row;
-		std::array<uint16_t, N> m_columns;
+		std::array<uint16_t, N> m_items;
 	};
 
 	// we want to be able to tie some variables to a get_row_result, for this we use tiewraps
@@ -244,70 +244,70 @@ class row_handle
 		return not empty();
 	}
 
-	/// \brief return a cif::item_handle to the item in column @a column_ix
-	item_handle operator[](uint16_t column_ix)
+	/// \brief return a cif::item_handle to the item in item @a item_ix
+	item_handle operator[](uint16_t item_ix)
 	{
-		return empty() ? item_handle::s_null_item : item_handle(column_ix, *this);
+		return empty() ? item_handle::s_null_item : item_handle(item_ix, *this);
 	}
 
-	/// \brief return a const cif::item_handle to the item in column @a column_ix
-	const item_handle operator[](uint16_t column_ix) const
+	/// \brief return a const cif::item_handle to the item in item @a item_ix
+	const item_handle operator[](uint16_t item_ix) const
 	{
-		return empty() ? item_handle::s_null_item : item_handle(column_ix, const_cast<row_handle &>(*this));
+		return empty() ? item_handle::s_null_item : item_handle(item_ix, const_cast<row_handle &>(*this));
 	}
 
-	/// \brief return a cif::item_handle to the item in the column named @a column_name
-	item_handle operator[](std::string_view column_name)
+	/// \brief return a cif::item_handle to the item in the item named @a item_name
+	item_handle operator[](std::string_view item_name)
 	{
-		return empty() ? item_handle::s_null_item : item_handle(add_column(column_name), *this);
+		return empty() ? item_handle::s_null_item : item_handle(add_item(item_name), *this);
 	}
 
-	/// \brief return a const cif::item_handle to the item in the column named @a column_name
-	const item_handle operator[](std::string_view column_name) const
+	/// \brief return a const cif::item_handle to the item in the item named @a item_name
+	const item_handle operator[](std::string_view item_name) const
 	{
-		return empty() ? item_handle::s_null_item : item_handle(get_column_ix(column_name), const_cast<row_handle &>(*this));
+		return empty() ? item_handle::s_null_item : item_handle(get_item_ix(item_name), const_cast<row_handle &>(*this));
 	}
 
 	/// \brief Return an object that can be used in combination with cif::tie
-	/// to assign the values for the columns @a columns
+	/// to assign the values for the items @a items
 	template <typename... C>
-	auto get(C... columns) const
+	auto get(C... items) const
 	{
-		return detail::get_row_result<C...>(*this, { get_column_ix(columns)... });
+		return detail::get_row_result<C...>(*this, { get_item_ix(items)... });
 	}
 
-	/// \brief Return a tuple of values of types @a Ts for the columns @a columns
+	/// \brief Return a tuple of values of types @a Ts for the items @a items
 	template <typename... Ts, typename... C, std::enable_if_t<sizeof...(Ts) == sizeof...(C) and sizeof...(C) != 1, int> = 0>
-	std::tuple<Ts...> get(C... columns) const
+	std::tuple<Ts...> get(C... items) const
 	{
-		return detail::get_row_result<Ts...>(*this, { get_column_ix(columns)... });
+		return detail::get_row_result<Ts...>(*this, { get_item_ix(items)... });
 	}
 
-	/// \brief Get the value of column @a column cast to type @a T
+	/// \brief Get the value of item @a item cast to type @a T
 	template <typename T>
-	T get(const char *column) const
+	T get(const char *item) const
 	{
-		return operator[](get_column_ix(column)).template as<T>();
+		return operator[](get_item_ix(item)).template as<T>();
 	}
 
-	/// \brief Get the value of column @a column cast to type @a T
+	/// \brief Get the value of item @a item cast to type @a T
 	template <typename T>
-	T get(std::string_view column) const
+	T get(std::string_view item) const
 	{
-		return operator[](get_column_ix(column)).template as<T>();
+		return operator[](get_item_ix(item)).template as<T>();
 	}
 
-	/// \brief assign each of the columns named in @a values to their respective value
+	/// \brief assign each of the items named in @a values to their respective value
 	void assign(const std::vector<item> &values)
 	{
 		for (auto &value : values)
 			assign(value, true);
 	}
 
-	/** \brief assign the value @a value to the column named @a name 
+	/** \brief assign the value @a value to the item named @a name 
 	 * 
 	 * If updateLinked it true, linked records are updated as well.
-	 * That means that if column @a name is part of the link definition
+	 * That means that if item @a name is part of the link definition
 	 * and the link results in a linked record in another category
 	 * this record in the linked category is updated as well.
 	 * 
@@ -317,13 +317,13 @@ class row_handle
 
 	void assign(std::string_view name, std::string_view value, bool updateLinked, bool validate = true)
 	{
-		assign(add_column(name), value, updateLinked, validate);
+		assign(add_item(name), value, updateLinked, validate);
 	}
 
-	/** \brief assign the value @a value to column at index @a column
+	/** \brief assign the value @a value to item at index @a item
 	 * 
 	 * If updateLinked it true, linked records are updated as well.
-	 * That means that if column @a column is part of the link definition
+	 * That means that if item @a item is part of the link definition
 	 * and the link results in a linked record in another category
 	 * this record in the linked category is updated as well.
 	 * 
@@ -331,7 +331,7 @@ class row_handle
 	 * checked to see if it conforms to the rules defined in the dictionary
 	 */
 
-	void assign(uint16_t column, std::string_view value, bool updateLinked, bool validate = true);
+	void assign(uint16_t item, std::string_view value, bool updateLinked, bool validate = true);
 
 	/// \brief compare two rows
 	bool operator==(const row_handle &rhs) const { return m_category == rhs.m_category and m_row == rhs.m_row; }
@@ -340,10 +340,10 @@ class row_handle
 	bool operator!=(const row_handle &rhs) const { return m_category != rhs.m_category or m_row != rhs.m_row; }
 
   private:
-	uint16_t get_column_ix(std::string_view name) const;
-	std::string_view get_column_name(uint16_t ix) const;
+	uint16_t get_item_ix(std::string_view name) const;
+	std::string_view get_item_name(uint16_t ix) const;
 
-	uint16_t add_column(std::string_view name);
+	uint16_t add_item(std::string_view name);
 
 	row *get_row()
 	{
@@ -360,7 +360,7 @@ class row_handle
 		assign(i.name(), i.value(), updateLinked);
 	}
 
-	void swap(uint16_t column, row_handle &r);
+	void swap(uint16_t item, row_handle &r);
 
 	category *m_category = nullptr;
 	row *m_row = nullptr;

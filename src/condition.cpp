@@ -30,17 +30,17 @@
 namespace cif
 {
 
-iset get_category_fields(const category &cat)
+iset get_category_items(const category &cat)
 {
-	return cat.key_fields();
+	return cat.key_items();
 }
 
-uint16_t get_column_ix(const category &cat, std::string_view col)
+uint16_t get_item_ix(const category &cat, std::string_view col)
 {
-	return cat.get_column_ix(col);
+	return cat.get_item_ix(col);
 }
 
-bool is_column_type_uchar(const category &cat, std::string_view col)
+bool is_item_type_uchar(const category &cat, std::string_view col)
 {
 	bool result = false;
 
@@ -63,12 +63,12 @@ namespace detail
 
 	condition_impl *key_equals_condition_impl::prepare(const category &c)
 	{
-		m_item_ix = c.get_column_ix(m_item_tag);
-		m_icase = is_column_type_uchar(c, m_item_tag);
+		m_item_ix = c.get_item_ix(m_item_tag);
+		m_icase = is_item_type_uchar(c, m_item_tag);
 
 		if (c.get_cat_validator() != nullptr and
-			c.key_field_indices().contains(m_item_ix) and
-			c.key_field_indices().size() == 1)
+			c.key_item_indices().contains(m_item_ix) and
+			c.key_item_indices().size() == 1)
 		{
 			m_single_hit = c[{ { m_item_tag, m_value } }];
 		}

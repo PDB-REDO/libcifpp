@@ -300,7 +300,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else if (ch == '_')
 					state = State::Tag;
 				else if (ch == ';' and m_bol)
-					state = State::TextField;
+					state = State::TextItem;
 				else if (ch == '?')
 					state = State::QuestionMark;
 				else if (ch == '\'' or ch == '"')
@@ -350,18 +350,18 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::Value;
 				break;
 
-			case State::TextField:
+			case State::TextItem:
 				if (ch == '\n')
-					state = State::TextFieldNL;
+					state = State::TextItemNL;
 				else if (ch == kEOF)
 					error("unterminated textfield");
 				else if (not is_any_print(ch) and cif::VERBOSE > 2)
 					warning("invalid character in text field '" + std::string({static_cast<char>(ch)}) + "' (" + std::to_string((int)ch) + ")");
 				break;
 
-			case State::TextFieldNL:
+			case State::TextItemNL:
 				if (is_text_lead(ch) or ch == ' ' or ch == '\t')
-					state = State::TextField;
+					state = State::TextItem;
 				else if (ch == ';')
 				{
 					assert(m_token_buffer.size() >= 2);

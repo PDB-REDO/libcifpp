@@ -39,10 +39,10 @@
 // the code will use boost::regex instead.
 
 #if USE_BOOST_REGEX
-#include <boost/regex.hpp>
+# include <boost/regex.hpp>
 using boost::regex;
 #else
-#include <regex>
+# include <regex>
 using std::regex;
 #endif
 
@@ -57,20 +57,11 @@ struct regex_impl : public regex
 	}
 };
 
-validation_error::validation_error(const std::string &msg)
-	: m_msg(msg)
-{
-}
-
-validation_error::validation_error(const std::string &cat, const std::string &item, const std::string &msg)
-	: m_msg("When validating _" + cat + '.' + item + ": " + msg)
-{
-}
-
 // --------------------------------------------------------------------
 
-DDL_PrimitiveType map_to_primitive_type(std::string_view s)
+DDL_PrimitiveType map_to_primitive_type(std::string_view s, std::error_code &ec) noexcept
 {
+	ec = {};
 	DDL_PrimitiveType result;
 	if (iequals(s, "char"))
 		result = DDL_PrimitiveType::Char;
@@ -79,7 +70,16 @@ DDL_PrimitiveType map_to_primitive_type(std::string_view s)
 	else if (iequals(s, "numb"))
 		result = DDL_PrimitiveType::Numb;
 	else
-		throw validation_error("Not a known primitive type");
+		ec = make_error_code(validation_error::not_a_known_primitive_type);
+	return result;
+}
+
+DDL_PrimitiveType map_to_primitive_type(std::string_view s)
+{
+	std::error_code ec;
+	auto result = map_to_primitive_type(s, ec);
+	if (ec)
+		throw std::system_error(ec, std::string{ s });
 	return result;
 }
 
@@ -218,17 +218,24 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 
 void item_validator::operator()(std::string_view value) const
 {
+	std::error_code ec;
+	if (not validate_value(value, ec))
+		throw std::system_error(ec, std::string{ value } + " does not match rx for " + m_tag);
+}
+
+bool item_validator::validate_value(std::string_view value, std::error_code &ec) const noexcept
+{
+	ec = {};
+
 	if (not value.empty() and value != "?" and value != ".")
 	{
 		if (m_type != nullptr and not regex_match(value.begin(), value.end(), *m_type->m_rx))
-			throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{ value } + "' does not match type expression for type " + m_type->m_name);
-
-		if (not m_enums.empty())
-		{
-			if (m_enums.count(std::string{ value }) == 0)
-				throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{ value } + "' is not in the list of allowed values");
-		}
+			ec = make_error_code(validation_error::value_does_not_match_rx);
+		else if (not m_enums.empty() and m_enums.count(std::string{ value }) == 0)
+			ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
 	}
+
+	return ec == std::errc();
 }
 
 // --------------------------------------------------------------------
@@ -236,7 +243,7 @@ void item_validator::operator()(std::string_view value) const
 void category_validator::add_item_validator(item_validator &&v)
 {
 	if (v.m_mandatory)
-		m_mandatory_fields.insert(v.m_tag);
+		m_mandatory_items.insert(v.m_tag);
 
 	v.m_category = this;
 
@@ -265,7 +272,7 @@ const item_validator *category_validator::get_validator_for_aliased_item(std::st
 		for (auto &ai : iv.m_aliases)
 		{
 			const auto &[cat, name] = split_tag_name(ai.m_name);
-			if (name == tag and cat == m_name)
+			if (iequals(name, tag) and iequals(cat, m_name))
 			{
 				result = &iv;
 				break;
@@ -373,7 +380,7 @@ std::vector<const link_validator *> validator::get_links_for_parent(std::string_
 
 	for (auto &l : m_link_validators)
 	{
-		if (l.m_parent_category == category)
+		if (iequals(l.m_parent_category, category))
 			result.push_back(&l);
 	}
 
@@ -386,19 +393,41 @@ std::vector<const link_validator *> validator::get_links_for_child(std::string_v
 
 	for (auto &l : m_link_validators)
 	{
-		if (l.m_child_category == category)
+		if (iequals(l.m_child_category, category))
 			result.push_back(&l);
 	}
 
 	return result;
 }
 
-void validator::report_error(const std::string &msg, bool fatal) const
+// void validator::report_error(const std::string &msg, bool fatal) const
+// {
+// 	if (m_strict or fatal)
+// 		throw validation_error(msg);
+// 	else if (VERBOSE > 0)
+// 		std::cerr << msg << '\n';
+// }
+
+void validator::report_error(std::error_code ec, bool fatal) const
 {
 	if (m_strict or fatal)
-		throw validation_error(msg);
-	else if (VERBOSE > 0)
-		std::cerr << msg << '\n';
+		throw std::system_error(ec);
+	else
+		std::cerr << ec.message() << '\n';
+}
+
+void validator::report_error(std::error_code ec, std::string_view category,
+	std::string_view item, bool fatal) const
+{
+	std::ostringstream os;
+	os << "category: "<< category;
+	if (not item.empty())
+		os << "; item: " << item;
+
+	if (m_strict or fatal)
+		throw std::system_error(ec, os.str());
+	else
+		std::cerr << ec.message() << ": " << os.str() << '\n';
 }
 
 // --------------------------------------------------------------------
@@ -460,12 +489,12 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 			if (not std::filesystem::exists(p, ec) or ec)
 			{
 				for (const char *dir : {
-#if defined(CACHE_DIR)
+# if defined(CACHE_DIR)
 						 CACHE_DIR,
-#endif
-#if defined(DATA_DIR)
+# endif
+# if defined(DATA_DIR)
 							 DATA_DIR
-#endif
+# endif
 					 })
 				{
 					auto p2 = std::filesystem::path(dir) / p;

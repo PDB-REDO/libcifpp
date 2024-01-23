@@ -39,17 +39,17 @@
  * query you can use to find rows in a @ref cif::category
  *
  * Conditions are created as standard C++ expressions. That means
- * you can use the standard comparison operators to compare field
+ * you can use the standard comparison operators to compare item
  * contents with a value and boolean operators to chain everything
  * together.
  *
- * To create a query that simply compares one field with one value:
+ * To create a query that simply compares one item with one value:
  *
  * @code {.cpp}
  * cif::condition c = cif::key("id") == 1;
  * @endcode
  * 
- * That will find rows where the ID field contains the number 1. If
+ * That will find rows where the ID item contains the number 1. If
  * using cif::key is a bit too much typing, you can also write:
  * 
  * @code{.cpp}
@@ -64,7 +64,7 @@
  * auto c3 = "id"_key == 1 or "id"_key == 2;
  * @endcode
  * 
- * There are some special values you can use. To find rows with field that
+ * There are some special values you can use. To find rows with item that
  * do not have a value:
  * 
  * @code{.cpp}
@@ -83,7 +83,7 @@
  * auto c6 = cif::all;
  * @endcode
  * 
- * And when you want to search for any column containing the value 'foo':
+ * And when you want to search for any item containing the value 'foo':
  * 
  * @code{.cpp}
  * auto c7 = cif::any == "foo";
@@ -104,31 +104,40 @@ namespace cif
 /// we declare a function to access its contents
 
 /**
- * @brief Get the fields that can be used as key in conditions for a category
+ * @brief Get the items that can be used as key in conditions for a category
  * 
- * @param cat The category whose fields to return
- * @return iset The set of key field names
+ * @param cat The category whose items to return
+ * @return iset The set of key item names
  */
+[[deprecated("use get_category_items instead")]]
 iset get_category_fields(const category &cat);
 
 /**
- * @brief Get the column index for column @a col in category @a cat
+ * @brief Get the items that can be used as key in conditions for a category
  * 
- * @param cat The category
- * @param col The name of the column
- * @return uint16_t The index
+ * @param cat The category whose items to return
+ * @return iset The set of key field names
  */
-uint16_t get_column_ix(const category &cat, std::string_view col);
+iset get_category_items(const category &cat);
 
 /**
- * @brief Return whether the column @a col in category @a cat has a primitive type of *uchar*
+ * @brief Get the item index for item @a col in category @a cat
  * 
  * @param cat The category
- * @param col The column name
+ * @param col The name of the item
+ * @return uint16_t The index
+ */
+uint16_t get_item_ix(const category &cat, std::string_view col);
+
+/**
+ * @brief Return whether the item @a col in category @a cat has a primitive type of *uchar*
+ * 
+ * @param cat The category
+ * @param col The item name
  * @return true If the primitive type is of type *uchar*
  * @return false If the primitive type is not of type *uchar*
  */
-bool is_column_type_uchar(const category &cat, std::string_view col);
+bool is_item_type_uchar(const category &cat, std::string_view col);
 
 // --------------------------------------------------------------------
 // some more templates to be able to do querying
@@ -219,7 +228,7 @@ class condition
 
 	/**
 	 * @brief Prepare the condition to be used on category @a c. This will
-	 * take care of setting the correct indices for fields e.g.
+	 * take care of setting the correct indices for items e.g.
 	 * 
 	 * @param c The category this query should act upon
 	 */
@@ -312,7 +321,7 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_tag);
 			return this;
 		}
 
@@ -339,7 +348,7 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_tag);
 			return this;
 		}
 
@@ -415,8 +424,8 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
-			m_icase = is_column_type_uchar(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_tag);
+			m_icase = is_item_type_uchar(c, m_item_tag);
 			return this;
 		}
 
@@ -473,8 +482,8 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
-			m_icase = is_column_type_uchar(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_tag);
+			m_icase = is_item_type_uchar(c, m_item_tag);
 			return this;
 		}
 
@@ -506,7 +515,7 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_tag);
 			return this;
 		}
 
@@ -541,7 +550,7 @@ namespace detail
 			auto &c = r.get_category();
 
 			bool result = false;
-			for (auto &f : get_category_fields(c))
+			for (auto &f : get_category_items(c))
 			{
 				try
 				{
@@ -579,7 +588,7 @@ namespace detail
 			auto &c = r.get_category();
 
 			bool result = false;
-			for (auto &f : get_category_fields(c))
+			for (auto &f : get_category_items(c))
 			{
 				try
 				{
@@ -887,7 +896,7 @@ inline condition operator or(condition &&a, condition &&b)
 }
 
 /**
- * @brief A helper class to make it possible to search for empty fields (NULL)
+ * @brief A helper class to make it possible to search for empty items (NULL)
  * 
  * @code{.cpp}
  * "id"_key == cif::empty_type();
@@ -909,7 +918,7 @@ struct empty_type
 inline constexpr empty_type null = empty_type();
 
 /**
- * @brief Class to use in creating conditions, creates a reference to a field or column
+ * @brief Class to use in creating conditions, creates a reference to a item or item
  * 
  */
 struct key
@@ -947,7 +956,7 @@ struct key
 	key(const key &) = delete;
 	key &operator=(const key &) = delete;
 
-	std::string m_item_tag; ///< The column name
+	std::string m_item_tag; ///< The item name
 };
 
 /**
@@ -1072,7 +1081,7 @@ inline condition operator!=(const key &key, const empty_type &)
 }
 
 /**
- * @brief Create a condition to search any column for a value @a v if @a v contains a value
+ * @brief Create a condition to search any item for a value @a v if @a v contains a value
  * compare to null if not.
  */
 template <typename T>
@@ -1099,12 +1108,12 @@ struct any_type
 /** @endcond */
 
 /**
- * @brief A helper for any field constructs
+ * @brief A helper for any item constructs
  */
 inline constexpr any_type any = any_type{};
 
 /**
- * @brief Create a condition to search any column for a value @a v
+ * @brief Create a condition to search any item for a value @a v
  */
 template <typename T>
 condition operator==(const any_type &, const T &v)
@@ -1113,7 +1122,7 @@ condition operator==(const any_type &, const T &v)
 }
 
 /**
- * @brief Create a condition to search any column for a regular expression @a rx
+ * @brief Create a condition to search any item for a regular expression @a rx
  */
 inline condition operator==(const any_type &, const std::regex &rx)
 {
@@ -1131,9 +1140,9 @@ inline condition all()
 namespace literals
 {
 	/**
-	 * @brief Return a cif::key for the column name @a text
+	 * @brief Return a cif::key for the item name @a text
 	 * 
-	 * @param text The name of the column
+	 * @param text The name of the item
 	 * @param length The length of @a text
 	 * @return key The cif::key created
 	 */

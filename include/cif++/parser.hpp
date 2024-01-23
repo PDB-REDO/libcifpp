@@ -268,8 +268,8 @@ class sac_parser
 		QuotedStringQuote,
 		UnquotedString,
 		Tag,
-		TextField,
-		TextFieldNL,
+		TextItem,
+		TextItemNL,
 		Reserved,
 		Value
 	};

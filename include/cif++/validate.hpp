@@ -28,9 +28,11 @@
 
 #include "cif++/text.hpp"
 
+#include <cassert>
 #include <filesystem>
 #include <list>
 #include <mutex>
+#include <system_error>
 #include <utility>
 
 /**
@@ -49,28 +51,122 @@ namespace cif
 struct category_validator;
 
 // --------------------------------------------------------------------
+// New: error_code
 
 /**
- * @brief The exception thrown when a validation error occurs
+ * @enum validation_error
+ *
+ * @brief A stronly typed class containing the error codes reported by @ref cif::validator and friends
+ */
+enum class validation_error
+{
+	value_does_not_match_rx = 1,      /**< The value of an item does not conform to the regular expression specified for it */
+	value_is_not_in_enumeration_list, /**< The value of an item is not in the list of values allowed */
+	not_a_known_primitive_type,       /**< The type is not a known primitive type */
+	undefined_category,               /**< Category has no definition in the dictionary */
+	unknown_item,                     /**< The item is not defined to be part of the category */
+	incorrect_item_validator,         /**< Incorrectly specified validator for item */
+	missing_mandatory_items,          /**< Missing mandatory items */
+	missing_key_items,                /**< An index could not be constructed due to missing key items */
+	item_not_allowed_in_category,     /**< Requested item allowed in category according to dictionary */
+	empty_file,                       /**< The file contains no datablocks */
+	empty_datablock,                  /**< The datablock contains no categories */
+	empty_category,                   /**< The category is empty */
+	not_valid_pdbx,                   /**< The file is not a valid PDBx file */
+};
+/**
+ * @brief The implementation for @ref validation_category error messages
  *
  */
-class validation_error : public std::exception
+class validation_category_impl : public std::error_category
 {
   public:
-	/// @brief Constructor
-	validation_error(const std::string &msg);
+	/**
+	 * @brief User friendly name
+	 *
+	 * @return const char*
+	 */
 
-	/// @brief Constructor
-	validation_error(const std::string &cat, const std::string &item,
-		const std::string &msg);
+	const char *name() const noexcept override
+	{
+		return "cif::validation";
+	}
 
-	/// @brief The description of the error
-	const char *what() const noexcept { return m_msg.c_str(); }
+	/**
+	 * @brief Provide the error message as a string for the error code @a ev
+	 *
+	 * @param ev The error code
+	 * @return std::string
+	 */
 
-	/// @cond
-	std::string m_msg;
-	/// @endcond
+	std::string message(int ev) const override
+	{
+		switch (static_cast<validation_error>(ev))
+		{
+			case validation_error::value_does_not_match_rx:
+				return "Value in item does not match regular expression";
+			case validation_error::value_is_not_in_enumeration_list:
+				return "Value is not in the enumerated list of valid values";
+			case validation_error::not_a_known_primitive_type:
+				return "The type is not a known primitive type";
+			case validation_error::undefined_category:
+				return "Category has no definition in the dictionary";
+			case validation_error::unknown_item:
+				return "The item is not defined to be part of the category";
+			case validation_error::incorrect_item_validator:
+				return "Incorrectly specified validator for item";
+			case validation_error::missing_mandatory_items:
+				return "Missing mandatory items";
+			case validation_error::missing_key_items:
+				return "An index could not be constructed due to missing key items";
+			case validation_error::item_not_allowed_in_category:
+				return "Requested item allowed in category according to dictionary";
+			case validation_error::empty_file:
+				return "The file contains no datablocks";
+			case validation_error::empty_datablock:
+				return "The datablock contains no categories";
+			case validation_error::empty_category:
+				return "The category is empty";
+			case validation_error::not_valid_pdbx:
+				return "The file is not a valid PDBx file";
+
+			default:
+				assert(false);
+				return "unknown error code";
+		}
+	}
+
+	/**
+	 * @brief Return whether two error codes are equivalent, always false in this case
+	 *
+	 */
+
+	bool equivalent(const std::error_code & /*code*/, int /*condition*/) const noexcept override
+	{
+		return false;
+	}
 };
+
+/**
+ * @brief Return the implementation for the validation_category
+ *
+ * @return std::error_category&
+ */
+inline std::error_category &validation_category()
+{
+	static validation_category_impl instance;
+	return instance;
+}
+
+inline std::error_code make_error_code(validation_error e)
+{
+	return std::error_code(static_cast<int>(e), validation_category());
+}
+
+inline std::error_condition make_error_condition(validation_error e)
+{
+	return std::error_condition(static_cast<int>(e), validation_category());
+}
 
 // --------------------------------------------------------------------
 
@@ -84,6 +180,9 @@ enum class DDL_PrimitiveType
 
 /// @brief Return the DDL_PrimitiveType encoded in @a s
 DDL_PrimitiveType map_to_primitive_type(std::string_view s);
+
+/// @brief Return the DDL_PrimitiveType encoded in @a s, error reporting variant
+DDL_PrimitiveType map_to_primitive_type(std::string_view s, std::error_code &ec) noexcept;
 
 struct regex_impl;
 
@@ -188,8 +287,11 @@ struct item_validator
 	}
 
 	/// @brief Validate the value in @a value for this item
-	/// Will throw a validation_error exception if it fails
+	/// Will throw a std::system_error exception if it fails
 	void operator()(std::string_view value) const;
+
+	/// @brief A more gentle version of value validation
+	bool validate_value(std::string_view value, std::error_code &ec) const noexcept;
 };
 
 /**
@@ -203,7 +305,7 @@ struct category_validator
 	std::string m_name;                         ///< The name of the category
 	std::vector<std::string> m_keys;            ///< The list of items that make up the key
 	cif::iset m_groups;                         ///< The category groups this category belongs to
-	cif::iset m_mandatory_fields;               ///< The mandatory fields for this category
+	cif::iset m_mandatory_items;               ///< The mandatory items for this category
 	std::set<item_validator> m_item_validators; ///< The item validators for the items in this category
 
 	/// @brief return true if this category sorts before @a rhs
@@ -298,7 +400,24 @@ class validator
 	std::vector<const link_validator *> get_links_for_child(std::string_view category) const;
 
 	/// @brief Bottleneck function to report an error in validation
-	void report_error(const std::string &msg, bool fatal) const;
+	void report_error(validation_error err, bool fatal = true) const
+	{
+		report_error(make_error_code(err), fatal);
+	}
+
+	/// @brief Bottleneck function to report an error in validation
+	void report_error(std::error_code ec, bool fatal = true) const;
+
+	/// @brief Bottleneck function to report an error in validation
+	void report_error(validation_error err, std::string_view category,
+		std::string_view item, bool fatal = true) const
+	{
+		report_error(make_error_code(err), category, item, fatal);
+	}
+
+	/// @brief Bottleneck function to report an error in validation
+	void report_error(std::error_code ec, std::string_view category,
+		std::string_view item, bool fatal = true) const;
 
 	const std::string &name() const { return m_name; }        ///< Get the name of this validator
 	void set_name(const std::string &name) { m_name = name; } ///< Set the name of this validator

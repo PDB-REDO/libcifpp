@@ -90,7 +90,7 @@ class iterator_impl
 		: m_category(rhs.m_category)
 		, m_current(rhs.m_current)
 		, m_value(rhs.m_value)
-		, m_column_ix(rhs.m_column_ix)
+		, m_item_ix(rhs.m_item_ix)
 	{
 	}
 
@@ -99,7 +99,7 @@ class iterator_impl
 		: m_category(rhs.m_category)
 		, m_current(const_cast<row_type *>(rhs.m_current))
 		, m_value(rhs.m_value)
-		, m_column_ix(rhs.m_column_ix)
+		, m_item_ix(rhs.m_item_ix)
 	{
 		m_value = get(std::make_index_sequence<N>());
 	}
@@ -108,7 +108,7 @@ class iterator_impl
 	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<uint16_t, N> &cix)
 		: m_category(rhs.m_category)
 		, m_current(rhs.m_current)
-		, m_column_ix(cix)
+		, m_item_ix(cix)
 	{
 		m_value = get(std::make_index_sequence<N>());
 	}
@@ -117,7 +117,7 @@ class iterator_impl
 	{
 		m_category = i.m_category;
 		m_current = i.m_current;
-		m_column_ix = i.m_column_ix;
+		m_item_ix = i.m_item_ix;
 		m_value = i.m_value;
 		return *this;
 	}
@@ -185,7 +185,7 @@ class iterator_impl
 		if (m_current != nullptr)
 		{
 			row_handle rh{ *m_category, *m_current };
-			return tuple_type{ rh[m_column_ix[Is]].template as<Ts>()... };
+			return tuple_type{ rh[m_item_ix[Is]].template as<Ts>()... };
 		}
 
 		return {};
@@ -194,7 +194,7 @@ class iterator_impl
 	category_type *m_category = nullptr;
 	row_type *m_current = nullptr;
 	value_type m_value;
-	std::array<uint16_t, N> m_column_ix;
+	std::array<uint16_t, N> m_item_ix;
 };
 
 /**
@@ -348,7 +348,7 @@ class iterator_impl<Category, T>
 		: m_category(rhs.m_category)
 		, m_current(rhs.m_current)
 		, m_value(rhs.m_value)
-		, m_column_ix(rhs.m_column_ix)
+		, m_item_ix(rhs.m_item_ix)
 	{
 	}
 
@@ -357,7 +357,7 @@ class iterator_impl<Category, T>
 		: m_category(rhs.m_category)
 		, m_current(const_cast<row_type *>(rhs.m_current))
 		, m_value(rhs.m_value)
-		, m_column_ix(rhs.m_column_ix)
+		, m_item_ix(rhs.m_item_ix)
 	{
 		m_value = get(m_current);
 	}
@@ -366,7 +366,7 @@ class iterator_impl<Category, T>
 	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<uint16_t, 1> &cix)
 		: m_category(rhs.m_category)
 		, m_current(rhs.m_current)
-		, m_column_ix(cix[0])
+		, m_item_ix(cix[0])
 	{
 		m_value = get();
 	}
@@ -375,7 +375,7 @@ class iterator_impl<Category, T>
 	{
 		m_category = i.m_category;
 		m_current = i.m_current;
-		m_column_ix = i.m_column_ix;
+		m_item_ix = i.m_item_ix;
 		m_value = i.m_value;
 		return *this;
 	}
@@ -442,7 +442,7 @@ class iterator_impl<Category, T>
 		if (m_current != nullptr)
 		{
 			row_handle rh{ *m_category, *m_current };
-			return rh[m_column_ix].template as<T>();
+			return rh[m_item_ix].template as<T>();
 		}
 
 		return {};
@@ -451,7 +451,7 @@ class iterator_impl<Category, T>
 	category_type *m_category = nullptr;
 	row_type *m_current = nullptr;
 	value_type m_value;
-	uint16_t m_column_ix;
+	uint16_t m_item_ix;
 };
 
 // --------------------------------------------------------------------
@@ -482,8 +482,8 @@ class iterator_proxy
 	using iterator = iterator_impl<category_type, Ts...>;
 	using row_iterator = iterator_impl<category_type>;
 
-	iterator_proxy(category_type &cat, row_iterator pos, char const *const columns[N]);
-	iterator_proxy(category_type &cat, row_iterator pos, std::initializer_list<char const *> columns);
+	iterator_proxy(category_type &cat, row_iterator pos, char const *const items[N]);
+	iterator_proxy(category_type &cat, row_iterator pos, std::initializer_list<char const *> items);
 
 	iterator_proxy(iterator_proxy &&p);
 	iterator_proxy &operator=(iterator_proxy &&p);
@@ -492,8 +492,8 @@ class iterator_proxy
 	iterator_proxy &operator=(const iterator_proxy &) = delete;
 	/** @endcond */
 
-	iterator begin() const { return iterator(m_begin, m_column_ix); } ///< Return the iterator pointing to the first row
-	iterator end() const { return iterator(m_end, m_column_ix); }     ///< Return the iterator pointing past the last row
+	iterator begin() const { return iterator(m_begin, m_item_ix); } ///< Return the iterator pointing to the first row
+	iterator end() const { return iterator(m_end, m_item_ix); }     ///< Return the iterator pointing past the last row
 
 	bool empty() const { return m_begin == m_end; }               ///< Return true if the range is empty
 	explicit operator bool() const { return not empty(); }        ///< Easy way to detect if the range is empty
@@ -510,13 +510,13 @@ class iterator_proxy
 		std::swap(m_category, rhs.m_category);
 		std::swap(m_begin, rhs.m_begin);
 		std::swap(m_end, rhs.m_end);
-		std::swap(m_column_ix, rhs.m_column_ix);
+		std::swap(m_item_ix, rhs.m_item_ix);
 	}
 
   private:
 	category_type *m_category;
 	row_iterator m_begin, m_end;
-	std::array<uint16_t, N> m_column_ix;
+	std::array<uint16_t, N> m_item_ix;
 };
 
 // --------------------------------------------------------------------
@@ -651,26 +651,26 @@ class conditional_iterator_proxy
 
 /** @cond */
 template <typename Category, typename... Ts>
-iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos, char const *const columns[N])
+iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos, char const *const items[N])
 	: m_category(&cat)
 	, m_begin(pos)
 	, m_end(cat.end())
 {
 	for (uint16_t i = 0; i < N; ++i)
-		m_column_ix[i] = m_category->get_column_ix(columns[i]);
+		m_item_ix[i] = m_category->get_item_ix(items[i]);
 }
 
 template <typename Category, typename... Ts>
-iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos, std::initializer_list<char const *> columns)
+iterator_proxy<Category, Ts...>::iterator_proxy(Category &cat, row_iterator pos, std::initializer_list<char const *> items)
 	: m_category(&cat)
 	, m_begin(pos)
 	, m_end(cat.end())
 {
-	// static_assert(columns.size() == N, "The list of column names should be exactly the same as the list of requested columns");
+	// static_assert(items.size() == N, "The list of item names should be exactly the same as the list of requested items");
 
 	std::uint16_t i = 0;
-	for (auto column : columns)
-		m_column_ix[i++] = m_category->get_column_ix(column);
+	for (auto item : items)
+		m_item_ix[i++] = m_category->get_item_ix(item);
 }
 
 // --------------------------------------------------------------------
@@ -707,7 +707,7 @@ conditional_iterator_proxy<Category, Ts...>::conditional_iterator_proxy(Category
 	, mCBegin(pos)
 	, mCEnd(cat.end())
 {
-	static_assert(sizeof...(Ts) == sizeof...(Ns), "Number of column names should be equal to number of requested value types");
+	static_assert(sizeof...(Ts) == sizeof...(Ns), "Number of item names should be equal to number of requested value types");
 
 	if (m_condition)
 	{
@@ -720,7 +720,7 @@ conditional_iterator_proxy<Category, Ts...>::conditional_iterator_proxy(Category
 		mCBegin = mCEnd;
 
 	uint16_t i = 0;
-	((mCix[i++] = m_cat->get_column_ix(names)), ...);
+	((mCix[i++] = m_cat->get_item_ix(names)), ...);
 }
 
 template <typename Category, typename... Ts>
