@@ -287,6 +287,59 @@ void checkAtomRecords(datablock &db)
 	}
 }
 
+void checkAtomAnisotropRecords(datablock &db)
+{
+	using namespace literals;
+
+	auto &atom_site = db["atom_site"];
+	auto &atom_site_anisotrop = db["atom_site_anisotrop"];
+
+	auto m_validator = db.get_validator();
+	if (not m_validator)
+		return;
+
+	std::vector<row_handle> to_be_deleted;
+
+	for (auto row : atom_site_anisotrop)
+	{
+		auto parents = atom_site_anisotrop.get_parents(row, atom_site);
+		if (parents.size() != 1)
+		{
+			to_be_deleted.emplace_back(row);
+			continue;
+		}
+
+		// this happens sometimes (Phenix):
+
+		auto parent = parents.front();
+
+		if (row["type_symbol"].empty())
+			row["type_symbol"] = parent["type_symbol"].text();
+
+		if (row["pdbx_auth_alt_id"].empty())
+			row["pdbx_auth_alt_id"] = parent["pdbx_auth_alt_id"].text();
+		if (row["pdbx_label_seq_id"].empty())
+			row["pdbx_label_seq_id"] = parent["label_seq_id"].text();
+		if (row["pdbx_label_asym_id"].empty())
+			row["pdbx_label_asym_id"] = parent["label_asym_id"].text();
+		if (row["pdbx_label_atom_id"].empty())
+			row["pdbx_label_atom_id"] = parent["label_atom_id"].text();
+		if (row["pdbx_label_comp_id"].empty())
+			row["pdbx_label_comp_id"] = parent["label_comp_id"].text();
+		if (row["pdbx_PDB_model_num"].empty())
+			row["pdbx_PDB_model_num"] = parent["pdbx_PDB_model_num"].text();
+	}
+
+	if (not to_be_deleted.empty())
+	{
+		if (cif::VERBOSE > 0)
+			std::clog << "Dropped " << to_be_deleted.size() << " anisotrop records since they did not have exactly one parent\n";
+
+		for (auto row : to_be_deleted)
+			atom_site_anisotrop.erase(row);
+	}
+}
+
 void createStructAsym(datablock &db)
 {
 	auto &atom_site = db["atom_site"];
@@ -730,22 +783,41 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 			auto cv = validator.get_validator_for_category(cat.name());
 			if (not cv)
 				continue;
-			
+
 			// Start by renaming items that may have old names based on alias info
 
 			for (auto item_name : cat.get_items())
 			{
 				auto iv = cv->get_validator_for_item(item_name);
-				if (iv)	// know, must be OK then`
+				if (iv) // know, must be OK then`
 					continue;
-				
+
 				iv = cv->get_validator_for_aliased_item(item_name);
 				if (not iv)
 					continue;
-				
+
 				if (cif::VERBOSE > 0)
 					std::clog << "Renaming " << item_name << " to " << iv->m_item_name << " in category " << cat.name() << '\n';
 				cat.rename_item(item_name, iv->m_item_name);
+			}
+
+			// In case a single ID field is missing, add it
+			if (cv->m_keys.size() == 1 and not cat.has_item(cv->m_keys.front()))
+			{
+				std::string key = cv->m_keys.front();
+
+				auto iv = cv->get_validator_for_item(key);
+				bool number = iv != nullptr and
+				              iv->m_type != nullptr and
+				              iv->m_type->m_primitive_type == cif::DDL_PrimitiveType::Numb;
+
+				for (size_t ix = 0; auto row : cat)
+				{
+					if (number)
+						row.assign(key, std::to_string(++ix), false, false);
+					else
+						row.assign(key, cif::cif_id_for_number(ix++), false, false);
+				}
 			}
 
 			for (auto link : validator.get_links_for_child(cat.name()))
@@ -769,13 +841,13 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 			}
 
 			// Fill in all mandatory items
-			for (auto key : cv->m_mandatory_items)
+			for (auto item : cv->m_mandatory_items)
 			{
-				if (not cat.has_item(key))
+				if (not cat.has_item(item))
 				{
 					if (cif::VERBOSE > 0)
-						std::clog << "Adding mandatory key " << key << " to category " << cat.name() << '\n';
-					cat.add_item(key);
+						std::clog << "Adding mandatory item " << item << " to category " << cat.name() << '\n';
+					cat.add_item(item);
 				}
 			}
 
@@ -785,7 +857,7 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 				auto iv = cv->get_validator_for_item(item_name);
 				if (not iv)
 					continue;
-				
+
 				auto ix = cat.get_item_ix(item_name);
 
 				for (auto row : cat)
@@ -796,8 +868,8 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 					if (not iv->validate_value(value, ec))
 					{
 						if (cif::VERBOSE > 0)
-							std::clog << "Replacing value (" << std::quoted(value) << ") for item " << item_name << " since it does not validate\n";
-						
+							std::clog << "Replacing value (" << std::quoted(value) << ") for item " << item_name << " in category " << cat.name() << " since it does not validate\n";
+
 						row[ix] = "?";
 					}
 				}
@@ -919,6 +991,9 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 	// First, see if atom records make sense at all
 	// Will take care of atom_type and chem_comp as well.
 	checkAtomRecords(db);
+
+	if (db.get("atom_site_anisotrop"))
+		checkAtomAnisotropRecords(db);
 
 	// Next make sure we have struct_asym records
 	if (db.get("struct_asym") == nullptr)

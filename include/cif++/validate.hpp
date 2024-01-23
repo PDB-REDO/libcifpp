@@ -112,7 +112,7 @@ class validation_category_impl : public std::error_category
 			case validation_error::undefined_category:
 				return "Category has no definition in the dictionary";
 			case validation_error::unknown_item:
-				return "The item is not defined to be part of the category";
+				return "Item is not defined to be part of the category";
 			case validation_error::incorrect_item_validator:
 				return "Incorrectly specified validator for item";
 			case validation_error::missing_mandatory_items:
