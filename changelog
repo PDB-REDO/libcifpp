@@ -1,4 +1,10 @@
-Version 6.2.0
+Version 7.0.0
+- Renaming many methods and parameters to be more
+  consistent with the mmCIF dictionaries.
+  (Most notably, item used to be called column or
+  tag sometimes).
+- validation_error is now a std::system_error error
+  value. The exception is gone.
 - Added repairSequenceInfo to repair invalid files
 
 Version 6.1.0
