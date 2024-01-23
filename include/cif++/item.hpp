@@ -44,7 +44,7 @@
 /** \file item.hpp
  *
  * This file contains the declaration of item but also the item_value and item_handle
- * These handle the storage of and access to the data for a single data field.
+ * These handle the storage of and access to the data for a single data item.
  */
 
 namespace cif
@@ -227,10 +227,10 @@ class item
 	/// \brief empty means either null or unknown
 	bool empty() const { return m_value.empty(); }
 
-	/// \brief returns true if the field contains '.'
+	/// \brief returns true if the item contains '.'
 	bool is_null() const { return m_value == "."; }
 
-	/// \brief returns true if the field contains '?'
+	/// \brief returns true if the item contains '?'
 	bool is_unknown() const { return m_value == "?"; }
 
 	/// \brief the length of the value string
@@ -464,14 +464,14 @@ struct item_handle
 	/** Easy way to test for an empty item */
 	explicit operator bool() const { return not empty(); }
 
-	/// is_null return true if the field contains '.'
+	/// is_null return true if the item contains '.'
 	bool is_null() const
 	{
 		auto txt = text();
 		return txt.length() == 1 and txt.front() == '.';
 	}
 
-	/// is_unknown returns true if the field contains '?'
+	/// is_unknown returns true if the item contains '?'
 	bool is_unknown() const
 	{
 		auto txt = text();
@@ -484,11 +484,11 @@ struct item_handle
 	/**
 	 * @brief Construct a new item handle object
 	 *
-	 * @param column Column index
+	 * @param item Item index
 	 * @param row Reference to the row
 	 */
-	item_handle(uint16_t column, row_handle &row)
-		: m_column(column)
+	item_handle(uint16_t item, row_handle &row)
+		: m_item_ix(item)
 		, m_row_handle(row)
 	{
 	}
@@ -505,7 +505,7 @@ struct item_handle
   private:
 	item_handle();
 
-	uint16_t m_column;
+	uint16_t m_item_ix;
 	row_handle &m_row_handle;
 
 	void assign_value(const item &value);

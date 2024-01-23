@@ -237,20 +237,20 @@ void checkAtomRecords(datablock &db)
 			{ "auth_comp_id", auth_comp_id.value_or(*label_comp_id) },
 			{ "auth_atom_id", auth_atom_id.value_or(*label_atom_id) } });
 
-		// Rewrite the coordinates and other fields that look better in a fixed format
+		// Rewrite the coordinates and other items that look better in a fixed format
 		// Be careful not to nuke invalidly formatted data here
-		for (auto [tag, prec] : std::vector<std::tuple<std::string_view, std::string::size_type>>{
+		for (auto [item_name, prec] : std::vector<std::tuple<std::string_view, std::string::size_type>>{
 				 { "cartn_x", 3 },
 				 { "cartn_y", 3 },
 				 { "cartn_z", 3 },
 				 { "occupancy", 2 },
 				 { "b_iso_or_equiv", 2 } })
 		{
-			if (row[tag].empty())
+			if (row[item_name].empty())
 				continue;
 
 			float v;
-			auto s = row.get<std::string>(tag);
+			auto s = row.get<std::string>(item_name);
 			if (auto [ptr, ec] = cif::from_chars(s.data(), s.data() + s.length(), v); ec != std::errc())
 				continue;
 
@@ -259,7 +259,7 @@ void checkAtomRecords(datablock &db)
 				char b[12];
 
 				if (auto [ptr, ec] = cif::to_chars(b, b + sizeof(b), v, cif::chars_format::fixed, prec); ec == std::errc())
-					row.assign(tag, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
+					row.assign(item_name, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
 			}
 		}
 	}
@@ -267,22 +267,22 @@ void checkAtomRecords(datablock &db)
 	auto *cv = atom_site.get_cat_validator();
 	if (cv)
 	{
-		// See if there are columns that are no longer known
-		for (auto tag : atom_site.get_columns())
+		// See if there are items that are no longer known
+		for (auto item_name : atom_site.get_items())
 		{
-			if (cv->get_validator_for_item(tag) != nullptr)
+			if (cv->get_validator_for_item(item_name) != nullptr)
 				continue;
 
-			auto r = atom_site.find_first(key(tag) != null);
+			auto r = atom_site.find_first(key(item_name) != null);
 			if (not r)
 			{
 				if (cif::VERBOSE > 0)
-					std::clog << "Dropping unknown column " << tag << '\n';
+					std::clog << "Dropping unknown item " << item_name << '\n';
 
-				atom_site.remove_column(tag);
+				atom_site.remove_item(item_name);
 			}
 			else if (cif::VERBOSE > 0)
-				std::clog << "Keeping unknown column " << std::quoted(tag) << " in atom_site since it is not empty\n";
+				std::clog << "Keeping unknown item " << std::quoted(item_name) << " in atom_site since it is not empty\n";
 		}
 	}
 }
@@ -311,10 +311,10 @@ void createEntity(datablock &db)
 	auto &cf = compound_factory::instance();
 
 	auto &atom_site = db["atom_site"];
-	atom_site.add_column("label_entity_id");
+	atom_site.add_item("label_entity_id");
 
 	auto &struct_asym = db["struct_asym"];
-	struct_asym.add_column("entity_id");
+	struct_asym.add_item("entity_id");
 
 	std::map<std::string, std::vector<std::tuple<std::string, int>>> asyms;
 
@@ -617,7 +617,7 @@ void comparePolySeqSchemes(datablock &db)
 	auto &ndb_poly_seq_scheme = db["ndb_poly_seq_scheme"];
 	auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
 
-	// Since often ndb_poly_seq_scheme only contains an id and mon_id field
+	// Since often ndb_poly_seq_scheme only contains an id and mon_id item
 	// we assume that it should match the accompanying pdbx_poly_seq
 
 	std::vector<std::string> asym_ids_ndb, asym_ids_pdbx;
@@ -722,6 +722,7 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 
 	std::vector<std::string> invalidCategories;
 
+	// clean up each category
 	for (auto &cat : db)
 	{
 		try
@@ -730,21 +731,21 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 			if (not cv)
 				continue;
 			
-			// Start by renaming columns that may have old names based on alias info
+			// Start by renaming items that may have old names based on alias info
 
-			for (auto tag : cat.get_columns())
+			for (auto item_name : cat.get_items())
 			{
-				auto iv = cv->get_validator_for_item(tag);
-				if (iv)	// know, must be OK then
+				auto iv = cv->get_validator_for_item(item_name);
+				if (iv)	// know, must be OK then`
 					continue;
 				
-				iv = cv->get_validator_for_aliased_item(tag);
+				iv = cv->get_validator_for_aliased_item(item_name);
 				if (not iv)
 					continue;
 				
 				if (cif::VERBOSE > 0)
-					std::clog << "Renaming " << tag << " to " << iv->m_tag << " in category " << cat.name() << '\n';
-				cat.rename_column(tag, iv->m_tag);
+					std::clog << "Renaming " << item_name << " to " << iv->m_item_name << " in category " << cat.name() << '\n';
+				cat.rename_item(item_name, iv->m_item_name);
 			}
 
 			for (auto link : validator.get_links_for_child(cat.name()))
@@ -767,14 +768,38 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 				}
 			}
 
-			// Fill in all mandatory fields
-			for (auto key : cv->m_mandatory_fields)
+			// Fill in all mandatory items
+			for (auto key : cv->m_mandatory_items)
 			{
-				if (not cat.has_column(key))
+				if (not cat.has_item(key))
 				{
 					if (cif::VERBOSE > 0)
 						std::clog << "Adding mandatory key " << key << " to category " << cat.name() << '\n';
-					cat.add_column(key);
+					cat.add_item(key);
+				}
+			}
+
+			// validate all values, and if they do not validate replace the content with an unknown flag
+			for (auto item_name : cat.get_items())
+			{
+				auto iv = cv->get_validator_for_item(item_name);
+				if (not iv)
+					continue;
+				
+				auto ix = cat.get_item_ix(item_name);
+
+				for (auto row : cat)
+				{
+					std::error_code ec;
+					std::string_view value = row[ix].text();
+
+					if (not iv->validate_value(value, ec))
+					{
+						if (cif::VERBOSE > 0)
+							std::clog << "Replacing value (" << std::quoted(value) << ") for item " << item_name << " since it does not validate\n";
+						
+						row[ix] = "?";
+					}
 				}
 			}
 
@@ -834,7 +859,7 @@ void reconstruct_pdbx(file &file, std::string_view dictionary)
 					if (cif::VERBOSE > 0)
 						std::clog << "Attempt to fix " << cat.name() << " failed: " << ex.what() << '\n';
 
-					// replace fields that do not define a relation to a parent
+					// replace items that do not define a relation to a parent
 
 					std::set<std::string> replaceableKeys;
 					for (auto key : cv->m_keys)

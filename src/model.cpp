@@ -163,9 +163,9 @@ int atom::atom_impl::get_charge() const
 
 // const std::string atom::atom_impl::get_property(const std::string_view name) const
 // {
-// 	for (auto &&[tag, ref] : mCachedRefs)
+// 	for (auto &&[item_name, ref] : mCachedRefs)
 // 	{
-// 		if (tag == name)
+// 		if (item_name == name)
 // 			return ref.as<std::string>();
 // 	}
 
@@ -175,9 +175,9 @@ int atom::atom_impl::get_charge() const
 
 // void atom::atom_impl::set_property(const std::string_view name, const std::string &value)
 // {
-// 	for (auto &&[tag, ref] : mCachedRefs)
+// 	for (auto &&[item_name, ref] : mCachedRefs)
 // 	{
-// 		if (tag != name)
+// 		if (item_name != name)
 // 			continue;
 
 // 		ref = value;

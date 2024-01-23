@@ -72,7 +72,7 @@ class structure;
  *
  * The class atom is a kind of flyweight class. It can be copied
  * with low overhead. All data is stored in the underlying mmCIF
- * categories but some very often used fields are cached in the
+ * categories but some very often used items are cached in the
  * impl.
  *
  * It is also possible to have symmetry copies of atoms. They
@@ -207,7 +207,7 @@ class atom
 	/// \brief Copy assignement operator
 	atom &operator=(const atom &rhs) = default;
 
-	/// \brief Return the field named @a name in the _atom_site category for this atom
+	/// \brief Return the item named @a name in the _atom_site category for this atom
 	std::string get_property(std::string_view name) const
 	{
 		if (not m_impl)
@@ -215,7 +215,7 @@ class atom
 		return m_impl->get_property(name);
 	}
 
-	/// \brief Return the field named @a name in the _atom_site category for this atom cast to an int
+	/// \brief Return the item named @a name in the _atom_site category for this atom cast to an int
 	int get_property_int(std::string_view name) const
 	{
 		if (not m_impl)
@@ -223,7 +223,7 @@ class atom
 		return m_impl->get_property_int(name);
 	}
 
-	/// \brief Return the field named @a name in the _atom_site category for this atom cast to a float
+	/// \brief Return the item named @a name in the _atom_site category for this atom cast to a float
 	float get_property_float(std::string_view name) const
 	{
 		if (not m_impl)
@@ -231,7 +231,7 @@ class atom
 		return m_impl->get_property_float(name);
 	}
 
-	/// \brief Set value for the field named @a name in the _atom_site category to @a value
+	/// \brief Set value for the item named @a name in the _atom_site category to @a value
 	void set_property(const std::string_view name, const std::string &value)
 	{
 		if (not m_impl)
@@ -239,7 +239,7 @@ class atom
 		m_impl->set_property(name, value);
 	}
 
-	/// \brief Set value for the field named @a name in the _atom_site category to @a value
+	/// \brief Set value for the item named @a name in the _atom_site category to @a value
 	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
 	void set_property(const std::string_view name, const T &value)
 	{
@@ -730,7 +730,7 @@ class sugar : public residue
 	/**
 	 * @brief Return the sugar number in the glycosylation tree
 	 *
-	 * To store the sugar number, the auth_seq_id field has been overloaded
+	 * To store the sugar number, the auth_seq_id item has been overloaded
 	 * in the specification. But since a sugar number should be, ehm, a number
 	 * and auth_seq_id is specified to contain a string, we do a check here
 	 * to see if it really is a number.

@@ -143,9 +143,9 @@ class sac_parser
 
 	enum class CIFToken
 	{
-		Unknown,
+		UNKNOWN,
 
-		Eof,
+		END_OF_FILE,
 
 		DATA,
 		LOOP,
@@ -153,24 +153,24 @@ class sac_parser
 		SAVE_,
 		SAVE_NAME,
 		STOP,
-		Tag,
-		Value
+		ITEM_NAME,
+		VALUE
 	};
 
 	static constexpr const char *get_token_name(CIFToken token)
 	{
 		switch (token)
 		{
-			case CIFToken::Unknown: return "Unknown";
-			case CIFToken::Eof: return "Eof";
+			case CIFToken::UNKNOWN: return "Unknown";
+			case CIFToken::END_OF_FILE: return "Eof";
 			case CIFToken::DATA: return "DATA";
 			case CIFToken::LOOP: return "LOOP";
 			case CIFToken::GLOBAL: return "GLOBAL";
 			case CIFToken::SAVE_: return "SAVE";
 			case CIFToken::SAVE_NAME: return "SAVE+name";
 			case CIFToken::STOP: return "STOP";
-			case CIFToken::Tag: return "Tag";
-			case CIFToken::Value: return "Value";
+			case CIFToken::ITEM_NAME: return "Tag";
+			case CIFToken::VALUE: return "Value";
 			default: return "Invalid token parameter";
 		}
 	}
@@ -267,9 +267,9 @@ class sac_parser
 		QuotedString,
 		QuotedStringQuote,
 		UnquotedString,
-		Tag,
-		TextField,
-		TextFieldNL,
+		ItemName,
+		TextItem,
+		TextItemNL,
 		Reserved,
 		Value
 	};

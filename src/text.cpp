@@ -215,19 +215,19 @@ std::string trim_copy(std::string_view s)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string, std::string> split_tag_name(std::string_view tag)
+std::tuple<std::string, std::string> split_item_name(std::string_view item_name)
 {
-	if (tag.empty())
-		throw std::runtime_error("empty tag");
-	if (tag[0] != '_')
-		throw std::runtime_error("tag '" + std::string { tag } + "' does not start with underscore");
+	if (item_name.empty())
+		throw std::runtime_error("empty item_name");
+	if (item_name[0] != '_')
+		throw std::runtime_error("item_name '" + std::string { item_name } + "' does not start with underscore");
 
-	auto s = tag.find('.');
+	auto s = item_name.find('.');
 	if (s == std::string::npos)
-		// throw std::runtime_error("tag does not contain dot (" + std::string{ tag } + ')');
-		return std::tuple<std::string, std::string>{ "", tag.substr(1) };
+		// throw std::runtime_error("item_name does not contain dot (" + std::string{ item_name } + ')');
+		return std::tuple<std::string, std::string>{ "", item_name.substr(1) };
 	else
-		return std::tuple<std::string, std::string>{tag.substr(1, s - 1), tag.substr(s + 1)};
+		return std::tuple<std::string, std::string>{item_name.substr(1, s - 1), item_name.substr(s + 1)};
 }
 
 // --------------------------------------------------------------------

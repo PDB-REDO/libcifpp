@@ -158,13 +158,6 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 		if (iequals(name, i->name()))
 		{
 			is_new = false;
-
-			if (i != begin())
-			{
-				auto n = std::next(i);
-				splice(begin(), *this, i, n);
-			}
-
 			break;
 		}
 
@@ -173,12 +166,12 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 
 	if (is_new)
 	{
-		auto &db = emplace_back(name);
-		db.set_validator(m_validator);
+		i = insert(end(), { name });
+		i->set_validator(m_validator);
 	}
 
-	assert(begin() != end());
-	return std::make_tuple(std::prev(end()), is_new);
+	assert(i != end());
+	return std::make_tuple(i, is_new);
 }
 
 void file::load(const std::filesystem::path &p)
