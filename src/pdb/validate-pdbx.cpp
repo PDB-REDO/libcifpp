@@ -145,12 +145,16 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary, std::erro
 			last_seq_id = *seq_id;
 
 			auto comp_id = r.get<std::string>("label_comp_id");
-			if (not cf.is_known_peptide(comp_id))
+			if (not cf.is_monomer(comp_id))
 				continue;
 
 			auto p = pdbx_poly_seq_scheme.find(get_parents_condition(validator, r, pdbx_poly_seq_scheme));
 			if (p.size() != 1)
-				throw std::runtime_error("For each residue in atom_site that is a residue in a polymer there should be exactly one pdbx_poly_seq_scheme record");
+			{
+				if (cif::VERBOSE > 0)
+					std::clog << "In atom_site record: " << r["id"].text() << '\n';
+				throw std::runtime_error("For each monomer in atom_site there should be exactly one pdbx_poly_seq_scheme record");
+			}
 		}
 
 		auto &entity = db["entity"];
@@ -244,9 +248,9 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary, std::erro
 					for (auto comp_id : comp_ids)
 					{
 						std::string letter;
-						if (cf.is_known_base(comp_id))
+						if (compound_factory::kBaseMap.contains(comp_id))
 							letter = compound_factory::kBaseMap.at(comp_id);
-						else if (cf.is_known_peptide(comp_id))
+						else if (compound_factory::kAAMap.contains(comp_id))
 							letter = compound_factory::kAAMap.at(comp_id);
 						else
 						{
@@ -300,11 +304,10 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary, std::erro
 			else
 			{
 				seq_can->erase(std::remove_if(seq_can->begin(), seq_can->end(), [](char ch) { return std::isspace(ch); }), seq_can->end());
-				
+
 				if (not seq_match(true, seq_can->begin(), seq_can->end()))
 					throw std::runtime_error("Canonical sequences do not match for entity " + entity_id);
 			}
-			
 		}
 
 		result = true;

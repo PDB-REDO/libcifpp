@@ -107,6 +107,15 @@ class datablock : public std::list<category>
 	bool is_valid() const;
 
 	/**
+	 * @brief Validates the content of this datablock and all its content
+	 * and updates or removes the audit_conform category to match the result.
+	 * 
+	 * @return true If the content is valid
+	 * @return false If the content is not valid
+	 */
+	bool is_valid();
+
+	/**
 	 * @brief Validates all contained data for valid links between parents and children
 	 * as defined in the validator
 	 * 

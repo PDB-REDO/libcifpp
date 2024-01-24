@@ -109,9 +109,10 @@ inline void write(const std::filesystem::path &p, const file &f)
  *
  * \param file The cif::file that hopefully contains some valid data
  * \param dictionary The mmcif dictionary to use
+ * \result Returns true if the resulting file is valid
  */
 
-void reconstruct_pdbx(file &pdbx_file, std::string_view dictionary = "mmcif_pdbx");
+bool reconstruct_pdbx(file &pdbx_file, std::string_view dictionary = "mmcif_pdbx");
 
 /** \brief This is an extension to cif::validator, use the logic in common
  * PDBx files to see if the file is internally consistent.

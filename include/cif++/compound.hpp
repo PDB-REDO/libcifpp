@@ -166,6 +166,12 @@ class compound
 		return m_id == "HOH" or m_id == "H2O" or m_id == "WAT";
 	}
 
+	/** \brief Return whether this compound has a type of either 'peptide linking' or 'L-peptide linking' */
+	bool is_peptide() const;
+
+	/** \brief Return whether this compound has a type of either 'DNA linking' or 'RNA linking' */
+	bool is_base() const;
+
 	char one_letter_code() const { return m_one_letter_code; }; ///< Return the one letter code to use in a canonical sequence. If unknown the value '\0' is returned
 	std::string parent_id() const { return m_parent_id; };      ///< Return the parent id code in case a parent is specified (e.g. MET for MSE)
 
@@ -237,10 +243,38 @@ class compound_factory
 	void pop_dictionary();
 
 	/// Return whether @a res_name is a valid and known peptide
+	[[deprecated("use is_peptide or is_std_peptide instead)")]]
 	bool is_known_peptide(const std::string &res_name) const;
 
 	/// Return whether @a res_name is a valid and known base
+	[[deprecated("use is_base or is_std_base instead)")]]
 	bool is_known_base(const std::string &res_name) const;
+
+	/// Return whether @a res_name is a peptide
+	bool is_peptide(std::string_view res_name) const;
+
+	/// Return whether @a res_name is a base
+	bool is_base(std::string_view res_name) const;
+
+	/// Return whether @a res_name is one of the standard peptides
+	bool is_std_peptide(std::string_view res_name) const;
+
+	/// Return whether @a res_name is one of the standard bases
+	bool is_std_base(std::string_view res_name) const;
+
+	/// Return whether @a res_name is a monomer (either base or peptide)
+	bool is_monomer(std::string_view res_name) const;
+
+	/// Return whether @a res_name is one of the standard bases or peptides
+	bool is_std_monomer(std::string_view res_name) const
+	{
+		return is_std_base(res_name) or is_std_peptide(res_name);
+	}
+
+	bool is_water(std::string_view res_name) const
+	{
+		return res_name == "HOH" or res_name == "H2O" or res_name == "WAT";
+	}
 
 	/// \brief Create the compound object for \a id
 	///
@@ -248,14 +282,14 @@ class compound_factory
 	/// The result is owned by this factory and should not be deleted by the user.
 	/// \param id	The compound ID, a three letter code usually
 	/// \result		The compound, or nullptr if it could not be created (missing info)
-	const compound *create(std::string id);
+	const compound *create(std::string_view id);
 
 	~compound_factory();
 
 	CIFPP_EXPORT static const std::map<std::string, char> kAAMap, ///< Globally accessible static list of the default amino acids
 		kBaseMap;                                                 ///< Globally accessible static list of the default bases
 
-	void report_missing_compound(const std::string &compound_id);
+	void report_missing_compound(std::string_view compound_id);
 
   private:
 	compound_factory();

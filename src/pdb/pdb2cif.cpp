@@ -3646,7 +3646,7 @@ void PDBFileParser::ConstructEntities()
 			PDBChain::AtomRes ar{ resName, resSeq, iCode };
 
 			if ((chain.mResiduesSeen.empty() or chain.mResiduesSeen.back() != ar) and
-				(cif::compound_factory::instance().is_known_peptide(resName) or cif::compound_factory::instance().is_known_base(resName)))
+				cif::compound_factory::instance().is_monomer(resName))
 			{
 				chain.mResiduesSeen.push_back(ar);
 			}
@@ -3731,11 +3731,8 @@ void PDBFileParser::ConstructEntities()
 			{
 				std::string resName = chain.mResiduesSeen[ix].mMonID;
 
-				if (cif::compound_factory::instance().is_known_peptide(resName) or
-					cif::compound_factory::instance().is_known_base(resName))
-				{
+				if (cif::compound_factory::instance().is_monomer(resName))
 					chain.mTerIndex = ix + 1;
-				}
 
 				InsertChemComp(resName);
 			}
@@ -3814,7 +3811,7 @@ void PDBFileParser::ConstructEntities()
 			int residueCount = (residuePerChainCounter[chainID] += 1);
 
 			// There appears to be a program that writes out HETATM records as ATOM records....
-			if (not(cif::compound_factory::instance().is_known_peptide(resName) or cif::compound_factory::instance().is_known_base(resName)) or
+			if (not cif::compound_factory::instance().is_monomer(resName) or
 				terminatedChains.count(chainID) or
 				(chain.mTerIndex > 0 and residueCount >= chain.mTerIndex))
 			{

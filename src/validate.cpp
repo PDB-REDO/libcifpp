@@ -49,6 +49,25 @@ using std::regex;
 namespace cif
 {
 
+validation_exception::validation_exception(std::error_code ec)
+	: runtime_error(ec.message())
+{
+}
+
+validation_exception::validation_exception(std::error_code ec, std::string_view category)
+	: runtime_error(
+		  (std::ostringstream{} << ec.message() << "; category: " << std::quoted(category)).str())
+{
+}
+
+validation_exception::validation_exception(std::error_code ec, std::string_view category, std::string_view item)
+	: runtime_error(
+		  (std::ostringstream{} << ec.message() << "; category: " << std::quoted(category) << "; item: " << std::quoted(item)).str())
+{
+}
+
+// --------------------------------------------------------------------
+
 struct regex_impl : public regex
 {
 	regex_impl(std::string_view rx)
@@ -380,18 +399,10 @@ std::vector<const link_validator *> validator::get_links_for_child(std::string_v
 	return result;
 }
 
-// void validator::report_error(const std::string &msg, bool fatal) const
-// {
-// 	if (m_strict or fatal)
-// 		throw validation_error(msg);
-// 	else if (VERBOSE > 0)
-// 		std::cerr << msg << '\n';
-// }
-
 void validator::report_error(std::error_code ec, bool fatal) const
 {
 	if (m_strict or fatal)
-		throw std::system_error(ec);
+		throw validation_exception(ec);
 	else
 		std::cerr << ec.message() << '\n';
 }
@@ -399,15 +410,14 @@ void validator::report_error(std::error_code ec, bool fatal) const
 void validator::report_error(std::error_code ec, std::string_view category,
 	std::string_view item, bool fatal) const
 {
-	std::ostringstream os;
-	os << "category: "<< category;
-	if (not item.empty())
-		os << "; item: " << item;
+	auto ex = item.empty() ?
+		validation_exception(ec, category) :
+		validation_exception(ec, category, item);
 
 	if (m_strict or fatal)
-		throw std::system_error(ec, os.str());
+		throw ex;
 	else
-		std::cerr << ec.message() << ": " << os.str() << '\n';
+		std::cerr << ex.what() << '\n';
 }
 
 // --------------------------------------------------------------------

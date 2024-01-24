@@ -85,6 +85,40 @@ bool datablock::is_valid() const
 	return result;
 }
 
+bool datablock::is_valid()
+{
+	if (m_validator == nullptr)
+		throw std::runtime_error("Validator not specified");
+
+	bool result = true;
+	for (auto &cat : *this)
+		result = cat.is_valid() and result;
+	
+	// Add or remove the audit_conform block here.
+	if (result)
+	{
+		// If the dictionary declares an audit_conform category, put it in,
+		// but only if it does not exist already!
+
+		if (m_validator->get_validator_for_category("audit_conform") != nullptr)
+		{
+			auto &audit_conform = operator[]("audit_conform");
+
+			audit_conform.clear();
+			audit_conform.emplace({
+				// clang-format off
+				{ "dict_name", m_validator->name() },
+				{ "dict_version", m_validator->version() }
+				// clang-format on
+			});
+		}
+	}
+	else
+		erase(std::find_if(begin(), end(), [](category &cat) { return cat.name() == "audit_conform"; }), end());
+
+	return result;
+}
+
 bool datablock::validate_links() const
 {
 	bool result = true;
@@ -243,35 +277,6 @@ void datablock::write(std::ostream &os) const
 
 	if (m_validator and size() > 0)
 	{
-		// If the dictionary declares an audit_conform category, put it in,
-		// but only if it does not exist already!
-
-		if (m_validator->get_validator_for_category("audit_conform") != nullptr)
-		{
-			auto *audit_conform = get("audit_conform");
-			if (audit_conform == nullptr or audit_conform->size() != 1) // There should be one entry here, I guess
-				audit_conform = nullptr;
-			else
-			{
-				// And the name and version should be filled in of course
-				auto &e = audit_conform->front();
-				if (e["dict_name"].empty() or e["dict_version"].empty())
-					audit_conform = nullptr;
-			}
-
-			if (not audit_conform)
-			{
-				category auditConform("audit_conform");
-				// clang-format off
-				auditConform.emplace({
-					{ "dict_name", m_validator->name() },
-					{ "dict_version", m_validator->version() }
-				});
-				// clang-format on
-				auditConform.write(os);
-			}
-		}
-
 		// base order on parent child relationships, parents first
 
 		cat_order_t cat_order;

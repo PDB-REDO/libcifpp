@@ -644,7 +644,7 @@ iset category::key_items() const
 		throw std::runtime_error("No Validator specified");
 
 	if (m_cat_validator == nullptr)
-		m_validator->report_error(validation_error::undefined_category);
+		throw validation_exception(validation_error::undefined_category);
 
 	iset result;
 	for (auto &iv : m_cat_validator->m_item_validators)
@@ -659,7 +659,7 @@ std::set<uint16_t> category::key_item_indices() const
 		throw std::runtime_error("No Validator specified");
 
 	if (m_cat_validator == nullptr)
-		m_validator->report_error(validation_error::undefined_category);
+		throw validation_exception(validation_error::undefined_category);
 
 	std::set<uint16_t> result;
 	for (auto &k : m_cat_validator->m_keys)
@@ -831,7 +831,7 @@ bool category::is_valid() const
 
 			if (iv == nullptr)
 			{
-				m_validator->report_error(validation_error::unknown_item, m_name, m_items[cix].m_name, false);
+				// no need to report, should have been reported already above
 				result = false;
 				continue;
 			}
@@ -1348,20 +1348,32 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 
 	auto colIx = get_item_ix(item_name);
 	if (colIx >= m_items.size())
-		throw std::runtime_error("Invalid item " + std::string{ value } + " for " + m_name);
+		throw validation_exception(validation_error::unknown_item, m_name, item_name);
 
 	auto &col = m_items[colIx];
 
 	// check the value
 	if (col.m_validator)
-		(*col.m_validator)(value);
+	{
+		std::error_code ec;
+		col.m_validator->validate_value(value, ec);
+		if (ec)
+			throw validation_exception(ec, m_name, item_name);
+	}
 
 	// first some sanity checks, what was the old value and is it the same for all rows?
 	std::string oldValue{ rows.front()[item_name].text() };
 	for (auto row : rows)
 	{
 		if (oldValue != row[item_name].text())
-			throw std::runtime_error("Inconsistent old values in update_value");
+		{
+			std::ostringstream os;
+
+			os << "Inconsistent old values in update_value, trying to set " << std::quoted(value)
+			   << " as value for item " << item_name << " in category " << m_name;
+
+			throw std::runtime_error(os.str());
+		}
 	}
 
 	if (oldValue == value) // no need to do anything

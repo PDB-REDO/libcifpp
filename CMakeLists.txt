@@ -564,6 +564,7 @@ if(BUILD_TESTING)
 		rename-compound
 		sugar
 		spinner
+		reconstruction
 		validate-pdbx)
 
 	foreach(CIFPP_TEST IN LISTS CIFPP_tests)

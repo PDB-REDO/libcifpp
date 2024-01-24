@@ -170,6 +170,33 @@ inline std::error_condition make_error_condition(validation_error e)
 
 // --------------------------------------------------------------------
 
+class validation_exception : public std::runtime_error
+{
+  public:
+	validation_exception(validation_error err)
+		: validation_exception(make_error_code(err))
+	{
+	}
+
+	validation_exception(validation_error err, std::string_view category)
+		: validation_exception(make_error_code(err), category)
+	{
+	}
+
+	validation_exception(validation_error err, std::string_view category, std::string_view item)
+		: validation_exception(make_error_code(err), category, item)
+	{
+	}
+
+	validation_exception(std::error_code ec);
+
+	validation_exception(std::error_code ec, std::string_view category);
+
+	validation_exception(std::error_code ec, std::string_view category, std::string_view item);
+};
+
+// --------------------------------------------------------------------
+
 /** @brief the primitive types known */
 enum class DDL_PrimitiveType
 {
