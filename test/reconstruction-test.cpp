@@ -41,12 +41,24 @@ TEST_CASE("reconstruct")
 	{
 		std::cout << i->path() << '\n';
 
-		cif::file f(i->path());
+		if (i->path().extension() == ".pdb")
+		{
+			cif::file f = cif::pdb::read(i->path());
 
-		std::error_code ec;
-		CHECK_FALSE(cif::pdb::is_valid_pdbx_file(f, ec));
-		CHECK(ec != std::errc{});
+			std::error_code ec;
 
-		CHECK(cif::pdb::reconstruct_pdbx(f));
+			if (not cif::pdb::is_valid_pdbx_file(f, ec))
+				CHECK(cif::pdb::reconstruct_pdbx(f));
+		}
+		else
+		{
+			cif::file f(i->path());
+
+			std::error_code ec;
+			CHECK_FALSE(cif::pdb::is_valid_pdbx_file(f, ec));
+			CHECK(ec != std::errc{});
+
+			CHECK(cif::pdb::reconstruct_pdbx(f));
+		}
 	}
 }

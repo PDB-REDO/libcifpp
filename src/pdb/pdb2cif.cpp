@@ -1123,9 +1123,6 @@ void PDBFileParser::PreParseInput(std::istream &is)
 	if (lookahead.back() == '\r')
 		lookahead.pop_back();
 
-	//	if (cif::starts_with(lookahead, "HEADER") == false)
-	//		throw std::runtime_error("This does not look like a PDB file, should start with a HEADER line");
-
 	auto contNr = [&lookahead](int offset, int len) -> int
 	{
 		std::string cs = lookahead.substr(offset, len);
@@ -1558,52 +1555,54 @@ void PDBFileParser::ParseTitle()
 	//	11 - 80       Specification   compound      Description of the molecular components.
 	//	              list
 
-	std::string value{ mRec->vS(11) };
-	if (value.find(':') == std::string::npos)
-	{
-		// special case for dumb, stripped files
-		auto &comp = GetOrCreateCompound(1);
-		comp.mInfo["MOLECULE"] = value;
-	}
-	else
-	{
-		SpecificationListParser p(value);
-
-		for (;;)
-		{
-			std::string key, val;
-			std::tie(key, val) = p.GetNextSpecification();
-
-			if (key.empty())
-				break;
-
-			if (not iequals(key, "MOL_ID") and mCompounds.empty())
-			{
-				if (cif::VERBOSE > 0)
-					std::cerr << "Ignoring invalid COMPND record\n";
-				break;
-			}
-
-			if (key == "MOL_ID")
-			{
-				auto &comp = GetOrCreateCompound(stoi(val));
-				comp.mTitle = title;
-			}
-			else if (key == "CHAIN")
-			{
-				for (auto c : cif::split<std::string>(val, ","))
-				{
-					cif::trim(c);
-					mCompounds.back().mChains.insert(c[0]);
-				}
-			}
-			else
-				mCompounds.back().mInfo[key] = val;
-		}
-	}
-
 	if (mRec->is("COMPND"))
+	{
+		std::string value{ mRec->vS(11) };
+		if (value.find(':') == std::string::npos)
+		{
+			// special case for dumb, stripped files
+			auto &comp = GetOrCreateCompound(1);
+			comp.mInfo["MOLECULE"] = value;
+		}
+		else
+		{
+			SpecificationListParser p(value);
+
+			for (;;)
+			{
+				std::string key, val;
+				std::tie(key, val) = p.GetNextSpecification();
+
+				if (key.empty())
+					break;
+
+				if (not iequals(key, "MOL_ID") and mCompounds.empty())
+				{
+					if (cif::VERBOSE > 0)
+						std::cerr << "Ignoring invalid COMPND record\n";
+					break;
+				}
+
+				if (key == "MOL_ID")
+				{
+					auto &comp = GetOrCreateCompound(stoi(val));
+					comp.mTitle = title;
+				}
+				else if (key == "CHAIN")
+				{
+					for (auto c : cif::split<std::string>(val, ","))
+					{
+						cif::trim(c);
+						mCompounds.back().mChains.insert(c[0]);
+					}
+				}
+				else
+					mCompounds.back().mInfo[key] = val;
+			}
+		}
+
 		GetNextRecord();
+	}
 
 	// SOURCE
 	Match("SOURCE", false);
@@ -1740,7 +1739,7 @@ void PDBFileParser::ParseTitle()
 		int n = 1;
 		cat = getCategory("audit_author");
 
-		value = { mRec->vS(11) };
+		std::string value = { mRec->vS(11) };
 		for (auto author : cif::split<std::string>(value, ",", true))
 		{
 			// clang-format off
@@ -4556,7 +4555,7 @@ void PDBFileParser::ConstructEntities()
 		std::string formula;
 		std::string type;
 		std::string nstd = ".";
-		std::string formulaWeight;
+		std::optional<float> formulaWeight;
 
 		if (compound != nullptr)
 		{
@@ -4567,7 +4566,7 @@ void PDBFileParser::ConstructEntities()
 				nstd = "y";
 
 			formula = compound->formula();
-			formulaWeight = std::to_string(compound->formula_weight());
+			formulaWeight = compound->formula_weight();
 		}
 
 		if (name.empty())
@@ -4594,7 +4593,7 @@ void PDBFileParser::ConstructEntities()
 			{ "id", cc },
 			{ "name", name },
 			{ "formula", formula },
-			{ "formula_weight", formulaWeight },
+			{ "formula_weight", formulaWeight, 3 },
 			{ "mon_nstd_flag", nstd },
 			{ "type", type }
 		});
@@ -4709,7 +4708,7 @@ void PDBFileParser::ConstructEntities()
 		}
 
 		if (formula_weight > 0)
-			entity["formula_weight"] = formula_weight;
+			entity.assign({ { "formula_weight", formula_weight, 3 } });
 	}
 }
 
@@ -5578,31 +5577,6 @@ void PDBFileParser::ParseCrystallographic()
 
 		GetNextRecord();
 	}
-	else
-	{
-		// clang-format off
-
-		// no cryst1, make a simple one, like this:
-		// CRYST1    1.000    1.000    1.000  90.00  90.00  90.00 P 1           1
-		getCategory("cell")->emplace({
-			{ "entry_id", mStructureID }, //	 1 -  6       Record name   "CRYST1"
-			{ "length_a", 1 },            //	 7 - 15       Real(9.3)     a              a (Angstroms).
-			{ "length_b", 1 },            //	16 - 24       Real(9.3)     b              b (Angstroms).
-			{ "length_c", 1 },            //	25 - 33       Real(9.3)     c              c (Angstroms).
-			{ "angle_alpha", 90 },        //	34 - 40       Real(7.2)     alpha          alpha (degrees).
-			{ "angle_beta", 90 },         //	41 - 47       Real(7.2)     beta           beta (degrees).
-			{ "angle_gamma", 90 },        //	48 - 54       Real(7.2)     gamma          gamma (degrees).
-			/* goes into symmetry */      //	56 - 66       LString       sGroup         Space  group.
-			{ "Z_PDB", 1 }                //	67 - 70       Integer       z              Z value.
-		});
-
-		getCategory("symmetry")->emplace({
-			{ "entry_id", mStructureID },
-			{ "space_group_name_H-M", "P 1" },
-			{ "Int_Tables_number", 1 }
-		});
-		// clang-format on
-	}
 }
 
 void PDBFileParser::ParseCoordinateTransformation()
@@ -6463,7 +6437,12 @@ file read(std::istream &is)
 		// and so the very first character in a valid PDB file
 		// is 'H'. It is as simple as that.
 
-		if (ch == 'h' or ch == 'H')
+		// Well, not quite, Unfortunately... People insisted that
+		// having only ATOM records also makes up a valid PDB file...
+		// Since mmCIF files cannot validly start with a letter character
+		// the test has changed into the following:
+
+		if (std::isalpha(ch))
 			read_pdb_file(is, result);
 		else
 		{

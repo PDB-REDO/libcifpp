@@ -491,12 +491,13 @@ void checkAtomAnisotropRecords(datablock &db)
 	auto &atom_site = db["atom_site"];
 	auto &atom_site_anisotrop = db["atom_site_anisotrop"];
 
-	auto m_validator = db.get_validator();
-	if (not m_validator)
-		return;
+	// auto m_validator = db.get_validator();
+	// if (not m_validator)
+	// 	return;
 
 	std::vector<row_handle> to_be_deleted;
 
+	bool warnReplaceTypeSymbol = true;
 	for (auto row : atom_site_anisotrop)
 	{
 		auto parents = atom_site_anisotrop.get_parents(row, atom_site);
@@ -512,6 +513,12 @@ void checkAtomAnisotropRecords(datablock &db)
 
 		if (row["type_symbol"].empty())
 			row["type_symbol"] = parent["type_symbol"].text();
+		else if (row["type_symbol"].text() != parent["type_symbol"].text())
+		{
+			if (cif::VERBOSE and std::exchange(warnReplaceTypeSymbol, false))
+				std::clog << "Replacing type_symbol in atom_site_anisotrop record(s)\n";
+			row["type_symbol"] != parent["type_symbol"].text();
+		}
 
 		if (row["pdbx_auth_alt_id"].empty())
 			row["pdbx_auth_alt_id"] = parent["pdbx_auth_alt_id"].text();
@@ -1019,9 +1026,6 @@ bool reconstruct_pdbx(file &file, std::string_view dictionary)
 	// Now see if atom records make sense at all
 	checkAtomRecords(db);
 
-	if (db.get("atom_site_anisotrop"))
-		checkAtomAnisotropRecords(db);
-
 	std::vector<std::string> invalidCategories;
 
 	// clean up each category
@@ -1243,6 +1247,9 @@ bool reconstruct_pdbx(file &file, std::string_view dictionary)
 	db["chem_comp"].reorder_by_index();
 
 	file.load_dictionary(dictionary);
+
+	if (db.get("atom_site_anisotrop"))
+		checkAtomAnisotropRecords(db);
 
 	// Now create any missing categories
 	// Next make sure we have struct_asym records
