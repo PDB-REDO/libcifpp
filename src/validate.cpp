@@ -55,14 +55,12 @@ validation_exception::validation_exception(std::error_code ec)
 }
 
 validation_exception::validation_exception(std::error_code ec, std::string_view category)
-	: runtime_error(
-		  (std::ostringstream{} << ec.message() << "; category: " << std::quoted(category)).str())
+	: runtime_error((ec.message() + "; category: ").append(category))
 {
 }
 
 validation_exception::validation_exception(std::error_code ec, std::string_view category, std::string_view item)
-	: runtime_error(
-		  (std::ostringstream{} << ec.message() << "; category: " << std::quoted(category) << "; item: " << std::quoted(item)).str())
+	: runtime_error((ec.message() + "; category: ").append(category).append("; item: ").append(item))
 {
 }
 
