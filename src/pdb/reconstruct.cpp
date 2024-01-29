@@ -705,7 +705,11 @@ void createEntityPoly(datablock &db)
 				if (cf.is_base(comp_id))
 				{
 					c_type = "polydeoxyribonucleotide";
-					letter = letter_can = compound_factory::kBaseMap.at(comp_id);
+					letter_can = compound_factory::kBaseMap.at(comp_id);
+					if (comp_id.length() == 1)
+						letter = letter_can;
+					else
+						letter = '(' + letter_can + ')';
 				}
 				else if (cf.is_peptide(comp_id))
 				{
