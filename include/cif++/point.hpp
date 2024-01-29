@@ -35,7 +35,10 @@
 
 #if __has_include(<clipper/core/coords.h>)
 #define HAVE_LIBCLIPPER 1
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #include <clipper/core/coords.h>
+#pragma GCC diagnostic pop
 #endif
 
 /** \file point.hpp
