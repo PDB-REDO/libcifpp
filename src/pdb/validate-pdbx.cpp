@@ -248,13 +248,12 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary, std::erro
 					for (auto comp_id : comp_ids)
 					{
 						std::string letter;
-						if (compound_factory::kBaseMap.contains(comp_id))
-							letter = compound_factory::kBaseMap.at(comp_id);
-						else if (compound_factory::kAAMap.contains(comp_id))
-							letter = compound_factory::kAAMap.at(comp_id);
-						else
+
+						if (can)
 						{
-							if (can)
+							if (compound_factory::kBaseMap.contains(comp_id))
+								letter = compound_factory::kBaseMap.at(comp_id);
+							else
 							{
 								auto c = cf.create(comp_id);
 								if (c and c->one_letter_code())
@@ -262,6 +261,13 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary, std::erro
 								else
 									letter = "X";
 							}
+						}
+						else
+						{
+							if (compound_factory::kAAMap.contains(comp_id))
+								letter = compound_factory::kAAMap.at(comp_id);
+							else if (comp_id.length() == 1 and compound_factory::kBaseMap.contains(comp_id))
+								letter = compound_factory::kBaseMap.at(comp_id);
 							else
 								letter = '(' + comp_id + ')';
 						}

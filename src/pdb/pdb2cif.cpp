@@ -6440,9 +6440,9 @@ file read(std::istream &is)
 		// Well, not quite, Unfortunately... People insisted that
 		// having only ATOM records also makes up a valid PDB file...
 		// Since mmCIF files cannot validly start with a letter character
-		// the test has changed into the following:
+		// apart from the letter 'd', the test has changed into the following:
 
-		if (std::isalpha(ch))
+		if (std::isalpha(ch) and std::toupper(ch) != 'D')
 			read_pdb_file(is, result);
 		else
 		{
