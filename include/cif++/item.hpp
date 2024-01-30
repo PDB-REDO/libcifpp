@@ -395,7 +395,7 @@ struct item_handle
 	template <size_t N>
 	item_handle &operator=(const char (&value)[N])
 	{
-		assign_value({ "", std::move(value) }.value());
+		assign_value(item{ "", std::move(value) }.value());
 		return *this;
 	}
 
