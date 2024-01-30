@@ -325,7 +325,7 @@ void checkChemCompRecords(datablock &db)
 				items.emplace_back(item{ "formula_weight", compound->formula_weight() });
 
 			if (not items.empty())
-				chem_comp_entry.assign(std::move(items));
+				chem_comp_entry.assign(items);
 		}
 	}
 }
@@ -412,7 +412,7 @@ void checkAtomRecords(datablock &db)
 				items.emplace_back(item{ "formula_weight", compound->formula_weight() });
 
 			if (not items.empty())
-				chem_comp_entry.assign(std::move(items));
+				chem_comp_entry.assign(items);
 		}
 
 		if (is_peptide and not has_seq_id(k))

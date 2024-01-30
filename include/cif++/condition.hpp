@@ -370,7 +370,7 @@ namespace detail
 	{
 		key_equals_condition_impl(item &&i)
 			: m_item_name(i.name())
-			, m_value(i.value())
+			, m_value(std::forward<item>(i).value())
 		{
 		}
 

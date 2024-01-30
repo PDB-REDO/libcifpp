@@ -52,10 +52,10 @@ std::string_view item_handle::text() const
 	return {};
 }
 
-void item_handle::assign_value(const item &v)
+void item_handle::assign_value(std::string_view value)
 {
 	assert(not m_row_handle.empty());
-	m_row_handle.assign(m_item_ix, v.value(), true);
+	m_row_handle.assign(m_item_ix, value, true);
 }
 
 void item_handle::swap(item_handle &b)
