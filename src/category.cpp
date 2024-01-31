@@ -1339,7 +1339,8 @@ std::string category::get_unique_value(std::string_view item_name)
 	return result;
 }
 
-void category::update_value(const std::vector<row_handle> &rows, std::string_view item_name, std::string_view value)
+void category::update_value(const std::vector<row_handle> &rows, std::string_view item_name,
+	value_provider_type &&value_provider)
 {
 	using namespace std::literals;
 
@@ -1352,40 +1353,29 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 
 	auto &col = m_items[colIx];
 
+	// this is expensive, but better throw early on
 	// check the value
 	if (col.m_validator)
 	{
-		std::error_code ec;
-		col.m_validator->validate_value(value, ec);
-		if (ec)
-			throw validation_exception(ec, m_name, item_name);
-	}
-
-	// first some sanity checks, what was the old value and is it the same for all rows?
-	std::string oldValue{ rows.front()[item_name].text() };
-	for (auto row : rows)
-	{
-		if (oldValue != row[item_name].text())
+		for (auto row : rows)
 		{
-			std::ostringstream os;
+			std::string value{ value_provider(row[item_name].text()) };
 
-			os << "Inconsistent old values in update_value, trying to set " << std::quoted(value)
-			   << " as value for item " << item_name << " in category " << m_name;
-
-			throw std::runtime_error(os.str());
+			std::error_code ec;
+			col.m_validator->validate_value(value, ec);
+			if (ec)
+				throw validation_exception(ec, m_name, item_name);
 		}
 	}
 
-	if (oldValue == value) // no need to do anything
-		return;
-
-	// update rows, but do not cascade
-	for (auto row : rows)
-		row.assign(colIx, value, false);
-
-	// see if we need to update any child categories that depend on this value
+	// update and see if we need to update any child categories that depend on this value
 	for (auto parent : rows)
 	{
+		std::string oldValue{ parent[item_name].text() };
+		std::string value{ value_provider(oldValue) };
+
+		parent.assign(colIx, value, false);
+
 		for (auto &&[childCat, linked] : m_child_links)
 		{
 			if (std::find(linked->m_parent_keys.begin(), linked->m_parent_keys.end(), item_name) == linked->m_parent_keys.end())

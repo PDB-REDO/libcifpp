@@ -964,6 +964,32 @@ class category
 
 	// --------------------------------------------------------------------
 
+	using value_provider_type = std::function<std::string_view(std::string_view)>;
+
+	/// \brief Update a single item named @a item_name in the rows that match
+	/// \a cond to values provided by a callback function \a value_provider
+	/// making sure the linked categories are updated according to the link.
+	/// That means, child categories are updated if the links are absolute
+	/// and unique. If they are not, the child category rows are split.
+
+	void update_value(condition &&cond, std::string_view item_name,
+		value_provider_type &&value_provider)
+	{
+		auto rs = find(std::move(cond));
+		std::vector<row_handle> rows;
+		std::copy(rs.begin(), rs.end(), std::back_inserter(rows));
+		update_value(rows, item_name, std::move(value_provider));
+	}
+
+	/// \brief Update a single item named @a item_name in the rows \a rows
+	/// to values provided by a callback function \a value_provider
+	/// making sure the linked categories are updated according to the link.
+	/// That means, child categories are updated if the links are absolute
+	/// and unique. If they are not, the child category rows are split.
+
+	void update_value(const std::vector<row_handle> &rows, std::string_view item_name,
+		value_provider_type &&value_provider);
+
 	/// \brief Update a single item named @a item_name in the rows that match \a cond to value \a value
 	/// making sure the linked categories are updated according to the link.
 	/// That means, child categories are updated if the links are absolute
@@ -982,7 +1008,10 @@ class category
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
 
-	void update_value(const std::vector<row_handle> &rows, std::string_view item_name, std::string_view value);
+	void update_value(const std::vector<row_handle> &rows, std::string_view item_name, std::string_view value)
+	{
+		update_value(rows, item_name, [value](std::string_view) { return value; });
+	}
 
 	// --------------------------------------------------------------------
 	// Naming used to be very inconsistent. For backward compatibility,
