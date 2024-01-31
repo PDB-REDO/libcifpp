@@ -74,6 +74,9 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" AND NOT BUILD_FOR_CCP4)
 	option(CIFPP_INSTALL_UPDATE_SCRIPT "Install the script to update CCD and dictionary files" ON)
 endif()
 
+# Optionally avoid installing data files (requires privileges at inconvenient moments)
+option(WRITE_DATA_FILES "Write data files during installation" ON)
+
 # When CCP4 is sourced in the environment, we can recreate the symmetry operations table
 if(EXISTS "$ENV{CCP4}")
 	if(EXISTS "$ENV{CCP4}/lib/data/syminfo.lib")
@@ -461,22 +464,24 @@ install(
 	COMPONENT Devel
 )
 
-install(FILES
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
-	${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
-	${COMPONENTS_CIF}
-	DESTINATION ${CIFPP_DATA_DIR}
-)
-
-if(CIFPP_CACHE_DIR)
+if(WRITE_DATA_FILES)
 	install(FILES
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
 		${COMPONENTS_CIF}
-		DESTINATION ${CIFPP_CACHE_DIR}
+		DESTINATION ${CIFPP_DATA_DIR}
 	)
+
+	if(CIFPP_CACHE_DIR)
+		install(FILES
+			${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
+			${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
+			${PROJECT_SOURCE_DIR}/rsrc/mmcif_ma.dic
+			${COMPONENTS_CIF}
+			DESTINATION ${CIFPP_CACHE_DIR}
+		)
+	endif()
 endif()
 
 set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifpp-config.cmake.in)
