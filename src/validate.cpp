@@ -79,7 +79,7 @@ struct regex_impl : public regex
 DDL_PrimitiveType map_to_primitive_type(std::string_view s, std::error_code &ec) noexcept
 {
 	ec = {};
-	DDL_PrimitiveType result;
+	DDL_PrimitiveType result = DDL_PrimitiveType::Char;
 	if (iequals(s, "char"))
 		result = DDL_PrimitiveType::Char;
 	else if (iequals(s, "uchar"))

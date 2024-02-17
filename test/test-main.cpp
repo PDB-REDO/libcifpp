@@ -1,3 +1,5 @@
+#define CATCH_CONFIG_RUNNER 1
+
 #include "test-main.hpp"
 
 #include <cif++.hpp>
