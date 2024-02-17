@@ -2,9 +2,6 @@
 
 #include <cif++.hpp>
 
-#define CATCH_CONFIG_RUNNER
-#include <catch2/catch.hpp>
-
 std::filesystem::path gTestDir = std::filesystem::current_path();
 
 int main(int argc, char *argv[])
@@ -12,7 +9,13 @@ int main(int argc, char *argv[])
 	Catch::Session session; // There must be exactly one instance
 
 	// Build a new parser on top of Catch2's
+#if CATCH22
 	using namespace Catch::clara;
+#else
+	// Build a new parser on top of Catch2's
+	using namespace Catch::Clara;
+#endif
+
 	auto cli = session.cli()                               // Get Catch2's command line parser
 	           | Opt(gTestDir, "data-dir")                 // bind variable to a new option, with a hint string
 	                 ["-D"]["--data-dir"]                  // the option names it will respond to
