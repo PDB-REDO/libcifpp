@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 3.16)
 # set the project name
 project(
 	libcifpp
-	VERSION 6.1.0
+	VERSION 7.0.0
 	LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -546,55 +546,7 @@ if(NOT PROJECT_IS_TOP_LEVEL)
 endif()
 
 if(BUILD_TESTING)
-	# We're using the older version 2 of Catch2
-	FetchContent_Declare(
-		Catch2
-		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG v2.13.9)
-
-	FetchContent_MakeAvailable(Catch2)
-
-	list(
-		APPEND
-		CIFPP_tests
-		unit-v2
-		unit-3d
-		format
-		model
-		rename-compound
-		sugar
-		spinner
-		validate-pdbx)
-
-	foreach(CIFPP_TEST IN LISTS CIFPP_tests)
-		set(CIFPP_TEST "${CIFPP_TEST}-test")
-		set(CIFPP_TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test/${CIFPP_TEST}.cpp")
-
-		add_executable(
-			${CIFPP_TEST} ${CIFPP_TEST_SOURCE}
-			"${CMAKE_CURRENT_SOURCE_DIR}/test/test-main.cpp")
-
-		target_link_libraries(${CIFPP_TEST} PRIVATE Threads::Threads cifpp::cifpp
-			Catch2::Catch2)
-		target_include_directories(${CIFPP_TEST} PRIVATE "${EIGEN_INCLUDE_DIR}")
-
-		if(MSVC)
-			# Specify unwind semantics so that MSVC knowns how to handle exceptions
-			target_compile_options(${CIFPP_TEST} PRIVATE /EHsc)
-		endif()
-
-		add_custom_target(
-			"run-${CIFPP_TEST}"
-			DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch ${CIFPP_TEST})
-
-		add_custom_command(
-			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Run${CIFPP_TEST}.touch
-			COMMAND $<TARGET_FILE:${CIFPP_TEST}> --data-dir
-			${CMAKE_CURRENT_SOURCE_DIR}/test)
-
-		add_test(NAME ${CIFPP_TEST} COMMAND $<TARGET_FILE:${CIFPP_TEST}> --data-dir
-			${CMAKE_CURRENT_SOURCE_DIR}/test)
-	endforeach()
+	add_subdirectory(test)
 endif()
 
 # Optionally install the update scripts for CCD and dictionary files

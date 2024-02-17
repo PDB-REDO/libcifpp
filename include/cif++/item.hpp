@@ -44,7 +44,7 @@
 /** \file item.hpp
  *
  * This file contains the declaration of item but also the item_value and item_handle
- * These handle the storage of and access to the data for a single data field.
+ * These handle the storage of and access to the data for a single data item.
  */
 
 namespace cif
@@ -120,8 +120,6 @@ class item
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
 
-		assert(r.ptr >= buffer and r.ptr < buffer + sizeof(buffer));
-		*r.ptr = 0;
 		m_value.assign(buffer, r.ptr - buffer);
 	}
 
@@ -141,8 +139,6 @@ class item
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
 
-		assert(r.ptr >= buffer and r.ptr < buffer + sizeof(buffer));
-		*r.ptr = 0;
 		m_value.assign(buffer, r.ptr - buffer);
 	}
 
@@ -158,8 +154,6 @@ class item
 		if (r.ec != std::errc())
 			throw std::runtime_error("Could not format number");
 
-		assert(r.ptr >= buffer and r.ptr < buffer + sizeof(buffer));
-		*r.ptr = 0;
 		m_value.assign(buffer, r.ptr - buffer);
 	}
 
@@ -174,9 +168,18 @@ class item
 
 	/// \brief constructor for an item with name \a name and as
 	/// content value \a value
-	item(const std::string_view name, const std::string_view value)
+	item(const std::string_view name, std::string_view value)
 		: m_name(name)
 		, m_value(value)
+	{
+	}
+
+	/// \brief constructor for an item with name \a name and as
+	/// content value \a value
+	template<typename T, std::enable_if_t<std::is_same_v<T, std::string>, int> = 0>
+	item(const std::string_view name, T &&value)
+		: m_name(name)
+		, m_value(std::move(value))
 	{
 	}
 
@@ -219,7 +222,8 @@ class item
 	/** @endcond */
 
 	std::string_view name() const { return m_name; }   ///< Return the name of the item
-	std::string_view value() const { return m_value; } ///< Return the value of the item
+	std::string_view value() const & { return m_value; } ///< Return the value of the item
+	std::string value() const && { return std::move(m_value); } ///< Return the value of the item
 
 	/// \brief replace the content of the stored value with \a v
 	void value(std::string_view v) { m_value = v; }
@@ -227,10 +231,10 @@ class item
 	/// \brief empty means either null or unknown
 	bool empty() const { return m_value.empty(); }
 
-	/// \brief returns true if the field contains '.'
+	/// \brief returns true if the item contains '.'
 	bool is_null() const { return m_value == "."; }
 
-	/// \brief returns true if the field contains '?'
+	/// \brief returns true if the item contains '?'
 	bool is_unknown() const { return m_value == "?"; }
 
 	/// \brief the length of the value string
@@ -363,8 +367,35 @@ struct item_handle
 	template <typename T>
 	item_handle &operator=(const T &value)
 	{
-		item v{ "", value };
-		assign_value(v);
+		assign_value(item{ "", value }.value());
+		return *this;
+	}
+
+	/**
+	 * @brief Assign value @a value to the item referenced
+	 *
+	 * @tparam T Type of the value
+	 * @param value The value
+	 * @return reference to this item_handle
+	 */
+	template <typename T>
+	item_handle &operator=(T &&value)
+	{
+		assign_value(item{ "", std::move(value) }.value());
+		return *this;
+	}
+
+	/**
+	 * @brief Assign value @a value to the item referenced
+	 *
+	 * @tparam T Type of the value
+	 * @param value The value
+	 * @return reference to this item_handle
+	 */
+	template <size_t N>
+	item_handle &operator=(const char (&value)[N])
+	{
+		assign_value(item{ "", std::move(value) }.value());
 		return *this;
 	}
 
@@ -464,14 +495,14 @@ struct item_handle
 	/** Easy way to test for an empty item */
 	explicit operator bool() const { return not empty(); }
 
-	/// is_null return true if the field contains '.'
+	/// is_null return true if the item contains '.'
 	bool is_null() const
 	{
 		auto txt = text();
 		return txt.length() == 1 and txt.front() == '.';
 	}
 
-	/// is_unknown returns true if the field contains '?'
+	/// is_unknown returns true if the item contains '?'
 	bool is_unknown() const
 	{
 		auto txt = text();
@@ -484,11 +515,11 @@ struct item_handle
 	/**
 	 * @brief Construct a new item handle object
 	 *
-	 * @param column Column index
+	 * @param item Item index
 	 * @param row Reference to the row
 	 */
-	item_handle(uint16_t column, row_handle &row)
-		: m_column(column)
+	item_handle(uint16_t item, row_handle &row)
+		: m_item_ix(item)
 		, m_row_handle(row)
 	{
 	}
@@ -505,10 +536,10 @@ struct item_handle
   private:
 	item_handle();
 
-	uint16_t m_column;
+	uint16_t m_item_ix;
 	row_handle &m_row_handle;
 
-	void assign_value(const item &value);
+	void assign_value(std::string_view value);
 };
 
 // So sad that older gcc implementations of from_chars did not support floats yet...
@@ -556,7 +587,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 
 		auto txt = ref.text();
 
-		if (txt.empty())
+		if (ref.empty())
 			result = 1;
 		else
 		{

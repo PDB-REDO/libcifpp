@@ -39,17 +39,17 @@
  * query you can use to find rows in a @ref cif::category
  *
  * Conditions are created as standard C++ expressions. That means
- * you can use the standard comparison operators to compare field
+ * you can use the standard comparison operators to compare item
  * contents with a value and boolean operators to chain everything
  * together.
  *
- * To create a query that simply compares one field with one value:
+ * To create a query that simply compares one item with one value:
  *
  * @code {.cpp}
  * cif::condition c = cif::key("id") == 1;
  * @endcode
  * 
- * That will find rows where the ID field contains the number 1. If
+ * That will find rows where the ID item contains the number 1. If
  * using cif::key is a bit too much typing, you can also write:
  * 
  * @code{.cpp}
@@ -64,7 +64,7 @@
  * auto c3 = "id"_key == 1 or "id"_key == 2;
  * @endcode
  * 
- * There are some special values you can use. To find rows with field that
+ * There are some special values you can use. To find rows with item that
  * do not have a value:
  * 
  * @code{.cpp}
@@ -83,7 +83,7 @@
  * auto c6 = cif::all;
  * @endcode
  * 
- * And when you want to search for any column containing the value 'foo':
+ * And when you want to search for any item containing the value 'foo':
  * 
  * @code{.cpp}
  * auto c7 = cif::any == "foo";
@@ -104,31 +104,40 @@ namespace cif
 /// we declare a function to access its contents
 
 /**
- * @brief Get the fields that can be used as key in conditions for a category
+ * @brief Get the items that can be used as key in conditions for a category
  * 
- * @param cat The category whose fields to return
- * @return iset The set of key field names
+ * @param cat The category whose items to return
+ * @return iset The set of key item names
  */
+[[deprecated("use get_category_items instead")]]
 iset get_category_fields(const category &cat);
 
 /**
- * @brief Get the column index for column @a col in category @a cat
+ * @brief Get the items that can be used as key in conditions for a category
  * 
- * @param cat The category
- * @param col The name of the column
- * @return uint16_t The index
+ * @param cat The category whose items to return
+ * @return iset The set of key field names
  */
-uint16_t get_column_ix(const category &cat, std::string_view col);
+iset get_category_items(const category &cat);
 
 /**
- * @brief Return whether the column @a col in category @a cat has a primitive type of *uchar*
+ * @brief Get the item index for item @a col in category @a cat
  * 
  * @param cat The category
- * @param col The column name
+ * @param col The name of the item
+ * @return uint16_t The index
+ */
+uint16_t get_item_ix(const category &cat, std::string_view col);
+
+/**
+ * @brief Return whether the item @a col in category @a cat has a primitive type of *uchar*
+ * 
+ * @param cat The category
+ * @param col The item name
  * @return true If the primitive type is of type *uchar*
  * @return false If the primitive type is not of type *uchar*
  */
-bool is_column_type_uchar(const category &cat, std::string_view col);
+bool is_item_type_uchar(const category &cat, std::string_view col);
 
 // --------------------------------------------------------------------
 // some more templates to be able to do querying
@@ -219,7 +228,7 @@ class condition
 
 	/**
 	 * @brief Prepare the condition to be used on category @a c. This will
-	 * take care of setting the correct indices for fields e.g.
+	 * take care of setting the correct indices for items e.g.
 	 * 
 	 * @param c The category this query should act upon
 	 */
@@ -305,14 +314,14 @@ namespace detail
 {
 	struct key_is_empty_condition_impl : public condition_impl
 	{
-		key_is_empty_condition_impl(const std::string &item_tag)
-			: m_item_tag(item_tag)
+		key_is_empty_condition_impl(const std::string &item_name)
+			: m_item_name(item_name)
 		{
 		}
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
 			return this;
 		}
 
@@ -323,23 +332,23 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << " IS NULL";
+			os << m_item_name << " IS NULL";
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 	};
 
 	struct key_is_not_empty_condition_impl : public condition_impl
 	{
-		key_is_not_empty_condition_impl(const std::string &item_tag)
-			: m_item_tag(item_tag)
+		key_is_not_empty_condition_impl(const std::string &item_name)
+			: m_item_name(item_name)
 		{
 		}
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
 			return this;
 		}
 
@@ -350,18 +359,18 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << " IS NOT NULL";
+			os << m_item_name << " IS NOT NULL";
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 	};
 
 	struct key_equals_condition_impl : public condition_impl
 	{
 		key_equals_condition_impl(item &&i)
-			: m_item_tag(i.name())
-			, m_value(i.value())
+			: m_item_name(i.name())
+			, m_value(std::forward<item>(i).value())
 		{
 		}
 
@@ -374,7 +383,7 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value;
+			os << m_item_name << (m_icase ? "^ " : " ") << " == " << m_value;
 		}
 
 		virtual std::optional<row_handle> single() const override
@@ -390,13 +399,13 @@ namespace detail
 				if (m_single_hit.has_value() or ri->m_single_hit.has_value())
 					return m_single_hit == ri->m_single_hit;
 				else
-					// watch out, both m_item_ix might be the same while tags might be diffent (in case they both do not exist in the category)
-					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_tag == ri->m_item_tag;
+					// watch out, both m_item_ix might be the same while item_names might be diffent (in case they both do not exist in the category)
+					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_name == ri->m_item_name;
 			}
 			return this == rhs;
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 		bool m_icase = false;
 		std::string m_value;
@@ -406,7 +415,7 @@ namespace detail
 	struct key_equals_or_empty_condition_impl : public condition_impl
 	{
 		key_equals_or_empty_condition_impl(key_equals_condition_impl *equals)
-			: m_item_tag(equals->m_item_tag)
+			: m_item_name(equals->m_item_name)
 			, m_value(equals->m_value)
 			, m_icase(equals->m_icase)
 			, m_single_hit(equals->m_single_hit)
@@ -415,8 +424,8 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
-			m_icase = is_column_type_uchar(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
+			m_icase = is_item_type_uchar(c, m_item_name);
 			return this;
 		}
 
@@ -432,7 +441,7 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << '(' << m_item_tag << (m_icase ? "^ " : " ") << " == " << m_value << " OR " << m_item_tag << " IS NULL)";
+			os << '(' << m_item_name << (m_icase ? "^ " : " ") << " == " << m_value << " OR " << m_item_name << " IS NULL)";
 		}
 
 		virtual std::optional<row_handle> single() const override
@@ -448,13 +457,13 @@ namespace detail
 				if (m_single_hit.has_value() or ri->m_single_hit.has_value())
 					return m_single_hit == ri->m_single_hit;
 				else
-					// watch out, both m_item_ix might be the same while tags might be diffent (in case they both do not exist in the category)
-					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_tag == ri->m_item_tag;
+					// watch out, both m_item_ix might be the same while item_names might be diffent (in case they both do not exist in the category)
+					return m_item_ix == ri->m_item_ix and m_value == ri->m_value and m_item_name == ri->m_item_name;
 			}
 			return this == rhs;
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 		std::string m_value;
 		bool m_icase = false;
@@ -464,8 +473,8 @@ namespace detail
 	struct key_compare_condition_impl : public condition_impl
 	{
 		template <typename COMP>
-		key_compare_condition_impl(const std::string &item_tag, COMP &&comp, const std::string &s)
-			: m_item_tag(item_tag)
+		key_compare_condition_impl(const std::string &item_name, COMP &&comp, const std::string &s)
+			: m_item_name(item_name)
 			, m_compare(std::move(comp))
 			, m_str(s)
 		{
@@ -473,8 +482,8 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
-			m_icase = is_column_type_uchar(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
+			m_icase = is_item_type_uchar(c, m_item_name);
 			return this;
 		}
 
@@ -485,10 +494,10 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << (m_icase ? "^ " : " ") << m_str;
+			os << m_item_name << (m_icase ? "^ " : " ") << m_str;
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 		bool m_icase = false;
 		std::function<bool(row_handle, bool)> m_compare;
@@ -497,8 +506,8 @@ namespace detail
 
 	struct key_matches_condition_impl : public condition_impl
 	{
-		key_matches_condition_impl(const std::string &item_tag, const std::regex &rx)
-			: m_item_tag(item_tag)
+		key_matches_condition_impl(const std::string &item_name, const std::regex &rx)
+			: m_item_name(item_name)
 			, m_item_ix(0)
 			, mRx(rx)
 		{
@@ -506,7 +515,7 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_column_ix(c, m_item_tag);
+			m_item_ix = get_item_ix(c, m_item_name);
 			return this;
 		}
 
@@ -518,10 +527,10 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_tag << " =~ expression";
+			os << m_item_name << " =~ expression";
 		}
 
-		std::string m_item_tag;
+		std::string m_item_name;
 		uint16_t m_item_ix;
 		std::regex mRx;
 	};
@@ -541,7 +550,7 @@ namespace detail
 			auto &c = r.get_category();
 
 			bool result = false;
-			for (auto &f : get_category_fields(c))
+			for (auto &f : get_category_items(c))
 			{
 				try
 				{
@@ -579,7 +588,7 @@ namespace detail
 			auto &c = r.get_category();
 
 			bool result = false;
-			for (auto &f : get_category_fields(c))
+			for (auto &f : get_category_items(c))
 			{
 				try
 				{
@@ -864,7 +873,7 @@ inline condition operator or(condition &&a, condition &&b)
 			auto ci = static_cast<detail::key_equals_condition_impl *>(a.m_impl);
 			auto ce = static_cast<detail::key_is_empty_condition_impl *>(b.m_impl);
 
-			if (ci->m_item_tag == ce->m_item_tag)
+			if (ci->m_item_name == ce->m_item_name)
 				return condition(new detail::key_equals_or_empty_condition_impl(ci));
 		}
 		else if (typeid(*b.m_impl) == typeid(detail::key_equals_condition_impl) and
@@ -873,7 +882,7 @@ inline condition operator or(condition &&a, condition &&b)
 			auto ci = static_cast<detail::key_equals_condition_impl *>(b.m_impl);
 			auto ce = static_cast<detail::key_is_empty_condition_impl *>(a.m_impl);
 
-			if (ci->m_item_tag == ce->m_item_tag)
+			if (ci->m_item_name == ce->m_item_name)
 				return condition(new detail::key_equals_or_empty_condition_impl(ci));
 		}
 
@@ -887,7 +896,7 @@ inline condition operator or(condition &&a, condition &&b)
 }
 
 /**
- * @brief A helper class to make it possible to search for empty fields (NULL)
+ * @brief A helper class to make it possible to search for empty items (NULL)
  * 
  * @code{.cpp}
  * "id"_key == cif::empty_type();
@@ -909,35 +918,45 @@ struct empty_type
 inline constexpr empty_type null = empty_type();
 
 /**
- * @brief Class to use in creating conditions, creates a reference to a field or column
+ * @brief Class to use in creating conditions, creates a reference to a item or item
  * 
  */
 struct key
 {
 	/**
-	 * @brief Construct a new key object using @a itemTag as name
+	 * @brief Construct a new key object using @a item_name as name
 	 * 
-	 * @param itemTag 
+	 * @param item_name 
 	 */
-	explicit key(const std::string &itemTag)
-		: m_item_tag(itemTag)
+	explicit key(const std::string &item_name)
+		: m_item_name(item_name)
 	{
 	}
 
 	/**
-	 * @brief Construct a new key object using @a itemTag as name
+	 * @brief Construct a new key object using @a item_name as name
 	 * 
-	 * @param itemTag 
+	 * @param item_name 
 	 */
-	explicit key(const char *itemTag)
-		: m_item_tag(itemTag)
+	explicit key(const char *item_name)
+		: m_item_name(item_name)
+	{
+	}
+
+	/**
+	 * @brief Construct a new key object using @a item_name as name
+	 * 
+	 * @param item_name 
+	 */
+	explicit key(std::string_view item_name)
+		: m_item_name(item_name)
 	{
 	}
 
 	key(const key &) = delete;
 	key &operator=(const key &) = delete;
 
-	std::string m_item_tag; ///< The column name
+	std::string m_item_name; ///< The item name
 };
 
 /**
@@ -946,7 +965,7 @@ struct key
 template <typename T>
 condition operator==(const key &key, const T &v)
 {
-	return condition(new detail::key_equals_condition_impl({ key.m_item_tag, v }));
+	return condition(new detail::key_equals_condition_impl({ key.m_item_name, v }));
 }
 
 /**
@@ -955,9 +974,9 @@ condition operator==(const key &key, const T &v)
 inline condition operator==(const key &key, std::string_view value)
 {
 	if (not value.empty())
-		return condition(new detail::key_equals_condition_impl({ key.m_item_tag, value }));
+		return condition(new detail::key_equals_condition_impl({ key.m_item_name, value }));
 	else
-		return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
+		return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
 /**
@@ -987,8 +1006,8 @@ condition operator>(const key &key, const T &v)
 	s << " > " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) > 0; },
+		key.m_item_name, [item_name = key.m_item_name, v](row_handle r, bool icase)
+		{ return r[item_name].template compare<T>(v, icase) > 0; },
 		s.str()));
 }
 
@@ -1002,8 +1021,8 @@ condition operator>=(const key &key, const T &v)
 	s << " >= " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) >= 0; },
+		key.m_item_name, [item_name = key.m_item_name, v](row_handle r, bool icase)
+		{ return r[item_name].template compare<T>(v, icase) >= 0; },
 		s.str()));
 }
 
@@ -1017,8 +1036,8 @@ condition operator<(const key &key, const T &v)
 	s << " < " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) < 0; },
+		key.m_item_name, [item_name = key.m_item_name, v](row_handle r, bool icase)
+		{ return r[item_name].template compare<T>(v, icase) < 0; },
 		s.str()));
 }
 
@@ -1032,8 +1051,8 @@ condition operator<=(const key &key, const T &v)
 	s << " <= " << v;
 
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_tag, [tag = key.m_item_tag, v](row_handle r, bool icase)
-		{ return r[tag].template compare<T>(v, icase) <= 0; },
+		key.m_item_name, [item_name = key.m_item_name, v](row_handle r, bool icase)
+		{ return r[item_name].template compare<T>(v, icase) <= 0; },
 		s.str()));
 }
 
@@ -1042,7 +1061,7 @@ condition operator<=(const key &key, const T &v)
  */
 inline condition operator==(const key &key, const std::regex &rx)
 {
-	return condition(new detail::key_matches_condition_impl(key.m_item_tag, rx));
+	return condition(new detail::key_matches_condition_impl(key.m_item_name, rx));
 }
 
 /**
@@ -1050,7 +1069,7 @@ inline condition operator==(const key &key, const std::regex &rx)
  */
 inline condition operator==(const key &key, const empty_type &)
 {
-	return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
+	return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
 /**
@@ -1058,20 +1077,20 @@ inline condition operator==(const key &key, const empty_type &)
  */
 inline condition operator!=(const key &key, const empty_type &)
 {
-	return condition(new detail::key_is_not_empty_condition_impl(key.m_item_tag));
+	return condition(new detail::key_is_not_empty_condition_impl(key.m_item_name));
 }
 
 /**
- * @brief Create a condition to search any column for a value @a v if @a v contains a value
+ * @brief Create a condition to search any item for a value @a v if @a v contains a value
  * compare to null if not.
  */
 template <typename T>
 condition operator==(const key &key, const std::optional<T> &v)
 {
 	if (v.has_value())
-		return condition(new detail::key_equals_condition_impl({ key.m_item_tag, *v }));
+		return condition(new detail::key_equals_condition_impl({ key.m_item_name, *v }));
 	else
-		return condition(new detail::key_is_empty_condition_impl(key.m_item_tag));
+		return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
 /**
@@ -1089,12 +1108,12 @@ struct any_type
 /** @endcond */
 
 /**
- * @brief A helper for any field constructs
+ * @brief A helper for any item constructs
  */
 inline constexpr any_type any = any_type{};
 
 /**
- * @brief Create a condition to search any column for a value @a v
+ * @brief Create a condition to search any item for a value @a v
  */
 template <typename T>
 condition operator==(const any_type &, const T &v)
@@ -1103,7 +1122,7 @@ condition operator==(const any_type &, const T &v)
 }
 
 /**
- * @brief Create a condition to search any column for a regular expression @a rx
+ * @brief Create a condition to search any item for a regular expression @a rx
  */
 inline condition operator==(const any_type &, const std::regex &rx)
 {
@@ -1121,9 +1140,9 @@ inline condition all()
 namespace literals
 {
 	/**
-	 * @brief Return a cif::key for the column name @a text
+	 * @brief Return a cif::key for the item name @a text
 	 * 
-	 * @param text The name of the column
+	 * @param text The name of the item
 	 * @param length The length of @a text
 	 * @return key The cif::key created
 	 */

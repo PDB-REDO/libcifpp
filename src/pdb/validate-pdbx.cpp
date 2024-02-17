@@ -69,26 +69,65 @@ condition get_parents_condition(const validator &validator, row_handle rh, const
 
 bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 {
-	using namespace cif::literals;
+	std::error_code ec;
+	bool result = is_valid_pdbx_file(file, dictionary, ec);
+	return result and ec == std::errc();
+}
 
-	auto &cf = cif::compound_factory::instance();
-	auto &validator = cif::validator_factory::instance().operator[](dictionary);
+bool is_valid_pdbx_file(const file &file, std::error_code &ec)
+{
+	bool result = false;
+
+	if (file.empty())
+		ec = make_error_code(validation_error::empty_file);
+	else
+	{
+		std::string dictionary = "mmcif_pdbx";
+
+		for (auto &db : file)
+		{
+			auto audit_conform = db.get("audit_conform");
+			if (audit_conform == nullptr)
+				continue;
+			
+			if (not audit_conform->empty())
+			{
+				auto specified_dict = audit_conform->front()["dict_name"];
+				if (not specified_dict.empty())
+					dictionary = specified_dict.as<std::string>();
+			}
+
+			break;
+		}
+
+		result = is_valid_pdbx_file(file, dictionary, ec);
+	}
+	
+	return result;
+}
+
+bool is_valid_pdbx_file(const file &file, std::string_view dictionary, std::error_code &ec)
+{
+	using namespace cif::literals;
 
 	bool result = true;
 
 	try
 	{
+		auto &cf = cif::compound_factory::instance();
+		auto &validator = cif::validator_factory::instance().operator[](dictionary);
+
 		if (file.empty())
-			throw validation_error("Empty file");
+			throw std::runtime_error("Empty file");
 
 		auto &db = file.front();
 
 		if (db.empty())
-			throw validation_error("Empty datablock");
+			throw std::runtime_error("Empty datablock");
 
 		auto &atom_site = db["atom_site"];
 		if (atom_site.empty())
-			throw validation_error("Empty or missing atom_site category");
+			throw std::runtime_error("Empty or missing atom_site category");
 
 		auto &pdbx_poly_seq_scheme = db["pdbx_poly_seq_scheme"];
 
@@ -106,34 +145,38 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 			last_seq_id = *seq_id;
 
 			auto comp_id = r.get<std::string>("label_comp_id");
-			if (not cf.is_known_peptide(comp_id))
+			if (not cf.is_monomer(comp_id))
 				continue;
 
 			auto p = pdbx_poly_seq_scheme.find(get_parents_condition(validator, r, pdbx_poly_seq_scheme));
 			if (p.size() != 1)
-				throw validation_error("For each residue in atom_site that is a residue in a polymer there should be exactly one pdbx_poly_seq_scheme record");
+			{
+				if (cif::VERBOSE > 0)
+					std::clog << "In atom_site record: " << r["id"].text() << '\n';
+				throw std::runtime_error("For each monomer in atom_site there should be exactly one pdbx_poly_seq_scheme record");
+			}
 		}
 
 		auto &entity = db["entity"];
 		if (entity.empty())
-			throw validation_error("Entity category is missing or empty");
+			throw std::runtime_error("Entity category is missing or empty");
 
 		auto &entity_poly = db["entity_poly"];
 		if (entity_poly.empty())
-			throw validation_error("Entity_poly category is missing or empty");
+			throw std::runtime_error("Entity_poly category is missing or empty");
 
 		auto &entity_poly_seq = db["entity_poly_seq"];
 		if (entity_poly_seq.empty())
-			throw validation_error("Entity_poly_seq category is missing or empty");
+			throw std::runtime_error("Entity_poly_seq category is missing or empty");
 
 		auto &struct_asym = db["struct_asym"];
 		if (struct_asym.empty())
-			throw validation_error("struct_asym category is missing or empty");
+			throw std::runtime_error("struct_asym category is missing or empty");
 
 		for (auto entity_id : entity.find<std::string>("type"_key == "polymer", "id"))
 		{
 			if (entity_poly.count("entity_id"_key == entity_id) != 1)
-				throw validation_error("There should be exactly one entity_poly record per polymer entity");
+				throw std::runtime_error("There should be exactly one entity_poly record per polymer entity");
 
 			const auto entity_poly_type = entity_poly.find1<std::string>("entity_id"_key == entity_id, "type");
 
@@ -151,7 +194,7 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 							"seq_id"_key == num and
 							"hetero"_key == hetero) != 1)
 					{
-						throw validation_error("For each entity_poly_seq record there should be exactly one pdbx_poly_seq record");
+						throw std::runtime_error("For each entity_poly_seq record there should be exactly one pdbx_poly_seq record");
 					}
 				}
 			}
@@ -163,11 +206,11 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 						"num"_key == seq_id and
 						"hetero"_key == hetero) != 1)
 				{
-					throw validation_error("For each pdbx_poly_seq/struct_asym record there should be exactly one entity_poly_seq record");
+					throw std::runtime_error("For each pdbx_poly_seq/struct_asym record there should be exactly one entity_poly_seq record");
 				}
 
 				if ((mon_per_seq_id[seq_id].size() > 1) != hetero)
-					throw validation_error("Mismatch between the hetero flag in the poly seq schemes and the number residues per seq_id");
+					throw std::runtime_error("Mismatch between the hetero flag in the poly seq schemes and the number residues per seq_id");
 			}
 
 			for (const auto &[seq_id, mon_ids] : mon_per_seq_id)
@@ -183,8 +226,8 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 						"label_asym_id"_key == asym_id and
 						"label_seq_id"_key == seq_id and not std::move(cond);
 					
-					if (atom_site.exists(std::move(cond)))
-						throw validation_error("An atom_site record exists that has no parent in the poly seq scheme categories");
+					if (atom_site.contains(std::move(cond)))
+						throw std::runtime_error("An atom_site record exists that has no parent in the poly seq scheme categories");
 				}
 			}
 
@@ -205,13 +248,12 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 					for (auto comp_id : comp_ids)
 					{
 						std::string letter;
-						if (cf.is_known_base(comp_id))
-							letter = compound_factory::kBaseMap.at(comp_id);
-						else if (cf.is_known_peptide(comp_id))
-							letter = compound_factory::kAAMap.at(comp_id);
-						else
+
+						if (can)
 						{
-							if (can)
+							if (compound_factory::kBaseMap.contains(comp_id))
+								letter = compound_factory::kBaseMap.at(comp_id);
+							else
 							{
 								auto c = cf.create(comp_id);
 								if (c and c->one_letter_code())
@@ -219,6 +261,13 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 								else
 									letter = "X";
 							}
+						}
+						else
+						{
+							if (compound_factory::kAAMap.contains(comp_id))
+								letter = compound_factory::kAAMap.at(comp_id);
+							else if (comp_id.length() == 1 and compound_factory::kBaseMap.contains(comp_id))
+								letter = compound_factory::kBaseMap.at(comp_id);
 							else
 								letter = '(' + comp_id + ')';
 						}
@@ -250,7 +299,7 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 				seq->erase(std::remove_if(seq->begin(), seq->end(), [](char ch) { return std::isspace(ch); }), seq->end());
 
 				if (not seq_match(false, seq->begin(), seq->end()))
-					throw validation_error("Sequences do not match for entity " + entity_id);
+					throw std::runtime_error("Sequences do not match for entity " + entity_id);
 			}
 
 			if (not seq_can.has_value())
@@ -261,11 +310,10 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 			else
 			{
 				seq_can->erase(std::remove_if(seq_can->begin(), seq_can->end(), [](char ch) { return std::isspace(ch); }), seq_can->end());
-				
+
 				if (not seq_match(true, seq_can->begin(), seq_can->end()))
-					throw validation_error("Canonical sequences do not match for entity " + entity_id);
+					throw std::runtime_error("Canonical sequences do not match for entity " + entity_id);
 			}
-			
 		}
 
 		result = true;
@@ -275,7 +323,11 @@ bool is_valid_pdbx_file(const file &file, std::string_view dictionary)
 		result = false;
 		if (cif::VERBOSE > 0)
 			std::clog << ex.what() << '\n';
+		ec = make_error_code(validation_error::not_valid_pdbx);
 	}
+
+	if (not result and ec == std::errc())
+		ec = make_error_code(validation_error::not_valid_pdbx);
 
 	return result;
 }

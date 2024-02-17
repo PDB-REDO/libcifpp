@@ -107,6 +107,15 @@ class datablock : public std::list<category>
 	bool is_valid() const;
 
 	/**
+	 * @brief Validates the content of this datablock and all its content
+	 * and updates or removes the audit_conform category to match the result.
+	 * 
+	 * @return true If the content is valid
+	 * @return false If the content is not valid
+	 */
+	bool is_valid();
+
+	/**
 	 * @brief Validates all contained data for valid links between parents and children
 	 * as defined in the validator
 	 * 
@@ -169,7 +178,16 @@ class datablock : public std::list<category>
 	/**
 	 * @brief Get the preferred order of the categories when writing them
 	 */
-	std::vector<std::string> get_tag_order() const;
+	[[deprecated("use get_item_order instead")]]
+	std::vector<std::string> get_tag_order() const
+	{
+		return get_item_order();
+	}
+
+	/**
+	 * @brief Get the preferred order of the categories when writing them
+	 */
+	std::vector<std::string> get_item_order() const;
 
 	/**
 	 * @brief Write out the contents to @a os
@@ -177,9 +195,9 @@ class datablock : public std::list<category>
 	void write(std::ostream &os) const;
 
 	/**
-	 * @brief Write out the contents to @a os using the order defined in @a tag_order
+	 * @brief Write out the contents to @a os using the order defined in @a item_name_order
 	 */
-	void write(std::ostream &os, const std::vector<std::string> &tag_order);
+	void write(std::ostream &os, const std::vector<std::string> &item_name_order);
 
 	/**
 	 * @brief Friend operator<< to write datablock @a db to std::ostream @a os

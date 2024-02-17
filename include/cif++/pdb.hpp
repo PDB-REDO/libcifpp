@@ -28,6 +28,8 @@
 
 #include "cif++/file.hpp"
 
+#include <system_error>
+
 /**
  * @file pdb.hpp
  *
@@ -107,9 +109,10 @@ inline void write(const std::filesystem::path &p, const file &f)
  *
  * \param file The cif::file that hopefully contains some valid data
  * \param dictionary The mmcif dictionary to use
+ * \result Returns true if the resulting file is valid
  */
 
-void reconstruct_pdbx(file &pdbx_file, std::string_view dictionary = "mmcif_pdbx");
+bool reconstruct_pdbx(file &pdbx_file, std::string_view dictionary = "mmcif_pdbx");
 
 /** \brief This is an extension to cif::validator, use the logic in common
  * PDBx files to see if the file is internally consistent.
@@ -119,6 +122,8 @@ void reconstruct_pdbx(file &pdbx_file, std::string_view dictionary = "mmcif_pdbx
  * atom_site -> pdbx_poly_seq_scheme -> entity_poly_seq -> entity_poly -> entity
  *
  * Use the common \ref cif::VERBOSE flag to turn on diagnostic messages.
+ * 
+ * This function throws a std::system_error in case of an error
  *
  * \param file The input file
  * \param dictionary The mmcif dictionary to use
@@ -126,6 +131,43 @@ void reconstruct_pdbx(file &pdbx_file, std::string_view dictionary = "mmcif_pdbx
  */
 
 bool is_valid_pdbx_file(const file &pdbx_file, std::string_view dictionary = "mmcif_pdbx");
+
+/** \brief This is an extension to cif::validator, use the logic in common
+ * PDBx files to see if the file is internally consistent.
+ *
+ * This function for now checks if the following categories are consistent:
+ *
+ * atom_site -> pdbx_poly_seq_scheme -> entity_poly_seq -> entity_poly -> entity
+ *
+ * Use the common \ref cif::VERBOSE flag to turn on diagnostic messages.
+ * 
+ * The dictionary is assumed to be specified in the file or to be the
+ * default mmcif_pdbx.dic dictionary.
+ *
+ * \param file The input file
+ * \param ec The error_code in case something was wrong
+ * \result Returns true if the file was valid and consistent
+ */
+
+bool is_valid_pdbx_file(const file &pdbx_file, std::error_code &ec);
+
+/** \brief This is an extension to cif::validator, use the logic in common
+ * PDBx files to see if the file is internally consistent.
+ *
+ * This function for now checks if the following categories are consistent:
+ *
+ * atom_site -> pdbx_poly_seq_scheme -> entity_poly_seq -> entity_poly -> entity
+ *
+ * Use the common \ref cif::VERBOSE flag to turn on diagnostic messages.
+ * 
+ * \param file The input file
+ * \param dictionary The dictionary to use
+ * \param ec The error_code in case something was wrong
+ * \result Returns true if the file was valid and consistent
+ */
+
+bool is_valid_pdbx_file(const file &pdbx_file, std::string_view dictionary,
+	std::error_code &ec);
 
 // --------------------------------------------------------------------
 // Other I/O related routines

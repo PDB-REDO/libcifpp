@@ -26,8 +26,6 @@
 
 #include "test-main.hpp"
 
-#include <catch2/catch.hpp>
-
 #include <cif++.hpp>
 
 #include "cif++/dictionary_parser.hpp"
@@ -568,7 +566,7 @@ _test.value
 	auto &test = db["test"];
 	REQUIRE(test.size() == 5);
 
-	REQUIRE(test.exists("value"_key == cif::null));
+	REQUIRE(test.contains("value"_key == cif::null));
 	REQUIRE(test.find("value"_key == cif::null).size() == 2);
 }
 
@@ -746,27 +744,51 @@ _cat_2.desc
 	std::istream is_data(&data_buffer);
 	f.load(is_data);
 
-	auto &cat1 = f.front()["cat_1"];
-	auto &cat2 = f.front()["cat_2"];
+	SECTION("one")
+	{
+		auto &cat1 = f.front()["cat_1"];
+		auto &cat2 = f.front()["cat_2"];
 
-	REQUIRE(cat1.size() == 3);
-	REQUIRE(cat2.size() == 3);
+		REQUIRE(cat1.size() == 3);
+		REQUIRE(cat2.size() == 3);
 
-	cat1.erase(cif::key("id") == 1);
+		cat1.erase(cif::key("id") == 1);
 
-	REQUIRE(cat1.size() == 2);
-	REQUIRE(cat2.size() == 1);
+		REQUIRE(cat1.size() == 2);
+		REQUIRE(cat2.size() == 1);
 
-	// REQUIRE_THROWS_AS(cat2.emplace({
-	//     { "id", 4 },
-	//     { "parent_id", 4 },
-	//     { "desc", "moet fout gaan" }
-	// }), std::exception);
+		// REQUIRE_THROWS_AS(cat2.emplace({
+		//     { "id", 4 },
+		//     { "parent_id", 4 },
+		//     { "desc", "moet fout gaan" }
+		// }), std::exception);
 
-	REQUIRE_THROWS_AS(cat2.emplace({ { "id", "vijf" }, // <- invalid value
-						  { "parent_id", 2 },
-						  { "desc", "moet fout gaan" } }),
-		std::exception);
+		REQUIRE_THROWS_AS(cat2.emplace({ { "id", "vijf" }, // <- invalid value
+							{ "parent_id", 2 },
+							{ "desc", "moet fout gaan" } }),
+			std::exception);
+	}
+
+	// SECTION("two")
+	// {
+	// 	auto &cat1 = f.front()["cat_1"];
+	// 	auto &cat2 = f.front()["cat_2"];
+
+	// 	cat1.update_value(cif::all(), "id", [](std::string_view v) -> std::string
+	// 	{
+	// 		int vi;
+	// 		auto [ec, ptr] = std::from_chars(v.data(), v.data() + v.length(), vi);
+	// 		return std::to_string(vi + 1);
+	// 	});
+
+	// 	REQUIRE(cat1.find1<std::string>(cif::key("id") == 2, "name") == "Aap");
+	// 	REQUIRE(cat1.find1<std::string>(cif::key("id") == 3, "name") == "Noot");
+	// 	REQUIRE(cat1.find1<std::string>(cif::key("id") == 4, "name") == "Mies");
+
+	// 	REQUIRE(cat2.find1<int>(cif::key("id") == 1, "parent_id") == 2);
+	// 	REQUIRE(cat2.find1<int>(cif::key("id") == 2, "parent_id") == 2);
+	// 	REQUIRE(cat2.find1<int>(cif::key("id") == 3, "parent_id") == 3);
+	// }
 }
 
 // --------------------------------------------------------------------
@@ -3486,4 +3508,11 @@ TEST_CASE("pdb2cif_formula_weight")
 
 	fw = a.front()["entity"].find1<float>(cif::key("id") == 3, "formula_weight");
 	CHECK(fw == 18.015f);
+}
+
+// --------------------------------------------------------------------
+
+TEST_CASE("update_values_with_provider")
+{
+
 }

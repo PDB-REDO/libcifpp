@@ -24,7 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <catch2/catch.hpp>
+
+#include "test-main.hpp"
 
 #include <stdexcept>
 

@@ -311,6 +311,18 @@ float compound::bond_length(const std::string &atomId_1, const std::string &atom
 }
 
 // --------------------------------------------------------------------
+
+bool compound::is_peptide() const
+{
+	return iequals(m_type, "l-peptide linking")	or iequals(m_type, "peptide linking");
+}
+
+bool compound::is_base() const
+{
+	return iequals(m_type, "dna linking")	or iequals(m_type, "rna linking");
+}
+
+// --------------------------------------------------------------------
 // known amino acids and bases
 
 const std::map<std::string, char> compound_factory::kAAMap{
@@ -660,25 +672,67 @@ void compound_factory::pop_dictionary()
 		m_impl = m_impl->next();
 }
 
-const compound *compound_factory::create(std::string id)
+const compound *compound_factory::create(std::string_view id)
 {
-	auto result = m_impl ? m_impl->get(id) : nullptr;
+	auto result = m_impl ? m_impl->get(std::string{ id }) : nullptr;
 	if (not result)
 		report_missing_compound(id);
 	return result;
 }
 
-bool compound_factory::is_known_peptide(const std::string &resName) const
+bool compound_factory::is_known_peptide(const std::string &res_name) const
 {
-	return kAAMap.count(resName) > 0;
+	return kAAMap.count(res_name) > 0;
 }
 
-bool compound_factory::is_known_base(const std::string &resName) const
+bool compound_factory::is_known_base(const std::string &res_name) const
 {
-	return kBaseMap.count(resName) > 0;
+	return kBaseMap.count(res_name) > 0;
 }
 
-void compound_factory::report_missing_compound(const std::string &compound_id)
+/// Return whether @a res_name is a peptide
+bool compound_factory::is_peptide(std::string_view res_name) const
+{
+	bool result = is_std_peptide(res_name);
+	if (not result and m_impl)
+	{
+		auto compound = const_cast<compound_factory&>(*this).create(res_name);
+		result = compound != nullptr and compound->is_peptide();
+	}
+	return result;
+}
+
+/// Return whether @a res_name is a base
+bool compound_factory::is_base(std::string_view res_name) const
+{
+	bool result = is_std_base(res_name);
+	if (not result and m_impl)
+	{
+		auto compound = const_cast<compound_factory&>(*this).create(res_name);
+		result = compound != nullptr and compound->is_base();
+	}
+	return result;
+}
+
+/// Return whether @a res_name is one of the standard peptides
+bool compound_factory::is_std_peptide(std::string_view res_name) const
+{
+	return kAAMap.count(std::string{ res_name }) > 0;
+}
+
+/// Return whether @a res_name is one of the standard bases
+bool compound_factory::is_std_base(std::string_view res_name) const
+{
+	return kBaseMap.count(std::string{ res_name }) > 0;
+}
+
+/// Return whether @a res_name is a monomer (either base or peptide)
+bool compound_factory::is_monomer(std::string_view res_name) const
+{
+	return is_peptide(res_name) or is_base(res_name);
+}
+
+void compound_factory::report_missing_compound(std::string_view compound_id)
 {
 	static bool s_reported = false;
 	if (std::exchange(s_reported, true) == false)
@@ -703,8 +757,8 @@ void compound_factory::report_missing_compound(const std::string &compound_id)
 				  << "update=true\n\n"
 				  << "If you do not have a working cron script, you can manually update the files\n"
 				  << "in /var/cache/libcifpp using the following commands:\n\n"
-				  << "curl -o " << CACHE_DIR << "/components.cif https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz\n"
-				  << "curl -o " << CACHE_DIR << "/mmcif_pdbx.dic https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz\n"
+				  << "curl -o " << CACHE_DIR << "/components.cif https://files.wwpdb.org/pub/pdb/data/monomers/components.cif\n"
+				  << "curl -o " << CACHE_DIR << "/mmcif_pdbx.dic https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic\n"
 				  << "curl -o " << CACHE_DIR << "/mmcif_ma.dic https://github.com/ihmwg/ModelCIF/raw/master/dist/mmcif_ma.dic\n\n";
 #endif
 
