@@ -1,3 +1,7 @@
+Version 7.0.1
+- Various reconstruction fixes
+- category order in output fixed
+
 Version 7.0.0
 - Renaming many methods and parameters to be more
   consistent with the mmCIF dictionaries.
