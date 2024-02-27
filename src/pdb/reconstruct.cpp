@@ -424,15 +424,13 @@ void checkAtomRecords(datablock &db)
 
 		int seq_id = get_seq_id(k);
 
-		if (row["label_seq_id"].empty())
+		if (row["label_seq_id"].empty() and cf.is_monomer(comp_id))
 			row["label_seq_id"] = std::to_string(seq_id);
 
 		if (row["label_atom_id"].empty())
 			row["label_atom_id"] = row["auth_atom_id"].text();
 		if (row["label_asym_id"].empty())
 			row["label_asym_id"] = row["auth_asym_id"].text();
-		if (row["label_seq_id"].empty())
-			row["label_seq_id"] = row["auth_seq_id"].text();
 		if (row["label_comp_id"].empty())
 			row["label_comp_id"] = row["auth_comp_id"].text();
 		if (row["label_atom_id"].empty())
