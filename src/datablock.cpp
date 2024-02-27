@@ -350,9 +350,6 @@ void datablock::write(std::ostream &os, const std::vector<std::string> &item_nam
 
 	for (auto &c : cat_order)
 	{
-		if (c == "entry" or c == "audit_conform")
-			continue;
-
 		auto cat = get(c);
 		if (cat == nullptr)
 			continue;
