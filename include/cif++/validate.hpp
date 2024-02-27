@@ -120,7 +120,7 @@ class validation_category_impl : public std::error_category
 			case validation_error::missing_key_items:
 				return "An index could not be constructed due to missing key items";
 			case validation_error::item_not_allowed_in_category:
-				return "Requested item allowed in category according to dictionary";
+				return "Requested item not allowed in category according to dictionary";
 			case validation_error::empty_file:
 				return "The file contains no datablocks";
 			case validation_error::empty_datablock:
