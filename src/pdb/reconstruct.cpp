@@ -386,12 +386,16 @@ void checkAtomRecords(datablock &db)
 
 		auto chem_comp_entry = chem_comp.find_first("id"_key == comp_id);
 
+		std::optional<bool> non_std;
+		if  (cf.is_monomer(comp_id))
+			non_std = cf.is_std_monomer(comp_id);
+
 		if (not chem_comp_entry)
 		{
 			chem_comp.emplace({ //
 				{ "id", comp_id },
 				{ "type", compound->type() },
-				{ "mon_nstd_flag", cf.is_std_monomer(comp_id) ? "y" : "n" },
+				{ "mon_nstd_flag", non_std },
 				{ "name", compound->name() },
 				{ "formula", compound->formula() },
 				{ "formula_weight", compound->formula_weight() } });
@@ -402,8 +406,8 @@ void checkAtomRecords(datablock &db)
 
 			if (not chem_comp_entry["type"])
 				items.emplace_back(item{ "type", compound->type() });
-			if (not chem_comp_entry["mon_nstd_flag"])
-				items.emplace_back(item{ "mon_nstd_flag", cf.is_std_monomer(comp_id) ? "y" : "n" });
+			if (not chem_comp_entry["mon_nstd_flag"] and non_std.has_value())
+				items.emplace_back(item{ "mon_nstd_flag", non_std });
 			if (not chem_comp_entry["name"])
 				items.emplace_back(item{ "name", compound->name() });
 			if (not chem_comp_entry["formula"])
