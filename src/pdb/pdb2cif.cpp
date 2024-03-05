@@ -6413,11 +6413,11 @@ file read(std::istream &is)
 			{
 				std::throw_with_nested(std::runtime_error("Since the file did not start with a valid PDB HEADER line mmCIF was assumed, but that failed."));
 			}
-
-			// Since we're using the cif::pdb way of reading the file, the data may need
-			// reconstruction
-			reconstruct_pdbx(result);
 		}
+
+		// Since we're using the cif::pdb way of reading the file, the data may need
+		// reconstruction
+		reconstruct_pdbx(result);
 	}
 
 	// Must be a PDB like file, right?

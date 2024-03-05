@@ -521,71 +521,18 @@ category::category(const category &rhs)
 		m_index = new category_index(*this);
 }
 
-category::category(category &&rhs)
-	: m_name(std::move(rhs.m_name))
-	, m_items(std::move(rhs.m_items))
-	, m_validator(rhs.m_validator)
-	, m_cat_validator(rhs.m_cat_validator)
-	, m_parent_links(std::move(rhs.m_parent_links))
-	, m_child_links(std::move(rhs.m_child_links))
-	, m_cascade(rhs.m_cascade)
-	, m_index(rhs.m_index)
-	, m_head(rhs.m_head)
-	, m_tail(rhs.m_tail)
+void swap(category &a, category &b) noexcept
 {
-	rhs.m_head = nullptr;
-	rhs.m_tail = nullptr;
-	rhs.m_index = nullptr;
-}
-
-category &category::operator=(const category &rhs)
-{
-	if (this != &rhs)
-	{
-		if (not empty())
-			clear();
-
-		m_name = rhs.m_name;
-		m_items = rhs.m_items;
-		m_cascade = rhs.m_cascade;
-
-		m_validator = nullptr;
-		m_cat_validator = nullptr;
-
-		delete m_index;
-		m_index = nullptr;
-
-		for (auto r = rhs.m_head; r != nullptr; r = r->m_next)
-			insert_impl(cend(), clone_row(*r));
-
-		m_validator = rhs.m_validator;
-		m_cat_validator = rhs.m_cat_validator;
-
-		if (m_cat_validator != nullptr and m_index == nullptr)
-			m_index = new category_index(*this);
-	}
-
-	return *this;
-}
-
-category &category::operator=(category &&rhs)
-{
-	if (this != &rhs)
-	{
-		m_name = std::move(rhs.m_name);
-		m_items = std::move(rhs.m_items);
-		m_cascade = rhs.m_cascade;
-		m_validator = rhs.m_validator;
-		m_cat_validator = rhs.m_cat_validator;
-		m_parent_links = rhs.m_parent_links;
-		m_child_links = rhs.m_child_links;
-
-		std::swap(m_index, rhs.m_index);
-		std::swap(m_head, rhs.m_head);
-		std::swap(m_tail, rhs.m_tail);
-	}
-
-	return *this;
+	std::swap(a.m_name, b.m_name);
+	std::swap(a.m_items, b.m_items);
+	std::swap(a.m_validator, b.m_validator);
+	std::swap(a.m_cat_validator, b.m_cat_validator);
+	std::swap(a.m_parent_links, b.m_parent_links);
+	std::swap(a.m_child_links, b.m_child_links);
+	std::swap(a.m_cascade, b.m_cascade);
+	std::swap(a.m_index, b.m_index);
+	std::swap(a.m_head, b.m_head);
+	std::swap(a.m_tail, b.m_tail);
 }
 
 category::~category()

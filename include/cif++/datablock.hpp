@@ -61,11 +61,25 @@ class datablock : public std::list<category>
 
 	/** @cond */
 	datablock(const datablock &);
-	datablock(datablock &&) = default;
 
-	datablock &operator=(const datablock &);
-	datablock &operator=(datablock &&) = default;
+	datablock(datablock &&db) noexcept
+	{
+		swap_(*this, db);
+	}
+
+	datablock &operator=(datablock db)
+	{
+		swap_(*this, db);
+		return *this;
+	}
 	/** @endcond */
+
+	friend void swap_(datablock &a, datablock &b) noexcept
+	{
+		std::swap(a.m_name, b.m_name);
+		std::swap(a.m_validator, b.m_validator);
+		std::swap(static_cast<std::list<category>&>(a), static_cast<std::list<category>&>(b));
+	}
 
 	// --------------------------------------------------------------------
 

@@ -141,31 +141,39 @@ class category
 
 	/// \endcond
 
-	category() = default;                     ///< Default constructor
-	category(std::string_view name);          ///< Constructor taking a \a name
-	category(const category &rhs);            ///< Copy constructor
-	category(category &&rhs);                 ///< Move constructor
-	category &operator=(const category &rhs); ///< Copy assignement operator
-	category &operator=(category &&rhs);      ///< Move assignement operator
+	category() = default;            ///< Default constructor
+	category(std::string_view name); ///< Constructor taking a \a name
+	category(const category &rhs);   ///< Copy constructor
+
+	category(category &&rhs) noexcept ///< Move constructor
+	{
+		swap(*this, rhs);
+	}
+
+	category &operator=(category rhs) ///< assignement operator
+	{
+		swap(*this, rhs);
+		return *this;
+	}
 
 	/// @brief Destructor
 	/// @note Please note that the destructor is not virtual. It is assumed that
 	/// you will not derive from this class.
 	~category();
 
+	friend void swap(category &a, category &b) noexcept;
+
 	// --------------------------------------------------------------------
 
 	const std::string &name() const { return m_name; } ///< Returns the name of the category
 
-	[[deprecated("use key_items instead")]]
-	iset key_fields() const;                           ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
+	[[deprecated("use key_items instead")]] iset key_fields() const; ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
 
-	iset key_items() const;                           ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
+	iset key_items() const; ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
 
-	[[deprecated("use key_item_indices instead")]]
-	std::set<uint16_t> key_field_indices() const;      ///< Returns a set of indices for the key items.
+	[[deprecated("use key_item_indices instead")]] std::set<uint16_t> key_field_indices() const; ///< Returns a set of indices for the key items.
 
-	std::set<uint16_t> key_item_indices() const;      ///< Returns a set of indices for the key items.
+	std::set<uint16_t> key_item_indices() const; ///< Returns a set of indices for the key items.
 
 	/// @brief Set the validator for this category to @a v
 	/// @param v The category_validator to assign. A nullptr value is allowed.
@@ -1010,7 +1018,8 @@ class category
 
 	void update_value(const std::vector<row_handle> &rows, std::string_view item_name, std::string_view value)
 	{
-		update_value(rows, item_name, [value](std::string_view) { return value; });
+		update_value(rows, item_name, [value](std::string_view)
+			{ return value; });
 	}
 
 	// --------------------------------------------------------------------
@@ -1018,8 +1027,7 @@ class category
 	// the old function names are here as deprecated variants.
 
 	/// \brief Return the index number for \a column_name
-	[[deprecated("Use get_item_ix instead")]]
-	uint16_t get_column_ix(std::string_view column_name) const
+	[[deprecated("Use get_item_ix instead")]] uint16_t get_column_ix(std::string_view column_name) const
 	{
 		return get_item_ix(column_name);
 	}
@@ -1027,8 +1035,7 @@ class category
 	/// @brief Return the name for column with index @a ix
 	/// @param ix The index number
 	/// @return The name of the column
-	[[deprecated("use get_item_name instead")]]
-	std::string_view get_column_name(uint16_t ix) const
+	[[deprecated("use get_item_name instead")]] std::string_view get_column_name(uint16_t ix) const
 	{
 		return get_item_name(ix);
 	}
@@ -1036,8 +1043,7 @@ class category
 	/// @brief Make sure a item with name @a item_name is known and return its index number
 	/// @param item_name The name of the item
 	/// @return The index number of the item
-	[[deprecated("use add_item instead")]]
-	uint16_t add_column(std::string_view item_name)
+	[[deprecated("use add_item instead")]] uint16_t add_column(std::string_view item_name)
 	{
 		return add_item(item_name);
 	}
@@ -1045,15 +1051,13 @@ class category
 	/** @brief Remove column name @a colum_name
 	 * @param column_name The column to be removed
 	 */
-	[[deprecated("use remove_item instead")]]
-	void remove_column(std::string_view column_name)
+	[[deprecated("use remove_item instead")]] void remove_column(std::string_view column_name)
 	{
 		remove_item(column_name);
 	}
 
 	/** @brief Rename column @a from_name to @a to_name */
-	[[deprecated("use rename_item instead")]]
-	void rename_column(std::string_view from_name, std::string_view to_name)
+	[[deprecated("use rename_item instead")]] void rename_column(std::string_view from_name, std::string_view to_name)
 	{
 		rename_item(from_name, to_name);
 	}
@@ -1061,15 +1065,13 @@ class category
 	/// @brief Return whether a column with name @a name exists in this category
 	/// @param name The name of the column
 	/// @return True if the column exists
-	[[deprecated("use has_item instead")]]
-	bool has_column(std::string_view name) const
+	[[deprecated("use has_item instead")]] bool has_column(std::string_view name) const
 	{
 		return has_item(name);
 	}
 
 	/// @brief Return the cif::iset of columns in this category
-	[[deprecated("use get_items instead")]]
-	iset get_columns() const
+	[[deprecated("use get_items instead")]] iset get_columns() const
 	{
 		return get_items();
 	}
@@ -1125,7 +1127,7 @@ class category
 			{
 				item_validator = m_cat_validator->get_validator_for_item(item_name);
 				if (item_validator == nullptr)
-					m_validator->report_error( validation_error::item_not_allowed_in_category, m_name, item_name, false);
+					m_validator->report_error(validation_error::item_not_allowed_in_category, m_name, item_name, false);
 			}
 
 			m_items.emplace_back(item_name, item_validator);
@@ -1169,8 +1171,7 @@ class category
 
 	/// This function returns effectively the list of fully qualified item
 	/// names, that is category_name + '.' + item_name for each item
-	[[deprecated("use get_item_order instead")]]
-	std::vector<std::string> get_tag_order() const
+	[[deprecated("use get_item_order instead")]] std::vector<std::string> get_tag_order() const
 	{
 		return get_item_order();
 	}
