@@ -519,7 +519,7 @@ void checkAtomAnisotropRecords(datablock &db)
 		{
 			if (cif::VERBOSE and std::exchange(warnReplaceTypeSymbol, false))
 				std::clog << "Replacing type_symbol in atom_site_anisotrop record(s)\n";
-			row["type_symbol"] != parent["type_symbol"].text();
+			row["type_symbol"] = parent["type_symbol"].text();
 		}
 
 		if (row["pdbx_auth_alt_id"].empty())
