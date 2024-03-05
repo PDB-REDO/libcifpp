@@ -1659,7 +1659,7 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 			m_index->insert(*this, n);
 
 		// insert at end, most often this is the case
-		if (pos.m_current == nullptr)
+		if (pos.m_current.m_row == nullptr)
 		{
 			if (m_head == nullptr)
 				m_tail = m_head = n;
@@ -1670,7 +1670,7 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 		{
 			assert(m_head != nullptr);
 
-			if (pos.m_current == m_head)
+			if (pos.m_current.m_row == m_head)
 				m_head = n->m_next = m_head;
 			else
 				n = n->m_next = m_head->m_next;

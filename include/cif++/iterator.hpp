@@ -84,11 +84,11 @@ class iterator_impl
 	iterator_impl() = default;
 
 	iterator_impl(const iterator_impl &rhs) = default;
+	iterator_impl(iterator_impl &&rhs) = default;
 
 	template <typename C2, typename... T2s>
 	iterator_impl(const iterator_impl<C2, T2s...> &rhs)
-		: m_category(rhs.m_category)
-		, m_current(rhs.m_current)
+		: m_current(const_cast<row_handle&>(rhs.m_current))
 		, m_value(rhs.m_value)
 		, m_item_ix(rhs.m_item_ix)
 	{
@@ -96,8 +96,7 @@ class iterator_impl
 
 	template <typename IRowType>
 	iterator_impl(iterator_impl<IRowType, Ts...> &rhs)
-		: m_category(rhs.m_category)
-		, m_current(const_cast<row_type *>(rhs.m_current))
+		: m_current(const_cast<row_handle&>(rhs.m_current))
 		, m_value(rhs.m_value)
 		, m_item_ix(rhs.m_item_ix)
 	{
@@ -106,19 +105,17 @@ class iterator_impl
 
 	template <typename IRowType>
 	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<uint16_t, N> &cix)
-		: m_category(rhs.m_category)
-		, m_current(rhs.m_current)
+		: m_current(const_cast<row_handle&>(rhs.m_current))
 		, m_item_ix(cix)
 	{
 		m_value = get(std::make_index_sequence<N>());
 	}
 
-	iterator_impl &operator=(const iterator_impl &i)
+	iterator_impl &operator=(iterator_impl i)
 	{
-		m_category = i.m_category;
-		m_current = i.m_current;
-		m_item_ix = i.m_item_ix;
-		m_value = i.m_value;
+		std::swap(m_current, i.m_current);
+		std::swap(m_item_ix, i.m_item_ix);
+		std::swap(m_value, i.m_value);
 		return *this;
 	}
 
@@ -136,18 +133,18 @@ class iterator_impl
 
 	operator const row_handle() const
 	{
-		return { *m_category, *m_current };
+		return m_current;
 	}
 
 	operator row_handle()
 	{
-		return { *m_category, *m_current };
+		return m_current;
 	}
 
 	iterator_impl &operator++()
 	{
-		if (m_current != nullptr)
-			m_current = m_current->m_next;
+		if (m_current)
+			m_current.m_row = m_current.m_row->m_next;
 
 		m_value = get(std::make_index_sequence<N>());
 
@@ -182,17 +179,10 @@ class iterator_impl
 	template <size_t... Is>
 	tuple_type get(std::index_sequence<Is...>) const
 	{
-		if (m_current != nullptr)
-		{
-			row_handle rh{ *m_category, *m_current };
-			return tuple_type{ rh[m_item_ix[Is]].template as<Ts>()... };
-		}
-
-		return {};
+		return m_current ? tuple_type{ m_current[m_item_ix[Is]].template as<Ts>()... } : tuple_type{};
 	}
 
-	category_type *m_category = nullptr;
-	row_type *m_current = nullptr;
+	row_handle m_current;
 	value_type m_value;
 	std::array<uint16_t, N> m_item_ix;
 };
@@ -219,37 +209,34 @@ class iterator_impl<Category>
 	using iterator_category = std::forward_iterator_tag;
 	using value_type = row_handle;
 	using difference_type = std::ptrdiff_t;
-	using pointer = row_handle;
-	using reference = row_handle;
+	using pointer = value_type *;
+	using reference = value_type &;
 
 	iterator_impl() = default;
 
 	iterator_impl(const iterator_impl &rhs) = default;
+	iterator_impl(iterator_impl &&rhs) = default;
 
 	template <typename C2>
 	iterator_impl(const iterator_impl<C2> &rhs)
-		: m_category(rhs.m_category)
-		, m_current(const_cast<row_type *>(rhs.m_current))
+		: m_current(const_cast<row_handle &>(rhs.m_current))
 	{
 	}
 
 	iterator_impl(Category &cat, row *current)
-		: m_category(const_cast<category_type *>(&cat))
-		, m_current(current)
+		: m_current(cat, *current)
 	{
 	}
 
 	template <typename IRowType>
 	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<uint16_t, 0> &)
-		: m_category(rhs.m_category)
-		, m_current(rhs.m_current)
+		: m_current(const_cast<row_handle &>(rhs.m_current))
 	{
 	}
 
-	iterator_impl &operator=(const iterator_impl &i)
+	iterator_impl &operator=(iterator_impl i)
 	{
-		m_category = i.m_category;
-		m_current = i.m_current;
+		std::swap(m_current, i.m_current);
 		return *this;
 	}
 
@@ -257,7 +244,7 @@ class iterator_impl<Category>
 
 	reference operator*()
 	{
-		return { *m_category, *m_current };
+		return m_current;
 	}
 
 	pointer operator->()
@@ -267,18 +254,18 @@ class iterator_impl<Category>
 
 	operator const row_handle() const
 	{
-		return { *m_category, *m_current };
+		return m_current;
 	}
 
 	operator row_handle()
 	{
-		return { *m_category, *m_current };
+		return m_current;
 	}
 
 	iterator_impl &operator++()
 	{
-		if (m_current != nullptr)
-			m_current = m_current->m_next;
+		if (m_current)
+			m_current.m_row = m_current.m_row->m_next;
 
 		return *this;
 	}
@@ -308,8 +295,7 @@ class iterator_impl<Category>
 	/** @endcond */
 
   private:
-	category_type *m_category = nullptr;
-	row_type *m_current = nullptr;
+	row_handle m_current;
 };
 
 /**
@@ -342,11 +328,11 @@ class iterator_impl<Category, T>
 	iterator_impl() = default;
 
 	iterator_impl(const iterator_impl &rhs) = default;
+	iterator_impl(iterator_impl &&rhs) = default;
 
 	template <typename C2, typename T2>
 	iterator_impl(const iterator_impl<C2, T2> &rhs)
-		: m_category(rhs.m_category)
-		, m_current(rhs.m_current)
+		: m_current(rhs.m_current)
 		, m_value(rhs.m_value)
 		, m_item_ix(rhs.m_item_ix)
 	{
@@ -354,29 +340,26 @@ class iterator_impl<Category, T>
 
 	template <typename IRowType>
 	iterator_impl(iterator_impl<IRowType, T> &rhs)
-		: m_category(rhs.m_category)
-		, m_current(const_cast<row_type *>(rhs.m_current))
+		: m_current(const_cast<row_handle&>(rhs.m_current))
 		, m_value(rhs.m_value)
 		, m_item_ix(rhs.m_item_ix)
 	{
-		m_value = get(m_current);
+		m_value = get();
 	}
 
 	template <typename IRowType>
 	iterator_impl(const iterator_impl<IRowType> &rhs, const std::array<uint16_t, 1> &cix)
-		: m_category(rhs.m_category)
-		, m_current(rhs.m_current)
+		: m_current(const_cast<row_handle&>(rhs.m_current))
 		, m_item_ix(cix[0])
 	{
 		m_value = get();
 	}
 
-	iterator_impl &operator=(const iterator_impl &i)
+	iterator_impl &operator=(iterator_impl i)
 	{
-		m_category = i.m_category;
-		m_current = i.m_current;
-		m_item_ix = i.m_item_ix;
-		m_value = i.m_value;
+		std::swap(m_current, i.m_current);
+		std::swap(m_item_ix, i.m_item_ix);
+		std::swap(m_value, i.m_value);
 		return *this;
 	}
 
@@ -394,18 +377,18 @@ class iterator_impl<Category, T>
 
 	operator const row_handle() const
 	{
-		return { *m_category, *m_current };
+		return m_current;
 	}
 
 	operator row_handle()
 	{
-		return { *m_category, *m_current };
+		return m_current;
 	}
 
 	iterator_impl &operator++()
 	{
-		if (m_current != nullptr)
-			m_current = m_current->m_next;
+		if (m_current)
+			m_current.m_row = m_current.m_row->m_next;
 
 		m_value = get();
 
@@ -439,17 +422,10 @@ class iterator_impl<Category, T>
   private:
 	value_type get() const
 	{
-		if (m_current != nullptr)
-		{
-			row_handle rh{ *m_category, *m_current };
-			return rh[m_item_ix].template as<T>();
-		}
-
-		return {};
+		return m_current ?  m_current[m_item_ix].template as<value_type>() : value_type{};
 	}
 
-	category_type *m_category = nullptr;
-	row_type *m_current = nullptr;
+	row_handle m_current;
 	value_type m_value;
 	uint16_t m_item_ix;
 };
