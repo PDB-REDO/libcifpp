@@ -495,7 +495,7 @@ install(
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 	COMPONENT Devel)
 
-if(CIFPP_DATA_DIR)
+if(CIFPP_DATA_DIR AND CIFPP_DOWNLOAD_CCD)
 	install(
 		FILES ${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
@@ -503,7 +503,7 @@ if(CIFPP_DATA_DIR)
 		DESTINATION ${CIFPP_DATA_DIR})
 endif()
 
-if(CIFPP_CACHE_DIR)
+if(CIFPP_CACHE_DIR AND CIFPP_DOWNLOAD_CCD)
 	install(
 		FILES ${PROJECT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
 		${PROJECT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
