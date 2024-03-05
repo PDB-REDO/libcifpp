@@ -190,22 +190,41 @@ std::string trim_left_copy(std::string_view s)
 
 void trim_left(std::string &s)
 {
-	auto b = s.begin();
-	while (b != s.end())
+	auto in = s.begin(), out = s.begin();
+
+	while (in != s.end() and std::isspace(*in))
+		++in;
+	
+	if (in == s.end())
+		s.clear();
+	else if (in != out)
 	{
-		if (not std::isspace(*b))
-			break;
-
-		b = std::next(b);
+		while (in != s.end())
+			*out++ = *in++;
+		s.erase(out, s.end());
 	}
-
-	s.erase(s.begin(), b);
 }
 
 void trim(std::string &s)
 {
-	trim_right(s);
-	trim_left(s);
+	auto in = s.begin(), out = s.begin(), end = s.end();
+
+	while (end != s.begin() and std::isspace(*(end - 1)))
+		--end;
+
+	while (in != end and std::isspace(*in))
+		++in;
+	
+	if (in == end)
+		s.clear();
+	else if (in != out)
+	{
+		while (in != end)
+			*out++ = *in++;
+		s.erase(out, s.end());
+	}
+	else if (end != s.end())
+		s.erase(end, s.end());
 }
 
 std::string trim_copy(std::string_view s)
