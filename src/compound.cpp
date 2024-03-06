@@ -545,43 +545,147 @@ class local_compound_factory_impl : public compound_factory_impl
 		: compound_factory_impl(next)
 		, m_local_file(file)
 	{
+		const std::regex peptideRx("(?:[lmp]-)?peptide", std::regex::icase);
+
+		for (const auto &[id, name, threeLetterCode, group] :
+			file["comp_list"]["chem_comp"].rows<std::string, std::string, std::string, std::string>("id", "name", "three_letter_code", "group"))
+		{
+			// if (std::regex_match(group, peptideRx))
+			// 	mKnownPeptides.insert(threeLetterCode);
+			// else if (cif::iequals(group, "DNA") or cif::iequals(group, "RNA"))
+			// 	mKnownBases.insert(threeLetterCode);
+			
+			// Test if this compound is known in CCD
+			auto &rdb = m_local_file["comp_" + id];
+			if (rdb.empty())
+			{
+				std::cerr << "Missing data in restraint file for id " + id + '\n';
+				continue;
+			}
+
+			cif::datablock db(id);
+
+			float formula_weight = 0;
+			int formal_charge = 0;
+			std::map<std::string,size_t> formula_data;
+
+			for (size_t ord = 1; const auto &[atom_id, type_symbol, type, charge, x, y, z] :
+				rdb["chem_comp_atom"].rows<std::string, std::string, std::string, int, float, float, float>(
+					"atom_id", "type_symbol", "type", "charge", "x", "y", "z"))
+			{
+				auto atom = cif::atom_type_traits(type_symbol);
+				formula_weight += atom.weight();
+
+				formula_data[type_symbol] += 1;
+
+				db["chem_comp_atom"].emplace({
+					{ "comp_id", id },
+					{ "atom_id", atom_id },
+					{ "type_symbol", type_symbol },
+					{ "charge", charge },
+					{ "model_Cartn_x",  x, 3 },
+					{ "model_Cartn_y",  y, 3 },
+					{ "model_Cartn_z",  z, 3 },
+					{ "pdbx_ordinal", ord++ }
+				});
+
+				formal_charge += charge;
+			}
+
+			for (size_t ord = 1; const auto &[atom_id_1, atom_id_2, type, aromatic] :
+				rdb["chem_comp_bond"].rows<std::string, std::string, std::string, bool>("atom_id_1", "atom_id_2", "type", "aromatic"))
+			{
+				std::string value_order("SING");
+
+				if (cif::iequals(type, "single") or cif::iequals(type, "sing"))
+					value_order = "SING";
+				else if (cif::iequals(type, "double") or cif::iequals(type, "doub"))
+					value_order = "DOUB";
+				else if (cif::iequals(type, "triple") or cif::iequals(type, "trip"))
+					value_order = "TRIP";
+
+				db["chem_comp_bond"].emplace({
+					{ "comp_id", id },
+					{ "atom_id_1", atom_id_1 },
+					{ "atom_id_2", atom_id_2 },
+					{ "value_order", value_order },
+					{ "pdbx_aromatic_flag", aromatic },
+					// TODO: fetch stereo_config info from chem_comp_chir
+					{ "pdbx_ordinal", ord++ }
+				});
+			}
+
+			db.emplace_back(rdb["pdbx_chem_comp_descriptor"]);
+
+			std::string formula;
+			for (bool first = true; const auto &[symbol, count]: formula_data)
+			{
+				if (std::exchange(first, false))
+					formula += ' ';
+				formula += symbol;
+				if (count > 1)
+					formula += std::to_string(count);
+			}
+
+			std::string type;
+			if (cif::iequals(group, "peptide") or cif::iequals(group, "l-peptide") or cif::iequals(group, "l-peptide linking"))
+				type = "L-PEPTIDE LINKING";
+			else if (cif::iequals(group, "dna"))
+				type = "DNA LINKING";
+			else if (cif::iequals(group, "rna"))
+				type = "RNA LINKING";
+			else
+				type = "NON-POLYMER";
+
+			db["chem_comp"].emplace({
+				{ "id", id },
+				{ "name", name },
+				{ "type", type },
+				{ "formula", formula },
+				{ "pdbx_formal_charge", formal_charge },
+				{ "formula_weight", formula_weight },
+				{ "three_letter_code", threeLetterCode }
+			});
+	
+			m_compounds.push_back(new compound(db));
+		}
 	}
 
-	compound *create(const std::string &id) override;
+	// compound *create(const std::string &id) override;
 
   private:
 	cif::file m_local_file;
 };
 
-compound *local_compound_factory_impl::create(const std::string &id)
-{
-	compound *result = nullptr;
+// compound *local_compound_factory_impl::create(const std::string &id)
+// {
+// 	compound *result = nullptr;
 
-	for (auto &db : m_local_file)
-	{
-		if (db.name() == id)
-		{
-			cif::datablock db_copy(db);
+// 	for (auto &db : m_local_file)
+// 	{
+// 		if (db.name() == id)
+// 		{
+// 			cif::datablock db_copy(db);
 
-			try
-			{
-				result = new compound(db_copy, 1);
-			}
-			catch (const std::exception &ex)
-			{
-				std::throw_with_nested(std::runtime_error("Error loading compound " + id));
-			}
+// 			try
+// 			{
+// 				result = new compound(db_copy, 1);
+// 			}
+// 			catch (const std::exception &ex)
+// 			{
+// 				std::throw_with_nested(std::runtime_error("Error loading compound " + id));
+// 			}
 
 
-			std::shared_lock lock(mMutex);
-			m_compounds.push_back(result);
+// 			std::shared_lock lock(mMutex);
+// 			m_compounds.push_back(result);
 
-			break;
-		}
-	}
+// 			break;
+// 		}
+// 	}
 
-	return result;
-}
+// 	return result;
+// }
 
 // --------------------------------------------------------------------
 
