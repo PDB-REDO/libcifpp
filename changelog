@@ -1,6 +1,8 @@
 Version 7.0.1
 - Various reconstruction fixes
 - category order in output fixed
+- better implementation of constructors for file, datablock and category
+- small optimisation in iterator
 
 Version 7.0.0
 - Renaming many methods and parameters to be more
