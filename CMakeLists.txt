@@ -337,8 +337,7 @@ target_sources(cifpp
 	PUBLIC
 	FILE_SET cifpp_headers TYPE HEADERS
 	BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-	FILES
-	${project_headers}
+	FILES ${project_headers}
 )
 
 # The code now really requires C++20
@@ -511,14 +510,13 @@ set(CONFIG_TEMPLATE_FILE ${PROJECT_SOURCE_DIR}/cmake/cifpp-config.cmake.in)
 
 configure_package_config_file(
 	${CONFIG_TEMPLATE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config.cmake
-	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
+	INSTALL_DESTINATION lib/cmake/cifpp
 	PATH_VARS CIFPP_DATA_DIR)
 
 install(
 	FILES "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config.cmake"
 	"${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config-version.cmake"
-	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp
-	COMPONENT Devel)
+	DESTINATION lib/cmake/cifpp)
 
 set_target_properties(
 	cifpp
