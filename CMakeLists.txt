@@ -304,33 +304,45 @@ set(project_sources
 )
 
 set(project_headers
-	${PROJECT_SOURCE_DIR}/include/cif++.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/utilities.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/item.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/datablock.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/file.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/validate.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/iterator.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/parser.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/forward_decl.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/dictionary_parser.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/condition.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/category.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/row.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/atom_type.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/compound.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/point.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/symmetry.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/model.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/pdb.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/pdb/cif2pdb.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/pdb/io.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/pdb/pdb2cif.hpp
-	${PROJECT_SOURCE_DIR}/include/cif++/pdb/tls.hpp)
+	include/cif++.hpp
+	include/cif++/utilities.hpp
+	include/cif++/item.hpp
+	include/cif++/datablock.hpp
+	include/cif++/file.hpp
+	include/cif++/validate.hpp
+	include/cif++/iterator.hpp
+	include/cif++/parser.hpp
+	include/cif++/forward_decl.hpp
+	include/cif++/dictionary_parser.hpp
+	include/cif++/condition.hpp
+	include/cif++/category.hpp
+	include/cif++/row.hpp
+	include/cif++/atom_type.hpp
+	include/cif++/compound.hpp
+	include/cif++/point.hpp
+	include/cif++/symmetry.hpp
+	include/cif++/model.hpp
+	include/cif++/pdb.hpp
+	include/cif++/pdb/cif2pdb.hpp
+	include/cif++/pdb/io.hpp
+	include/cif++/pdb/pdb2cif.hpp
+	include/cif++/pdb/tls.hpp)
 
-add_library(cifpp ${project_sources} ${project_headers}
-	${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp)
+add_library(cifpp STATIC)
 add_library(cifpp::cifpp ALIAS cifpp)
+
+target_sources(cifpp
+	PRIVATE ${project_sources}
+	${PROJECT_SOURCE_DIR}/src/symop_table_data.hpp
+	PUBLIC
+	FILE_SET cifpp_headers TYPE HEADERS
+	BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+	FILES
+	${project_headers}
+)
+
+# The code now really requires C++20
+target_compile_features(cifpp PUBLIC cxx_std_20)
 
 set(CMAKE_DEBUG_POSTFIX d)
 set_target_properties(cifpp PROPERTIES DEBUG_POSTFIX "d")
@@ -452,14 +464,9 @@ else()
 endif()
 
 # Install rules
-install(
-	TARGETS cifpp
-	EXPORT cifpp-targets
-	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-	INCLUDES
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(TARGETS cifpp
+	EXPORT cifpp
+	FILE_SET cifpp_headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if(MSVC AND BUILD_SHARED_LIBS)
 	install(
@@ -479,21 +486,10 @@ if(OLD_CONFIG_FILES)
 	install(CODE "file(REMOVE ${OLD_CONFIG_FILES})")
 endif()
 
-install(
-	EXPORT cifpp-targets
-	FILE "cifpp-targets.cmake"
+install(EXPORT cifpp
 	NAMESPACE cifpp::
-	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cifpp)
-
-install(
-	DIRECTORY include/cif++
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-	COMPONENT Devel)
-
-install(
-	FILES include/cif++.hpp
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-	COMPONENT Devel)
+	FILE "cifpp-targets.cmake"
+	DESTINATION lib/cmake/cifpp)
 
 if(CIFPP_DATA_DIR AND CIFPP_DOWNLOAD_CCD)
 	install(
