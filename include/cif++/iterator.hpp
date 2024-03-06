@@ -49,7 +49,7 @@ namespace cif
 /**
  * @brief Implementation of an iterator that can return
  * multiple values in a tuple. Of course, that tuple can
- * then used in structured binding to receive the values
+ * then be used in structured binding to receive the values
  * in a for loop e.g.
  *
  * @tparam Category The category for this iterator

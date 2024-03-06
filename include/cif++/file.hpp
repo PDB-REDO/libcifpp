@@ -100,10 +100,22 @@ class file : public std::list<datablock>
 	}
 
 	/** @cond */
-	file(const file &) = default;
-	file(file &&) = default;
-	file &operator=(const file &) = default;
-	file &operator=(file &&) = default;
+	file(const file &rhs)
+		: std::list<datablock>(rhs)
+	{
+	}
+
+	file(file &&rhs)
+	{
+		this->swap(rhs);
+	}
+
+	file &operator=(file f)
+	{
+		this->swap(f);
+		return *this;
+	}
+
 	/** @endcond */
 
 	/**
