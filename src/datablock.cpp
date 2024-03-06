@@ -38,21 +38,6 @@ datablock::datablock(const datablock &db)
 		cat.update_links(*this);
 }
 
-datablock &datablock::operator=(const datablock &db)
-{
-	if (this != &db)
-	{
-		std::list<category>::operator=(db);
-		m_name = db.m_name;
-		m_validator = db.m_validator;
-
-		for (auto &cat : *this)
-			cat.update_links(*this);
-	}
-
-	return *this;
-}
-
 void datablock::set_validator(const validator *v)
 {
 	m_validator = v;
@@ -282,7 +267,11 @@ void datablock::write(std::ostream &os) const
 		cat_order_t cat_order;
 
 		for (auto &cat : *this)
+		{
+			if (cat.name() == "entry" or cat.name() == "audit_conform")
+				continue;
 			cat_order.emplace_back(cat.name(), -1, false);
+		}
 
 		for (auto i = cat_order.begin(); i != cat_order.end(); ++i)
 			calculate_cat_order(cat_order, i, *m_validator);
@@ -292,24 +281,17 @@ void datablock::write(std::ostream &os) const
 			const auto &[cat_a, count_a, on_stack_a] = a;
 			const auto &[cat_b, count_b, on_stack_b] = b;
 
-			int d = 0;
-
-			if (cat_a == "audit_conform")
-				d = -1;
-			else if (cat_b == "audit_conform")
-				d = 1;
-			else if (cat_a == "entry")
-				d = -1;
-			else if (cat_b == "entry")
-				d = 1;
-			else
-			{
-				d = std::get<1>(a) - std::get<1>(b);
-				if (d == 0)
-					d = cat_b.compare(cat_a);
-			}
+			int d = std::get<1>(a) - std::get<1>(b);
+			if (d == 0)
+				d = cat_b.compare(cat_a);
 
 			return d < 0; });
+
+		if (auto entry = get("entry"); entry != nullptr)
+			entry->write(os);
+
+		if (auto audit_conform = get("audit_conform"); audit_conform != nullptr)
+			audit_conform->write(os);
 
 		for (auto &&[cat, count, on_stack] : cat_order)
 			get(cat)->write(os);
@@ -320,20 +302,13 @@ void datablock::write(std::ostream &os) const
 		// and if it exists, _AND_ we have a Validator, write out the
 		// audit_conform record.
 
-		for (auto &cat : *this)
-		{
-			if (cat.name() != "entry")
-				continue;
-
-			cat.write(os);
-
-			break;
-		}
+		if (auto entry = get("entry"); entry != nullptr)
+			entry->write(os);
 
 		// If the dictionary declares an audit_conform category, put it in,
 		// but only if it does not exist already!
-		if (get("audit_conform"))
-			get("audit_conform")->write(os);
+		if (auto audit_conform = get("audit_conform"); audit_conform != nullptr)
+			audit_conform->write(os);
 
 		for (auto &cat : *this)
 		{
@@ -348,7 +323,7 @@ void datablock::write(std::ostream &os, const std::vector<std::string> &item_nam
 	os << "data_" << m_name << '\n'
 	   << "# \n";
 
-	std::vector<std::string> cat_order;
+	std::vector<std::string> cat_order{ "entry", "audit_conform" };
 	for (auto &o : item_name_order)
 	{
 		std::string cat_name, item_name;

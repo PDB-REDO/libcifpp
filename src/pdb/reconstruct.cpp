@@ -92,6 +92,70 @@ condition get_condition(residue_key_type &k)
 
 // --------------------------------------------------------------------
 
+void checkEntities(datablock &db)
+{
+	using namespace cif::literals;
+
+	auto &cf = cif::compound_factory::instance();
+
+	for (auto entity : db["entity"].find("formula_weight"_key == null or "formula_weight"_key == 0))
+	{
+		const auto &[entity_id, type] = entity.get<std::string, std::string>("id", "type");
+
+		float formula_weight = 0;
+
+		if (type == "polymer")
+		{
+			int n = 0;
+
+			for (std::string comp_id : db["pdbx_poly_seq_scheme"].find<std::string>("entity_id"_key == entity_id, "mon_id"))
+			{
+				auto compound = cf.create(comp_id);
+				assert(compound);
+				if (not compound)
+					throw std::runtime_error("missing information for compound " + comp_id);
+				formula_weight += compound->formula_weight();
+				++n;
+			}
+
+			formula_weight -= (n - 1) * 18.015;
+		}
+		else if (type == "water")
+			formula_weight = 18.015;
+		else if (type == "branched")
+		{
+			int n = 0;
+
+			for (std::string comp_id : db["pdbx_entity_branch_list"].find<std::string>("entity_id"_key == entity_id, "comp_id"))
+			{
+				auto compound = cf.create(comp_id);
+				assert(compound);
+				if (not compound)
+					throw std::runtime_error("missing information for compound " + comp_id);
+				formula_weight += compound->formula_weight();
+				++n;
+			}
+
+			formula_weight -= (n - 1) * 18.015;
+		}
+		else if (type == "non-polymer")
+		{
+			auto comp_id = db["pdbx_nonpoly_scheme"].find_first<std::optional<std::string>>("entity_id"_key == entity_id, "mon_id");
+			if (comp_id.has_value())
+			{
+				auto compound = cf.create(*comp_id);
+				assert(compound);
+				if (not compound)
+					throw std::runtime_error("missing information for compound " + *comp_id);
+				formula_weight = compound->formula_weight();
+			}
+		}
+
+		if (formula_weight > 0)
+			entity.assign({ { "formula_weight", formula_weight, 3 } });
+	}
+}
+
 void createEntityIDs(datablock &db)
 {
 	// Suppose the file does not have entity ID's. We have to make up some
@@ -386,12 +450,16 @@ void checkAtomRecords(datablock &db)
 
 		auto chem_comp_entry = chem_comp.find_first("id"_key == comp_id);
 
+		std::optional<bool> non_std;
+		if  (cf.is_monomer(comp_id))
+			non_std = cf.is_std_monomer(comp_id);
+
 		if (not chem_comp_entry)
 		{
 			chem_comp.emplace({ //
 				{ "id", comp_id },
 				{ "type", compound->type() },
-				{ "mon_nstd_flag", cf.is_std_monomer(comp_id) ? "y" : "n" },
+				{ "mon_nstd_flag", non_std },
 				{ "name", compound->name() },
 				{ "formula", compound->formula() },
 				{ "formula_weight", compound->formula_weight() } });
@@ -402,8 +470,8 @@ void checkAtomRecords(datablock &db)
 
 			if (not chem_comp_entry["type"])
 				items.emplace_back(item{ "type", compound->type() });
-			if (not chem_comp_entry["mon_nstd_flag"])
-				items.emplace_back(item{ "mon_nstd_flag", cf.is_std_monomer(comp_id) ? "y" : "n" });
+			if (not chem_comp_entry["mon_nstd_flag"] and non_std.has_value())
+				items.emplace_back(item{ "mon_nstd_flag", non_std });
 			if (not chem_comp_entry["name"])
 				items.emplace_back(item{ "name", compound->name() });
 			if (not chem_comp_entry["formula"])
@@ -420,15 +488,13 @@ void checkAtomRecords(datablock &db)
 
 		int seq_id = get_seq_id(k);
 
-		if (row["label_seq_id"].empty())
+		if (row["label_seq_id"].empty() and cf.is_monomer(comp_id))
 			row["label_seq_id"] = std::to_string(seq_id);
 
 		if (row["label_atom_id"].empty())
 			row["label_atom_id"] = row["auth_atom_id"].text();
 		if (row["label_asym_id"].empty())
 			row["label_asym_id"] = row["auth_asym_id"].text();
-		if (row["label_seq_id"].empty())
-			row["label_seq_id"] = row["auth_seq_id"].text();
 		if (row["label_comp_id"].empty())
 			row["label_comp_id"] = row["auth_comp_id"].text();
 		if (row["label_atom_id"].empty())
@@ -517,7 +583,7 @@ void checkAtomAnisotropRecords(datablock &db)
 		{
 			if (cif::VERBOSE and std::exchange(warnReplaceTypeSymbol, false))
 				std::clog << "Replacing type_symbol in atom_site_anisotrop record(s)\n";
-			row["type_symbol"] != parent["type_symbol"].text();
+			row["type_symbol"] = parent["type_symbol"].text();
 		}
 
 		if (row["pdbx_auth_alt_id"].empty())
@@ -1262,6 +1328,9 @@ bool reconstruct_pdbx(file &file, std::string_view dictionary)
 
 	if (db.get("entity") == nullptr)
 		createEntity(db);
+
+	// fill in missing formula_weight, e.g.
+	checkEntities(db);
 
 	if (db.get("pdbx_poly_seq_scheme") == nullptr)
 		createPdbxPolySeqScheme(db);

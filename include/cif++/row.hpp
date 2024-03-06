@@ -208,6 +208,7 @@ class row_handle
 	friend class category;
 	friend class category_index;
 	friend class row_initializer;
+	template <typename, typename...> friend class iterator_impl;
 
 	row_handle() = default;
 

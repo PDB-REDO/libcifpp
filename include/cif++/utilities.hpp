@@ -113,16 +113,12 @@ namespace colour
 		/**
 		 * @brief Struct for delimited strings.
 		 */
-		template <typename StringType>
 		struct coloured_string_t
 		{
-			static_assert(std::is_reference_v<StringType> or std::is_pointer_v<StringType>,
-				"String type must be pointer or reference");
-
 			/**
 			 * @brief Construct a new coloured string t object
 			 */
-			coloured_string_t(StringType s, colour_type fc, colour_type bc, style_type st)
+			coloured_string_t(std::string_view s, colour_type fc, colour_type bc, style_type st)
 				: m_str(s)
 				, m_fore_colour(static_cast<int>(fc) + 30)
 				, m_back_colour(static_cast<int>(bc) + 40)
@@ -152,12 +148,14 @@ namespace colour
 					   << cs.m_str
 					   << "\033[0m";
 				}
+				else
+					os << cs.m_str;
 
 				return os;
 			}
 
 			/// @cond
-			StringType m_str;
+			std::string_view m_str;
 			int m_fore_colour, m_back_colour;
 			int m_style;
 			/// @endcond
@@ -191,39 +189,13 @@ namespace colour
  * @param st Text style to use
  */
 
-template <typename char_type>
-inline auto coloured(const char_type *str,
+template <typename T>
+	requires std::is_assignable_v<std::string_view, T>
+inline auto coloured(T str,
 	colour::colour_type fg, colour::colour_type bg = colour::colour_type::none,
 	colour::style_type st = colour::style_type::regular)
 {
-	return colour::detail::coloured_string_t<const char_type *>(str, fg, bg, st);
-}
-
-/// @brief Manipulator for coloured strings.
-template <typename char_type, typename traits_type, typename allocator_type>
-inline auto coloured(const std::basic_string<char_type, traits_type, allocator_type> &str,
-	colour::colour_type fg, colour::colour_type bg = colour::colour_type::none,
-	colour::style_type st = colour::style_type::regular)
-{
-	return colour::detail::coloured_string_t<const std::basic_string<char_type, traits_type, allocator_type> &>(str, fg, bg, st);
-}
-
-/// @brief Manipulator for coloured strings.
-template <typename char_type, typename traits_type, typename allocator_type>
-inline auto coloured(std::basic_string<char_type, traits_type, allocator_type> &str,
-	colour::colour_type fg, colour::colour_type bg = colour::colour_type::none,
-	colour::style_type st = colour::style_type::regular)
-{
-	return colour::detail::coloured_string_t<std::basic_string<char_type, traits_type, allocator_type> &>(str, fg, bg, st);
-}
-
-/// @brief Manipulator for coloured strings.
-template <typename char_type, typename traits_type>
-inline auto coloured(std::basic_string_view<char_type, traits_type> &str,
-	colour::colour_type fg, colour::colour_type bg = colour::colour_type::none,
-	colour::style_type st = colour::style_type::regular)
-{
-	return colour::detail::coloured_string_t<std::basic_string_view<char_type, traits_type> &>(str, fg, bg, st);
+	return colour::detail::coloured_string_t(str, fg, bg, st);
 }
 
 // --------------------------------------------------------------------

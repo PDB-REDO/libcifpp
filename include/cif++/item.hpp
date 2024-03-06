@@ -288,19 +288,16 @@ struct item_value
 	}
 
 	/** @cond */
-	item_value(item_value &&rhs)
+	item_value(item_value &&rhs) noexcept
 		: m_length(std::exchange(rhs.m_length, 0))
 		, m_storage(std::exchange(rhs.m_storage, 0))
 	{
 	}
 
-	item_value &operator=(item_value &&rhs)
+	item_value &operator=(item_value &&rhs) noexcept
 	{
-		if (this != &rhs)
-		{
-			m_length = std::exchange(rhs.m_length, m_length);
-			m_storage = std::exchange(rhs.m_storage, m_storage);
-		}
+		std::swap(m_length, rhs.m_length);
+		std::swap(m_storage, rhs.m_storage);
 		return *this;
 	}
 

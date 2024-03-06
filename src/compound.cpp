@@ -550,7 +550,7 @@ class local_compound_factory_impl : public compound_factory_impl
 	compound *create(const std::string &id) override;
 
   private:
-	const cif::file &m_local_file;
+	cif::file m_local_file;
 };
 
 compound *local_compound_factory_impl::create(const std::string &id)
@@ -559,11 +559,19 @@ compound *local_compound_factory_impl::create(const std::string &id)
 
 	for (auto &db : m_local_file)
 	{
-		if (db.name() == "comp_" + id)
+		if (db.name() == id)
 		{
 			cif::datablock db_copy(db);
 
-			result = new compound(db_copy, 1);
+			try
+			{
+				result = new compound(db_copy, 1);
+			}
+			catch (const std::exception &ex)
+			{
+				std::throw_with_nested(std::runtime_error("Error loading compound " + id));
+			}
+
 
 			std::shared_lock lock(mMutex);
 			m_compounds.push_back(result);
