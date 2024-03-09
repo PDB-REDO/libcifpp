@@ -681,7 +681,7 @@ class Fi : public FBase
 		{
 			long l = 0;
 			auto r = std::from_chars(s.data(), s.data() + s.length(), l);
-			if (r.ec != std::errc())
+			if ((bool)r.ec)
 			{
 				if (VERBOSE > 0)
 					std::cerr << "Failed to write '" << s << "' as a long from field " << mField << ", this indicates an error in the code for writing PDB files\n";
@@ -719,7 +719,7 @@ class Ff : public FBase
 
 			double d = 0;
 			auto r = cif::from_chars(s.data(), s.data() + s.length(), d);
-			if (r.ec != std::errc())
+			if ((bool)r.ec)
 			{
 				if (VERBOSE > 0)
 					std::cerr << "Failed to write '" << s << "' as a double from field " << mField << ", this indicates an error in the code for writing PDB files\n";
@@ -3393,7 +3393,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 		{
 			int nr = 0;
 			auto r = std::from_chars(modelNum.data(), modelNum.data() + modelNum.length(), nr);
-			if (r.ec != std::errc())
+			if ((bool)r.ec)
 			{
 				if (VERBOSE > 0)
 					std::cerr << "Model number '" << modelNum << "' is not a valid integer\n";

@@ -514,14 +514,14 @@ void checkAtomRecords(datablock &db)
 
 			float v;
 			auto s = row.get<std::string>(item_name);
-			if (auto [ptr, ec] = cif::from_chars(s.data(), s.data() + s.length(), v); ec != std::errc())
+			if (auto [ptr, ec] = cif::from_chars(s.data(), s.data() + s.length(), v); (bool)ec)
 				continue;
 
 			if (s.length() < prec + 1 or s[s.length() - prec - 1] != '.')
 			{
 				char b[12];
 
-				if (auto [ptr, ec] = cif::to_chars(b, b + sizeof(b), v, cif::chars_format::fixed, prec); ec == std::errc())
+				if (auto [ptr, ec] = cif::to_chars(b, b + sizeof(b), v, cif::chars_format::fixed, prec); (bool)ec)
 					row.assign(item_name, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
 			}
 		}

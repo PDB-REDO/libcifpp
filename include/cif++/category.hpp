@@ -1263,6 +1263,7 @@ class category
 		{
 		}
 
+#pragma warning("NEED TO FIX THIS!")
 		category *linked;
 		const link_validator *v;
 	};

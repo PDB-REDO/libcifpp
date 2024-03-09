@@ -111,7 +111,7 @@ sym_op::sym_op(std::string_view s)
 	m_tb = r.ptr[2] - '0';
 	m_tc = r.ptr[3] - '0';
 
-	if (r.ec != std::errc() or rnri > 192 or r.ptr[0] != '_' or m_ta > 9 or m_tb > 9 or m_tc > 9)
+	if ((bool)r.ec or rnri > 192 or r.ptr[0] != '_' or m_ta > 9 or m_tb > 9 or m_tc > 9)
 		throw std::invalid_argument("Could not convert string into sym_op");
 }
 
@@ -119,7 +119,7 @@ std::string sym_op::string() const
 {
 	char b[9];
 	auto r = std::to_chars(b, b + sizeof(b), m_nr);
-	if (r.ec != std::errc() or r.ptr > b + 4)
+	if ((bool)r.ec or r.ptr > b + 4)
 		throw std::runtime_error("Could not write out symmetry operation to string");
 	
 	*r.ptr++ = '_';

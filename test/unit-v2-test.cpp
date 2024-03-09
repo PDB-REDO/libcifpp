@@ -101,7 +101,7 @@ TEST_CASE("cc_1")
 		float tv;
 		const auto &[ptr, ec] = cif::from_chars(txt.data(), txt.data() + txt.length(), tv);
 
-		REQUIRE(ec == std::errc());
+		CHECK_FALSE((bool)ec);
 		REQUIRE(tv == val);
 		if (ch != 0)
 			REQUIRE(*ptr == ch);
@@ -119,7 +119,7 @@ TEST_CASE("cc_2")
 		char buffer[64];
 		const auto &[ptr, ec] = cif::to_chars(buffer, buffer + sizeof(buffer), val, cif::chars_format::fixed, prec);
 
-		REQUIRE(ec == std::errc());
+		CHECK_FALSE((bool)ec);
 
 		REQUIRE(buffer == test);
 	}

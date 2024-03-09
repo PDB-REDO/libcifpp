@@ -1132,7 +1132,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 		if (not cs.empty())
 		{
 			auto r = std::from_chars(cs.data(), cs.data() + cs.length(), result);
-			if (r.ec != std::errc())
+			if ((bool)r.ec)
 				throw std::runtime_error("Continuation std::string '" + cs + "' is not valid");
 		}
 
@@ -1397,7 +1397,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			{
 				auto f = cur->vF(74, 78);
 				auto r = cif::from_chars(f.data(), f.data() + f.length(), link.distance);
-				if (r.ec != std::errc() and cif::VERBOSE > 0)
+				if ((bool)r.ec and cif::VERBOSE > 0)
 					std::cerr << "Error parsing link distance at line " << cur->mLineNr << '\n';
 			}
 			//	74 – 78         Real(5.2)      Length          Link distance
@@ -5306,7 +5306,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 
 				double d;
 				auto r = cif::from_chars(distance.data(), distance.data() + distance.length(), d);
-				if (r.ec != std::errc())
+				if ((bool)r.ec)
 				{
 					if (cif::VERBOSE > 0)
 						std::cerr << "Distance value '" << distance << "' is not a valid float in LINK record\n";

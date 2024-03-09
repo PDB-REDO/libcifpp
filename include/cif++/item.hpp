@@ -117,7 +117,7 @@ class item
 		char buffer[32];
 
 		auto r = to_chars(buffer, buffer + sizeof(buffer) - 1, value, chars_format::fixed, precision);
-		if (r.ec != std::errc())
+		if ((bool)r.ec)
 			throw std::runtime_error("Could not format number");
 
 		m_value.assign(buffer, r.ptr - buffer);
@@ -136,7 +136,7 @@ class item
 		char buffer[32];
 
 		auto r = to_chars(buffer, buffer + sizeof(buffer) - 1, value, chars_format::general);
-		if (r.ec != std::errc())
+		if ((bool)r.ec)
 			throw std::runtime_error("Could not format number");
 
 		m_value.assign(buffer, r.ptr - buffer);
@@ -151,7 +151,7 @@ class item
 		char buffer[32];
 
 		auto r = std::to_chars(buffer, buffer + sizeof(buffer) - 1, value);
-		if (r.ec != std::errc())
+		if ((bool)r.ec)
 			throw std::runtime_error("Could not format number");
 
 		m_value.assign(buffer, r.ptr - buffer);
@@ -560,7 +560,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 
 			std::from_chars_result r = (b + 1 < e and *b == '+' and std::isdigit(b[1])) ? selected_charconv<value_type>::from_chars(b + 1, e, result) : selected_charconv<value_type>::from_chars(b, e, result);
 
-			if (r.ec != std::errc() or r.ptr != e)
+			if ((bool)r.ec or r.ptr != e)
 			{
 				result = {};
 				if (cif::VERBOSE)
@@ -595,7 +595,7 @@ struct item_handle::item_value_as<T, std::enable_if_t<std::is_arithmetic_v<T> an
 
 			std::from_chars_result r = (b + 1 < e and *b == '+' and std::isdigit(b[1])) ? selected_charconv<value_type>::from_chars(b + 1, e, v) : selected_charconv<value_type>::from_chars(b, e, v);
 
-			if (r.ec != std::errc() or r.ptr != e)
+			if ((bool)r.ec or r.ptr != e)
 			{
 				if (cif::VERBOSE)
 				{
