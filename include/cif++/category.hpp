@@ -182,7 +182,7 @@ class category
 
 	/// @brief Update the links in this category
 	/// @param db The enclosing @ref datablock
-	void update_links(datablock &db);
+	void update_links(const datablock &db);
 
 	/// @brief Return the global @ref validator for the data
 	/// @return The @ref validator or nullptr if not assigned

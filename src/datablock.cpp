@@ -109,7 +109,7 @@ bool datablock::validate_links() const
 	bool result = true;
 
 	for (auto &cat : *this)
-		cat.update_links(*this);
+		const_cast<category &>(cat).update_links(*this);
 
 	for (auto &cat : *this)
 		result = cat.validate_links() and result;
