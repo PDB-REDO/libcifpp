@@ -280,7 +280,7 @@ int main(int argc, char* const argv[])
 			if (std::isdigit(line[0]))	// start of new spacegroup
 			{
 				auto r = std::from_chars(line.data(), line.data() + line.length(), sgnr);
-				if (r.ec != std::errc())
+				if ((bool)r.ec)
 					throw std::runtime_error("Error parsing symop.lib file");
 				rnr = 1;
 				continue;

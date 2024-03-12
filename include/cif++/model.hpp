@@ -741,7 +741,7 @@ class sugar : public residue
 	{
 		int result;
 		auto r = std::from_chars(m_auth_seq_id.data(), m_auth_seq_id.data() + m_auth_seq_id.length(), result);
-		if (r.ec != std::errc())
+		if ((bool)r.ec)
 			throw std::runtime_error("The auth_seq_id should be a number for a sugar");
 		return result;
 	}

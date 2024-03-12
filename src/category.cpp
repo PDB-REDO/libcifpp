@@ -666,7 +666,7 @@ void category::set_validator(const validator *v, datablock &db)
 	update_links(db);
 }
 
-void category::update_links(datablock &db)
+void category::update_links(const datablock &db)
 {
 	m_child_links.clear();
 	m_parent_links.clear();
@@ -675,7 +675,7 @@ void category::update_links(datablock &db)
 	{
 		for (auto link : m_validator->get_links_for_parent(m_name))
 		{
-			auto childCat = db.get(link->m_child_category);
+			auto childCat = const_cast<category *>(db.get(link->m_child_category));
 			if (childCat == nullptr)
 				continue;
 			m_child_links.emplace_back(childCat, link);
@@ -683,7 +683,7 @@ void category::update_links(datablock &db)
 
 		for (auto link : m_validator->get_links_for_child(m_name))
 		{
-			auto parentCat = db.get(link->m_parent_category);
+			auto parentCat = const_cast<category *>(db.get(link->m_parent_category));
 			if (parentCat == nullptr)
 				continue;
 			m_parent_links.emplace_back(parentCat, link);
@@ -791,7 +791,7 @@ bool category::is_valid() const
 
 				iv->validate_value(vi->text(), ec);
 
-				if (ec != std::errc())
+				if ((bool)ec)
 				{
 					m_validator->report_error(ec, m_name, m_items[cix].m_name, false);
 					continue;

@@ -138,7 +138,7 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 				ra = selected_charconv<double>::from_chars(a.data(), a.data() + a.length(), da);
 				rb = selected_charconv<double>::from_chars(b.data(), b.data() + b.length(), db);
 
-				if (ra.ec == std::errc() and rb.ec == std::errc())
+				if (not (bool)ra.ec and not (bool)rb.ec)
 				{
 					auto d = da - db;
 					if (std::abs(d) > std::numeric_limits<double>::epsilon())
@@ -149,7 +149,7 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 							result = -1;
 					}
 				}
-				else if (ra.ec == std::errc())
+				else if ((bool)ra.ec)
 					result = 1;
 				else
 					result = -1;
@@ -222,7 +222,7 @@ void item_validator::operator()(std::string_view value) const
 
 bool item_validator::validate_value(std::string_view value, std::error_code &ec) const noexcept
 {
-	ec = {};
+	ec.clear();
 
 	if (not value.empty() and value != "?" and value != ".")
 	{
@@ -232,7 +232,7 @@ bool item_validator::validate_value(std::string_view value, std::error_code &ec)
 			ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
 	}
 
-	return ec == std::errc();
+	return not (bool)ec;
 }
 
 // --------------------------------------------------------------------

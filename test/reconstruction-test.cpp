@@ -54,7 +54,7 @@ TEST_CASE("reconstruct")
 
 			std::error_code ec;
 			CHECK_FALSE(cif::pdb::is_valid_pdbx_file(f, ec));
-			CHECK(ec != std::errc{});
+			CHECK((bool)ec);
 
 			CHECK(cif::pdb::reconstruct_pdbx(f));
 		}

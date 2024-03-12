@@ -383,7 +383,7 @@ std::from_chars_result from_chars(const char *first, const char *last, FloatType
 	int exponent = 0;
 	bool done = false;
 
-	while (not done and result.ec == std::errc())
+	while (not done and not (bool)result.ec)
 	{
 		char ch = result.ptr != last ? *result.ptr : 0;
 		++result.ptr;
@@ -467,7 +467,7 @@ std::from_chars_result from_chars(const char *first, const char *last, FloatType
 		}
 	}
 
-	if (result.ec == std::errc())
+	if (not (bool)result.ec)
 	{
 		long double v = f * vi * sign;
 		if (exponent != 0)
