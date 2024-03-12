@@ -412,6 +412,10 @@ void checkAtomRecords(datablock &db)
 	if (atom_site.contains(key("label_seq_id") < 0))
 		fixNegativeSeqID(atom_site);
 
+	std::set<int> polymer_entities;
+	for (int id : db["entity"].find<int>("type"_key == "polymer", "id"))
+		polymer_entities.insert(id);
+
 	for (auto row : atom_site)
 	{
 		residue_key_type k = row.get<std::optional<std::string>,
@@ -443,6 +447,7 @@ void checkAtomRecords(datablock &db)
 		std::string comp_id = get_comp_id(k);
 
 		bool is_peptide = cf.is_peptide(comp_id);
+		bool is_polymer = polymer_entities.contains(row["label_entity_id"].as<int>());
 		auto compound = cf.create(comp_id);
 
 		if (not compound)
@@ -483,12 +488,12 @@ void checkAtomRecords(datablock &db)
 				chem_comp_entry.assign(items);
 		}
 
-		if (is_peptide and not has_seq_id(k))
+		if (is_polymer and not has_seq_id(k))
 			throw std::runtime_error("atom_site record has peptide comp_id but no sequence number, cannot continue");
 
 		int seq_id = get_seq_id(k);
 
-		if (row["label_seq_id"].empty() and cf.is_monomer(comp_id))
+		if (is_polymer and row["label_seq_id"].empty() and cf.is_monomer(comp_id))
 			row["label_seq_id"] = std::to_string(seq_id);
 
 		if (row["label_atom_id"].empty())
