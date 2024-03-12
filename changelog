@@ -1,3 +1,6 @@
+Version 7.0.3
+- Fix installation, write exports.hpp again
+
 Version 7.0.2
 - Fix in testing error_code results.
 

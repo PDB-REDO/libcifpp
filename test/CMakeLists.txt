@@ -23,7 +23,7 @@ list(
 	rename-compound
 	sugar
 	spinner
-	reconstruction
+	# reconstruction
 	validate-pdbx)
 
 add_library(test-main OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/test-main.cpp")

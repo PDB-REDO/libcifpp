@@ -446,7 +446,6 @@ void checkAtomRecords(datablock &db)
 		std::string asym_id = get_asym_id(k);
 		std::string comp_id = get_comp_id(k);
 
-		bool is_peptide = cf.is_peptide(comp_id);
 		bool is_polymer = polymer_entities.contains(row["label_entity_id"].as<int>());
 		auto compound = cf.create(comp_id);
 
