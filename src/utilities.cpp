@@ -877,6 +877,21 @@ class resource_pool
 
 resource_pool::resource_pool()
 {
+	// directories are searched in reverse order
+
+	// As a last resort, try the location that might have been
+	// used during installation, works only when running on an
+	// OS with a proc file system.
+
+	std::error_code ec;
+	if (auto exefile = fs::read_symlink("/proc/self/exe", ec); not ec and exefile.parent_path().filename() == "bin")
+	{
+		auto install_prefix = exefile.parent_path().parent_path();
+		auto data_dir = install_prefix / "share" / "libcifpp";
+		if (fs::exists(data_dir, ec))
+			pushDir(data_dir);
+	}
+
 #if defined(DATA_DIR)
 	pushDir(DATA_DIR);
 #endif
