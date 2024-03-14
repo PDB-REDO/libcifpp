@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 3.16)
 # set the project name
 project(
 	libcifpp
-	VERSION 7.0.3
+	VERSION 7.0.4
 	LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -40,11 +40,6 @@ include(CheckCXXSourceCompiles)
 include(GenerateExportHeader)
 include(CTest)
 include(FetchContent)
-include(ExternalProject)
-
-set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # When building with ninja-multiconfig, build both debug and release by default
 if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
@@ -247,12 +242,6 @@ else()
 	set(EIGEN_INCLUDE_DIR ${my-eigen3_SOURCE_DIR})
 endif()
 
-include(FindFilesystem)
-list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPFS_LIBRARY})
-
-include(FindAtomic)
-list(APPEND CIFPP_REQUIRED_LIBRARIES ${STDCPPATOMIC_LIBRARY})
-
 # Create a revision file, containing the current git version info
 include(VersionString)
 write_version_header(${CMAKE_CURRENT_SOURCE_DIR}/src/ LIB_NAME "LibCIFPP")
@@ -369,8 +358,7 @@ target_include_directories(
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	PRIVATE "${BOOST_REGEX_INCLUDE_DIR}" "${EIGEN_INCLUDE_DIR}")
 
-target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB
-	${CIFPP_REQUIRED_LIBRARIES})
+target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)
