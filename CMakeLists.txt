@@ -305,29 +305,34 @@ set(project_sources
 
 set(project_headers
 	include/cif++.hpp
-	include/cif++/utilities.hpp
-	include/cif++/item.hpp
+	include/cif++/atom_type.hpp
+	include/cif++/category.hpp
+	include/cif++/compound.hpp
+	include/cif++/condition.hpp
 	include/cif++/datablock.hpp
+	include/cif++/dictionary_parser.hpp
 	include/cif++/exports.hpp
 	include/cif++/file.hpp
-	include/cif++/validate.hpp
-	include/cif++/iterator.hpp
-	include/cif++/parser.hpp
+	include/cif++/format.hpp
 	include/cif++/forward_decl.hpp
-	include/cif++/dictionary_parser.hpp
-	include/cif++/condition.hpp
-	include/cif++/category.hpp
-	include/cif++/row.hpp
-	include/cif++/atom_type.hpp
-	include/cif++/compound.hpp
-	include/cif++/point.hpp
-	include/cif++/symmetry.hpp
+	include/cif++/gzio.hpp
+	include/cif++/item.hpp
+	include/cif++/iterator.hpp
+	include/cif++/matrix.hpp
 	include/cif++/model.hpp
-	include/cif++/pdb.hpp
+	include/cif++/parser.hpp
 	include/cif++/pdb/cif2pdb.hpp
+	include/cif++/pdb.hpp
 	include/cif++/pdb/io.hpp
 	include/cif++/pdb/pdb2cif.hpp
-	include/cif++/pdb/tls.hpp)
+	include/cif++/pdb/tls.hpp
+	include/cif++/point.hpp
+	include/cif++/row.hpp
+	include/cif++/symmetry.hpp
+	include/cif++/text.hpp
+	include/cif++/utilities.hpp
+	include/cif++/validate.hpp
+)
 
 add_library(cifpp STATIC)
 add_library(cifpp::cifpp ALIAS cifpp)
