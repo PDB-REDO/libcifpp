@@ -1,3 +1,6 @@
+Version 7.0.4
+- Do not install headers and library in case we're not the top project
+
 Version 7.0.3
 - Fix installation, write exports.hpp again
 
