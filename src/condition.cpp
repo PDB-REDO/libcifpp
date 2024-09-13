@@ -135,6 +135,7 @@ namespace detail
 
 				for (size_t ssub_i = 0; ssub_i < ssub.size();)
 				{
+					auto sc = ssub[ssub_i];
 					if (not sc->equals(c)) {
 						++ssub_i;
 						continue;
