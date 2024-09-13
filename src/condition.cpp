@@ -115,27 +115,32 @@ namespace detail
 		auto first = subs.front();
 		auto &fc = first->m_sub;
 
-		for (auto c : fc)
+		for (size_t fc_i = 0; fc_i < fc.size();)
 		{
-			if (not found_in_range(c, subs.begin() + 1, subs.end()))
+			auto c = fc[fc_i];
+			if (not found_in_range(c, subs.begin() + 1, subs.end())) {
+				++fc_i;
 				continue;
+			}
 
 			if (and_result == nullptr)
 				and_result = new and_condition_impl();
 
 			and_result->m_sub.push_back(c);
-			fc.erase(remove(fc.begin(), fc.end(), c), fc.end());
+			fc.erase(fc.begin() + fc_i);
 
 			for (auto sub : subs)
 			{
 				auto &ssub = sub->m_sub;
 
-				for (auto sc : ssub)
+				for (size_t ssub_i = 0; ssub_i < ssub.size();)
 				{
-					if (not sc->equals(c))
+					if (not sc->equals(c)) {
+						++ssub_i;
 						continue;
+					}
 					
-					ssub.erase(remove(ssub.begin(), ssub.end(), sc), ssub.end());
+					ssub.erase(ssub.begin() + ssub_i);
 					delete sc;
 					break;
 				}
