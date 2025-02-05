@@ -39,15 +39,32 @@
 // the code will use boost::regex instead.
 
 #if USE_BOOST_REGEX
-#include <boost/regex.hpp>
+# include <boost/regex.hpp>
 using boost::regex;
 #else
-#include <regex>
+# include <regex>
 using std::regex;
 #endif
 
 namespace cif
 {
+
+validation_exception::validation_exception(std::error_code ec)
+	: runtime_error(ec.message())
+{
+}
+
+validation_exception::validation_exception(std::error_code ec, std::string_view category)
+	: runtime_error((ec.message() + "; category: ").append(category))
+{
+}
+
+validation_exception::validation_exception(std::error_code ec, std::string_view category, std::string_view item)
+	: runtime_error((ec.message() + "; category: ").append(category).append("; item: ").append(item))
+{
+}
+
+// --------------------------------------------------------------------
 
 struct regex_impl : public regex
 {
@@ -57,21 +74,12 @@ struct regex_impl : public regex
 	}
 };
 
-validation_error::validation_error(const std::string &msg)
-	: m_msg(msg)
-{
-}
-
-validation_error::validation_error(const std::string &cat, const std::string &item, const std::string &msg)
-	: m_msg("When validating _" + cat + '.' + item + ": " + msg)
-{
-}
-
 // --------------------------------------------------------------------
 
-DDL_PrimitiveType map_to_primitive_type(std::string_view s)
+DDL_PrimitiveType map_to_primitive_type(std::string_view s, std::error_code &ec) noexcept
 {
-	DDL_PrimitiveType result;
+	ec = {};
+	DDL_PrimitiveType result = DDL_PrimitiveType::Char;
 	if (iequals(s, "char"))
 		result = DDL_PrimitiveType::Char;
 	else if (iequals(s, "uchar"))
@@ -79,7 +87,16 @@ DDL_PrimitiveType map_to_primitive_type(std::string_view s)
 	else if (iequals(s, "numb"))
 		result = DDL_PrimitiveType::Numb;
 	else
-		throw validation_error("Not a known primitive type");
+		ec = make_error_code(validation_error::not_a_known_primitive_type);
+	return result;
+}
+
+DDL_PrimitiveType map_to_primitive_type(std::string_view s)
+{
+	std::error_code ec;
+	auto result = map_to_primitive_type(s, ec);
+	if (ec)
+		throw std::system_error(ec, std::string{ s });
 	return result;
 }
 
@@ -96,24 +113,6 @@ type_validator::~type_validator()
 {
 	delete m_rx;
 }
-
-template <typename T>
-struct my_from_chars
-{
-	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
-	{
-		return cif::from_chars(a, b, d);
-	}
-};
-
-template <typename T>
-struct std_from_chars
-{
-	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
-	{
-		return std::from_chars(a, b, d);
-	}
-};
 
 int type_validator::compare(std::string_view a, std::string_view b) const
 {
@@ -139,7 +138,7 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 				ra = selected_charconv<double>::from_chars(a.data(), a.data() + a.length(), da);
 				rb = selected_charconv<double>::from_chars(b.data(), b.data() + b.length(), db);
 
-				if (ra.ec == std::errc() and rb.ec == std::errc())
+				if (not(bool) ra.ec and not(bool) rb.ec)
 				{
 					auto d = da - db;
 					if (std::abs(d) > std::numeric_limits<double>::epsilon())
@@ -150,7 +149,7 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 							result = -1;
 					}
 				}
-				else if (ra.ec == std::errc())
+				else if ((bool)ra.ec)
 					result = 1;
 				else
 					result = -1;
@@ -214,63 +213,72 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 
 // --------------------------------------------------------------------
 
-// void ValidateItem::addLinked(ValidateItem* parent, const std::string& parentItem, const std::string& childItem)
-//{
-////	if (mParent != nullptr and VERBOSE)
-////		cerr << "replacing parent in " << mCategory->m_name << " from " << mParent->mCategory->m_name << " to " << parent->mCategory->m_name << endl;
-////	mParent = parent;
-//
-//	if (m_type == nullptr and parent != nullptr)
-//		m_type = parent->m_type;
-//
-//	if (parent != nullptr)
-//	{
-//		mLinked.push_back({parent, parentItem, childItem});
-//
-//		parent->mChildren.insert(this);
-////
-////		if (mCategory->mKeys == std::vector<std::string>{mTag})
-////			parent->mForeignKeys.insert(this);
-//	}
-//}
-
 void item_validator::operator()(std::string_view value) const
 {
+	std::error_code ec;
+	if (not validate_value(value, ec))
+		throw std::system_error(ec, std::string{ value } + " does not match rx for " + m_item_name);
+}
+
+bool item_validator::validate_value(std::string_view value, std::error_code &ec) const noexcept
+{
+	ec.clear();
+
 	if (not value.empty() and value != "?" and value != ".")
 	{
 		if (m_type != nullptr and not regex_match(value.begin(), value.end(), *m_type->m_rx))
-			throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{ value } + "' does not match type expression for type " + m_type->m_name);
-
-		if (not m_enums.empty())
-		{
-			if (m_enums.count(std::string{ value }) == 0)
-				throw validation_error(m_category->m_name, m_tag, "Value '" + std::string{ value } + "' is not in the list of allowed values");
-		}
+			ec = make_error_code(validation_error::value_does_not_match_rx);
+		else if (not m_enums.empty() and m_enums.count(std::string{ value }) == 0)
+			ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
 	}
+
+	return not(bool) ec;
 }
 
 // --------------------------------------------------------------------
 
-void category_validator::addItemValidator(item_validator &&v)
+void category_validator::add_item_validator(item_validator &&v)
 {
 	if (v.m_mandatory)
-		m_mandatory_fields.insert(v.m_tag);
+		m_mandatory_items.insert(v.m_item_name);
 
 	v.m_category = this;
 
 	auto r = m_item_validators.insert(std::move(v));
 	if (not r.second and VERBOSE >= 4)
-		std::cout << "Could not add validator for item " << v.m_tag << " to category " << m_name << std::endl;
+		std::cout << "Could not add validator for item " << v.m_item_name << " to category " << m_name << '\n';
 }
 
-const item_validator *category_validator::get_validator_for_item(std::string_view tag) const
+const item_validator *category_validator::get_validator_for_item(std::string_view item_name) const
 {
 	const item_validator *result = nullptr;
-	auto i = m_item_validators.find(item_validator{ std::string(tag) });
+	auto i = m_item_validators.find(item_validator{ std::string(item_name) });
 	if (i != m_item_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
-		std::cout << "No validator for tag " << tag << std::endl;
+		std::cout << "No validator for item " << item_name << '\n';
+	return result;
+}
+
+const item_validator *category_validator::get_validator_for_aliased_item(std::string_view item_name) const
+{
+	const item_validator *result = nullptr;
+
+	for (auto &iv : m_item_validators)
+	{
+		for (auto &ai : iv.m_aliases)
+		{
+			const auto &[cat, name] = split_item_name(ai.m_name);
+			if (iequals(name, item_name) and iequals(cat, m_name))
+			{
+				result = &iv;
+				break;
+			}
+		}
+		if (result)
+			break;
+	}
+
 	return result;
 }
 
@@ -280,7 +288,7 @@ void validator::add_type_validator(type_validator &&v)
 {
 	auto r = m_type_validators.insert(std::move(v));
 	if (not r.second and VERBOSE > 4)
-		std::cout << "Could not add validator for type " << v.m_name << std::endl;
+		std::cout << "Could not add validator for type " << v.m_name << '\n';
 }
 
 const type_validator *validator::get_validator_for_type(std::string_view typeCode) const
@@ -291,7 +299,7 @@ const type_validator *validator::get_validator_for_type(std::string_view typeCod
 	if (i != m_type_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
-		std::cout << "No validator for type " << typeCode << std::endl;
+		std::cout << "No validator for type " << typeCode << '\n';
 	return result;
 }
 
@@ -299,7 +307,7 @@ void validator::add_category_validator(category_validator &&v)
 {
 	auto r = m_category_validators.insert(std::move(v));
 	if (not r.second and VERBOSE > 4)
-		std::cout << "Could not add validator for category " << v.m_name << std::endl;
+		std::cout << "Could not add validator for category " << v.m_name << '\n';
 }
 
 const category_validator *validator::get_validator_for_category(std::string_view category) const
@@ -309,23 +317,23 @@ const category_validator *validator::get_validator_for_category(std::string_view
 	if (i != m_category_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
-		std::cout << "No validator for category " << category << std::endl;
+		std::cout << "No validator for category " << category << '\n';
 	return result;
 }
 
-item_validator *validator::get_validator_for_item(std::string_view tag) const
+item_validator *validator::get_validator_for_item(std::string_view item_name) const
 {
 	item_validator *result = nullptr;
 
 	std::string cat, item;
-	std::tie(cat, item) = split_tag_name(tag);
+	std::tie(cat, item) = split_item_name(item_name);
 
 	auto *cv = get_validator_for_category(cat);
 	if (cv != nullptr)
 		result = const_cast<item_validator *>(cv->get_validator_for_item(item));
 
 	if (result == nullptr and VERBOSE > 4)
-		std::cout << "No validator for item " << tag << std::endl;
+		std::cout << "No validator for item " << item_name << '\n';
 
 	return result;
 }
@@ -345,16 +353,16 @@ void validator::add_link_validator(link_validator &&v)
 	if (ccv == nullptr)
 		throw std::runtime_error("unknown child category " + v.m_child_category);
 
-	for (size_t i = 0; i < v.m_parent_keys.size(); ++i)
+	for (std::size_t i = 0; i < v.m_parent_keys.size(); ++i)
 	{
 		auto piv = pcv->get_validator_for_item(v.m_parent_keys[i]);
 
 		if (piv == nullptr)
-			throw std::runtime_error("unknown parent tag _" + v.m_parent_category + '.' + v.m_parent_keys[i]);
+			throw std::runtime_error("unknown parent item _" + v.m_parent_category + '.' + v.m_parent_keys[i]);
 
 		auto civ = ccv->get_validator_for_item(v.m_child_keys[i]);
 		if (civ == nullptr)
-			throw std::runtime_error("unknown child tag _" + v.m_child_category + '.' + v.m_child_keys[i]);
+			throw std::runtime_error("unknown child item _" + v.m_child_category + '.' + v.m_child_keys[i]);
 
 		if (civ->m_type == nullptr and piv->m_type != nullptr)
 			const_cast<item_validator *>(civ)->m_type = piv->m_type;
@@ -369,7 +377,7 @@ std::vector<const link_validator *> validator::get_links_for_parent(std::string_
 
 	for (auto &l : m_link_validators)
 	{
-		if (l.m_parent_category == category)
+		if (iequals(l.m_parent_category, category))
 			result.push_back(&l);
 	}
 
@@ -382,22 +390,39 @@ std::vector<const link_validator *> validator::get_links_for_child(std::string_v
 
 	for (auto &l : m_link_validators)
 	{
-		if (l.m_child_category == category)
+		if (iequals(l.m_child_category, category))
 			result.push_back(&l);
 	}
 
 	return result;
 }
 
-void validator::report_error(const std::string &msg, bool fatal) const
+void validator::report_error(std::error_code ec, bool fatal) const
 {
 	if (m_strict or fatal)
-		throw validation_error(msg);
-	else if (VERBOSE > 0)
-		std::cerr << msg << std::endl;
+		throw validation_exception(ec);
+	else
+		std::cerr << ec.message() << '\n';
+}
+
+void validator::report_error(std::error_code ec, std::string_view category,
+	std::string_view item, bool fatal) const
+{
+	auto ex = item.empty() ? validation_exception(ec, category) : validation_exception(ec, category, item);
+
+	if (m_strict or fatal)
+		throw ex;
+	else
+		std::cerr << ex.what() << '\n';
 }
 
 // --------------------------------------------------------------------
+
+validator_factory &validator_factory::instance()
+{
+	static validator_factory s_instance;
+	return s_instance;
+}
 
 const validator &validator_factory::operator[](std::string_view dictionary_name)
 {
@@ -428,58 +453,70 @@ const validator &validator_factory::operator[](std::string_view dictionary_name)
 		}
 
 		// not found, add it
-		auto data = load_resource(dictionary_name);
 
-		if (not data and dictionary.extension().string() != ".dic")
-			data = load_resource(dictionary.parent_path() / (dictionary.filename().string() + ".dic"));
+		validator v(dictionary_name);
 
-		if (data)
-			construct_validator(dictionary_name, *data);
-		else
+		for (bool first = true; auto part_name : cif::split(dictionary_name, ";", true))
 		{
-			std::error_code ec;
+			auto data = load_resource(part_name);
+			dictionary.assign(part_name.begin(), part_name.end());
 
-			// might be a compressed dictionary on disk
-			std::filesystem::path p = dictionary;
-			if (p.extension() == ".dic")
-				p = p.parent_path() / (p.filename().string() + ".gz");
-			else
-				p = p.parent_path() / (p.filename().string() + ".dic.gz");
+			if (not data and dictionary.extension().string() != ".dic")
+				data = load_resource(dictionary.parent_path() / (dictionary.filename().string() + ".dic"));
+
+			if (not data)
+			{
+				std::error_code ec;
+
+				// might be a compressed dictionary on disk
+				std::filesystem::path p = dictionary;
+				if (p.extension() == ".dic")
+					p = p.parent_path() / (p.filename().string() + ".gz");
+				else
+					p = p.parent_path() / (p.filename().string() + ".dic.gz");
 
 #if defined(CACHE_DIR) or defined(DATA_DIR)
-			if (not std::filesystem::exists(p, ec) or ec)
-			{
-				for (const char *dir : {
-#if defined(CACHE_DIR)
-						 CACHE_DIR,
-#endif
-#if defined(DATA_DIR)
-							 DATA_DIR
-#endif
-					 })
+				if (not std::filesystem::exists(p, ec) or ec)
 				{
-					auto p2 = std::filesystem::path(dir) / p;
-					if (std::filesystem::exists(p2, ec) and not ec)
+					for (const char *dir : {
+# if defined(CACHE_DIR)
+							 CACHE_DIR,
+# endif
+# if defined(DATA_DIR)
+							 DATA_DIR
+# endif
+						 })
 					{
-						swap(p, p2);
-						break;
+						auto p2 = std::filesystem::path(dir) / p;
+						if (std::filesystem::exists(p2, ec) and not ec)
+						{
+							swap(p, p2);
+							break;
+						}
 					}
 				}
-			}
 #endif
 
-			if (std::filesystem::exists(p, ec) and not ec)
-			{
-				gzio::ifstream in(p);
+				if (std::filesystem::exists(p, ec) and not ec)
+				{
+					auto in = std::make_unique<gzio::ifstream>(p);
 
-				if (not in.is_open())
-					throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
+					if (not in->is_open())
+						throw std::runtime_error("Could not open dictionary (" + p.string() + ")");
 
-				construct_validator(dictionary_name, in);
+					data.reset(in.release());
+				}
+				else
+					throw std::runtime_error("Dictionary not found or defined (" + dictionary.string() + ")");
 			}
+
+			if (std::exchange(first, false))
+				v = parse_dictionary(part_name, *data);
 			else
-				throw std::runtime_error("Dictionary not found or defined (" + dictionary.string() + ")");
+				extend_dictionary(v, *data);
 		}
+
+		m_validators.emplace_back(std::move(v));
 
 		return m_validators.back();
 	}

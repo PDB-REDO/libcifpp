@@ -30,17 +30,17 @@
 namespace cif
 {
 
-iset get_category_fields(const category &cat)
+iset get_category_items(const category &cat)
 {
-	return cat.key_fields();
+	return cat.key_items();
 }
 
-uint16_t get_column_ix(const category &cat, std::string_view col)
+uint16_t get_item_ix(const category &cat, std::string_view col)
 {
-	return cat.get_column_ix(col);
+	return cat.get_item_ix(col);
 }
 
-bool is_column_type_uchar(const category &cat, std::string_view col)
+bool is_item_type_uchar(const category &cat, std::string_view col)
 {
 	bool result = false;
 
@@ -63,14 +63,28 @@ namespace detail
 
 	condition_impl *key_equals_condition_impl::prepare(const category &c)
 	{
-		m_item_ix = c.get_column_ix(m_item_tag);
-		m_icase = is_column_type_uchar(c, m_item_tag);
+		m_item_ix = c.get_item_ix(m_item_name);
+		m_icase = is_item_type_uchar(c, m_item_name);
 
 		if (c.get_cat_validator() != nullptr and
-			c.key_field_indices().contains(m_item_ix) and
-			c.key_field_indices().size() == 1)
+			c.key_item_indices().contains(m_item_ix) and
+			c.key_item_indices().size() == 1)
 		{
-			m_single_hit = c[{ { m_item_tag, m_value } }];
+			m_single_hit = c[{ { m_item_name, m_value } }];
+		}
+
+		return this;
+	}
+
+	condition_impl *key_equals_number_condition_impl::prepare(const category &c)
+	{
+		m_item_ix = c.get_item_ix(m_item_name);
+
+		if (c.get_cat_validator() != nullptr and
+			c.key_item_indices().contains(m_item_ix) and
+			c.key_item_indices().size() == 1)
+		{
+			m_single_hit = c[{ { m_item_name, m_value } }];
 		}
 
 		return this;
@@ -101,27 +115,33 @@ namespace detail
 		auto first = subs.front();
 		auto &fc = first->m_sub;
 
-		for (auto c : fc)
+		for (size_t fc_i = 0; fc_i < fc.size();)
 		{
-			if (not found_in_range(c, subs.begin() + 1, subs.end()))
+			auto c = fc[fc_i];
+			if (not found_in_range(c, subs.begin() + 1, subs.end())) {
+				++fc_i;
 				continue;
+			}
 
 			if (and_result == nullptr)
 				and_result = new and_condition_impl();
 
 			and_result->m_sub.push_back(c);
-			fc.erase(remove(fc.begin(), fc.end(), c), fc.end());
+			fc.erase(fc.begin() + fc_i);
 
 			for (auto sub : subs)
 			{
 				auto &ssub = sub->m_sub;
 
-				for (auto sc : ssub)
+				for (size_t ssub_i = 0; ssub_i < ssub.size();)
 				{
-					if (not sc->equals(c))
+					auto sc = ssub[ssub_i];
+					if (not sc->equals(c)) {
+						++ssub_i;
 						continue;
+					}
 					
-					ssub.erase(remove(ssub.begin(), ssub.end(), sc), ssub.end());
+					ssub.erase(ssub.begin() + ssub_i);
 					delete sc;
 					break;
 				}

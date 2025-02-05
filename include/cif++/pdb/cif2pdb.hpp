@@ -26,17 +26,8 @@
 
 #pragma once
 
-#include "cif++/datablock.hpp"
+/// \file cif2pdb.hpp
+/// \deprecated This file is no longer used. Please use "cif++/pdb.hpp" instead
 
-namespace cif::pdb
-{
+#warning "Use of this file is deprecated, please use "cif++/pdb.hpp"
 
-/// \brief Just the HEADER, COMPND, SOURCE and AUTHOR lines
-void write_header_lines(std::ostream &os, const datablock &data);
-
-std::string get_HEADER_line(const datablock &data, std::string::size_type truncate_at = 127);
-std::string get_COMPND_line(const datablock &data, std::string::size_type truncate_at = 127);
-std::string get_SOURCE_line(const datablock &data, std::string::size_type truncate_at = 127);
-std::string get_AUTHOR_line(const datablock &data, std::string::size_type truncate_at = 127);
-
-} // namespace pdbx

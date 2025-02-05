@@ -24,8 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define BOOST_TEST_ALTERNATIVE_INIT_API
-#include <boost/test/included/unit_test.hpp>
+#include "test-main.hpp"
 
 #include <stdexcept>
 
@@ -33,18 +32,13 @@
 
 #include <Eigen/Eigenvalues>
 
-namespace tt = boost::test_tools;
-namespace utf = boost::unit_test;
-
-std::filesystem::path gTestDir = std::filesystem::current_path(); // filled in first test
-
 // --------------------------------------------------------------------
 
-cif::file operator""_cf(const char *text, size_t length)
+cif::file operator""_cf(const char *text, std::size_t length)
 {
 	struct membuf : public std::streambuf
 	{
-		membuf(char *text, size_t length)
+		membuf(char *text, std::size_t length)
 		{
 			this->setg(text, text, text + length);
 		}
@@ -56,28 +50,9 @@ cif::file operator""_cf(const char *text, size_t length)
 
 // --------------------------------------------------------------------
 
-bool init_unit_test()
-{
-	cif::VERBOSE = 1;
-
-	// not a test, just initialize test dir
-	if (boost::unit_test::framework::master_test_suite().argc == 2)
-		gTestDir = boost::unit_test::framework::master_test_suite().argv[1];
-
-	// do this now, avoids the need for installing
-	cif::add_file_resource("mmcif_pdbx.dic", gTestDir / ".." / "rsrc" / "mmcif_pdbx.dic");
-
-	// initialize CCD location
-	cif::add_file_resource("components.cif", gTestDir / ".." / "data" / "ccd-subset.cif");
-
-	return true;
-}
-
-// --------------------------------------------------------------------
-
 // 3d tests
 
-BOOST_AUTO_TEST_CASE(t1)
+TEST_CASE("t1")
 {
 	// std::random_device rnd;
 	// std::mt19937 gen(rnd());
@@ -115,19 +90,19 @@ BOOST_AUTO_TEST_CASE(t1)
 
 	const auto &&[angle, axis] = cif::quaternion_to_angle_axis(q2);
 
-	BOOST_TEST(std::fmod(360 + angle, 360) == std::fmod(360 - angle0, 360), tt::tolerance(0.01));
+	REQUIRE_THAT(std::fmod(360 + angle, 360), Catch::Matchers::WithinRel(std::fmod(360 - angle0, 360), 0.01));
 
 	for (auto &p : p1)
 		p.rotate(q2);
 
 	auto rmsd = cif::RMSd(p1, p2);
 
-	BOOST_TEST(rmsd < 1e-5);
+	REQUIRE(rmsd < 1e-5);
 
-	// std::cout << "rmsd: " << RMSd(p1, p2) << std::endl;
+	// std::cout << "rmsd: " << RMSd(p1, p2) << '\n';
 }
 
-BOOST_AUTO_TEST_CASE(t2)
+TEST_CASE("t2")
 {
 	cif::point p[] = {
 		{ 1, 1, 0 },
@@ -141,10 +116,10 @@ BOOST_AUTO_TEST_CASE(t2)
 
 	auto &&[angle, axis] = cif::quaternion_to_angle_axis(q);
 
-	BOOST_TEST(angle == 45, tt::tolerance(0.01));
+	REQUIRE_THAT(angle, Catch::Matchers::WithinRel(45.f, 0.01f));
 }
 
-BOOST_AUTO_TEST_CASE(t3)
+TEST_CASE("t3")
 {
 	cif::point p[] = {
 		{ 1, 1, 0 },
@@ -161,14 +136,14 @@ BOOST_AUTO_TEST_CASE(t3)
 	v.rotate(q);
 	v += p[0];
 
-	std::cout << v << std::endl;
+	std::cout << v << '\n';
 
 	double a = cif::angle(v, p[0], p[1]);
 
-	BOOST_TEST(a == 45, tt::tolerance(0.01));
+	REQUIRE_THAT(a, Catch::Matchers::WithinRel(45.f, 0.01f));
 }
 
-BOOST_AUTO_TEST_CASE(dh_q_0)
+TEST_CASE("dh_q_0")
 {
 	cif::point axis(1, 0, 0);
 
@@ -182,33 +157,33 @@ BOOST_AUTO_TEST_CASE(dh_q_0)
 	};
 
 	auto a = cif::dihedral_angle(t[0], t[1], t[2], p);
-	BOOST_TEST(a == 0, tt::tolerance(0.01f));
+	REQUIRE_THAT(a, Catch::Matchers::WithinRel(0.f, 0.01f));
 
 	auto q = cif::construct_from_angle_axis(90, axis);
 
 	p.rotate(q);
 
-	BOOST_TEST(p.m_x == 1, tt::tolerance(0.01f));
-	BOOST_TEST(p.m_y == 0, tt::tolerance(0.01f));
-	BOOST_TEST(p.m_z == 1, tt::tolerance(0.01f));
+	REQUIRE(std::abs(p.m_x - 1.f) < 0.01f);
+	REQUIRE(std::abs(p.m_y - 0.f) < 0.01f);
+	REQUIRE(std::abs(p.m_z - 1.f) < 0.01f);
 
 	a = cif::dihedral_angle(t[0], t[1], t[2], p);
-	BOOST_TEST(a == 90, tt::tolerance(0.01f));
+	REQUIRE(std::abs(a - 90.f) < 0.01f);
 
 	q = cif::construct_from_angle_axis(-90, axis);
 
 	p.rotate(q);
 
-	BOOST_TEST(p.m_x == 1, tt::tolerance(0.01f));
-	BOOST_TEST(p.m_y == 1, tt::tolerance(0.01f));
-	BOOST_TEST(p.m_z == 0, tt::tolerance(0.01f));
+	REQUIRE(std::abs(p.m_x - 1.f) < 0.01f);
+	REQUIRE(std::abs(p.m_y - 1.f) < 0.01f);
+	REQUIRE(std::abs(p.m_z - 0.f) < 0.01f);
 
 	a = cif::dihedral_angle(t[0], t[1], t[2], p);
-	BOOST_TEST(a == 0, tt::tolerance(0.01f));
+	REQUIRE(std::abs(a - 0.f) < 0.01f);
 
 }
 
-BOOST_AUTO_TEST_CASE(dh_q_1)
+TEST_CASE("dh_q_1")
 {
 	struct
 	{
@@ -247,15 +222,15 @@ BOOST_AUTO_TEST_CASE(dh_q_1)
 		pts[3].rotate(q, pts[2]);
 
 		auto dh = cif::dihedral_angle(pts[0], pts[1], pts[2], pts[3]);
-		BOOST_TEST(dh == angle, tt::tolerance(0.1f));
+		REQUIRE_THAT(dh, Catch::Matchers::WithinRel(angle, 0.1f));
 	}
 }
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
+TEST_CASE("m2q_0, *utf::tolerance(0.001f)")
 {
-	for (size_t i = 0; i < cif::kSymopNrTableSize; ++i)
+	for (std::size_t i = 0; i < cif::kSymopNrTableSize; ++i)
 	{
 		auto d = cif::kSymopNrTable[i].symop().data();
 
@@ -281,10 +256,10 @@ BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
 
 		auto ev = es.eigenvalues();
 
-		size_t bestJ = 0;
+		std::size_t bestJ = 0;
 		float bestEV = -1;
 
-		for (size_t j = 0; j < 4; ++j)
+		for (std::size_t j = 0; j < 4; ++j)
 		{
 			if (bestEV < ev[j].real())
 			{
@@ -310,15 +285,15 @@ BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
 
 		cif::point p3 = rot * p1;
 
-		BOOST_TEST(p2.m_x == p3.m_x);
-		BOOST_TEST(p2.m_y == p3.m_y);
-		BOOST_TEST(p2.m_z == p3.m_z);
+		REQUIRE_THAT(p2.m_x, Catch::Matchers::WithinRel(p3.m_x, 0.01f));
+		REQUIRE_THAT(p2.m_y, Catch::Matchers::WithinRel(p3.m_y, 0.01f));
+		REQUIRE_THAT(p2.m_z, Catch::Matchers::WithinRel(p3.m_z, 0.01f));
 	}
 }
 
-// BOOST_AUTO_TEST_CASE(m2q_1, *utf::tolerance(0.001f))
+// "TEST_CASE(m2q_1, *utf::tolerance(0.001f)")
 // {
-// 	for (size_t i = 0; i < cif::kSymopNrTableSize; ++i)
+// 	for (std::size_t i = 0; i < cif::kSymopNrTableSize; ++i)
 // 	{
 // 		auto d = cif::kSymopNrTable[i].symop().data();
 
@@ -342,10 +317,10 @@ BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
 
 // 		auto &&[ev, em] = cif::eigen(m * (1/3.0f), false);
 
-// 		size_t bestJ = 0;
+// 		std::size_t bestJ = 0;
 // 		float bestEV = -1;
 
-// 		for (size_t j = 0; j < 4; ++j)
+// 		for (std::size_t j = 0; j < 4; ++j)
 // 		{
 // 			if (bestEV < ev[j])
 // 			{
@@ -369,15 +344,15 @@ BOOST_AUTO_TEST_CASE(m2q_0, *utf::tolerance(0.001f))
 
 // 		cif::point p3 = rot * p1;
 
-// 		BOOST_TEST(p2.m_x == p3.m_x);
-// 		BOOST_TEST(p2.m_y == p3.m_y);
-// 		BOOST_TEST(p2.m_z == p3.m_z);
+// 		REQUIRE(p2.m_x == p3.m_x);
+// 		REQUIRE(p2.m_y == p3.m_y);
+// 		REQUIRE(p2.m_z == p3.m_z);
 // 	}
 // }
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(symm_1)
+TEST_CASE("symm_1")
 {
 	cif::cell c(10, 10, 10);
 
@@ -385,37 +360,37 @@ BOOST_AUTO_TEST_CASE(symm_1)
 
 	cif::point f = fractional(p, c);
 
-	BOOST_TEST(f.m_x == 0.1f, tt::tolerance(0.01));
-	BOOST_TEST(f.m_y == 0.1f, tt::tolerance(0.01));
-	BOOST_TEST(f.m_z == 0.1f, tt::tolerance(0.01));
+	REQUIRE_THAT(f.m_x, Catch::Matchers::WithinRel(0.1f, 0.01f));
+	REQUIRE_THAT(f.m_y, Catch::Matchers::WithinRel(0.1f, 0.01f));
+	REQUIRE_THAT(f.m_z, Catch::Matchers::WithinRel(0.1f, 0.01f));
 
 	cif::point o = orthogonal(f, c);
 
-	BOOST_TEST(o.m_x == 1.f, tt::tolerance(0.01));
-	BOOST_TEST(o.m_y == 1.f, tt::tolerance(0.01));
-	BOOST_TEST(o.m_z == 1.f, tt::tolerance(0.01));
+	REQUIRE_THAT(o.m_x, Catch::Matchers::WithinRel(1.f, 0.01f));
+	REQUIRE_THAT(o.m_y, Catch::Matchers::WithinRel(1.f, 0.01f));
+	REQUIRE_THAT(o.m_z, Catch::Matchers::WithinRel(1.f, 0.01f));
 }
 
-BOOST_AUTO_TEST_CASE(symm_2)
+TEST_CASE("symm_2")
 {
 	using namespace cif::literals;
 
 	auto symop = "1_555"_symop;
 
-	BOOST_TEST(symop.is_identity() == true);
+	REQUIRE(symop.is_identity() == true);
 }
 
-BOOST_AUTO_TEST_CASE(symm_3)
+TEST_CASE("symm_3")
 {
 	using namespace cif::literals;
 
 	cif::spacegroup sg(18);
 
-	BOOST_TEST(sg.size() == 4);
-	BOOST_TEST(sg.get_name() == "P 21 21 2");
+	REQUIRE(sg.size() == 4UL);
+	REQUIRE(sg.get_name() == "P 21 21 2");
 }
 
-BOOST_AUTO_TEST_CASE(symm_4, *utf::tolerance(0.1f))
+TEST_CASE("symm_4, *utf::tolerance(0.1f)")
 {
 	using namespace cif::literals;
 
@@ -427,21 +402,21 @@ BOOST_AUTO_TEST_CASE(symm_4, *utf::tolerance(0.1f))
 	cif::point b{  -35.356,  33.693, -3.236 }; // CG2 THR D 400
 	cif::point sb(  -6.916,   79.34,   3.236); // 4_565 copy of b
 
-	BOOST_TEST(distance(a, sg(a, c, "1_455"_symop)) == static_cast<float>(c.get_a()));
-	BOOST_TEST(distance(a, sg(a, c, "1_545"_symop)) == static_cast<float>(c.get_b()));
-	BOOST_TEST(distance(a, sg(a, c, "1_554"_symop)) == static_cast<float>(c.get_c()));
+	REQUIRE_THAT(distance(a, sg(a, c, "1_455"_symop)), Catch::Matchers::WithinRel(static_cast<float>(c.get_a()), 0.01f));
+	REQUIRE_THAT(distance(a, sg(a, c, "1_545"_symop)), Catch::Matchers::WithinRel(static_cast<float>(c.get_b()), 0.01f));
+	REQUIRE_THAT(distance(a, sg(a, c, "1_554"_symop)), Catch::Matchers::WithinRel(static_cast<float>(c.get_c()), 0.01f));
 
 	auto sb2 = sg(b, c, "4_565"_symop);
-	BOOST_TEST(sb.m_x == sb2.m_x);
-	BOOST_TEST(sb.m_y == sb2.m_y);
-	BOOST_TEST(sb.m_z == sb2.m_z);
+	REQUIRE_THAT(sb.m_x, Catch::Matchers::WithinRel(sb2.m_x, 0.01f));
+	REQUIRE_THAT(sb.m_y, Catch::Matchers::WithinRel(sb2.m_y, 0.01f));
+	REQUIRE_THAT(sb.m_z, Catch::Matchers::WithinRel(sb2.m_z, 0.01f));
 
-	BOOST_TEST(distance(a, sb2) == 7.42f);	
+	REQUIRE_THAT(distance(a, sb2), Catch::Matchers::WithinRel(7.42f, 0.01f));	
 }
 
 // --------------------------------------------------------------------
 
-BOOST_AUTO_TEST_CASE(symm_4wvp_1, *utf::tolerance(0.1f))
+TEST_CASE("symm_4wvp_1, *utf::tolerance(0.1f)")
 {
 	using namespace cif::literals;
 
@@ -456,21 +431,21 @@ BOOST_AUTO_TEST_CASE(symm_4wvp_1, *utf::tolerance(0.1f))
 	auto a = s.get_residue("A", 10, "").get_atom_by_atom_id("O");
 
 	auto sp1 = c.symmetry_copy(a.get_location(), "2_565"_symop);
-	BOOST_TEST(sp1.m_x == p.m_x);
-	BOOST_TEST(sp1.m_y == p.m_y);
-	BOOST_TEST(sp1.m_z == p.m_z);
+	REQUIRE_THAT(sp1.m_x, Catch::Matchers::WithinAbs(p.m_x, 0.5f));
+	REQUIRE_THAT(sp1.m_y, Catch::Matchers::WithinAbs(p.m_y, 0.5f));
+	REQUIRE_THAT(sp1.m_z, Catch::Matchers::WithinAbs(p.m_z, 0.5f));
 
 	const auto &[d, sp2, so] = c.closest_symmetry_copy(p, a.get_location());
 
-	BOOST_TEST(d < 1);
+	REQUIRE(d < 1);
 
-	BOOST_TEST(sp2.m_x == p.m_x);
-	BOOST_TEST(sp2.m_y == p.m_y);
-	BOOST_TEST(sp2.m_z == p.m_z);
+	REQUIRE_THAT(sp2.m_x, Catch::Matchers::WithinAbs(p.m_x, 0.5f));
+	REQUIRE_THAT(sp2.m_y, Catch::Matchers::WithinAbs(p.m_y, 0.5f));
+	REQUIRE_THAT(sp2.m_z, Catch::Matchers::WithinAbs(p.m_z, 0.5f));
 
 }
 
-BOOST_AUTO_TEST_CASE(symm_2bi3_1, *utf::tolerance(0.1f))
+TEST_CASE("symm_2bi3_1, *utf::tolerance(0.1f)")
 {
 	cif::file f(gTestDir / "2bi3.cif.gz");
 
@@ -502,23 +477,70 @@ BOOST_AUTO_TEST_CASE(symm_2bi3_1, *utf::tolerance(0.1f))
 		auto sa1 = c.symmetry_copy(a1.get_location(), cif::sym_op(symm1));
 		auto sa2 = c.symmetry_copy(a2.get_location(), cif::sym_op(symm2));
 
-		BOOST_TEST(cif::distance(sa1, sa2) == dist);
+		REQUIRE_THAT(cif::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
 
 		auto pa1 = a1.get_location();
 
 		const auto &[d, p, so] = c.closest_symmetry_copy(pa1, a2.get_location());
 
-		BOOST_TEST(p.m_x == sa2.m_x);
-		BOOST_TEST(p.m_y == sa2.m_y);
-		BOOST_TEST(p.m_z == sa2.m_z);
+		REQUIRE_THAT(p.m_x, Catch::Matchers::WithinAbs(sa2.m_x, 0.5f));
+		REQUIRE_THAT(p.m_y, Catch::Matchers::WithinAbs(sa2.m_y, 0.5f));
+		REQUIRE_THAT(p.m_z, Catch::Matchers::WithinAbs(sa2.m_z, 0.5f));
 
-		BOOST_TEST(d == dist);
-		BOOST_TEST(so.string() == symm2);
+		REQUIRE_THAT(d, Catch::Matchers::WithinAbs(dist, 0.5f));
+		REQUIRE(so.string() == symm2);
 	}
 }
 
+TEST_CASE("symm_2bi3_1a, *utf::tolerance(0.1f)")
+{
+	using namespace cif::literals;
 
-BOOST_AUTO_TEST_CASE(symm_3bwh_1, *utf::tolerance(0.1f))
+	cif::file f(gTestDir / "2bi3.cif.gz");
+
+	auto &db = f.front();
+
+	cif::crystal c(db);
+	auto struct_conn = db["struct_conn"];
+	auto atom_site = db["atom_site"];
+
+	for (const auto &[
+			asym1, seqid1, authseqid1, atomid1, symm1,
+			asym2, seqid2, authseqid2, atomid2, symm2,
+			dist] : struct_conn.find<
+				std::string,std::optional<int>,std::string,std::string,std::string,
+				std::string,std::optional<int>,std::string,std::string,std::string,
+				float>(
+			cif::key("ptnr1_symmetry") != "1_555" or cif::key("ptnr2_symmetry") != "1_555",
+			"ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr1_auth_seq_id", "ptnr1_label_atom_id", "ptnr1_symmetry", 
+			"ptnr2_label_asym_id", "ptnr2_label_seq_id", "ptnr2_auth_seq_id", "ptnr2_label_atom_id", "ptnr2_symmetry", 
+			"pdbx_dist_value"
+		))
+	{
+		cif::point p1 = atom_site.find1<float,float,float>(
+			"label_asym_id"_key == asym1 and "label_seq_id"_key == seqid1 and "auth_seq_id"_key == authseqid1 and "label_atom_id"_key == atomid1,
+			"cartn_x", "cartn_y", "cartn_z");
+		cif::point p2 = atom_site.find1<float,float,float>(
+			"label_asym_id"_key == asym2 and "label_seq_id"_key == seqid2 and "auth_seq_id"_key == authseqid2 and "label_atom_id"_key == atomid2,
+			"cartn_x", "cartn_y", "cartn_z");
+
+		auto sa1 = c.symmetry_copy(p1, cif::sym_op(symm1));
+		auto sa2 = c.symmetry_copy(p2, cif::sym_op(symm2));
+
+		REQUIRE_THAT(cif::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
+
+		const auto &[d, p, so] = c.closest_symmetry_copy(p1, p2);
+
+		REQUIRE_THAT(p.m_x, Catch::Matchers::WithinAbs(sa2.m_x, 0.5f));
+		REQUIRE_THAT(p.m_y, Catch::Matchers::WithinAbs(sa2.m_y, 0.5f));
+		REQUIRE_THAT(p.m_z, Catch::Matchers::WithinAbs(sa2.m_z, 0.5f));
+
+		REQUIRE_THAT(d, Catch::Matchers::WithinAbs(dist, 0.5f));
+		REQUIRE(so.string() == symm2);
+	}
+}
+
+TEST_CASE("symm_3bwh_1, *utf::tolerance(0.1f)")
 {
 	cif::file f(gTestDir / "3bwh.cif.gz");
 
@@ -536,7 +558,19 @@ BOOST_AUTO_TEST_CASE(symm_3bwh_1, *utf::tolerance(0.1f))
 			
 			const auto&[ d, p, so ] = c.closest_symmetry_copy(a1.get_location(), a2.get_location());
 
-			BOOST_TEST(d == distance(a1.get_location(), p));
+			REQUIRE_THAT(d, Catch::Matchers::WithinAbs(distance(a1.get_location(), p), 0.5f));
 		}
 	}
 }
+
+TEST_CASE("volume_3bwh_1, *utf::tolerance(0.1f)")
+{
+	cif::file f(gTestDir / "1juh.cif.gz");
+
+	auto &db = f.front();
+
+	cif::crystal c(db);
+
+	REQUIRE_THAT(c.get_cell().get_volume(), Catch::Matchers::WithinRel(741009.625f, 0.01f));
+}
+

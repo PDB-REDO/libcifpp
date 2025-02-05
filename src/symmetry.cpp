@@ -70,14 +70,30 @@ void cell::init()
 
 	m_orthogonal = identity_matrix(3);
 
-	m_orthogonal(0, 0) = m_a;
-	m_orthogonal(0, 1) = m_b * std::cos(gamma);
-	m_orthogonal(0, 2) = m_c * std::cos(beta);
-	m_orthogonal(1, 1) = m_b * std::sin(gamma);
-	m_orthogonal(1, 2) = -m_c * std::sin(beta) * std::cos(alpha_star);
-	m_orthogonal(2, 2) = m_c * std::sin(beta) * std::sin(alpha_star);
+	m_orthogonal(0, 0) = static_cast<float>(m_a);
+	m_orthogonal(0, 1) = static_cast<float>(m_b * std::cos(gamma));
+	m_orthogonal(0, 2) = static_cast<float>(m_c * std::cos(beta));
+	m_orthogonal(1, 1) = static_cast<float>(m_b * std::sin(gamma));
+	m_orthogonal(1, 2) = static_cast<float>(-m_c * std::sin(beta) * std::cos(alpha_star));
+	m_orthogonal(2, 2) = static_cast<float>(m_c * std::sin(beta) * std::sin(alpha_star));
 
 	m_fractional = inverse(m_orthogonal);
+}
+
+float cell::get_volume() const
+{
+	auto alpha = (m_alpha * kPI) / 180;
+	auto beta = (m_beta * kPI) / 180;
+	auto gamma = (m_gamma * kPI) / 180;
+
+	auto cos_alpha = std::cos(alpha);
+	auto cos_beta = std::cos(beta);
+	auto cos_gamma = std::cos(gamma);
+
+	auto vol = m_a * m_b * m_c;
+	vol *= std::sqrt(1.0f - cos_alpha * cos_alpha - cos_beta * cos_beta - cos_gamma * cos_gamma + 2.0f * cos_alpha * cos_beta * cos_gamma);
+
+	return vol;
 }
 
 // --------------------------------------------------------------------
@@ -90,12 +106,12 @@ sym_op::sym_op(std::string_view s)
 	int rnri = 256;	// default to unexisting number
 	auto r = std::from_chars(b, e, rnri);
 	
-	m_nr = rnri;
+	m_nr = static_cast<uint8_t>(rnri);
 	m_ta = r.ptr[1] - '0';
 	m_tb = r.ptr[2] - '0';
 	m_tc = r.ptr[3] - '0';
 
-	if (r.ec != std::errc() or rnri > 192 or r.ptr[0] != '_' or m_ta > 9 or m_tb > 9 or m_tc > 9)
+	if ((bool)r.ec or rnri > 192 or r.ptr[0] != '_' or m_ta > 9 or m_tb > 9 or m_tc > 9)
 		throw std::invalid_argument("Could not convert string into sym_op");
 }
 
@@ -103,7 +119,7 @@ std::string sym_op::string() const
 {
 	char b[9];
 	auto r = std::to_chars(b, b + sizeof(b), m_nr);
-	if (r.ec != std::errc() or r.ptr > b + 4)
+	if ((bool)r.ec or r.ptr > b + 4)
 		throw std::runtime_error("Could not write out symmetry operation to string");
 	
 	*r.ptr++ = '_';
@@ -112,7 +128,7 @@ std::string sym_op::string() const
 	*r.ptr++ = '0' + m_tc;
 	*r.ptr = 0;
 
-	return { b, static_cast<size_t>(r.ptr - b) };
+	return { b, static_cast<std::size_t>(r.ptr - b) };
 }
 
 // --------------------------------------------------------------------
@@ -121,21 +137,21 @@ transformation::transformation(const symop_data &data)
 {
 	const auto &d = data.data();
 
-	m_rotation(0, 0) = d[0];
-	m_rotation(0, 1) = d[1];
-	m_rotation(0, 2) = d[2];
-	m_rotation(1, 0) = d[3];
-	m_rotation(1, 1) = d[4];
-	m_rotation(1, 2) = d[5];
-	m_rotation(2, 0) = d[6];
-	m_rotation(2, 1) = d[7];
-	m_rotation(2, 2) = d[8];
+	m_rotation(0, 0) = static_cast<float>(d[0]);
+	m_rotation(0, 1) = static_cast<float>(d[1]);
+	m_rotation(0, 2) = static_cast<float>(d[2]);
+	m_rotation(1, 0) = static_cast<float>(d[3]);
+	m_rotation(1, 1) = static_cast<float>(d[4]);
+	m_rotation(1, 2) = static_cast<float>(d[5]);
+	m_rotation(2, 0) = static_cast<float>(d[6]);
+	m_rotation(2, 1) = static_cast<float>(d[7]);
+	m_rotation(2, 2) = static_cast<float>(d[8]);
 
 	try_create_quaternion();
 
-	m_translation.m_x = d[9] == 0 ? 0 : 1.0 * d[9] / d[10];
-	m_translation.m_y = d[11] == 0 ? 0 : 1.0 * d[11] / d[12];
-	m_translation.m_z = d[13] == 0 ? 0 : 1.0 * d[13] / d[14];
+	m_translation.m_x = static_cast<float>(d[9] == 0 ? 0 : 1.0 * d[9] / d[10]);
+	m_translation.m_y = static_cast<float>(d[11] == 0 ? 0 : 1.0 * d[11] / d[12]);
+	m_translation.m_z = static_cast<float>(d[13] == 0 ? 0 : 1.0 * d[13] / d[14]);
 }
 
 transformation::transformation(const matrix3x3<float> &r, const cif::point &t)
@@ -168,7 +184,7 @@ void transformation::try_create_quaternion()
 
 	auto ev = es.eigenvalues();
 
-	for (size_t j = 0; j < 4; ++j)
+	for (std::size_t j = 0; j < 4; ++j)
 	{
 		if (std::abs(ev[j].real() - 1) > 0.01)
 			continue;
@@ -205,7 +221,7 @@ transformation inverse(const transformation &t)
 spacegroup::spacegroup(int nr)
 	: m_nr(nr)
 {
-	const size_t N = kSymopNrTableSize;
+	const std::size_t N = kSymopNrTableSize;
 	int32_t L = 0, R = static_cast<int32_t>(N - 1);
 	while (L <= R)
 	{
@@ -218,7 +234,7 @@ spacegroup::spacegroup(int nr)
 
 	m_index = L;
 
-	for (size_t i = L; i < N and kSymopNrTable[i].spacegroup() == m_nr; ++i)
+	for (std::size_t i = L; i < N and kSymopNrTable[i].spacegroup() == m_nr; ++i)
 		emplace_back(kSymopNrTable[i].symop().data());
 }
 
@@ -327,7 +343,7 @@ int get_space_group_number(std::string_view spacegroup)
 
 	int result = 0;
 
-	const size_t N = kNrOfSpaceGroups;
+	const std::size_t N = kNrOfSpaceGroups;
 	int32_t L = 0, R = static_cast<int32_t>(N - 1);
 	while (L <= R)
 	{
@@ -349,7 +365,7 @@ int get_space_group_number(std::string_view spacegroup)
 	// not found, see if we can find a match based on xHM name
 	if (result == 0)
 	{
-		for (size_t i = 0; i < kNrOfSpaceGroups; ++i)
+		for (std::size_t i = 0; i < kNrOfSpaceGroups; ++i)
 		{
 			auto &sp = kSpaceGroups[i];
 			if (sp.xHM == spacegroup)
@@ -379,7 +395,7 @@ int get_space_group_number(std::string_view spacegroup, space_group_name type)
 
 	if (type == space_group_name::full)
 	{
-		const size_t N = kNrOfSpaceGroups;
+		const std::size_t N = kNrOfSpaceGroups;
 		int32_t L = 0, R = static_cast<int32_t>(N - 1);
 		while (L <= R)
 		{
@@ -459,9 +475,9 @@ std::tuple<float,point,sym_op> crystal::closest_symmetry_copy(point a, point b) 
 
 	a = orthogonal(fa, m_cell);
 
-	for (size_t i = 0; i < m_spacegroup.size(); ++i)
+	for (std::size_t i = 0; i < m_spacegroup.size(); ++i)
 	{
-		sym_op s(i + 1);
+		sym_op s(static_cast<uint8_t>(i + 1));
 		auto &t = m_spacegroup[i];
 
 		auto fsb = t(fb);

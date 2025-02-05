@@ -181,7 +181,7 @@ _pdbx_chem_comp_audit.comp_id
 _pdbx_chem_comp_audit.action_type 
 _pdbx_chem_comp_audit.date 
 _pdbx_chem_comp_audit.processing_site 
-REA_v2 "CREA_v2te component"   1999-07-08 RCSB 
+REA_v2 "Create component"   1999-07-08 RCSB 
 REA_v2 "Modify descriptor"  2011-06-04 RCSB 
 REA_v2 "Other modification" 2016-10-18 RCSB 
 # 

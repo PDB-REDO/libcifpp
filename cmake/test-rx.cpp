@@ -11,8 +11,8 @@ int main()
 
 	std::regex_search(s, m, r);
 
-	std::cout << s.substr(0, 10) << std::endl;
-	std::cout << m.str(1).substr(0, 10) << std::endl;
+	std::cout << s.substr(0, 10) << '\n';
+	std::cout << m.str(1).substr(0, 10) << '\n';
 
 	return 0;
 }

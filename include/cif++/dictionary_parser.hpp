@@ -28,10 +28,23 @@
 
 #include "cif++/validate.hpp"
 
+/**
+ * @file validate.hpp
+ * 
+ * Functions to create and manipulate validator objects 
+ */
+
 namespace cif
 {
 
+/**
+ * @brief Parse the contents of @a is and create a new validator object with name @a name
+ */
 validator parse_dictionary(std::string_view name, std::istream &is);
+
+/**
+ * @brief Extend the definitions in validator @a v with the contents of stream @a is
+ */
 void extend_dictionary(validator &v, std::istream &is);
 
 } // namespace cif

@@ -26,35 +26,7 @@
 
 #pragma once
 
-#include "cif++/datablock.hpp"
+/// \file io.hpp
+/// \deprecated This file is no longer used. Please use "cif++/pdb.hpp" instead
 
-namespace cif::pdb
-{
-
-/// \brief Read a file in either mmCIF or PDB format, compressed or not,
-/// depending on the content.
-file read(const std::filesystem::path &file);
-
-/// \brief Read a file in either mmCIF or PDB format, compressed or not,
-/// depending on the content.
-file read(std::istream &is);
-
-/// \brief Write out a file in PDB format
-void write(std::ostream &os, const datablock &db);
-
-/// \brief Write out a file in PDB format
-inline void write(std::ostream &os, const file &f)
-{
-	write(os, f.front());
-}
-
-/// \brief Write out a file in PDB format or mmCIF format, depending on the filename extension
-void write(const std::filesystem::path &file, const datablock &db);
-
-/// \brief Write out a file in PDB format or mmCIF format, depending on the filename extension
-inline void write(const std::filesystem::path &p, const file &f)
-{
-	write(p, f.front());
-}
-
-}
+#warning "Use of this file is deprecated, please use "cif++/pdb.hpp"

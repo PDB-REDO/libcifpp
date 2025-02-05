@@ -31,11 +31,32 @@ namespace cif
 {
 
 // --------------------------------------------------------------------
+// TODO: This is wrong. A validator should be assigned to datablocks,
+// not to a file. Since audit_conform is a category specifying the
+// content of a datablock. Not the entire file.
+
 void file::set_validator(const validator *v)
 {
 	m_validator = v;
-	for (auto &db : *this)
-		db.set_validator(v);
+	for (bool first = true; auto &db : *this)
+	{
+		try
+		{
+			db.set_validator(v);
+		}
+		catch (const std::exception &e)
+		{
+			if (first)
+				throw;
+
+			// Accept failure on secondary datablocks
+			// now that many mmCIF files have invalid
+			// restraint data concatenated.
+			std::cerr << e.what() << '\n';
+		}
+
+		first = false;
+	}
 }
 
 bool file::is_valid() const
@@ -58,7 +79,7 @@ bool file::is_valid()
 	if (m_validator == nullptr)
 	{
 		if (VERBOSE > 0)
-			std::cerr << "No dictionary loaded explicitly, loading default" << std::endl;
+			std::cerr << "No dictionary loaded explicitly, loading default\n";
 
 		load_dictionary();
 	}
@@ -78,12 +99,12 @@ bool file::validate_links() const
 {
 	if (m_validator == nullptr)
 		std::runtime_error("No validator loaded explicitly, cannot continue");
-	
+
 	bool result = true;
 
 	for (auto &db : *this)
 		result = db.validate_links() and result;
-	
+
 	return result;
 }
 
@@ -97,7 +118,7 @@ void file::load_dictionary()
 			std::string name = audit_conform->front().get<std::string>("dict_name");
 
 			if (name == "mmcif_pdbx_v50")
-				name = "mmcif_pdbx.dic";	// we had a bug here in libcifpp... 
+				name = "mmcif_pdbx.dic"; // we had a bug here in libcifpp...
 
 			if (not name.empty())
 			{
@@ -108,7 +129,7 @@ void file::load_dictionary()
 				catch (const std::exception &ex)
 				{
 					if (VERBOSE)
-						std::cerr << "Failed to load dictionary " << std::quoted(name) << ": " << ex.what() << std::endl;
+						std::cerr << "Failed to load dictionary " << std::quoted(name) << ": " << ex.what() << '\n';
 				}
 			}
 		}
@@ -125,7 +146,8 @@ void file::load_dictionary(std::string_view name)
 
 bool file::contains(std::string_view name) const
 {
-	return std::find_if(begin(), end(), [name](const datablock &db) { return iequals(db.name(), name); }) != end();
+	return std::find_if(begin(), end(), [name](const datablock &db)
+			   { return iequals(db.name(), name); }) != end();
 }
 
 datablock &file::operator[](std::string_view name)
@@ -158,13 +180,6 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 		if (iequals(name, i->name()))
 		{
 			is_new = false;
-
-			if (i != begin())
-			{
-				auto n = std::next(i);
-				splice(begin(), *this, i, n);
-			}
-
 			break;
 		}
 
@@ -173,26 +188,27 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 
 	if (is_new)
 	{
-		auto &db = emplace_front(name);
-		db.set_validator(m_validator);
+		i = insert(end(), { name });
+		i->set_validator(m_validator);
 	}
 
-	return std::make_tuple(begin(), is_new);
+	assert(i != end());
+	return std::make_tuple(i, is_new);
 }
 
 void file::load(const std::filesystem::path &p)
 {
+	gzio::ifstream in(p);
+	if (not in.is_open())
+		throw std::runtime_error("Could not open file '" + p.string() + '\'');
+
 	try
 	{
-		gzio::ifstream in(p);
-		if (not in.is_open())
-			throw std::runtime_error("Could not open file " + p.string());
-
 		load(in);
 	}
 	catch (const std::exception &)
 	{
-		throw_with_nested(std::runtime_error("Error reading file " + p.string()));
+		throw_with_nested(std::runtime_error("Error reading file '" + p.string() + '\''));
 	}
 }
 
@@ -219,7 +235,7 @@ void file::save(const std::filesystem::path &p) const
 void file::save(std::ostream &os) const
 {
 	// if (not is_valid())
-	// 	std::cout << "File is not valid!" << std::endl;
+	// 	std::cout << "File is not valid!\n";
 
 	for (auto &db : *this)
 		db.write(os);

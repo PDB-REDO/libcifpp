@@ -43,11 +43,6 @@
 #include <sstream>
 #include <thread>
 
-#if not defined(_WIN32)
-#include <sys/ioctl.h>
-#include <termios.h>
-#endif
-
 namespace fs = std::filesystem;
 
 // --------------------------------------------------------------------
@@ -86,25 +81,10 @@ uint32_t get_terminal_width()
     return csbi.srWindow.Right - csbi.srWindow.Left + 1;
 }
 
-std::string GetExecutablePath()
-{
-	WCHAR buffer[4096];
-
-	DWORD n = ::GetModuleFileNameW(nullptr, buffer, sizeof(buffer) / sizeof(WCHAR));
-	if (n == 0)
-		throw std::runtime_error("could not get exe path");
-
-	std::wstring ws(buffer);
-
-	// convert from utf16 to utf8
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv1;
-	std::string u8str = conv1.to_bytes(ws);
-
-	return u8str;
-}
-
 #else
 
+#include <sys/ioctl.h>
+#include <termios.h>
 #include <limits.h>
 
 uint32_t get_terminal_width()
@@ -118,17 +98,6 @@ uint32_t get_terminal_width()
 		result = w.ws_col;
 	}
 	return result;
-}
-
-std::string get_executable_path()
-{
-	using namespace std::literals;
-
-	// This used to be PATH_MAX, but lets simply assume 1024 is enough...
-	char path[1024] = "";
-	if (readlink("/proc/self/exe", path, sizeof(path)) == -1)
-		throw std::runtime_error("could not get exe path "s + strerror(errno));
-	return {path};
 }
 
 #endif
@@ -204,7 +173,7 @@ void progress_bar_impl::run()
 			std::lock_guard lock(m_mutex);
 
 			if (not printedAny and isatty(STDOUT_FILENO))
-				std::cout << "\e[?25l";
+				std::cout << "\x1b[?25l";
 
 			print_progress();
 
@@ -220,7 +189,7 @@ void progress_bar_impl::run()
 	{
 		print_done();
 		if (isatty(STDOUT_FILENO))
-			std::cout << "\e[?25h";
+			std::cout << "\x1b[?25h";
 	}
 }
 
@@ -241,10 +210,15 @@ void progress_bar_impl::message(const std::string &msg)
 }
 
 const char* kSpinner[] = {
-	// "▉", "▊", "▋", "▌", "▍", "▎", "▏", "▎", "▍", "▌", "▋", "▊", "▉"
-	".", "o", "O", "0", "O", "o", ".", " "
+	// ".", "o", "O", "0", "O", "o", ".", " "
+	// "⢄", "⢂", "⢁", "⡁", "⡈", "⡐", "⡠"
+	 ".", "o", "O", "0", "@", "*", " "
 };
-const size_t kSpinnerCount = sizeof(kSpinner) / sizeof(char*);
+
+const std::size_t kSpinnerCount = sizeof(kSpinner) / sizeof(char*);
+
+const int kSpinnerTimeInterval = 100;
+
 const uint32_t kMinBarWidth = 40, kMinMsgWidth = 12;
 
 void progress_bar_impl::print_progress()
@@ -261,7 +235,7 @@ void progress_bar_impl::print_progress()
 	float progress = static_cast<float>(m_consumed) / m_max_value;
 	
 	if (width < kMinBarWidth)
-		std::cout << (100 * progress) << '%' << std::endl;
+		std::cout << (100 * progress) << "%\n";
 	else
 	{
 		uint32_t bar_width = 7 * width / 10;
@@ -297,7 +271,7 @@ void progress_bar_impl::print_progress()
 		msg << std::setw(3) << static_cast<int>(std::ceil(progress * 100)) << "% ";
 
 		auto now = std::chrono::system_clock::now();
-		m_spinner_index = (std::chrono::duration_cast<std::chrono::milliseconds>(now - m_start).count() / 200) % kSpinnerCount;
+		m_spinner_index = (std::chrono::duration_cast<std::chrono::milliseconds>(now - m_start).count() / kSpinnerTimeInterval) % kSpinnerCount;
 
 		msg << kSpinner[m_spinner_index];
 
@@ -355,7 +329,7 @@ void progress_bar_impl::print_done()
 	if (msg.length() < width)
 		msg += std::string(width - msg.length(), ' ');
 
-	std::cout << '\r' << msg << std::endl;
+	std::cout << '\r' << msg << '\n';
 }
 
 progress_bar::progress_bar(int64_t inMax, const std::string &inAction)
@@ -411,11 +385,19 @@ struct rsrc_imp
 };
 } // namespace mrsrc
 
-#if _MSC_VER
+#if _WIN32
 
-extern "C" CIFPP_EXPORT const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
-extern "C" CIFPP_EXPORT const char *gResourceDataDefault[1] = {};
-extern "C" CIFPP_EXPORT const char *gResourceNameDefault[1] = {};
+#if __MINGW32__
+
+extern "C" __attribute__((weak, alias("gResourceIndexDefault"))) const mrsrc::rsrc_imp gResourceIndex[];
+extern "C" __attribute__((weak, alias("gResourceDataDefault"))) const char gResourceData[];
+extern "C" __attribute__((weak, alias("gResourceNameDefault"))) const char gResourceName[];
+
+#else
+
+extern "C" const mrsrc::rsrc_imp *gResourceIndexDefault[1] = {};
+extern "C" const char *gResourceDataDefault[1] = {};
+extern "C" const char *gResourceNameDefault[1] = {};
 
 extern "C" const mrsrc::rsrc_imp gResourceIndex[];
 extern "C" const char gResourceData[];
@@ -424,6 +406,8 @@ extern "C" const char gResourceName[];
 #pragma comment(linker, "/alternatename:gResourceIndex=gResourceIndexDefault")
 #pragma comment(linker, "/alternatename:gResourceData=gResourceDataDefault")
 #pragma comment(linker, "/alternatename:gResourceName=gResourceNameDefault")
+
+#endif
 
 #else
 extern const __attribute__((weak)) mrsrc::rsrc_imp gResourceIndex[];
@@ -861,6 +845,9 @@ class resource_pool
 
 	std::unique_ptr<std::istream> load(fs::path name);
 
+	const auto data_directories() { return mDirs; }
+	const auto file_resources() { return mLocalResources; }
+
   private:
 	resource_pool();
 
@@ -890,6 +877,21 @@ class resource_pool
 
 resource_pool::resource_pool()
 {
+	// directories are searched in reverse order
+
+	// As a last resort, try the location that might have been
+	// used during installation, works only when running on an
+	// OS with a proc file system.
+
+	std::error_code ec;
+	if (auto exefile = fs::read_symlink("/proc/self/exe", ec); not ec and exefile.parent_path().filename() == "bin")
+	{
+		auto install_prefix = exefile.parent_path().parent_path();
+		auto data_dir = install_prefix / "share" / "libcifpp";
+		if (fs::exists(data_dir, ec))
+			pushDir(data_dir);
+	}
+
 #if defined(DATA_DIR)
 	pushDir(DATA_DIR);
 #endif
@@ -951,6 +953,24 @@ void add_file_resource(const std::string &name, std::filesystem::path dataFile)
 std::unique_ptr<std::istream> load_resource(std::filesystem::path name)
 {
 	return resource_pool::instance().load(name);
+}
+
+void list_file_resources(std::ostream &os)
+{
+	auto &file_resources = resource_pool::instance().file_resources();
+
+	if (not file_resources.empty())
+	{
+		os << "\nThe following named resources were loaded:\n";
+		for (const auto &[name, path] : file_resources)
+			os << name << " -> " << std::quoted(path.string()) << '\n';
+	}
+}
+
+void list_data_directories(std::ostream &os)
+{
+	for (auto &p : resource_pool::instance().data_directories())
+		os << p << '\n';
 }
 
 } // namespace cif

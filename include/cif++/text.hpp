@@ -38,11 +38,46 @@
 #include <vector>
 
 #if __has_include(<experimental/type_traits>)
+
 #include <experimental/type_traits>
+namespace std_experimental = std::experimental;
+
 #else
-// sub optimal, but replicating the same code is worse
-#include <zeep/type-traits.hpp>
+
+// A quick hack to work around the missing is_detected in MSVC
+namespace std_experimental
+{
+
+namespace detail
+{
+	template <class AlwaysVoid, template <class...> class Op, class... Args>
+	struct detector
+	{
+		using value_t = std::false_type;
+	};
+
+	template <template <class...> class Op, class... Args>
+	struct detector<std::void_t<Op<Args...>>, Op, Args...>
+	{
+		using value_t = std::true_type;
+	};
+} // namespace detail
+
+template <template <class...> class Op, class... Args>
+using is_detected = typename detail::detector<void, Op, Args...>::value_t;
+
+template <template <class...> class Op, class... Args>
+const auto is_detected_v = is_detected<Op, Args...>::value;
+
+} // namespace std_experimental
+
 #endif
+
+/**
+ * \file text.hpp
+ *
+ * Various text manipulating routines
+ */
 
 namespace cif
 {
@@ -52,18 +87,40 @@ namespace cif
 // some basic utilities: Since we're using ASCII input only, we define for optimisation
 // our own case conversion routines.
 
+/// \brief return whether string @a is equal to string @a b ignoring changes in character case
 bool iequals(std::string_view a, std::string_view b);
+
+/// \brief compare string @a is to string @a b ignoring changes in character case
 int icompare(std::string_view a, std::string_view b);
 
+/// \brief return whether string @a is equal to string @a b ignoring changes in character case
 bool iequals(const char *a, const char *b);
+
+/// \brief compare string @a is to string @a b ignoring changes in character case
 int icompare(const char *a, const char *b);
 
+/// \brief convert the string @a s to lower case in situ
 void to_lower(std::string &s);
+
+/// \brief return a lower case copy of string @a s
 std::string to_lower_copy(std::string_view s);
 
+/// \brief convert the string @a s to upper case in situ
 void to_upper(std::string &s);
-// std::string toUpperCopy(const std::string &s);
 
+/**
+ * @brief Join the strings in the range [ @a a, @a e ) using
+ * @a sep as separator
+ *
+ * Example usage:
+ *
+ * @code {.cpp}
+ * std::vector<std::string> v{ "aap", "noot", "mies" };
+ *
+ * assert(cif::join(v.begin(), v.end(), ", ") == "aap, noot, mies");
+ * @endcode
+ *
+ */
 template <typename IterType>
 std::string join(IterType b, IterType e, std::string_view sep)
 {
@@ -91,12 +148,41 @@ std::string join(IterType b, IterType e, std::string_view sep)
 	return s.str();
 }
 
+/**
+ * @brief Join the strings in the array @a arr using @a sep as separator
+ *
+ * Example usage:
+ *
+ * @code {.cpp}
+ * std::list<std::string> v{ "aap", "noot", "mies" };
+ *
+ * assert(cif::join(v, ", ") == "aap, noot, mies");
+ * @endcode
+ *
+ */
 template <typename V>
 std::string join(const V &arr, std::string_view sep)
 {
 	return join(arr.begin(), arr.end(), sep);
 }
 
+/**
+ * @brief Split the string in @a s based on the characters in @a separators
+ *
+ * Each of the characters in @a separators induces a split.
+ *
+ * When suppress_empty is true, empty strings are not produced in the
+ * resulting array.
+ *
+ * Example:
+ *
+ * @code {.cpp}
+ * auto v = cif::split("aap:noot,,mies", ":,", true);
+ *
+ * assert(v == std::vector{"aap", "noot", "mies"});
+ * @endcode
+ *
+ */
 template <typename StringType = std::string_view>
 std::vector<StringType> split(std::string_view s, std::string_view separators, bool suppress_empty = false)
 {
@@ -124,15 +210,23 @@ std::vector<StringType> split(std::string_view s, std::string_view separators, b
 	return result;
 }
 
+/**
+ * @brief Replace all occurrences of @a what in string @a s with the string @a with
+ *
+ * The string @a with may be empty in which case each occurrence of @a what is simply
+ * deleted.
+ */
 void replace_all(std::string &s, std::string_view what, std::string_view with = {});
 
 #if defined(__cpp_lib_starts_ends_with)
 
+/// \brief return whether string @a s starts with @a with
 inline bool starts_with(std::string s, std::string_view with)
 {
 	return s.starts_with(with);
 }
 
+/// \brief return whether string @a s ends with @a with
 inline bool ends_with(std::string_view s, std::string_view with)
 {
 	return s.ends_with(with);
@@ -140,11 +234,13 @@ inline bool ends_with(std::string_view s, std::string_view with)
 
 #else
 
+/// \brief return whether string @a s starts with @a with
 inline bool starts_with(std::string s, std::string_view with)
 {
 	return s.compare(0, with.length(), with) == 0;
 }
 
+/// \brief return whether string @a s ends with @a with
 inline bool ends_with(std::string_view s, std::string_view with)
 {
 	return s.length() >= with.length() and s.compare(s.length() - with.length(), with.length(), with) == 0;
@@ -154,6 +250,7 @@ inline bool ends_with(std::string_view s, std::string_view with)
 
 #if defined(__cpp_lib_string_contains)
 
+/// \brief return whether string @a s contains @a q
 inline bool contains(std::string_view s, std::string_view q)
 {
 	return s.contains(q);
@@ -161,6 +258,7 @@ inline bool contains(std::string_view s, std::string_view q)
 
 #else
 
+/// \brief return whether string @a s contains @a q
 inline bool contains(std::string_view s, std::string_view q)
 {
 	return s.find(q) != std::string_view::npos;
@@ -168,33 +266,50 @@ inline bool contains(std::string_view s, std::string_view q)
 
 #endif
 
+/// \brief return whether string @a s contains @a q ignoring character case
 bool icontains(std::string_view s, std::string_view q);
 
+/// \brief trim white space at the start of string @a s in situ
 void trim_left(std::string &s);
+
+/// \brief trim white space at the end of string @a s in situ
 void trim_right(std::string &s);
+
+/// \brief trim white space at both the start and the end of string @a s in situ
 void trim(std::string &s);
 
+/// \brief return a string trimmed of white space at the start of string @a s
 std::string trim_left_copy(std::string_view s);
+
+/// \brief return a string trimmed of white space at the end of string @a s
 std::string trim_right_copy(std::string_view s);
+
+/// \brief return a string trimmed of white space at both the start and the end of string @a s
 std::string trim_copy(std::string_view s);
 
 // To make life easier, we also define iless and iset using iequals
 
+/// \brief an operator object you can use to compare strings ignoring their character case
 struct iless
 {
+	/// \brief return the result of icompare for @a a and @a b
 	bool operator()(const std::string &a, const std::string &b) const
 	{
 		return icompare(a, b) < 0;
 	}
 };
 
-typedef std::set<std::string, iless> iset;
+/// iset is a std::set of std::string but with a comparator that
+/// ignores character case.
+using iset = std::set<std::string, iless>;
 
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
 
+/// \brief global list containing the lower case version of each ASCII character
 extern CIFPP_EXPORT const uint8_t kCharToLowerMap[256];
 
+/// \brief a very fast tolower implementation
 inline char tolower(int ch)
 {
 	return static_cast<char>(kCharToLowerMap[static_cast<uint8_t>(ch)]);
@@ -202,22 +317,49 @@ inline char tolower(int ch)
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string, std::string> split_tag_name(std::string_view tag);
+/** \brief return a tuple consisting of the category and item name for @a item_name
+ *
+ * The category name is stripped of its leading underscore character.
+ *
+ * If no dot character was found, the category name is empty. That's for
+ * cif 1.0 formatted data.
+ */
+
+[[deprecated("use split_item_name instead")]]
+std::tuple<std::string, std::string> split_tag_name(std::string_view item_name);
+
+
+/** \brief return a tuple consisting of the category and item name for @a item_name
+ *
+ * The category name is stripped of its leading underscore character.
+ *
+ * If no dot character was found, the category name is empty. That's for
+ * cif 1.0 formatted data.
+ */
+
+std::tuple<std::string, std::string> split_item_name(std::string_view item_name);
 
 // --------------------------------------------------------------------
-// generate a cif name, mainly used to generate asym_id's
 
+/// \brief generate a cif name, used e.g. to generate asym_id's
 std::string cif_id_for_number(int number);
 
 // --------------------------------------------------------------------
-//	custom wordwrapping routine
 
-std::vector<std::string> word_wrap(const std::string &text, size_t width);
+/** \brief custom word wrapping routine.
+ *
+ * Wrap the text in @a text based on a maximum line width @a width using
+ * a dynamic programming approach to get the most efficient filling of
+ * the space.
+ */
+std::vector<std::string> word_wrap(const std::string &text, std::size_t width);
 
 // --------------------------------------------------------------------
-/// std::from_chars for floating point types.
+/// \brief std::from_chars for floating point types.
+///
 /// These are optional, there's a selected_charconv class below that selects
-/// the best option to used based on support by the stl library
+/// the best option to use based on support by the stl library.
+///
 /// I.e. that in case of GNU < 12 (or something) the cif implementation will
 /// be used, all other cases will use the stl version.
 
@@ -236,12 +378,12 @@ std::from_chars_result from_chars(const char *first, const char *last, FloatType
 	} state = IntegerSign;
 	int sign = 1;
 	unsigned long long vi = 0;
-	long double f = 1;
+	int fl = 0, tz = 0;
 	int exponent_sign = 1;
 	int exponent = 0;
 	bool done = false;
 
-	while (not done and result.ec == std::errc())
+	while (not done and not (bool)result.ec)
 	{
 		char ch = result.ptr != last ? *result.ptr : 0;
 		++result.ptr;
@@ -285,7 +427,14 @@ std::from_chars_result from_chars(const char *first, const char *last, FloatType
 				if (ch >= '0' and ch <= '9')
 				{
 					vi = 10 * vi + (ch - '0');
-					f /= 10;
+
+					if (ch == '0')
+						tz += 1;
+					else
+					{
+						fl += tz + 1;
+						tz = 0;
+					}
 				}
 				else if (ch == 'e' or ch == 'E')
 					state = ExponentSign;
@@ -325,9 +474,12 @@ std::from_chars_result from_chars(const char *first, const char *last, FloatType
 		}
 	}
 
-	if (result.ec == std::errc())
+	if (not (bool)result.ec)
 	{
-		long double v = f * vi * sign;
+		while (tz-- > 0)
+			vi /= 10;
+
+		long double v = std::pow(10, -fl) * vi * sign;
 		if (exponent != 0)
 			v *= std::pow(10, exponent * exponent_sign);
 
@@ -342,6 +494,7 @@ std::from_chars_result from_chars(const char *first, const char *last, FloatType
 	return result;
 }
 
+/// \brief duplication of std::chars_format for deficient STL implementations
 enum class chars_format
 {
 	scientific = 1,
@@ -350,6 +503,7 @@ enum class chars_format
 	general = fixed | scientific
 };
 
+/// \brief a simplistic implementation of std::to_chars for old STL implementations
 template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
 std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_format fmt)
 {
@@ -389,6 +543,7 @@ std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_f
 	return result;
 }
 
+/// \brief a simplistic implementation of std::to_chars for old STL implementations
 template <typename FloatType, std::enable_if_t<std::is_floating_point_v<FloatType>, int> = 0>
 std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_format fmt, int precision)
 {
@@ -428,38 +583,51 @@ std::to_chars_result to_chars(char *first, char *last, FloatType &value, chars_f
 	return result;
 }
 
+/// \brief class that uses our implementation of std::from_chars and std::to_chars
 template <typename T>
 struct my_charconv
 {
+	/// @brief Simply call our version of std::from_chars
 	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
 	{
 		return cif::from_chars(a, b, d);
 	}
 
+	/// @brief Simply call our version of std::to_chars
 	static std::to_chars_result to_chars(char *first, char *last, T &value, chars_format fmt)
 	{
 		return cif::to_chars(first, last, value, fmt);
 	}
 };
 
+/// \brief class that uses the STL implementation of std::from_chars and std::to_chars
 template <typename T>
 struct std_charconv
 {
+	/// @brief Simply call std::from_chars
 	static std::from_chars_result from_chars(const char *a, const char *b, T &d)
 	{
 		return std::from_chars(a, b, d);
 	}
 
+	/// @brief Simply call std::to_chars
 	static std::to_chars_result to_chars(char *first, char *last, T &value, chars_format fmt)
 	{
 		return std::to_chars(first, last, value, fmt);
 	}
 };
 
+/// \brief helper to find a from_chars function
 template <typename T>
 using from_chars_function = decltype(std::from_chars(std::declval<const char *>(), std::declval<const char *>(), std::declval<T &>()));
 
+/**
+ * @brief Helper to select the best implementation of charconv based on availability of the
+ * function in the std:: namespace
+ *
+ * @tparam T The type for which we want to find a from_chars/to_chars function
+ */
 template <typename T>
-using selected_charconv = typename std::conditional_t<std::experimental::is_detected_v<from_chars_function, T>, std_charconv<T>, my_charconv<T>>;
+using selected_charconv = typename std::conditional_t<std_experimental::is_detected_v<from_chars_function, T>, std_charconv<T>, my_charconv<T>>;
 
 } // namespace cif
