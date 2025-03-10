@@ -32,7 +32,7 @@ The documentation can be found at [github.io](https://pdb-redo.github.io/libcifp
 
 ## Synopsis
 
-```c++
+```cpp
 // A simple program counting residues with an OXT atom
 
 #include <filesystem>

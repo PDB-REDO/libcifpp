@@ -7,6 +7,7 @@ Version 7.0.10
 - Replace code creating quaternions from rotation matrices
   that might sometimes give incorrect results. Or at least,
   the test code failed on this particular kind of code. Sometimes.
+- Fix reconstruction to build pdbx_nonpoly_scheme
 
 Version 7.0.9
 - Using cif::file::load_dictionary it is now possible to

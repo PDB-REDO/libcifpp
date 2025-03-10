@@ -1109,6 +1109,87 @@ void comparePolySeqSchemes(datablock &db)
 	}
 }
 
+void createPdbxEntityNonpoly(datablock &db)
+{
+	using namespace literals;
+
+	auto &atom_site = db["atom_site"];
+	auto &entity = db["entity"];
+	auto &pdbx_entity_nonpoly = db["pdbx_entity_nonpoly"];
+
+	for (const auto &[entity_id, type] : entity.find<std::string, std::string>("type"_key == "water" or "type"_key == "non-polymer", "id", "type"))
+	{
+		for (auto comp_id : atom_site.find<std::string>("label_entity_id"_key == entity_id, "label_comp_id"))
+		{
+			if (auto test_comp_id = pdbx_entity_nonpoly.find_first<std::optional<std::string>>("entity_id"_key == entity_id, "comp_id"); test_comp_id.has_value())
+			{
+				if (*test_comp_id != comp_id)
+					throw std::runtime_error("Inconsistent pdbx_entity_nonpoly record for entity " + entity_id + ", expected comp_id " + comp_id);
+
+				continue;
+			}
+
+			if (type == "water")
+				pdbx_entity_nonpoly.emplace({ //
+					{ "entity_id", entity_id },
+					{ "name", "water" },
+					{ "comp_id", comp_id }
+				});
+			else
+			{
+				auto c = cif::compound_factory::instance().create(comp_id);
+
+				std::string name = c ? c->name() : ".";
+
+				pdbx_entity_nonpoly.emplace({ //
+					{ "entity_id", entity_id },
+					{ "name", name },
+					{ "comp_id", comp_id }
+				});
+			}
+		}
+	}
+}
+
+void createPdbxNonpolyScheme(datablock &db)
+{
+	using namespace literals;
+
+	createPdbxEntityNonpoly(db);
+
+	auto &pdbx_entity_nonpoly = db["pdbx_entity_nonpoly"];
+	auto &pdbx_nonpoly_scheme = db["pdbx_nonpoly_scheme"];
+	auto &atom_site = db["atom_site"];
+
+	for (const auto &[entity_id, comp_id] : pdbx_entity_nonpoly.rows<std::string,std::string>("entity_id", "comp_id"))
+	{
+		for (int ndb_nr = 1; auto row : atom_site.find("label_entity_id"_key == entity_id and "label_comp_id"_key == comp_id))
+		{
+			// Skip existing records
+			auto linked = atom_site.get_linked(row, pdbx_nonpoly_scheme);
+			if (not linked.empty())
+				continue;
+
+			int num = row.get<int>("auth_seq_id");
+
+			pdbx_nonpoly_scheme.emplace({//
+
+				{ "asym_id", row.get<std::string>("label_asym_id") },
+				{ "entity_id", entity_id },
+				{ "mon_id", comp_id },
+				{ "ndb_seq_num", ndb_nr++ },
+				{ "pdb_seq_num", num },
+				{ "auth_seq_num", num },
+				{ "pdb_mon_id", row.get<std::string>("auth_comp_id") },
+				{ "auth_mon_id",  row.get<std::string>("auth_comp_id") },
+				{ "pdb_strand_id", row.get<std::string>("auth_asym_id") },
+				{ "pdb_ins_code", row.get<std::string>("pdbx_PDB_ins_code") }
+
+			});
+		}
+	}
+}
+
 bool reconstruct_pdbx(file &file, std::string_view dictionary)
 {
 	if (file.empty())
@@ -1396,6 +1477,8 @@ bool reconstruct_pdbx(file &file, std::string_view dictionary)
 
 	if (auto cat = db.get("ndb_poly_seq_scheme"); cat == nullptr or cat->empty())
 		comparePolySeqSchemes(db);
+	
+	createPdbxNonpolyScheme(db);
 
 	// skip unknown categories for now
 	bool valid = true;

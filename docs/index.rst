@@ -27,7 +27,7 @@ Using *libcifpp* is easy, if you are familiar with modern C++:
 
 .. literalinclude:: ../README.md
 	:language: c++
-	:start-after: ```c++
+	:start-after: ```cpp
 	:end-before: ```
 
 .. toctree::
