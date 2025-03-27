@@ -284,6 +284,27 @@ const item_validator *category_validator::get_validator_for_aliased_item(std::st
 
 // --------------------------------------------------------------------
 
+void validator_base::report_error(std::error_code ec, bool fatal) const
+{
+	if (m_strict or fatal)
+		throw validation_exception(ec);
+	else if (VERBOSE > 0)
+		std::cerr << ec.message() << '\n';
+}
+
+void validator_base::report_error(std::error_code ec, std::string_view category,
+	std::string_view item, bool fatal) const
+{
+	auto ex = item.empty() ? validation_exception(ec, category) : validation_exception(ec, category, item);
+
+	if (m_strict or fatal)
+		throw ex;
+	else if (VERBOSE > 0)
+		std::cerr << ex.what() << '\n';
+}
+
+// --------------------------------------------------------------------
+
 void validator::add_type_validator(type_validator &&v)
 {
 	auto r = m_type_validators.insert(std::move(v));
@@ -395,25 +416,6 @@ std::vector<const link_validator *> validator::get_links_for_child(std::string_v
 	}
 
 	return result;
-}
-
-void validator::report_error(std::error_code ec, bool fatal) const
-{
-	if (m_strict or fatal)
-		throw validation_exception(ec);
-	else if (VERBOSE > 0)
-		std::cerr << ec.message() << '\n';
-}
-
-void validator::report_error(std::error_code ec, std::string_view category,
-	std::string_view item, bool fatal) const
-{
-	auto ex = item.empty() ? validation_exception(ec, category) : validation_exception(ec, category, item);
-
-	if (m_strict or fatal)
-		throw ex;
-	else if (VERBOSE > 0)
-		std::cerr << ex.what() << '\n';
 }
 
 // --------------------------------------------------------------------

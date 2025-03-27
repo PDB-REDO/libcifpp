@@ -384,57 +384,32 @@ struct link_validator
 
 // --------------------------------------------------------------------
 
-/**
- * @brief The validator class combines all the link, category and item validator classes
- *
- */
-class validator
+class validator_base
 {
   public:
-	/**
-	 * @brief Construct a new validator object
-	 *
-	 * @param name The name of the underlying dictionary
-	 */
-	validator(std::string_view name)
-		: m_name(name)
-	{
-	}
-
 	/// @brief destructor
-	~validator() = default;
+	virtual ~validator_base() = default;
 
-	validator(const validator &rhs) = delete;
-	validator &operator=(const validator &rhs) = delete;
+	validator_base(const validator_base &rhs) = delete;
+	validator_base &operator=(const validator_base &rhs) = delete;
 
 	/// @brief move constructor
-	validator(validator &&rhs) = default;
+	validator_base(validator_base &&rhs) = default;
 
 	/// @brief move assignment operator
-	validator &operator=(validator &&rhs) = default;
-
-	friend class dictionary_parser;
-
-	/// @brief Add type_validator @a v to the list of type validators
-	void add_type_validator(type_validator &&v);
+	validator_base &operator=(validator_base &&rhs) = default;
 
 	/// @brief Return the type validator for @a type_code, may return nullptr
-	const type_validator *get_validator_for_type(std::string_view type_code) const;
-
-	/// @brief Add category_validator @a v to the list of category validators
-	void add_category_validator(category_validator &&v);
+	virtual const type_validator *get_validator_for_type(std::string_view type_code) const = 0;
 
 	/// @brief Return the category validator for @a category, may return nullptr
-	const category_validator *get_validator_for_category(std::string_view category) const;
-
-	/// @brief Add link_validator @a v to the list of link validators
-	void add_link_validator(link_validator &&v);
+	virtual const category_validator *get_validator_for_category(std::string_view category) const = 0;
 
 	/// @brief Return the list of link validators for which the parent is @a category
-	std::vector<const link_validator *> get_links_for_parent(std::string_view category) const;
+	virtual std::vector<const link_validator *> get_links_for_parent(std::string_view category) const = 0;
 
 	/// @brief Return the list of link validators for which the child is @a category
-	std::vector<const link_validator *> get_links_for_child(std::string_view category) const;
+	virtual std::vector<const link_validator *> get_links_for_child(std::string_view category) const = 0;
 
 	/// @brief Bottleneck function to report an error in validation
 	void report_error(validation_error err, bool fatal = true) const
@@ -456,19 +431,89 @@ class validator
 	void report_error(std::error_code ec, std::string_view category,
 		std::string_view item, bool fatal = true) const;
 
-	const std::string &name() const { return m_name; }        ///< Get the name of this validator
-	void set_name(const std::string &name) { m_name = name; } ///< Set the name of this validator
+	virtual const std::string &name() const = 0;    ///< Get the name of this validator
+	virtual const std::string &version() const = 0; ///< Get the version of this validator
 
-	const std::string &version() const { return m_version; }              ///< Get the version of this validator
+  protected:
+	/**
+	 * @brief Construct a new validator object
+	 *
+	 * @param name The name of the underlying dictionary
+	 */
+	validator_base(std::string_view name)
+		: m_name(name)
+	{
+	}
+
+	validator_base() = delete;
+
+	std::string m_name;
+	std::string m_version;
+	bool m_strict = false;
+};
+
+/**
+ * @brief The validator class combines all the link, category and item validator classes
+ *
+ */
+class validator : public validator_base
+{
+  public:
+	/**
+	 * @brief Construct a new validator object
+	 *
+	 * @param name The name of the underlying dictionary
+	 */
+	validator(std::string_view name)
+		: validator_base(name)
+	{
+	}
+
+	/// @brief destructor
+	~validator() = default;
+
+	validator(const validator &rhs) = delete;
+	validator &operator=(const validator &rhs) = delete;
+
+	/// @brief move constructor
+	validator(validator &&rhs) = default;
+
+	/// @brief move assignment operator
+	validator &operator=(validator &&rhs) = default;
+
+	friend class dictionary_parser;
+
+	/// @brief Add type_validator @a v to the list of type validators
+	void add_type_validator(type_validator &&v);
+
+	/// @brief Return the type validator for @a type_code, may return nullptr
+	const type_validator *get_validator_for_type(std::string_view type_code) const override;
+
+	/// @brief Add category_validator @a v to the list of category validators
+	void add_category_validator(category_validator &&v);
+
+	/// @brief Return the category validator for @a category, may return nullptr
+	const category_validator *get_validator_for_category(std::string_view category) const override;
+
+	/// @brief Add link_validator @a v to the list of link validators
+	void add_link_validator(link_validator &&v);
+
+	/// @brief Return the list of link validators for which the parent is @a category
+	std::vector<const link_validator *> get_links_for_parent(std::string_view category) const override;
+
+	/// @brief Return the list of link validators for which the child is @a category
+	std::vector<const link_validator *> get_links_for_child(std::string_view category) const override;
+
+	const std::string &name() const override { return m_name; } ///< Get the name of this validator
+	void set_name(const std::string &name) { m_name = name; }   ///< Set the name of this validator
+
+	const std::string &version() const override { return m_version; }     ///< Get the version of this validator
 	void set_version(const std::string &version) { m_version = version; } ///< Set the version of this validator
 
   private:
 	// name is fully qualified here:
 	item_validator *get_validator_for_item(std::string_view name) const;
 
-	std::string m_name;
-	std::string m_version;
-	bool m_strict = false;
 	std::set<type_validator> m_type_validators;
 	std::set<category_validator> m_category_validators;
 	std::vector<link_validator> m_link_validators;
