@@ -42,9 +42,4 @@ namespace cif
  */
 validator parse_dictionary(std::string_view name, std::istream &is);
 
-/**
- * @brief Extend the definitions in validator @a v with the contents of stream @a is
- */
-void extend_dictionary(validator &v, std::istream &is);
-
 } // namespace cif

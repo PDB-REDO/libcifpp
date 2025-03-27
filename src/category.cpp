@@ -617,7 +617,7 @@ std::set<uint16_t> category::key_item_indices() const
 
 // --------------------------------------------------------------------
 
-void category::set_validator(const validator *v, datablock &db)
+void category::set_validator(const validator_base *v, datablock &db)
 {
 	m_validator = v;
 
@@ -696,7 +696,7 @@ bool category::is_valid() const
 	bool result = true;
 
 	if (m_validator == nullptr)
-		throw std::runtime_error("no Validator specified");
+		throw std::runtime_error("no validator specified");
 
 	if (empty())
 	{

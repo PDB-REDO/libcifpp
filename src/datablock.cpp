@@ -41,25 +41,7 @@ datablock::datablock(const datablock &db)
 void datablock::load_dictionary()
 {
 	if (auto *audit_conform = get("audit_conform"); audit_conform and not audit_conform->empty())
-	{
-		std::string name = audit_conform->front().get<std::string>("dict_name");
-
-		if (name == "mmcif_pdbx_v50")
-			name = "mmcif_pdbx.dic"; // we had a bug here in libcifpp...
-
-		if (not name.empty())
-		{
-			try
-			{
-				load_dictionary(name);
-			}
-			catch (const std::exception &ex)
-			{
-				if (VERBOSE)
-					std::cerr << "Failed to load dictionary " << std::quoted(name) << ": " << ex.what() << '\n';
-			}
-		}
-	}
+		set_validator(&validator_factory::instance().construct_validator(*audit_conform));
 }
 
 void datablock::load_dictionary(std::string_view name)
@@ -67,7 +49,7 @@ void datablock::load_dictionary(std::string_view name)
 	set_validator(&validator_factory::instance()[name]);
 }
 
-void datablock::set_validator(const validator *v)
+void datablock::set_validator(const validator_base *v)
 {
 	m_validator = v;
 
@@ -83,7 +65,7 @@ void datablock::set_validator(const validator *v)
 	}
 }
 
-const validator *datablock::get_validator() const
+const validator_base *datablock::get_validator() const
 {
 	return m_validator;
 }
@@ -108,7 +90,7 @@ bool datablock::is_valid()
 	bool result = true;
 	for (auto &cat : *this)
 		result = cat.is_valid() and result;
-	
+
 	// Add or remove the audit_conform block here.
 	if (result)
 	{
@@ -129,7 +111,9 @@ bool datablock::is_valid()
 		}
 	}
 	else
-		erase(std::find_if(begin(), end(), [](category &cat) { return cat.name() == "audit_conform"; }), end());
+		erase(std::find_if(begin(), end(), [](category &cat)
+				  { return cat.name() == "audit_conform"; }),
+			end());
 
 	return result;
 }
@@ -203,7 +187,7 @@ std::tuple<datablock::iterator, bool> datablock::emplace(std::string_view name)
 
 	if (is_new)
 	{
-		i = insert(end(), {name});
+		i = insert(end(), { name });
 		i->set_validator(m_validator, *this);
 	}
 
@@ -264,7 +248,7 @@ namespace
 		return std::get<2>(*i);
 	}
 
-	void calculate_cat_order(cat_order_t &cat_order, iter_t i, const validator &validator)
+	void calculate_cat_order(cat_order_t &cat_order, iter_t i, const validator_base &validator)
 	{
 		if (i == cat_order.end() or get_count(i) >= 0)
 			return;
@@ -337,7 +321,7 @@ void datablock::write(std::ostream &os) const
 	else
 	{
 		// mmcif support, sort of. First write the 'entry' Category
-		// and if it exists, _AND_ we have a Validator, write out the
+		// and if it exists, _AND_ we have a validator, write out the
 		// audit_conform record.
 
 		if (auto entry = get("entry"); entry != nullptr)

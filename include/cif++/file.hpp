@@ -205,10 +205,10 @@ class file : public std::list<datablock>
 	void load(std::istream &is);
 
 	/** Load the data from the file specified by @a p using validator @a v */
-	void load(const std::filesystem::path &p, const validator &v);
+	void load(const std::filesystem::path &p, const validator_base &v);
 
 	/** Load the data from @a is using validator @a v */
-	void load(std::istream &is, const validator &v);
+	void load(std::istream &is, const validator_base &v);
 
 	/** Load the data from the file specified by @a p using a validator constructed from dictionary @a dict */
 	void load(const std::filesystem::path &p, std::string_view dict);

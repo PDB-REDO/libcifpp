@@ -116,14 +116,14 @@ class datablock : public std::list<category>
 	 * 
 	 * @param v The new validator object, may be null
 	 */
-	void set_validator(const validator *v);
+	void set_validator(const validator_base *v);
 
 	/**
 	 * @brief Get the validator object
 	 * 
 	 * @return const validator* The validator or nullptr if there is none
 	 */
-	const validator *get_validator() const;
+	const validator_base *get_validator() const;
 
 	/**
 	 * @brief Validates the content of this datablock and all its content
@@ -244,7 +244,7 @@ class datablock : public std::list<category>
 
   private:
 	std::string m_name;
-	const validator *m_validator = nullptr;
+	const validator_base *m_validator = nullptr;
 };
 
 } // namespace cif

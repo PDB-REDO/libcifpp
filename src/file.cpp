@@ -176,7 +176,7 @@ void file::load(std::istream &is, std::string_view dict)
 	load(is, validator_factory::instance().operator[](dict));
 }
 
-void file::load(const std::filesystem::path &p, const validator &v)
+void file::load(const std::filesystem::path &p, const validator_base &v)
 {
 	gzio::ifstream in(p);
 	if (not in.is_open())
@@ -192,7 +192,7 @@ void file::load(const std::filesystem::path &p, const validator &v)
 	}
 }
 
-void file::load(std::istream &is, const validator &v)
+void file::load(std::istream &is, const validator_base &v)
 {
 	parser p(is, *this);
 	p.parse_file();

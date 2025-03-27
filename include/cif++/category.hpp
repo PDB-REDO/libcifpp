@@ -178,7 +178,7 @@ class category
 	/// @brief Set the validator for this category to @a v
 	/// @param v The category_validator to assign. A nullptr value is allowed.
 	/// @param db The enclosing @ref datablock
-	void set_validator(const validator *v, datablock &db);
+	void set_validator(const validator_base *v, datablock &db);
 
 	/// @brief Update the links in this category
 	/// @param db The enclosing @ref datablock
@@ -186,7 +186,7 @@ class category
 
 	/// @brief Return the global @ref validator for the data
 	/// @return The @ref validator or nullptr if not assigned
-	const validator *get_validator() const { return m_validator; }
+	const validator_base *get_validator() const { return m_validator; }
 
 	/// @brief Return the category validator for this category
 	/// @return The @ref category_validator or nullptr if not assigned
@@ -1285,7 +1285,7 @@ class category
 
 	std::string m_name;
 	std::vector<item_entry> m_items;
-	const validator *m_validator = nullptr;
+	const validator_base *m_validator = nullptr;
 	const category_validator *m_cat_validator = nullptr;
 	std::vector<link> m_parent_links, m_child_links;
 	bool m_cascade = true;

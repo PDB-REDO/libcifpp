@@ -32,6 +32,7 @@
 #include <filesystem>
 #include <list>
 #include <mutex>
+#include <optional>
 #include <system_error>
 #include <utility>
 
@@ -48,6 +49,7 @@
 namespace cif
 {
 
+class category;
 struct category_validator;
 
 // --------------------------------------------------------------------
@@ -431,8 +433,9 @@ class validator_base
 	void report_error(std::error_code ec, std::string_view category,
 		std::string_view item, bool fatal = true) const;
 
-	virtual const std::string &name() const = 0;    ///< Get the name of this validator
-	virtual const std::string &version() const = 0; ///< Get the version of this validator
+	const std::string &name() const { return m_name; }       ///< Get the name of this validator
+	const std::string &version() const { return m_version; } ///< Get the version of this validator
+	bool is_strict() const { return m_strict; }              ///< Get the strict flag of this validator
 
   protected:
 	/**
@@ -445,7 +448,7 @@ class validator_base
 	{
 	}
 
-	validator_base() = delete;
+	validator_base() = default;
 
 	std::string m_name;
 	std::string m_version;
@@ -504,10 +507,7 @@ class validator : public validator_base
 	/// @brief Return the list of link validators for which the child is @a category
 	std::vector<const link_validator *> get_links_for_child(std::string_view category) const override;
 
-	const std::string &name() const override { return m_name; } ///< Get the name of this validator
-	void set_name(const std::string &name) { m_name = name; }   ///< Set the name of this validator
-
-	const std::string &version() const override { return m_version; }     ///< Get the version of this validator
+	void set_name(const std::string &name) { m_name = name; }             ///< Set the name of this validator
 	void set_version(const std::string &version) { m_version = version; } ///< Set the version of this validator
 
   private:
@@ -517,6 +517,46 @@ class validator : public validator_base
 	std::set<type_validator> m_type_validators;
 	std::set<category_validator> m_category_validators;
 	std::vector<link_validator> m_link_validators;
+};
+
+// --------------------------------------------------------------------
+
+class extended_validator : public validator_base
+{
+  public:
+	/**
+	 * @brief Construct a new validator object
+	 *
+	 * @param name The name of the underlying dictionary
+	 * @param validators The validators this extended validator is composed off
+	 */
+	extended_validator(std::vector<const validator *> validators);
+
+	extended_validator(const extended_validator &rhs) = delete;
+	extended_validator &operator=(const extended_validator &rhs) = delete;
+
+	/// @brief move constructor
+	extended_validator(extended_validator &&rhs) = default;
+
+	/// @brief move assignment operator
+	extended_validator &operator=(extended_validator &&rhs) = default;
+
+	/// @brief Return the type validator for @a type_code, may return nullptr
+	virtual const type_validator *get_validator_for_type(std::string_view type_code) const override;
+
+	/// @brief Return the category validator for @a category, may return nullptr
+	virtual const category_validator *get_validator_for_category(std::string_view category) const override;
+
+	/// @brief Return the list of link validators for which the parent is @a category
+	virtual std::vector<const link_validator *> get_links_for_parent(std::string_view category) const override;
+
+	/// @brief Return the list of link validators for which the child is @a category
+	virtual std::vector<const link_validator *> get_links_for_child(std::string_view category) const override;
+
+  protected:
+	friend class validator_factory;
+
+	std::vector<const validator *> m_validators;
 };
 
 // --------------------------------------------------------------------
@@ -533,18 +573,36 @@ class validator_factory
 	static validator_factory &instance();
 
 	/// @brief Return the validator with name @a dictionary_name
-	const validator &operator[](std::string_view dictionary_name);
+	[[deprecated("use construct_validator(const category &audit_conform) instead")]]
+	const validator_base &operator[](std::string_view dictionary_name);
+
+	/// @brief Return a validator for the data contained in an audit_conform category
+	const validator_base &construct_validator(const category &audit_conform);
+
+	/// @brief Construct a new validator with name @a name from resource data with at least version @a version if specified
+	const validator &construct_validator(std::string_view name,
+		std::optional<std::string> version);
+
+	/// @brief Construct a new validator with name @a name from the data in @a is with at least version @a version if specified
+	const validator &construct_validator(std::string_view name,
+		std::optional<std::string> version, std::istream &is);
 
 	/// @brief Construct a new validator with name @a name from the data in @a is
-	const validator &construct_validator(std::string_view name, std::istream &is);
+	const validator &construct_validator(std::string_view name, std::istream &is)
+	{
+		return construct_validator(name, {}, is);
+	}
 
   private:
 	// --------------------------------------------------------------------
 
 	validator_factory() = default;
 
+	static bool check_version(std::string_view name, std::string_view expected, std::string_view found);
+
 	std::mutex m_mutex;
 	std::list<validator> m_validators;
+	std::list<extended_validator> m_extended_validators;
 };
 
 } // namespace cif
