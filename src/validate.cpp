@@ -526,6 +526,9 @@ const validator_base &validator_factory::construct_validator(const category &aud
 	if (validators.size() == 1)
 		return *validators.front();
 
+	// override mode, last dictionary is most important
+	std::reverse(validators.begin(), validators.end());
+		
 	for (auto &ev : m_extended_validators)
 	{
 		if (ev.m_validators == validators)
