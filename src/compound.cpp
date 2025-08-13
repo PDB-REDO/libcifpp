@@ -26,6 +26,10 @@
 
 #include "cif++.hpp"
 
+#if HAVE_CURL
+# include <curl/curl.h>
+#endif
+
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -140,7 +144,7 @@ compound::compound(cif::datablock &db)
 
 	cif::tie(m_id, m_name, m_type, m_formula, m_formula_weight, m_formal_charge, one_letter_code, m_parent_id) =
 		chemComp.front().get("id", "name", "type", "formula", "formula_weight", "pdbx_formal_charge", "one_letter_code", "mon_nstd_parent_comp_id");
-	
+
 	if (one_letter_code.length() == 1)
 		m_one_letter_code = one_letter_code.front();
 
@@ -159,7 +163,7 @@ compound::compound(cif::datablock &db)
 		if (stereo_config.empty())
 			atom.stereo_config = stereo_config_type::N;
 		else
-		atom.stereo_config = parse_stereo_config_from_string(stereo_config);
+			atom.stereo_config = parse_stereo_config_from_string(stereo_config);
 		m_atoms.push_back(std::move(atom));
 	}
 
@@ -172,7 +176,7 @@ compound::compound(cif::datablock &db)
 		if (valueOrder.empty())
 			bond.type = bond_type::sing;
 		else
-		bond.type = parse_bond_type_from_string(valueOrder);
+			bond.type = parse_bond_type_from_string(valueOrder);
 		m_bonds.push_back(std::move(bond));
 	}
 }
@@ -231,12 +235,12 @@ float compound::bond_length(const std::string &atomId_1, const std::string &atom
 
 bool compound::is_peptide() const
 {
-	return iequals(m_type, "l-peptide linking")	or iequals(m_type, "peptide linking");
+	return iequals(m_type, "l-peptide linking") or iequals(m_type, "peptide linking");
 }
 
 bool compound::is_base() const
 {
-	return iequals(m_type, "dna linking")	or iequals(m_type, "rna linking");
+	return iequals(m_type, "dna linking") or iequals(m_type, "rna linking");
 }
 
 // --------------------------------------------------------------------
@@ -299,7 +303,7 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 		std::shared_lock lock(mMutex);
 
 		compound *result = nullptr;
-		
+
 		for (auto impl = shared_from_this(); impl; impl = impl->m_next)
 		{
 			result = impl->create(id);
@@ -363,7 +367,9 @@ compound *compound_factory_impl::create(const std::string &id)
 	if (m_missing.contains(id))
 		return nullptr;
 
-	if (auto i = find_if(m_compounds.begin(), m_compounds.end(), [id](compound *c) { return c->id() == id; }); i != m_compounds.end())
+	if (auto i = find_if(m_compounds.begin(), m_compounds.end(), [id](compound *c)
+			{ return c->id() == id; });
+		i != m_compounds.end())
 		return *i;
 
 	compound *result = nullptr;
@@ -454,7 +460,6 @@ class local_compound_factory_impl : public compound_factory_impl
 	compound *create(const std::string &id) override;
 
   private:
-
 	compound *construct_compound(const datablock &db, const std::string &id, const std::string &name, const std::string &three_letter_code, const std::string &group);
 
 	cif::file m_local_file;
@@ -465,7 +470,9 @@ compound *local_compound_factory_impl::create(const std::string &id)
 	if (m_missing.contains(id))
 		return nullptr;
 
-	if (auto i = find_if(m_compounds.begin(), m_compounds.end(), [id](compound *c) { return c->id() == id; }); i != m_compounds.end())
+	if (auto i = find_if(m_compounds.begin(), m_compounds.end(), [id](compound *c)
+			{ return c->id() == id; });
+		i != m_compounds.end())
 		return *i;
 
 	compound *result = nullptr;
@@ -507,12 +514,10 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 
 	float formula_weight = 0;
 	int formal_charge = 0;
-	std::map<std::string,std::size_t> formula_data;
+	std::map<std::string, std::size_t> formula_data;
 
 	for (std::size_t ord = 1; const auto &[atom_id, type_symbol, type, charge, x, y, z, xi, yi, zi] :
-		rdb["chem_comp_atom"].rows<std::string, std::string, std::string, int,
-			std::optional<float>, std::optional<float>, std::optional<float>,
-			std::optional<float>, std::optional<float>, std::optional<float>>(
+		rdb["chem_comp_atom"].rows<std::string, std::string, std::string, int, std::optional<float>, std::optional<float>, std::optional<float>, std::optional<float>, std::optional<float>, std::optional<float>>(
 			"atom_id", "type_symbol", "type", "charge",
 			"model_Cartn_x", "model_Cartn_y", "model_Cartn_z",
 			"pdbx_model_Cartn_x_ideal", "pdbx_model_Cartn_y_ideal", "pdbx_model_Cartn_z_ideal"))
@@ -522,16 +527,14 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 
 		formula_data[type_symbol] += 1;
 
-		db["chem_comp_atom"].emplace({
-			{ "comp_id", id },
+		db["chem_comp_atom"].emplace({ { "comp_id", id },
 			{ "atom_id", atom_id },
 			{ "type_symbol", type_symbol },
 			{ "charge", charge },
-			{ "model_Cartn_x",  x.has_value() ? x : xi, 3 },
-			{ "model_Cartn_y",  y.has_value() ? y : yi, 3 },
-			{ "model_Cartn_z",  z.has_value() ? z : zi, 3 },
-			{ "pdbx_ordinal", ord++ }
-		});
+			{ "model_Cartn_x", x.has_value() ? x : xi, 3 },
+			{ "model_Cartn_y", y.has_value() ? y : yi, 3 },
+			{ "model_Cartn_z", z.has_value() ? z : zi, 3 },
+			{ "pdbx_ordinal", ord++ } });
 
 		formal_charge += charge;
 	}
@@ -548,21 +551,19 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 		else if (cif::iequals(type, "triple") or cif::iequals(type, "trip"))
 			value_order = "TRIP";
 
-		db["chem_comp_bond"].emplace({
-			{ "comp_id", id },
+		db["chem_comp_bond"].emplace({ { "comp_id", id },
 			{ "atom_id_1", atom_id_1 },
 			{ "atom_id_2", atom_id_2 },
 			{ "value_order", value_order },
 			{ "pdbx_aromatic_flag", aromatic },
 			// TODO: fetch stereo_config info from chem_comp_chir
-			{ "pdbx_ordinal", ord++ }
-		});
+			{ "pdbx_ordinal", ord++ } });
 	}
 
 	db.emplace_back(rdb["pdbx_chem_comp_descriptor"]);
 
 	std::string formula;
-	for (bool first = true; const auto &[symbol, count]: formula_data)
+	for (bool first = true; const auto &[symbol, count] : formula_data)
 	{
 		if (std::exchange(first, false))
 			formula += ' ';
@@ -581,15 +582,13 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 	else
 		type = "NON-POLYMER";
 
-	db["chem_comp"].emplace({
-		{ "id", id },
+	db["chem_comp"].emplace({ { "id", id },
 		{ "name", name },
 		{ "type", type },
 		{ "formula", formula },
 		{ "pdbx_formal_charge", formal_charge },
 		{ "formula_weight", formula_weight },
-		{ "three_letter_code", three_letter_code }
-	});
+		{ "three_letter_code", three_letter_code } });
 
 	std::shared_lock lock(mMutex);
 
@@ -602,11 +601,16 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 
 std::unique_ptr<compound_factory> compound_factory::s_instance;
 thread_local std::unique_ptr<compound_factory> compound_factory::tl_instance;
-bool compound_factory::s_use_thread_local_instance;
+compound_factory_options compound_factory::s_options;
 
 void compound_factory::init(bool useThreadLocalInstanceOnly)
 {
-	s_use_thread_local_instance = useThreadLocalInstanceOnly;
+	init({ .use_thread_local_instance_only = useThreadLocalInstanceOnly });
+}
+
+void compound_factory::init(compound_factory_options options)
+{
+	s_options = options;
 }
 
 compound_factory::compound_factory()
@@ -625,7 +629,7 @@ compound_factory::~compound_factory()
 
 compound_factory &compound_factory::instance()
 {
-	if (s_use_thread_local_instance)
+	if (s_options.use_thread_local_instance_only)
 	{
 		if (not tl_instance)
 			tl_instance.reset(new compound_factory());
@@ -641,7 +645,7 @@ compound_factory &compound_factory::instance()
 
 void compound_factory::clear()
 {
-	if (s_use_thread_local_instance)
+	if (s_options.use_thread_local_instance_only)
 		tl_instance.reset(nullptr);
 	else
 		s_instance.reset();
@@ -719,7 +723,7 @@ bool compound_factory::is_peptide(std::string_view res_name) const
 	bool result = is_std_peptide(res_name);
 	if (not result and m_impl)
 	{
-		auto compound = const_cast<compound_factory&>(*this).create(res_name);
+		auto compound = const_cast<compound_factory &>(*this).create(res_name);
 		result = compound != nullptr and compound->is_peptide();
 	}
 	return result;
@@ -731,7 +735,7 @@ bool compound_factory::is_base(std::string_view res_name) const
 	bool result = is_std_base(res_name);
 	if (not result and m_impl)
 	{
-		auto compound = const_cast<compound_factory&>(*this).create(res_name);
+		auto compound = const_cast<compound_factory &>(*this).create(res_name);
 		result = compound != nullptr and compound->is_base();
 	}
 	return result;

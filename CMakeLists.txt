@@ -73,6 +73,9 @@ set(BUILD_DOCUMENTATION OFF CACHE BOOL "Build the documentation")
 # Optionally build a version to be installed inside CCP4
 set(BUILD_FOR_CCP4 OFF CACHE BOOL "Build a version to be installed in CCP4")
 
+# Optionally use libcurl to fetch compound files
+set(USE_CURL_FOR_CCD ON CACHE BOOL "Use curl to fetch missing CCD files")
+
 # Building shared libraries?
 if(NOT(BUILD_FOR_CCP4 AND WIN32))
 	set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build a shared library instead of a static one")
@@ -218,6 +221,10 @@ if(MSVC)
 			NAMES zlibstatic NAMES_PER_DIR ${${search}}
 			PATH_SUFFIXES lib)
 	endforeach()
+endif()
+
+if(USE_CURL_FOR_CCD)
+	find_package(CURL REQUIRED)
 endif()
 
 find_package(ZLIB QUIET)
@@ -375,7 +382,13 @@ target_include_directories(
 	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	PRIVATE "${BOOST_REGEX_INCLUDE_DIR}" "${EIGEN_INCLUDE_DIR}")
 
-target_link_libraries(cifpp PUBLIC Threads::Threads ZLIB::ZLIB $<$<TARGET_EXISTS:std::atomic>:std::atomic>)
+target_link_libraries(cifpp
+	PUBLIC Threads::Threads ZLIB::ZLIB $<$<TARGET_EXISTS:std::atomic>:std::atomic>
+	$<IF:$<BOOL:${USE_CURL_FOR_CCD}>,CURL::libcurl,>)
+
+if (USE_CURL_FOR_CCD)
+	target_compile_definitions(cifpp PUBLIC HAVE_CURL)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	target_link_options(cifpp PRIVATE -undefined dynamic_lookup)

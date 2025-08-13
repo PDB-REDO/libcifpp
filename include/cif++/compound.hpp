@@ -196,6 +196,23 @@ class compound
 // --------------------------------------------------------------------
 // Factory class for compound and Link objects
 
+/// @brief Options available to configure a compound factory
+struct compound_factory_options
+{
+	/// If you have a multithreaded application and want to have different
+	/// compounds in each thread (e.g. a web service processing user requests
+	/// with different sets of compounds) you can set this flag to true.
+	bool use_thread_local_instance_only = false;
+
+#if HAVE_CURL
+	// Various locations for chem_comp data files:
+	// - ftp://files.ebi.ac.uk/pub/databases/pdb/refdata/chem_comp
+	// - https://files.rcsb.org/pub/pdb/refdata/chem_comp/
+
+	std::string remote_chem_comp_url = "ftp://files.ebi.ac.uk/pub/databases/pdb/refdata/chem_comp";
+#endif
+};
+
 /// Use the compound_factory singleton instance to create compound objects
 
 class compound_factory
@@ -208,7 +225,11 @@ class compound_factory
 	/// with different sets of compounds) you can set the \a useThreadLocalInstanceOnly
 	/// flag to true.
 
+	[[deprecated("Use version with compound_factory_options instead")]]
 	static void init(bool useThreadLocalInstanceOnly);
+
+	/// \brief Initialise a singleton instance.
+	static void init(compound_factory_options options = {});
 
 	/// Return the singleton instance. If initialized with local threads, this is the
 	/// instance for the current thread.
@@ -239,6 +260,8 @@ class compound_factory
 	void push_dictionary(const file &file);
 
 	/// Remove the last pushed dictionary
+
+	// TODO: check if the popped dict is the correct one
 	void pop_dictionary();
 
 	/// Return whether @a res_name is a valid and known peptide
@@ -298,7 +321,7 @@ class compound_factory
 
 	static std::unique_ptr<compound_factory> s_instance;
 	static thread_local std::unique_ptr<compound_factory> tl_instance;
-	static bool s_use_thread_local_instance;
+	static compound_factory_options s_options;
 
 	std::shared_ptr<compound_factory_impl> m_impl;
 };
@@ -319,6 +342,9 @@ class compound_factory
  * auto rea_compound = cf.create("REA");
  * @endcode
  */
+
+
+// TODO: check if pushed and popped dicts are the same!
 
 class compound_source
 {
