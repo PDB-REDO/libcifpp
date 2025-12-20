@@ -171,15 +171,21 @@ endif()
 
 # Using fast_float for float parsing, but only if needed
 try_compile(STD_CHARCONV_COMPILING
-	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp)
+	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp
+	CXX_STANDARD 20
+	CXX_STANDARD_REQUIRED ON)
 
 if(NOT STD_CHARCONV_COMPILING)
 	message(NOTICE "libcifpp: Using fast_float for std::from_chars")
-	FetchContent_Declare(fastfloat
-		GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
-		GIT_TAG v8.0.2
-		EXCLUDE_FROM_ALL)
-	FetchContent_MakeAvailable(fastfloat)
+	find_package(FastFloat 8.0 QUIET CONFIG)
+    if(NOT FastFloat_FOUND)
+		message(STATUS "FastFloat not found in system, fetching from GitHub")
+		FetchContent_Declare(fastfloat
+			GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
+			GIT_TAG v8.0.2
+			EXCLUDE_FROM_ALL)
+		FetchContent_MakeAvailable(fastfloat)
+    endif()
 endif()
 
 find_package(Threads)
