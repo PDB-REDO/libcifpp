@@ -62,7 +62,7 @@ void atom::atom_impl::moveTo(const point &p)
 
 std::string atom::atom_impl::get_property(std::string_view name) const
 {
-	return row()[name].as<std::string>();
+	return row()[name].get<std::string>();
 }
 
 int atom::atom_impl::get_property_int(std::string_view name) const
@@ -135,7 +135,7 @@ int atom::atom_impl::compare(const atom_impl &b) const
 
 int atom::atom_impl::get_charge() const
 {
-	auto formalCharge = row()["pdbx_formal_charge"].as<std::optional<int>>();
+	auto formalCharge = row()["pdbx_formal_charge"].get<std::optional<int>>();
 
 	if (not formalCharge.has_value())
 	{
@@ -1891,11 +1891,7 @@ void structure::swap_atoms(atom a1, atom a2)
 		auto r2 = atomSites.find1(key("id") == a2.id());
 
 		for (std::string fld : std::initializer_list<std::string>{ "label_atom_id", "auth_atom_id", "type_symbol" })
-		{
-			auto l1 = r1[fld];
-			auto l2 = r2[fld];
-			l1.swap(l2);
-		}
+			swap(r1[fld], r2[fld]);
 	}
 	catch (const std::exception &ex)
 	{
@@ -2758,7 +2754,7 @@ void structure::cleanup_empty_categories()
 
 	for (auto chemComp : chem_comp)
 	{
-		std::string compID = chemComp["id"].as<std::string>();
+		std::string compID = chemComp["id"].get<std::string>();
 		if (atomSite.contains("label_comp_id"_key == compID or "auth_comp_id"_key == compID) or
 			pdbxPolySeqScheme.contains("mon_id"_key == compID or "auth_mon_id"_key == compID or "pdb_mon_id"_key == compID) or
 			entityPolySeq.contains("mon_id"_key == compID))
@@ -2779,7 +2775,7 @@ void structure::cleanup_empty_categories()
 
 	for (auto entity : entities)
 	{
-		std::string entityID = entity["id"].as<std::string>();
+		std::string entityID = entity["id"].get<std::string>();
 		if (atomSite.contains("label_entity_id"_key == entityID))
 			continue;
 

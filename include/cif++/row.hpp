@@ -41,7 +41,7 @@
  * that's not the case.
  * 
  * You can access the values of stored items by name or index.
- * The return value of operator[] is an cif::item_handle object.
+ * The return value of operator[] is a reference to a cif::item_value object.
  * 
  * @code {.cpp}
  * cif::category &atom_site = my_db["atom_site"];
@@ -93,7 +93,7 @@ namespace detail
 		{
 		}
 
-		const item_handle operator[](uint16_t ix) const
+		const item_value &operator[](uint16_t ix) const
 		{
 			return m_row[m_items[ix]];
 		}
@@ -107,7 +107,7 @@ namespace detail
 		template <typename... Ts, std::size_t... Is>
 		std::tuple<Ts...> get(std::index_sequence<Is...>) const
 		{
-			return std::tuple<Ts...>{ m_row[m_items[Is]].template as<Ts>()... };
+			return std::tuple<Ts...>{ m_row[m_items[Is]].template get<Ts>()... };
 		}
 
 		const row_handle &m_row;
@@ -204,7 +204,6 @@ class row_handle
 {
   public:
 	/** @cond */
-	friend struct item_handle;
 	friend class category;
 	friend class category_index;
 	friend class row_initializer;
@@ -245,29 +244,17 @@ class row_handle
 		return not empty();
 	}
 
-	/// \brief return a cif::item_handle to the item in item @a item_ix
-	item_handle operator[](uint16_t item_ix)
-	{
-		return empty() ? item_handle::s_null_item : item_handle(item_ix, *this);
-	}
+	/// \brief return a reference to a cif::item_value to the item in item @a item_ix
+	item_value &operator[](uint16_t item_ix);
 
-	/// \brief return a const cif::item_handle to the item in item @a item_ix
-	const item_handle operator[](uint16_t item_ix) const
-	{
-		return empty() ? item_handle::s_null_item : item_handle(item_ix, const_cast<row_handle &>(*this));
-	}
+	/// \brief return a const reference to a cif::item_value to the item in item @a item_ix
+	const item_value &operator[](uint16_t item_ix) const;
 
-	/// \brief return a cif::item_handle to the item in the item named @a item_name
-	item_handle operator[](std::string_view item_name)
-	{
-		return empty() ? item_handle::s_null_item : item_handle(add_item(item_name), *this);
-	}
+	/// \brief return a reference to a cif::item_value to the item in the item named @a item_name
+	item_value &operator[](std::string_view item_name);
 
-	/// \brief return a const cif::item_handle to the item in the item named @a item_name
-	const item_handle operator[](std::string_view item_name) const
-	{
-		return empty() ? item_handle::s_null_item : item_handle(get_item_ix(item_name), const_cast<row_handle &>(*this));
-	}
+	/// \brief return a const reference to a cif::item_value to the item in the item named @a item_name
+	const item_value &operator[](std::string_view item_name) const;
 
 	/// \brief Return an object that can be used in combination with cif::tie
 	/// to assign the values for the items @a items
@@ -288,14 +275,14 @@ class row_handle
 	template <typename T>
 	T get(const char *item) const
 	{
-		return operator[](get_item_ix(item)).template as<T>();
+		return operator[](get_item_ix(item)).template get<T>();
 	}
 
 	/// \brief Get the value of item @a item cast to type @a T
 	template <typename T>
 	T get(std::string_view item) const
 	{
-		return operator[](get_item_ix(item)).template as<T>();
+		return operator[](get_item_ix(item)).template get<T>();
 	}
 
 	/// \brief assign each of the items named in @a values to their respective value

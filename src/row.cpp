@@ -86,7 +86,7 @@ row_initializer::row_initializer(row_handle rh)
 		auto &i = r->operator[](ix);
 		if (not i)
 			continue;
-		emplace_back(cat.get_item_name(ix), i.text());
+		emplace_back(cat.get_item_name(ix), i);
 	}
 }
 

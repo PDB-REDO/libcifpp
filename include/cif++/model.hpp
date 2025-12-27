@@ -190,7 +190,7 @@ class atom
 	 * @param row The row containing the data for this atom
 	 */
 	atom(const datablock &db, const row_handle &row)
-		: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>()))
+		: atom(std::make_shared<atom_impl>(db, row["id"].get<std::string>()))
 	{
 	}
 

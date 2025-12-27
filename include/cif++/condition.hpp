@@ -622,7 +622,7 @@ namespace detail
 
 		bool test(row_handle r) const override
 		{
-			std::string_view txt = r[m_item_ix].text();
+			auto txt = r[m_item_ix].get<std::string>();
 			return std::regex_match(txt.begin(), txt.end(), mRx);
 		}
 
@@ -693,7 +693,7 @@ namespace detail
 			{
 				try
 				{
-					std::string_view txt = r[f].text();
+					auto txt = r[f].get<std::string>();
 					if (std::regex_match(txt.begin(), txt.end(), mRx))
 					{
 						result = true;

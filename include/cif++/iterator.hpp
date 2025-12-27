@@ -179,7 +179,7 @@ class iterator_impl
 	template <std::size_t... Is>
 	tuple_type get(std::index_sequence<Is...>) const
 	{
-		return m_current ? tuple_type{ m_current[m_item_ix[Is]].template as<Ts>()... } : tuple_type{};
+		return m_current ? tuple_type{ m_current[m_item_ix[Is]].template get<Ts>()... } : tuple_type{};
 	}
 
 	row_handle m_current;
@@ -422,7 +422,7 @@ class iterator_impl<Category, T>
   private:
 	value_type get() const
 	{
-		return m_current ?  m_current[m_item_ix].template as<value_type>() : value_type{};
+		return m_current ?  m_current[m_item_ix].template get<value_type>() : value_type{};
 	}
 
 	row_handle m_current;

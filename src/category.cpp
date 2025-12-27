@@ -106,7 +106,7 @@ class row_comparator
 			assert(ai != a.end());
 
 			std::string_view ka = ai->value;
-			std::string_view kb = rhb[k].text();
+			std::string kb = rhb[k].get<std::string>();
 
 			if (not (ai->may_be_null and rhb[k].empty()))
 				d = f(ka, kb);
@@ -409,7 +409,7 @@ category_index::entry *category_index::insert(category &cat, entry *h, row *v)
 		for (auto col : cat.key_items())
 		{
 			if (rh[col])
-				os << col << ": " << std::quoted(rh[col].text()) << "; ";
+				os << col << ": " << std::quoted(rh[col].get<std::string>()) << "; ";
 		}
 
 		throw duplicate_key_error("Duplicate Key violation, cat: " + cat.name() + " values: " + os.str());
