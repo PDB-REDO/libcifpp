@@ -262,7 +262,7 @@ class sac_parser
 	virtual void produce_datablock(std::string_view name) = 0;
 	virtual void produce_category(std::string_view name) = 0;
 	virtual void produce_row() = 0;
-	virtual void produce_item(std::string_view category, std::string_view item, std::string_view value) = 0;
+	virtual void produce_item(std::string_view category, std::string_view item, item_value value) = 0;
 
   protected:
 
@@ -331,7 +331,7 @@ class parser : public sac_parser
 
 	void produce_row() override;
 
-	void produce_item(std::string_view category, std::string_view item, std::string_view value) override;
+	void produce_item(std::string_view category, std::string_view item, item_value value) override;
 
   protected:
 	file &m_file;

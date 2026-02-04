@@ -24,17 +24,45 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "cif++/row.hpp"
+
 #include "cif++/category.hpp"
+#include "cif++/item.hpp"
 
 namespace cif
 {
+// --------------------------------------------------------------------
 
-void row_handle::assign(uint16_t item, std::string_view value, bool updateLinked, bool validate)
+item_value s_null_item;
+
+item_value &row_handle::operator[](uint16_t item_ix)
+{
+	return empty() or item_ix >= m_row->size() ? s_null_item : m_row->operator[](item_ix);
+}
+
+const item_value &row_handle::operator[](uint16_t item_ix) const
+{
+	return empty() or item_ix >= m_row->size() ? s_null_item : m_row->operator[](item_ix);
+}
+
+item_value &row_handle::operator[](std::string_view item_name)
+{
+	return operator[](get_item_ix(item_name));
+}
+
+const item_value &row_handle::operator[](std::string_view item_name) const
+{
+	return operator[](get_item_ix(item_name));
+}
+
+// --------------------------------------------------------------------
+
+void row_handle::assign(uint16_t item, item_value value, bool updateLinked, bool validate)
 {
 	if (not m_category)
 		throw std::runtime_error("uninitialized row");
 
-	m_category->update_value(m_row, item, value, updateLinked, validate);
+	m_category->update_value(m_row, item, std::move(value), updateLinked, validate);
 }
 
 uint16_t row_handle::get_item_ix(std::string_view name) const
@@ -90,24 +118,25 @@ row_initializer::row_initializer(row_handle rh)
 	}
 }
 
-void row_initializer::set_value(std::string_view name, std::string_view value)
+void row_initializer::set_value(std::string name, item_value value)
 {
 	for (auto &i : *this)
 	{
 		if (i.name() == name)
 		{
-			i.value(value);
+			i.value(std::move(value));
 			return;
 		}
 	}
 
-	emplace_back(name, value);
+	emplace_back(std::move(name), std::move(value));
 }
 
-void row_initializer::set_value_if_empty(std::string_view name, std::string_view value)
+void row_initializer::set_value_if_empty(std::string name, item_value value)
 {
-	if (find_if(begin(), end(), [name](auto &i) { return i.name() == name; }) == end())
-		emplace_back(name, value);
+	if (std::ranges::find_if(*this, [name](auto &i)
+			{ return i.name() == name; }) == end())
+		emplace_back(std::move(name), std::move(value));
 }
 
 } // namespace cif

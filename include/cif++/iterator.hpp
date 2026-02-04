@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "cif++/condition.hpp"
 #include "cif++/row.hpp"
 
 #include <array>

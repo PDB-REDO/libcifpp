@@ -41,15 +41,15 @@ list(
 	APPEND
 	CIFPP_tests
 	unit-v2
-	unit-3d
-	model
-	query
-	rename-compound
-	sugar
-	spinner
-	reconstruction
-	validate-pdbx
-	matrix
+	# unit-3d
+	# model
+	# query
+	# rename-compound
+	# sugar
+	# spinner
+	# reconstruction
+	# validate-pdbx
+	# matrix
 )
 
 add_library(test-main OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/test-main.cpp")

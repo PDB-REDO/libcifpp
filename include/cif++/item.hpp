@@ -93,7 +93,7 @@ enum class item_value_type
 	FLOAT,
 	TEXT,
 	MISSING,
-	EMPTY
+	EMPTY // This is the real NULL in SQL terms
 };
 
 template <typename T>
@@ -136,20 +136,37 @@ class item_value
 
 	item_value(std::nullptr_t)
 	{
-		m_data.m_type = item_value_type::MISSING;
+		m_data.m_type = item_value_type::EMPTY;
 	}
 
-	item_value(bool v)
+	template <BooleanType T>
+	item_value(T v)
 	{
 		m_data.m_type = item_value_type::BOOLEAN;
 		m_data.m_value = v;
 	}
 
-	template <StringType T>
-	item_value(const T &s)
+	item_value(std::string_view s)
 	{
 		m_data.m_type = item_value_type::TEXT;
-		m_data.m_value = std::string_view{ s };
+		m_data.m_len = s.length();
+		m_data.m_value = s;
+	}
+
+	template <size_t N>
+	item_value(const char(s)[N])
+		: item_value(std::string_view{ s, N })
+	{
+	}
+
+	item_value(const char *s)
+		: item_value(std::string_view{ s })
+	{
+	}
+
+	item_value(const std::string &s)
+		: item_value(std::string_view{ s })
+	{
 	}
 
 	template <IntegralType T>
@@ -165,6 +182,12 @@ class item_value
 		m_data.m_type = item_value_type::FLOAT;
 		m_data.m_value = static_cast<double>(v);
 		m_data.m_len = precision;
+	}
+
+	template <typename T>
+	item_value(std::optional<T> v)
+		: item_value(v.has_value() ? *v : nullptr)
+	{
 	}
 
 	item_value(item_value &&rhs) noexcept
@@ -195,12 +218,12 @@ class item_value
 		bool result;
 		switch (m_data.m_type)
 		{
-			case cif::item_value_type::BOOLEAN: result = m_data.m_value.m_boolean; break;
-			case item_value_type::MISSING: result = false; break;
-			case item_value_type::EMPTY: result = false; break;
+			case item_value_type::BOOLEAN: result = m_data.m_value.m_boolean; break;
 			case item_value_type::INT: result = m_data.m_value.m_integer != 0; break;
 			case item_value_type::FLOAT: result = m_data.m_value.m_float != 0; break;
 			case item_value_type::TEXT: result = m_data.m_len != 0; break;
+			case item_value_type::MISSING:
+			case item_value_type::EMPTY: result = false; break;
 		}
 		return result;
 	}
@@ -305,6 +328,24 @@ class item_value
 		}
 	}
 
+	template <BooleanType T>
+	std::remove_cvref_t<T> get() const
+	{
+		switch (m_data.m_type)
+		{
+			case cif::item_value_type::BOOLEAN:
+				return m_data.m_value.m_boolean;
+			case item_value_type::INT:
+				return m_data.m_value.m_integer != 0;
+			case item_value_type::FLOAT:
+				return m_data.m_value.m_float != 0.;
+			case item_value_type::TEXT:
+				return iequals(m_data.sv(), "y") or iequals(m_data.sv(), "yes") or iequals(m_data.sv(), "true");
+			default:
+				return not empty();
+		}
+	}
+
 	template <typename T>
 	std::optional<T> get() const
 	{
@@ -329,25 +370,45 @@ class item_value
 	}
 
 	// --------------------------------------------------------------------
-	std::partial_ordering operator<=>(const item_value &rhs) const
+	// std::partial_ordering operator<=>(const item_value &rhs) const
+	// {
+	// 	if (m_data.m_type == rhs.m_data.m_type)
+	// 	{
+	// 		switch (m_data.m_type)
+	// 		{
+	// 			case item_value_type::BOOLEAN: return m_data.m_value.m_boolean <=> rhs.m_data.m_value.m_boolean;
+	// 			case item_value_type::INT: return m_data.m_value.m_integer <=> rhs.m_data.m_value.m_integer;
+	// 			case item_value_type::FLOAT: return m_data.m_value.m_float <=> rhs.m_data.m_value.m_float;
+	// 			case item_value_type::TEXT: return m_data.sv() <=> rhs.m_data.sv();
+	// 			case item_value_type::MISSING:
+	// 			case item_value_type::EMPTY: return std::strong_ordering::equivalent;
+	// 		}
+	// 	}
+	// 	else
+	// 		return m_data.m_type <=> rhs.m_data.m_type;
+	// }
+
+	bool operator==(const item_value &rhs) const
 	{
 		if (m_data.m_type == rhs.m_data.m_type)
 		{
 			switch (m_data.m_type)
 			{
-				case item_value_type::MISSING: return std::strong_ordering::equivalent;
-				case item_value_type::EMPTY: return std::strong_ordering::equivalent;
-				case item_value_type::BOOLEAN: return m_data.m_value.m_boolean <=> rhs.m_data.m_value.m_boolean;
-				case item_value_type::INT: return m_data.m_value.m_integer <=> rhs.m_data.m_value.m_integer;
-				case item_value_type::FLOAT: return m_data.m_value.m_float <=> rhs.m_data.m_value.m_float;
-				case item_value_type::TEXT: return m_data.sv() <=> rhs.m_data.sv();
+				case item_value_type::BOOLEAN: return m_data.m_value.m_boolean == rhs.m_data.m_value.m_boolean;
+				case item_value_type::INT: return m_data.m_value.m_integer == rhs.m_data.m_value.m_integer;
+				case item_value_type::FLOAT: return m_data.m_value.m_float == rhs.m_data.m_value.m_float;
+				case item_value_type::TEXT: return m_data.sv() == rhs.m_data.sv();
+				case item_value_type::MISSING:
+				case item_value_type::EMPTY: return true;
 			}
 		}
-		else
-			return m_data.m_type <=> rhs.m_data.m_type;
+
+		return false;
 	}
 
 	int compare(const item_value &b, bool ignore_case = false) const noexcept;
+
+	friend std::ostream operator<<(std::ostream &os, const item_value &v);
 
   private:
 	union value
@@ -447,88 +508,102 @@ class item
 
 	/// \brief constructor for an item with name \a name and as
 	/// content the character '.', i.e. an inapplicable value.
-	item(std::string_view name)
-		: m_name(name)
+	item(std::string name)
+		: m_name(std::move(name))
 		, m_value(item_value_type::EMPTY)
 	{
 	}
 
-	/// \brief constructor for an item with name \a name and as
-	/// content a single character string with content \a value
-	item(std::string_view name, char value)
-		: m_name(name)
-		, m_value(std::string_view{ &value, 1 })
+	item(std::string name, item_value value)
+		: m_name(std::move(name))
+		, m_value(std::move(value))
 	{
 	}
 
-	/// \brief constructor for an item with name \a name and as
-	/// content the formatted floating point value \a value
-	template <FloatType T>
-	item(std::string_view name, T value)
-		: m_name(name)
-		, m_value(value)
-	{
-	}
+	// /// \brief constructor for an item with name \a name and as
+	// /// content the character '.', i.e. an inapplicable value.
+	// item(std::string_view name, std::nullptr_t)
+	// 	: m_name(name)
+	// 	, m_value(item_value_type::EMPTY)
+	// {
+	// }
 
-	/// \brief constructor for an item with name \a name and as
-	/// content the formatted floating point value \a value with
-	/// precision \a precision
-	template <FloatType T>
-	item(std::string_view name, T value, int precision)
-		: m_name(name)
-		, m_value(value, precision)
-	{
-	}
+	// /// \brief constructor for an item with name \a name and as
+	// /// content a single character string with content \a value
+	// item(std::string_view name, char value)
+	// 	: m_name(name)
+	// 	, m_value(std::string_view{ &value, 1 })
+	// {
+	// }
 
-	/// \brief constructor for an item with name \a name and as
-	/// content the formatted integral value \a value
-	template <IntegralType T>
-	item(const std::string_view name, T value)
-		: m_name(name)
-		, m_value(value)
-	{
-	}
+	// /// \brief constructor for an item with name \a name and as
+	// /// content the formatted floating point value \a value
+	// template <FloatType T>
+	// item(std::string_view name, T value)
+	// 	: m_name(name)
+	// 	, m_value(value)
+	// {
+	// }
 
-	// TODO: Perhaps introduce a real boolean type?
-	/// \brief constructor for an item with name \a name and as
-	/// content the formatted boolean value \a value
-	template <BooleanType T>
-	item(const std::string_view name, T value)
-		: m_name(name)
-		, m_value(value)
-	{
-	}
+	// /// \brief constructor for an item with name \a name and as
+	// /// content the formatted floating point value \a value with
+	// /// precision \a precision
+	// template <FloatType T>
+	// item(std::string_view name, T value, int precision)
+	// 	: m_name(name)
+	// 	, m_value(value, precision)
+	// {
+	// }
 
-	/// \brief constructor for an item with name \a name and as
-	/// content value \a value
-	item(const std::string_view name, std::string_view value)
-		: m_name(name)
-		, m_value(value)
-	{
-	}
+	// /// \brief constructor for an item with name \a name and as
+	// /// content the formatted integral value \a value
+	// template <IntegralType T>
+	// item(const std::string_view name, T value)
+	// 	: m_name(name)
+	// 	, m_value(value)
+	// {
+	// }
 
-	/// \brief constructor for an item with name \a name and as
-	/// content the optional value \a value
-	template <typename T>
-	item(const std::string_view name, const std::optional<T> &value)
-		: m_name(name)
-		, m_value(item_value_type::MISSING)
-	{
-		if (value.has_value())
-			m_value = *value;
-	}
+	// // TODO: Perhaps introduce a real boolean type?
+	// /// \brief constructor for an item with name \a name and as
+	// /// content the formatted boolean value \a value
+	// template <BooleanType T>
+	// item(const std::string_view name, T value)
+	// 	: m_name(name)
+	// 	, m_value(value)
+	// {
+	// }
 
-	/// \brief constructor for an item with name \a name and as
-	/// content the formatted floating point value \a value with
-	/// precision \a precision
-	template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
-	item(std::string_view name, const std::optional<T> &value, int precision)
-		: m_name(name)
-		, m_value(item_value_type::MISSING)
-	{
-		if (value.has_value())
-			m_value = item_value(*value, precision);
-	}
+	// /// \brief constructor for an item with name \a name and as
+	// /// content value \a value
+	// item(const std::string_view name, std::string_view value)
+	// 	: m_name(name)
+	// 	, m_value(value)
+	// {
+	// }
+
+	// /// \brief constructor for an item with name \a name and as
+	// /// content the optional value \a value
+	// template <typename T>
+	// item(const std::string_view name, const std::optional<T> &value)
+	// 	: m_name(name)
+	// 	, m_value(item_value_type::MISSING)
+	// {
+	// 	if (value.has_value())
+	// 		m_value = *value;
+	// }
+
+	// /// \brief constructor for an item with name \a name and as
+	// /// content the formatted floating point value \a value with
+	// /// precision \a precision
+	// template <typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+	// item(std::string_view name, const std::optional<T> &value, int precision)
+	// 	: m_name(name)
+	// 	, m_value(item_value_type::MISSING)
+	// {
+	// 	if (value.has_value())
+	// 		m_value = item_value(*value, precision);
+	// }
 
 	/** @cond */
 	item(const item &rhs) = default;
@@ -537,11 +612,12 @@ class item
 	item &operator=(item &&rhs) noexcept = default;
 	/** @endcond */
 
-	std::string_view name() const { return m_name; }                   ///< Return the name of the item
-	std::string value() const & { return m_value.get<std::string>(); } ///< Return the value of the item
+	const std::string &name() const { return m_name; }    ///< Return the name of the item
+	const item_value &value() const & { return m_value; } ///< Return the value of the item
+	item_value &value() & { return m_value; }             ///< Return the value of the item
 
 	/// \brief replace the content of the stored value with \a v
-	void value(const item_value &v) { m_value = v; }
+	void value(item_value v) { m_value = std::move(v); }
 
 	/// \brief empty means either null or unknown
 	bool empty() const { return m_value.empty(); }
@@ -568,7 +644,7 @@ class item
 	auto operator<=>(const item &rhs) const = default;
 
   private:
-	std::string_view m_name;
+	std::string m_name;
 	item_value m_value;
 };
 
@@ -656,7 +732,6 @@ class item
 // 		return { m_length >= kBufferSize ? m_data : m_local_data, m_length };
 // 	}
 // };
-
 
 // // --------------------------------------------------------------------
 // // Transient object to access stored data

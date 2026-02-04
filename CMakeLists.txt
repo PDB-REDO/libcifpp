@@ -249,28 +249,28 @@ write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src/" LIB_NAME "LibCIFPP")
 # Sources
 set(project_sources
 	${CMAKE_CURRENT_SOURCE_DIR}/src/category.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/condition.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/datablock.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/dictionary_parser.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/file.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/condition.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/datablock.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/dictionary_parser.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/file.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/item.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/parser.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/row.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/validate.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/validate.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/text.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/utilities.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/atom_type.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/compound.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/point.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/symmetry.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/model.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/cif2pdb.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb_record.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/reconstruct.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/validate-pdbx.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/atom_type.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/compound.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/point.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/symmetry.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/cif2pdb.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb_record.hpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.hpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/reconstruct.cpp
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/validate-pdbx.cpp
 )
 
 set(project_headers

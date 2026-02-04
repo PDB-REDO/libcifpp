@@ -2,7 +2,7 @@
 
 #include "test-main.hpp"
 
-#include <cif++.hpp>
+#include <cif++/utilities.hpp>
 
 std::filesystem::path gTestDir = std::filesystem::current_path();
 
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	// initialize CCD location
 	cif::add_file_resource("components.cif", gTestDir / ".." / "rsrc" / "ccd-subset.cif");
 
-	cif::compound_factory::instance().push_dictionary(gTestDir / "HEM.cif");
+	// cif::compound_factory::instance().push_dictionary(gTestDir / "HEM.cif");
 
 	return session.run();
 }

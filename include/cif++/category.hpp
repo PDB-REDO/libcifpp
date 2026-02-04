@@ -28,12 +28,13 @@
 
 #include "cif++/forward_decl.hpp"
 
-#include "cif++/condition.hpp"
+// #include "cif++/condition.hpp"
 #include "cif++/iterator.hpp"
 #include "cif++/row.hpp"
 #include "cif++/text.hpp"
 
-#include <array>
+// #include <array>
+#include <functional>
 
 /** \file category.hpp
  * Documentation for the cif::category class
@@ -181,11 +182,7 @@ class category
 
 	const std::string &name() const { return m_name; } ///< Returns the name of the category
 
-	[[deprecated("use key_items instead")]] iset key_fields() const; ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
-
 	iset key_items() const; ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
-
-	[[deprecated("use key_item_indices instead")]] std::set<uint16_t> key_field_indices() const; ///< Returns a set of indices for the key items.
 
 	std::set<uint16_t> key_item_indices() const; ///< Returns a set of indices for the key items.
 
@@ -961,7 +958,7 @@ class category
 			for (auto i = b; i != e; ++i)
 			{
 				// item_value *new_item = this->create_item(*i);
-				r->append(add_item(i->name()), { i->value() });
+				r->append(add_item(i->name()), i->value());
 			}
 		}
 		catch (...)
@@ -1056,60 +1053,6 @@ class category
 	}
 
 	// --------------------------------------------------------------------
-	// Naming used to be very inconsistent. For backward compatibility,
-	// the old function names are here as deprecated variants.
-
-	/// \brief Return the index number for \a column_name
-	[[deprecated("Use get_item_ix instead")]] uint16_t get_column_ix(std::string_view column_name) const
-	{
-		return get_item_ix(column_name);
-	}
-
-	/// @brief Return the name for column with index @a ix
-	/// @param ix The index number
-	/// @return The name of the column
-	[[deprecated("use get_item_name instead")]] std::string_view get_column_name(uint16_t ix) const
-	{
-		return get_item_name(ix);
-	}
-
-	/// @brief Make sure a item with name @a item_name is known and return its index number
-	/// @param item_name The name of the item
-	/// @return The index number of the item
-	[[deprecated("use add_item instead")]] uint16_t add_column(std::string_view item_name)
-	{
-		return add_item(item_name);
-	}
-
-	/** @brief Remove column name @a colum_name
-	 * @param column_name The column to be removed
-	 */
-	[[deprecated("use remove_item instead")]] void remove_column(std::string_view column_name)
-	{
-		remove_item(column_name);
-	}
-
-	/** @brief Rename column @a from_name to @a to_name */
-	[[deprecated("use rename_item instead")]] void rename_column(std::string_view from_name, std::string_view to_name)
-	{
-		rename_item(from_name, to_name);
-	}
-
-	/// @brief Return whether a column with name @a name exists in this category
-	/// @param name The name of the column
-	/// @return True if the column exists
-	[[deprecated("use has_item instead")]] bool has_column(std::string_view name) const
-	{
-		return has_item(name);
-	}
-
-	/// @brief Return the cif::iset of columns in this category
-	[[deprecated("use get_items instead")]] iset get_columns() const
-	{
-		return get_items();
-	}
-
-	// --------------------------------------------------------------------
 	/// \brief Return the index number for \a item_name
 
 	uint16_t get_item_ix(std::string_view item_name) const;
@@ -1117,7 +1060,7 @@ class category
 	/// @brief Return the name for item with index @a ix
 	/// @param ix The index number
 	/// @return The name of the item
-	std::string_view get_item_name(uint16_t ix) const
+	const std::string &get_item_name(uint16_t ix) const
 	{
 		if (ix >= m_items.size())
 			throw std::out_of_range("item index is out of range");
@@ -1200,7 +1143,7 @@ class category
 	}
 
   private:
-	void update_value(row *row, uint16_t item, std::string_view value, bool updateLinked, bool validate = true);
+	void update_value(row *row, uint16_t item, item_value value, bool updateLinked, bool validate = true);
 
 	void erase_orphans(condition &&cond, category &parent);
 

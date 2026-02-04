@@ -371,7 +371,7 @@ namespace detail
 	{
 		key_equals_condition_impl(item &&i)
 			: m_item_name(i.name())
-			, m_value(std::forward<item>(i).value())
+			, m_value(std::forward<item_value>(i.value()))
 		{
 		}
 
@@ -409,7 +409,7 @@ namespace detail
 		std::string m_item_name;
 		uint16_t m_item_ix = 0;
 		bool m_icase = false;
-		std::string m_value;
+		item_value m_value;
 		std::optional<row_handle> m_single_hit;
 	};
 
@@ -466,7 +466,7 @@ namespace detail
 
 		std::string m_item_name;
 		uint16_t m_item_ix = 0;
-		std::string m_value;
+		item_value &m_value;
 		bool m_icase = false;
 		std::optional<row_handle> m_single_hit;
 	};

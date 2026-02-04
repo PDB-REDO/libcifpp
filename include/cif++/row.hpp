@@ -173,14 +173,14 @@ class row : public std::vector<item_value>
 		return ix < size() ? &data()[ix] : nullptr;
 	}
 
-  private:
+//   private:
 	friend class category;
 	friend class category_index;
 
 	template <typename, typename...>
 	friend class iterator_impl;
 
-	void append(uint16_t ix, item_value &&iv)
+	void append(uint16_t ix, item_value iv)
 	{
 		if (ix >= size())
 			resize(ix + 1);
@@ -303,9 +303,9 @@ class row_handle
 	 * checked to see if it conforms to the rules defined in the dictionary
 	 */
 
-	void assign(std::string_view name, std::string_view value, bool updateLinked, bool validate = true)
+	void assign(std::string_view name, item_value value, bool updateLinked, bool validate = true)
 	{
-		assign(add_item(name), value, updateLinked, validate);
+		assign(add_item(name), std::move(value), updateLinked, validate);
 	}
 
 	/** \brief assign the value @a value to item at index @a item
@@ -319,7 +319,7 @@ class row_handle
 	 * checked to see if it conforms to the rules defined in the dictionary
 	 */
 
-	void assign(uint16_t item, std::string_view value, bool updateLinked, bool validate = true);
+	void assign(uint16_t item, item_value value, bool updateLinked, bool validate = true);
 
 	/// \brief compare two rows
 	bool operator==(const row_handle &rhs) const { return m_category == rhs.m_category and m_row == rhs.m_row; }
@@ -343,10 +343,10 @@ class row_handle
 		return m_row;
 	}
 
-	void assign(const item &i, bool updateLinked)
+	void assign(const item &i, bool updateLinked);/* 
 	{
 		assign(i.name(), i.value(), updateLinked);
-	}
+	} */
 
 	void swap(uint16_t item, row_handle &r);
 
@@ -395,7 +395,7 @@ class row_initializer : public std::vector<item>
 
 
 	/// \brief set the value for item name @a name to @a value
-	void set_value(std::string_view name, std::string_view value);
+	void set_value(std::string name, item_value value);
 
 	/// \brief set the value for item based on @a i
 	void set_value(const item &i)
@@ -404,7 +404,7 @@ class row_initializer : public std::vector<item>
 	}
 
 	/// \brief set the value for item name @a name to @a value, but only if the item did not have a value already
-	void set_value_if_empty(std::string_view name, std::string_view value);
+	void set_value_if_empty(std::string name, item_value value);
 
 	/// \brief set the value for item @a i, but only if the item did not have a value already
 	void set_value_if_empty(const item &i)

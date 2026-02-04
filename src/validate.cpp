@@ -263,7 +263,7 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 
 // --------------------------------------------------------------------
 
-void item_validator::operator()(std::string_view value) const
+void item_validator::operator()(const item_value &value) const
 {
 	std::error_code ec;
 	if (not validate_value(value, ec))

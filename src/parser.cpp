@@ -864,7 +864,7 @@ void parser::produce_row()
 	// m_row.lineNr(m_line_nr);
 }
 
-void parser::produce_item(std::string_view category, std::string_view item, std::string_view value)
+void parser::produce_item(std::string_view category, std::string_view item, item_value value)
 {
 	if (VERBOSE >= 4)
 		std::cerr << "producing _" << category << '.' << item << " -> " << value << '\n';
@@ -872,7 +872,7 @@ void parser::produce_item(std::string_view category, std::string_view item, std:
 	if (m_category == nullptr or not iequals(category, m_category->name()))
 		error("inconsistent categories in loop_");
 
-	m_row[item] = m_token_value;
+	m_row[item] = std::move(value);
 }
 
 } // namespace cif
