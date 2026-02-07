@@ -41,6 +41,7 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <system_error>
 #include <utility>
 
@@ -108,6 +109,17 @@ concept FloatType = std::is_floating_point_v<std::remove_cvref_t<T>>;
 template <typename T>
 concept StringType = (std::is_assignable_v<std::string, T> and not std::is_integral_v<T> and not std::is_floating_point_v<T>);
 
+// --------------------------------------------------------------------
+
+/// \cond
+template <typename _Tp>
+inline constexpr bool is_optional_v = false;
+template <typename _Tp>
+inline constexpr bool is_optional_v<std::optional<_Tp>> = true;
+/// \endcond
+
+
+
 class item_value
 {
   public:
@@ -129,7 +141,10 @@ class item_value
 			case item_value_type::BOOLEAN: m_data.m_value = rhs.m_data.m_value.m_boolean; break;
 			case item_value_type::INT: m_data.m_value = rhs.m_data.m_value.m_integer; break;
 			case item_value_type::FLOAT: m_data.m_value = rhs.m_data.m_value.m_float; break;
-			case item_value_type::TEXT: m_data.m_value = rhs.m_data.sv(); break;
+			case item_value_type::TEXT:
+				m_data.m_len = rhs.m_data.m_len;
+				m_data.m_value = rhs.m_data.sv();
+				break;
 			default: break;
 		}
 	}
@@ -186,8 +201,14 @@ class item_value
 
 	template <typename T>
 	item_value(std::optional<T> v)
-		: item_value(v.has_value() ? *v : nullptr)
 	{
+		if (v.has_value())
+		{
+			item_value iv{ *v  };
+			swap(*this, iv);
+		}
+		else
+			m_data.m_type = item_value_type::EMPTY;
 	}
 
 	item_value(item_value &&rhs) noexcept
@@ -296,6 +317,9 @@ class item_value
 				auto &&[ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.length(), v);
 				if (ec != std::errc{})
 					throw std::system_error(std::make_error_code(ec));
+				if (ptr != sv.data() + sv.length())
+					throw std::invalid_argument("String value does not contain only an integer");
+
 				return v;
 			}
 			default:
@@ -321,6 +345,8 @@ class item_value
 				auto &&[ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.length(), v);
 				if (ec != std::errc{})
 					throw std::system_error(std::make_error_code(ec));
+				if (ptr != sv.data() + sv.length())
+					throw std::invalid_argument("String value does not contain only a floating point number");
 				return v;
 			}
 			default:
@@ -347,16 +373,20 @@ class item_value
 	}
 
 	template <typename T>
-	std::optional<T> get() const
+		requires is_optional_v<T>
+	auto get() const
 	{
+		using value_type = T::value_type;
+
 		switch (m_data.m_type)
 		{
 			case item_value_type::MISSING:
 			case item_value_type::EMPTY:
-				return {};
+				return T{};
 
 			default:
-				return get<T>();
+				value_type v = get<value_type>();
+				return T{ v };
 		}
 	}
 
@@ -408,7 +438,7 @@ class item_value
 
 	int compare(const item_value &b, bool ignore_case = false) const noexcept;
 
-	friend std::ostream operator<<(std::ostream &os, const item_value &v);
+	friend std::ostream &operator<<(std::ostream &os, const item_value &v);
 
   private:
 	union value
@@ -475,8 +505,16 @@ class item_value
 		{
 		}
 
-		data() noexcept = default;
-		data(data &&) noexcept = default;
+		data() noexcept
+		{
+		}
+		data(data &&rhs) noexcept
+		{
+			std::swap(m_type, rhs.m_type);
+			std::swap(m_len, rhs.m_len);
+			std::swap(m_value, rhs.m_value);
+		}
+
 		data(const data &) noexcept = delete;
 		data &operator=(data &&) noexcept = delete;
 		data &operator=(const data &) noexcept = delete;
@@ -606,11 +644,29 @@ class item
 	// }
 
 	/** @cond */
-	item(const item &rhs) = default;
-	item(item &&rhs) noexcept = default;
-	item &operator=(const item &rhs) = default;
-	item &operator=(item &&rhs) noexcept = default;
+	item(const item &rhs)
+		: m_name(rhs.m_name)
+		, m_value(rhs.m_value)
+	{
+	}
+
+	item(item &&rhs)
+	{
+		swap(*this, rhs);
+	}
+
+	item &operator=(item rhs) noexcept
+	{
+		swap(*this, rhs);
+		return *this;
+	}
 	/** @endcond */
+
+	friend void swap(item &a, item &b) noexcept
+	{
+		std::swap(a.m_name, b.m_name);
+		std::swap(a.m_value, b.m_value);
+	}
 
 	const std::string &name() const { return m_name; }    ///< Return the name of the item
 	const item_value &value() const & { return m_value; } ///< Return the value of the item
@@ -641,7 +697,7 @@ class item
 			return value();
 	}
 
-	auto operator<=>(const item &rhs) const = default;
+	// auto operator<=>(const item &rhs) const = default;
 
   private:
 	std::string m_name;

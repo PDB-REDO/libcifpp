@@ -29,6 +29,7 @@
 #include "cif++/forward_decl.hpp"
 
 // #include "cif++/condition.hpp"
+#include "cif++/item.hpp"
 #include "cif++/iterator.hpp"
 #include "cif++/row.hpp"
 #include "cif++/text.hpp"
@@ -108,16 +109,6 @@ class multiple_results_error : public std::runtime_error
 	{
 	}
 };
-
-// --------------------------------------------------------------------
-// These should be moved elsewhere, one day.
-
-/// \cond
-template <typename _Tp>
-inline constexpr bool is_optional_v = false;
-template <typename _Tp>
-inline constexpr bool is_optional_v<std::optional<_Tp>> = true;
-/// \endcond
 
 // --------------------------------------------------------------------
 
@@ -333,7 +324,7 @@ class category
 	struct key_element_type
 	{
 		std::string name;         ///< Name of the item
-		std::string value;        ///< Value to be found
+		item_value value;         ///< Value to be found
 		bool may_be_null = false; ///< If true, value should be same or empty
 	};
 
@@ -1002,7 +993,7 @@ class category
 
 	// --------------------------------------------------------------------
 
-	using value_provider_type = std::function<std::string_view(std::string_view)>;
+	using value_provider_type = std::function<item_value(const item_value &)>;
 
 	/// \brief Update a single item named @a item_name in the rows that match
 	/// \a cond to values provided by a callback function \a value_provider
@@ -1033,7 +1024,7 @@ class category
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
 
-	void update_value(condition &&cond, std::string_view item_name, std::string_view value)
+	void update_value(condition &&cond, std::string_view item_name, item_value value)
 	{
 		auto rs = find(std::move(cond));
 		std::vector<row_handle> rows;
@@ -1046,9 +1037,9 @@ class category
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
 
-	void update_value(const std::vector<row_handle> &rows, std::string_view item_name, std::string_view value)
+	void update_value(const std::vector<row_handle> &rows, std::string_view item_name, item_value value)
 	{
-		update_value(rows, item_name, [value](std::string_view)
+		update_value(rows, item_name, [value](const item_value &v)
 			{ return value; });
 	}
 

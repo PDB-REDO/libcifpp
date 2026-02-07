@@ -132,7 +132,7 @@ namespace detail
 			c.key_item_indices().size() == 1)
 		{
 			item v(m_item_name, m_value);
-			m_single_hit = c[{ { m_item_name, std::string{ v.value() }, false } }];
+			m_single_hit = c[{ { m_item_name,  v.value(), false } }];
 		}
 
 		return this;
@@ -239,7 +239,7 @@ namespace detail
 					if (keys.contains(s->m_item_name))
 					{
 						item v{ s->m_item_name, s->m_value };
-						lookup.emplace_back(s->m_item_name, std::string{ v.value() } );
+						lookup.emplace_back(s->m_item_name, v.value() );
 						subs.emplace_back(sub);
 					}
 					continue;
@@ -261,7 +261,7 @@ namespace detail
 					if (keys.contains(s->m_item_name))
 					{
 						item v{ s->m_item_name, s->m_value };
-						lookup.emplace_back(s->m_item_name, std::string{ v.value() }, true );
+						lookup.emplace_back(s->m_item_name, v.value(), true );
 						subs.emplace_back(sub);
 					}
 					continue;

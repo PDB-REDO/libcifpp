@@ -249,14 +249,14 @@ write_version_header("${CMAKE_CURRENT_SOURCE_DIR}/src/" LIB_NAME "LibCIFPP")
 # Sources
 set(project_sources
 	${CMAKE_CURRENT_SOURCE_DIR}/src/category.cpp
-	# ${CMAKE_CURRENT_SOURCE_DIR}/src/condition.cpp
-	# ${CMAKE_CURRENT_SOURCE_DIR}/src/datablock.cpp
-	# ${CMAKE_CURRENT_SOURCE_DIR}/src/dictionary_parser.cpp
-	# ${CMAKE_CURRENT_SOURCE_DIR}/src/file.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/condition.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/datablock.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/dictionary_parser.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/file.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/item.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/parser.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/row.cpp
-	# ${CMAKE_CURRENT_SOURCE_DIR}/src/validate.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/validate.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/text.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/utilities.cpp
 	# ${CMAKE_CURRENT_SOURCE_DIR}/src/atom_type.cpp

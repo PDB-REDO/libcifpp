@@ -265,22 +265,22 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 
 void item_validator::operator()(const item_value &value) const
 {
-	std::error_code ec;
-	if (not validate_value(value, ec))
-		throw std::system_error(ec, std::string{ value } + " does not match rx for " + m_item_name);
+	// std::error_code ec;
+	// if (not validate_value(value, ec))
+	// 	throw std::system_error(ec, std::string{ value } + " does not match rx for " + m_item_name);
 }
 
-bool item_validator::validate_value(std::string_view value, std::error_code &ec) const noexcept
+bool item_validator::validate_value(const item_value &value, std::error_code &ec) const noexcept
 {
 	ec.clear();
 
-	if (not value.empty() and value != "?" and value != ".")
-	{
-		if (m_type != nullptr and not m_type->m_rx->match(value))
-			ec = make_error_code(validation_error::value_does_not_match_rx);
-		else if (not m_enums.empty() and m_enums.count(std::string{ value }) == 0)
-			ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
-	}
+	// if (not value.empty() and value != "?" and value != ".")
+	// {
+	// 	if (m_type != nullptr and not m_type->m_rx->match(value))
+	// 		ec = make_error_code(validation_error::value_does_not_match_rx);
+	// 	else if (not m_enums.empty() and m_enums.count(std::string{ value }) == 0)
+	// 		ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
+	// }
 
 	return not(bool) ec;
 }

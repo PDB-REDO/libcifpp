@@ -153,7 +153,7 @@ class dictionary_parser : public parser
 					match(CIFToken::ITEM_NAME);
 				}
 
-				while (m_lookahead == CIFToken::VALUE)
+				while (m_lookahead >= CIFToken::VALUE_INAPPLICABLE)
 				{
 					cat->emplace({});
 					auto row = cat->back();
@@ -161,7 +161,7 @@ class dictionary_parser : public parser
 					for (auto item_name : item_names)
 					{
 						row[item_name] = m_token_value;
-						match(CIFToken::VALUE);
+						match(m_lookahead);
 					}
 				}
 
@@ -181,7 +181,7 @@ class dictionary_parser : public parser
 					cat->emplace({});
 				cat->back()[item_name] = m_token_value;
 
-				match(CIFToken::VALUE);
+				match(m_lookahead >= CIFToken::VALUE_INAPPLICABLE ? m_lookahead : CIFToken::VALUE_CHARSTRING);
 			}
 		}
 
@@ -193,11 +193,11 @@ class dictionary_parser : public parser
 
 			std::vector<std::string> keys;
 			for (auto k : dict["category_key"])
-				keys.push_back(std::get<1>(split_item_name(k["name"].as<std::string>())));
+				keys.push_back(std::get<1>(split_item_name(k["name"].get<std::string>())));
 
 			iset groups;
 			for (auto g : dict["category_group"])
-				groups.insert(g["id"].as<std::string>());
+				groups.insert(g["id"].get<std::string>());
 
 			mCategoryValidators.push_back(category_validator{ category, keys, groups });
 		}
@@ -212,7 +212,7 @@ class dictionary_parser : public parser
 
 			iset ess;
 			for (auto e : dict["item_enumeration"])
-				ess.insert(e["value"].as<std::string>());
+				ess.insert(e["value"].get<std::string>());
 
 			std::string defaultValue = dict["item_default"].front().get<std::string>("value");
 			// bool defaultIsNull = false;
@@ -405,7 +405,7 @@ class dictionary_parser : public parser
 			// look up the label
 			for (auto r : linkedGroup.find("category_id"_key == link.m_child_category and "link_group_id"_key == link.m_link_group_id))
 			{
-				link.m_link_group_label = r["label"].as<std::string>();
+				link.m_link_group_label = r["label"].get<std::string>();
 				break;
 			}
 

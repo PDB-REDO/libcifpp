@@ -24,13 +24,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "cif++/item.hpp"
+
 #include "cif++/row.hpp"
 
 #include <cassert>
+#include <ios>
 
 namespace cif
 {
-
 
 int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 {
@@ -72,4 +74,31 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 // 	m_row_handle.swap(m_item_ix, b.m_row_handle);
 // }
 
+std::ostream &operator<<(std::ostream &os, const item_value &v)
+{
+	switch (v.type())
+	{
+		case cif::item_value_type::BOOLEAN:
+			os << std::boolalpha << v.m_data.m_value.m_boolean;
+			break;
+		case cif::item_value_type::INT:
+			os << v.m_data.m_value.m_integer;
+			break;
+		case cif::item_value_type::FLOAT:
+			os << v.m_data.m_value.m_float;
+			break;
+		case cif::item_value_type::TEXT:
+			os << v.m_data.sv();
+			break;
+		case cif::item_value_type::MISSING:
+			os << '?';
+			break;
+		case cif::item_value_type::EMPTY:
+			os << '.';
+			break;
+	}
+
+	return os;
 }
+
+} // namespace cif
