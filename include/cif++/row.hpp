@@ -244,6 +244,9 @@ class row_handle
 		return not empty();
 	}
 
+	/// \brief return the count of the items
+	[[nodiscard]] size_t size() const { return m_row->size(); }
+
 	/// \brief return a reference to a cif::item_value to the item in item @a item_ix
 	item_value &operator[](uint16_t item_ix);
 

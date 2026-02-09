@@ -244,10 +244,10 @@ TEST_CASE("cc_3")
 	CHECK(row["f-1"].get<int>() == 1);
 	CHECK(row["f-2"].get<int>() == -1);
 
-	CHECK_THROWS_AS(row["f-3"].get<int>(), std::exception);
-	CHECK_THROWS_AS(row["f-4"].get<int>(), std::exception);
-	CHECK_THROWS_AS(row["f-5"].get<int>(), std::exception);
-	CHECK_THROWS_AS(row["f-6"].get<int>(), std::exception);
+	CHECK_FALSE(row["f-3"].is_number());
+	CHECK_FALSE(row["f-4"].is_number());
+	CHECK_FALSE(row["f-5"].is_number());
+	CHECK_FALSE(row["f-6"].is_number());
 }
 
 TEST_CASE("item_1")
@@ -521,6 +521,13 @@ _test.name
 5 .
     )"_cf;
 
+	REQUIRE(f.size() == 1);
+	REQUIRE(f.contains("TEST"));
+	REQUIRE(f.front().size() == 1);
+	REQUIRE(f.front().contains("test"));
+	REQUIRE(f.front()["test"].size() == 5);
+	REQUIRE(f.front()["test"].front().size() == 2);
+
 	for (auto r : f.front()["test"])
 	{
 		int id;
@@ -533,7 +540,9 @@ _test.name
 			case 1: CHECK(*name == "aap"); break;
 			case 2: CHECK(*name == "noot"); break;
 			case 3: CHECK(*name == "mies"); break;
-			default: CHECK(name.has_value() == false);
+			case 4: 
+			case 5: CHECK_FALSE(name.has_value());break;
+			default: CHECK(false);
 		}
 	}
 }
@@ -636,11 +645,11 @@ _test.value
 	}
 
 	auto t = test.find(cif::key("id") == 1);
-	CHECK(not t.empty());
+	REQUIRE(not t.empty());
 	CHECK(t.front()["name"].get<std::string>() == "aap");
 
 	auto t2 = test.find(cif::key("value") == 1.2);
-	CHECK(not t2.empty());
+	REQUIRE(not t2.empty());
 	CHECK(t2.front()["name"].get<std::string>() == "mies");
 }
 
@@ -1615,7 +1624,7 @@ _cat_2.parent_id3
 	// check iterate children
 
 	auto PR2set = cat1.find(cif::key("id") == 2);
-	CHECK(PR2set.size() == 1);
+	REQUIRE(PR2set.size() == 1);
 	auto PR2 = PR2set.front();
 	CHECK(PR2["id"].get<int>() == 2);
 

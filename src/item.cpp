@@ -29,6 +29,7 @@
 #include "cif++/row.hpp"
 
 #include <cassert>
+#include <compare>
 #include <ios>
 
 namespace cif
@@ -36,8 +37,35 @@ namespace cif
 
 int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 {
-	assert(false);
-	return 0;
+	int d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);
+
+	if (d == 0)
+	{
+		switch (m_data.m_type)
+		{
+			case cif::item_value_type::BOOLEAN:
+				d = static_cast<int>(m_data.m_value.m_boolean) - static_cast<int>(b.m_data.m_value.m_boolean);
+				break;
+			case cif::item_value_type::INT:
+				d = m_data.m_value.m_integer - b.m_data.m_value.m_integer;
+				break;
+			case cif::item_value_type::FLOAT:
+			{
+				auto dp = (m_data.m_value.m_float <=> b.m_data.m_value.m_float);
+				if (dp == std::partial_ordering::less)
+					d = -1;
+				else if (dp == std::partial_ordering::greater)
+					d = 1;
+				break;
+			}
+			case cif::item_value_type::TEXT:
+				d = m_data.sv().compare(b.m_data.sv());
+				break;
+			default:;
+		}
+	}
+
+	return d;
 }
 
 // const item_handle item_handle::s_null_item;

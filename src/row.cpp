@@ -28,6 +28,7 @@
 
 #include "cif++/category.hpp"
 #include "cif++/item.hpp"
+#include <stdexcept>
 
 namespace cif
 {
@@ -47,7 +48,11 @@ const item_value &row_handle::operator[](uint16_t item_ix) const
 
 item_value &row_handle::operator[](std::string_view item_name)
 {
-	return operator[](get_item_ix(item_name));
+	auto ix = add_item(item_name);
+	if (ix >= size())
+		m_row->resize(ix + 1);
+	
+	return m_row->operator[](ix);
 }
 
 const item_value &row_handle::operator[](std::string_view item_name) const

@@ -123,21 +123,6 @@ namespace detail
 		return this;
 	}
 
-	condition_impl *key_equals_number_condition_impl::prepare(const category &c)
-	{
-		m_item_ix = c.get_item_ix(m_item_name);
-
-		if (c.get_cat_validator() != nullptr and
-			c.key_item_indices().contains(m_item_ix) and
-			c.key_item_indices().size() == 1)
-		{
-			item v(m_item_name, m_value);
-			m_single_hit = c[{ { m_item_name,  v.value(), false } }];
-		}
-
-		return this;
-	}
-
 	bool found_in_range(condition_impl *c, std::vector<and_condition_impl *>::iterator b, std::vector<and_condition_impl *>::iterator e)
 	{
 		bool result = true;
@@ -234,17 +219,6 @@ namespace detail
 					continue;
 				}
 
-				if (auto s = dynamic_cast<const key_equals_number_condition_impl *>(sub); s != nullptr)
-				{
-					if (keys.contains(s->m_item_name))
-					{
-						item v{ s->m_item_name, s->m_value };
-						lookup.emplace_back(s->m_item_name, v.value() );
-						subs.emplace_back(sub);
-					}
-					continue;
-				}
-
 				if (auto s = dynamic_cast<const key_equals_or_empty_condition_impl *>(sub); s != nullptr)
 				{
 					if (keys.contains(s->m_item_name))
@@ -252,17 +226,6 @@ namespace detail
 						lookup.emplace_back(s->m_item_name, s->m_value, true);
 						subs.emplace_back(sub);
 						may_be_empty.emplace_back(s->m_item_name);
-					}
-					continue;
-				}
-
-				if (auto s = dynamic_cast<const key_equals_number_or_empty_condition_impl *>(sub); s != nullptr)
-				{
-					if (keys.contains(s->m_item_name))
-					{
-						item v{ s->m_item_name, s->m_value };
-						lookup.emplace_back(s->m_item_name, v.value(), true );
-						subs.emplace_back(sub);
 					}
 					continue;
 				}

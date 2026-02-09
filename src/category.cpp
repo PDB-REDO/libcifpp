@@ -548,12 +548,12 @@ uint16_t category::get_item_ix(std::string_view item_name) const
 			break;
 	}
 
-	// if (VERBOSE > 0 and result == m_items.size() and m_cat_validator != nullptr) // validate the name, if it is known at all (since it was not found)
-	// {
-	// 	auto iv = m_cat_validator->get_validator_for_item(item_name);
-	// 	if (iv == nullptr)
-	// 		std::cerr << "Invalid name used '" << item_name << "' is not a known item in " + m_name << '\n';
-	// }
+	if (VERBOSE > 0 and result == m_items.size() and m_cat_validator != nullptr) // validate the name, if it is known at all (since it was not found)
+	{
+		auto iv = m_cat_validator->get_validator_for_item(item_name);
+		if (iv == nullptr)
+			std::cerr << "Invalid name used '" << item_name << "' is not a known item in " + m_name << '\n';
+	}
 
 	return result;
 }

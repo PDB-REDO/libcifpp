@@ -496,14 +496,14 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				if (not is_non_blank(ch))
 				{
 					retract();
-					if (m_token_buffer.size() == 2)
+					if (m_token_buffer.size() == 1)
 						result = CIFToken::VALUE_INAPPLICABLE;
 					else
 						result = CIFToken::VALUE_NUMERIC_FLOAT;
 				}
 				else if (ch == 'e' or ch == 'E')
 					state = State::Numeric_Exponent1;
-				else if (ch < 0 or ch > '9')
+				else if (ch < '0' or ch > '9')
 					state = State::Value;
 				break;
 
@@ -872,20 +872,27 @@ void sac_parser::parse_datablock()
 						{
 							case CIFToken::VALUE_INAPPLICABLE:
 								produce_item(cat, item_name, nullptr);
+								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_UNKNOWN:
-								produce_item(cat, item_name, std::optional<std::string>{} );
+								produce_item(cat, item_name, std::optional<std::string>{});
+								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_NUMERIC_INTEGER:
 								produce_item(cat, item_name, m_token_value_int);
+								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_NUMERIC_FLOAT:
 								produce_item(cat, item_name, m_token_value_float);
+								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_CHARSTRING:
+							case CIFToken::VALUE_TEXTFIELD:
 								produce_item(cat, item_name, m_token_value);
+								match(m_lookahead);
 								break;
 							default:;
+								match(CIFToken::VALUE_CHARSTRING);
 						}
 					}
 				}
@@ -927,8 +934,9 @@ void sac_parser::parse_datablock()
 						match(CIFToken::VALUE_NUMERIC_FLOAT);
 						break;
 					case CIFToken::VALUE_CHARSTRING:
+					case CIFToken::VALUE_TEXTFIELD:
 						produce_item(cat, itemName, m_token_value);
-						match(CIFToken::VALUE_CHARSTRING);
+						match(m_lookahead);
 						break;
 					default:
 						match(CIFToken::VALUE_CHARSTRING);
