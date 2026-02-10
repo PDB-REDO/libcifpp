@@ -326,11 +326,13 @@ struct item_validator
 		return iequals(m_item_name, rhs.m_item_name);
 	}
 
-	/// @brief Validate the value in @a value for this item
-	/// Will throw a std::system_error exception if it fails
-	void operator()(std::string_view value) const;
+	/// @brief Validate value @a value, throws if invalid
+	void validate_value(const item_value &value) const;
 
-	/// @brief A more gentle version of value validation
+	/// @brief Validate value @a value and return potential error in @a ec
+	bool validate_value(const item_value &value, std::error_code &ec) const noexcept;
+
+	/// @brief Validate value @a value and return potential error in @a ec
 	bool validate_value(std::string_view value, std::error_code &ec) const noexcept;
 };
 

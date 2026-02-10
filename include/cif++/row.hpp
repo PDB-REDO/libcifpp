@@ -32,6 +32,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
+#include <stdexcept>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -88,11 +89,12 @@ namespace cif
 
 class category;
 class row_handle;
+class const_row_handle;
+
 namespace cql
 {
 	struct connection_impl;
 }
-
 
 namespace detail
 {
@@ -103,7 +105,7 @@ namespace detail
 	{
 		static constexpr std::size_t N = sizeof...(C);
 
-		get_row_result(const row_handle &r, std::array<uint16_t, N> &&items)
+		get_row_result(const const_row_handle &r, std::array<uint16_t, N> &&items)
 			: m_row(r)
 			, m_items(std::move(items))
 		{
@@ -127,7 +129,7 @@ namespace detail
 			return std::tuple<Ts...>{ m_row[m_items[Is]].template get<Ts>()... };
 		}
 
-		const row_handle &m_row;
+		const const_row_handle &m_row;
 		std::array<uint16_t, N> m_items;
 	};
 
@@ -179,7 +181,9 @@ class row : public std::vector<item_value>
 	 */
 	item_value *get(uint16_t ix)
 	{
-		return ix < size() ? &data()[ix] : nullptr;
+		if (ix >= size())
+			resize(ix + 1);
+		return &data()[ix];
 	}
 
 	/**
@@ -190,14 +194,14 @@ class row : public std::vector<item_value>
 		return ix < size() ? &data()[ix] : nullptr;
 	}
 
-//   private:
+	//   private:
 	friend class category;
 	friend class category_index;
 
 	template <bool, typename...>
 	friend class iterator_impl_base;
 
-	void append(uint16_t ix, item_value &&iv)
+	void append(uint16_t ix, item_value iv)
 	{
 		if (ix >= size())
 			resize(ix + 1);
@@ -221,7 +225,8 @@ class row_handle
 {
   public:
 	/** @cond */
-	friend struct item_handle;
+	template <bool>
+	friend struct item_handle_base;
 	friend class category;
 	friend class category_index;
 	friend class row_initializer;
@@ -230,24 +235,24 @@ class row_handle
 	friend class iterator_impl_base;
 
 	row_handle() = default;
+	virtual ~row_handle() = default;
 
 	row_handle(const row_handle &) = default;
 	row_handle(row_handle &&) = default;
-
 	row_handle &operator=(const row_handle &) = default;
 	row_handle &operator=(row_handle &&) = default;
 
 	/** @endcond */
 
 	/// \brief constructor taking a category @a cat and a row @a r
-	row_handle(const category &cat, const row &r)
-		: m_category(const_cast<category *>(&cat))
-		, m_row(const_cast<row *>(&r))
+	row_handle(category &cat, row &r)
+		: m_category(&cat)
+		, m_row(&r)
 	{
 	}
 
 	/// \brief return the category this row belongs to
-	[[nodiscard]] const category &get_category() const
+	[[nodiscard]] category &get_category() const
 	{
 		return *m_category;
 	}
@@ -270,58 +275,31 @@ class row_handle
 		return not empty();
 	}
 
+	/// \brief return the count of the items
+	[[nodiscard]] size_t size() const { return m_row->size(); }
+
 	/// \brief return a cif::item_handle to the item in item @a item_ix
 	item_handle operator[](uint16_t item_ix)
 	{
-		return empty() ? item_handle::s_null_item : item_handle(item_ix, *this);
+		return { *m_category, *m_row, item_ix };
 	}
 
-	/// \brief return a const cif::item_handle to the item in item @a item_ix
-	const item_handle operator[](uint16_t item_ix) const
+	/// \brief return a cif::item_handle to the item in item @a item_ix
+	const_item_handle operator[](uint16_t item_ix) const
 	{
-		return empty() ? item_handle::s_null_item : item_handle(item_ix, const_cast<row_handle &>(*this));
+		return { *m_category, *m_row, item_ix };
 	}
 
 	/// \brief return a cif::item_handle to the item in the item named @a item_name
 	item_handle operator[](std::string_view item_name)
 	{
-		return empty() ? item_handle::s_null_item : item_handle(add_item(item_name), *this);
+		return { *m_category, *m_row, get_item_ix(item_name) };
 	}
 
-	/// \brief return a const cif::item_handle to the item in the item named @a item_name
-	const item_handle operator[](std::string_view item_name) const
+	/// \brief return a cif::item_handle to the item in the item named @a item_name
+	const_item_handle operator[](std::string_view item_name) const
 	{
-		return empty() ? item_handle::s_null_item : item_handle(get_item_ix(item_name), const_cast<row_handle &>(*this));
-	}
-
-	/// \brief Return an object that can be used in combination with cif::tie
-	/// to assign the values for the items @a items
-	template <typename... C>
-	[[nodiscard]] auto get(C... items) const
-	{
-		return detail::get_row_result<C...>(*this, { get_item_ix(items)... });
-	}
-
-	/// \brief Return a tuple of values of types @a Ts for the items @a items
-	template <typename... Ts, typename... C>
-	std::tuple<Ts...> get(C... items) const
-		requires(sizeof...(Ts) == sizeof...(C) and sizeof...(C) != 1)
-	{
-		return detail::get_row_result<Ts...>(*this, { get_item_ix(items)... });
-	}
-
-	/// \brief Get the value of item @a item cast to type @a T
-	template <typename T>
-	T get(const char *item) const
-	{
-		return operator[](get_item_ix(item)).template get<T>();
-	}
-
-	/// \brief Get the value of item @a item cast to type @a T
-	template <typename T>
-	[[nodiscard]] T get(std::string_view item) const
-	{
-		return operator[](get_item_ix(item)).template get<T>();
+		return { *m_category, *m_row, get_item_ix(item_name) };
 	}
 
 	/// \brief assign each of the items named in @a values to their respective value
@@ -360,39 +338,185 @@ class row_handle
 
 	void assign(uint16_t item, item_value value, bool updateLinked, bool validate = true);
 
+	/// \brief Return an object that can be used in combination with cif::tie
+	/// to assign the values for the items @a items
+	template <typename... C>
+	[[nodiscard]] auto get(C... items) const
+	{
+		return detail::get_row_result<C...>(*this, { get_item_ix(items)... });
+	}
+
+	/// \brief Return a tuple of values of types @a Ts for the items @a items
+	template <typename... Ts, typename... C>
+	std::tuple<Ts...> get(C... items) const
+		requires(sizeof...(Ts) == sizeof...(C) and sizeof...(C) != 1)
+	{
+		return detail::get_row_result<Ts...>(*this, { get_item_ix(items)... });
+	}
+
+	/// \brief Get the value of item @a item cast to type @a T
+	template <typename T>
+	[[nodiscard]] T get(std::string_view item) const
+	{
+		return operator[](get_item_ix(item)).template get<T>();
+	}
+
 	/// \brief compare two rows
 	bool operator==(const row_handle &rhs) const { return m_category == rhs.m_category and m_row == rhs.m_row; }
 
 	/// \brief compare two rows
 	bool operator!=(const row_handle &rhs) const { return m_category != rhs.m_category or m_row != rhs.m_row; }
 
-  private:
+  protected:
 	[[nodiscard]] uint16_t get_item_ix(std::string_view name) const;
 	[[nodiscard]] std::string_view get_item_name(uint16_t ix) const;
 
-	uint16_t add_item(std::string_view name);
-
 	friend cql::connection_impl;
 
-	row *get_row()
+	[[nodiscard]] auto get_row() const
 	{
 		return m_row;
 	}
 
-	[[nodiscard]] const row *get_row() const
-	{
-		return m_row;
-	}
+	// void swap(uint16_t item, row_handle &r) noexcept(false);
+	// {
+	// 	if (not m_category)
+	// 		throw std::runtime_error("uninitialized row");
+	// 
+	// 	m_category->swap_item(item, *this, b);
+	// }
+
+	category *m_category = nullptr;
+	row *m_row = nullptr;
+
+  private:
+	uint16_t add_item(std::string_view name);
 
 	void assign(const item &i, bool updateLinked)
 	{
 		assign(i.name(), i.value(), updateLinked);
 	}
+};
 
-	void swap(uint16_t item, row_handle &r) noexcept(false);
+class const_row_handle
+{
+  public:
+	/** @cond */
+	template <bool>
+	friend struct item_handle_base;
+	friend class category;
+	friend class category_index;
+	friend class row_initializer;
 
-	category *m_category = nullptr;
-	row *m_row = nullptr;
+	template <bool, typename...>
+	friend class iterator_impl_base;
+
+	const_row_handle() = default;
+	virtual ~const_row_handle() = default;
+
+	const_row_handle(const const_row_handle &) = default;
+	const_row_handle(const_row_handle &&) = default;
+	const_row_handle &operator=(const const_row_handle &) = default;
+	const_row_handle &operator=(const_row_handle &&) = default;
+
+	/** @endcond */
+
+	/// \brief constructor taking a category @a cat and a row @a r
+	const_row_handle(const category &cat, const row &r)
+		: m_category(&cat)
+		, m_row(&r)
+	{
+	}
+
+	/// \brief return the category this row belongs to
+	[[nodiscard]] const category &get_category() const
+	{
+		return *m_category;
+	}
+
+	/// \brief return the row ID
+	[[nodiscard]] int64_t row_id() const
+	{
+		return reinterpret_cast<int64_t>(m_row);
+	}
+
+	/// \brief Return true if the row is empty or uninitialised
+	[[nodiscard]] bool empty() const
+	{
+		return m_category == nullptr or m_row == nullptr;
+	}
+
+	/// \brief convenience method to test for empty()
+	explicit operator bool() const
+	{
+		return not empty();
+	}
+
+	/// \brief return the count of the items
+	[[nodiscard]] size_t size() const { return m_row->size(); }
+
+	/// \brief return a cif::item_handle to the item in item @a item_ix
+	const_item_handle operator[](uint16_t item_ix) const
+	{
+		return { *m_category, *m_row, item_ix };
+	}
+
+	/// \brief return a cif::item_handle to the item in the item named @a item_name
+	const_item_handle operator[](std::string_view item_name) const
+	{
+		return { *m_category, *m_row, get_item_ix(item_name) };
+	}
+
+	/// \brief Return an object that can be used in combination with cif::tie
+	/// to assign the values for the items @a items
+	template <typename... C>
+	[[nodiscard]] auto get(C... items) const
+	{
+		return detail::get_row_result<C...>(*this, { get_item_ix(items)... });
+	}
+
+	/// \brief Return a tuple of values of types @a Ts for the items @a items
+	template <typename... Ts, typename... C>
+	std::tuple<Ts...> get(C... items) const
+		requires(sizeof...(Ts) == sizeof...(C) and sizeof...(C) != 1)
+	{
+		return detail::get_row_result<Ts...>(*this, { get_item_ix(items)... });
+	}
+
+	/// \brief Get the value of item @a item cast to type @a T
+	template <typename T>
+	[[nodiscard]] T get(std::string_view item) const
+	{
+		return operator[](get_item_ix(item)).template get<T>();
+	}
+
+	/// \brief compare two rows
+	bool operator==(const const_row_handle &rhs) const { return m_category == rhs.m_category and m_row == rhs.m_row; }
+
+	/// \brief compare two rows
+	bool operator!=(const const_row_handle &rhs) const { return m_category != rhs.m_category or m_row != rhs.m_row; }
+
+  protected:
+	[[nodiscard]] uint16_t get_item_ix(std::string_view name) const;
+	[[nodiscard]] std::string_view get_item_name(uint16_t ix) const;
+
+	friend cql::connection_impl;
+
+	[[nodiscard]] auto get_row() const
+	{
+		return m_row;
+	}
+
+	// void swap(uint16_t item, const_row_handle &r) noexcept(false);
+	// {
+	// 	if (not m_category)
+	// 		throw std::runtime_error("uninitialized row");
+	// 
+	// 	m_category->swap_item(item, *this, b);
+	// }
+
+	const category *m_category = nullptr;
+	const row *m_row = nullptr;
 };
 
 // --------------------------------------------------------------------
@@ -433,7 +557,7 @@ class row_initializer : public std::vector<item>
 	}
 
 	/// \brief constructor taking the values of an existing row
-	row_initializer(row_handle rh);
+	row_initializer(const_row_handle rh);
 
 	/// \brief set the value for item name @a name to @a value
 	void set_value(std::string name, item_value value);

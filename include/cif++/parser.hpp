@@ -166,7 +166,13 @@ class sac_parser
 		SAVE_NAME,
 		STOP,
 		ITEM_NAME,
-		VALUE
+
+		VALUE_INAPPLICABLE,
+		VALUE_UNKNOWN,
+		VALUE_NUMERIC_INTEGER,
+		VALUE_NUMERIC_FLOAT,
+		VALUE_CHARSTRING,
+		VALUE_TEXTFIELD
 	};
 
 	static constexpr const char *get_token_name(CIFToken token)
@@ -182,7 +188,15 @@ class sac_parser
 			case CIFToken::SAVE_NAME: return "SAVE+name";
 			case CIFToken::STOP: return "STOP";
 			case CIFToken::ITEM_NAME: return "Tag";
-			case CIFToken::VALUE: return "Value";
+			// case CIFToken::VALUE: return "Value";
+
+			case CIFToken::VALUE_INAPPLICABLE: return "Inapplicable value";
+			case CIFToken::VALUE_UNKNOWN: return "'Unknown' value (=null)";
+			case CIFToken::VALUE_NUMERIC_INTEGER: return "Integer value";
+			case CIFToken::VALUE_NUMERIC_FLOAT: return "Float value";
+			case CIFToken::VALUE_CHARSTRING: return "Charstring value";
+			case CIFToken::VALUE_TEXTFIELD: return "Textfield value";
+
 			default: return "Invalid token parameter";
 		}
 	}
@@ -282,13 +296,17 @@ class sac_parser
 		ItemName,
 		TextItem,
 		TextItemNL,
+		Reserved,
+		Value,
 
 		TextItemBS,
 		TextItemBS2,
 		TextItemBSNL,
 
-		Reserved,
-		Value
+		Numeric_Integer,
+		Numeric_Float,
+		Numeric_Exponent1,
+		Numeric_Exponent2
 	};
 
 	std::streambuf &m_source;
@@ -302,6 +320,8 @@ class sac_parser
 	// token buffer
 	std::vector<char> m_token_buffer;
 	std::string_view m_token_value;
+	int64_t m_token_value_int;
+	double m_token_value_float;
 
 	/** @endcond */
 };

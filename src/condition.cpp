@@ -78,7 +78,7 @@ namespace detail
 	// 			return this;
 	// 		}
 	//
-	// 		bool test(row_handle r) const override
+	// 		bool test(const_row_handle r) const override
 	// 		{
 	// 			return m_single_hit == r;
 	// 		}
@@ -121,21 +121,6 @@ namespace detail
 			c.key_item_indices().size() == 1)
 		{
 			m_single_hit = c[{ { m_item_name, m_value } }];
-		}
-
-		return this;
-	}
-
-	condition_impl *key_equals_number_condition_impl::prepare(const category &c)
-	{
-		m_item_ix = c.get_item_ix(m_item_name);
-
-		if (c.get_cat_validator() != nullptr and
-			c.key_item_indices().contains(m_item_ix) and
-			c.key_item_indices().size() == 1)
-		{
-			item v(m_item_name, m_value);
-			m_single_hit = c[{ { m_item_name, std::string{ v.value() }, false } }];
 		}
 
 		return this;
@@ -237,17 +222,6 @@ namespace detail
 					continue;
 				}
 
-				if (auto s = dynamic_cast<const key_equals_number_condition_impl *>(sub); s != nullptr)
-				{
-					if (keys.contains(s->m_item_name))
-					{
-						item v{ s->m_item_name, s->m_value };
-						lookup.emplace_back(s->m_item_name, std::string{ v.value() });
-						subs.emplace_back(sub);
-					}
-					continue;
-				}
-
 				if (auto s = dynamic_cast<const key_equals_or_empty_condition_impl *>(sub); s != nullptr)
 				{
 					if (keys.contains(s->m_item_name))
@@ -255,17 +229,6 @@ namespace detail
 						lookup.emplace_back(s->m_item_name, s->m_value, true);
 						subs.emplace_back(sub);
 						may_be_empty.emplace_back(s->m_item_name);
-					}
-					continue;
-				}
-
-				if (auto s = dynamic_cast<const key_equals_number_or_empty_condition_impl *>(sub); s != nullptr)
-				{
-					if (keys.contains(s->m_item_name))
-					{
-						item v{ s->m_item_name, s->m_value };
-						lookup.emplace_back(s->m_item_name, std::string{ v.value() }, true);
-						subs.emplace_back(sub);
 					}
 					continue;
 				}
@@ -283,7 +246,7 @@ namespace detail
 		return this;
 	}
 
-	bool and_condition_impl::test(row_handle r) const
+	bool and_condition_impl::test(const_row_handle r) const
 	{
 		bool result = true;
 

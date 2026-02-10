@@ -42,9 +42,6 @@ class file;
 class parser;
 
 class row;
-class row_handle;
-
 class item;
-struct item_handle;
 
 } // namespace cif

@@ -128,7 +128,7 @@ class atom
 			return m_cat[{ { .name = "id", .value = m_id } }];
 		}
 
-		[[nodiscard]] const row_handle row() const
+		[[nodiscard]] const_row_handle row() const
 		{
 			return m_cat[{ { .name = "id", .value = m_id } }];
 		}
@@ -142,7 +142,7 @@ class atom
 			return result;
 		}
 
-		[[nodiscard]] const row_handle row_aniso() const
+		[[nodiscard]] const_row_handle row_aniso() const
 		{
 			row_handle result{};
 			auto cat = m_db.get("atom_site_anisotrop");
@@ -189,7 +189,7 @@ class atom
 	 * @param db The datablock where the _atom_site category resides
 	 * @param row The row containing the data for this atom
 	 */
-	atom(const datablock &db, const row_handle &row)
+	atom(const datablock &db, const_row_handle &row)
 		: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>()))
 	{
 	}
@@ -315,10 +315,10 @@ class atom
 	}
 
 	/// for direct access to underlying data, be careful!
-	[[nodiscard]] const row_handle get_row() const { return impl().row(); }
+	[[nodiscard]] const_row_handle get_row() const { return impl().row(); }
 
 	/// for direct access to underlying data, be careful!
-	[[nodiscard]] const row_handle get_row_aniso() const { return impl().row_aniso(); }
+	[[nodiscard]] const_row_handle get_row_aniso() const { return impl().row_aniso(); }
 
 	/// Return if the atom is actually a symmetry copy or the original one
 	[[nodiscard]] bool is_symmetry_copy() const { return impl().m_symop != "1_555"; }

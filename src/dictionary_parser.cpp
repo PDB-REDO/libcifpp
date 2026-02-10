@@ -156,7 +156,7 @@ class dictionary_parser : public parser
 					match(CIFToken::ITEM_NAME);
 				}
 
-				while (m_lookahead == CIFToken::VALUE)
+				while (m_lookahead >= CIFToken::VALUE_INAPPLICABLE)
 				{
 					cat->emplace({});
 					auto row = cat->back();
@@ -164,7 +164,7 @@ class dictionary_parser : public parser
 					for (auto item_name : item_names)
 					{
 						row[item_name] = m_token_value;
-						match(CIFToken::VALUE);
+						match(m_lookahead);
 					}
 				}
 
@@ -184,7 +184,7 @@ class dictionary_parser : public parser
 					cat->emplace({});
 				cat->back()[item_name] = m_token_value;
 
-				match(CIFToken::VALUE);
+				match(m_lookahead >= CIFToken::VALUE_INAPPLICABLE ? m_lookahead : CIFToken::VALUE_CHARSTRING);
 			}
 		}
 
@@ -257,7 +257,7 @@ class dictionary_parser : public parser
 
 				auto vi = std::ranges::find(ivs, item_validator{ item_name });
 				if (vi == ivs.end())
-					ivs.emplace_back(item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, cat_name, aliases);
+					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, cat_name, std::move(aliases) });
 				else
 				{
 					// need to update the itemValidator?

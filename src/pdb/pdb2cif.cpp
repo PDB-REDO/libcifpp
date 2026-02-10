@@ -4566,7 +4566,7 @@ void PDBFileParser::ConstructEntities()
 			{ "id", cc },
 			{ "name", name },
 			{ "formula", formula },
-			{ "formula_weight", formulaWeight, 3 },
+			{ "formula_weight", formulaWeight/* , 3 */ },
 			{ "mon_nstd_flag", nstd },
 			{ "type", type }
 		});

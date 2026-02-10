@@ -652,9 +652,9 @@ class FBase
 			mRow = r.front();
 	}
 
-	[[nodiscard]] std::string_view text() const
+	[[nodiscard]] std::string text() const
 	{
-		return mRow.empty() or mRow[mField].empty() ? "" : mRow[mField].text();
+		return mRow.empty() or mRow[mField].empty() ? "" : mRow[mField].str();
 	}
 
 	row_handle mRow;

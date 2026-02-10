@@ -26,7 +26,8 @@
 
 #include "cif++.hpp"
 #include "cif++/compound.hpp"
-#include "cif++/cql.hpp"
+// #include "cif++/cql.hpp"
+#include "cif++/item.hpp"
 #include "cif++/point.hpp"
 #include "cif++/row.hpp"
 
@@ -187,7 +188,7 @@ void checkEntities(datablock &db)
 		}
 
 		if (formula_weight > 0)
-			entity.assign({ { "formula_weight", formula_weight, 3 } });
+			entity.assign({ { "formula_weight", formula_weight/* , 3 */ } });
 	}
 }
 
@@ -454,10 +455,10 @@ void checkChemCompRecords(datablock &db)
 
 	for (auto chem_comp_entry : chem_comp)
 	{
-		auto compound = cf.create(chem_comp_entry["id"].text());
+		auto compound = cf.create(chem_comp_entry["id"].str());
 
 		if (not compound)
-			std::cerr << "Unknown compound: " << chem_comp_entry["id"].text() << '\n';
+			std::cerr << "Unknown compound: " << chem_comp_entry["id"].str() << '\n';
 		else
 		{
 			std::vector<item> items;
@@ -544,7 +545,7 @@ void checkAtomRecords(datablock &db)
 		if (row["type_symbol"].empty())
 			throw std::runtime_error("Missing type symbol in atom_site record");
 
-		std::string symbol{ row["type_symbol"].text() };
+		std::string symbol{ row["type_symbol"].str() };
 		if (atom_type.count("symbol"_key == symbol) == 0)
 			atom_type.emplace({ { "symbol", symbol } });
 
@@ -617,19 +618,19 @@ void checkAtomRecords(datablock &db)
 			row["label_seq_id"] = std::to_string(seq_id);
 
 		if (row["label_asym_id"].empty())
-			row["label_asym_id"] = row["auth_asym_id"].text();
+			row["label_asym_id"] = row["auth_asym_id"].value();
 		else if (row["auth_asym_id"].empty())
-			row["auth_asym_id"] = row["label_asym_id"].text();
+			row["auth_asym_id"] = row["label_asym_id"].value();
 
 		if (row["label_comp_id"].empty())
-			row["label_comp_id"] = row["auth_comp_id"].text();
+			row["label_comp_id"] = row["auth_comp_id"].value();
 		else if (row["auth_comp_id"].empty())
-			row["auth_comp_id"] = row["label_comp_id"].text();
+			row["auth_comp_id"] = row["label_comp_id"].value();
 
 		if (row["label_atom_id"].empty())
-			row["label_atom_id"] = row["auth_atom_id"].text();
+			row["label_atom_id"] = row["auth_atom_id"].value();
 		else if (row["auth_atom_id"].empty())
-			row["auth_atom_id"] = row["label_atom_id"].text();
+			row["auth_atom_id"] = row["label_atom_id"].value();
 
 		// Rewrite the coordinates and other items that look better in a fixed format
 		// Be careful not to nuke invalidly formatted data here
@@ -648,14 +649,14 @@ void checkAtomRecords(datablock &db)
 			if (auto [ptr, ec] = cif::from_chars(s.data(), s.data() + s.length(), v); ec != std::errc{})
 				continue;
 
-			if (s.length() < prec + 1UL or s[s.length() - prec - 1] != '.')
+/* 			if (s.length() < prec + 1UL or s[s.length() - prec - 1] != '.')
 			{
 				char b[12];
 
 				if (auto [ptr, ec] = std::to_chars(b, b + sizeof(b), v, std::chars_format::fixed, prec); ec == std::errc{})
 					row.assign(item_name, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
 			}
-		}
+ */		}
 	}
 
 	// auto *cv = atom_site.get_cat_validator();
@@ -714,24 +715,24 @@ void checkAtomAnisotropRecords(datablock &db)
 		// this happens sometimes (Phenix):
 
 		if (row["type_symbol"].empty())
-			row["type_symbol"] = parent["type_symbol"].text();
-		else if (row["type_symbol"].text() != parent["type_symbol"].text())
+			row["type_symbol"] = parent["type_symbol"].value();
+		else if (row["type_symbol"].value() != parent["type_symbol"].value())
 		{
 			if (cif::VERBOSE and std::exchange(warnReplaceTypeSymbol, false))
 				std::clog << "Replacing type_symbol in atom_site_anisotrop record(s)\n";
-			row["type_symbol"] = parent["type_symbol"].text();
+			row["type_symbol"] = parent["type_symbol"].value();
 		}
 
 		if (row["pdbx_auth_alt_id"].empty() and not parent["pdbx_auth_alt_id"].empty())
-			row["pdbx_auth_alt_id"] = parent["pdbx_auth_alt_id"].text();
+			row["pdbx_auth_alt_id"] = parent["pdbx_auth_alt_id"].value();
 		if (row["pdbx_label_seq_id"].empty() and not parent["label_seq_id"].empty())
-			row["pdbx_label_seq_id"] = parent["label_seq_id"].text();
+			row["pdbx_label_seq_id"] = parent["label_seq_id"].value();
 		if (row["pdbx_label_asym_id"].empty() and not parent["label_asym_id"].empty())
-			row["pdbx_label_asym_id"] = parent["label_asym_id"].text();
+			row["pdbx_label_asym_id"] = parent["label_asym_id"].value();
 		if (row["pdbx_label_atom_id"].empty() and not parent["label_atom_id"].empty())
-			row["pdbx_label_atom_id"] = parent["label_atom_id"].text();
+			row["pdbx_label_atom_id"] = parent["label_atom_id"].value();
 		if (row["pdbx_label_comp_id"].empty() and not parent["label_comp_id"].empty())
-			row["pdbx_label_comp_id"] = parent["label_comp_id"].text();
+			row["pdbx_label_comp_id"] = parent["label_comp_id"].value();
 	}
 
 	if (not to_be_deleted.empty())
@@ -1130,7 +1131,7 @@ void createPdbxPolySeqScheme(datablock &db)
 	for (auto col : { "label_asym_id", "label_entity_id", "label_seq_id", "label_comp_id", "auth_seq_id", "auth_comp_id", "pdbx_PDB_ins_code"})
 		atom_site.add_item(col);
 
-	cql::connection conn(db);
+/* 	cql::connection conn(db);
 	cql::transaction tx(conn);
 	for (auto &&[asym_id, entity_id,  seq_id, comp_id, auth_seq_id, auth_comp_id, pdb_ins_code] :
 			tx.stream<std::string, std::string, std::optional<int>, std::string, std::string, std::string, std::optional<std::string>>(
@@ -1165,7 +1166,7 @@ void createPdbxPolySeqScheme(datablock &db)
 		last_asym_id = asym_id;
 		last_seq_id = seq_id;
 	}
-
+ */
 	// // select distinct A.entity_id, A.id, B.mon_id, B.num, B.hetero, C.auth_seq_id, C.auth_comp_id, C.pdbx_PDB_ins_code from struct_asym A, entity_poly_seq B, atom_site C where A.entity_id = B.entity_id and C.label_asym_id = A.id and C.label_seq_id = B.num order by A.entity_id, B.num;
 
 	// // select distinct label_entity_id, label_asym_id, label_comp_id, label_seq_id, auth_asym_id, auth_seq_id, auth_comp_id from atom_site order by CAST(label_entity_id AS INT), label_asym_id, CAST(label_seq_id AS INT);
@@ -1658,14 +1659,13 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 				for (auto row : cat)
 				{
 					std::error_code ec;
-					std::string_view value = row[ix].text();
 
-					if (not iv->validate_value(value, ec))
+					if (not iv->validate_value(row[ix].value(), ec))
 					{
 						if (cif::VERBOSE > 0)
-							std::clog << "Replacing value (" << std::quoted(value) << ") for item " << item_name << " in category " << cat.name() << " since it does not validate\n";
+							std::clog << "Replacing value (" << std::quoted(row[ix].str()) << ") for item " << item_name << " in category " << cat.name() << " since it does not validate\n";
 
-						row[ix] = "?";
+						row[ix] = item_value{ cif::item_value_type::INAPPLICABLE };
 					}
 				}
 			}

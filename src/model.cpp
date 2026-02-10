@@ -237,7 +237,7 @@ atom residue::create_new_atom(atom_type inType, const std::string &inAtomID, poi
 		{ "auth_atom_id", inAtomID },
 		{ "auth_comp_id", m_compound_id },
 		{ "auth_seq_id", m_pdb_seq_num },
-		{ "occupancy", 1.0f, 2 },
+		{ "occupancy", 1.0f/* , 2 */ },
 		{ "B_iso_or_equiv", 20.0f },
 		{ "pdbx_PDB_model_num", m_structure->get_model_nr() },
 	});
@@ -955,8 +955,8 @@ cif::mm::atom sugar::add_atom(row_initializer atom_info)
 	atom_info.set_value({ "auth_asym_id", m_branch->get_asym_id() });
 	atom_info.set_value({ "auth_comp_id", m_compound_id });
 	atom_info.set_value({ "auth_seq_id", m_pdb_seq_num });
-	atom_info.set_value({ "occupancy", 1.0, 2 });
-	atom_info.set_value({ "B_iso_or_equiv", 30.0, 2 });
+	atom_info.set_value({ "occupancy", 1.0/* , 2 */ });
+	atom_info.set_value({ "B_iso_or_equiv", 30.0/* , 2 */ });
 	atom_info.set_value({ "pdbx_PDB_model_num", 1 });
 
 	auto row = atom_site.emplace(std::move(atom_info));
@@ -1859,11 +1859,7 @@ void structure::swap_atoms(atom a1, atom a2)
 		auto r2 = atomSites.find1(key("id") == a2.id());
 
 		for (std::string fld : std::initializer_list<std::string>{ "label_atom_id", "auth_atom_id", "type_symbol" })
-		{
-			auto l1 = r1[fld];
-			auto l2 = r2[fld];
-			l1.swap(l2);
-		}
+			swap(r1[fld].value(), r2[fld].value());
 	}
 	catch (const std::exception &ex)
 	{
@@ -2280,7 +2276,7 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 		atom.set_value_if_empty({ "auth_seq_id", 1 });
 		atom.set_value_if_empty({ "pdbx_PDB_model_num", 1 });
 		atom.set_value_if_empty({ "label_alt_id", "" });
-		atom.set_value_if_empty({ "occupancy", 1.0, 2 });
+		atom.set_value_if_empty({ "occupancy", 1.0/* , 2 */ });
 
 		auto row = atom_site.emplace(atom.begin(), atom.end());
 
@@ -2378,7 +2374,7 @@ void structure::create_water(row_initializer atom)
 	atom.set_value_if_empty({ "auth_comp_id", "HOH" });
 	atom.set_value_if_empty({ "pdbx_PDB_model_num", 1 });
 	atom.set_value_if_empty({ "label_alt_id", "" });
-	atom.set_value_if_empty({ "occupancy", 1.0, 2 });
+	atom.set_value_if_empty({ "occupancy", 1.0/* , 2 */ });
 
 	auto row = atom_site.emplace(atom.begin(), atom.end());
 
@@ -2449,7 +2445,7 @@ std::string structure::create_link(atom a1, atom a2, const std::string &link_typ
 			{ "ptnr2_auth_seq_id", a2.get_auth_seq_id() },
 			{ "ptnr2_symmetry", a2.symmetry() },
 
-			{ "pdbx_dist_value", distance(a1.get_location(), a2.get_location()), 3 },
+			{ "pdbx_dist_value", distance(a1.get_location(), a2.get_location())/* , 3 */ },
 			{ "pdbx_role", role } });
 
 	return link_id;

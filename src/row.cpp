@@ -40,37 +40,25 @@
 namespace cif
 {
 
-item_value s_null_item;
+// item_value &row_handle::operator[](uint16_t item_ix)
+// {
+// 	return empty() or item_ix >= m_row->size() ? s_null_item : m_row->operator[](item_ix);
+// }
 
-item_value &row_handle::operator[](uint16_t item_ix)
-{
-	return empty() or item_ix >= m_row->size() ? s_null_item : m_row->operator[](item_ix);
-}
+// const item_value &row_handle::operator[](uint16_t item_ix) const
+// {
+// 	return empty() or item_ix >= m_row->size() ? s_null_item : m_row->operator[](item_ix);
+// }
 
-const item_value &row_handle::operator[](uint16_t item_ix) const
-{
-	return empty() or item_ix >= m_row->size() ? s_null_item : m_row->operator[](item_ix);
-}
+// item_value &row_handle::operator[](std::string_view item_name)
+// {
+// 	return operator[](get_item_ix(item_name));
+// }
 
-item_value &row_handle::operator[](std::string_view item_name)
-{
-	return operator[](get_item_ix(item_name));
-}
-
-const item_value &row_handle::operator[](std::string_view item_name) const
-{
-	return operator[](get_item_ix(item_name));
-}
-
-// --------------------------------------------------------------------
-
-void row_handle::assign(uint16_t item, item_value value, bool updateLinked, bool validate)
-{
-	if (not m_category)
-		throw std::runtime_error("uninitialized row");
-
-	m_category->update_value(m_row, item, std::move(value), updateLinked, validate);
-}
+// const item_value &row_handle::operator[](std::string_view item_name) const
+// {
+// 	return operator[](get_item_ix(item_name));
+// }
 
 uint16_t row_handle::get_item_ix(std::string_view name) const
 {
@@ -88,6 +76,32 @@ std::string_view row_handle::get_item_name(uint16_t ix) const
 	return m_category->get_item_name(ix);
 }
 
+uint16_t const_row_handle::get_item_ix(std::string_view name) const
+{
+	if (not m_category)
+		throw std::runtime_error("uninitialized row");
+
+	return m_category->get_item_ix(name);
+}
+
+std::string_view const_row_handle::get_item_name(uint16_t ix) const
+{
+	if (not m_category)
+		throw std::runtime_error("uninitialized row");
+
+	return m_category->get_item_name(ix);
+}
+
+// --------------------------------------------------------------------
+
+void row_handle::assign(uint16_t item, item_value value, bool updateLinked, bool validate)
+{
+	if (not m_category)
+		throw std::runtime_error("uninitialized row");
+
+	m_category->update_value(m_row, item, std::move(value), updateLinked, validate);
+}
+
 uint16_t row_handle::add_item(std::string_view name)
 {
 	if (not m_category)
@@ -96,24 +110,16 @@ uint16_t row_handle::add_item(std::string_view name)
 	return m_category->add_item(name);
 }
 
-void row_handle::swap(uint16_t item, row_handle &b)
-{
-	if (not m_category)
-		throw std::runtime_error("uninitialized row");
-
-	m_category->swap_item(item, *this, b);
-}
-
 // --------------------------------------------------------------------
 
-row_initializer::row_initializer(row_handle rh)
+row_initializer::row_initializer(const_row_handle rh)
 {
 	if (not rh.m_category)
 		throw std::runtime_error("uninitialized row");
 
 	assert(rh.m_row);
 
-	row *r = rh.get_row();
+	auto r = rh.get_row();
 	auto &cat = *rh.m_category;
 
 	for (uint16_t ix = 0; ix < r->size(); ++ix)

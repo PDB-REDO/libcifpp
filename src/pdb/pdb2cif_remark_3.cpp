@@ -1534,7 +1534,7 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 						continue;
 
 					for (auto &iv : cv->m_item_validators)
-						r2[iv.m_item_name] = r1[iv.m_item_name].text();
+						r2[iv.m_item_name] = r1[iv.m_item_name].str();
 				}
 			}
 			else

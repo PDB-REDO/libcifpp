@@ -257,22 +257,22 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 
 // --------------------------------------------------------------------
 
-void item_validator::operator()(std::string_view value) const
+void item_validator::validate_value(const item_value &value) const
 {
 	std::error_code ec;
 	if (not validate_value(value, ec))
-		throw std::system_error(ec, std::format("'{}' is not a valid value for {}", value, m_item_name));
+		throw std::system_error(ec, std::format("'{}' is not a valid value for {}", value.str(), m_item_name));
 }
 
-bool item_validator::validate_value(std::string_view value, std::error_code &ec) const noexcept
+bool item_validator::validate_value(const item_value &value, std::error_code &ec) const noexcept
 {
 	ec.clear();
 
-	if (not value.empty() and value != "?" and value != ".")
+	if (not value.empty())
 	{
-		if (m_type != nullptr and not m_type->m_rx->match(value))
+		if (m_type != nullptr and not m_type->m_rx->match(value.str()))
 			ec = make_error_code(validation_error::value_does_not_match_rx);
-		else if (not m_enums.empty() and m_enums.count(std::string{ value }) == 0)
+		else if (not m_enums.empty() and m_enums.count(value.str()) == 0)
 			ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
 	}
 

@@ -55,7 +55,7 @@ condition get_parents_condition(const validator &validator, row_handle rh, const
 				if (childValue.empty())
 					continue;
 
-				cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.text();
+				cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.value();
 			}
 
 			result = std::move(result) or std::move(cond);
@@ -145,7 +145,7 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 			if (p.size() != 1)
 			{
 				if (VERBOSE > 0)
-					std::clog << "In atom_site record: " << r["id"].text() << '\n';
+					std::clog << "In atom_site record: " << r["id"].str() << '\n';
 				throw std::runtime_error("For each monomer in atom_site there should be exactly one pdbx_poly_seq_scheme record");
 			}
 		}

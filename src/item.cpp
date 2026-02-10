@@ -36,38 +36,70 @@
 namespace cif
 {
 
-const item_handle item_handle::s_null_item;
-row_handle s_null_row_handle;
-
-item_handle::item_handle() noexcept
-	: m_item_ix(std::numeric_limits<uint16_t>::max())
-	, m_row_handle(s_null_row_handle)
+int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 {
-}
+	int d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);
 
-std::string_view item_handle::text() const
-{
-	if (not m_row_handle.empty())
+	if (d == 0)
 	{
-		auto iv = m_row_handle.m_row->get(m_item_ix);
-		if (iv != nullptr)
-			return iv->text();
+		switch (m_data.m_type)
+		{
+			case cif::item_value_type::BOOLEAN:
+				d = static_cast<int>(m_data.m_value.m_boolean) - static_cast<int>(b.m_data.m_value.m_boolean);
+				break;
+			case cif::item_value_type::INT:
+				d = m_data.m_value.m_integer - b.m_data.m_value.m_integer;
+				break;
+			case cif::item_value_type::FLOAT:
+			{
+				auto dp = (m_data.m_value.m_float <=> b.m_data.m_value.m_float);
+				if (dp == std::partial_ordering::less)
+					d = -1;
+				else if (dp == std::partial_ordering::greater)
+					d = 1;
+				break;
+			}
+			case cif::item_value_type::TEXT:
+				d = m_data.sv().compare(b.m_data.sv());
+				break;
+			default:;
+		}
 	}
 
-	return {};
+	return d;
 }
 
-void item_handle::assign_value(std::string_view value)
-{
-	assert(not m_row_handle.empty());
-	m_row_handle.assign(m_item_ix, value, true);
-}
+// void const_item_handle::assign_value(const item_value &value)
+// {
+// 	assert(not m_row_handle.empty());
+// 	m_row_handle.assign(m_item_ix, value, true);
+// }
 
-void item_handle::swap(item_handle &b)
+std::ostream &operator<<(std::ostream &os, const item_value &v)
 {
-	assert(m_item_ix == b.m_item_ix);
-	// assert(&m_row_handle.m_category == &b.m_row_handle.m_category);
-	m_row_handle.swap(m_item_ix, b.m_row_handle);
+	switch (v.type())
+	{
+		case cif::item_value_type::BOOLEAN:
+			os << std::boolalpha << v.m_data.m_value.m_boolean;
+			break;
+		case cif::item_value_type::INT:
+			os << v.m_data.m_value.m_integer;
+			break;
+		case cif::item_value_type::FLOAT:
+			os << v.m_data.m_value.m_float;
+			break;
+		case cif::item_value_type::TEXT:
+			os << v.m_data.sv();
+			break;
+		case cif::item_value_type::MISSING:
+			os << '?';
+			break;
+		case cif::item_value_type::INAPPLICABLE:
+			os << '.';
+			break;
+	}
+
+	return os;
 }
 
 } // namespace cif

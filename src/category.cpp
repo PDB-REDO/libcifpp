@@ -97,10 +97,11 @@ class row_comparator
 		int d = 0;
 		for (const auto &[k, f] : m_comparator)
 		{
-			std::string_view ka = rha[k].text();
-			std::string_view kb = rhb[k].text();
+			// std::string_view ka = rha[k].text();
+			// std::string_view kb = rhb[k].text();
 
-			d = f(ka, kb);
+			// d = f(ka, kb);
+			d = rha[k].value().compare(rhb[k].value());
 
 			if (d != 0)
 				break;
@@ -109,33 +110,35 @@ class row_comparator
 		return d;
 	}
 
-	int operator()(const category &cat, const category::key_type &a, const row *b) const
-	{
-		assert(b);
+	// int operator()(const category &cat, const category::key_type &a, const row *b) const
+	// {
+	// 	assert(b);
 
-		row_handle rhb(cat, *b);
+	// 	row_handle rhb(cat, *b);
 
-		int d = 0;
-		auto ai = a.begin();
+	// 	int d = 0;
+	// 	auto ai = a.begin();
 
-		for (const auto &[k, f] : m_comparator)
-		{
-			assert(ai != a.end());
+	// 	for (const auto &[k, f] : m_comparator)
+	// 	{
+	// 		// assert(ai != a.end());
 
-			std::string_view ka = ai->value;
-			std::string_view kb = rhb[k].text();
+	// 		// std::string_view ka = ai->value;
+	// 		// std::string_view kb = rhb[k].text();
 
-			if (not(ai->may_be_null and rhb[k].empty()))
-				d = f(ka, kb);
+	// 		// if (not(ai->may_be_null and rhb[k].empty()))
+	// 		// 	d = f(ka, kb);
 
-			if (d != 0)
-				break;
+	// 		d = rha[k].value().compare(rhb[k].value());
 
-			++ai;
-		}
+	// 		if (d != 0)
+	// 			break;
 
-		return d;
-	}
+	// 		++ai;
+	// 	}
+
+	// 	return d;
+	// }
 
   private:
 	using compareFunc = std::function<int(std::string_view, std::string_view)>;
@@ -368,34 +371,35 @@ row *category_index::find(const category &cat, row *k) const
 
 row *category_index::find_by_value(const category &cat, const category::key_type &k) const
 {
-	// sort the values in k first
+return nullptr;
+	// // sort the values in k first
 
-	category::key_type k2;
-	for (auto &f : cat.key_item_indices())
-	{
-		auto fld = cat.get_item_name(f);
+	// category::key_type k2;
+	// for (auto &f : cat.key_item_indices())
+	// {
+	// 	auto fld = cat.get_item_name(f);
 
-		auto ki = std::ranges::find_if(k, [&fld](auto &i)
-			{ return i.name == fld; });
-		if (ki == k.end())
-			k2.emplace_back(std::string{ fld }, "");
-		else
-			k2.emplace_back(*ki);
-	}
+	// 	auto ki = std::ranges::find_if(k, [&fld](auto &i)
+	// 		{ return i.name == fld; });
+	// 	if (ki == k.end())
+	// 		k2.emplace_back(std::string{ fld }, "");
+	// 	else
+	// 		k2.emplace_back(*ki);
+	// }
 
-	const entry *r = m_root;
-	while (r != nullptr)
-	{
-		int d = m_row_comparator(cat, k2, r->m_row);
-		if (d < 0)
-			r = r->m_left;
-		else if (d > 0)
-			r = r->m_right;
-		else
-			break;
-	}
+	// const entry *r = m_root;
+	// while (r != nullptr)
+	// {
+	// 	int d = m_row_comparator(cat, k2, r->m_row);
+	// 	if (d < 0)
+	// 		r = r->m_left;
+	// 	else if (d > 0)
+	// 		r = r->m_right;
+	// 	else
+	// 		break;
+	// }
 
-	return r ? r->m_row : nullptr;
+	// return r ? r->m_row : nullptr;
 }
 
 void category_index::insert(category &cat, row *k)
@@ -422,7 +426,7 @@ category_index::entry *category_index::insert(category &cat, entry *h, row *v)
 		for (auto col : cat.key_items())
 		{
 			if (rh[col])
-				os << col << ": " << std::quoted(rh[col].text()) << "; ";
+				os << col << ": " << std::quoted(rh[col].str()) << "; ";
 		}
 
 		throw duplicate_key_error("Duplicate Key violation, cat: " + cat.name() + " values: " + os.str());
@@ -870,7 +874,7 @@ bool category::is_valid() const
 				seen = true;
 				std::error_code ec;
 
-				iv->validate_value(vi->text(), ec);
+				iv->validate_value(*vi, ec);
 
 				if (ec != std::errc{})
 				{
@@ -990,6 +994,25 @@ row_handle category::operator[](const key_type &key)
 
 // --------------------------------------------------------------------
 
+const_row_handle category::operator[](const key_type &key) const
+{
+	const_row_handle result{};
+
+	if (not empty())
+	{
+		if (m_index == nullptr)
+			throw std::logic_error("Category " + m_name + " does not have an index");
+
+		auto row = m_index->find_by_value(*this, key);
+		if (row != nullptr)
+			result = { *this, *row };
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------
+
 condition category::get_parents_condition(row_handle rh, const category &parentCat) const
 {
 	if (m_validator == nullptr or m_cat_validator == nullptr)
@@ -1010,12 +1033,12 @@ condition category::get_parents_condition(row_handle rh, const category &parentC
 
 			for (std::size_t ix = 0; ix < link->m_child_keys.size(); ++ix)
 			{
-				auto childValue = rh[link->m_child_keys[ix]];
+				auto childValue = rh[link->m_child_keys[ix]].value();
 
 				if (childValue.empty())
 					continue;
 
-				cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue.text();
+				cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue;
 			}
 
 			result = std::move(result) or std::move(cond);
@@ -1055,14 +1078,14 @@ condition category::get_children_condition(row_handle rh, const category &childC
 				auto childKey = link->m_child_keys[ix];
 				auto parentKey = link->m_parent_keys[ix];
 
-				auto parentValue = rh[parentKey];
+				auto parentValue = rh[parentKey].value();
 
 				if (parentValue.empty())
 					cond = std::move(cond) and key(childKey) == null;
 				else if (link->m_parent_keys.size() > 1 and not mandatoryChildItems.contains(childKey))
-					cond = std::move(cond) and (key(childKey) == parentValue.text() or key(childKey) == null);
+					cond = std::move(cond) and (key(childKey) == parentValue or key(childKey) == null);
 				else
-					cond = std::move(cond) and key(childKey) == parentValue.text();
+					cond = std::move(cond) and key(childKey) == parentValue;
 			}
 
 			result = std::move(result) or std::move(cond);
@@ -1405,7 +1428,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 	{
 		for (auto row : rows)
 		{
-			std::string value{ value_provider(row[item_name].text()) };
+			auto value{ value_provider(row[item_name].value()) };
 
 			std::error_code ec;
 			col.m_validator->validate_value(value, ec);
@@ -1417,8 +1440,8 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 	// update and see if we need to update any child categories that depend on this value
 	for (auto parent : rows)
 	{
-		std::string oldValue{ parent[item_name].text() };
-		std::string value{ value_provider(oldValue) };
+		auto oldValue{ parent[item_name].value() };
+		auto value{ value_provider(oldValue) };
 
 		update_value(parent.get_row(), colIx, value, false, false);
 
@@ -1441,7 +1464,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 					cond = std::move(cond) && key(ck) == oldValue;
 				}
 				else
-					cond = std::move(cond) && key(ck) == parent[pk].text();
+					cond = std::move(cond) && key(ck) == parent[pk].value();
 			}
 
 			auto children = childCat->find(std::move(cond));
@@ -1465,7 +1488,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 					std::string pk = linked->m_parent_keys[ix];
 					std::string ck = linked->m_child_keys[ix];
 
-					cond_c = std::move(cond_c) && key(pk) == child[ck].text();
+					cond_c = std::move(cond_c) && key(pk) == child[ck].value();
 				}
 
 				auto parents = find(std::move(cond_c));
@@ -1486,7 +1509,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 					if (pk == item_name)
 						check = std::move(check) && key(ck) == value;
 					else
-						check = std::move(check) && key(ck) == parent[pk].text();
+						check = std::move(check) && key(ck) == parent[pk].value();
 				}
 
 				if (childCat->contains(std::move(check))) // phew..., narrow escape
@@ -1527,11 +1550,13 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 	if (ival != nullptr and *ival == value)
 		return;
 
+	auto oldValue = *ival;
+
 	m_dirty = true;
 
 	// check the value
 	if (col.m_validator and validate)
-		col.m_validator->operator()(value);
+		col.m_validator->validate_value(value);
 
 	// If the item is part of the Key for this category, remove it from the index
 	// before updating
@@ -1580,11 +1605,11 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 				if (pk == iv->m_item_name)
 				{
 					childItemName = ck;
-					cond = std::move(cond) and key(ck) == oldStrValue;
+					cond = std::move(cond) and key(ck) == oldValue;
 				}
 				else
 				{
-					std::string_view pk_value = rh[pk].text();
+					auto pk_value = rh[pk].value();
 					if (pk_value.empty())
 						cond = std::move(cond) and key(ck) == null;
 					else
@@ -1616,7 +1641,7 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 					cond_n = std::move(cond_n) and key(ck) == value;
 				else
 				{
-					std::string_view pk_value = rh[pk].text();
+					auto pk_value = rh[pk].value();
 					if (pk_value.empty())
 						cond_n = std::move(cond_n) and key(ck) == null;
 					else
@@ -1651,7 +1676,7 @@ row *category::clone_row(const row &r)
 			if (not i)
 				continue;
 
-			result->append(ix, { i.text() });
+			result->append(ix, i);
 		}
 	}
 	catch (...)
@@ -1684,7 +1709,7 @@ row_handle category::create_copy(row_handle r)
 	{
 		auto i = r.m_row->get(ix);
 		if (i != nullptr)
-			items.emplace_back(m_items[ix].m_name, i->text());
+			items.emplace_back(m_items[ix].m_name, *i);
 	}
 
 	if (m_cat_validator and m_cat_validator->m_keys.size() == 1)
@@ -1742,7 +1767,7 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 				auto i = n->get(ix);
 				if (i != nullptr)
 				{
-					iv->operator()(i->value());
+					iv->validate_value(*i);
 					seen = true;
 				}
 
@@ -2055,11 +2080,11 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 				if (v == nullptr)
 					continue;
 
-				if (v->text().find('\n') == std::string_view::npos)
+				if (v->str().find('\n') == std::string_view::npos)
 				{
-					std::size_t l = v->text().length();
+					std::size_t l = v->str().length();
 
-					if (not sac_parser::is_unquoted_string(v->text()))
+					if (not sac_parser::is_unquoted_string(v->str()))
 						l += 2;
 
 					if (l > 132)
@@ -2079,10 +2104,10 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 			{
 				std::size_t w = itemWidths[cix];
 
-				std::string_view s;
+				std::string s;
 				auto iv = r->get(cix);
 				if (iv != nullptr)
-					s = iv->text();
+					s = iv->str();
 
 				if (s.empty())
 					s = "?";
@@ -2134,10 +2159,10 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 			if (not right_aligned[cix])
 				continue;
 
-			std::string_view s;
+			std::string s;
 			auto iv = m_head->get(cix);
 			if (iv != nullptr)
-				s = iv->text();
+				s = iv->str();
 
 			if (s.empty())
 				s = "?";
@@ -2160,10 +2185,10 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 				os << m_name << '.';
 			os << col.m_name << std::string(l - col.m_name.length() - m_name.length() - 2, ' ');
 
-			std::string_view s;
+			std::string s;
 			auto iv = m_head->get(cix);
 			if (iv != nullptr)
-				s = iv->text();
+				s = iv->str();
 
 			if (s.empty())
 				s = "?";
@@ -2262,7 +2287,7 @@ void category::write_delimited(std::ostream &os, const std::vector<uint16_t> &or
 				if (v == nullptr)
 					continue;
 
-				size_t l = get_line(v->text()).length();
+				size_t l = get_line(v->str()).length();
 				if (itemWidths[ix] < l)
 					itemWidths[ix] = l;
 			}
@@ -2324,11 +2349,11 @@ void category::write_delimited(std::ostream &os, const std::vector<uint16_t> &or
 
 			std::size_t w = itemWidths[cix];
 
-			std::string_view s;
+			std::string s;
 			auto iv = r->get(cix);
 
 			if (iv != nullptr)
-				s = iv->text();
+				s = iv->str();
 
 			if (s == "?" or s == ".")
 				s = "";
@@ -2383,7 +2408,7 @@ void category::write_markdown(std::ostream &os, const std::vector<uint16_t> &ord
 			if (v == nullptr)
 				continue;
 
-			size_t l = v->text().length();
+			size_t l = v->str().length();
 			if (itemWidths[ix] < l)
 				itemWidths[ix] = l;
 		}
@@ -2432,11 +2457,11 @@ void category::write_markdown(std::ostream &os, const std::vector<uint16_t> &ord
 
 			std::size_t w = itemWidths[cix];
 
-			std::string_view s;
+			std::string s;
 			auto iv = r->get(cix);
 
 			if (iv != nullptr)
-				s = iv->text();
+				s = iv->str();
 
 			if (s == "?" or s == ".")
 				s = "";
@@ -2509,7 +2534,7 @@ void category::write_table(std::ostream &os, const std::vector<uint16_t> &order,
 			if (v == nullptr)
 				continue;
 
-			size_t l = v->text().length();
+			size_t l = v->str().length();
 			if (itemWidths[ix] < l)
 				itemWidths[ix] = l;
 		}
@@ -2565,11 +2590,11 @@ void category::write_table(std::ostream &os, const std::vector<uint16_t> &order,
 
 			std::size_t w = itemWidths[cix];
 
-			std::string_view s;
+			std::string s;
 			auto iv = r->get(cix);
 
 			if (iv != nullptr)
-				s = iv->text();
+				s = iv->str();
 
 			if (s == "?" or s == ".")
 				s = "";
@@ -2664,7 +2689,7 @@ bool category::operator==(const category &rhs) const
 	// a.reorderByIndex();
 	// b.reorderByIndex();
 
-	auto rowEqual = [&](const row_handle &a, const row_handle &b)
+	auto rowEqual = [&](const_row_handle &a, const_row_handle &b)
 	{
 		int d = 0;
 
@@ -2675,7 +2700,7 @@ bool category::operator==(const category &rhs) const
 
 			std::tie(item_name, compare) = item_names[kix];
 
-			d = compare(a[item_name].text(), b[item_name].text());
+			d = a[item_name].compare(b[item_name]);
 
 			if (d != 0)
 				break;
@@ -2706,14 +2731,14 @@ bool category::operator==(const category &rhs) const
 
 			// make it an option to compare unapplicable to empty or something
 
-			auto ta = ra[item_name].text();
-			if (ta == "." or ta == "?")
-				ta = "";
-			auto tb = rb[item_name].text();
-			if (tb == "." or tb == "?")
-				tb = "";
+			// auto ta = ra[item_name].text();
+			// if (ta == "." or ta == "?")
+			// 	ta = "";
+			// auto tb = rb[item_name].text();
+			// if (tb == "." or tb == "?")
+			// 	tb = "";
 
-			if (compare(ta, tb) != 0)
+			if (ra[item_name].compare(rb[item_name]) != 0)
 				return false;
 		}
 

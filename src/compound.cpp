@@ -567,9 +567,9 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 			{ "atom_id", atom_id },
 			{ "type_symbol", type_symbol },
 			{ "charge", charge },
-			{ "model_Cartn_x", x.has_value() ? x : xi, 3 },
-			{ "model_Cartn_y", y.has_value() ? y : yi, 3 },
-			{ "model_Cartn_z", z.has_value() ? z : zi, 3 },
+			{ "model_Cartn_x", x.has_value() ? x : xi/* , 3 */ },
+			{ "model_Cartn_y", y.has_value() ? y : yi/* , 3 */ },
+			{ "model_Cartn_z", z.has_value() ? z : zi/* , 3 */ },
 			{ "pdbx_ordinal", ord++ } });
 
 		formal_charge += charge;
