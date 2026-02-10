@@ -24,52 +24,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "cif++/item.hpp"
+
 #include "cif++/row.hpp"
 
 #include <cassert>
+#include <cstdint>
+#include <limits>
+#include <string_view>
 
 namespace cif
 {
 
+const item_handle item_handle::s_null_item;
+row_handle s_null_row_handle;
 
-int item_value::compare(const item_value &b, bool ignore_case) const noexcept
+item_handle::item_handle() noexcept
+	: m_item_ix(std::numeric_limits<uint16_t>::max())
+	, m_row_handle(s_null_row_handle)
 {
-	assert(false);
-	return 0;
 }
 
-// const item_handle item_handle::s_null_item;
-// row_handle s_null_row_handle;
+std::string_view item_handle::text() const
+{
+	if (not m_row_handle.empty())
+	{
+		auto iv = m_row_handle.m_row->get(m_item_ix);
+		if (iv != nullptr)
+			return iv->text();
+	}
 
-// item_handle::item_handle()
-// 	: m_item_ix(std::numeric_limits<uint16_t>::max())
-// 	, m_row_handle(s_null_row_handle)
-// {
-// }
-
-// std::string_view item_handle::text() const
-// {
-// 	if (not m_row_handle.empty())
-// 	{
-// 		auto iv = m_row_handle.m_row->get(m_item_ix);
-// 		if (iv != nullptr)
-// 			return iv->text();
-// 	}
-
-// 	return {};
-// }
-
-// void item_handle::assign_value(std::string_view value)
-// {
-// 	assert(not m_row_handle.empty());
-// 	m_row_handle.assign(m_item_ix, value, true);
-// }
-
-// void item_handle::swap(item_handle &b)
-// {
-// 	assert(m_item_ix == b.m_item_ix);
-// 	// assert(&m_row_handle.m_category == &b.m_row_handle.m_category);
-// 	m_row_handle.swap(m_item_ix, b.m_row_handle);
-// }
-
+	return {};
 }
+
+void item_handle::assign_value(std::string_view value)
+{
+	assert(not m_row_handle.empty());
+	m_row_handle.assign(m_item_ix, value, true);
+}
+
+void item_handle::swap(item_handle &b)
+{
+	assert(m_item_ix == b.m_item_ix);
+	// assert(&m_row_handle.m_category == &b.m_row_handle.m_category);
+	m_row_handle.swap(m_item_ix, b.m_row_handle);
+}
+
+} // namespace cif

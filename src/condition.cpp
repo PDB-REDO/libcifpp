@@ -25,8 +25,11 @@
  */
 
 #include "cif++/condition.hpp"
+
 #include "cif++/category.hpp"
 #include "cif++/validate.hpp"
+
+#include <algorithm>
 
 namespace cif
 {
@@ -146,7 +149,7 @@ namespace detail
 		{
 			auto &cs = (*s)->m_sub;
 
-			if (find_if(cs.begin(), cs.end(), [c](const condition_impl *i)
+			if (std::ranges::find_if(cs, [c](const condition_impl *i)
 					{ return i->equals(c); }) == cs.end())
 			{
 				result = false;
@@ -177,7 +180,7 @@ namespace detail
 				and_result = new and_condition_impl();
 
 			and_result->m_sub.push_back(c);
-			fc.erase(fc.begin() + fc_i);
+			fc.erase(fc.begin() + static_cast<std::string::difference_type>(fc_i));
 
 			for (auto sub : subs)
 			{
@@ -192,7 +195,7 @@ namespace detail
 						continue;
 					}
 
-					ssub.erase(ssub.begin() + ssub_i);
+					ssub.erase(ssub.begin() + static_cast<std::string::difference_type>(ssub_i));
 					delete sc;
 					break;
 				}
@@ -239,7 +242,7 @@ namespace detail
 					if (keys.contains(s->m_item_name))
 					{
 						item v{ s->m_item_name, s->m_value };
-						lookup.emplace_back(s->m_item_name, std::string{ v.value() } );
+						lookup.emplace_back(s->m_item_name, std::string{ v.value() });
 						subs.emplace_back(sub);
 					}
 					continue;
@@ -261,7 +264,7 @@ namespace detail
 					if (keys.contains(s->m_item_name))
 					{
 						item v{ s->m_item_name, s->m_value };
-						lookup.emplace_back(s->m_item_name, std::string{ v.value() }, true );
+						lookup.emplace_back(s->m_item_name, std::string{ v.value() }, true);
 						subs.emplace_back(sub);
 					}
 					continue;
@@ -273,7 +276,7 @@ namespace detail
 				m_single = c[lookup];
 
 				for (auto s : subs)
-					m_sub.erase(std::remove(m_sub.begin(), m_sub.end(), s), m_sub.end());
+					std::erase(m_sub, s);
 			}
 		}
 

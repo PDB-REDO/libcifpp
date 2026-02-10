@@ -26,9 +26,6 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-
 /**
  * @file forward_decl.hpp
  * 

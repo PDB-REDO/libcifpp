@@ -28,10 +28,11 @@
 
 #include <algorithm>
 #include <cassert>
-#include <charconv>
+#include <cctype>
+#include <stdexcept>
 
 #if __has_include("fast_float/fast_float.h")
-#include "fast_float/fast_float.h"
+# include "fast_float/fast_float.h"
 #endif
 
 namespace cif
@@ -61,31 +62,29 @@ const uint8_t kCharToLowerMap[256] = {
 
 // --------------------------------------------------------------------
 
-bool iequals(std::string_view a, std::string_view b)
+bool iequals(std::string_view a, std::string_view b) noexcept
 {
 	bool result = a.length() == b.length();
 	for (auto ai = a.begin(), bi = b.begin(); result and ai != a.end(); ++ai, ++bi)
-		result = kCharToLowerMap[uint8_t(*ai)] == kCharToLowerMap[uint8_t(*bi)];
-	// result = tolower(*ai) == tolower(*bi);
+		result = kCharToLowerMap[static_cast<uint8_t>(*ai)] == kCharToLowerMap[static_cast<uint8_t>(*bi)];
 	return result;
 }
 
-bool iequals(const char *a, const char *b)
+bool iequals(const char *a, const char *b) noexcept
 {
 	bool result = true;
 	for (; result and *a and *b; ++a, ++b)
-		result = kCharToLowerMap[uint8_t(*a)] == kCharToLowerMap[uint8_t(*b)];
-
+		result = kCharToLowerMap[static_cast<uint8_t>(*a)] == kCharToLowerMap[static_cast<uint8_t>(*b)];
 	return result and *a == *b;
 }
 
-int icompare(std::string_view a, std::string_view b)
+int icompare(std::string_view a, std::string_view b) noexcept
 {
 	int d = 0;
 	auto ai = a.begin(), bi = b.begin();
 
 	for (; d == 0 and ai != a.end() and bi != b.end(); ++ai, ++bi)
-		d = (int)kCharToLowerMap[uint8_t(*ai)] - (int)kCharToLowerMap[uint8_t(*bi)];
+		d = static_cast<int>(kCharToLowerMap[static_cast<uint8_t>(*ai)]) - static_cast<int>(kCharToLowerMap[static_cast<uint8_t>(*bi)]);
 
 	if (d == 0)
 	{
@@ -98,12 +97,12 @@ int icompare(std::string_view a, std::string_view b)
 	return d;
 }
 
-int icompare(const char *a, const char *b)
+int icompare(const char *a, const char *b) noexcept
 {
 	int d = 0;
 
 	for (; d == 0 and *a != 0 and *b != 0; ++a, ++b)
-		d = (int)kCharToLowerMap[uint8_t(*a)] - (int)kCharToLowerMap[uint8_t(*b)];
+		d = static_cast<int>(kCharToLowerMap[static_cast<uint8_t>(*a)]) - static_cast<int>(kCharToLowerMap[static_cast<uint8_t>(*b)]);
 
 	if (d == 0)
 	{
@@ -199,7 +198,7 @@ void trim_left(std::string &s)
 
 	while (in != s.end() and std::isspace(*in))
 		++in;
-	
+
 	if (in == s.end())
 		s.clear();
 	else if (in != out)
@@ -219,7 +218,7 @@ void trim(std::string &s)
 
 	while (in != end and std::isspace(*in))
 		++in;
-	
+
 	if (in == end)
 		s.clear();
 	else if (in != out)
@@ -268,7 +267,7 @@ std::string cif_id_for_number(int number)
 		number = (number - r) / 26 - 1;
 	} while (number >= 0);
 
-	std::reverse(result.begin(), result.end());
+	std::ranges::reverse(result);
 
 	assert(not result.empty());
 
@@ -390,7 +389,7 @@ std::string::const_iterator nextLineBreak(std::string::const_iterator text, std:
 		/* JT */ { DBK, PBK, PBK, IBK, IBK, IBK, PBK, PBK, PBK, DBK, IBK, DBK, DBK, DBK, IBK, IBK, IBK, DBK, DBK, PBK, CIB, PBK, DBK, DBK, DBK, DBK, IBK },
 	};
 
-	uint8_t ch = static_cast<uint8_t>(*text);
+	auto ch = static_cast<uint8_t>(*text);
 
 	LineBreakClass cls;
 
@@ -494,7 +493,7 @@ std::vector<std::string> wrapLine(const std::string &text, std::size_t width)
 		j = i;
 	}
 
-	reverse(result.begin(), result.end());
+	std::ranges::reverse(result);
 
 	return result;
 }
@@ -506,7 +505,7 @@ std::vector<std::string> word_wrap(const std::string &text, std::size_t width)
 	{
 		if (p.empty())
 		{
-			result.push_back("");
+			result.emplace_back("");
 			continue;
 		}
 
@@ -530,18 +529,18 @@ template struct ff_charconv<float>;
 template struct ff_charconv<double>;
 // template struct ff_charconv<long double>;
 
-#ifdef __STDCPP_FLOAT64_T__
+# ifdef __STDCPP_FLOAT64_T__
 template struct ff_charconv<std::float64_t>;
-#endif
-#ifdef __STDCPP_FLOAT32_T__
+# endif
+# ifdef __STDCPP_FLOAT32_T__
 template struct ff_charconv<std::float32_t>;
-#endif
-#ifdef __STDCPP_FLOAT16_T__
+# endif
+# ifdef __STDCPP_FLOAT16_T__
 template struct ff_charconv<std::float16_t>;
-#endif
-#ifdef __STDCPP_BFLOAT16_T__
+# endif
+# ifdef __STDCPP_BFLOAT16_T__
 template struct ff_charconv<std::bfloat16_t>;
-#endif
+# endif
 
 #endif
 

@@ -26,15 +26,29 @@
 
 #pragma once
 
-#include "cif++/forward_decl.hpp"
-
-// #include "cif++/condition.hpp"
+#include "cif++/condition.hpp"
 #include "cif++/iterator.hpp"
 #include "cif++/row.hpp"
 #include "cif++/text.hpp"
 
-// #include <array>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <iosfwd>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <ranges>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 /** \file category.hpp
  * Documentation for the cif::category class
@@ -51,6 +65,7 @@
 namespace cif
 {
 
+class datablock;
 class validator;
 struct category_validator;
 struct item_validator;
@@ -83,13 +98,13 @@ class missing_key_error : public std::runtime_error
 	/**
 	 * @brief Construct a new duplicate key error object
 	 */
-	missing_key_error(const std::string &msg, const std::string &key)
+	missing_key_error(const std::string &msg, std::string key)
 		: std::runtime_error(msg)
-		, m_key(key)
+		, m_key(std::move(key))
 	{
 	}
 
-	const std::string &get_key() const noexcept { return m_key; }
+	[[nodiscard]] const std::string &get_key() const noexcept { return m_key; }
 
   private:
 	std::string m_key;
@@ -103,7 +118,7 @@ class multiple_results_error : public std::runtime_error
 	/**
 	 * @brief Construct a new multiple results error object
 	 */
-	multiple_results_error()
+	multiple_results_error() // NOLINT
 		: std::runtime_error("query should have returned exactly one row")
 	{
 	}
@@ -113,10 +128,10 @@ class multiple_results_error : public std::runtime_error
 // These should be moved elsewhere, one day.
 
 /// \cond
-template <typename _Tp>
+template <typename T>
 inline constexpr bool is_optional_v = false;
-template <typename _Tp>
-inline constexpr bool is_optional_v<std::optional<_Tp>> = true;
+template <typename T>
+inline constexpr bool is_optional_v<std::optional<T>> = true;
 /// \endcond
 
 // --------------------------------------------------------------------
@@ -135,14 +150,17 @@ class category
 
 	friend class row_handle;
 
-	template <typename, typename...>
-	friend class iterator_impl;
+	template <bool, typename...>
+	friend class iterator_impl_base;
 
 	using value_type = row_handle;
 	using reference = value_type;
 	using const_reference = const value_type;
-	using iterator = iterator_impl<category>;
-	using const_iterator = iterator_impl<const category>;
+	using iterator = iterator_impl<>;
+	using const_iterator = const_iterator_impl<>;
+
+	static_assert(std::input_iterator<iterator>);
+	static_assert(std::input_iterator<const_iterator>);
 
 	/// \endcond
 
@@ -180,11 +198,36 @@ class category
 
 	// --------------------------------------------------------------------
 
-	const std::string &name() const { return m_name; } ///< Returns the name of the category
+	[[nodiscard]] const std::string &name() const { return m_name; } ///< Returns the name of the category
 
-	iset key_items() const; ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
+	/// \brief Rename category to @a new_name
+	void name(std::string_view new_name)
+	{
+		m_name = new_name;
+		m_dirty = true;
+	}
 
-	std::set<uint16_t> key_item_indices() const; ///< Returns a set of indices for the key items.
+	/// \brief Return true if the category has been modified since last open/save
+	[[nodiscard]] constexpr bool is_dirty() const
+	{
+		return m_dirty;
+	}
+
+	/// \brief Mark the category as modified according to @a dirty
+	void set_dirty(bool dirty)
+	{
+		m_dirty = dirty;
+	}
+
+	// --------------------------------------------------------------------
+
+	[[deprecated("use key_items instead")]] [[nodiscard]] iset key_fields() const; ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
+
+	[[nodiscard]] iset key_items() const; ///< Returns the cif::iset of key item names. Retrieved from the @ref category_validator for this category
+
+	[[deprecated("use key_item_indices instead")]] [[nodiscard]] std::set<uint16_t> key_field_indices() const; ///< Returns a set of indices for the key items.
+
+	[[nodiscard]] std::set<uint16_t> key_item_indices() const; ///< Returns a set of indices for the key items.
 
 	/// @brief Set the validator for this category to @a v
 	/// @param v The category_validator to assign. A nullptr value is allowed.
@@ -197,15 +240,15 @@ class category
 
 	/// @brief Return the global @ref validator for the data
 	/// @return The @ref validator or nullptr if not assigned
-	const validator *get_validator() const { return m_validator; }
+	[[nodiscard]] const validator *get_validator() const { return m_validator; }
 
 	/// @brief Return the category validator for this category
 	/// @return The @ref category_validator or nullptr if not assigned
-	const category_validator *get_cat_validator() const { return m_cat_validator; }
+	[[nodiscard]] const category_validator *get_cat_validator() const { return m_cat_validator; }
 
 	/// @brief Validate the data stored using the assigned @ref category_validator
 	/// @return Returns true is all validations pass
-	bool is_valid() const;
+	[[nodiscard]] bool is_valid() const;
 
 	/// @brief Validate links, that means, values in this category should have an
 	/// accompanying value in parent categories.
@@ -218,7 +261,7 @@ class category
 	/// parent in those categories.
 	///
 	/// @return Returns true is all validations pass
-	bool validate_links() const;
+	[[nodiscard]] bool validate_links() const;
 
 	/**
 	 * @brief Strip removes items from this category that are invalid according to the assigned validator
@@ -251,7 +294,7 @@ class category
 	/// @brief Return a const reference to the first row in this category.
 	/// @return const reference to the first row in this category. The result is undefined if
 	/// the category is empty.
-	const_reference front() const
+	[[nodiscard]] const_reference front() const
 	{
 		return { const_cast<category &>(*this), const_cast<row &>(*m_head) };
 	}
@@ -267,7 +310,7 @@ class category
 	/// @brief Return a const reference to the last row in this category.
 	/// @return const reference to the last row in this category. The result is undefined if
 	/// the category is empty.
-	const_reference back() const
+	[[nodiscard]] const_reference back() const
 	{
 		return { const_cast<category &>(*this), const_cast<row &>(*m_tail) };
 	}
@@ -285,43 +328,43 @@ class category
 	}
 
 	/// Return a const iterator to the first row
-	const_iterator begin() const
+	[[nodiscard]] const_iterator begin() const
 	{
 		return { *this, m_head };
 	}
 
 	/// Return a const iterator pointing past the last row
-	const_iterator end() const
+	[[nodiscard]] const_iterator end() const
 	{
 		return { *this, nullptr };
 	}
 
 	/// Return a const iterator to the first row
-	const_iterator cbegin() const
+	[[nodiscard]] const_iterator cbegin() const
 	{
 		return { *this, m_head };
 	}
 
 	/// Return an iterator pointing past the last row
-	const_iterator cend() const
+	[[nodiscard]] const_iterator cend() const
 	{
 		return { *this, nullptr };
 	}
 
 	/// Return a count of the rows in this container
-	std::size_t size() const
+	[[nodiscard]] std::size_t size() const
 	{
 		return std::distance(cbegin(), cend());
 	}
 
 	/// Return the theoretical maximum number or rows that can be stored
-	std::size_t max_size() const
+	[[nodiscard]] std::size_t max_size() const
 	{
 		return std::numeric_limits<std::size_t>::max(); // this is a bit optimistic, I guess
 	}
 
 	/// Return true if the category is empty
-	bool empty() const
+	[[nodiscard]] bool empty() const
 	{
 		return m_head == nullptr;
 	}
@@ -367,10 +410,10 @@ class category
 	/// @param names The names for the items requested
 
 	template <typename... Ts, typename... Ns>
-	iterator_proxy<const category, Ts...> rows(Ns... names) const
+	[[nodiscard]] const_iterator_proxy<Ts...> rows(Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
-		return iterator_proxy<const category, Ts...>(*this, begin(), { names... });
+		return const_iterator_proxy<Ts...>(*this, begin(), { names... });
 	}
 
 	/// @brief Return a special iterator for all rows in this category.
@@ -390,10 +433,10 @@ class category
 	/// @param names The names for the items requested
 
 	template <typename... Ts, typename... Ns>
-	iterator_proxy<category, Ts...> rows(Ns... names)
+	iterator_proxy<Ts...> rows(Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
-		return iterator_proxy<category, Ts...>(*this, begin(), { names... });
+		return iterator_proxy<Ts...>(*this, begin(), { names... });
 	}
 
 	// --------------------------------------------------------------------
@@ -409,7 +452,7 @@ class category
 	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
 	/// to a @ref row_handle
 
-	conditional_iterator_proxy<category> find(condition &&cond)
+	conditional_iterator_proxy<> find(condition &&cond)
 	{
 		return find(begin(), std::move(cond));
 	}
@@ -422,7 +465,7 @@ class category
 	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
 	/// to a @ref row_handle
 
-	conditional_iterator_proxy<category> find(iterator pos, condition &&cond)
+	conditional_iterator_proxy<> find(iterator pos, condition &&cond)
 	{
 		return { *this, pos, std::move(cond) };
 	}
@@ -433,7 +476,7 @@ class category
 	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
 	/// to a const @ref row_handle
 
-	conditional_iterator_proxy<const category> find(condition &&cond) const
+	const_conditional_iterator_proxy<> find(condition &&cond) const
 	{
 		return find(cbegin(), std::move(cond));
 	}
@@ -446,9 +489,9 @@ class category
 	/// @return A special iterator that loops over all elements that match. The iterator can be dereferenced
 	/// to a const @ref row_handle
 
-	conditional_iterator_proxy<const category> find(const_iterator pos, condition &&cond) const
+	const_conditional_iterator_proxy<> find(const_iterator pos, condition &&cond) const
 	{
-		return conditional_iterator_proxy<const category>{ *this, pos, std::move(cond) };
+		return const_conditional_iterator_proxy<>{ *this, pos, std::move(cond) };
 	}
 
 	/// @brief Return a special iterator to loop over all rows that conform to @a cond. The resulting
@@ -465,7 +508,7 @@ class category
 	/// @return A special iterator that loops over all elements that match.
 
 	template <typename... Ts, typename... Ns>
-	conditional_iterator_proxy<category, Ts...> find(condition &&cond, Ns... names)
+	conditional_iterator_proxy<Ts...> find(condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
 		return find<Ts...>(cbegin(), std::move(cond), std::forward<Ns>(names)...);
@@ -480,7 +523,7 @@ class category
 	/// @return A special iterator that loops over all elements that match.
 
 	template <typename... Ts, typename... Ns>
-	conditional_iterator_proxy<const category, Ts...> find(condition &&cond, Ns... names) const
+	const_conditional_iterator_proxy<Ts...> find(condition &&cond, Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
 		return find<Ts...>(cbegin(), std::move(cond), std::forward<Ns>(names)...);
@@ -496,7 +539,7 @@ class category
 	/// @return A special iterator that loops over all elements that match.
 
 	template <typename... Ts, typename... Ns>
-	conditional_iterator_proxy<category, Ts...> find(const_iterator pos, condition &&cond, Ns... names)
+	conditional_iterator_proxy<Ts...> find(const_iterator pos, condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
 		return { *this, pos, std::move(cond), std::forward<Ns>(names)... };
@@ -512,7 +555,7 @@ class category
 	/// @return A special iterator that loops over all elements that match.
 
 	template <typename... Ts, typename... Ns>
-	conditional_iterator_proxy<const category, Ts...> find(const_iterator pos, condition &&cond, Ns... names) const
+	const_conditional_iterator_proxy<Ts...> find(const_iterator pos, condition &&cond, Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
 		return { *this, pos, std::move(cond), std::forward<Ns>(names)... };
@@ -589,8 +632,9 @@ class category
 	/// @param cond The condition to search for
 	/// @param item The name of the item to return the value for
 	/// @return The value found
-	template <typename T, std::enable_if_t<not is_optional_v<T>, int> = 0>
+	template <typename T>
 	T find1(const_iterator pos, condition &&cond, std::string_view item) const
+		requires(not is_optional_v<T>)
 	{
 		auto h = find<T>(pos, std::move(cond), item);
 
@@ -608,8 +652,9 @@ class category
 	/// @param cond The condition to search for
 	/// @param item The name of the item to return the value for
 	/// @return The value found, can be empty if no row matches the condition
-	template <typename T, std::enable_if_t<is_optional_v<T>, int> = 0>
+	template <typename T>
 	T find1(const_iterator pos, condition &&cond, std::string_view item) const
+		requires(is_optional_v<T>)
 	{
 		auto h = find<typename T::value_type>(pos, std::move(cond), item);
 
@@ -760,8 +805,9 @@ class category
 	/// @param item The item to use for the value
 	/// @param cond The condition to search for
 	/// @return The value found or the minimal value for the type
-	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	template <typename T>
 	T find_max(std::string_view item, condition &&cond) const
+		requires(std::is_arithmetic_v<T>)
 	{
 		T result = std::numeric_limits<T>::min();
 
@@ -778,8 +824,9 @@ class category
 	/// @tparam The type of the value to return
 	/// @param item The item to use for the value
 	/// @return The value found or the minimal value for the type
-	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	T find_max(std::string_view item) const
+	template <typename T>
+	[[nodiscard]] T find_max(std::string_view item) const
+		requires(std::is_arithmetic_v<T>)
 	{
 		return find_max<T>(item, all());
 	}
@@ -789,8 +836,9 @@ class category
 	/// @param item The item to use for the value
 	/// @param cond The condition to search for
 	/// @return The value found or the maximum value for the type
-	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	T find_min(std::string_view item, condition &&cond) const
+	template <typename T>
+	[[nodiscard]] T find_min(std::string_view item, condition &&cond) const
+		requires(std::is_arithmetic_v<T>)
 	{
 		T result = std::numeric_limits<T>::max();
 
@@ -807,8 +855,9 @@ class category
 	/// @tparam The type of the value to return
 	/// @param item The item to use for the value
 	/// @return The value found or the maximum value for the type
-	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-	T find_min(std::string_view item) const
+	template <typename T>
+	[[nodiscard]] T find_min(std::string_view item) const
+		requires(std::is_arithmetic_v<T>)
 	{
 		return find_min<T>(item, all());
 	}
@@ -884,35 +933,25 @@ class category
 
 	/// Using the relations defined in the validator, return whether the row
 	/// in @a r has any children in other categories
-	bool has_children(row_handle r) const;
+	[[nodiscard]] bool has_children(row_handle r) const;
 
 	/// Using the relations defined in the validator, return whether the row
 	/// in @a r has any parents in other categories
-	bool has_parents(row_handle r) const;
+	[[nodiscard]] bool has_parents(row_handle r) const;
 
 	/// Using the relations defined in the validator, return the row handles
 	/// for all rows in @a childCat that are linked to row @a r
-	std::vector<row_handle> get_children(row_handle r, const category &childCat) const;
+	[[nodiscard]] std::vector<row_handle> get_children(row_handle r, const category &childCat) const;
 
 	/// Using the relations defined in the validator, return the row handles
 	/// for all rows in @a parentCat that are linked to row @a r
-	std::vector<row_handle> get_parents(row_handle r, const category &parentCat) const;
+	[[nodiscard]] std::vector<row_handle> get_parents(row_handle r, const category &parentCat) const;
 
 	/// Using the relations defined in the validator, return the row handles
 	/// for all rows in @a cat that are in any way linked to row @a r
-	std::vector<row_handle> get_linked(row_handle r, const category &cat) const;
+	[[nodiscard]] std::vector<row_handle> get_linked(row_handle r, const category &cat) const;
 
 	// --------------------------------------------------------------------
-
-	// void insert(const_iterator pos, const row_initializer &row)
-	// {
-	// 	insert_impl(pos, row);
-	// }
-
-	// void insert(const_iterator pos, row_initializer &&row)
-	// {
-	// 	insert_impl(pos, std::move(row));
-	// }
 
 	/// Erase the row pointed to by @a pos and return the iterator to the
 	/// row following pos.
@@ -1015,6 +1054,7 @@ class category
 	{
 		auto rs = find(std::move(cond));
 		std::vector<row_handle> rows;
+		// NOLINTNEXTLINE
 		std::copy(rs.begin(), rs.end(), std::back_inserter(rows));
 		update_value(rows, item_name, std::move(value_provider));
 	}
@@ -1037,6 +1077,7 @@ class category
 	{
 		auto rs = find(std::move(cond));
 		std::vector<row_handle> rows;
+		// NOLINTNEXTLINE
 		std::copy(rs.begin(), rs.end(), std::back_inserter(rows));
 		update_value(rows, item_name, value);
 	}
@@ -1055,12 +1096,12 @@ class category
 	// --------------------------------------------------------------------
 	/// \brief Return the index number for \a item_name
 
-	uint16_t get_item_ix(std::string_view item_name) const;
+	[[nodiscard]] uint16_t get_item_ix(std::string_view item_name) const;
 
 	/// @brief Return the name for item with index @a ix
 	/// @param ix The index number
 	/// @return The name of the item
-	const std::string &get_item_name(uint16_t ix) const
+	[[nodiscard]] std::string_view get_item_name(uint16_t ix) const
 	{
 		if (ix >= m_items.size())
 			throw std::out_of_range("item index is out of range");
@@ -1078,19 +1119,28 @@ class category
 	 */
 	void remove_item(std::string_view item_name);
 
+	/// \brief Drop items in this category that contain empty values in all rows.
+	void drop_empty_items();
+
 	/** @brief Rename item @a from_name to @a to_name */
 	void rename_item(std::string_view from_name, std::string_view to_name);
 
 	/// @brief Return whether a item with name @a name exists in this category
 	/// @param name The name of the item
 	/// @return True if the item exists
-	bool has_item(std::string_view name) const
+	[[nodiscard]] bool has_item(std::string_view name) const
 	{
 		return get_item_ix(name) < m_items.size();
 	}
 
-	/// @brief Return the cif::iset of items in this category
-	iset get_items() const;
+	/// @brief Return the items in this category
+	[[nodiscard]] std::vector<std::string> get_items() const;
+
+	/// @brief Return the number of items (colums) in this category
+	[[nodiscard]] constexpr uint16_t get_item_count() const noexcept
+	{
+		return m_items.size();
+	}
 
 	// --------------------------------------------------------------------
 
@@ -1105,20 +1155,37 @@ class category
 	void reorder_by_index();
 
 	// --------------------------------------------------------------------
-
 	/// This function returns effectively the list of fully qualified item
 	/// names, that is category_name + '.' + item_name for each item
-	[[deprecated("use get_item_order instead")]] std::vector<std::string> get_tag_order() const
-	{
-		return get_item_order();
-	}
-
-	/// This function returns effectively the list of fully qualified item
-	/// names, that is category_name + '.' + item_name for each item
-	std::vector<std::string> get_item_order() const;
+	[[nodiscard]] std::vector<std::string> get_item_order() const;
 
 	/// Write the contents of the category to the std::ostream @a os
 	void write(std::ostream &os) const;
+
+	/// \brief Various supported output formats
+	enum class output_format
+	{
+		cif,      // Output in mmCIF format
+		csv,      // comma separated values
+		tsv,      // tab separated values
+		list,     // values delimited by a '|' character
+		column,   // output in columns
+		markdown, //
+		table,    // ascii art table
+		box,      // table with unicode line characters
+	};
+
+	/// @brief
+	/// @brief Write the contents of the category to the std::ostream @a os and
+	/// use @a order as the order of the items. If @a addMissingItems is
+	/// false, items that do not contain any value will be suppressed. Use this version
+	/// to write out
+	/// @param os The std::ostream to write to
+	/// @param fmt The format to use
+	/// @param order The order in which the items should appear
+	/// @param addMissingItems When false, empty items are suppressed from the output
+	void write(std::ostream &os, output_format fmt,
+		const std::vector<std::string> &order, bool addMissingItems = true);
 
 	/// @brief Write the contents of the category to the std::ostream @a os and
 	/// use @a order as the order of the items. If @a addMissingItems is
@@ -1126,10 +1193,17 @@ class category
 	/// @param os The std::ostream to write to
 	/// @param order The order in which the items should appear
 	/// @param addMissingItems When false, empty items are suppressed from the output
-	void write(std::ostream &os, const std::vector<std::string> &order, bool addMissingItems = true);
+	void write(std::ostream &os, const std::vector<std::string> &order, bool addMissingItems = true)
+	{
+		write(os, output_format::cif, order, addMissingItems);
+	}
 
   private:
-	void write(std::ostream &os, const std::vector<uint16_t> &order, bool includeEmptyItems) const;
+	void write_cif(std::ostream &os, const std::vector<uint16_t> &order, bool includeEmptyItems) const;
+	void write_delimited(std::ostream &os, const std::vector<uint16_t> &order, bool includeEmptyItems,
+		std::string_view delimiter, bool aligned, bool header) const;
+	void write_markdown(std::ostream &os, const std::vector<uint16_t> &order, bool includeEmptyItems) const;
+	void write_table(std::ostream &os, const std::vector<uint16_t> &order, bool includeEmptyItems, bool ascii) const;
 
   public:
 	/// friend function to make it possible to do:
@@ -1149,7 +1223,7 @@ class category
 
 	using allocator_type = std::allocator<void>;
 
-	constexpr allocator_type get_allocator() const
+	[[nodiscard]] constexpr allocator_type get_allocator() const
 	{
 		return {};
 	}
@@ -1177,6 +1251,8 @@ class category
 	row *clone_row(const row &r);
 
 	void delete_row(row *r);
+
+	iterator erase(iterator pos, bool cascade);
 
 	row_handle create_copy(row_handle r);
 
@@ -1211,8 +1287,8 @@ class category
 
 	// --------------------------------------------------------------------
 
-	condition get_parents_condition(row_handle rh, const category &parentCat) const;
-	condition get_children_condition(row_handle rh, const category &childCat) const;
+	[[nodiscard]] condition get_parents_condition(row_handle rh, const category &parentCat) const;
+	[[nodiscard]] condition get_children_condition(row_handle rh, const category &childCat) const;
 
 	// --------------------------------------------------------------------
 
@@ -1225,10 +1301,13 @@ class category
 	const validator *m_validator = nullptr;
 	const category_validator *m_cat_validator = nullptr;
 	std::vector<link> m_parent_links, m_child_links;
-	bool m_cascade = true;
 	uint32_t m_last_unique_num = 0;
 	class category_index *m_index = nullptr;
 	row *m_head = nullptr, *m_tail = nullptr;
+
+	bool m_dirty = false; // Keep track of modifications
 };
+
+static_assert(std::ranges::input_range<category>);
 
 } // namespace cif

@@ -32,15 +32,16 @@
 #include <cstdint>
 #include <format>
 #include <functional>
+#include <numbers>
 #include <optional>
 #include <valarray>
 
 #if __has_include(<clipper/core/coords.h>)
-#define HAVE_LIBCLIPPER 1
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#include <clipper/core/coords.h>
-#pragma GCC diagnostic pop
+# define HAVE_LIBCLIPPER 1
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wignored-qualifiers"
+# include <clipper/core/coords.h>
+# pragma GCC diagnostic pop
 #endif
 
 /** \file point.hpp
@@ -56,7 +57,7 @@ namespace cif
 
 /// \brief Our value for Pi
 const double
-	kPI = 3.141592653589793238462643383279502884;
+	kPI = std::numbers::pi;
 
 // --------------------------------------------------------------------
 /**
@@ -119,13 +120,13 @@ class quaternion_type
 	// accessors
 
 	/// \brief See class description, return the *real* part of the quaternion
-	constexpr value_type real() const
+	[[nodiscard]] constexpr value_type real() const
 	{
 		return a;
 	}
 
 	/// \brief See class description, return the *unreal* part of the quaternion
-	constexpr quaternion_type unreal() const
+	[[nodiscard]] constexpr quaternion_type unreal() const
 	{
 		return { 0, b, c, d };
 	}
@@ -154,15 +155,7 @@ class quaternion_type
 	}
 
 	/// \brief Assignment operator
-	constexpr quaternion_type &operator=(quaternion_type const &rhs)
-	{
-		a = rhs.a;
-		b = rhs.b;
-		c = rhs.c;
-		d = rhs.d;
-
-		return *this;
-	}
+	constexpr quaternion_type &operator=(quaternion_type const &rhs) = default;
 
 	/// \brief Assignment operator that sets the *real* part to @a rhs and the *unreal* parts to zero
 	constexpr quaternion_type &operator=(value_type const &rhs)
@@ -275,10 +268,10 @@ class quaternion_type
 	template <typename X>
 	constexpr quaternion_type &operator*=(quaternion_type<X> const &rhs)
 	{
-		value_type ar = static_cast<value_type>(rhs.a);
-		value_type br = static_cast<value_type>(rhs.b);
-		value_type cr = static_cast<value_type>(rhs.c);
-		value_type dr = static_cast<value_type>(rhs.d);
+		auto ar = static_cast<value_type>(rhs.a);
+		auto br = static_cast<value_type>(rhs.b);
+		auto cr = static_cast<value_type>(rhs.c);
+		auto dr = static_cast<value_type>(rhs.d);
 
 		quaternion_type result(a * ar - b * br - c * cr - d * dr, a * br + b * ar + c * dr - d * cr, a * cr - b * dr + c * ar + d * br, a * dr + b * cr - c * br + d * ar);
 		swap(result);
@@ -310,10 +303,10 @@ class quaternion_type
 	template <typename X>
 	constexpr quaternion_type &operator/=(quaternion_type<X> const &rhs)
 	{
-		value_type ar = static_cast<value_type>(rhs.a);
-		value_type br = static_cast<value_type>(rhs.b);
-		value_type cr = static_cast<value_type>(rhs.c);
-		value_type dr = static_cast<value_type>(rhs.d);
+		auto ar = static_cast<value_type>(rhs.a);
+		auto br = static_cast<value_type>(rhs.b);
+		auto cr = static_cast<value_type>(rhs.c);
+		auto dr = static_cast<value_type>(rhs.d);
 
 		value_type denominator = ar * ar + br * br + cr * cr + dr * dr;
 		quaternion_type result((+a * ar + b * br + c * cr + d * dr) / denominator, (-a * br + b * ar - c * dr + d * cr) / denominator, (-a * cr + b * dr + c * ar - d * br) / denominator, (-a * dr - b * cr + c * br + d * ar) / denominator);
@@ -349,10 +342,10 @@ class quaternion_type
 		return quaternion_type{ +q.a, -q.b, -q.c, -q.d };
 	}
 
-	constexpr value_type get_a() const { return a; } ///< Return part a
-	constexpr value_type get_b() const { return b; } ///< Return part b
-	constexpr value_type get_c() const { return c; } ///< Return part c
-	constexpr value_type get_d() const { return d; } ///< Return part d
+	[[nodiscard]] constexpr value_type get_a() const { return a; } ///< Return part a
+	[[nodiscard]] constexpr value_type get_b() const { return b; } ///< Return part b
+	[[nodiscard]] constexpr value_type get_c() const { return c; } ///< Return part c
+	[[nodiscard]] constexpr value_type get_d() const { return d; } ///< Return part d
 
 	/// \brief compare with @a rhs
 	constexpr bool operator==(const quaternion_type &rhs) const
@@ -500,17 +493,17 @@ struct point_type
 		return *this;
 	}
 
-	constexpr value_type &get_x() { return m_x; }      ///< Get a reference to x
-	constexpr value_type get_x() const { return m_x; } ///< Get the value of x
-	constexpr void set_x(value_type x) { m_x = x; }    ///< Set the value of x to @a x
+	[[nodiscard]] constexpr value_type &get_x() { return m_x; }      ///< Get a reference to x
+	[[nodiscard]] constexpr value_type get_x() const { return m_x; } ///< Get the value of x
+	constexpr void set_x(value_type x) { m_x = x; }                  ///< Set the value of x to @a x
 
-	constexpr value_type &get_y() { return m_y; }      ///< Get a reference to y
-	constexpr value_type get_y() const { return m_y; } ///< Get the value of y
-	constexpr void set_y(value_type y) { m_y = y; }    ///< Set the value of y to @a y
+	[[nodiscard]] constexpr value_type &get_y() { return m_y; }      ///< Get a reference to y
+	[[nodiscard]] constexpr value_type get_y() const { return m_y; } ///< Get the value of y
+	constexpr void set_y(value_type y) { m_y = y; }                  ///< Set the value of y to @a y
 
-	constexpr value_type &get_z() { return m_z; }      ///< Get a reference to z
-	constexpr value_type get_z() const { return m_z; } ///< Get the value of z
-	constexpr void set_z(value_type z) { m_z = z; }    ///< Set the value of z to @a z
+	[[nodiscard]] constexpr value_type &get_z() { return m_z; }      ///< Get a reference to z
+	[[nodiscard]] constexpr value_type get_z() const { return m_z; } ///< Get the value of z
+	constexpr void set_z(value_type z) { m_z = z; }                  ///< Set the value of z to @a z
 
 	/// \brief add @a rhs
 	constexpr point_type &operator+=(const point_type &rhs)
@@ -691,13 +684,13 @@ struct point_type
 	// consider point as a vector... perhaps I should rename point?
 
 	/// \brief looking at the point as if it is a vector, return the squared length
-	constexpr value_type length_sq() const
+	[[nodiscard]] constexpr value_type length_sq() const
 	{
 		return m_x * m_x + m_y * m_y + m_z * m_z;
 	}
 
 	/// \brief looking at the point as if it is a vector, return the length
-	constexpr value_type length() const
+	[[nodiscard]] constexpr value_type length() const
 	{
 		return std::sqrt(length_sq());
 	}
@@ -939,7 +932,7 @@ class spherical_dots
 	}
 
 	/// \brief The number of points
-	std::size_t size() const { return P; }
+	[[nodiscard]] std::size_t size() const { return P; }
 
 	/// \brief Access a point by index
 	const point operator[](uint32_t inIx) const { return m_points[inIx]; }
@@ -951,12 +944,12 @@ class spherical_dots
 	iterator end() const { return m_points.end(); }
 
 	/// \brief return the *weight*,
-	double weight() const { return W; }
+	[[nodiscard]] double weight() const { return W; }
 
 	spherical_dots()
 	{
 		const double
-			kGoldenRatio = (1 + std::sqrt(5.0)) / 2;
+			kGoldenRatio = std::numbers::phi;
 
 		auto p = m_points.begin();
 

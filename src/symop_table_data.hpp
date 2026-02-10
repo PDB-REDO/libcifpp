@@ -363,7 +363,7 @@ const space_group kSpaceGroups[] =
 
 const std::size_t kNrOfSpaceGroups = sizeof(kSpaceGroups) / sizeof(space_group);
 
-const symop_datablock kSymopNrTable[] = {
+const symop_datablock kSymopNrTable[] = {	// NOLINT(bugprone-throwing-static-initialization,cert-err58-cpp)
     // P 1
     {   1,   1, {  1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, } },
     // P -1

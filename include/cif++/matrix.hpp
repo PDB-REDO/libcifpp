@@ -29,9 +29,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
-#include <cstdint>
 #include <ostream>
-#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -56,22 +54,22 @@ namespace cif
  * @tparam M The type of the derived class
  */
 template <typename M>
-class matrix_expression
+class matrix_expression // NOLINT(bugprone-crtp-constructor-accessibility)
 {
   public:
-	constexpr std::size_t dim_m() const { return static_cast<const M &>(*this).dim_m(); } ///< Return the size (dimension) in direction m
-	constexpr std::size_t dim_n() const { return static_cast<const M &>(*this).dim_n(); } ///< Return the size (dimension) in direction n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return static_cast<const M &>(*this).dim_m(); } ///< Return the size (dimension) in direction m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return static_cast<const M &>(*this).dim_n(); } ///< Return the size (dimension) in direction n
 
-	constexpr bool empty() const { return dim_m() == 0 or dim_n() == 0; } ///< Convenient way to test for empty matrices
+	[[nodiscard]] constexpr bool empty() const { return dim_m() == 0 or dim_n() == 0; } ///< Convenient way to test for empty matrices
 
 	/** Return a reference to element [ @a i, @a j ] */
-	constexpr auto &operator()(std::size_t i, std::size_t j)
+	[[nodiscard]] constexpr auto &operator()(std::size_t i, std::size_t j)
 	{
 		return static_cast<M &>(*this).operator()(i, j);
 	}
 
 	/** Return the value of element [ @a i, @a j ] */
-	constexpr auto operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr auto operator()(std::size_t i, std::size_t j) const
 	{
 		return static_cast<const M &>(*this).operator()(i, j);
 	}
@@ -204,11 +202,11 @@ class matrix : public matrix_expression<matrix<F>>
 	matrix &operator=(const matrix &m) = default;
 	/** @endcond */
 
-	constexpr std::size_t dim_m() const { return m_m; } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return m_n; } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return m_m; } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_n; } ///< Return dimension n
 
 	/** Return the value of element [ @a i, @a j ] */
-	constexpr value_type operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr value_type operator()(std::size_t i, std::size_t j) const
 	{
 		assert(i < m_m);
 		assert(j < m_n);
@@ -216,7 +214,7 @@ class matrix : public matrix_expression<matrix<F>>
 	}
 
 	/** Return a reference to element [ @a i, @a j ] */
-	constexpr value_type &operator()(std::size_t i, std::size_t j)
+	[[nodiscard]] constexpr value_type &operator()(std::size_t i, std::size_t j)
 	{
 		assert(i < m_m);
 		assert(j < m_n);
@@ -290,11 +288,11 @@ class matrix_fixed : public matrix_expression<matrix_fixed<F, M, N>>
 		return *this;
 	}
 
-	constexpr std::size_t dim_m() const { return M; } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return N; } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return M; } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return N; } ///< Return dimension n
 
 	/** Return the value of element [ @a i, @a j ] */
-	constexpr value_type operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr value_type operator()(std::size_t i, std::size_t j) const
 	{
 		assert(i < M);
 		assert(j < N);
@@ -302,7 +300,7 @@ class matrix_fixed : public matrix_expression<matrix_fixed<F, M, N>>
 	}
 
 	/** Return a reference to element [ @a i, @a j ] */
-	constexpr value_type &operator()(std::size_t i, std::size_t j)
+	[[nodiscard]] constexpr value_type &operator()(std::size_t i, std::size_t j)
 	{
 		assert(i < M);
 		assert(j < N);
@@ -354,11 +352,11 @@ class symmetric_matrix : public matrix_expression<symmetric_matrix<F>>
 	symmetric_matrix &operator=(const symmetric_matrix &m) = default;
 	/** @endcond */
 
-	constexpr std::size_t dim_m() const { return m_n; } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return m_n; } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return m_n; } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_n; } ///< Return dimension n
 
 	/** Return the value of element [ @a i, @a j ] */
-	constexpr value_type operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr value_type operator()(std::size_t i, std::size_t j) const
 	{
 		return i < j
 		           ? m_data[(j * (j + 1)) / 2 + i]
@@ -366,7 +364,7 @@ class symmetric_matrix : public matrix_expression<symmetric_matrix<F>>
 	}
 
 	/** Return a reference to element [ @a i, @a j ] */
-	constexpr value_type &operator()(std::size_t i, std::size_t j)
+	[[nodiscard]] constexpr value_type &operator()(std::size_t i, std::size_t j)
 	{
 		if (i > j)
 			std::swap(i, j);
@@ -410,11 +408,11 @@ class symmetric_matrix_fixed : public matrix_expression<symmetric_matrix_fixed<F
 	symmetric_matrix_fixed &operator=(const symmetric_matrix_fixed &m) = default;
 	/** @endcond */
 
-	constexpr std::size_t dim_m() const { return M; } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return M; } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return M; } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return M; } ///< Return dimension n
 
 	/** Return the value of element [ @a i, @a j ] */
-	constexpr value_type operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr value_type operator()(std::size_t i, std::size_t j) const
 	{
 		return i < j
 		           ? m_data[(j * (j + 1)) / 2 + i]
@@ -422,7 +420,7 @@ class symmetric_matrix_fixed : public matrix_expression<symmetric_matrix_fixed<F
 	}
 
 	/** Return a reference to element [ @a i, @a j ] */
-	constexpr value_type &operator()(std::size_t i, std::size_t j)
+	[[nodiscard]] constexpr value_type &operator()(std::size_t i, std::size_t j)
 	{
 		if (i > j)
 			std::swap(i, j);
@@ -466,11 +464,11 @@ class identity_matrix : public matrix_expression<identity_matrix<F>>
 	{
 	}
 
-	constexpr std::size_t dim_m() const { return m_n; } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return m_n; } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return m_n; } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_n; } ///< Return dimension n
 
 	/** Return the value of element [ @a i, @a j ] */
-	constexpr value_type operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr value_type operator()(std::size_t i, std::size_t j) const
 	{
 		return static_cast<value_type>(i == j ? 1 : 0);
 	}
@@ -501,11 +499,11 @@ class matrix_subtraction : public matrix_expression<matrix_subtraction<M1, M2>>
 		assert(m_m1.dim_n() == m_m2.dim_n());
 	}
 
-	constexpr std::size_t dim_m() const { return m_m1.dim_m(); } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return m_m1.dim_n(); } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return m_m1.dim_m(); } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_m1.dim_n(); } ///< Return dimension n
 
 	/** Access to the value of element [ @a i, @a j ] */
-	constexpr auto operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr auto operator()(std::size_t i, std::size_t j) const
 	{
 		return m_m1(i, j) - m_m2(i, j);
 	}
@@ -540,11 +538,11 @@ class matrix_matrix_multiplication : public matrix_expression<matrix_matrix_mult
 		assert(m1.dim_m() == m2.dim_n());
 	}
 
-	constexpr std::size_t dim_m() const { return m_m1.dim_m(); } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return m_m1.dim_n(); } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return m_m1.dim_m(); } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_m1.dim_n(); } ///< Return dimension n
 
 	/** Access to the value of element [ @a i, @a j ] */
-	constexpr auto operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr auto operator()(std::size_t i, std::size_t j) const
 	{
 		using value_type = decltype(m_m1(0, 0));
 
@@ -581,11 +579,11 @@ class matrix_scalar_multiplication : public matrix_expression<matrix_scalar_mult
 	{
 	}
 
-	constexpr std::size_t dim_m() const { return m_m.dim_m(); } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return m_m.dim_n(); } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return m_m.dim_m(); } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_m.dim_n(); } ///< Return dimension n
 
 	/** Access to the value of element [ @a i, @a j ] */
-	constexpr auto operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr auto operator()(std::size_t i, std::size_t j) const
 	{
 		return m_m(i, j) * m_v;
 	}
@@ -596,16 +594,16 @@ class matrix_scalar_multiplication : public matrix_expression<matrix_scalar_mult
 };
 
 /** First implementation of operator*, enabled if the second parameter is a scalar */
-template <typename M1, typename T, std::enable_if_t<std::is_floating_point_v<T>, int> = 0>
+template <typename M1, typename T>
 auto operator*(const matrix_expression<M1> &m, T v)
-{
+requires (std::is_floating_point_v<T>) {
 	return matrix_scalar_multiplication(m, v);
 }
 
 /** First implementation of operator*, enabled if the second parameter is not a scalar and thus must be a matrix, right? */
-template <typename M1, typename M2, std::enable_if_t<not std::is_floating_point_v<M2>, int> = 0>
+template <typename M1, typename M2>
 auto operator*(const matrix_expression<M1> &m1, const matrix_expression<M2> &m2)
-{
+requires (not std::is_floating_point_v<M2>) {
 	return matrix_matrix_multiplication(m1, m2);
 }
 
@@ -622,11 +620,11 @@ class sub_matrix : public matrix_expression<sub_matrix<M2>>
 	{
 	}
 
-	constexpr std::size_t dim_m() const { return m_m.dim_m() - 1; } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return m_m.dim_n() - 1; } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return m_m.dim_m() - 1; } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_m.dim_n() - 1; } ///< Return dimension n
 
 	/** Access to the value of element [ @a i, @a j ] */
-	constexpr auto operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr auto operator()(std::size_t i, std::size_t j) const
 	{
 		return m_m(
 			i >= m_i ? i + 1 : i,
@@ -713,11 +711,11 @@ class matrix_cofactors : public matrix_expression<matrix_cofactors<M>>
 	{
 	}
 
-	constexpr std::size_t dim_m() const { return m_m.dim_m(); } ///< Return dimension m
-	constexpr std::size_t dim_n() const { return m_m.dim_n(); } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_m() const { return m_m.dim_m(); } ///< Return dimension m
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_m.dim_n(); } ///< Return dimension n
 
 	/** Access to the value of element [ @a i, @a j ] */
-	constexpr auto operator()(std::size_t i, std::size_t j) const
+	[[nodiscard]] constexpr auto operator()(std::size_t i, std::size_t j) const
 	{
 		const std::size_t ixs[4][3] = {
 			{ 1, 2, 3 },

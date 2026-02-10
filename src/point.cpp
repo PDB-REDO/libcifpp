@@ -28,6 +28,7 @@
 
 #include "cif++/matrix.hpp" // for matrix_subtraction, matrix_cofactors
 
+#include <algorithm>
 #include <initializer_list>
 #include <random> // for uniform_real_distribution, normal_distri...
 #include <stdexcept>
@@ -106,9 +107,9 @@ point center_points(std::vector<point> &Points)
 		t.m_z += pt.m_z;
 	}
 
-	t.m_x /= Points.size();
-	t.m_y /= Points.size();
-	t.m_z /= Points.size();
+	t.m_x /= static_cast<float>(Points.size());
+	t.m_y /= static_cast<float>(Points.size());
+	t.m_z /= static_cast<float>(Points.size());
 
 	for (point &pt : Points)
 	{
@@ -162,7 +163,7 @@ double RMSd(const std::vector<point> &a, const std::vector<point> &b)
 		sum += d.sum();
 	}
 
-	return std::sqrt(sum / a.size());
+	return std::sqrt(sum / static_cast<double>(a.size()));
 }
 
 // The next function returns the largest solution for a quartic equation
@@ -307,17 +308,15 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 
 point nudge(point p, float offset)
 {
-	static const float kPI_f = static_cast<float>(kPI);
-
 	static std::random_device rd;
 	static std::mt19937_64 rng(rd());
 
-	std::uniform_real_distribution<float> randomAngle(0, 2 * kPI_f);
+	std::uniform_real_distribution<float> randomAngle(0, 2 * std::numbers::pi);
 	std::normal_distribution<float> randomOffset(0, offset);
 
 	float theta = randomAngle(rng);
-	float phi1 = randomAngle(rng) - kPI_f;
-	float phi2 = randomAngle(rng) - kPI_f;
+	float phi1 = randomAngle(rng) - static_cast<float>(std::numbers::pi);
+	float phi2 = randomAngle(rng) - static_cast<float>(std::numbers::pi);
 
 	quaternion q = spherical(1.0f, theta, phi1, phi2);
 
@@ -541,16 +540,15 @@ std::tuple<point, float> smallest_sphere_around_points(std::vector<point> pts)
 	size_t i = 0;
 	while (i < pts.size())
 	{
-		if (std::find(cix.begin(), cix.end(), i) != cix.end() or
+		if (std::ranges::find(cix, i) != cix.end() or
 			point_in_circle(pts[i], cirle_points()))
 		{
 			++i;
 		}
 		else
 		{
-			cix.erase(std::remove_if(cix.begin(), cix.end(), [i](size_t j)
-						  { return j < i; }),
-				cix.end());
+			std::erase_if(cix, [i](size_t j)
+				{ return j < i; });
 			cix.push_back(i);
 			if (cix.size() < 4)
 				i = 0;

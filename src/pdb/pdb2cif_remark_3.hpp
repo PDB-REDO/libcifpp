@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "cif++/datablock.hpp"
 #include "pdb_record.hpp"
 
 // --------------------------------------------------------------------
@@ -38,7 +39,7 @@ struct TemplateLine;
 class Remark3Parser
 {
   public:
-	virtual ~Remark3Parser() {}
+	virtual ~Remark3Parser() = default;
 
 	static bool parse(const std::string &expMethod, PDBRecord *r, cif::datablock &db);
 
@@ -46,13 +47,13 @@ class Remark3Parser
 	virtual std::string version();
 
   protected:
-	Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db,
+	Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db,
 		const TemplateLine templatelines[], uint32_t templateLineCount, std::regex programVersion);
 
 	virtual float parse();
 	std::string nextLine();
 
-	bool match(const char *expr, int nextState);
+	bool match(const char *expr, uint32_t nextState);
 	void storeCapture(const char *category, std::initializer_list<const char *> items, bool createNew = false);
 	void storeRefineLsRestr(const char *type, std::initializer_list<const char *> values);
 	void updateRefineLsRestr(const char *type, std::initializer_list<const char *> values);

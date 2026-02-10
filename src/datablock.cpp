@@ -28,7 +28,9 @@
 
 #include "cif++/validate.hpp"
 
+#include <algorithm>
 #include <exception>
+#include <ranges>
 
 namespace cif
 {
@@ -48,12 +50,24 @@ void datablock::load_dictionary()
 	{
 		try
 		{
-			set_validator(&validator_factory::instance().get(*audit_conform));
+			set_validator(validator_factory::instance().get(*audit_conform));
 		}
 		catch (const std::exception &ex)
 		{
 			std::clog << ex.what() << '\n';
 		}
+	}
+}
+
+void datablock::load_dictionary(std::string_view dict)
+{
+	try
+	{
+		set_validator(validator_factory::instance().get(dict));
+	}
+	catch (const std::exception &ex)
+	{
+		std::clog << ex.what() << '\n';
 	}
 }
 
@@ -108,8 +122,8 @@ bool datablock::strip()
 	bool result = true;
 
 	// remove all categories that have no validator
-	erase(std::remove_if(begin(), end(), [](category &c)
-			  {
+	std::erase_if(*this, [](category &c)
+		{
 		bool result = false;
 		if (c.get_cat_validator() == nullptr)
 		{
@@ -117,8 +131,7 @@ bool datablock::strip()
 				std::clog << "Dropping category " << c.name() << '\n';
 			result = true;
 		}
-		return result; }),
-		end());
+		return result; });
 
 	// then strip the remaining categories
 	for (auto &cat : *this)
@@ -147,7 +160,7 @@ bool datablock::strip()
 
 category &datablock::operator[](std::string_view name)
 {
-	auto i = std::find_if(begin(), end(), [name](const category &c)
+	auto i = std::ranges::find_if(*this, [name](const category &c)
 		{ return iequals(c.name(), name); });
 
 	if (i != end())
@@ -164,14 +177,14 @@ category &datablock::operator[](std::string_view name)
 const category &datablock::operator[](std::string_view name) const
 {
 	static const category s_empty;
-	auto i = std::find_if(begin(), end(), [name](const category &c)
+	auto i = std::ranges::find_if(*this, [name](const category &c)
 		{ return iequals(c.name(), name); });
 	return i == end() ? s_empty : *i;
 }
 
 category *datablock::get(std::string_view name)
 {
-	auto i = std::find_if(begin(), end(), [name](const category &c)
+	auto i = std::ranges::find_if(*this, [name](const category &c)
 		{ return iequals(c.name(), name); });
 	return i == end() ? nullptr : &*i;
 }
@@ -217,7 +230,7 @@ std::vector<std::string> datablock::get_item_order() const
 	std::vector<std::string> result;
 
 	// for entry and audit_conform on top
-	auto ci = find_if(begin(), end(), [](const category &cat)
+	auto ci = std::ranges::find_if(*this, [](const category &cat)
 		{ return cat.name() == "entry"; });
 	if (ci != end())
 	{
@@ -225,7 +238,7 @@ std::vector<std::string> datablock::get_item_order() const
 		result.insert(result.end(), cto.begin(), cto.end());
 	}
 
-	ci = find_if(begin(), end(), [](const category &cat)
+	ci = std::ranges::find_if(*this, [](const category &cat)
 		{ return cat.name() == "audit_conform"; });
 	if (ci != end())
 	{
@@ -273,7 +286,7 @@ namespace
 
 		for (auto link : validator.get_links_for_child(cat))
 		{
-			auto ei = std::find_if(cat_order.begin(), cat_order.end(), [parent = link->m_parent_category](elem_t &a)
+			auto ei = std::ranges::find_if(cat_order, [parent = link->m_parent_category](elem_t &a)
 				{ return std::get<0>(a) == parent; });
 
 			if (ei == cat_order.end())
@@ -310,7 +323,7 @@ void datablock::write(std::ostream &os) const
 		for (auto i = cat_order.begin(); i != cat_order.end(); ++i)
 			calculate_cat_order(cat_order, i, *m_validator);
 
-		std::sort(cat_order.begin(), cat_order.end(), [](const elem_t &a, const elem_t &b)
+		std::ranges::sort(cat_order, [](const elem_t &a, const elem_t &b)
 			{
 			const auto &[cat_a, count_a, on_stack_a] = a;
 			const auto &[cat_b, count_b, on_stack_b] = b;
@@ -362,7 +375,7 @@ void datablock::write(std::ostream &os, const std::vector<std::string> &item_nam
 	{
 		std::string cat_name, item_name;
 		std::tie(cat_name, item_name) = split_item_name(o);
-		if (find_if(cat_order.rbegin(), cat_order.rend(), [cat_name](const std::string &s) -> bool
+		if (std::ranges::find_if(std::ranges::reverse_view(cat_order), [cat_name](const std::string &s) -> bool
 				{ return iequals(cat_name, s); }) == cat_order.rend())
 			cat_order.push_back(cat_name);
 	}
@@ -389,7 +402,7 @@ void datablock::write(std::ostream &os, const std::vector<std::string> &item_nam
 	// for any Category we missed in the catOrder
 	for (auto &cat : *this)
 	{
-		if (find_if(cat_order.begin(), cat_order.end(), [&](const std::string &s) -> bool
+		if (std::ranges::find_if(cat_order, [&](const std::string &s) -> bool
 				{ return iequals(cat.name(), s); }) != cat_order.end())
 			continue;
 
@@ -413,14 +426,14 @@ bool datablock::operator==(const datablock &rhs) const
 		if (not cat.empty())
 			catA.push_back(cat.name());
 	}
-	std::sort(catA.begin(), catA.end());
+	std::ranges::sort(catA);
 
 	for (auto &cat : dbB)
 	{
 		if (not cat.empty())
 			catB.push_back(cat.name());
 	}
-	std::sort(catB.begin(), catB.end());
+	std::ranges::sort(catB);
 
 	// loop over categories twice, to group output
 	// First iteration is to list missing categories.

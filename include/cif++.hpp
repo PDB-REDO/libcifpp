@@ -26,16 +26,15 @@
 
 #pragma once
 
-#include "cif++/utilities.hpp"
-#include "cif++/file.hpp"
-#include "cif++/parser.hpp"
-#include "cif++/format.hpp"
-
+// IWYU pragma: begin_exports
 #include "cif++/compound.hpp"
+#include "cif++/file.hpp"
+#include "cif++/format.hpp"
+#include "cif++/gzio.hpp"
+#include "cif++/model.hpp"
+#include "cif++/parser.hpp"
+#include "cif++/pdb.hpp"
 #include "cif++/point.hpp"
 #include "cif++/symmetry.hpp"
-
-#include "cif++/model.hpp"
-
-#include "cif++/pdb.hpp"
-#include "cif++/gzio.hpp"
+#include "cif++/utilities.hpp"
+// IWYU pragma: end_exports

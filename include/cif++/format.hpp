@@ -26,28 +26,17 @@
 
 #pragma once
 
-#if __has_include(<format>)
-#include <format>
-#define USE_STD_FORMAT 1
-#else
-#include <fmt/format.h>
-#endif
+#include <ostream>
+#include <streambuf>
 
-#include <string>
 
 /**  \file format.hpp
  * 
- * Now using cif::format instead of a home grown rip off
+ * Now using std::format instead of a home grown rip off
  */
 
 namespace cif
 {
-
-#if USE_STD_FORMAT
-using std::format;
-#else
-using fmt::format;
-#endif
 
 // --------------------------------------------------------------------
 /// A streambuf that fills out lines with spaces up until a specified width
@@ -78,7 +67,7 @@ class fill_out_streambuf : public std::streambuf
 
 	/** @cond */
 
-	~fill_out_streambuf()
+	~fill_out_streambuf() override
 	{
 		m_os.rdbuf(m_upstream);
 	}
@@ -91,8 +80,7 @@ class fill_out_streambuf : public std::streambuf
 	 * wide as the requested width.
 	 */
 	
-	virtual int_type
-	overflow(int_type ic = traits_type::eof())
+	int_type overflow(int_type ic = traits_type::eof()) override
 	{
 		char ch = traits_type::to_char_type(ic);
 
@@ -122,10 +110,10 @@ class fill_out_streambuf : public std::streambuf
 	}
 
 	/** Return the upstream streambuf */
-	std::streambuf *get_upstream() const { return m_upstream; }
+	[[nodiscard]] std::streambuf *get_upstream() const { return m_upstream; }
 
 	/** Return how many lines have been written */
-	int get_line_count() const { return m_line_count; }
+	[[nodiscard]] int get_line_count() const { return m_line_count; }
 
   private:
 	std::ostream &m_os;

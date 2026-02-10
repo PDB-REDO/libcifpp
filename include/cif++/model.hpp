@@ -32,10 +32,10 @@
 #include "cif++/row.hpp"
 
 #include <memory>
-#include <numeric>
 
 #if __cpp_lib_format
 # include <format>
+# include <utility>
 #endif
 
 /** @file model.hpp
@@ -107,30 +107,30 @@ class atom
 
 		atom_impl(const atom_impl &i) = default;
 
-		int compare(const atom_impl &b) const;
+		[[nodiscard]] int compare(const atom_impl &b) const;
 
 		// bool getAnisoU(float anisou[6]) const;
 
-		int get_charge() const;
+		[[nodiscard]] int get_charge() const;
 
 		void moveTo(const point &p);
 
 		// const compound *compound() const;
 
-		std::string get_property(std::string_view name) const;
-		int get_property_int(std::string_view name) const;
-		float get_property_float(std::string_view name) const;
+		[[nodiscard]] std::string get_property(std::string_view name) const;
+		[[nodiscard]] int get_property_int(std::string_view name) const;
+		[[nodiscard]] float get_property_float(std::string_view name) const;
 
 		void set_property(const std::string_view name, const std::string &value);
 
 		row_handle row()
 		{
-			return m_cat[{ { "id", m_id } }];
+			return m_cat[{ { .name = "id", .value = m_id } }];
 		}
 
-		const row_handle row() const
+		[[nodiscard]] const row_handle row() const
 		{
-			return m_cat[{ { "id", m_id } }];
+			return m_cat[{ { .name = "id", .value = m_id } }];
 		}
 
 		row_handle row_aniso()
@@ -138,16 +138,16 @@ class atom
 			row_handle result{};
 			auto cat = m_db.get("atom_site_anisotrop");
 			if (cat)
-				result = cat->operator[]({ { "id", m_id } });
+				result = cat->operator[]({ { .name = "id", .value = m_id } });
 			return result;
 		}
 
-		const row_handle row_aniso() const
+		[[nodiscard]] const row_handle row_aniso() const
 		{
 			row_handle result{};
 			auto cat = m_db.get("atom_site_anisotrop");
 			if (cat)
-				result = cat->operator[]({ { "id", m_id } });
+				result = cat->operator[]({ { .name = "id", .value = m_id } });
 			return result;
 		}
 
@@ -163,7 +163,7 @@ class atom
 	/**
 	 * @brief Construct a new, empty atom object
 	 */
-	atom() {}
+	atom() = default;
 
 	/**
 	 * @brief Construct a new atom object using @a impl as impl
@@ -171,14 +171,14 @@ class atom
 	 * @param impl The implementation objectt
 	 */
 	atom(std::shared_ptr<atom_impl> impl)
-		: m_impl(impl)
+		: m_impl(std::move(impl))
 	{
 	}
 
 	/**
 	 * @brief Copy construct a new atom object
 	 */
-	atom(const atom &rhs)
+	atom(const atom &rhs) // NOLINT(modernize-use-equals-default)
 		: m_impl(rhs.m_impl)
 	{
 	}
@@ -190,7 +190,7 @@ class atom
 	 * @param row The row containing the data for this atom
 	 */
 	atom(const datablock &db, const row_handle &row)
-		: atom(std::make_shared<atom_impl>(db, row["id"].get<std::string>()))
+		: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>()))
 	{
 	}
 
@@ -207,13 +207,13 @@ class atom
 	}
 
 	/// \brief To quickly test if the atom has data
-	explicit operator bool() const { return (bool)m_impl; }
+	explicit operator bool() const { return m_impl.operator bool(); }
 
 	/// \brief Copy assignement operator
 	atom &operator=(const atom &rhs) = default;
 
 	/// \brief Return the item named @a name in the _atom_site category for this atom
-	std::string get_property(std::string_view name) const
+	[[nodiscard]] std::string get_property(std::string_view name) const
 	{
 		if (not m_impl)
 			throw std::logic_error("Error trying to fetch a property from an uninitialized atom");
@@ -221,7 +221,7 @@ class atom
 	}
 
 	/// \brief Return the item named @a name in the _atom_site category for this atom cast to an int
-	int get_property_int(std::string_view name) const
+	[[nodiscard]] int get_property_int(std::string_view name) const
 	{
 		if (not m_impl)
 			throw std::logic_error("Error trying to fetch a property from an uninitialized atom");
@@ -229,7 +229,7 @@ class atom
 	}
 
 	/// \brief Return the item named @a name in the _atom_site category for this atom cast to a float
-	float get_property_float(std::string_view name) const
+	[[nodiscard]] float get_property_float(std::string_view name) const
 	{
 		if (not m_impl)
 			throw std::logic_error("Error trying to fetch a property from an uninitialized atom");
@@ -245,8 +245,9 @@ class atom
 	}
 
 	/// \brief Set value for the item named @a name in the _atom_site category to @a value
-	template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
+	template <typename T>
 	void set_property(const std::string_view name, const T &value)
+		requires(std::is_arithmetic_v<T>)
 	{
 		set_property(name, std::to_string(value));
 	}
@@ -256,13 +257,13 @@ class atom
 	 * @note Although I've never seen anything other than integers,
 	 * the standard says this should be a string and so we use that.
 	 */
-	const std::string &id() const { return impl().m_id; }
+	[[nodiscard]] const std::string &id() const { return impl().m_id; }
 
 	/// \brief Return the type of the atom
-	cif::atom_type get_type() const { return atom_type_traits(get_property("type_symbol")).type(); }
+	[[nodiscard]] cif::atom_type get_type() const { return atom_type_traits(get_property("type_symbol")).type(); }
 
 	/// \brief Return the cached location of this atom
-	point get_location() const { return impl().m_location; }
+	[[nodiscard]] point get_location() const { return impl().m_location; }
 
 	/// \brief Set the location of this atom, will set both the cached data as well as the data in the underlying _atom_site category
 	void set_location(point p)
@@ -314,48 +315,48 @@ class atom
 	}
 
 	/// for direct access to underlying data, be careful!
-	const row_handle get_row() const { return impl().row(); }
+	[[nodiscard]] const row_handle get_row() const { return impl().row(); }
 
 	/// for direct access to underlying data, be careful!
-	const row_handle get_row_aniso() const { return impl().row_aniso(); }
+	[[nodiscard]] const row_handle get_row_aniso() const { return impl().row_aniso(); }
 
 	/// Return if the atom is actually a symmetry copy or the original one
-	bool is_symmetry_copy() const { return impl().m_symop != "1_555"; }
+	[[nodiscard]] bool is_symmetry_copy() const { return impl().m_symop != "1_555"; }
 
 	/// Return the symmetry operator used
-	std::string symmetry() const { return impl().m_symop; }
+	[[nodiscard]] std::string symmetry() const { return impl().m_symop; }
 
 	/// Return true if this atom is part of a water molecule
-	bool is_water() const
+	[[nodiscard]] bool is_water() const
 	{
 		auto comp_id = get_label_comp_id();
 		return comp_id == "HOH" or comp_id == "H2O" or comp_id == "WAT";
 	}
 
 	/// Return the charge
-	int get_charge() const { return impl().get_charge(); }
+	[[nodiscard]] int get_charge() const { return impl().get_charge(); }
 
 	/// Return the occupancy
-	float get_occupancy() const { return get_property_float("occupancy"); }
+	[[nodiscard]] float get_occupancy() const { return get_property_float("occupancy"); }
 
 	// specifications
 
-	std::string get_label_asym_id() const { return get_property("label_asym_id"); }     ///< Return the label_asym_id property
-	int get_label_seq_id() const { return get_property_int("label_seq_id"); }           ///< Return the label_seq_id property
-	std::string get_label_atom_id() const { return get_property("label_atom_id"); }     ///< Return the label_atom_id property
-	std::string get_label_alt_id() const { return get_property("label_alt_id"); }       ///< Return the label_alt_id property
-	std::string get_label_comp_id() const { return get_property("label_comp_id"); }     ///< Return the label_comp_id property
-	std::string get_label_entity_id() const { return get_property("label_entity_id"); } ///< Return the label_entity_id property
+	[[nodiscard]] std::string get_label_asym_id() const { return get_property("label_asym_id"); }     ///< Return the label_asym_id property
+	[[nodiscard]] int get_label_seq_id() const { return get_property_int("label_seq_id"); }           ///< Return the label_seq_id property
+	[[nodiscard]] std::string get_label_atom_id() const { return get_property("label_atom_id"); }     ///< Return the label_atom_id property
+	[[nodiscard]] std::string get_label_alt_id() const { return get_property("label_alt_id"); }       ///< Return the label_alt_id property
+	[[nodiscard]] std::string get_label_comp_id() const { return get_property("label_comp_id"); }     ///< Return the label_comp_id property
+	[[nodiscard]] std::string get_label_entity_id() const { return get_property("label_entity_id"); } ///< Return the label_entity_id property
 
-	std::string get_auth_asym_id() const { return get_property("auth_asym_id"); }      ///< Return the auth_asym_id property
-	std::string get_auth_seq_id() const { return get_property("auth_seq_id"); }        ///< Return the auth_seq_id property
-	std::string get_auth_atom_id() const { return get_property("auth_atom_id"); }      ///< Return the auth_atom_id property
-	std::string get_auth_alt_id() const { return get_property("pdbx_auth_alt_id"); }   ///< Return the auth_alt_id property
-	std::string get_auth_comp_id() const { return get_property("auth_comp_id"); }      ///< Return the auth_comp_id property
-	std::string get_pdb_ins_code() const { return get_property("pdbx_PDB_ins_code"); } ///< Return the pdb_ins_code property
+	[[nodiscard]] std::string get_auth_asym_id() const { return get_property("auth_asym_id"); }      ///< Return the auth_asym_id property
+	[[nodiscard]] std::string get_auth_seq_id() const { return get_property("auth_seq_id"); }        ///< Return the auth_seq_id property
+	[[nodiscard]] std::string get_auth_atom_id() const { return get_property("auth_atom_id"); }      ///< Return the auth_atom_id property
+	[[nodiscard]] std::string get_auth_alt_id() const { return get_property("pdbx_auth_alt_id"); }   ///< Return the auth_alt_id property
+	[[nodiscard]] std::string get_auth_comp_id() const { return get_property("auth_comp_id"); }      ///< Return the auth_comp_id property
+	[[nodiscard]] std::string get_pdb_ins_code() const { return get_property("pdbx_PDB_ins_code"); } ///< Return the pdb_ins_code property
 
 	/// Return true if this atom is an alternate
-	bool is_alternate() const
+	[[nodiscard]] bool is_alternate() const
 	{
 		if (auto alt_id = get_label_alt_id(); alt_id.empty() or alt_id == ".")
 			return false;
@@ -363,7 +364,7 @@ class atom
 	}
 
 	/// Convenience method to return a string that might be ID in PDB space
-	std::string pdb_id() const
+	[[nodiscard]] std::string pdb_id() const
 	{
 		return get_label_comp_id() + '_' + get_auth_asym_id() + '_' + get_auth_seq_id() + get_pdb_ins_code();
 	}
@@ -387,7 +388,7 @@ class atom
 	}
 
 	/// Is this atom a backbone atom
-	bool is_back_bone() const
+	[[nodiscard]] bool is_back_bone() const
 	{
 		auto atomID = get_label_atom_id();
 		return atomID == "N" or atomID == "O" or atomID == "C" or atomID == "CA";
@@ -400,7 +401,7 @@ class atom
 	}
 
 	/// Compare this atom with @a b
-	int compare(const atom &b) const { return impl().compare(*b.m_impl); }
+	[[nodiscard]] int compare(const atom &b) const { return impl().compare(*b.m_impl); }
 
 	/// Should this atom sort before @a rhs
 	bool operator<(const atom &rhs) const
@@ -414,7 +415,7 @@ class atom
   private:
 	friend class structure;
 
-	const atom_impl &impl() const
+	[[nodiscard]] const atom_impl &impl() const
 	{
 		if (not m_impl)
 			throw std::runtime_error("Uninitialized atom, not found?");
@@ -478,17 +479,15 @@ class residue
 	/**
 	 * @brief Construct a new residue object based on key items
 	 */
-	residue(structure &structure, const std::string &compoundID,
-		const std::string &asymID, int seqID,
-		const std::string &authAsymID, const std::string &authSeqID,
-		const std::string &pdbInsCode)
+	residue(structure &structure, std::string compoundID, std::string asymID, int seqID,
+		std::string authAsymID, std::string authSeqID, std::string pdbInsCode)
 		: m_structure(&structure)
-		, m_compound_id(compoundID)
-		, m_asym_id(asymID)
+		, m_compound_id(std::move(compoundID))
+		, m_asym_id(std::move(asymID))
 		, m_seq_id(seqID)
-		, m_pdb_strand_id(authAsymID)
-		, m_pdb_seq_num(authSeqID)
-		, m_pdb_ins_code(pdbInsCode)
+		, m_pdb_strand_id(std::move(authAsymID))
+		, m_pdb_seq_num(std::move(authSeqID))
+		, m_pdb_ins_code(std::move(pdbInsCode))
 	{
 	}
 
@@ -496,33 +495,51 @@ class residue
 	residue(structure &structure, const std::vector<atom> &atoms);
 
 	/** @cond */
-	residue(const residue &rhs) = delete;
-	residue &operator=(const residue &rhs) = delete;
+	residue(const residue &rhs) = default;
+	residue(residue &&rhs)
+	{
+		swap(*this, rhs);
+	}
 
-	residue(residue &&rhs) = default;
-	residue &operator=(residue &&rhs) = default;
+	residue &operator=(residue rhs)
+	{
+		swap(*this, rhs);
+		return *this;
+	}
+
+	friend void swap(residue &a, residue &b) noexcept
+	{
+		if (&a != &b)
+		{
+			std::swap(a.m_structure, b.m_structure);
+			std::swap(a.m_asym_id, b.m_asym_id);
+			std::swap(a.m_seq_id, b.m_seq_id);
+			std::swap(a.m_pdb_ins_code, b.m_pdb_ins_code);
+			std::swap(a.m_atoms, b.m_atoms);
+		}
+	}
 
 	virtual ~residue() = default;
 	/** @endcond */
 
 	/** Return the entity_id of this residue */
-	std::string get_entity_id() const;
+	[[nodiscard]] std::string get_entity_id() const;
 
 	/** Return the entity type of this residue */
-	EntityType entity_type() const;
+	[[nodiscard]] EntityType entity_type() const;
 
-	const std::string &get_asym_id() const { return m_asym_id; } ///< Return the asym_id
-	int get_seq_id() const { return m_seq_id; }                  ///< Return the seq_id
+	[[nodiscard]] const std::string &get_asym_id() const { return m_asym_id; } ///< Return the asym_id
+	[[nodiscard]] int get_seq_id() const { return m_seq_id; }                  ///< Return the seq_id
 
-	const std::string get_pdb_strand_id() const { return m_pdb_strand_id; } ///< Return the pdb_strand_id
-	const std::string get_pdb_seq_num() const { return m_pdb_seq_num; }     ///< Return the pdb_seq_num
-	std::string get_pdb_ins_code() const { return m_pdb_ins_code; }         ///< Return the pdb_ins_code
+	[[nodiscard]] const std::string get_pdb_strand_id() const { return m_pdb_strand_id; } ///< Return the pdb_strand_id
+	[[nodiscard]] const std::string get_pdb_seq_num() const { return m_pdb_seq_num; }     ///< Return the pdb_seq_num
+	[[nodiscard]] std::string get_pdb_ins_code() const { return m_pdb_ins_code; }         ///< Return the pdb_ins_code
 
-	const std::string &get_compound_id() const { return m_compound_id; } ///< Return the compound_id
-	void set_compound_id(const std::string &id) { m_compound_id = id; }  ///< Set the compound_id to @a id
+	[[nodiscard]] const std::string &get_compound_id() const { return m_compound_id; } ///< Return the compound_id
+	void set_compound_id(const std::string &id) { m_compound_id = id; }                ///< Set the compound_id to @a id
 
 	/** Return the structure this residue belongs to */
-	structure *get_structure() const { return m_structure; }
+	[[nodiscard]] structure *get_structure() const { return m_structure; }
 
 	/** Return a list of the atoms for this residue */
 	std::vector<atom> &atoms()
@@ -531,7 +548,7 @@ class residue
 	}
 
 	/** Return a const list of the atoms for this residue */
-	const std::vector<atom> &atoms() const
+	[[nodiscard]] const std::vector<atom> &atoms() const
 	{
 		return m_atoms;
 	}
@@ -540,40 +557,40 @@ class residue
 	void add_atom(atom &atom);
 
 	/// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
-	std::vector<atom> unique_atoms() const;
+	[[nodiscard]] std::vector<atom> unique_atoms() const;
 
 	/// \brief Return the atom with atom_id @a atomID
-	atom get_atom_by_atom_id(const std::string &atomID) const;
+	[[nodiscard]] atom get_atom_by_atom_id(const std::string &atomID) const;
 
 	/// \brief Return the atom with atom_id @a atomID and alternate_id @a altID
-	atom get_atom_by_atom_id(const std::string &atomID, const std::string &altID) const;
+	[[nodiscard]] atom get_atom_by_atom_id(const std::string &atomID, const std::string &altID) const;
 
 	/// \brief Return the list of atoms having ID \a atomID
 	///
 	/// This includes all alternate atoms with this ID
 	/// whereas get_atom_by_atom_id only returns the first unique atom
-	std::vector<atom> get_atoms_by_id(const std::string &atomID) const;
+	[[nodiscard]] std::vector<atom> get_atoms_by_id(const std::string &atomID) const;
 
 	/// \brief Is this residue a single entity?
-	bool is_entity() const;
+	[[nodiscard]] bool is_entity() const;
 
 	/// \brief Is this residue a water molecule?
-	bool is_water() const { return m_compound_id == "HOH"; }
+	[[nodiscard]] bool is_water() const { return m_compound_id == "HOH"; }
 
 	/// \brief Return true if this residue has alternate atoms
-	bool has_alternate_atoms() const;
+	[[nodiscard]] bool has_alternate_atoms() const;
 
 	/// \brief Return true if this residue has alternate atoms for the atom \a atomID
-	bool has_alternate_atoms_for(const std::string &atomID) const;
+	[[nodiscard]] bool has_alternate_atoms_for(const std::string &atomID) const;
 
 	/// \brief Return the list of unique alt ID's present in this residue
-	std::set<std::string> get_alternate_ids() const;
+	[[nodiscard]] std::set<std::string> get_alternate_ids() const;
 
 	/// \brief Return the list of unique atom ID's
-	std::set<std::string> get_atom_ids() const;
+	[[nodiscard]] std::set<std::string> get_atom_ids() const;
 
 	/// \brief Return a tuple containing the center location and the radius for the atoms of this residue
-	std::tuple<point, float> center_and_radius() const;
+	[[nodiscard]] std::tuple<point, float> center_and_radius() const;
 
 	/// \brief Write the residue @a res to the std::ostream @a os
 	friend std::ostream &operator<<(std::ostream &os, const residue &res);
@@ -594,7 +611,7 @@ class residue
 
   protected:
 	/** @cond */
-	residue() {}
+	residue() = default;
 
 	structure *m_structure = nullptr;
 	std::string m_compound_id, m_asym_id;
@@ -614,58 +631,70 @@ class residue
 class monomer : public residue
 {
   public:
-	monomer(const monomer &rhs) = delete;
-	monomer &operator=(const monomer &rhs) = delete;
-
-	/// \brief Move constructor
-	monomer(monomer &&rhs);
-
-	/// \brief Move assignment operator
-	monomer &operator=(monomer &&rhs);
-
 	/// \brief constructor with actual values
 	monomer(const polymer &polymer, std::size_t index, int seqID, const std::string &authSeqID,
 		const std::string &pdbInsCode, const std::string &compoundID);
 
-	bool is_first_in_chain() const; ///< Return if this residue is the first residue in the chain
-	bool is_last_in_chain() const;  ///< Return if this residue is the last residue in the chain
+	/// \brief Copy constructor
+	monomer(const monomer &rhs) = default;
 
-	const monomer &prev() const; // Return previous monomer in polymer
-	const monomer &next() const; // Return next monomer in polymer
+	/// \brief Move constructor
+	monomer(monomer &&rhs)
+	{
+		swap(*this, rhs);
+	}
+	monomer &operator=(monomer rhs)
+	{
+		swap(*this, rhs);
+		return *this;
+	}
+
+	friend void swap(monomer &a, monomer &b) noexcept
+	{
+		assert(a.m_polymer == b.m_polymer);
+		std::swap(a.m_index, b.m_index);
+		swap(static_cast<residue &>(a), static_cast<residue &>(b));
+	}
+
+	[[nodiscard]] bool is_first_in_chain() const; ///< Return if this residue is the first residue in the chain
+	[[nodiscard]] bool is_last_in_chain() const;  ///< Return if this residue is the last residue in the chain
+
+	[[nodiscard]] const monomer &prev() const; // Return previous monomer in polymer
+	[[nodiscard]] const monomer &next() const; // Return next monomer in polymer
 
 	// convenience
-	bool has_alpha() const; ///< Return if a alpha value can be calculated (depends on location in chain)
-	bool has_kappa() const; ///< Return if a kappa value can be calculated (depends on location in chain)
+	[[nodiscard]] bool has_alpha() const; ///< Return if a alpha value can be calculated (depends on location in chain)
+	[[nodiscard]] bool has_kappa() const; ///< Return if a kappa value can be calculated (depends on location in chain)
 
 	// Assuming this is really an amino acid...
 
-	float phi() const;   ///< Return the phi value for this residue
-	float psi() const;   ///< Return the psi value for this residue
-	float alpha() const; ///< Return the alpha value for this residue
-	float kappa() const; ///< Return the kappa value for this residue
-	float tco() const;   ///< Return the tco value for this residue
-	float omega() const; ///< Return the omega value for this residue
+	[[nodiscard]] float phi() const;   ///< Return the phi value for this residue
+	[[nodiscard]] float psi() const;   ///< Return the psi value for this residue
+	[[nodiscard]] float alpha() const; ///< Return the alpha value for this residue
+	[[nodiscard]] float kappa() const; ///< Return the kappa value for this residue
+	[[nodiscard]] float tco() const;   ///< Return the tco value for this residue
+	[[nodiscard]] float omega() const; ///< Return the omega value for this residue
 
 	// torsion angles
-	std::size_t nr_of_chis() const; ///< Return how many torsion angles can be calculated
-	float chi(std::size_t i) const; ///< Return torsion angle @a i
+	[[nodiscard]] std::size_t nr_of_chis() const; ///< Return how many torsion angles can be calculated
+	[[nodiscard]] float chi(std::size_t i) const; ///< Return torsion angle @a i
 
-	bool is_cis() const; ///< Return true if this residue is in a cis conformation
+	[[nodiscard]] bool is_cis() const; ///< Return true if this residue is in a cis conformation
 
 	/// \brief Returns true if the four atoms C, CA, N and O are present
-	bool is_complete() const;
+	[[nodiscard]] bool is_complete() const;
 
 	/// \brief Returns true if any of the backbone atoms has an alternate
-	bool has_alternate_backbone_atoms() const;
+	[[nodiscard]] bool has_alternate_backbone_atoms() const;
 
-	atom CAlpha() const { return get_atom_by_atom_id("CA"); } ///< Return the CAlpha atom
-	atom C() const { return get_atom_by_atom_id("C"); }       ///< Return the C atom
-	atom N() const { return get_atom_by_atom_id("N"); }       ///< Return the N atom
-	atom O() const { return get_atom_by_atom_id("O"); }       ///< Return the O atom
-	atom H() const { return get_atom_by_atom_id("H"); }       ///< Return the H atom
+	[[nodiscard]] atom CAlpha() const { return get_atom_by_atom_id("CA"); } ///< Return the CAlpha atom
+	[[nodiscard]] atom C() const { return get_atom_by_atom_id("C"); }       ///< Return the C atom
+	[[nodiscard]] atom N() const { return get_atom_by_atom_id("N"); }       ///< Return the N atom
+	[[nodiscard]] atom O() const { return get_atom_by_atom_id("O"); }       ///< Return the O atom
+	[[nodiscard]] atom H() const { return get_atom_by_atom_id("H"); }       ///< Return the H atom
 
 	/// \brief Return true if this monomer is bonded to monomer @a rhs
-	bool is_bonded_to(const monomer &rhs) const
+	[[nodiscard]] bool is_bonded_to(const monomer &rhs) const
 	{
 		return this != &rhs and are_bonded(*this, rhs);
 	}
@@ -687,7 +716,7 @@ class monomer : public residue
 	static float omega(const monomer &a, const monomer &b);
 
 	/// \brief Return the chiral volume, only for LEU and VAL
-	float chiral_volume() const;
+	[[nodiscard]] float chiral_volume() const;
 
 	/// \brief Compare this monomer with \a rhs
 	bool operator==(const monomer &rhs) const
@@ -699,7 +728,7 @@ class monomer : public residue
 
   private:
 	const polymer *m_polymer;
-	std::size_t m_index;
+	std::size_t m_index{};
 };
 
 // --------------------------------------------------------------------
@@ -712,16 +741,16 @@ class polymer : public std::vector<monomer>
 {
   public:
 	/// \brief Constructor
-	polymer(structure &s, const std::string &entityID, const std::string &asymID, const std::string &auth_asym_id);
+	polymer(structure &s, std::string entityID, std::string asymID, std::string auth_asym_id);
 
 	polymer(const polymer &) = delete;
 	polymer &operator=(const polymer &) = delete;
 
-	structure *get_structure() const { return m_structure; } ///< Return the structure
+	[[nodiscard]] structure *get_structure() const { return m_structure; } ///< Return the structure
 
-	std::string get_asym_id() const { return m_asym_id; }             ///< Return the asym_id
-	std::string get_pdb_strand_id() const { return m_pdb_strand_id; } ///< Return the PDB chain ID, actually
-	std::string get_entity_id() const { return m_entity_id; }         ///< Return the entity_id
+	[[nodiscard]] std::string get_asym_id() const { return m_asym_id; }             ///< Return the asym_id
+	[[nodiscard]] std::string get_pdb_strand_id() const { return m_pdb_strand_id; } ///< Return the PDB chain ID, actually
+	[[nodiscard]] std::string get_entity_id() const { return m_entity_id; }         ///< Return the entity_id
 
   private:
 	structure *m_structure;
@@ -748,8 +777,26 @@ class sugar : public residue
 		const std::string &asymID, int authSeqID);
 
 	/** @cond */
-	sugar(sugar &&rhs);
-	sugar &operator=(sugar &&rhs);
+	sugar(const sugar &rhs) = default;
+
+	sugar(sugar &&rhs)
+	{
+		swap(*this, rhs);
+	}
+
+	sugar &operator=(sugar rhs)
+	{
+		swap(*this, rhs);
+		return *this;
+	}
+
+	friend void swap(sugar &a, sugar &b) noexcept
+	{
+		assert(a.m_branch == b.m_branch);
+		std::swap(a.m_link, b.m_link);
+		swap(static_cast<residue &>(a), static_cast<residue &>(b));
+	}
+
 	/** @endcond */
 
 	/**
@@ -762,26 +809,26 @@ class sugar : public residue
 	 *
 	 * @return The sugar number
 	 */
-	int num() const
+	[[nodiscard]] int num() const
 	{
 		int result;
 		auto r = std::from_chars(m_pdb_seq_num.data(), m_pdb_seq_num.data() + m_pdb_seq_num.length(), result);
-		if ((bool)r.ec)
+		if (r.ec != std::errc{})
 			throw std::runtime_error("The auth_seq_id should be a number for a sugar");
 		return result;
 	}
 
 	/// \brief Return the name of this sugar
-	std::string name() const;
+	[[nodiscard]] std::string name() const;
 
 	/// \brief Return the atom the C1 is linked to
-	atom get_link() const { return m_link; }
+	[[nodiscard]] atom get_link() const { return m_link; }
 
 	/// \brief Set the link atom C1 is linked to to @a link
 	void set_link(atom link) { m_link = link; }
 
 	/// \brief Return the sugar number of the sugar linked to C1
-	std::size_t get_link_nr() const
+	[[nodiscard]] std::size_t get_link_nr() const
 	{
 		std::size_t result = 0;
 		if (m_link)
@@ -809,7 +856,7 @@ class branch : public std::vector<sugar>
 {
   public:
 	/// \brief constructor
-	branch(structure &structure, const std::string &asym_id, const std::string &entity_id);
+	branch(structure &structure, std::string asym_id, std::string entity_id);
 
 	branch(const branch &) = delete;
 	branch &operator=(const branch &) = delete;
@@ -823,22 +870,22 @@ class branch : public std::vector<sugar>
 	void link_atoms();
 
 	/// \brief Return the name of the branch
-	std::string name() const;
+	[[nodiscard]] std::string name() const;
 
 	/// \brief Return the weight of the branch based on the formulae of the sugars
-	float weight() const;
+	[[nodiscard]] float weight() const;
 
-	std::string get_asym_id() const { return m_asym_id; }     ///< Return the asym_id
-	std::string get_entity_id() const { return m_entity_id; } ///< Return the entity_id
+	[[nodiscard]] std::string get_asym_id() const { return m_asym_id; }     ///< Return the asym_id
+	[[nodiscard]] std::string get_entity_id() const { return m_entity_id; } ///< Return the entity_id
 
-	structure &get_structure() { return *m_structure; }       ///< Return the structure
-	structure &get_structure() const { return *m_structure; } ///< Return the structure
+	[[nodiscard]] structure &get_structure() { return *m_structure; }       ///< Return the structure
+	[[nodiscard]] structure &get_structure() const { return *m_structure; } ///< Return the structure
 
 	/// \brief Return a reference to the sugar with number @a num
-	sugar &get_sugar_by_num(int nr);
+	[[nodiscard]] sugar &get_sugar_by_num(int nr);
 
 	/// \brief Return a const reference to the sugar with number @a num
-	const sugar &get_sugar_by_num(int nr) const
+	[[nodiscard]] const sugar &get_sugar_by_num(int nr) const
 	{
 		return const_cast<branch *>(this)->get_sugar_by_num(nr);
 	}
@@ -858,7 +905,7 @@ class branch : public std::vector<sugar>
   private:
 	friend sugar;
 
-	std::string name(const sugar &s) const;
+	[[nodiscard]] std::string name(const sugar &s) const;
 
 	structure *m_structure;
 	std::string m_asym_id, m_entity_id;
@@ -925,85 +972,85 @@ class structure
 	~structure() = default;
 
 	/// \brief Return the model number
-	std::size_t get_model_nr() const { return m_model_nr; }
+	[[nodiscard]] std::size_t get_model_nr() const { return m_model_nr; }
 
 	/// \brief Return a list of all the atoms in this structure
-	const std::vector<atom> &atoms() const { return m_atoms; }
+	[[nodiscard]] const std::vector<atom> &atoms() const { return m_atoms; }
 
-	EntityType get_entity_type_for_entity_id(const std::string entityID) const; ///< Return the entity type for the entity with id @a entity_id
-	EntityType get_entity_type_for_asym_id(const std::string asymID) const;     ///< Return the entity type for the asym with id @a asym_id
+	[[nodiscard]] EntityType get_entity_type_for_entity_id(const std::string entityID) const; ///< Return the entity type for the entity with id @a entity_id
+	[[nodiscard]] EntityType get_entity_type_for_asym_id(const std::string asymID) const;     ///< Return the entity type for the asym with id @a asym_id
 
-	const std::list<polymer> &polymers() const { return m_polymers; } ///< Return the list of polymers
-	std::list<polymer> &polymers() { return m_polymers; }             ///< Return the list of polymers
+	[[nodiscard]] const std::list<polymer> &polymers() const { return m_polymers; } ///< Return the list of polymers
+	[[nodiscard]] std::list<polymer> &polymers() { return m_polymers; }             ///< Return the list of polymers
 
-	polymer &get_polymer_by_asym_id(const std::string &asymID);            ///< Return the polymer having asym ID @a asymID
-	const polymer &get_polymer_by_asym_id(const std::string &asymID) const ///< Return the polymer having asym ID @a asymID
+	[[nodiscard]] polymer &get_polymer_by_asym_id(const std::string &asymID);            ///< Return the polymer having asym ID @a asymID
+	[[nodiscard]] const polymer &get_polymer_by_asym_id(const std::string &asymID) const ///< Return the polymer having asym ID @a asymID
 	{
 		return const_cast<structure *>(this)->get_polymer_by_asym_id(asymID);
 	}
 
-	const std::list<branch> &branches() const { return m_branches; } ///< Return the list of all branches
-	std::list<branch> &branches() { return m_branches; }             ///< Return the list of all branches
+	[[nodiscard]] const std::list<branch> &branches() const { return m_branches; } ///< Return the list of all branches
+	[[nodiscard]] std::list<branch> &branches() { return m_branches; }             ///< Return the list of all branches
 
-	branch &get_branch_by_asym_id(const std::string &asymID);             ///< Return the branch having asym ID @a asymID
-	const branch &get_branch_by_asym_id(const std::string &asymID) const; ///< Return the branch having asym ID @a asymID
+	[[nodiscard]] branch &get_branch_by_asym_id(const std::string &asymID);             ///< Return the branch having asym ID @a asymID
+	[[nodiscard]] const branch &get_branch_by_asym_id(const std::string &asymID) const; ///< Return the branch having asym ID @a asymID
 
-	const std::vector<residue> &non_polymers() const { return m_non_polymers; } ///< Return the list of non-polymers, actually the list of ligands
+	[[nodiscard]] const std::vector<residue> &non_polymers() const { return m_non_polymers; } ///< Return the list of non-polymers, actually the list of ligands
 
-	bool has_atom_id(const std::string &id) const;    ///< Return true if an atom with ID @a id exists in this structure
-	atom get_atom_by_id(const std::string &id) const; ///< Return the atom with ID @a id
+	[[nodiscard]] bool has_atom_id(const std::string &id) const;    ///< Return true if an atom with ID @a id exists in this structure
+	[[nodiscard]] atom get_atom_by_id(const std::string &id) const; ///< Return the atom with ID @a id
 
 	/// \brief Return the atom identified by the label_ values specified
-	atom get_atom_by_label(const std::string &atomID, const std::string &asymID,
+	[[nodiscard]] atom get_atom_by_label(const std::string &atomID, const std::string &asymID,
 		const std::string &compID, int seqID, const std::string &altID = "");
 
 	/// \brief Return the atom closest to point \a p
-	atom get_atom_by_position(point p) const;
+	[[nodiscard]] atom get_atom_by_position(point p) const;
 
 	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
-	atom get_atom_by_position_and_type(point p, std::string_view type, std::string_view res_type) const;
+	[[nodiscard]] atom get_atom_by_position_and_type(point p, std::string_view type, std::string_view res_type) const;
 
 	/// \brief Create a non-poly residue based on atoms already present in this structure.
 	residue &create_residue(const std::vector<atom> &atoms);
 
 	/// \brief Get a non-poly residue for an asym with id \a asymID
-	residue &get_residue(const std::string &asymID)
+	[[nodiscard]] residue &get_residue(const std::string &asymID)
 	{
 		return get_residue(asymID, 0, "");
 	}
 
 	/// \brief Get a non-poly residue for an asym with id \a asymID
-	const residue &get_residue(const std::string &asymID) const
+	[[nodiscard]] const residue &get_residue(const std::string &asymID) const
 	{
 		return get_residue(asymID, 0, "");
 	}
 
 	/// \brief Get a residue for an asym with id \a asymID seq id \a seqID and authSeqID \a authSeqID
-	residue &get_residue(const std::string &asymID, int seqID, const std::string &authSeqID);
+	[[nodiscard]] residue &get_residue(const std::string &asymID, int seqID, const std::string &authSeqID);
 
 	/// \brief Get a the single residue for an asym with id \a asymID seq id \a seqID and authSeqID \a authSeqID
-	const residue &get_residue(const std::string &asymID, int seqID, const std::string &authSeqID) const
+	[[nodiscard]] const residue &get_residue(const std::string &asymID, int seqID, const std::string &authSeqID) const
 	{
 		return const_cast<structure *>(this)->get_residue(asymID, seqID, authSeqID);
 	}
 
 	/// \brief Get a residue for an asym with id \a asymID, compound id \a compID, seq id \a seqID and authSeqID \a authSeqID
-	residue &get_residue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID);
+	[[nodiscard]] residue &get_residue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID);
 
 	/// \brief Get a residue for an asym with id \a asymID, compound id \a compID, seq id \a seqID and authSeqID \a authSeqID
-	const residue &get_residue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID) const
+	[[nodiscard]] const residue &get_residue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID) const
 	{
 		return const_cast<structure *>(this)->get_residue(asymID, compID, seqID, authSeqID);
 	}
 
 	/// \brief Get a the residue for atom \a atom
-	residue &get_residue(const atom &atom)
+	[[nodiscard]] residue &get_residue(const atom &atom)
 	{
 		return get_residue(atom.get_label_asym_id(), atom.get_label_comp_id(), atom.get_label_seq_id(), atom.get_auth_seq_id());
 	}
 
 	/// \brief Get a the residue for atom \a atom
-	const residue &get_residue(const atom &atom) const
+	[[nodiscard]] const residue &get_residue(const atom &atom) const
 	{
 		return get_residue(atom.get_label_asym_id(), atom.get_label_comp_id(), atom.get_label_seq_id(), atom.get_auth_seq_id());
 	}
@@ -1129,13 +1176,13 @@ class structure
 	void cleanup_empty_categories();
 
 	/// \brief Direct access to underlying data
-	category &get_category(std::string_view name) const
+	[[nodiscard]] category &get_category(std::string_view name) const
 	{
 		return m_db[name];
 	}
 
 	/// \brief Direct access to underlying data
-	datablock &get_datablock() const
+	[[nodiscard]] datablock &get_datablock() const
 	{
 		return m_db;
 	}

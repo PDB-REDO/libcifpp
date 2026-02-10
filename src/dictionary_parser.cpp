@@ -24,12 +24,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "cif++/condition.hpp"
 #include "cif++/dictionary_parser.hpp"
+
+#include "cif++/condition.hpp"
 #include "cif++/file.hpp"
 #include "cif++/parser.hpp"
+
+#include <algorithm>
 #include <exception>
-#include <iomanip>
+#include <memory>
 #include <stdexcept>
 
 namespace cif
@@ -63,7 +66,7 @@ class dictionary_parser : public parser
 
 					default:
 					{
-						dict.reset(new datablock(m_token_value)); // dummy datablock, for constructing the validator only
+						dict = std::make_unique<datablock>(m_token_value); // dummy datablock, for constructing the validator only
 						m_datablock = dict.get();
 
 						match(CIFToken::DATA);
@@ -104,7 +107,7 @@ class dictionary_parser : public parser
 		// store meta information
 		if (auto dictionary = m_datablock->get("dictionary"); dictionary != nullptr and not dictionary->empty())
 		{
-			const auto &[name, version] = dictionary->front().get<std::string,std::optional<std::string>>("title", "version");
+			const auto &[name, version] = dictionary->front().get<std::string, std::optional<std::string>>("title", "version");
 			m_validator.append_audit_conform(name, version);
 		}
 
@@ -119,7 +122,7 @@ class dictionary_parser : public parser
 		if (not m_collected_item_types)
 			m_collected_item_types = collect_item_types();
 
-		std::string saveFrameName { m_token_value };
+		std::string saveFrameName{ m_token_value };
 
 		if (saveFrameName.empty())
 			error("Invalid save frame, should contain more than just 'save_' here");
@@ -127,7 +130,7 @@ class dictionary_parser : public parser
 		bool isCategorySaveFrame = m_token_value[0] != '_';
 
 		datablock dict(m_token_value);
-		datablock::iterator cat = dict.end();
+		auto cat = dict.end();
 
 		match(CIFToken::SAVE_NAME);
 		while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::ITEM_NAME)
@@ -189,7 +192,7 @@ class dictionary_parser : public parser
 
 		if (isCategorySaveFrame)
 		{
-			std::string category = dict["category"].front().get<std::string>("id");
+			auto category = dict["category"].front().get<std::string>("id");
 
 			std::vector<std::string> keys;
 			for (auto k : dict["category_key"])
@@ -204,7 +207,7 @@ class dictionary_parser : public parser
 		else
 		{
 			// if the type code is missing, this must be a pointer, just skip it
-			std::string typeCode = dict["item_type"].front().get<std::string>("code");
+			auto typeCode = dict["item_type"].front().get<std::string>("code");
 
 			const type_validator *tv = nullptr;
 			if (not(typeCode.empty() or typeCode == "?"))
@@ -214,7 +217,7 @@ class dictionary_parser : public parser
 			for (auto e : dict["item_enumeration"])
 				ess.insert(e["value"].as<std::string>());
 
-			std::string defaultValue = dict["item_default"].front().get<std::string>("value");
+			auto defaultValue = dict["item_default"].front().get<std::string>("value");
 			// bool defaultIsNull = false;
 			// if (defaultValue.empty())
 			// {
@@ -228,7 +231,7 @@ class dictionary_parser : public parser
 
 			std::vector<item_alias> aliases;
 			for (const auto &[alias_name, dictionary, version] :
-				dict["item_aliases"].rows<std::string,std::string,std::string>("alias_name", "dictionary", "version"))
+				dict["item_aliases"].rows<std::string, std::string, std::string>("alias_name", "dictionary", "version"))
 			{
 				aliases.emplace_back(alias_name, dictionary, version);
 			}
@@ -252,9 +255,9 @@ class dictionary_parser : public parser
 
 				auto &ivs = mItemValidators[category];
 
-				auto vi = find(ivs.begin(), ivs.end(), item_validator{ item_name });
+				auto vi = std::ranges::find(ivs, item_validator{ item_name });
 				if (vi == ivs.end())
-					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, cat_name, std::move(aliases) });
+					ivs.emplace_back(item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, cat_name, aliases);
 				else
 				{
 					// need to update the itemValidator?
@@ -293,9 +296,7 @@ class dictionary_parser : public parser
 
 			// collect the dict from our dataBlock and construct validators
 			for (auto i : dict["item_linked"])
-			{
-				mLinkedItems.emplace(i.get<std::string,std::string>("child_name", "parent_name"));
-			}
+				mLinkedItems.emplace(i.get<std::string, std::string>("child_name", "parent_name"));
 		}
 	}
 
@@ -356,7 +357,7 @@ class dictionary_parser : public parser
 			if (not linkIndex.count(key))
 			{
 				linkIndex[key] = linkKeys.size();
-				linkKeys.push_back({});
+				linkKeys.emplace_back();
 			}
 
 			std::size_t ix = linkIndex.at(key);
@@ -384,7 +385,7 @@ class dictionary_parser : public parser
 				if (not linkIndex.count(key))
 				{
 					linkIndex[key] = linkKeys.size();
-					linkKeys.push_back({});
+					linkKeys.emplace_back();
 				}
 
 				std::size_t ix = linkIndex.at(key);

@@ -25,11 +25,20 @@
  */
 
 #include "cif++/file.hpp"
-#include "cif++/condition.hpp"
+
 #include "cif++/gzio.hpp"
+#include "cif++/parser.hpp"
+#include "cif++/text.hpp"
+
+#include <exception>
+#include <ranges>
+#include <stdexcept>
+#include <string>
 
 namespace cif
 {
+
+class validator;
 
 bool file::is_valid() const
 {
@@ -76,13 +85,13 @@ bool file::validate_links() const
 
 bool file::contains(std::string_view name) const
 {
-	return std::find_if(begin(), end(), [name](const datablock &db)
+	return std::ranges::find_if(*this, [name](const datablock &db)
 			   { return iequals(db.name(), name); }) != end();
 }
 
 datablock &file::operator[](std::string_view name)
 {
-	auto i = std::find_if(begin(), end(), [name](const datablock &c)
+	auto i = std::ranges::find_if(*this, [name](const datablock &c)
 		{ return iequals(c.name(), name); });
 
 	if (i != end())
@@ -95,7 +104,7 @@ datablock &file::operator[](std::string_view name)
 const datablock &file::operator[](std::string_view name) const
 {
 	static const datablock s_empty;
-	auto i = std::find_if(begin(), end(), [name](const datablock &c)
+	auto i = std::ranges::find_if(*this, [name](const datablock &c)
 		{ return iequals(c.name(), name); });
 	return i == end() ? s_empty : *i;
 }

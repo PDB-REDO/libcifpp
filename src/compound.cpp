@@ -30,8 +30,6 @@
 #include "cif++/category.hpp"  // for category
 #include "cif++/datablock.hpp" // for datablock
 #include "cif++/file.hpp"      // for file
-#include "cif++/item.hpp"      // for item
-#include "cif++/iterator.hpp"  // for iterator_proxy
 #include "cif++/parser.hpp"    // for parser
 #include "cif++/point.hpp"     // for distance, point
 #include "cif++/row.hpp"       // for tie, row_initializer, tie_wrap
@@ -46,7 +44,6 @@
 #include <iomanip>      // for operator<<, quoted
 #include <iostream>     // for clog, cout, cerr
 #include <limits>       // for numeric_limits
-#include <list>         // for _List_iterator
 #include <map>          // for allocator, map, _Rb_tree_iterator
 #include <memory>       // for shared_ptr, unique_ptr, __shared_ptr_...
 #include <optional>     // for optional
@@ -61,6 +58,7 @@ namespace fs = std::filesystem;
 
 namespace cif
 {
+using std::shared_ptr;
 
 // --------------------------------------------------------------------
 
@@ -221,7 +219,7 @@ compound_atom compound::get_atom_by_atom_id(const std::string &atom_id) const
 
 bool compound::atoms_bonded(const std::string &atomId_1, const std::string &atomId_2) const
 {
-	auto i = find_if(m_bonds.begin(), m_bonds.end(),
+	auto i = std::ranges::find_if(m_bonds,
 		[&](const compound_bond &b)
 		{
 			return (b.atom_id[0] == atomId_1 and b.atom_id[1] == atomId_2) or (b.atom_id[0] == atomId_2 and b.atom_id[1] == atomId_1);
@@ -232,7 +230,7 @@ bool compound::atoms_bonded(const std::string &atomId_1, const std::string &atom
 
 float compound::bond_length(const std::string &atomId_1, const std::string &atomId_2) const
 {
-	auto i = find_if(m_bonds.begin(), m_bonds.end(),
+	auto i = std::ranges::find_if(m_bonds,
 		[&](const compound_bond &b)
 		{
 			return (b.atom_id[0] == atomId_1 and b.atom_id[1] == atomId_2) or (b.atom_id[0] == atomId_2 and b.atom_id[1] == atomId_1);
@@ -266,7 +264,7 @@ bool compound::is_base() const
 // --------------------------------------------------------------------
 // known amino acids and bases
 
-const std::map<std::string, char> compound_factory::kAAMap{
+const std::map<std::string, char> compound_factory::kAAMap{ // NOLINT(bugprone-throwing-static-initialization,cert-err58-cpp)
 	{ "ALA", 'A' },
 	{ "ARG", 'R' },
 	{ "ASN", 'N' },
@@ -291,7 +289,7 @@ const std::map<std::string, char> compound_factory::kAAMap{
 	{ "ASX", 'B' }
 };
 
-const std::map<std::string, char> compound_factory::kBaseMap{
+const std::map<std::string, char> compound_factory::kBaseMap{ // NOLINT(bugprone-throwing-static-initialization,cert-err58-cpp)
 	{ "A", 'A' },
 	{ "C", 'C' },
 	{ "G", 'G' },
@@ -309,21 +307,21 @@ const std::map<std::string, char> compound_factory::kBaseMap{
 class compound_factory_impl : public std::enable_shared_from_this<compound_factory_impl>
 {
   public:
-	compound_factory_impl();
+	compound_factory_impl() = default;
 	compound_factory_impl(const fs::path &file, std::shared_ptr<compound_factory_impl> next);
 
-	virtual ~compound_factory_impl()
+	virtual ~compound_factory_impl() // NOLINT(modernize-use-equals-default)
 	{
 		for (auto c : m_compounds)
 			delete c;
 	}
 
-	virtual bool exists_self(const std::string &id) const
+	[[nodiscard]] virtual bool exists_self(const std::string &id) const
 	{
 		if (m_missing.contains(id))
 			return false;
 
-		if (std::find_if(m_compounds.begin(), m_compounds.end(), [id](compound *c)
+		if (std::ranges::find_if(m_compounds, [id](compound *c)
 				{ return c->id() == id; }) != m_compounds.end())
 			return true;
 
@@ -384,12 +382,8 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 	std::shared_ptr<compound_factory_impl> m_next;
 };
 
-compound_factory_impl::compound_factory_impl()
-{
-}
-
 compound_factory_impl::compound_factory_impl(std::shared_ptr<compound_factory_impl> next)
-	: m_next(next)
+	: m_next(std::move(next))
 {
 }
 
@@ -406,7 +400,7 @@ compound *compound_factory_impl::create(const std::string &id)
 	if (m_missing.contains(id))
 		return nullptr;
 
-	if (auto i = find_if(m_compounds.begin(), m_compounds.end(), [id](compound *c)
+	if (auto i = std::ranges::find_if(m_compounds, [id](compound *c)
 			{ return c->id() == id; });
 		i != m_compounds.end())
 		return *i;
@@ -425,7 +419,7 @@ compound *compound_factory_impl::create(const std::string &id)
 		}
 	}
 	else
-		ccd.reset(new std::ifstream(m_file));
+		ccd = std::make_unique<std::ifstream>(m_file);
 
 	cif::file file;
 
@@ -452,7 +446,7 @@ compound *compound_factory_impl::create(const std::string &id)
 				throw std::runtime_error("Could not locate the CCD components.cif file, please make sure the software is installed properly and/or use the update-libcifpp-data to fetch the data.");
 		}
 		else
-			ccd.reset(new std::ifstream(m_file));
+			ccd = std::make_unique<std::ifstream>(m_file);
 	}
 
 	if (cif::VERBOSE > 1)
@@ -490,9 +484,9 @@ compound *compound_factory_impl::create(const std::string &id)
 class local_compound_factory_impl : public compound_factory_impl
 {
   public:
-	local_compound_factory_impl(const cif::file &file, std::shared_ptr<compound_factory_impl> next)
+	local_compound_factory_impl(cif::file file, shared_ptr<compound_factory_impl> next)
 		: compound_factory_impl(next)
-		, m_local_file(file)
+		, m_local_file(std::move(file))
 	{
 	}
 
@@ -509,7 +503,7 @@ compound *local_compound_factory_impl::create(const std::string &id)
 	if (m_missing.contains(id))
 		return nullptr;
 
-	if (auto i = find_if(m_compounds.begin(), m_compounds.end(), [id](compound *c)
+	if (auto i = std::ranges::find_if(m_compounds, [id](compound *c)
 			{ return c->id() == id; });
 		i != m_compounds.end())
 		return *i;
@@ -660,10 +654,6 @@ compound_factory::compound_factory()
 		std::cerr << "CCD components.cif resource was not found\n";
 }
 
-compound_factory::~compound_factory()
-{
-}
-
 compound_factory &compound_factory::instance()
 {
 	if (s_use_thread_local_instance)
@@ -695,7 +685,7 @@ void compound_factory::set_default_dictionary(const fs::path &inDictFile)
 
 	try
 	{
-		m_impl.reset(new compound_factory_impl(inDictFile, m_impl));
+		m_impl = std::make_shared<compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
 	{
@@ -710,7 +700,7 @@ void compound_factory::push_dictionary(const fs::path &inDictFile)
 
 	try
 	{
-		m_impl.reset(new compound_factory_impl(inDictFile, m_impl));
+		m_impl = std::make_shared<compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
 	{
@@ -722,7 +712,7 @@ void compound_factory::push_dictionary(const cif::file &inDictFile)
 {
 	try
 	{
-		m_impl.reset(new local_compound_factory_impl(inDictFile, m_impl));
+		m_impl = std::make_shared<local_compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
 	{

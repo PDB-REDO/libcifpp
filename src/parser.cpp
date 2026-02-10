@@ -24,15 +24,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "cif++/utilities.hpp"
-#include "cif++/forward_decl.hpp"
 #include "cif++/parser.hpp"
+
 #include "cif++/file.hpp"
+#include "cif++/forward_decl.hpp"
+#include "cif++/utilities.hpp"
 
 #include <cassert>
 #include <iostream>
-#include <map>
-#include <stack>
 
 namespace cif
 {
@@ -42,7 +41,7 @@ namespace cif
 class reserved_words_automaton
 {
   public:
-	reserved_words_automaton() {}
+	reserved_words_automaton() = default;
 
 	enum move_result
 	{
@@ -56,14 +55,14 @@ class reserved_words_automaton
 		stop
 	};
 
-	constexpr bool finished() const
+	[[nodiscard]] constexpr bool finished() const
 	{
-		return m_state <= 0; 
+		return m_state <= 0;
 	}
 
-	constexpr bool matched() const
+	[[nodiscard]] constexpr bool matched() const
 	{
-		return m_state < 0; 
+		return m_state < 0;
 	}
 
 	constexpr move_result move(int ch)
@@ -75,7 +74,7 @@ class reserved_words_automaton
 			case 0:
 				break;
 
-			case -1:		// data_
+			case -1: // data_
 				if (sac_parser::is_non_blank(ch))
 					m_seen_trailing_chars = true;
 				else if (m_seen_trailing_chars)
@@ -84,15 +83,15 @@ class reserved_words_automaton
 					result = no_keyword;
 				break;
 
-			case -2:		// global_
+			case -2: // global_
 				result = sac_parser::is_non_blank(ch) ? no_keyword : global;
 				break;
 
-			case -3:		// loop_
+			case -3: // loop_
 				result = sac_parser::is_non_blank(ch) ? no_keyword : loop;
 				break;
 
-			case -4:		// save_
+			case -4: // save_
 				if (sac_parser::is_non_blank(ch))
 					m_seen_trailing_chars = true;
 				else if (m_seen_trailing_chars)
@@ -101,10 +100,10 @@ class reserved_words_automaton
 					result = save;
 				break;
 
-			case -5:		// stop_
+			case -5: // stop_
 				result = sac_parser::is_non_blank(ch) ? no_keyword : stop;
 				break;
-			
+
 			default:
 				assert(m_state > 0 and m_state < NODE_COUNT);
 
@@ -137,17 +136,17 @@ class reserved_words_automaton
 	static constexpr struct node
 	{
 		int16_t ch;
-		int8_t next_match;
-		int8_t next_nomatch;
+		int next_match;
+		int next_nomatch;
 	} s_dag[] = {
 		{ 0 },
-		{ 'D',  5, 2 },
-		{ 'G',  9, 3 },
+		{ 'D', 5, 2 },
+		{ 'G', 9, 3 },
 		{ 'L', 15, 4 },
 		{ 'S', 19, 0 },
-		{ 'A',  6, 0 },
-		{ 'T',  7, 0 },
-		{ 'A',  8, 0 },
+		{ 'A', 6, 0 },
+		{ 'T', 7, 0 },
+		{ 'A', 8, 0 },
 		{ '_', -1, 0 },
 		{ 'L', 10, 0 },
 		{ 'O', 11, 0 },
@@ -155,7 +154,7 @@ class reserved_words_automaton
 		{ 'A', 13, 0 },
 		{ 'L', 14, 0 },
 		{ '_', -2, 0 },
-		{ 'O', 16, 0},
+		{ 'O', 16, 0 },
 		{ 'O', 17, 0 },
 		{ 'P', 18, 0 },
 		{ '_', -3, 0 },
@@ -238,7 +237,7 @@ int sac_parser::get_next_char()
 		}
 		else if (result == '\n')
 			++m_line_nr;
-		
+
 		m_token_buffer.push_back(std::char_traits<char>::to_char_type(result));
 	}
 
@@ -300,7 +299,12 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else if (ch == '_')
 					state = State::ItemName;
 				else if (ch == ';' and m_bol)
-					state = State::TextItem;
+				{
+					if (m_backslash_strings)
+						state = State::TextItemBS;
+					else
+						state = State::TextItem;
+				}
 				else if (ch == '?')
 					state = State::QuestionMark;
 				else if (ch == '\'' or ch == '"')
@@ -326,12 +330,14 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else
 					m_bol = (ch == '\n');
 				break;
-			
+
 			case State::Comment:
 				if (ch == '\n')
 				{
 					state = State::Start;
 					m_bol = true;
+					if (m_token_buffer.size() == 3 and m_token_buffer == std::vector{ '#', '\\', '\n' })
+						m_backslash_strings = true;
 					m_token_buffer.clear();
 				}
 				else if (ch == kEOF)
@@ -339,7 +345,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else if (not is_any_print(ch))
 					error("invalid character in comment");
 				break;
-			
+
 			case State::QuestionMark:
 				if (not is_non_blank(ch))
 				{
@@ -350,13 +356,52 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::Value;
 				break;
 
+			case State::TextItemBS:
+				if (ch == '\\')
+				{
+					state = State::TextItemBS2;
+					break;
+				}
+				[[fallthrough]];
+
 			case State::TextItem:
 				if (ch == '\n')
 					state = State::TextItemNL;
 				else if (ch == kEOF)
 					error("unterminated textfield");
 				else if (not is_any_print(ch) and cif::VERBOSE > 2)
-					warning("invalid character in text field '" + std::string({static_cast<char>(ch)}) + "' (" + std::to_string((int)ch) + ")");
+					warning("invalid character in text field '" + std::string({ static_cast<char>(ch) }) + "' (" + std::to_string(ch) + ")");
+				break;
+
+			case State::TextItemBS2:
+				if (ch == '\n')
+				{
+					if (m_token_buffer[m_token_buffer.size() - 2] == '\\')
+					{
+						m_token_buffer.pop_back();
+						m_token_buffer.pop_back();
+					}
+					state = State::TextItemBSNL;
+				}
+				else if (ch == kEOF)
+					error("unterminated textfield");
+				else if (not is_any_print(ch) and cif::VERBOSE > 2)
+					warning("invalid character in text field '" + std::string({ static_cast<char>(ch) }) + "' (" + std::to_string(ch) + ")");
+				break;
+
+			case State::TextItemBSNL:
+				if (is_text_lead(ch) or ch == ' ' or ch == '\t')
+					state = State::TextItemBS;
+				else if (ch == ';')
+				{
+					assert(m_token_buffer.size() >= 2);
+					m_token_value = std::string_view(m_token_buffer.data() + 1, m_token_buffer.size() - 3);
+					result = CIFToken::VALUE;
+				}
+				else if (ch == kEOF)
+					error("unterminated textfield");
+				else if (ch != '\n')
+					error("invalid character in text field");
 				break;
 
 			case State::TextItemNL:
@@ -380,7 +425,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else if (ch == quoteChar)
 					state = State::QuotedStringQuote;
 				else if (not is_any_print(ch) and cif::VERBOSE > 2)
-					warning("invalid character in quoted string: '" + std::string({static_cast<char>(ch)}) + "' (" + std::to_string((int)ch) + ")");
+					warning("invalid character in quoted string: '" + std::string({ static_cast<char>(ch) }) + "' (" + std::to_string(ch) + ")");
 				break;
 
 			case State::QuotedStringQuote:
@@ -540,6 +585,7 @@ bool sac_parser::parse_single_datablock(const std::string &datablock)
 						if (bol)
 							state = qstring;
 						break;
+					default:;
 				}
 				break;
 
@@ -633,6 +679,7 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 						if (bol)
 							state = qstring;
 						break;
+					default:;
 				}
 				break;
 
@@ -661,7 +708,7 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 			case data:
 				if (dblk[si] == 0 and is_non_blank(ch))
 				{
-					datablock = {static_cast<char>(ch)};
+					datablock = { static_cast<char>(ch) };
 					state = data_name;
 				}
 				else if (dblk[si++] != ch)
@@ -670,7 +717,7 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 
 			case data_name:
 				if (is_non_blank(ch))
-					datablock.insert(datablock.end(), (char)std::toupper(ch));
+					datablock.insert(datablock.end(), static_cast<char>(std::toupper(ch)));
 				else if (is_space(ch))
 				{
 					if (not datablock.empty())
@@ -745,7 +792,7 @@ void sac_parser::parse_global()
 void sac_parser::parse_datablock()
 {
 	static const std::string kUnitializedCategory("<invalid>");
-	std::string cat = kUnitializedCategory;	// intial value acts as a guard for empty category names
+	std::string cat = kUnitializedCategory; // intial value acts as a guard for empty category names
 
 	while (m_lookahead == CIFToken::LOOP or m_lookahead == CIFToken::ITEM_NAME or m_lookahead == CIFToken::SAVE_NAME)
 	{

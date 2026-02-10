@@ -24,6 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// NOLINTBEGIN(modernize-use-std-numbers)
+
 #include <cmath>
 
 #include "cif++.hpp"
@@ -34,7 +36,7 @@ namespace cif
 namespace data
 {
 
-const atom_type_info kKnownAtoms[] =
+const atom_type_info kKnownAtoms[] = // NOLINT(bugprone-throwing-static-initialization,cert-err58-cpp)
 {
 	{ Nn,	"Unknown",			"Nn",	0,			false, {	kNA,	kNA,	kNA,	kNA,	kNA,	kNA,	kNA } },  //	0	Nn	 Unknown        
 	{ H,	"Hydrogen",			"H",	1.008f,		false, {	53,		25,		37,		32,		kNA,	kNA,	120 } },  //	1	H	 Hydro­gen         
@@ -1180,3 +1182,4 @@ float atom_type_traits::effective_ionic_radius(int charge) const
 }
 
 }
+// NOLINTEND(modernize-use-std-numbers)

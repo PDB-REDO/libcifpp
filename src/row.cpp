@@ -29,9 +29,16 @@
 #include "cif++/category.hpp"
 #include "cif++/item.hpp"
 
+#include <algorithm>
+#include <cassert>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
+
 namespace cif
 {
-// --------------------------------------------------------------------
 
 item_value s_null_item;
 

@@ -29,54 +29,70 @@
 #include "cif++/item.hpp"
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 /**
  * @file row.hpp
- * 
+ *
  * The class cif::row should be an opaque type. It is used to store the
  * internal data per row in a category. You should use cif::row_handle
  * to get access to the contents in a row.
- * 
+ *
  * One could think of rows as vectors of cif::item. But internally
  * that's not the case.
- * 
+ *
  * You can access the values of stored items by name or index.
  * The return value of operator[] is a reference to a cif::item_value object.
- * 
+ *
  * @code {.cpp}
  * cif::category &atom_site = my_db["atom_site"];
  * cif::row_handle rh = atom_site.front();
- * 
+ *
  * // by name:
  * std::string name = rh["label_atom_id"].as<std::string>();
- * 
+ *
  * // by index:
  * uint16_t ix = atom_site.get_item_ix("label_atom_id");
  * assert(rh[ix].as<std::string() == name);
  * @endcode
- * 
+ *
  * There some template magic here to allow easy extracting of data
  * from rows. This can be done using cif::tie e.g.:
- * 
+ *
  * @code {.cpp}
  * std::string name;
  * float x, y, z;
- * 
+ *
  * cif::tie(name, x, y, z) = rh.get("label_atom_id", "cartn_x", "cartn_y", "cartn_z");
  * @endcode
- * 
+ *
  * However, a more modern way uses structured binding:
- * 
+ *
  * @code {.cpp}
  * const auto &[name, x, y, z] = rh.get<std::string,float,float,float>("label_atom_id", "cartn_x", "cartn_y", "cartn_z");
  * @endcode
- * 
- * 
- * 
+ *
+ *
+ *
  */
 
 namespace cif
 {
+
+class category;
+class row_handle;
+namespace cql
+{
+	struct connection_impl;
+}
+
 
 namespace detail
 {
@@ -93,19 +109,20 @@ namespace detail
 		{
 		}
 
-		const item_value &operator[](uint16_t ix) const
+		const item_handle operator[](uint16_t ix) const
 		{
 			return m_row[m_items[ix]];
 		}
 
-		template <typename... Ts, std::enable_if_t<N == sizeof...(Ts), int> = 0>
+		template <typename... Ts>
 		operator std::tuple<Ts...>() const
+			requires(N == sizeof...(Ts))
 		{
 			return get<Ts...>(std::index_sequence_for<Ts...>{});
 		}
 
 		template <typename... Ts, std::size_t... Is>
-		std::tuple<Ts...> get(std::index_sequence<Is...>) const
+		[[nodiscard]] std::tuple<Ts...> get(std::index_sequence<Is...>) const
 		{
 			return std::tuple<Ts...>{ m_row[m_items[Is]].template get<Ts>()... };
 		}
@@ -131,7 +148,7 @@ namespace detail
 			// of the row should be equal to the number of items in the tuple
 			// you are trying to tie.
 
-			using RType = std::tuple<typename std::remove_reference<Ts>::type...>;
+			using RType = std::tuple<std::remove_reference_t<Ts>...>;
 
 			m_value = static_cast<RType>(rr);
 		}
@@ -141,7 +158,7 @@ namespace detail
 
 } // namespace detail
 
-/// \brief similar to std::tie, assign values to each element in @a v from the 
+/// \brief similar to std::tie, assign values to each element in @a v from the
 /// result of a get on a row_handle.
 template <typename... Ts>
 auto tie(Ts &...v)
@@ -160,7 +177,7 @@ class row : public std::vector<item_value>
 	/**
 	 * @brief Return the item_value pointer for item at index @a ix
 	 */
-	item_value* get(uint16_t ix)
+	item_value *get(uint16_t ix)
 	{
 		return ix < size() ? &data()[ix] : nullptr;
 	}
@@ -168,7 +185,7 @@ class row : public std::vector<item_value>
 	/**
 	 * @brief Return the const item_value pointer for item at index @a ix
 	 */
-	const item_value* get(uint16_t ix) const
+	[[nodiscard]] const item_value *get(uint16_t ix) const
 	{
 		return ix < size() ? &data()[ix] : nullptr;
 	}
@@ -177,14 +194,14 @@ class row : public std::vector<item_value>
 	friend class category;
 	friend class category_index;
 
-	template <typename, typename...>
-	friend class iterator_impl;
+	template <bool, typename...>
+	friend class iterator_impl_base;
 
-	void append(uint16_t ix, item_value iv)
+	void append(uint16_t ix, item_value &&iv)
 	{
 		if (ix >= size())
 			resize(ix + 1);
-		
+
 		at(ix) = std::move(iv);
 	}
 
@@ -204,10 +221,13 @@ class row_handle
 {
   public:
 	/** @cond */
+	friend struct item_handle;
 	friend class category;
 	friend class category_index;
 	friend class row_initializer;
-	template <typename, typename...> friend class iterator_impl;
+
+	template <bool, typename...>
+	friend class iterator_impl_base;
 
 	row_handle() = default;
 
@@ -227,13 +247,19 @@ class row_handle
 	}
 
 	/// \brief return the category this row belongs to
-	const category &get_category() const
+	[[nodiscard]] const category &get_category() const
 	{
 		return *m_category;
 	}
 
+	/// \brief return the row ID
+	[[nodiscard]] int64_t row_id() const
+	{
+		return reinterpret_cast<int64_t>(m_row);
+	}
+
 	/// \brief Return true if the row is empty or uninitialised
-	bool empty() const
+	[[nodiscard]] bool empty() const
 	{
 		return m_category == nullptr or m_row == nullptr;
 	}
@@ -244,29 +270,42 @@ class row_handle
 		return not empty();
 	}
 
-	/// \brief return a reference to a cif::item_value to the item in item @a item_ix
-	item_value &operator[](uint16_t item_ix);
+	/// \brief return a cif::item_handle to the item in item @a item_ix
+	item_handle operator[](uint16_t item_ix)
+	{
+		return empty() ? item_handle::s_null_item : item_handle(item_ix, *this);
+	}
 
-	/// \brief return a const reference to a cif::item_value to the item in item @a item_ix
-	const item_value &operator[](uint16_t item_ix) const;
+	/// \brief return a const cif::item_handle to the item in item @a item_ix
+	const item_handle operator[](uint16_t item_ix) const
+	{
+		return empty() ? item_handle::s_null_item : item_handle(item_ix, const_cast<row_handle &>(*this));
+	}
 
-	/// \brief return a reference to a cif::item_value to the item in the item named @a item_name
-	item_value &operator[](std::string_view item_name);
+	/// \brief return a cif::item_handle to the item in the item named @a item_name
+	item_handle operator[](std::string_view item_name)
+	{
+		return empty() ? item_handle::s_null_item : item_handle(add_item(item_name), *this);
+	}
 
-	/// \brief return a const reference to a cif::item_value to the item in the item named @a item_name
-	const item_value &operator[](std::string_view item_name) const;
+	/// \brief return a const cif::item_handle to the item in the item named @a item_name
+	const item_handle operator[](std::string_view item_name) const
+	{
+		return empty() ? item_handle::s_null_item : item_handle(get_item_ix(item_name), const_cast<row_handle &>(*this));
+	}
 
 	/// \brief Return an object that can be used in combination with cif::tie
 	/// to assign the values for the items @a items
 	template <typename... C>
-	auto get(C... items) const
+	[[nodiscard]] auto get(C... items) const
 	{
 		return detail::get_row_result<C...>(*this, { get_item_ix(items)... });
 	}
 
 	/// \brief Return a tuple of values of types @a Ts for the items @a items
-	template <typename... Ts, typename... C, std::enable_if_t<sizeof...(Ts) == sizeof...(C) and sizeof...(C) != 1, int> = 0>
+	template <typename... Ts, typename... C>
 	std::tuple<Ts...> get(C... items) const
+		requires(sizeof...(Ts) == sizeof...(C) and sizeof...(C) != 1)
 	{
 		return detail::get_row_result<Ts...>(*this, { get_item_ix(items)... });
 	}
@@ -280,7 +319,7 @@ class row_handle
 
 	/// \brief Get the value of item @a item cast to type @a T
 	template <typename T>
-	T get(std::string_view item) const
+	[[nodiscard]] T get(std::string_view item) const
 	{
 		return operator[](get_item_ix(item)).template get<T>();
 	}
@@ -292,13 +331,13 @@ class row_handle
 			assign(value, true);
 	}
 
-	/** \brief assign the value @a value to the item named @a name 
-	 * 
+	/** \brief assign the value @a value to the item named @a name
+	 *
 	 * If updateLinked it true, linked records are updated as well.
 	 * That means that if item @a name is part of the link definition
 	 * and the link results in a linked record in another category
 	 * this record in the linked category is updated as well.
-	 * 
+	 *
 	 * If validate is true, which is default, the assigned value is
 	 * checked to see if it conforms to the rules defined in the dictionary
 	 */
@@ -309,12 +348,12 @@ class row_handle
 	}
 
 	/** \brief assign the value @a value to item at index @a item
-	 * 
+	 *
 	 * If updateLinked it true, linked records are updated as well.
 	 * That means that if item @a item is part of the link definition
 	 * and the link results in a linked record in another category
 	 * this record in the linked category is updated as well.
-	 * 
+	 *
 	 * If validate is true, which is default, the assigned value is
 	 * checked to see if it conforms to the rules defined in the dictionary
 	 */
@@ -328,27 +367,29 @@ class row_handle
 	bool operator!=(const row_handle &rhs) const { return m_category != rhs.m_category or m_row != rhs.m_row; }
 
   private:
-	uint16_t get_item_ix(std::string_view name) const;
-	std::string_view get_item_name(uint16_t ix) const;
+	[[nodiscard]] uint16_t get_item_ix(std::string_view name) const;
+	[[nodiscard]] std::string_view get_item_name(uint16_t ix) const;
 
 	uint16_t add_item(std::string_view name);
+
+	friend cql::connection_impl;
 
 	row *get_row()
 	{
 		return m_row;
 	}
 
-	const row *get_row() const
+	[[nodiscard]] const row *get_row() const
 	{
 		return m_row;
 	}
 
-	void assign(const item &i, bool updateLinked);/* 
+	void assign(const item &i, bool updateLinked)
 	{
 		assign(i.name(), i.value(), updateLinked);
-	} */
+	}
 
-	void swap(uint16_t item, row_handle &r);
+	void swap(uint16_t item, row_handle &r) noexcept(false);
 
 	category *m_category = nullptr;
 	row *m_row = nullptr;
@@ -358,7 +399,7 @@ class row_handle
 
 /**
  * @brief The class row_initializer is a list of cif::item's.
- * 
+ *
  * This class is used to construct new rows, it allows to
  * group a list of item name and value pairs and pass it
  * in one go to the constructing function.
@@ -384,15 +425,15 @@ class row_initializer : public std::vector<item>
 	}
 
 	/// \brief constructor taking a range of items
-	template <typename ItemIter, std::enable_if_t<std::is_same_v<typename ItemIter::value_type, item>, int> = 0>
+	template <typename ItemIter>
 	row_initializer(ItemIter b, ItemIter e)
+		requires(std::is_same_v<typename ItemIter::value_type, item>)
 		: std::vector<item>(b, e)
 	{
 	}
 
 	/// \brief constructor taking the values of an existing row
 	row_initializer(row_handle rh);
-
 
 	/// \brief set the value for item name @a name to @a value
 	void set_value(std::string name, item_value value);

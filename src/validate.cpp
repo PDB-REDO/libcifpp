@@ -25,13 +25,18 @@
  */
 
 #include "cif++/validate.hpp"
+
 #include "cif++/category.hpp"
 #include "cif++/dictionary_parser.hpp"
 #include "cif++/utilities.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <format>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <stdexcept>
 
 // The validator depends on regular expressions. Unfortunately,
 // the implementation of std::regex in g++ is buggy and crashes
@@ -72,7 +77,7 @@ struct regex_impl
 	bool match(std::string_view v) const;
 
   private:
-	pcre2_code *m_rx = nullptr;
+	pcre2_code_8 *m_rx = nullptr;
 	pcre2_match_data *m_data = nullptr;
 	mutable std::mutex m_mutex;
 };
@@ -81,13 +86,13 @@ regex_impl::regex_impl(std::string_view rx)
 {
 	int err_code;
 	size_t err_offset;
-	m_rx = pcre2_compile((PCRE2_SPTR)rx.data(), rx.length(), 0, &err_code, &err_offset, nullptr);
+	m_rx = pcre2_compile(reinterpret_cast<PCRE2_SPTR>(rx.data()), rx.length(), 0, &err_code, &err_offset, nullptr);
 	if (m_rx == nullptr)
 	{
-		PCRE2_UCHAR buffer[256];
-		int n = pcre2_get_error_message(err_code, buffer, sizeof(buffer));
+		char buffer[256];
+		int n = pcre2_get_error_message(err_code, reinterpret_cast<unsigned char *>(&buffer[0]), sizeof(buffer));
 
-		throw std::runtime_error(std::string("PCRE2 compilation failed: ") + std::string{ (char *)buffer, (char *)buffer + n });
+		throw std::runtime_error(std::string("PCRE2 compilation failed: ") + std::string{ buffer, buffer + n });
 	}
 
 	m_data = pcre2_match_data_create_from_pattern(m_rx, nullptr);
@@ -110,7 +115,7 @@ bool regex_impl::match(std::string_view v) const
 
 	bool result = false;
 
-	if (int rc = pcre2_match(m_rx, (PCRE2_SPTR)v.data(), v.length(), 0, 0, m_data, nullptr); rc >= 0)
+	if (int rc = pcre2_match(m_rx, reinterpret_cast<PCRE2_SPTR>(v.data()), v.length(), 0, 0, m_data, nullptr); rc >= 0)
 		result = true;
 	else if (rc != PCRE2_ERROR_NOMATCH)
 		std::cerr << "Error matching with pcre\n";
@@ -153,17 +158,6 @@ type_validator::type_validator(std::string_view name, DDL_PrimitiveType type, st
 {
 }
 
-type_validator::type_validator(const type_validator &tv)
-	: m_name(tv.m_name)
-	, m_primitive_type(tv.m_primitive_type)
-	, m_rx(tv.m_rx)
-{
-}
-
-type_validator::~type_validator()
-{
-}
-
 int type_validator::compare(std::string_view a, std::string_view b) const
 {
 	int result = 0;
@@ -188,7 +182,7 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 				ra = from_chars(a.data(), a.data() + a.length(), da);
 				rb = from_chars(b.data(), b.data() + b.length(), db);
 
-				if (not(bool) ra.ec and not(bool) rb.ec)
+				if (ra.ec == std::errc{} and rb.ec == std::errc{})
 				{
 					auto d = da - db;
 					if (std::abs(d) > std::numeric_limits<double>::epsilon())
@@ -199,7 +193,7 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 							result = -1;
 					}
 				}
-				else if ((bool)ra.ec)
+				else if (ra.ec != std::errc{})
 					result = 1;
 				else
 					result = -1;
@@ -263,11 +257,11 @@ int type_validator::compare(std::string_view a, std::string_view b) const
 
 // --------------------------------------------------------------------
 
-void item_validator::operator()(const item_value &value) const
+void item_validator::operator()(std::string_view value) const
 {
 	std::error_code ec;
 	if (not validate_value(value, ec))
-		throw std::system_error(ec, std::string{ value } + " does not match rx for " + m_item_name);
+		throw std::system_error(ec, std::format("'{}' is not a valid value for {}", value, m_item_name));
 }
 
 bool item_validator::validate_value(std::string_view value, std::error_code &ec) const noexcept
@@ -282,7 +276,7 @@ bool item_validator::validate_value(std::string_view value, std::error_code &ec)
 			ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
 	}
 
-	return not(bool) ec;
+	return ec == std::errc{};
 }
 
 // --------------------------------------------------------------------
@@ -294,15 +288,20 @@ void category_validator::add_item_validator(item_validator &&v)
 
 	v.m_category = m_name;
 
-	auto r = m_item_validators.insert(std::move(v));
-	if (not r.second and VERBOSE >= 4)
-		std::cout << "Could not add validator for item " << v.m_item_name << " to category " << m_name << '\n';
+	auto i = std::ranges::find(m_item_validators, v);
+	if (i != m_item_validators.end())
+	{
+		if (VERBOSE >= 4)
+			std::cout << "Could not add validator for item " << v.m_item_name << " to category " << m_name << '\n';
+	}
+	else
+		m_item_validators.emplace_back(std::move(v));
 }
 
 const item_validator *category_validator::get_validator_for_item(std::string_view item_name) const
 {
 	const item_validator *result = nullptr;
-	auto i = m_item_validators.find(item_validator{ std::string(item_name) });
+	auto i = std::ranges::find(m_item_validators, item_validator{ std::string(item_name) });
 	if (i != m_item_validators.end())
 		result = &*i;
 	else if (VERBOSE > 4)
@@ -334,15 +333,6 @@ const item_validator *category_validator::get_validator_for_aliased_item(std::st
 
 // --------------------------------------------------------------------
 
-validator::validator(const validator &rhs)
-	: m_audit_conform(rhs.m_audit_conform)
-	, m_strict(rhs.m_strict)
-	, m_type_validators(rhs.m_type_validators)
-	, m_category_validators(rhs.m_category_validators)
-	, m_link_validators(rhs.m_link_validators)
-{
-}
-
 void swap(validator &a, validator &b) noexcept
 {
 	std::swap(a.m_audit_conform, b.m_audit_conform);
@@ -359,9 +349,7 @@ void validator::parse(std::istream &is)
 
 void validator::add_type_validator(type_validator &&v)
 {
-	auto r = m_type_validators.insert(std::move(v));
-	if (not r.second and VERBOSE > 4)
-		std::cout << "Could not add validator for type " << v.m_name << '\n';
+	m_type_validators.emplace(v);
 }
 
 const type_validator *validator::get_validator_for_type(std::string_view typeCode) const
@@ -371,16 +359,12 @@ const type_validator *validator::get_validator_for_type(std::string_view typeCod
 	auto i = m_type_validators.find(type_validator{ std::string(typeCode), DDL_PrimitiveType::Char, {} });
 	if (i != m_type_validators.end())
 		result = &*i;
-	else if (VERBOSE > 4)
-		std::cout << "No validator for type " << typeCode << '\n';
 	return result;
 }
 
 void validator::add_category_validator(category_validator &&v)
 {
-	auto r = m_category_validators.insert(std::move(v));
-	if (not r.second and VERBOSE > 4)
-		std::cout << "Could not add validator for category " << v.m_name << '\n';
+	m_category_validators.emplace(v);
 }
 
 const category_validator *validator::get_validator_for_category(std::string_view category) const
@@ -389,8 +373,6 @@ const category_validator *validator::get_validator_for_category(std::string_view
 	auto i = m_category_validators.find(category_validator{ std::string(category) });
 	if (i != m_category_validators.end())
 		result = &*i;
-	else if (VERBOSE > 4)
-		std::cout << "No validator for category " << category << '\n';
 	return result;
 }
 
@@ -481,12 +463,16 @@ void validator::report_error(std::error_code ec, bool fatal) const
 void validator::report_error(std::error_code ec, std::string_view category,
 	std::string_view item, bool fatal) const
 {
-	auto ex = item.empty() ? validation_exception(ec, category) : validation_exception(ec, category, item);
-
 	if (m_strict or fatal)
-		throw ex;
-	else if (VERBOSE > 0)
-		std::cerr << ex.what() << '\n';
+	{
+		if (item.empty())
+			throw validation_exception(ec, category);
+		else
+		 	throw validation_exception(ec, category, item);
+	}
+
+	if (VERBOSE > 0)
+		std::cerr << ec.message() << " category: " << std::quoted(category) << " item: " << std::quoted(item) << '\n';
 }
 
 void validator::fill_audit_conform(category &audit_conform) const
@@ -539,62 +525,79 @@ validator_factory &validator_factory::instance()
 	return s_instance;
 }
 
-const validator &validator_factory::get(std::string_view dictionary_name)
+const validator *validator_factory::get(std::string_view dictionary_name)
 {
 	category audit_conform("audit_conform");
-	for (auto part : cif::split(dictionary_name, ";", true))
+	for (auto part : cif::split(dictionary_name, ";,", true))
 		audit_conform.emplace({ { "dict_name", part } });
 
 	return get(audit_conform);
 }
 
-const validator &validator_factory::get(const category &audit_conform)
+const validator *validator_factory::get(const category &audit_conform)
 {
-	if (audit_conform.empty())
-		throw std::runtime_error("Empty audit_conform category, cannot create a validator");
+	const validator *result = nullptr;
 
-	std::lock_guard lock(m_mutex);
+	std::scoped_lock lock(m_mutex);
 
 	// Check existing first
 	for (auto &v : m_validators)
 	{
 		if (v.matches_audit_conform(audit_conform))
-			return v;
+			result = &v;
 	}
 
 	// If the audit conform contains only one record, this is easy
-	if (audit_conform.size() == 1)
+	if (result == nullptr and audit_conform.size() == 1)
 	{
 		const auto &[name, version] =
 			audit_conform.front().get<std::string, std::optional<std::string>>("dict_name", "dict_version");
 		if (not name.empty())
-			return m_validators.emplace_back(construct_validator(name, version));
+			result = &m_validators.emplace_back(construct_validator(name, version));
 	}
 
-	// A new, merged dictionary
-
-	std::optional<validator> v;
-	for (const auto &[name, version] : audit_conform.rows<std::string, std::optional<std::string>>("dict_name", "dict_version"))
+	if (result == nullptr)
 	{
-		if (name.empty())
-			continue;
-
-		if (not v)
-			v = construct_validator(name, version);
-		else
+		// A new, merged dictionary
+		std::optional<validator> v;
+		for (const auto &[name, version] : audit_conform.rows<std::string, std::optional<std::string>>("dict_name", "dict_version"))
 		{
-			auto data = load_resource(name);
-			if (not data)
-				throw std::runtime_error("Could not load dictionary " + std::string{ name });
+			if (name.empty())
+				continue;
 
-			v->parse(*data);
+			if (not v) // first dict
+				v = construct_validator(name, version);
+			else // additional/extending dict
+			{
+				auto data = load_resource(name);
+				if (not data)
+					throw std::runtime_error("Could not load dictionary " + std::string{ name });
+
+				v->parse(*data);
+			}
 		}
+
+		if (v)
+			result = &m_validators.emplace_back(std::move(*v));
 	}
 
-	if (not v)
-		throw std::runtime_error("Missing dictionary information?");
+	return result;
+}
 
-	return m_validators.emplace_back(std::move(*v));
+const validator &validator_factory::operator[](const category &audit_conform)
+{
+	auto v = get(audit_conform);
+	if (v == nullptr)
+		throw std::runtime_error("Could not load dictionary for audit_conform");
+	return *v;
+}
+
+const validator &validator_factory::operator[](std::string_view dictionary_name)
+{
+	auto v = get(dictionary_name);
+	if (v == nullptr)
+		throw std::runtime_error("Could not load dictionary for " + std::string{ dictionary_name });
+	return *v;
 }
 
 validator validator_factory::construct_validator(std::string_view name, std::optional<std::string> version)

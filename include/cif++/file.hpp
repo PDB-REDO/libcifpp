@@ -26,31 +26,38 @@
 
 #pragma once
 
-#include <list>
-
 #include "cif++/datablock.hpp"
-#include "cif++/parser.hpp"
+
+#include <cassert>
+#include <cstddef>
+#include <filesystem>
+#include <istream>
+#include <list>
+#include <string_view>
+#include <tuple>
 
 /** \file file.hpp
- * 
+ *
  * The file class defined here encapsulates the contents of an mmCIF file
  * It is mainly a list of @ref cif::datablock objects
- * 
+ *
  * The class file has methods to load dictionaries. These dictionaries are
  * loaded from resources (if available) or from disk from several locations.
- * 
+ *
  * See the documentation on load_resource() in file: utilities.hpp for more
- * information on how data is loaded. 
+ * information on how data is loaded.
  */
 
 namespace cif
 {
 
+class validator;
+
 // --------------------------------------------------------------------
 
 /**
  * @brief The class file is actually a list of datablock objects
- * 
+ *
  */
 
 class file : public std::list<datablock>
@@ -60,7 +67,7 @@ class file : public std::list<datablock>
 
 	/**
 	 * @brief Construct a new file object using the data in the file @a p as content
-	 * 
+	 *
 	 * @param p Path to a file containing the data to load
 	 */
 	explicit file(const std::filesystem::path &p)
@@ -70,7 +77,7 @@ class file : public std::list<datablock>
 
 	/**
 	 * @brief Construct a new file object using the data in the std::istream @a is
-	 * 
+	 *
 	 * @param is The istream containing the data to load
 	 */
 	explicit file(std::istream &is)
@@ -81,7 +88,7 @@ class file : public std::list<datablock>
 	/**
 	 * @brief Construct a new file object with data in the constant string defined
 	 * by @a data and @a length
-	 * 
+	 *
 	 * @param data The pointer to the character string with data to load
 	 * @param length The length of the data
 	 */
@@ -100,7 +107,7 @@ class file : public std::list<datablock>
 	}
 
 	/** @cond */
-	file(const file &rhs)
+	file(const file &rhs) // NOLINT
 		: std::list<datablock>(rhs)
 	{
 	}
@@ -120,23 +127,23 @@ class file : public std::list<datablock>
 
 	/**
 	 * @brief Validate the content and return true if everything was valid.
-	 * 
+	 *
 	 * Will throw an exception if there is no validator defined.
-	 * 
+	 *
 	 * If each category was valid, validate_links will also be called.
-	 * 
+	 *
 	 * @return true If the content is valid
 	 * @return false If the content is not valid
 	 */
-	bool is_valid() const;
+	[[nodiscard]] bool is_valid() const;
 
 	/**
 	 * @brief Validate the content and return true if everything was valid.
-	 * 
+	 *
 	 * Will attempt to load the referenced dictionary if none was specified.
-	 * 
+	 *
 	 * If each category was valid, validate_links will also be called.
-	 * 
+	 *
 	 * @return true If the content is valid
 	 * @return false If the content is not valid
 	 */
@@ -144,18 +151,18 @@ class file : public std::list<datablock>
 
 	/**
 	 * @brief Validate the links for all datablocks contained.
-	 * 
+	 *
 	 * Will throw an exception if no validator was specified.
-	 * 
+	 *
 	 * @return true If all links were valid
 	 * @return false If all links were not valid
 	 */
-	bool validate_links() const;
+	[[nodiscard]] bool validate_links() const;
 
 	/**
 	 * @brief Return true if a datablock with the name @a name is part of this file
 	 */
-	bool contains(std::string_view name) const;
+	[[nodiscard]] bool contains(std::string_view name) const;
 
 	/**
 	 * @brief return a reference to the first datablock in the file
@@ -169,7 +176,7 @@ class file : public std::list<datablock>
 	/**
 	 * @brief return a const reference to the first datablock in the file
 	 */
-	const datablock &front() const
+	[[nodiscard]] const datablock &front() const
 	{
 		assert(not empty());
 		return std::list<datablock>::front();
@@ -190,7 +197,7 @@ class file : public std::list<datablock>
 	 * new one if it is not found. The result is a tuple of an iterator
 	 * pointing to the datablock and a boolean indicating whether the datablock
 	 * was created or not.
-	 * 
+	 *
 	 * @param name The name for the datablock
 	 * @return std::tuple<iterator, bool> A tuple containing an iterator pointing
 	 * at the datablock and a boolean indicating whether the datablock was newly

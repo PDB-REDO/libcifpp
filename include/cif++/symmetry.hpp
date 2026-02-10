@@ -35,7 +35,7 @@
 #include <string>
 
 #if defined(__cpp_impl_three_way_comparison)
-#include <compare>
+# include <utility>
 #endif
 
 /** \file cif++/symmetry.hpp
@@ -127,20 +127,20 @@ struct symop_data
 	}
 
 	/// \brief return an int representing the value stored in the two bits at offset @a offset
-	inline constexpr int unpack3(int offset) const
+	[[nodiscard]] inline constexpr int unpack3(int offset) const
 	{
-		int result = (m_packed >> offset) bitand 0x03;
+		int result = static_cast<int>((m_packed >> offset) bitand 0x03);
 		return result == 3 ? -1 : result;
 	}
 
 	/// \brief return an int representing the value stored in the three bits at offset @a offset
-	inline constexpr int unpack7(int offset) const
+	[[nodiscard]] inline constexpr int unpack7(int offset) const
 	{
-		return (m_packed >> offset) bitand 0x07;
+		return static_cast<int>((m_packed >> offset) bitand 0x07);
 	}
 
 	/// \brief return an array of 15 ints representing the values stored
-	constexpr std::array<int, 15> data() const
+	[[nodiscard]] constexpr std::array<int, 15> data() const
 	{
 		return {
 			unpack3(34),
@@ -189,9 +189,9 @@ struct symop_datablock
 	{
 	}
 
-	uint16_t spacegroup() const { return m_v >> 48; }                     ///< Return the spacegroup
-	symop_data symop() const { return symop_data(m_v); }                  ///< Return the symmetry operation
-	uint8_t rotational_number() const { return (m_v >> 40) bitand 0xff; } ///< Return the rotational_number
+	[[nodiscard]] int spacegroup() const { return m_v >> 48; }                          ///< Return the spacegroup
+	[[nodiscard]] symop_data symop() const { return { m_v }; }                          ///< Return the symmetry operation
+	[[nodiscard]] uint8_t rotational_number() const { return (m_v >> 40) bitand 0xff; } ///< Return the rotational_number
 
   private:
 	uint64_t m_v;
@@ -249,7 +249,7 @@ struct sym_op
 	/** @endcond */
 
 	/// \brief return true if this sym_op is the identity operator
-	constexpr bool is_identity() const
+	[[nodiscard]] constexpr bool is_identity() const
 	{
 		return m_nr == 1 and m_ta == 5 and m_tb == 5 and m_tc == 5;
 	}
@@ -261,7 +261,7 @@ struct sym_op
 	}
 
 	/// \brief return the content encoded in a string
-	std::string string() const;
+	[[nodiscard]] std::string string() const;
 
 #if defined(__cpp_impl_three_way_comparison)
 	/// \brief a default spaceship operator
@@ -389,18 +389,18 @@ class cell
 	/// \brief constructor that takes the appropriate values from the *cell* category in datablock @a db
 	cell(const datablock &db);
 
-	float get_a() const { return m_a; } ///< return dimension a
-	float get_b() const { return m_b; } ///< return dimension b
-	float get_c() const { return m_c; } ///< return dimension c
+	[[nodiscard]] float get_a() const { return m_a; } ///< return dimension a
+	[[nodiscard]] float get_b() const { return m_b; } ///< return dimension b
+	[[nodiscard]] float get_c() const { return m_c; } ///< return dimension c
 
-	float get_alpha() const { return m_alpha; } ///< return angle alpha
-	float get_beta() const { return m_beta; }   ///< return angle beta
-	float get_gamma() const { return m_gamma; } ///< return angle gamma
+	[[nodiscard]] float get_alpha() const { return m_alpha; } ///< return angle alpha
+	[[nodiscard]] float get_beta() const { return m_beta; }   ///< return angle beta
+	[[nodiscard]] float get_gamma() const { return m_gamma; } ///< return angle gamma
 
-	float get_volume() const; ///< return the calculated volume for this cell
+	[[nodiscard]] float get_volume() const; ///< return the calculated volume for this cell
 
-	matrix3x3<float> get_orthogonal_matrix() const { return m_orthogonal; } ///< return the matrix to use to transform coordinates from fractional to orthogonal
-	matrix3x3<float> get_fractional_matrix() const { return m_fractional; } ///< return the matrix to use to transform coordinates from orthogonal to fractional
+	[[nodiscard]] matrix3x3<float> get_orthogonal_matrix() const { return m_orthogonal; } ///< return the matrix to use to transform coordinates from fractional to orthogonal
+	[[nodiscard]] matrix3x3<float> get_fractional_matrix() const { return m_fractional; } ///< return the matrix to use to transform coordinates from orthogonal to fractional
 
   private:
 	void init();
@@ -448,8 +448,8 @@ class spacegroup : public std::vector<transformation>
 	/// \brief constructor using the spacegroup number @a nr
 	spacegroup(int nr);
 
-	int get_nr() const { return m_nr; } ///< Return the nr
-	std::string get_name() const;       ///< Return the name
+	[[nodiscard]] int get_nr() const { return m_nr; } ///< Return the nr
+	[[nodiscard]] std::string get_name() const;       ///< Return the name
 
 	/** \brief perform a spacegroup operation on point @a pt using
 	 * cell @a c and sym_op @a symop
@@ -460,7 +460,7 @@ class spacegroup : public std::vector<transformation>
 	/** \brief perform an inverse spacegroup operation on point @a pt using
 	 * cell @a c and sym_op @a symop
 	 */
-	point inverse(const point &pt, const cell &c, sym_op symop) const;
+	[[nodiscard]] point inverse(const point &pt, const cell &c, sym_op symop) const;
 
   private:
 	int m_nr;
@@ -486,9 +486,9 @@ class crystal
 	}
 
 	/// \brief constructor using cell @a c and spacegroup @a sg
-	crystal(const cell &c, const spacegroup &sg)
+	crystal(const cell &c, spacegroup sg)
 		: m_cell(c)
-		, m_spacegroup(sg)
+		, m_spacegroup(std::move(sg))
 	{
 	}
 
@@ -499,24 +499,24 @@ class crystal
 	crystal &operator=(crystal &&) = default;
 	/** @endcond */
 
-	const cell &get_cell() const { return m_cell; }                   ///< Return the cell
-	const spacegroup &get_spacegroup() const { return m_spacegroup; } ///< Return the spacegroup
+	[[nodiscard]] const cell &get_cell() const { return m_cell; }                   ///< Return the cell
+	[[nodiscard]] const spacegroup &get_spacegroup() const { return m_spacegroup; } ///< Return the spacegroup
 
 	/// \brief Return the symmetry copy of point @a pt using symmetry operation @a symop
-	point symmetry_copy(const point &pt, sym_op symop) const
+	[[nodiscard]] point symmetry_copy(const point &pt, sym_op symop) const
 	{
 		return m_spacegroup(pt, m_cell, symop);
 	}
 
 	/// \brief Return the symmetry copy of point @a pt using the inverse of symmetry operation @a symop
-	point inverse_symmetry_copy(const point &pt, sym_op symop) const
+	[[nodiscard]] point inverse_symmetry_copy(const point &pt, sym_op symop) const
 	{
 		return m_spacegroup.inverse(pt, m_cell, symop);
 	}
 
 	/// \brief Return a tuple consisting of distance, new location and symmetry operation
 	/// for the point @a b with respect to point @a a.
-	std::tuple<float, point, sym_op> closest_symmetry_copy(point a, point b) const;
+	[[nodiscard]] std::tuple<float, point, sym_op> closest_symmetry_copy(point a, point b) const;
 
   private:
 	cell m_cell;

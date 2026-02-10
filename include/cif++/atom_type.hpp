@@ -33,6 +33,7 @@
 
 #include "cif++/exports.hpp"
 
+#include <array>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -235,7 +236,7 @@ struct atom_type_info
 
 	/// Array containing all known radii for this element. A value of kNA is
 	/// stored for unknown values
-	float radii[kRadiusTypeCount];
+	std::array<float, kRadiusTypeCount> radii;
 };
 
 /// Array of atom_type_info struct for each of the defined elements in atom_type
@@ -256,12 +257,12 @@ class atom_type_traits
 	/// Constructor based on the element as a string in \a symbol
 	atom_type_traits(const std::string &symbol);
 
-	atom_type type() const { return m_info->type; }       ///< Returns the atom_type
-	std::string name() const { return m_info->name; }     ///< Returns the name of the element
-	std::string symbol() const { return m_info->symbol; } ///< Returns the symbol of the element
-	float weight() const { return m_info->weight; }       ///< Returns the average weight of the element
+	[[nodiscard]] atom_type type() const { return m_info->type; }       ///< Returns the atom_type
+	[[nodiscard]] std::string name() const { return m_info->name; }     ///< Returns the name of the element
+	[[nodiscard]] std::string symbol() const { return m_info->symbol; } ///< Returns the symbol of the element
+	[[nodiscard]] float weight() const { return m_info->weight; }       ///< Returns the average weight of the element
 
-	bool is_metal() const { return m_info->metal; } ///< Returns true if the element is a metal
+	[[nodiscard]] bool is_metal() const { return m_info->metal; } ///< Returns true if the element is a metal
 
 	/// Return true if the symbol in \a symbol actually exists in the list of known elements in atom_type
 	static bool is_element(const std::string &symbol);
@@ -272,7 +273,7 @@ class atom_type_traits
 	/// @brief Return the radius for the element, use \a type to select which radius to return
 	/// @param type The selector for which radius to return
 	/// @return The requested radius or kNA if not known (or applicable)
-	float radius(radius_type type = radius_type::single_bond) const
+	[[nodiscard]] float radius(radius_type type = radius_type::single_bond) const
 	{
 		if (type >= radius_type::type_count)
 			throw std::invalid_argument("invalid radius requested");
@@ -283,20 +284,20 @@ class atom_type_traits
 	///
 	/// \param charge  The charge of the ion
 	/// \return        The radius of the ion
-	float crystal_ionic_radius(int charge) const;
+	[[nodiscard]] float crystal_ionic_radius(int charge) const;
 
 	/// \brief Return the radius for a charged version of this atom in a non-solid environment
 	///
 	/// \param charge  The charge of the ion
 	/// \return        The radius of the ion
-	float effective_ionic_radius(int charge) const;
+	[[nodiscard]] float effective_ionic_radius(int charge) const;
 
 	/// \brief Return the radius for a charged version of this atom, returns the effective radius by default
 	///
 	/// \param charge  The charge of the ion
 	/// \param type    The requested ion radius type
 	/// \return        The radius of the ion
-	float ionic_radius(int charge, ionic_radius_type type = ionic_radius_type::effective) const
+	[[nodiscard]] float ionic_radius(int charge, ionic_radius_type type = ionic_radius_type::effective) const
 	{
 		return type == ionic_radius_type::effective ? effective_ionic_radius(charge) : crystal_ionic_radius(charge);
 	}
@@ -321,16 +322,16 @@ class atom_type_traits
 	///
 	/// @param charge The charge for which the structure values should be returned, use kWSKFVal to return the *Cval* and *Siva* values
 	/// @return The scattering factors as a SFData struct
-	const SFData &wksf(int charge = 0) const;
+	[[nodiscard]] const SFData &wksf(int charge = 0) const;
 
 	/// @brief Return the electron scattering factor values for the element
 	///
 	/// @return The scattering factors as a SFData struct
-	const SFData &elsf() const;
+	[[nodiscard]] const SFData &elsf() const;
 
 	/// Clipper doesn't like atoms with charges that do not have a scattering factor. And
 	/// rightly so, but we need to know in advance if this is the case
-	bool has_sf(int charge) const;
+	[[nodiscard]] bool has_sf(int charge) const;
 
   private:
 	const struct atom_type_info *m_info;

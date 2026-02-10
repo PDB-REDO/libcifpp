@@ -26,10 +26,13 @@
 
 #include "pdb2cif_remark_3.hpp"
 
-#include <cif++.hpp>
+#include "cif++/utilities.hpp"
 
-#include <map>
-#include <set>
+#include <algorithm>
+#include <cif++.hpp>
+#include <utility>
+
+// NOLINTBEGIN(bugprone-empty-catch)
 
 namespace cif::pdb
 {
@@ -153,7 +156,7 @@ const TemplateLine kBusterTNT_Template[] = {
 class BUSTER_TNT_Remark3Parser : public Remark3Parser
 {
   public:
-	BUSTER_TNT_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	BUSTER_TNT_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db,
 			  kBusterTNT_Template, sizeof(kBusterTNT_Template) / sizeof(TemplateLine),
 			  std::regex(R"((BUSTER(?:-TNT)?)(?: (\d+(?:\..+)?))?)"))
@@ -237,18 +240,28 @@ const TemplateLine kCNS_Template[] = {
 	/* 72 */ { R"(METHOD USED\s*:\s*(.+))", 1, "refine", { "solvent_model_details" } },
 	/* 73 */ { R"(KSOL\s*:\s*(.+))", 1, "refine", { "solvent_model_param_ksol" } },
 	/* 74 */ { R"(BSOL\s*:\s*(.+))", 1, "refine", { "solvent_model_param_bsol" } },
-	/* 75 */ { R"(NCS MODEL\s*:\s*(.+))", 1, /* "refine_ls_restr_ncs", { "ncs_model_details" } */ },
+	/* 75 */ { R"(NCS MODEL\s*:\s*(.+))",
+		1,
+		/* "refine_ls_restr_ncs", { "ncs_model_details" } */ },
 	/* 76 */ { R"(NCS RESTRAINTS\. RMS SIGMA/WEIGHT)", 1 },
-	/* 77 */ { R"(GROUP (\d+) POSITIONAL \(A\)\s*:\s*(.+))", 1, /* "refine_ls_restr_ncs", { "dom_id", "rms_dev_position", "weight_position" } */ },
-	/* 78 */ { R"(GROUP (\d+) B-FACTOR \(A\*\*2\)\s*:\s*(.+))", 1, /* "refine_ls_restr_ncs", { "dom_id", "rms_dev_B_iso", "weight_B_iso" } */ },
-	/* 79 */ { R"(PARAMETER FILE (\d+) :\s+(.+))", 1, /* "pdbx_xplor_file", { "serial_no", "param_file" } */ },
-	/* 80 */ { R"(TOPOLOGY FILE (\d+) :\s+(.+))", 1, /* "pdbx_xplor_file", { "serial_no", "topol_file" } */ },
+	/* 77 */ { R"(GROUP (\d+) POSITIONAL \(A\)\s*:\s*(.+))",
+		1,
+		/* "refine_ls_restr_ncs", { "dom_id", "rms_dev_position", "weight_position" } */ },
+	/* 78 */ { R"(GROUP (\d+) B-FACTOR \(A\*\*2\)\s*:\s*(.+))",
+		1,
+		/* "refine_ls_restr_ncs", { "dom_id", "rms_dev_B_iso", "weight_B_iso" } */ },
+	/* 79 */ { R"(PARAMETER FILE (\d+) :\s+(.+))",
+		1,
+		/* "pdbx_xplor_file", { "serial_no", "param_file" } */ },
+	/* 80 */ { R"(TOPOLOGY FILE (\d+) :\s+(.+))",
+		1,
+		/* "pdbx_xplor_file", { "serial_no", "topol_file" } */ },
 };
 
 class CNS_Remark3Parser : public Remark3Parser
 {
   public:
-	CNS_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	CNS_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kCNS_Template,
 			  sizeof(kCNS_Template) / sizeof(TemplateLine), std::regex(R"((CN[SX])(?: (\d+(?:\.\d+)?))?)"))
 	{
@@ -332,13 +345,13 @@ const TemplateLine kPHENIX_Template[] = {
 class PHENIX_Remark3Parser : public Remark3Parser
 {
   public:
-	PHENIX_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	PHENIX_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kPHENIX_Template, sizeof(kPHENIX_Template) / sizeof(TemplateLine),
 			  std::regex(R"((PHENIX)(?: \(PHENIX\.REFINE:) (\d+(?:\.[^)]+)?)\)?)"))
 	{
 	}
 
-	virtual void fixup();
+	void fixup() override;
 };
 
 void PHENIX_Remark3Parser::fixup()
@@ -347,7 +360,7 @@ void PHENIX_Remark3Parser::fixup()
 	{
 		try
 		{
-			float val = r["percent_reflns_obs"].as<float>();
+			auto val = r["percent_reflns_obs"].as<float>();
 			int perc = static_cast<int>(val * 100);
 			r["percent_reflns_obs"] = perc;
 		}
@@ -420,13 +433,13 @@ const TemplateLine kNUCLSQ_Template[] = {
 class NUCLSQ_Remark3Parser : public Remark3Parser
 {
   public:
-	NUCLSQ_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	NUCLSQ_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kNUCLSQ_Template, sizeof(kNUCLSQ_Template) / sizeof(TemplateLine),
 			  std::regex(R"((NUCLSQ)(?: (\d+(?:\.\d+)?))?)"))
 	{
 	}
 
-	virtual void fixup()
+	void fixup() override
 	{
 		for (auto r : mDb["refine_hist"])
 		{
@@ -513,13 +526,13 @@ const TemplateLine kPROLSQ_Template[] = {
 class PROLSQ_Remark3Parser : public Remark3Parser
 {
   public:
-	PROLSQ_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	PROLSQ_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kPROLSQ_Template, sizeof(kPROLSQ_Template) / sizeof(TemplateLine),
 			  std::regex(R"((PROLSQ)(?: (\d+(?:\.\d+)?))?)"))
 	{
 	}
 
-	virtual void fixup()
+	void fixup() override
 	{
 		for (auto r : mDb["refine_hist"])
 		{
@@ -556,7 +569,9 @@ const TemplateLine kREFMAC_Template[] = {
 	/* 17 */ { R"(NUCLEIC ACID ATOMS\s*:\s*(.+))", 1, "refine_hist", { "pdbx_number_atoms_nucleic_acid" } },
 	/* 18 */ { R"(HETEROGEN ATOMS\s*:\s*(.+))", 1, "refine_hist", { "pdbx_number_atoms_ligand" } },
 	/* 19 */ { R"(SOLVENT ATOMS\s*:\s*(.+))", 1, "refine_hist", { "number_atoms_solvent" } },
-	/* 20 */ { R"(ALL ATOMS\s*:\s*(.+))", 1, /* "refine_hist", "pdbx_number_atoms_protein" */ },
+	/* 20 */ { R"(ALL ATOMS\s*:\s*(.+))",
+		1,
+		/* "refine_hist", "pdbx_number_atoms_protein" */ },
 	/* 21 */ { R"(B VALUES\..*)", 1 },
 	/* 22 */ { R"(B VALUE TYPE\s*:\s*(.+))", 1, "refine", { "pdbx_TLS_residual_ADP_flag" } },
 	/* 23 */ { R"(FROM WILSON PLOT \(A\*\*2\)\s*:\s*(.+))", 1, "reflns", { "B_iso_Wilson_estimate" } },
@@ -601,14 +616,14 @@ const TemplateLine kREFMAC_Template[] = {
 class REFMAC_Remark3Parser : public Remark3Parser
 {
   public:
-	REFMAC_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	REFMAC_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kREFMAC_Template, sizeof(kREFMAC_Template) / sizeof(TemplateLine),
 			  std::regex(".+"))
 	{
 	}
 
-	virtual std::string program() { return "REFMAC"; }
-	virtual std::string version() { return ""; }
+	std::string program() override { return "REFMAC"; }
+	std::string version() override { return ""; }
 };
 
 const TemplateLine kREFMAC5_Template[] = {
@@ -641,7 +656,9 @@ const TemplateLine kREFMAC5_Template[] = {
 	/* 26 */ { R"(NUCLEIC ACID ATOMS\s*:\s*(.+))", 1, "refine_hist", { "pdbx_number_atoms_nucleic_acid" } },
 	/* 27 */ { R"(HETEROGEN ATOMS\s*:\s*(.+))", 1, "refine_hist", { "pdbx_number_atoms_ligand" } },
 	/* 28 */ { R"(SOLVENT ATOMS\s*:\s*(.+))", 1, "refine_hist", { "number_atoms_solvent" } },
-	/* 29 */ { R"(ALL ATOMS\s*:\s*(.+))", 1, /* "refine_hist", { "pdbx_number_atoms_protein" } */ },
+	/* 29 */ { R"(ALL ATOMS\s*:\s*(.+))",
+		1,
+		/* "refine_hist", { "pdbx_number_atoms_protein" } */ },
 	/* 30 */ { R"(B VALUES\..*)", 1 },
 	/* 31 */ { R"(B VALUE TYPE\s*:\s*(.+))", 1, "refine", { "pdbx_TLS_residual_ADP_flag" } },
 	/* 32 */ { R"(FROM WILSON PLOT \(A\*\*2\)\s*:\s*(.+))", 1, "reflns", { "B_iso_Wilson_estimate" } },
@@ -705,8 +722,12 @@ const TemplateLine kREFMAC5_Template[] = {
 	//	Simply ignore NCS, you can ask Robbie why
 	/* 90 */ { R"(NCS RESTRAINTS STATISTICS)", 1 },
 	/* 91 */ { R"(NUMBER OF DIFFERENT NCS GROUPS\s*:\s*(.+))", 1 },
-	/* 92 */ { R"(NCS GROUP NUMBER\s*:\s*(\d+))", 1, /*"struct_ncs_dom", { "pdbx_ens_id" }*/ },
-	/* 93 */ { R"(CHAIN NAMES\s*:\s*(.+))", 1, /*"struct_ncs_dom", { "details" }*/ },
+	/* 92 */ { R"(NCS GROUP NUMBER\s*:\s*(\d+))",
+		1,
+		/*"struct_ncs_dom", { "pdbx_ens_id" }*/ },
+	/* 93 */ { R"(CHAIN NAMES\s*:\s*(.+))",
+		1,
+		/*"struct_ncs_dom", { "details" }*/ },
 	/* 94 */ { R"(NUMBER OF COMPONENTS NCS GROUP\s*:\s*(\d+))", 1 },
 	/* 95 */ { R"(COMPONENT C SSSEQI TO C SSSEQI CODE)", 1 },
 	//// This sucks.... The following line is fixed format
@@ -719,7 +740,9 @@ const TemplateLine kREFMAC5_Template[] = {
 	/* 102 */ { R"(TIGHT THERMAL\s+\d+\s+(.)\s+\(A\*\*2\):\s+(\d+)\s*;\s*(\d+(?:\.\d*)?)\s*;\s*(\d+(?:\.\d*)?))", 0 },  // , "refine_ls_restr_ncs", {"pdbx_auth_asym_id", "pdbx_number", "rms_dev_position", "weight_position"}, { "pdbx_type", "tight thermal", }, 1 },
 	/* 103 */ { R"(MEDIUM THERMAL\s+\d+\s+(.)\s+\(A\*\*2\):\s+(\d+)\s*;\s*(\d+(?:\.\d*)?)\s*;\s*(\d+(?:\.\d*)?))", 0 }, // , "refine_ls_restr_ncs", {"pdbx_auth_asym_id", "pdbx_number", "rms_dev_position", "weight_position"}, { "pdbx_type", "medium thermal", }, 1 },
 	/* 104 */ { R"(LOOSE THERMAL\s+\d+\s+(.)\s+\(A\*\*2\):\s+(\d+)\s*;\s*(\d+(?:\.\d*)?)\s*;\s*(\d+(?:\.\d*)?))", 0 },  // , "refine_ls_restr_ncs", {"pdbx_auth_asym_id", "pdbx_number", "rms_dev_position", "weight_position"}, { "pdbx_type", "loose thermal", }, 10 },
-	/* 105 */ { R"(NCS GROUP NUMBER\s*:\s*(\d+))", 93 - 105, /*"struct_ncs_dom", { "pdbx_ens_id" }*/ },
+	/* 105 */ { R"(NCS GROUP NUMBER\s*:\s*(\d+))",
+		93 - 105,
+		/*"struct_ncs_dom", { "pdbx_ens_id" }*/ },
 	/* 106 */ { R"(TWIN DETAILS)", 1 },
 	/* 107 */ { R"(NUMBER OF TWIN DOMAINS\s*:\s*(\d*))", 1 },
 	/* 108 */ { R"(TWIN DOMAIN\s*:\s*(.+))", 1, "pdbx_reflns_twin", { "domain_id" }, nullptr, true },
@@ -755,7 +778,7 @@ const TemplateLine kREFMAC5_Template[] = {
 class REFMAC5_Remark3Parser : public Remark3Parser
 {
   public:
-	REFMAC5_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	REFMAC5_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kREFMAC5_Template, sizeof(kREFMAC5_Template) / sizeof(TemplateLine),
 			  std::regex(R"((REFMAC)(?: (\d+(?:\..+)?))?)"))
 	{
@@ -815,7 +838,7 @@ const TemplateLine kSHELXL_Template[] = {
 class SHELXL_Remark3Parser : public Remark3Parser
 {
   public:
-	SHELXL_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	SHELXL_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kSHELXL_Template, sizeof(kSHELXL_Template) / sizeof(TemplateLine),
 			  std::regex(R"((SHELXL)(?:-(\d+(?:\..+)?)))"))
 	{
@@ -872,7 +895,7 @@ const TemplateLine kTNT_Template[] = {
 class TNT_Remark3Parser : public Remark3Parser
 {
   public:
-	TNT_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	TNT_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kTNT_Template, sizeof(kTNT_Template) / sizeof(TemplateLine),
 			  std::regex(R"((TNT)(?: V. (\d+.+)?)?)"))
 	{
@@ -941,18 +964,28 @@ const TemplateLine kXPLOR_Template[] = {
 	/* 58 */ { R"(MAIN-CHAIN ANGLE \(A\*\*2\) :\s+(.+?);\s+(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "x_mcangle_it", false },
 	/* 59 */ { R"(SIDE-CHAIN BOND \(A\*\*2\) :\s+(.+?);\s+(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "x_scbond_it", false },
 	/* 60 */ { R"(SIDE-CHAIN ANGLE \(A\*\*2\) :\s+(.+?);\s+(.+))", 1, "refine_ls_restr", { "dev_ideal", "dev_ideal_target" }, "x_scangle_it", false },
-	/* 61 */ { R"(NCS MODEL :\s+(.+))", 1, /* "refine_ls_restr_ncs", { "ncs_model_details" } */ },
+	/* 61 */ { R"(NCS MODEL :\s+(.+))",
+		1,
+		/* "refine_ls_restr_ncs", { "ncs_model_details" } */ },
 	/* 62 */ { R"(NCS RESTRAINTS\. RMS SIGMA/WEIGHT)", 1 },
-	/* 63 */ { R"(GROUP (\d+) POSITIONAL \(A\) :\s+(.+?);\s+(.+))", 1, /* "refine_ls_restr_ncs", { ":dom_id", "rms_dev_position", "weight_position" } */ },
-	/* 64 */ { R"(GROUP (\d+) B-FACTOR \(A\*\*2\) :\s+(.+?);\s+(.+))", 63 - 64, /* "refine_ls_restr_ncs", { ":dom_id", "rms_dev_B_iso", "weight_B_iso" } */ },
-	/* 65 */ { R"(PARAMETER FILE (\d+) :\s+(.+))", 0, /* "pdbx_xplor_file", { "serial_no", "param_file" } */ },
-	/* 66 */ { R"(TOPOLOGY FILE (\d+) :\s+(.+))", 0, /* "pdbx_xplor_file", { "serial_no", "topol_file" } */ },
+	/* 63 */ { R"(GROUP (\d+) POSITIONAL \(A\) :\s+(.+?);\s+(.+))",
+		1,
+		/* "refine_ls_restr_ncs", { ":dom_id", "rms_dev_position", "weight_position" } */ },
+	/* 64 */ { R"(GROUP (\d+) B-FACTOR \(A\*\*2\) :\s+(.+?);\s+(.+))",
+		63 - 64,
+		/* "refine_ls_restr_ncs", { ":dom_id", "rms_dev_B_iso", "weight_B_iso" } */ },
+	/* 65 */ { R"(PARAMETER FILE (\d+) :\s+(.+))",
+		0,
+		/* "pdbx_xplor_file", { "serial_no", "param_file" } */ },
+	/* 66 */ { R"(TOPOLOGY FILE (\d+) :\s+(.+))",
+		0,
+		/* "pdbx_xplor_file", { "serial_no", "topol_file" } */ },
 };
 
 class XPLOR_Remark3Parser : public Remark3Parser
 {
   public:
-	XPLOR_Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db)
+	XPLOR_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
 		: Remark3Parser(name, expMethod, r, db, kXPLOR_Template, sizeof(kXPLOR_Template) / sizeof(TemplateLine),
 			  std::regex(R"((X-PLOR)(?: (\d+(?:\.\d+)?))?)"))
 	{
@@ -961,15 +994,15 @@ class XPLOR_Remark3Parser : public Remark3Parser
 
 // --------------------------------------------------------------------
 
-Remark3Parser::Remark3Parser(const std::string &name, const std::string &expMethod, PDBRecord *r, cif::datablock &db,
+Remark3Parser::Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db,
 	const TemplateLine templatelines[], uint32_t templateLineCount, std::regex programversion)
-	: mName(name)
-	, mExpMethod(expMethod)
+	: mName(std::move(name))
+	, mExpMethod(std::move(expMethod))
 	, mRec(r)
 	, mDb(db.name())
 	, mTemplate(templatelines)
 	, mTemplateCount(templateLineCount)
-	, mProgramVersion(programversion)
+	, mProgramVersion(std::move(programversion))
 {
 	mDb.set_validator(db.get_validator());
 }
@@ -1048,7 +1081,7 @@ std::string Remark3Parser::nextLine()
 	return mLine;
 }
 
-bool Remark3Parser::match(const char *expr, int nextState)
+bool Remark3Parser::match(const char *expr, uint32_t nextState)
 {
 	std::regex rx(expr);
 
@@ -1085,7 +1118,7 @@ float Remark3Parser::parse()
 		if (mState == 0 and match(R"(AUTHORS\s*:.+)", 0))
 			continue;
 
-		auto state = mState;
+		uint32_t state;
 		for (state = mState; state < mTemplateCount; ++state)
 		{
 			const TemplateLine &tmpl = mTemplate[state];
@@ -1136,7 +1169,7 @@ float Remark3Parser::parse()
 			mDb["refine"].front()["details"] = remarks;
 	}
 
-	float score = float(lineCount - dropped) / lineCount;
+	float score = static_cast<float>(lineCount - dropped) / static_cast<float>(lineCount);
 
 	return score;
 }
@@ -1185,7 +1218,7 @@ void Remark3Parser::storeCapture(const char *category, std::initializer_list<con
 			if (iequals(category, "refine"))
 				cat.emplace({ { "pdbx_refine_id", mExpMethod },
 					{ "entry_id", mDb.name() },
-					//#warning("this diffrn-id is probably not correct?")
+					// #warning("this diffrn-id is probably not correct?")
 					{ "pdbx_diffrn_id", 1 } });
 			else if (iequals(category, "refine_analyze") or iequals(category, "pdbx_refine"))
 				cat.emplace({
@@ -1220,8 +1253,7 @@ void Remark3Parser::storeCapture(const char *category, std::initializer_list<con
 					tlsID = mDb["pdbx_refine_tls"].back()["id"].as<std::string>();
 				std::string tlsGroupID = cat.get_unique_id("");
 
-				cat.emplace({
-					{ "pdbx_refine_id", mExpMethod },
+				cat.emplace({ { "pdbx_refine_id", mExpMethod },
 					{ "id", tlsGroupID },
 					{ "refine_tls_id", tlsID } });
 			}
@@ -1276,10 +1308,8 @@ void Remark3Parser::storeRefineLsRestr(const char *type, std::initializer_list<c
 
 		if (r.empty())
 		{
-			r = mDb["refine_ls_restr"].emplace({
-				{"pdbx_refine_id", mExpMethod},
-				{"type", type}
-			});
+			r = mDb["refine_ls_restr"].emplace({ { "pdbx_refine_id", mExpMethod },
+				{ "type", type } });
 		}
 
 		r[item] = value;
@@ -1358,8 +1388,8 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 
 	struct programScore
 	{
-		programScore(const std::string &program, Remark3Parser *parser, float score)
-			: program(program)
+		programScore(std::string program, Remark3Parser *parser, float score)
+			: program(std::move(program))
 			, parser(parser)
 			, score(score)
 		{
@@ -1400,8 +1430,6 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 		if (score > 0)
 		{
 			std::string program = parser->program();
-			std::string version = parser->version();
-
 			scores.emplace_back(program, parser.release(), score);
 		}
 	};
@@ -1434,7 +1462,7 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 			std::cerr << "Skipping unknown program (" << program << ") in REMARK 3\n";
 	}
 
-	sort(scores.begin(), scores.end());
+	std::sort(scores.begin(), scores.end()); // NOLINT(modernize-use-ranges)
 
 	bool guessProgram = scores.empty() or scores.front().score < 0.9f;
 	if (guessProgram)
@@ -1460,7 +1488,7 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 	{
 		result = true;
 
-		sort(scores.begin(), scores.end());
+		sort(scores.begin(), scores.end()); // NOLINT(modernize-use-ranges)
 
 		auto &best = scores.front();
 
@@ -1478,7 +1506,7 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 
 		best.parser->fixup();
 
-		auto &validator = cif::validator_factory::instance().get("mmcif_pdbx.dic");
+		auto &validator = cif::validator_factory::instance()["mmcif_pdbx.dic"];
 
 		for (auto &cat1 : best.parser->mDb)
 		{
@@ -1494,14 +1522,14 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 					cat2.emplace(cat1.front());
 				else
 				{
-						
+
 					auto r1 = cat1.front();
 					auto r2 = cat2.front();
 
 					auto cv = cat1.get_cat_validator();
 					if (cv == nullptr)
 						cv = validator.get_validator_for_category(cat1.name());
-					
+
 					if (cv == nullptr)
 						continue;
 
@@ -1520,4 +1548,6 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 	return result;
 }
 
-} // namespace pdbx
+} // namespace cif::pdb
+
+// NOLINTEND(bugprone-empty-catch)
