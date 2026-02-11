@@ -168,7 +168,7 @@ TEST_CASE("cc_2")
 		char buffer[64] = {};
 		const auto &[ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), val, std::chars_format::fixed, prec);
 
-		CHECK_FALSE((bool)ec);
+		CHECK(ec == std::errc{});
 
 		// This line generates a linker error on Windows:
 		// CHECK(buffer == test);
@@ -196,7 +196,7 @@ TEST_CASE("item_0")
 	CHECK(i5.value().empty());
 
 	i2.value() = false;
-	CHECK(i2.value().type() == cif::item_value_type::BOOLEAN);
+	CHECK(i2.value().type() == cif::item_value_type::INT);
 	CHECK(i2.value().get<bool>() == false);
 
 	cif::item i6 = std::move(i1);

@@ -92,7 +92,6 @@ class row;
 
 enum class item_value_type
 {
-	BOOLEAN,
 	INT,
 	FLOAT,
 	TEXT,
@@ -102,10 +101,7 @@ enum class item_value_type
 };
 
 template <typename T>
-concept BooleanType = std::is_same_v<std::remove_cvref_t<T>, bool>;
-
-template <typename T>
-concept IntegralType = (std::is_integral_v<std::remove_cvref_t<T>> and not std::is_same_v<std::remove_cvref_t<T>, bool>);
+concept IntegralType = (std::is_integral_v<std::remove_cvref_t<T>>);
 
 template <typename T>
 concept FloatType = std::is_floating_point_v<std::remove_cvref_t<T>>;
@@ -140,7 +136,6 @@ class item_value
 		m_data.m_type = rhs.m_data.m_type;
 		switch (m_data.m_type)
 		{
-			case item_value_type::BOOLEAN: m_data.m_value = rhs.m_data.m_value.m_boolean; break;
 			case item_value_type::INT: m_data.m_value = rhs.m_data.m_value.m_integer; break;
 			case item_value_type::FLOAT: m_data.m_value = rhs.m_data.m_value.m_float; break;
 			case item_value_type::TEXT:
@@ -154,13 +149,6 @@ class item_value
 	item_value(std::nullptr_t)
 	{
 		m_data.m_type = item_value_type::MISSING;
-	}
-
-	template <BooleanType T>
-	item_value(T v)
-	{
-		m_data.m_type = item_value_type::BOOLEAN;
-		m_data.m_value = v;
 	}
 
 	item_value(std::string_view s)
@@ -236,8 +224,6 @@ class item_value
 	[[nodiscard]] constexpr bool is_number_float() const noexcept { return m_data.m_type == item_value_type::FLOAT; }
 	[[nodiscard]] constexpr bool is_number() const noexcept { return is_number_int() or is_number_float(); }
 
-	[[nodiscard]] constexpr bool is_boolean() const noexcept { return m_data.m_type == item_value_type::BOOLEAN; }
-
 	[[nodiscard]] constexpr item_value_type type() const { return m_data.m_type; }
 
 	explicit operator bool() const noexcept
@@ -245,7 +231,6 @@ class item_value
 		bool result;
 		switch (m_data.m_type)
 		{
-			case item_value_type::BOOLEAN: result = m_data.m_value.m_boolean; break;
 			case item_value_type::INT: result = m_data.m_value.m_integer != 0; break;
 			case item_value_type::FLOAT: result = m_data.m_value.m_float != 0; break;
 			case item_value_type::TEXT: result = m_data.m_len != 0; break;
@@ -285,9 +270,6 @@ class item_value
 			case item_value_type::TEXT:
 				return std::string{ m_data.sv() };
 
-			case cif::item_value_type::BOOLEAN:
-				return m_data.m_value.m_boolean ? "y" : "n";
-
 			default:
 			{
 				char b[32];
@@ -310,8 +292,6 @@ class item_value
 	{
 		switch (m_data.m_type)
 		{
-			case cif::item_value_type::BOOLEAN:
-				return m_data.m_value.m_boolean;
 			case item_value_type::INT:
 				return m_data.m_value.m_integer;
 			case item_value_type::FLOAT:
@@ -338,8 +318,6 @@ class item_value
 	{
 		switch (m_data.m_type)
 		{
-			case cif::item_value_type::BOOLEAN:
-				return m_data.m_value.m_boolean;
 			case item_value_type::INT:
 				return m_data.m_value.m_integer;
 			case item_value_type::FLOAT:
@@ -355,24 +333,6 @@ class item_value
 					throw std::invalid_argument("String value does not contain only a floating point number");
 				return v;
 			}
-			default:
-				return not empty();
-		}
-	}
-
-	template <BooleanType T>
-	[[nodiscard]] std::remove_cvref_t<T> get() const
-	{
-		switch (m_data.m_type)
-		{
-			case cif::item_value_type::BOOLEAN:
-				return m_data.m_value.m_boolean;
-			case item_value_type::INT:
-				return m_data.m_value.m_integer != 0;
-			case item_value_type::FLOAT:
-				return m_data.m_value.m_float != 0.;
-			case item_value_type::TEXT:
-				return iequals(m_data.sv(), "y") or iequals(m_data.sv(), "yes") or iequals(m_data.sv(), "true");
 			default:
 				return not empty();
 		}
@@ -417,7 +377,6 @@ class item_value
 	// 	{
 	// 		switch (m_data.m_type)
 	// 		{
-	// 			case item_value_type::BOOLEAN: return m_data.m_value.m_boolean <=> rhs.m_data.m_value.m_boolean;
 	// 			case item_value_type::INT: return m_data.m_value.m_integer <=> rhs.m_data.m_value.m_integer;
 	// 			case item_value_type::FLOAT: return m_data.m_value.m_float <=> rhs.m_data.m_value.m_float;
 	// 			case item_value_type::TEXT: return m_data.sv() <=> rhs.m_data.sv();
@@ -435,7 +394,6 @@ class item_value
 		{
 			switch (m_data.m_type)
 			{
-				case item_value_type::BOOLEAN: return m_data.m_value.m_boolean == rhs.m_data.m_value.m_boolean;
 				case item_value_type::INT: return m_data.m_value.m_integer == rhs.m_data.m_value.m_integer;
 				case item_value_type::FLOAT: return m_data.m_value.m_float == rhs.m_data.m_value.m_float;
 				case item_value_type::TEXT: return m_data.sv() == rhs.m_data.sv();
@@ -454,18 +412,12 @@ class item_value
   private:
 	union value
 	{
-		bool m_boolean;
 		int64_t m_integer{};
 		double m_float;
 		char m_local_str[8];
 		char *m_str;
 
 		value() = default;
-
-		value(bool v)
-			: m_boolean(v)
-		{
-		}
 
 		value(int64_t v)
 			: m_integer(v)
@@ -652,8 +604,6 @@ struct item_handle
 	[[nodiscard]] constexpr bool is_number_float() const noexcept { return value().type() == item_value_type::FLOAT; }
 	[[nodiscard]] constexpr bool is_number() const noexcept { return is_number_int() or is_number_float(); }
 
-	[[nodiscard]] constexpr bool is_boolean() const noexcept { return value().type() == item_value_type::BOOLEAN; }
-
 	[[nodiscard]] auto type() const { return value().type(); }
 
 	template <typename T>
@@ -786,8 +736,6 @@ struct const_item_handle
 	[[nodiscard]] constexpr bool is_number_int() const noexcept { return value().type() == item_value_type::INT; }
 	[[nodiscard]] constexpr bool is_number_float() const noexcept { return value().type() == item_value_type::FLOAT; }
 	[[nodiscard]] constexpr bool is_number() const noexcept { return is_number_int() or is_number_float(); }
-
-	[[nodiscard]] constexpr bool is_boolean() const noexcept { return value().type() == item_value_type::BOOLEAN; }
 
 	[[nodiscard]] auto type() const { return value().type(); }
 

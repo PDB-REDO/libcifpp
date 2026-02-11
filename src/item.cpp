@@ -75,9 +75,6 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 	{
 		switch (m_data.m_type)
 		{
-			case cif::item_value_type::BOOLEAN:
-				d = static_cast<int>(m_data.m_value.m_boolean) - static_cast<int>(b.m_data.m_value.m_boolean);
-				break;
 			case cif::item_value_type::INT:
 				d = m_data.m_value.m_integer - b.m_data.m_value.m_integer;
 				break;
@@ -126,9 +123,6 @@ std::ostream &operator<<(std::ostream &os, const item_value &v)
 {
 	switch (v.type())
 	{
-		case cif::item_value_type::BOOLEAN:
-			os << std::boolalpha << v.m_data.m_value.m_boolean;
-			break;
 		case cif::item_value_type::INT:
 			os << v.m_data.m_value.m_integer;
 			break;

@@ -281,8 +281,18 @@ bool item_validator::validate_value(const item_value &value, std::error_code &ec
 			{
 				if (value.is_number())
 					ec = make_error_code(validation_error::value_is_not_a_char_string);
-				else if (not m_type->m_rx->match(value.str()))
-					ec = make_error_code(validation_error::value_does_not_match_rx);
+				else
+				{
+					try {
+						auto s = value.str();
+						if (not m_type->m_rx->match(s))
+							ec = make_error_code(validation_error::value_does_not_match_rx);
+					}
+					catch (...)
+					{
+						ec = make_error_code(validation_error::value_does_not_match_rx);
+					}
+				}
 			}
 		}
 
