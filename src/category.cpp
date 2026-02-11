@@ -91,8 +91,8 @@ class row_comparator
 		assert(a);
 		assert(b);
 
-		row_handle rha(cat, *a);
-		row_handle rhb(cat, *b);
+		const_row_handle rha(cat, *a);
+		const_row_handle rhb(cat, *b);
 
 		int d = 0;
 		for (const auto &[k, f] : m_comparator)
@@ -1013,7 +1013,7 @@ const_row_handle category::operator[](const key_type &key) const
 
 // --------------------------------------------------------------------
 
-condition category::get_parents_condition(row_handle rh, const category &parentCat) const
+condition category::get_parents_condition(const_row_handle rh, const category &parentCat) const
 {
 	if (m_validator == nullptr or m_cat_validator == nullptr)
 		throw std::runtime_error("No validator known for category " + m_name);
@@ -1050,7 +1050,7 @@ condition category::get_parents_condition(row_handle rh, const category &parentC
 	return result;
 }
 
-condition category::get_children_condition(row_handle rh, const category &childCat) const
+condition category::get_children_condition(const_row_handle rh, const category &childCat) const
 {
 	if (m_validator == nullptr or m_cat_validator == nullptr)
 		throw std::runtime_error("No validator known for category " + m_name);
@@ -1097,7 +1097,7 @@ condition category::get_children_condition(row_handle rh, const category &childC
 	return result;
 }
 
-bool category::has_children(row_handle r) const
+bool category::has_children(const_row_handle r) const
 {
 	bool result = false;
 
@@ -1113,7 +1113,7 @@ bool category::has_children(row_handle r) const
 	return result;
 }
 
-bool category::has_parents(row_handle r) const
+bool category::has_parents(const_row_handle r) const
 {
 	bool result = false;
 
@@ -1129,7 +1129,7 @@ bool category::has_parents(row_handle r) const
 	return result;
 }
 
-std::vector<row_handle> category::get_children(row_handle r, const category &childCat) const
+std::vector<row_handle> category::get_children(row_handle r, category &childCat)
 {
 	if (m_validator == nullptr or m_cat_validator == nullptr)
 		throw std::runtime_error("No validator known for category " + m_name);
@@ -1145,7 +1145,7 @@ std::vector<row_handle> category::get_children(row_handle r, const category &chi
 	return result;
 }
 
-std::vector<row_handle> category::get_parents(row_handle r, const category &parentCat) const
+std::vector<row_handle> category::get_parents(row_handle r, category &parentCat)
 {
 	assert(m_validator != nullptr);
 	assert(m_cat_validator != nullptr);
@@ -1161,7 +1161,7 @@ std::vector<row_handle> category::get_parents(row_handle r, const category &pare
 	return result;
 }
 
-std::vector<row_handle> category::get_linked(row_handle r, const category &cat) const
+std::vector<row_handle> category::get_linked(row_handle r, category &cat)
 {
 	std::vector<row_handle> result = get_children(r, cat);
 	if (result.empty())

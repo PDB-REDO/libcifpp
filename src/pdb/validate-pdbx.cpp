@@ -30,7 +30,7 @@
 namespace cif::pdb
 {
 
-condition get_parents_condition(const validator &validator, row_handle rh, const category &parentCat)
+condition get_parents_condition(const validator &validator, const_row_handle rh, const category &parentCat)
 {
 	condition result;
 

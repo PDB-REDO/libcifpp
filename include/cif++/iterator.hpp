@@ -78,6 +78,8 @@ class iterator_impl_base
 	/** @cond */
 	using tuple_type = std::tuple<Ts...>;
 
+	using row_handle_type = std::conditional_t<Const, const_row_handle, row_handle>;
+
 	using iterator_category = std::forward_iterator_tag;
 	using value_type = std::conditional_t<Const, const tuple_type, tuple_type>;
 	using difference_type = std::ptrdiff_t;
@@ -149,7 +151,7 @@ class iterator_impl_base
 		return m_current;
 	}
 
-	operator row_handle()
+	operator row_handle_type()
 	{
 		return m_current;
 	}
@@ -195,7 +197,7 @@ class iterator_impl_base
 		return m_current ? tuple_type{ m_current[m_item_ix[Is]].template as<Ts>()... } : tuple_type{};
 	}
 
-	std::conditional_t<Const, const_row_handle, row_handle> m_current;
+	row_handle_type m_current;
 	tuple_type m_value;
 	std::array<uint16_t, N> m_item_ix;
 };
@@ -219,6 +221,7 @@ class iterator_impl_base<Const>
 
 	using category_type = std::conditional_t<Const, const category, category>;
 	using row_type = std::conditional_t<Const, const row, row>;
+	using row_handle_type = std::conditional_t<Const, const_row_handle, row_handle>;
 
 	using iterator_category = std::forward_iterator_tag;
 
@@ -282,7 +285,7 @@ class iterator_impl_base<Const>
 		return m_current;
 	}
 
-	operator row_handle()
+	operator row_handle_type()
 	{
 		return m_current;
 	}
@@ -325,7 +328,7 @@ class iterator_impl_base<Const>
 	/** @endcond */
 
   private:
-	value_type m_current;
+	row_handle_type m_current;
 };
 
 /**
@@ -347,6 +350,7 @@ class iterator_impl_base<Const, T>
 	friend class category;
 
 	using category_type = std::conditional_t<Const, const category, category>;
+	using row_handle_type = std::conditional_t<Const, const_row_handle, row_handle>;
 
 	using iterator_category = std::forward_iterator_tag;
 	using value_type = T;
@@ -419,7 +423,7 @@ class iterator_impl_base<Const, T>
 		return m_current;
 	}
 
-	operator row_handle()
+	operator row_handle_type()
 	{
 		return m_current;
 	}
@@ -464,7 +468,7 @@ class iterator_impl_base<Const, T>
 		return m_current ?  m_current[m_item_ix].template get<value_type>() : value_type{};
 	}
 
-	row_handle m_current;
+	row_handle_type m_current;
 	value_type m_value;
 	uint16_t m_item_ix;
 };
@@ -684,7 +688,7 @@ class conditional_iterator_proxy_base
 	explicit operator bool() const { return not empty(); }        ///< Easy way to detect if the range is empty
 	[[nodiscard]] std::size_t size() const { return std::distance(begin(), end()); } ///< Return size of the range
 
-	row_handle front() { return *begin(); } ///< Return reference to the first row
+	auto front() { return *begin(); } ///< Return reference to the first row
 	// row_handle back() { return *begin(); }
 
 	[[nodiscard]] category_type &get_category() const { return *m_cat; } ///< Category the iterators belong to

@@ -36,6 +36,28 @@
 namespace cif
 {
 
+item_value &item_handle::value()
+{
+	return m_row.operator[](m_item_ix);
+}
+
+const item_value &item_handle::value() const
+{
+	return m_row.operator[](m_item_ix);
+}
+
+item_handle &item_handle::operator=(item_value value)
+{
+	row_handle rh{ m_category, m_row };
+	rh.assign(m_item_ix, std::move(value), true);
+	return *this;
+}
+
+const item_value &const_item_handle::value() const
+{
+	return m_row.operator[](m_item_ix);
+}
+
 int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 {
 	int d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);

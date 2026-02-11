@@ -133,7 +133,7 @@ std::string cifSoftware(const datablock &db, SoftwareType sw)
 		{
 			auto &software = db["software"];
 
-			row_handle r;
+			const_row_handle r;
 
 			switch (sw)
 			{
@@ -227,7 +227,7 @@ std::size_t WriteOneContinuedLine(std::ostream &pdbFile, std::string header, int
 	return WriteContinuedLine(pdbFile, header, count, cLen, line, lStart);
 }
 
-std::size_t WriteCitation(std::ostream &pdbFile, const datablock &db, row_handle r, int reference)
+std::size_t WriteCitation(std::ostream &pdbFile, const datablock &db, const_row_handle r, int reference)
 {
 	std::size_t result = 0;
 
@@ -543,8 +543,8 @@ void WriteTitle(std::ostream &pdbFile, const datablock &db)
 
 	// REVDAT
 	auto &cat2 = db["database_PDB_rev"];
-	std::vector<row_handle> rev(cat2.begin(), cat2.end());
-	std::ranges::sort(rev, [](row_handle a, row_handle b) -> bool
+	std::vector<const_row_handle> rev(cat2.begin(), cat2.end());
+	std::ranges::sort(rev, [](const_row_handle a, const_row_handle b) -> bool
 		{ return a["num"].as<int>() > b["num"].as<int>(); });
 	for (auto r : rev)
 	{
@@ -639,7 +639,7 @@ class FBase
 	virtual void out(std::ostream &os) = 0;
 
   protected:
-	FBase(row_handle r, const char *f)
+	FBase(const_row_handle r, const char *f)
 		: mRow(r)
 		, mField(f)
 	{
@@ -657,14 +657,14 @@ class FBase
 		return mRow.empty() or mRow[mField].empty() ? "" : mRow[mField].str();
 	}
 
-	row_handle mRow;
+	const_row_handle mRow;
 	const char *mField;
 };
 
 class Fi : public FBase
 {
   public:
-	Fi(row_handle r, const char *f)
+	Fi(const_row_handle r, const char *f)
 		: FBase(r, f)
 	{
 	}
@@ -702,7 +702,7 @@ class Fi : public FBase
 class Ff : public FBase
 {
   public:
-	Ff(row_handle r, const char *f)
+	Ff(const_row_handle r, const char *f)
 		: FBase(r, f)
 	{
 	}
@@ -740,7 +740,7 @@ class Ff : public FBase
 class Fs : public FBase
 {
   public:
-	Fs(row_handle r, const char *f, int remarkNr = 3)
+	Fs(const_row_handle r, const char *f, int remarkNr = 3)
 		: FBase(r, f)
 		, mNr(remarkNr)
 	{
@@ -1601,13 +1601,13 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 			<< RM3("  BIN  RESOLUTION RANGE  COMPL.    NWORK NFREE   RWORK  RFREE") << '\n';
 
 	int bin = 1;
-	std::vector<row_handle> bins;
+	std::vector<const_row_handle> bins;
 	for (auto r : db["refine_ls_shell"])
 		bins.push_back(r);
 
 	try
 	{
-		std::ranges::sort(bins, [](row_handle a, row_handle b) -> bool
+		std::ranges::sort(bins, [](const_row_handle a, const_row_handle b) -> bool
 			{ return a["d_res_high"].as<float>() > b["d_res_high"].as<float>(); });
 	}
 	catch (...)
@@ -2314,7 +2314,7 @@ void WriteRemark200(std::ostream &pdbFile, const datablock &db)
 
 			struct
 			{
-				row_handle r;
+				const_row_handle r;
 				const char *field;
 				const char *dst;
 			} kTail[] = {
@@ -2557,8 +2557,8 @@ void WriteRemark465(std::ostream &pdbFile, const datablock &db)
 	using RM = RM<465>;
 
 	auto &c = db["pdbx_unobs_or_zero_occ_residues"];
-	std::vector<row_handle> missing(c.begin(), c.end());
-	std::ranges::stable_sort(missing, [](row_handle a, row_handle b) -> bool
+	std::vector<const_row_handle> missing(c.begin(), c.end());
+	std::ranges::stable_sort(missing, [](const_row_handle a, const_row_handle b) -> bool
 		{
 		int modelNrA, seqIDA, modelNrB, seqIDB;
 		std::string asymIDA, asymIDB;
@@ -3469,7 +3469,7 @@ std::tuple<int, int> WriteCoordinatesForModel(std::ostream &pdbFile, const datab
 		auto ai = atom_site_anisotrop.find_first(key("id") == id);
 		if (not ai.empty())
 		//
-		//		auto ai = find_if(atom_site_anisotrop.begin(), atom_site_anisotrop.end(), [id](row_handle r) -> bool { return r["id"] == id; });
+		//		auto ai = find_if(atom_site_anisotrop.begin(), atom_site_anisotrop.end(), [id](const_row_handle r) -> bool { return r["id"] == id; });
 		//		if (ai != atom_site_anisotrop.end())
 		{
 			float u11, u22, u33, u12, u13, u23;

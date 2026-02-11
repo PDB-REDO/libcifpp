@@ -230,6 +230,7 @@ class row_handle
 	friend class category;
 	friend class category_index;
 	friend class row_initializer;
+	friend class const_row_handle;
 
 	template <bool, typename...>
 	friend class iterator_impl_base;
@@ -419,6 +420,12 @@ class const_row_handle
 	const_row_handle &operator=(const const_row_handle &) = default;
 	const_row_handle &operator=(const_row_handle &&) = default;
 
+	const_row_handle(row_handle rh)
+		: m_category(rh.m_category)
+		, m_row(rh.m_row)
+	{
+	}
+
 	/** @endcond */
 
 	/// \brief constructor taking a category @a cat and a row @a r
@@ -491,7 +498,11 @@ class const_row_handle
 	}
 
 	/// \brief compare two rows
-	bool operator==(const const_row_handle &rhs) const { return m_category == rhs.m_category and m_row == rhs.m_row; }
+	// bool operator==(const const_row_handle &rhs) const { return m_category == rhs.m_category and m_row == rhs.m_row; }
+	friend bool operator==(const_row_handle a, const_row_handle b)
+	{
+		return a.m_category == b.m_category and a.m_row == b.m_row;
+	}
 
 	/// \brief compare two rows
 	bool operator!=(const const_row_handle &rhs) const { return m_category != rhs.m_category or m_row != rhs.m_row; }
@@ -557,6 +568,11 @@ class row_initializer : public std::vector<item>
 	}
 
 	/// \brief constructor taking the values of an existing row
+	row_initializer(row_handle rh)
+		: cif::row_initializer(const_row_handle{ rh })
+	{
+	}
+
 	row_initializer(const_row_handle rh);
 
 	/// \brief set the value for item name @a name to @a value

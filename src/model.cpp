@@ -960,7 +960,8 @@ cif::mm::atom sugar::add_atom(row_initializer atom_info)
 	atom_info.set_value({ "pdbx_PDB_model_num", 1 });
 
 	auto row = atom_site.emplace(std::move(atom_info));
-	auto result = m_structure->emplace_atom(db, row);
+	const_row_handle rh = *row;
+	auto result = m_structure->emplace_atom(db, rh);
 
 	residue::add_atom(result);
 
@@ -1712,7 +1713,7 @@ std::string structure::insert_compound(const std::string &compoundID, bool is_en
 
 // --------------------------------------------------------------------
 
-atom &structure::emplace_atom(atom &&atom)
+atom &structure::emplace_atom(atom atom)
 {
 	int L = 0, R = static_cast<int>(m_atom_index.size() - 1);
 	while (L <= R)

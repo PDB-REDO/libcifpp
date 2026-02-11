@@ -498,7 +498,7 @@ class category
 	conditional_iterator_proxy<Ts...> find(condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
-		return find<Ts...>(cbegin(), std::move(cond), std::forward<Ns>(names)...);
+		return find<Ts...>(begin(), std::move(cond), std::forward<Ns>(names)...);
 	}
 
 	/// @brief Return a special const iterator to loop over all rows that conform to @a cond. The resulting
@@ -526,7 +526,7 @@ class category
 	/// @return A special iterator that loops over all elements that match.
 
 	template <typename... Ts, typename... Ns>
-	conditional_iterator_proxy<Ts...> find(const_iterator pos, condition &&cond, Ns... names)
+	conditional_iterator_proxy<Ts...> find(iterator pos, condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
 		return { *this, pos, std::move(cond), std::forward<Ns>(names)... };
@@ -920,23 +920,35 @@ class category
 
 	/// Using the relations defined in the validator, return whether the row
 	/// in @a r has any children in other categories
-	[[nodiscard]] bool has_children(row_handle r) const;
+	[[nodiscard]] bool has_children(const_row_handle r) const;
 
 	/// Using the relations defined in the validator, return whether the row
 	/// in @a r has any parents in other categories
-	[[nodiscard]] bool has_parents(row_handle r) const;
+	[[nodiscard]] bool has_parents(const_row_handle r) const;
 
 	/// Using the relations defined in the validator, return the row handles
 	/// for all rows in @a childCat that are linked to row @a r
-	[[nodiscard]] std::vector<row_handle> get_children(row_handle r, const category &childCat) const;
+	[[nodiscard]] std::vector<const_row_handle> get_children(const_row_handle r, const category &childCat) const;
 
 	/// Using the relations defined in the validator, return the row handles
 	/// for all rows in @a parentCat that are linked to row @a r
-	[[nodiscard]] std::vector<row_handle> get_parents(row_handle r, const category &parentCat) const;
+	[[nodiscard]] std::vector<const_row_handle> get_parents(const_row_handle r, const category &parentCat) const;
 
 	/// Using the relations defined in the validator, return the row handles
 	/// for all rows in @a cat that are in any way linked to row @a r
-	[[nodiscard]] std::vector<row_handle> get_linked(row_handle r, const category &cat) const;
+	[[nodiscard]] std::vector<const_row_handle> get_linked(const_row_handle r, const category &cat) const;
+
+	/// Using the relations defined in the validator, return the row handles
+	/// for all rows in @a childCat that are linked to row @a r
+	[[nodiscard]] std::vector<row_handle> get_children(row_handle r, category &childCat);
+
+	/// Using the relations defined in the validator, return the row handles
+	/// for all rows in @a parentCat that are linked to row @a r
+	[[nodiscard]] std::vector<row_handle> get_parents(row_handle r, category &parentCat);
+
+	/// Using the relations defined in the validator, return the row handles
+	/// for all rows in @a cat that are in any way linked to row @a r
+	[[nodiscard]] std::vector<row_handle> get_linked(row_handle r, category &cat);
 
 	// --------------------------------------------------------------------
 
@@ -1274,8 +1286,8 @@ class category
 
 	// --------------------------------------------------------------------
 
-	[[nodiscard]] condition get_parents_condition(row_handle rh, const category &parentCat) const;
-	[[nodiscard]] condition get_children_condition(row_handle rh, const category &childCat) const;
+	[[nodiscard]] condition get_parents_condition(const_row_handle rh, const category &parentCat) const;
+	[[nodiscard]] condition get_children_condition(const_row_handle rh, const category &childCat) const;
 
 	// --------------------------------------------------------------------
 

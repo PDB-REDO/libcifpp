@@ -648,7 +648,7 @@ struct item_handle
 	 */
 	item_handle &operator=(item_value value);
 
-	[[nodiscard]] item_value_type &value();
+	[[nodiscard]] item_value &value();
 	[[nodiscard]] const item_value &value() const;
 
 	[[nodiscard]] constexpr bool is_inapplicable() const noexcept { return value().type() == item_value_type::INAPPLICABLE; }

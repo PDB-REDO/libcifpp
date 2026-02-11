@@ -87,7 +87,7 @@ class atom
 	/** @cond */
 	struct atom_impl : public std::enable_shared_from_this<atom_impl>
 	{
-		atom_impl(const datablock &db, std::string_view id)
+		atom_impl(datablock &db, std::string_view id)
 			: m_db(db)
 			, m_cat(db["atom_site"])
 			, m_id(id)
@@ -151,8 +151,8 @@ class atom
 			return result;
 		}
 
-		const datablock &m_db;
-		const category &m_cat;
+		datablock &m_db;
+		category &m_cat;
 		std::string m_id;
 		point m_location;
 		std::string m_symop = "1_555";
@@ -178,9 +178,24 @@ class atom
 	/**
 	 * @brief Copy construct a new atom object
 	 */
-	atom(const atom &rhs) // NOLINT(modernize-use-equals-default)
-		: m_impl(rhs.m_impl)
+	atom(const atom &rhs)
+		: atom(rhs.m_impl)
 	{
+	}
+
+	/**
+	 * @brief Move construct a new atom object
+	 */
+	atom(atom &&rhs)
+	{
+		std::swap(m_impl, rhs.m_impl);
+	}
+
+	/// \brief Copy assignement operator
+	atom &operator=(atom rhs)
+	{
+		std::swap(m_impl, rhs.m_impl);
+		return *this;
 	}
 
 	/**
@@ -189,7 +204,7 @@ class atom
 	 * @param db The datablock where the _atom_site category resides
 	 * @param row The row containing the data for this atom
 	 */
-	atom(const datablock &db, const_row_handle &row)
+	atom(datablock &db, const_row_handle row)
 		: atom(std::make_shared<atom_impl>(db, row["id"].as<std::string>()))
 	{
 	}
@@ -208,9 +223,6 @@ class atom
 
 	/// \brief To quickly test if the atom has data
 	explicit operator bool() const { return m_impl.operator bool(); }
-
-	/// \brief Copy assignement operator
-	atom &operator=(const atom &rhs) = default;
 
 	/// \brief Return the item named @a name in the _atom_site category for this atom
 	[[nodiscard]] std::string get_property(std::string_view name) const
@@ -1191,14 +1203,13 @@ class structure
 	void validate_atoms() const;
 
 	/// \brief emplace a newly created atom using @a args
-	template <typename... Args>
-	atom &emplace_atom(Args &...args)
+	atom &emplace_atom(datablock &db, const_row_handle rh)
 	{
-		return emplace_atom(atom{ std::forward<Args>(args)... });
+		return emplace_atom(atom{ db, rh });
 	}
 
 	/// \brief emplace the moved atom @a atom
-	atom &emplace_atom(atom &&atom);
+	atom &emplace_atom(atom atom);
 
 	/// \brief Reorder atom_site atoms based on 'natural' ordering
 	void reorder_atoms();
