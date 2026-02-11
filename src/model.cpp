@@ -64,13 +64,15 @@ void atom::atom_impl::moveTo(const point &p)
 
 std::string atom::atom_impl::get_property(std::string_view name) const
 {
-	return row()[name].as<std::string>();
+	if (auto rh = row(); rh)
+		return rh[name].as<std::string>();
+	return "";
 }
 
 int atom::atom_impl::get_property_int(std::string_view name) const
 {
 	int result = 0;
-	if (not row()[name].empty())
+	if (auto rh = row(); rh and not rh[name].empty())
 	{
 		auto s = get_property(name);
 
@@ -84,7 +86,7 @@ int atom::atom_impl::get_property_int(std::string_view name) const
 float atom::atom_impl::get_property_float(std::string_view name) const
 {
 	float result = 0;
-	if (not row()[name].empty())
+	if (auto rh = row(); rh and not rh[name].empty())
 	{
 		auto s = get_property(name);
 

@@ -25,6 +25,7 @@
  */
 
 #include "cif++/point.hpp"
+#include "cif++/validate.hpp"
 #include "test-main.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -464,7 +465,8 @@ TEST_CASE("symm_4wvp_1")
 {
 	using namespace cif::literals;
 
-	cif::file f(gTestDir / "4wvp.cif.gz");
+	cif::file f;
+	f.load(gTestDir / "4wvp.cif.gz", *cif::validator_factory::instance().get("mmcif_pdbx.dic"));
 
 	auto &db = f.front();
 	cif::mm::structure s(db);

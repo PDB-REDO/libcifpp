@@ -41,7 +41,7 @@ list(
 	APPEND
 	CIFPP_tests
 	unit-v2
-	# unit-3d
+	unit-3d
 	# model
 	# query
 	# rename-compound
