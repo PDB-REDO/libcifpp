@@ -29,6 +29,7 @@
 #include "cif++/condition.hpp"
 #include "cif++/file.hpp"
 #include "cif++/parser.hpp"
+#include "cif++/utilities.hpp"
 
 #include <algorithm>
 #include <exception>
@@ -309,7 +310,7 @@ class dictionary_parser : public parser
 
 				auto vi = std::ranges::find(ivs, item_validator{ item_name });
 				if (vi == ivs.end())
-					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, cat_name, std::move(aliases) });
+					ivs.push_back(item_validator{ item_name, iequals(mandatory, "yes"), tv, ess, defaultValue, cat_name, aliases });
 				else
 				{
 					// need to update the itemValidator?
@@ -498,7 +499,7 @@ class dictionary_parser : public parser
 		{
 			for (auto &iv : cv.m_item_validators)
 			{
-				if (iv.m_type == nullptr and cif::VERBOSE >= 0)
+				if (iv.m_type == nullptr and VERBOSE >= 0)
 					std::cerr << "Missing item_type for " << iv.m_item_name << '\n';
 			}
 		}

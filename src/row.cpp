@@ -122,7 +122,7 @@ row_initializer::row_initializer(const_row_handle rh)
 	auto r = rh.get_row();
 	auto &cat = *rh.m_category;
 
-	for (uint16_t ix = 0; ix < r->size(); ++ix)
+	for (uint16_t ix = 0; std::cmp_less(ix, r->size()); ++ix)
 	{
 		auto &i = r->operator[](ix);
 		if (not i)

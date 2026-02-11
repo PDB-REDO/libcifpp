@@ -26,9 +26,7 @@
 
 #pragma once
 
-#include "cif++/exports.hpp"
 #include "cif++/text.hpp"
-#include "cif++/utilities.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -38,11 +36,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <iomanip>
 #include <iostream>
-#include <limits>
 #include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -535,12 +530,12 @@ class item_value
 			m_value.destroy(m_type, m_len);
 		}
 
-		std::string_view sv() const noexcept
+		[[nodiscard]] std::string_view sv() const noexcept
 		{
 			return m_type == item_value_type::TEXT ? std::string_view(m_len >= sizeof(m_value.m_local_str) ? m_value.m_str : m_value.m_local_str, m_len) : std::string_view{};
 		}
 
-		const char *c_str() const noexcept
+		[[nodiscard]] const char *c_str() const noexcept
 		{
 			return m_type == item_value_type::TEXT ? (m_len >= sizeof(m_value.m_local_str) ? m_value.m_str : m_value.m_local_str) : nullptr;
 		}
@@ -570,11 +565,7 @@ class item
 	}
 
 	/** @cond */
-	item(const item &rhs)
-		: m_name(rhs.m_name)
-		, m_value(rhs.m_value)
-	{
-	}
+	item(const item &rhs) = default;
 
 	item(item &&rhs)
 	{
@@ -594,21 +585,21 @@ class item
 		std::swap(a.m_value, b.m_value);
 	}
 
-	const std::string &name() const { return m_name; }    ///< Return the name of the item
-	const item_value &value() const & { return m_value; } ///< Return the value of the item
+	[[nodiscard]] const std::string &name() const { return m_name; }    ///< Return the name of the item
+	[[nodiscard]] const item_value &value() const & { return m_value; } ///< Return the value of the item
 	item_value &value() & { return m_value; }             ///< Return the value of the item
 
 	/// \brief replace the content of the stored value with \a v
 	void value(item_value v) { m_value = std::move(v); }
 
 	/// \brief empty means either null or unknown
-	bool empty() const { return m_value.empty(); }
+	[[nodiscard]] bool empty() const { return m_value.empty(); }
 
 	/// \brief returns true if the item contains '.' or '?'
-	bool is_null() const { return m_value.is_null(); }
+	[[nodiscard]] bool is_null() const { return m_value.is_null(); }
 
 	/// \brief returns true if the item contains '?'
-	bool is_unknown() const { return m_value.is_missing(); }
+	[[nodiscard]] bool is_unknown() const { return m_value.is_missing(); }
 
 	// /// \brief the length of the value string
 	// std::size_t length() const { return m_value.length(); }
@@ -666,7 +657,7 @@ struct item_handle
 	[[nodiscard]] auto type() const { return value().type(); }
 
 	template <typename T>
-	auto get() const
+	[[nodiscard]] auto get() const
 	{
 		if (empty())
 			return T{};
@@ -675,7 +666,7 @@ struct item_handle
 	}
 
 	template <typename T>
-	auto as() const
+	[[nodiscard]] auto as() const
 	{
 		if (empty())
 			return T{};
@@ -801,7 +792,7 @@ struct const_item_handle
 	[[nodiscard]] auto type() const { return value().type(); }
 
 	template <typename T>
-	auto get() const
+	[[nodiscard]] auto get() const
 	{
 		if (empty())
 			return T{};
@@ -810,7 +801,7 @@ struct const_item_handle
 	}
 
 	template <typename T>
-	auto as() const
+	[[nodiscard]] auto as() const
 	{
 		if (empty())
 			return T{};

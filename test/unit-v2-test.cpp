@@ -536,9 +536,9 @@ _test.name
 
 		switch (id)
 		{
-			case 1: CHECK(*name == "aap"); break;
-			case 2: CHECK(*name == "noot"); break;
-			case 3: CHECK(*name == "mies"); break;
+			case 1: REQUIRE(name.has_value()); CHECK(*name == "aap"); break;
+			case 2: REQUIRE(name.has_value()); CHECK(*name == "noot"); break;
+			case 3: REQUIRE(name.has_value()); CHECK(*name == "mies"); break;
 			case 4:
 			case 5: CHECK_FALSE(name.has_value()); break;
 			default: CHECK(false);
@@ -2037,7 +2037,7 @@ _test.name
 	std::optional<int> v;
 
 	v = db["test"].find_first<std::optional<int>>(cif::key("id") == 1, "id");
-	CHECK(v.has_value());
+	REQUIRE(v.has_value());
 	CHECK(*v == 1);
 
 	v = db["test"].find_first<std::optional<int>>(cif::key("id") == 6, "id");
@@ -3462,9 +3462,9 @@ _name
 
 		switch (id)
 		{
-			case 1: CHECK(*name == "aap"); break;
-			case 2: CHECK(*name == "noot"); break;
-			case 3: CHECK(*name == "mies"); break;
+			case 1: REQUIRE(name.has_value()); CHECK(*name == "aap"); break;
+			case 2: REQUIRE(name.has_value()); CHECK(*name == "noot"); break;
+			case 3: REQUIRE(name.has_value()); CHECK(*name == "mies"); break;
 			default: CHECK(name.has_value() == false);
 		}
 	}

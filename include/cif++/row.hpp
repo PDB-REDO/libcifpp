@@ -32,7 +32,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
-#include <stdexcept>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -468,7 +467,7 @@ namespace detail
 		static constexpr std::size_t N = sizeof...(C);
 
 		get_row_result(const_row_handle r, std::array<uint16_t, N> &&items)
-			: m_row(r)
+			: m_row(std::move(r))
 			, m_items(std::move(items))
 		{
 		}

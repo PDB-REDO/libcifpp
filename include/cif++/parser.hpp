@@ -29,6 +29,7 @@
 #include "cif++/row.hpp"
 
 #include "cif++/file.hpp"
+#include "cif++/utilities.hpp"
 
 #include <map>
 
@@ -261,7 +262,7 @@ class sac_parser
 
 	void error(const std::string &msg)
 	{
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::cerr << "Error parsing mmCIF: " << msg << '\n';
 
 		throw parse_error(m_line_nr, msg);
@@ -269,7 +270,7 @@ class sac_parser
 
 	void warning(const std::string &msg)
 	{
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::cerr << "parser warning at line " << m_line_nr << ": " << msg << '\n';
 	}
 

@@ -46,7 +46,6 @@
 #include <stack>
 #include <system_error>
 #include <utility>
-#include <variant>
 #include <vector>
 
 // TODO: Find out what the rules are exactly for linked items, the current implementation
@@ -966,7 +965,7 @@ void category::strip()
 
 	for (auto item : to_be_removed)
 	{
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::clog << "Dropping item " << m_name << '.' << item << '\n';
 		remove_item(item);
 	}
@@ -1043,7 +1042,7 @@ condition category::get_parents_condition(const_row_handle rh, const category &p
 			result = std::move(result) or std::move(cond);
 		}
 	}
-	else if (cif::VERBOSE > 0)
+	else if (VERBOSE > 0)
 		std::cerr << "warning: no child to parent links were found for child " << parentCat.name() << " and parent " << name() << '\n';
 
 	return result;
@@ -1090,7 +1089,7 @@ condition category::get_children_condition(const_row_handle rh, const category &
 			result = std::move(result) or std::move(cond);
 		}
 	}
-	else if (cif::VERBOSE > 0)
+	else if (VERBOSE > 0)
 		std::cerr << "warning: no parent to child links were found for parent " << name() << " and child " << childCat.name() << '\n';
 
 	return result;
@@ -1526,7 +1525,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 				}
 
 				// cannot update this...
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Cannot update child " << childCat->m_name << "." << childItemName << " with value " << value << '\n';
 			}
 
@@ -1613,7 +1612,7 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 			if (rows.empty())
 				continue;
 
-			// if (cif::VERBOSE > 2)
+			// if (VERBOSE > 2)
 			// {
 			// 	std::cerr << "Parent: " << linked->mParentcategory << " Child: " << linked->m_child_category << '\n'
 			// 			  << cond << '\n';
@@ -1644,7 +1643,7 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 			auto rows_n = childCat->find(std::move(cond_n));
 			if (not rows_n.empty())
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Will not rename in child category since there are already rows that link to the parent\n";
 
 				continue;

@@ -34,6 +34,7 @@
 #include <map>
 #include <regex>
 #include <set>
+#include <utility>
 
 // NOLINTBEGIN(bugprone-empty-catch)
 
@@ -640,7 +641,7 @@ class FBase
 
   protected:
 	FBase(const_row_handle r, const char *f)
-		: mRow(r)
+		: mRow(std::move(r))
 		, mField(f)
 	{
 	}
@@ -665,7 +666,7 @@ class Fi : public FBase
 {
   public:
 	Fi(const_row_handle r, const char *f)
-		: FBase(r, f)
+		: FBase(std::move(r), f)
 	{
 	}
 	Fi(const category &cat, condition &&cond, const char *f)

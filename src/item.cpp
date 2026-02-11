@@ -29,8 +29,7 @@
 #include "cif++/row.hpp"
 
 #include <cassert>
-#include <cstdint>
-#include <limits>
+#include <compare>
 #include <string_view>
 
 namespace cif
@@ -99,7 +98,13 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 	}
 	else if (is_number() and b.is_number())
 	{
-		auto dp = (get<double>() <=> b.get<double>());
+		std::partial_ordering dp = std::partial_ordering::equivalent;
+
+		if (is_number_float())
+			dp = m_data.m_value.m_float <=> b.m_data.m_value.m_integer;
+		else/*  if (is_number_int()) */
+			dp = m_data.m_value.m_integer <=> b.m_data.m_value.m_float;
+
 		if (dp == std::partial_ordering::less)
 			d = -1;
 		else if (dp == std::partial_ordering::greater)

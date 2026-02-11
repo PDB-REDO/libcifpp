@@ -26,7 +26,6 @@
 
 #include "cif++/parser.hpp"
 
-#include "cif++/condition.hpp"
 #include "cif++/file.hpp"
 #include "cif++/forward_decl.hpp"
 #include "cif++/utilities.hpp"
@@ -382,7 +381,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::TextItemNL;
 				else if (ch == kEOF)
 					error("unterminated textfield");
-				else if (not is_any_print(ch) and cif::VERBOSE > 2)
+				else if (not is_any_print(ch) and VERBOSE > 2)
 					warning("invalid character in text field '" + std::string({ static_cast<char>(ch) }) + "' (" + std::to_string(ch) + ")");
 				break;
 
@@ -398,7 +397,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				}
 				else if (ch == kEOF)
 					error("unterminated textfield");
-				else if (not is_any_print(ch) and cif::VERBOSE > 2)
+				else if (not is_any_print(ch) and VERBOSE > 2)
 					warning("invalid character in text field '" + std::string({ static_cast<char>(ch) }) + "' (" + std::to_string(ch) + ")");
 				break;
 
@@ -437,7 +436,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					error("unterminated quoted string");
 				else if (ch == quoteChar)
 					state = State::QuotedStringQuote;
-				else if (not is_any_print(ch) and cif::VERBOSE > 2)
+				else if (not is_any_print(ch) and VERBOSE > 2)
 					warning("invalid character in quoted string: '" + std::string({ static_cast<char>(ch) }) + "' (" + std::to_string(ch) + ")");
 				break;
 

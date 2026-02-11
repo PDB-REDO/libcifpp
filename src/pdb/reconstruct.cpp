@@ -28,7 +28,6 @@
 #include "cif++/compound.hpp"
 // #include "cif++/cql.hpp"
 #include "cif++/item.hpp"
-#include "cif++/point.hpp"
 #include "cif++/row.hpp"
 
 #include <algorithm>
@@ -147,7 +146,7 @@ void checkEntities(datablock &db)
 				auto compound = cf.create(comp_id);
 				if (compound)
 					formula_weight += compound->formula_weight();
-				// else if (cif::VERBOSE > 0)
+				// else if (VERBOSE > 0)
 				// 	std::clog << "missing information for compound " + comp_id << '\n';
 				++n;
 			}
@@ -165,7 +164,7 @@ void checkEntities(datablock &db)
 				auto compound = cf.create(comp_id);
 				if (compound)
 					formula_weight += compound->formula_weight();
-				// else if (cif::VERBOSE > 0)
+				// else if (VERBOSE > 0)
 				// 	std::clog << "missing information for compound " + comp_id << '\n';
 				++n;
 			}
@@ -355,7 +354,7 @@ void fillLabelAsymID(category &atom_site)
 				mapAuthAsymIDAndEntityToLabelAsymID.emplace(key, label_asym_id);
 			else if (i->second != label_asym_id)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::clog << "Inconsistent assignment of label_asym_id for the tuple entity_id: " << *label_entity_id << " and auth_asym_id: " << auth_asym_id << '\n';
 
 				mapAuthAsymIDAndEntityToLabelAsymID.clear();
@@ -569,7 +568,7 @@ void checkAtomRecords(datablock &db)
 		if (not compound)
 		{
 			missingCompounds.insert(comp_id);
-			// if (cif::VERBOSE > 0)
+			// if (VERBOSE > 0)
 			// 	std::cerr << "Missing compound information for " << comp_id << "\n";
 			continue;
 		}
@@ -671,12 +670,12 @@ void checkAtomRecords(datablock &db)
 	// 		auto r = atom_site.find_first(key(item_name) != null);
 	// 		if (not r)
 	// 		{
-	// 			if (cif::VERBOSE > 0)
+	// 			if (VERBOSE > 0)
 	// 				std::clog << "Dropping unknown item " << item_name << '\n';
 
 	// 			atom_site.remove_item(item_name);
 	// 		}
-	// 		else if (cif::VERBOSE > 0)
+	// 		else if (VERBOSE > 0)
 	// 			std::clog << "Keeping unknown item " << std::quoted(item_name) << " in atom_site since it is not empty\n";
 	// 	}
 	// }
@@ -718,7 +717,7 @@ void checkAtomAnisotropRecords(datablock &db)
 			row["type_symbol"] = parent["type_symbol"].value();
 		else if (row["type_symbol"].value() != parent["type_symbol"].value())
 		{
-			if (cif::VERBOSE and std::exchange(warnReplaceTypeSymbol, false))
+			if (VERBOSE and std::exchange(warnReplaceTypeSymbol, false))
 				std::clog << "Replacing type_symbol in atom_site_anisotrop record(s)\n";
 			row["type_symbol"] = parent["type_symbol"].value();
 		}
@@ -737,7 +736,7 @@ void checkAtomAnisotropRecords(datablock &db)
 
 	if (not to_be_deleted.empty())
 	{
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::clog << "Dropped " << to_be_deleted.size() << " anisotrop records since they did not have exactly one parent\n";
 
 		for (auto row : to_be_deleted)
@@ -1232,7 +1231,7 @@ void comparePolySeqSchemes(datablock &db)
 	// If we have different Asym ID's assume the ndb is invalid.
 	if (asym_ids_ndb != asym_ids_pdbx)
 	{
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::clog << "The asym ID's of ndb_poly_seq_scheme and pdbx_poly_seq_scheme are not equal, dropping ndb_poly_seq_scheme\n";
 		ndb_poly_seq_scheme.clear();
 	}
@@ -1250,7 +1249,7 @@ void comparePolySeqSchemes(datablock &db)
 			{
 				if (ndb_i == ndb_range.end() or pdbx_i == pdbx_range.end())
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::clog << "The sequences in ndb_poly_seq_scheme and pdbx_poly_seq_scheme are unequal in size for asym ID " << asym_id << '\n';
 					valid = false;
 					break;
@@ -1261,7 +1260,7 @@ void comparePolySeqSchemes(datablock &db)
 
 				if (ndb_mon_id != pdbx_mon_id)
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::clog << "The sequences in ndb_poly_seq_scheme and pdbx_poly_seq_scheme contain different mon ID's for asym ID " << asym_id << '\n';
 					valid = false;
 					break;
@@ -1270,7 +1269,7 @@ void comparePolySeqSchemes(datablock &db)
 
 			if (not valid)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::clog << "Dropping asym ID " << asym_id << " from ndb_poly_seq_scheme\n";
 				ndb_poly_seq_scheme.erase(key("id") == asym_id);
 			}
@@ -1432,7 +1431,7 @@ void reconstruct_index_for_category(const validator &validator, category &cat, d
 		{
 			if (state == State::MissingKeys)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::clog << "Repairing failed for category " << cat.name() << ", missing keys remain: " << ex.what() << '\n';
 
 				throw;
@@ -1442,7 +1441,7 @@ void reconstruct_index_for_category(const validator &validator, category &cat, d
 
 			auto key = ex.get_key();
 
-			if (cif::VERBOSE > 1)
+			if (VERBOSE > 1)
 				std::clog << "Need to add key " << key << " to category " << cat.name() << '\n';
 
 			for (auto row : cat)
@@ -1459,7 +1458,7 @@ void reconstruct_index_for_category(const validator &validator, category &cat, d
 		{
 			if (state == State::DuplicateKeys)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::clog << "Repairing failed for category " << cat.name() << ", duplicate keys remain: " << ex.what() << '\n';
 
 				throw;
@@ -1467,7 +1466,7 @@ void reconstruct_index_for_category(const validator &validator, category &cat, d
 
 			state = State::DuplicateKeys;
 
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::clog << "Attempt to fix " << cat.name() << " failed: " << ex.what() << '\n';
 
 			// replace items that do not define a relation to a parent
@@ -1585,7 +1584,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 				if (not iv)
 					continue;
 
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::clog << "Renaming " << item_name << " to " << iv->m_item_name << " in category " << cat.name() << '\n';
 				cat.rename_item(item_name, iv->m_item_name);
 			}
@@ -1634,7 +1633,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 			{
 				if (not cat.has_item(item))
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::clog << "Adding mandatory item " << item << " to category " << cat.name() << '\n';
 
 					cat.add_item(item);
@@ -1662,7 +1661,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 
 					if (not iv->validate_value(row[ix].value(), ec))
 					{
-						if (cif::VERBOSE > 0)
+						if (VERBOSE > 0)
 							std::clog << "Replacing value (" << std::quoted(row[ix].str()) << ") for item " << item_name << " in category " << cat.name() << " since it does not validate\n";
 
 						row[ix] = item_value{ cif::item_value_type::INAPPLICABLE };
@@ -1674,7 +1673,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 		}
 		catch (const std::exception &ex)
 		{
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::clog << ex.what() << '\n';
 
 			std::clog << "Will drop category " << cat.name() << " since it cannot be repaired\n";
@@ -1759,7 +1758,7 @@ void fixup_pdbx(file &file, const validator &validator)
 	// Be silent about missing compound info in fixup
 	auto &cf = compound_factory::instance();
 	bool save_report = cf.get_report_missing();
-	cf.set_report_missing(cif::VERBOSE > 1);
+	cf.set_report_missing(VERBOSE > 1);
 
 	std::string entry_id;
 

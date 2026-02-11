@@ -31,6 +31,7 @@
 #include "cif++/model.hpp"
 #include "cif++/pdb.hpp"
 #include "cif++/symmetry.hpp"
+#include "cif++/utilities.hpp"
 #include "pdb2cif_remark_3.hpp"
 
 #include <algorithm>
@@ -262,7 +263,7 @@ int PDBRecord::vI(int columnFirst, int columnLast)
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE >= 0)
+		if (VERBOSE >= 0)
 			std::cerr << "Trying to parse '" << std::string(mValue + columnFirst - 7, mValue + columnLast - 7) << '\'' << '\n';
 		throw;
 	}
@@ -332,7 +333,7 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 				}
 				else if (not isspace(ch))
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::cerr << "skipping invalid character in SOURCE ID: " << ch << '\n';
 				}
 				break;
@@ -349,7 +350,7 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 			case eColon:
 				if (ch == ';')
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::cerr << "Empty value for SOURCE: " << id << '\n';
 					state = eStart;
 				}
@@ -413,7 +414,7 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 			case eError:
 				if (ch == ';')
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::cerr << "Skipping invalid header line: '" << std::string(start, mP) << '\n';
 					state = eStart;
 				}
@@ -819,7 +820,7 @@ class PDBFileParser
 		if (not mChainSeq2AsymSeq.count(key))
 		{
 			ec = error::make_error_code(error::pdbErrors::residueNotFound);
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::cerr << "Residue " << chainID << resSeq << iCode << " could not be mapped\n";
 		}
 		else
@@ -907,7 +908,7 @@ class PDBFileParser
 		}
 		catch (const std::exception &ex)
 		{
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::cerr << ex.what() << '\n';
 			ec = error::make_error_code(error::pdbErrors::invalidDate);
 		}
@@ -919,7 +920,7 @@ class PDBFileParser
 	{
 		std::error_code ec;
 		auto result = pdb2cifDate(s, ec);
-		if (ec and cif::VERBOSE > 0)
+		if (ec and VERBOSE > 0)
 			std::cerr << "Invalid date(" << s << "): " << ec.message() << '\n';
 		return result;
 	}
@@ -1138,7 +1139,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			if (is.eof())
 				break;
 
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::cerr << "Line number " << lineNr << " is empty!\n";
 
 			getline(is, lookahead);
@@ -1259,7 +1260,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 				}
 				catch (const std::exception &ex)
 				{
-					if (cif::VERBOSE >= 0)
+					if (VERBOSE >= 0)
 						std::cerr << "Dropping FORMUL line (" << (lineNr - 1) << ") with invalid component number '" << value.substr(1, 3) << '\'' << '\n';
 					continue;
 					// throw_with_nested(std::runtime_error("Invalid component number '" + value.substr(1, 3) + '\''));
@@ -1286,7 +1287,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			}
 			catch (const std::exception &ex)
 			{
-				if (cif::VERBOSE >= 0)
+				if (VERBOSE >= 0)
 					std::cerr << "Error parsing FORMUL at line " << lineNr << '\n';
 				throw;
 			}
@@ -1385,7 +1386,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			{
 				auto f = cur->vF(74, 78);
 				auto r = cif::from_chars(f.data(), f.data() + f.length(), link.distance);
-				if (r.ec != std::errc{} and cif::VERBOSE > 0)
+				if (r.ec != std::errc{} and VERBOSE > 0)
 					std::cerr << "Error parsing link distance at line " << cur->mLineNr << '\n';
 			}
 			//	74 – 78         Real(5.2)      Length          Link distance
@@ -1399,7 +1400,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 
 	if (not dropped.empty())
 	{
-		if (cif::VERBOSE >= 0)
+		if (VERBOSE >= 0)
 			std::cerr << "Dropped unsupported records: " << cif::join(dropped, ", ") << '\n';
 	}
 
@@ -1428,7 +1429,7 @@ void PDBFileParser::Match(const std::string &expected, bool throwIfMissing)
 	{
 		if (throwIfMissing)
 			throw std::runtime_error("Expected record " + expected + " but found " + mRec->mName);
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::cerr << "Expected record " + expected + " but found " + mRec->mName << '\n';
 	}
 }
@@ -1566,7 +1567,7 @@ void PDBFileParser::ParseTitle()
 
 				if (not iequals(key, "MOL_ID") and mCompounds.empty())
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::cerr << "Ignoring invalid COMPND record\n";
 					break;
 				}
@@ -1614,7 +1615,7 @@ void PDBFileParser::ParseTitle()
 		//			auto colon = s.find(": ");
 		//			if (colon == std::string::npos)
 		//			{
-		//				if (cif::VERBOSE > 0)
+		//				if (VERBOSE > 0)
 		//					std::cerr << "invalid source field, missing colon (" << s << ')' << '\n';
 		//				continue;
 		//			}
@@ -1708,7 +1709,7 @@ void PDBFileParser::ParseTitle()
 	// NUMMDL
 	if (mRec->is("NUMMDL"))
 	{
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::cerr << "skipping unimplemented NUMMDL record\n";
 		GetNextRecord();
 	}
@@ -1825,7 +1826,7 @@ void PDBFileParser::ParseTitle()
 	// SPRSDE
 	if (mRec->is("SPRSDE"))
 	{
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::cerr << "skipping unimplemented SPRSDE record\n";
 		GetNextRecord();
 	}
@@ -2278,7 +2279,7 @@ void PDBFileParser::ParseRemarks()
 									state = eMCP;
 								else if (subtopic == "CHIRAL CENTERS")
 									state = eChC;
-								else if (cif::VERBOSE > 0)
+								else if (VERBOSE > 0)
 									throw std::runtime_error("Unknown subtopic in REMARK 500: " + subtopic);
 
 								headerSeen = false;
@@ -2359,7 +2360,7 @@ void PDBFileParser::ParseRemarks()
 									}
 									catch (const std::exception &ex)
 									{
-										if (cif::VERBOSE > 0)
+										if (VERBOSE > 0)
 											std::cerr << "Dropping REMARK 500 at line " << mRec->mLineNr << " due to invalid symmetry operation\n";
 										continue;
 									}
@@ -2720,7 +2721,7 @@ void PDBFileParser::ParseRemarks()
 							case sStart:
 								if (s == "SITE")
 									state = sID;
-								else if (cif::VERBOSE > 0)
+								else if (VERBOSE > 0)
 									throw std::runtime_error("Invalid REMARK 800 record, expected SITE");
 								break;
 
@@ -2730,7 +2731,7 @@ void PDBFileParser::ParseRemarks()
 									id = m[1].str();
 									state = sEvidence;
 								}
-								else if (cif::VERBOSE > 0)
+								else if (VERBOSE > 0)
 									throw std::runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
 								break;
 
@@ -2740,7 +2741,7 @@ void PDBFileParser::ParseRemarks()
 									evidence = m[1].str();
 									state = sDesc;
 								}
-								else if (cif::VERBOSE > 0)
+								else if (VERBOSE > 0)
 									throw std::runtime_error("Invalid REMARK 800 record, expected SITE_IDENTIFIER");
 								break;
 
@@ -2963,7 +2964,7 @@ void PDBFileParser::ParseRemark200()
 		collectionDate = pdb2cifDate(rm200("DATE OF DATA COLLECTION", diffrnNr), ec);
 		if (ec)
 		{
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::cerr << ec.message() << " for pdbx_collection_date\n";
 
 			// The date field can become truncated when multiple values are available
@@ -3103,7 +3104,7 @@ void PDBFileParser::ParseRemark200()
 	else if (inRM200({ "HIGHEST RESOLUTION SHELL, RANGE LOW (A)", "COMPLETENESS FOR SHELL (%)",
 				 "R MERGE FOR SHELL (I)", "R SYM FOR SHELL (I)", "<I/SIGMA(I)> FOR SHELL", "DATA REDUNDANCY IN SHELL" }))
 	{
-		if (cif::VERBOSE > 0)
+		if (VERBOSE > 0)
 			std::cerr << "Not writing reflns_shell record since d_res_high is missing\n";
 	}
 }
@@ -3683,7 +3684,7 @@ void PDBFileParser::ConstructEntities()
 			{
 				auto &r = chain.mResiduesSeen[lastResidueIndex + 1];
 
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 				{
 					std::cerr << "Detected residues that cannot be aligned to SEQRES\n"
 							  << "First residue is " << chain.mDbref.chainID << ':' << r.mSeqNum << r.mIcode << '\n';
@@ -4140,7 +4141,7 @@ void PDBFileParser::ConstructEntities()
 					std::tie(asym, labelSeq, std::ignore) = MapResidue(seqadv.chainID, seqadv.seqNum, seqadv.iCode, ec);
 					if (ec)
 					{
-						if (cif::VERBOSE > 0)
+						if (VERBOSE > 0)
 							std::cerr << "dropping unmatched SEQADV record\n";
 						continue;
 					}
@@ -4494,7 +4495,7 @@ void PDBFileParser::ConstructEntities()
 		std::tie(asymID, seq, std::ignore) = MapResidue(chainID, seqNum, iCode, ec);
 		if (ec) // no need to write a modres if it could not be found
 		{
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::cerr << "dropping unmapped MODRES record\n";
 			continue;
 		}
@@ -4595,7 +4596,7 @@ void PDBFileParser::ConstructEntities()
 		std::tie(asymID, seqNr, isPolymer) = MapResidue(unobs.chain, unobs.seq, unobs.iCode, ec);
 		if (ec)
 		{
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::cerr << "error mapping unobserved residue\n";
 			continue;
 		}
@@ -4881,7 +4882,7 @@ void PDBFileParser::ParseSecondaryStructure()
 
 		if (ec)
 		{
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::cerr << "Could not map residue for HELIX " << vI(8, 10) << '\n';
 		}
 		else
@@ -5004,7 +5005,7 @@ void PDBFileParser::ParseSecondaryStructure()
 
 		if (ec)
 		{
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::cerr << "Dropping SHEET record " << vI(8, 10) << '\n';
 		}
 		else
@@ -5042,7 +5043,7 @@ void PDBFileParser::ParseSecondaryStructure()
 
 				if (ec)
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::cerr << "skipping unmatched pdbx_struct_sheet_hbond record\n";
 				}
 				else
@@ -5144,7 +5145,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 
 			if (ec)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Dropping SSBOND " << vI(8, 10) << '\n';
 				continue;
 			}
@@ -5165,7 +5166,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			}
 			catch (const std::exception &ex)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Dropping SSBOND " << vI(8, 10) << " due to invalid symmetry operation\n";
 				continue;
 			}
@@ -5212,7 +5213,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 
 		if (mRec->is("LINK  ") or mRec->is("LINKR "))
 		{
-			if (cif::VERBOSE > 0 and mRec->is("LINKR "))
+			if (VERBOSE > 0 and mRec->is("LINKR "))
 				std::cerr << "Accepting non-standard LINKR record, but ignoring extra information\n";
 
 			//	 1 -  6         Record name    "LINK  "
@@ -5265,7 +5266,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 
 			if (ec)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Dropping LINK record at line " << mRec->mLineNr << '\n';
 				continue;
 			}
@@ -5280,7 +5281,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 				auto r = cif::from_chars(distance.data(), distance.data() + distance.length(), d);
 				if (r.ec != std::errc{})
 				{
-					if (cif::VERBOSE > 0)
+					if (VERBOSE > 0)
 						std::cerr << "Distance value '" << distance << "' is not a valid float in LINK record\n";
 					swap(ccp4LinkID, distance); // assume this is a ccp4_link_id... oh really?
 				}
@@ -5296,7 +5297,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 			}
 			catch (const std::exception &ex)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Dropping LINK record at line " << mRec->mLineNr << " due to invalid symmetry operation\n";
 				continue;
 			}
@@ -5371,7 +5372,7 @@ void PDBFileParser::ParseConnectivtyAnnotation()
 
 			if (ec)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Dropping CISPEP record at line " << mRec->mLineNr << '\n';
 				continue;
 			}
@@ -5441,7 +5442,7 @@ void PDBFileParser::ParseMiscellaneousFeatures()
 
 			if (ec)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "skipping struct_site_gen record\n";
 			}
 			else
@@ -5765,7 +5766,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		{
 			if (groupPDB == "HETATM")
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Changing atom from HETATM to ATOM at line " << mRec->mLineNr << '\n';
 				groupPDB = "ATOM";
 			}
@@ -5774,7 +5775,7 @@ void PDBFileParser::ParseCoordinate(int modelNr)
 		{
 			if (groupPDB == "ATOM")
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Changing atom from ATOM to HETATM at line " << mRec->mLineNr << '\n';
 				groupPDB = "HETATM";
 			}
@@ -5965,7 +5966,7 @@ void PDBFileParser::Parse(std::istream &is, cif::file &result)
 		}
 		catch (const std::exception &ex)
 		{
-			if (cif::VERBOSE >= 0)
+			if (VERBOSE >= 0)
 				std::cerr << "Error parsing REMARK 3\n";
 			throw;
 		}
@@ -6024,12 +6025,12 @@ void PDBFileParser::Parse(std::istream &is, cif::file &result)
 						(x1 - x2) * (x1 - x2) +
 						(y1 - y2) * (y1 - y2) +
 						(z1 - z2) * (z1 - z2));
-				else if (cif::VERBOSE > 0)
+				else if (VERBOSE > 0)
 					std::cerr << "Cannot calculate distance for link since one of the atoms is in another dimension\n";
 			}
 			catch (std::exception &ex)
 			{
-				if (cif::VERBOSE > 0)
+				if (VERBOSE > 0)
 					std::cerr << "Error finding atom for LINK distance calculation: " << ex.what() << '\n';
 			}
 
@@ -6040,7 +6041,7 @@ void PDBFileParser::Parse(std::istream &is, cif::file &result)
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE >= 0)
+		if (VERBOSE >= 0)
 		{
 			std::cerr << "Error parsing PDB";
 			if (mRec != nullptr)
@@ -6263,7 +6264,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 		std::cerr << '\n';
 	};
 
-	if (cif::VERBOSE > 1)
+	if (VERBOSE > 1)
 		printAlignment();
 
 	try
@@ -6280,7 +6281,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 					break;
 
 				case 1:
-					if (cif::VERBOSE > 3)
+					if (VERBOSE > 3)
 						std::cerr << "Missing residue in ATOM records: " << rx[x].mMonID << " at " << rx[x].mSeqNum << '\n';
 
 					--x;
@@ -6304,7 +6305,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 	}
 	catch (const std::exception &ex)
 	{
-		if (cif::VERBOSE == 1)
+		if (VERBOSE == 1)
 			printAlignment();
 
 		throw;
@@ -6364,7 +6365,7 @@ void read_pdb_file(std::istream &pdbFile, cif::file &cifFile)
 		if (cifFile.front().get_validator() == nullptr)
 			cifFile.front().set_validator(validator_factory::instance().get("mmcif_pdbx.dic"));
 
-		if (not cifFile.is_valid() and cif::VERBOSE >= 0)
+		if (not cifFile.is_valid() and VERBOSE >= 0)
 			std::cerr << "Resulting mmCIF file is not valid!\n";
 	}
 }

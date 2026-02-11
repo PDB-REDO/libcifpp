@@ -425,7 +425,7 @@ compound *compound_factory_impl::create(const std::string &id)
 
 	if (m_index.empty())
 	{
-		if (cif::VERBOSE > 1)
+		if (VERBOSE > 1)
 		{
 			std::cout << "Creating component index "
 					  << "...";
@@ -435,7 +435,7 @@ compound *compound_factory_impl::create(const std::string &id)
 		cif::parser parser(*ccd, file);
 		m_index = parser.index_datablocks();
 
-		if (cif::VERBOSE > 1)
+		if (VERBOSE > 1)
 			std::cout << " done\n";
 
 		// reload the resource, perhaps this should be improved...
@@ -449,7 +449,7 @@ compound *compound_factory_impl::create(const std::string &id)
 			ccd = std::make_unique<std::ifstream>(m_file);
 	}
 
-	if (cif::VERBOSE > 1)
+	if (VERBOSE > 1)
 	{
 		std::cout << "Loading component " << id << "...";
 		std::cout.flush();
@@ -458,7 +458,7 @@ compound *compound_factory_impl::create(const std::string &id)
 	cif::parser parser(*ccd, file);
 	parser.parse_single_datablock(id, m_index);
 
-	if (cif::VERBOSE > 1)
+	if (VERBOSE > 1)
 		std::cout << " done\n";
 
 	if (not file.empty())
@@ -650,7 +650,7 @@ compound_factory::compound_factory()
 	auto ccd = cif::load_resource("components.cif");
 	if (ccd)
 		m_impl = std::make_shared<compound_factory_impl>();
-	else if (cif::VERBOSE > 0)
+	else if (VERBOSE > 0)
 		std::cerr << "CCD components.cif resource was not found\n";
 }
 

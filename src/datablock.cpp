@@ -27,6 +27,7 @@
 #include "cif++/datablock.hpp"
 
 #include "cif++/validate.hpp"
+#include "cif++/utilities.hpp"
 
 #include <algorithm>
 #include <exception>
@@ -127,7 +128,7 @@ bool datablock::strip()
 		bool result = false;
 		if (c.get_cat_validator() == nullptr)
 		{
-			if (cif::VERBOSE > 0)
+			if (VERBOSE > 0)
 				std::clog << "Dropping category " << c.name() << '\n';
 			result = true;
 		}

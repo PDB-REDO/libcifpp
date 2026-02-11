@@ -31,6 +31,7 @@
 #include "cif++/exports.hpp"
 #include "cif++/point.hpp"
 
+#include <filesystem>
 #include <map>
 #include <vector>
 
