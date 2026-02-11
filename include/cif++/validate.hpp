@@ -64,6 +64,8 @@ enum class validation_error
 {
 	value_does_not_match_rx = 1,      /**< The value of an item does not conform to the regular expression specified for it */
 	value_is_not_in_enumeration_list, /**< The value of an item is not in the list of values allowed */
+	value_is_not_a_number,            /**< The value is not a number */
+	value_is_not_a_char_string,       /**< The value is not a character string */
 	not_a_known_primitive_type,       /**< The type is not a known primitive type */
 	undefined_category,               /**< Category has no definition in the dictionary */
 	unknown_item,                     /**< The item is not defined to be part of the category */
@@ -109,6 +111,10 @@ class validation_category_impl : public std::error_category
 				return "Value in item does not match regular expression";
 			case validation_error::value_is_not_in_enumeration_list:
 				return "Value is not in the enumerated list of valid values";
+			case validation_error::value_is_not_a_number:
+				return "Value is not a number";
+			case validation_error::value_is_not_a_char_string:
+				return "Value is not a character string";
 			case validation_error::not_a_known_primitive_type:
 				return "The type is not a known primitive type";
 			case validation_error::undefined_category:

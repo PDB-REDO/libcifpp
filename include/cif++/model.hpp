@@ -94,7 +94,7 @@ class atom
 		{
 			auto r = row();
 			if (r)
-				tie(m_location.m_x, m_location.m_y, m_location.m_z) = r.get("Cartn_x", "Cartn_y", "Cartn_z");
+				std::tie(m_location.m_x, m_location.m_y, m_location.m_z) = r.get<float, float, float>("Cartn_x", "Cartn_y", "Cartn_z");
 		}
 
 		// constructor for a symmetry copy of an atom

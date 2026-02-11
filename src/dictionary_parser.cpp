@@ -163,8 +163,32 @@ class dictionary_parser : public parser
 
 					for (auto item_name : item_names)
 					{
-						row[item_name] = m_token_value;
-						match(m_lookahead);
+						switch (m_lookahead)
+						{
+							case CIFToken::VALUE_INAPPLICABLE:
+								row[item_name] = nullptr;
+								match(CIFToken::VALUE_INAPPLICABLE);
+								break;
+							case CIFToken::VALUE_UNKNOWN:
+								row[item_name] = item_value{ std::optional<std::string>{} };
+								match(CIFToken::VALUE_UNKNOWN);
+								break;
+							case CIFToken::VALUE_NUMERIC_INTEGER:
+								row[item_name] = m_token_value_int;
+								match(CIFToken::VALUE_NUMERIC_INTEGER);
+								break;
+							case CIFToken::VALUE_NUMERIC_FLOAT:
+								row[item_name] = m_token_value_float;
+								match(CIFToken::VALUE_NUMERIC_FLOAT);
+								break;
+							case CIFToken::VALUE_CHARSTRING:
+							case CIFToken::VALUE_TEXTFIELD:
+								row[item_name] = m_token_value;
+								match(m_lookahead);
+								break;
+							default:
+								match(CIFToken::VALUE_CHARSTRING);
+						}
 					}
 				}
 
@@ -182,9 +206,33 @@ class dictionary_parser : public parser
 
 				if (cat->empty())
 					cat->emplace({});
-				cat->back()[item_name] = m_token_value;
 
-				match(m_lookahead >= CIFToken::VALUE_INAPPLICABLE ? m_lookahead : CIFToken::VALUE_CHARSTRING);
+				switch (m_lookahead)
+				{
+					case CIFToken::VALUE_INAPPLICABLE:
+						cat->back()[item_name] = nullptr;
+						match(CIFToken::VALUE_INAPPLICABLE);
+						break;
+					case CIFToken::VALUE_UNKNOWN:
+						cat->back()[item_name] = item_value{ std::optional<std::string>{} };
+						match(CIFToken::VALUE_UNKNOWN);
+						break;
+					case CIFToken::VALUE_NUMERIC_INTEGER:
+						cat->back()[item_name] = m_token_value_int;
+						match(CIFToken::VALUE_NUMERIC_INTEGER);
+						break;
+					case CIFToken::VALUE_NUMERIC_FLOAT:
+						cat->back()[item_name] = m_token_value_float;
+						match(CIFToken::VALUE_NUMERIC_FLOAT);
+						break;
+					case CIFToken::VALUE_CHARSTRING:
+					case CIFToken::VALUE_TEXTFIELD:
+						cat->back()[item_name] = m_token_value;
+						match(m_lookahead);
+						break;
+					default:
+						match(CIFToken::VALUE_CHARSTRING);
+				}
 			}
 		}
 
@@ -207,17 +255,22 @@ class dictionary_parser : public parser
 		else
 		{
 			// if the type code is missing, this must be a pointer, just skip it
-			auto typeCode = dict["item_type"].front().get<std::string>("code");
+			std::optional<std::string> typeCode;
+			
+			if (not dict["item_type"].empty())
+				typeCode = dict["item_type"].front().get<std::optional<std::string>>("code");
 
 			const type_validator *tv = nullptr;
-			if (not(typeCode.empty() or typeCode == "?"))
-				tv = m_validator.get_validator_for_type(typeCode);
+			if (typeCode.has_value())
+				tv = m_validator.get_validator_for_type(*typeCode);
 
 			iset ess;
 			for (auto e : dict["item_enumeration"])
 				ess.insert(e["value"].as<std::string>());
 
-			auto defaultValue = dict["item_default"].front().get<std::string>("value");
+			std::string defaultValue;
+			if (auto &cat = dict["item_default"]; not cat.empty())
+				defaultValue = cat.front().get<std::string>("value");
 			// bool defaultIsNull = false;
 			// if (defaultValue.empty())
 			// {
@@ -239,8 +292,7 @@ class dictionary_parser : public parser
 			// collect the dict from our dataBlock and construct validators
 			for (auto i : dict["item"])
 			{
-				std::string item, category, mandatory;
-				cif::tie(item, category, mandatory) = i.get("name", "category_id", "mandatory_code");
+				auto &&[item, category, mandatory] = i.get<std::string, std::string, std::string>("name", "category_id", "mandatory_code");
 
 				std::string cat_name, item_name;
 				std::tie(cat_name, item_name) = split_item_name(item);
@@ -341,9 +393,7 @@ class dictionary_parser : public parser
 
 		for (auto gl : linkedGroupList)
 		{
-			std::string child, parent;
-			int link_group_id;
-			cif::tie(child, parent, link_group_id) = gl.get("child_name", "parent_name", "link_group_id");
+			auto &&[child, parent, link_group_id] = gl.get<std::string, std::string, int>("child_name", "parent_name", "link_group_id");
 
 			auto civ = m_validator.get_validator_for_item(child);
 			if (civ == nullptr)
@@ -408,6 +458,35 @@ class dictionary_parser : public parser
 			{
 				link.m_link_group_label = r["label"].as<std::string>();
 				break;
+			}
+
+			// A last validation, link ends should both point to the same time
+
+			auto childCatValidator = m_validator.get_validator_for_category(link.m_child_category);
+			auto parentCatValidator = m_validator.get_validator_for_category(link.m_parent_category);
+
+			if (childCatValidator == nullptr)
+				throw std::runtime_error(std::format("Invalid dictionary, undefined category {} in link {}", link.m_child_category, link.m_link_group_id));
+			if (parentCatValidator == nullptr)
+				throw std::runtime_error(std::format("Invalid dictionary, undefined category {} in link {}", link.m_parent_category, link.m_link_group_id));
+
+			for (size_t ix = 0; ix < link.m_child_keys.size(); ++ix)
+			{
+				auto childItemValidator = childCatValidator->get_validator_for_item(link.m_child_keys[ix]);
+				auto parentItemValidator = parentCatValidator->get_validator_for_item(link.m_parent_keys[ix]);
+
+				if (childItemValidator == nullptr)
+					throw std::runtime_error(std::format("Invalid dictionary, in link group {} the item {} is not know in category {}",
+						link.m_link_group_id, link.m_child_keys[ix], link.m_child_category));
+				if (parentItemValidator == nullptr)
+					throw std::runtime_error(std::format("Invalid dictionary, in link group {} the item {} is not know in category {}",
+						link.m_link_group_id, link.m_parent_keys[ix], link.m_parent_category));
+
+				if (childItemValidator->m_type == nullptr)
+					const_cast<item_validator *>(childItemValidator)->m_type = parentItemValidator->m_type;
+				else if (childItemValidator->m_type != parentItemValidator->m_type)
+					throw std::runtime_error(std::format("Invalid dictionary, in link group {} the items _{}.{}/_{}.{} do not have the same type",
+						link.m_link_group_id, link.m_parent_category, link.m_parent_keys[ix], link.m_child_category, link.m_child_keys[ix]));
 			}
 
 			m_validator.add_link_validator(std::move(link));

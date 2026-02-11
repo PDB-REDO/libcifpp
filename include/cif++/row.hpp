@@ -98,74 +98,8 @@ namespace cql
 
 namespace detail
 {
-
-	// some helper classes to help create tuple result types
 	template <typename... C>
-	struct get_row_result
-	{
-		static constexpr std::size_t N = sizeof...(C);
-
-		get_row_result(const const_row_handle &r, std::array<uint16_t, N> &&items)
-			: m_row(r)
-			, m_items(std::move(items))
-		{
-		}
-
-		const item_handle operator[](uint16_t ix) const
-		{
-			return m_row[m_items[ix]];
-		}
-
-		template <typename... Ts>
-		operator std::tuple<Ts...>() const
-			requires(N == sizeof...(Ts))
-		{
-			return get<Ts...>(std::index_sequence_for<Ts...>{});
-		}
-
-		template <typename... Ts, std::size_t... Is>
-		[[nodiscard]] std::tuple<Ts...> get(std::index_sequence<Is...>) const
-		{
-			return std::tuple<Ts...>{ m_row[m_items[Is]].template get<Ts>()... };
-		}
-
-		const const_row_handle &m_row;
-		std::array<uint16_t, N> m_items;
-	};
-
-	// we want to be able to tie some variables to a get_row_result, for this we use tiewraps
-	template <typename... Ts>
-	struct tie_wrap
-	{
-		tie_wrap(Ts... args)
-			: m_value(args...)
-		{
-		}
-
-		template <typename RR>
-		void operator=(const RR &&rr)
-		{
-			// get_row_result will do the conversion, but only if the types
-			// are compatible. That means the number of parameters to the get()
-			// of the row should be equal to the number of items in the tuple
-			// you are trying to tie.
-
-			using RType = std::tuple<std::remove_reference_t<Ts>...>;
-
-			m_value = static_cast<RType>(rr);
-		}
-
-		std::tuple<Ts...> m_value;
-	};
-
-} // namespace detail
-
-/// \brief similar to std::tie, assign values to each element in @a v from the
-/// result of a get on a row_handle.
-template <typename... Ts>
-auto tie(Ts &...v)
-{
-	return detail::tie_wrap<Ts &...>(std::forward<Ts &>(v)...);
+	struct get_row_result;
 }
 
 // --------------------------------------------------------------------
@@ -175,6 +109,8 @@ class row : public std::vector<item_value>
 {
   public:
 	row() = default;
+
+  private:
 
 	/**
 	 * @brief Return the item_value pointer for item at index @a ix
@@ -194,26 +130,18 @@ class row : public std::vector<item_value>
 		return ix < size() ? &data()[ix] : nullptr;
 	}
 
-	//   private:
+	void set(uint16_t ix, item_value v)
+	{
+		if (ix >= size())
+			resize(ix + 1);
+		operator[](ix) = std::move(v);
+	}
+
 	friend class category;
 	friend class category_index;
 
 	template <bool, typename...>
 	friend class iterator_impl_base;
-
-	void append(uint16_t ix, item_value iv)
-	{
-		if (ix >= size())
-			resize(ix + 1);
-
-		at(ix) = std::move(iv);
-	}
-
-	void remove(uint16_t ix)
-	{
-		if (ix < size())
-			at(ix) = item_value{};
-	}
 
 	row *m_next = nullptr;
 };
@@ -294,7 +222,7 @@ class row_handle
 	/// \brief return a cif::item_handle to the item in the item named @a item_name
 	item_handle operator[](std::string_view item_name)
 	{
-		return { *m_category, *m_row, get_item_ix(item_name) };
+		return { *m_category, *m_row, add_item(item_name) };
 	}
 
 	/// \brief return a cif::item_handle to the item in the item named @a item_name
@@ -383,7 +311,7 @@ class row_handle
 	// {
 	// 	if (not m_category)
 	// 		throw std::runtime_error("uninitialized row");
-	// 
+	//
 	// 	m_category->swap_item(item, *this, b);
 	// }
 
@@ -522,13 +450,85 @@ class const_row_handle
 	// {
 	// 	if (not m_category)
 	// 		throw std::runtime_error("uninitialized row");
-	// 
+	//
 	// 	m_category->swap_item(item, *this, b);
 	// }
 
 	const category *m_category = nullptr;
 	const row *m_row = nullptr;
 };
+
+namespace detail
+{
+
+	// some helper classes to help create tuple result types
+	template <typename... C>
+	struct get_row_result
+	{
+		static constexpr std::size_t N = sizeof...(C);
+
+		get_row_result(const_row_handle r, std::array<uint16_t, N> &&items)
+			: m_row(r)
+			, m_items(std::move(items))
+		{
+		}
+
+		const item_handle operator[](uint16_t ix) const
+		{
+			return m_row[m_items[ix]];
+		}
+
+		template <typename... Ts>
+		operator std::tuple<Ts...>() const
+			requires(N == sizeof...(Ts))
+		{
+			return get<Ts...>(std::index_sequence_for<Ts...>{});
+		}
+
+		template <typename... Ts, std::size_t... Is>
+		[[nodiscard]] std::tuple<Ts...> get(std::index_sequence<Is...>) const
+		{
+			return std::tuple<Ts...>{ m_row[m_items[Is]].template get<Ts>()... };
+		}
+
+		const_row_handle m_row;
+		std::array<uint16_t, N> m_items;
+	};
+
+	// we want to be able to tie some variables to a get_row_result, for this we use tiewraps
+	template <typename... Ts>
+	struct tie_wrap
+	{
+		tie_wrap(Ts... args)
+			: m_value(args...)
+		{
+		}
+
+		template <typename RR>
+		void operator=(const RR &&rr)
+		{
+			// get_row_result will do the conversion, but only if the types
+			// are compatible. That means the number of parameters to the get()
+			// of the row should be equal to the number of items in the tuple
+			// you are trying to tie.
+
+			using RType = std::tuple<std::remove_reference_t<Ts>...>;
+
+			m_value = static_cast<RType>(rr);
+		}
+
+		std::tuple<Ts...> m_value;
+	};
+
+} // namespace detail
+
+/// \brief similar to std::tie, assign values to each element in @a v from the
+/// result of a get on a row_handle.
+template <typename... Ts>
+auto tie(Ts &...v)
+{
+	return detail::tie_wrap<Ts &...>(std::forward<Ts &>(v)...);
+}
 
 // --------------------------------------------------------------------
 

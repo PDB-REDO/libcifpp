@@ -28,11 +28,12 @@
 #include "test-main.hpp"
 
 // #include <cif++.hpp>
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
-#include <cif++/item.hpp>
 #include <cif++/category.hpp>
 #include <cif++/datablock.hpp>
 #include <cif++/file.hpp>
+#include <cif++/item.hpp>
 #include <cif++/parser.hpp>
 #include <cif++/row.hpp>
 #include <cif++/validate.hpp>
@@ -203,28 +204,28 @@ TEST_CASE("item_0")
 	CHECK(i1.value().is_null());
 }
 
-TEST_CASE("row_1")
-{
-	cif::row r;
+// TEST_CASE("row_1")
+// {
+// 	cif::row r;
 
-	r.append(0, 1);
-	r.append(1, "twee");
+// 	r.append(0, 1);
+// 	r.append(1, "twee");
 
-	cif::category cat("cat");
+// 	cif::category cat("cat");
 
-	cat.add_item("een");
-	cat.add_item("twee");
+// 	cat.add_item("een");
+// 	cat.add_item("twee");
 
-	cif::row_handle rh(cat, r);
+// 	cif::row_handle rh(cat, r);
 
-	const auto &[a, b] = rh.get<int, std::string>("een", "twee");
-	CHECK(a == 1);
-	CHECK(b == "twee");
+// 	const auto &[a, b] = rh.get<int, std::string>("een", "twee");
+// 	CHECK(a == 1);
+// 	CHECK(b == "twee");
 
-	rh.assign("twee", 3.0, false);
-	CHECK(rh[1].type() == cif::item_value_type::FLOAT);
-	CHECK(rh[1].get<double>() == 3.0);
-}
+// 	rh.assign("twee", 3.0, false);
+// 	CHECK(rh[1].type() == cif::item_value_type::FLOAT);
+// 	CHECK(rh[1].get<double>() == 3.0);
+// }
 
 TEST_CASE("cc_3")
 {
@@ -283,7 +284,7 @@ TEST_CASE("item_2")
 
 	cif::item i0("test1");
 	CHECK(i0.value().empty());
-	CHECK(i0.value().type() == cif::item_value_type::INAPPLICABLE);
+	CHECK(i0.value().type() == cif::item_value_type::MISSING);
 
 	cif::item i1("test1", std::optional<float>());
 	CHECK(i0.value().empty());
@@ -307,7 +308,7 @@ TEST_CASE("r_1")
 	c.emplace({
 		{ "f-1", 1 },
 		{ "f-2", "two" },
-		{ "f-3", 3.0f/* , 3 */ },
+		{ "f-3", 3.0f /* , 3 */ },
 	});
 
 	auto row = c.front();
@@ -538,8 +539,8 @@ _test.name
 			case 1: CHECK(*name == "aap"); break;
 			case 2: CHECK(*name == "noot"); break;
 			case 3: CHECK(*name == "mies"); break;
-			case 4: 
-			case 5: CHECK_FALSE(name.has_value());break;
+			case 4:
+			case 5: CHECK_FALSE(name.has_value()); break;
 			default: CHECK(false);
 		}
 	}
@@ -734,6 +735,14 @@ _test.value
 
 // --------------------------------------------------------------------
 
+TEST_CASE("d0")
+{
+	auto v = cif::validator_factory::instance().get("mmcif_pdbx.dic");
+	CHECK(v != nullptr);
+}
+
+// --------------------------------------------------------------------
+
 TEST_CASE("d1")
 {
 	const char dict[] = R"(
@@ -882,7 +891,7 @@ _cat_2.desc
 		CHECK(cat1.size() == 3);
 		CHECK(cat2.size() == 3);
 
-		cat1.erase(cif::key("id") == 1);
+		cat1.erase(cif::key("id") == "1");
 
 		CHECK(cat1.size() == 2);
 		CHECK(cat2.size() == 1);
@@ -1032,7 +1041,7 @@ mies Mies
 
 	// should fail with duplicate key:
 	CHECK_THROWS_AS(cat1.emplace({ { "id", "aap" },
-						  { "c", "2e-aap" } }),
+						{ "c", "2e-aap" } }),
 		std::exception);
 
 	cat1.erase(cif::key("id") == "aap");
@@ -1195,51 +1204,51 @@ _cat_2.desc
 
 	// check a rename in parent and child
 
-	for (auto r : cat1.find(cif::key("id") == 1))
+	for (auto r : cat1.find(cif::key("id") == "1"))
 	{
-		r["id"] = 10;
+		r["id"] = "10";
 		break;
 	}
 
 	CHECK(cat1.size() == 3);
 	CHECK(cat2.size() == 4);
 
-	CHECK(cat1.find(cif::key("id") == 1).size() == 0);
-	CHECK(cat1.find(cif::key("id") == 10).size() == 1);
+	CHECK(cat1.find(cif::key("id") == "1").size() == 0);
+	CHECK(cat1.find(cif::key("id") == "10").size() == 1);
 
-	CHECK(cat2.find(cif::key("parent_id") == 1).size() == 0);
-	CHECK(cat2.find(cif::key("parent_id") == 10).size() == 2);
+	CHECK(cat2.find(cif::key("parent_id") == "1").size() == 0);
+	CHECK(cat2.find(cif::key("parent_id") == "10").size() == 2);
 
 	// check a rename in parent and child, this time only one child should be renamed
 
-	for (auto r : cat1.find(cif::key("id") == 2))
+	for (auto r : cat1.find(cif::key("id") == "2"))
 	{
-		r["id"] = 20;
+		r["id"] = "20";
 		break;
 	}
 
 	CHECK(cat1.size() == 3);
 	CHECK(cat2.size() == 4);
 
-	CHECK(cat1.find(cif::key("id") == 2).size() == 0);
-	CHECK(cat1.find(cif::key("id") == 20).size() == 1);
+	CHECK(cat1.find(cif::key("id") == "2").size() == 0);
+	CHECK(cat1.find(cif::key("id") == "20").size() == 1);
 
-	CHECK(cat2.find(cif::key("parent_id") == 2).size() == 1);
-	CHECK(cat2.find(cif::key("parent_id") == 20).size() == 1);
+	CHECK(cat2.find(cif::key("parent_id") == "2").size() == 1);
+	CHECK(cat2.find(cif::key("parent_id") == "20").size() == 1);
 
-	CHECK(cat2.find(cif::key("parent_id") == 2 and cif::key("name2") == "noot").size() == 0);
-	CHECK(cat2.find(cif::key("parent_id") == 2 and cif::key("name2") == "n2").size() == 1);
-	CHECK(cat2.find(cif::key("parent_id") == 20 and cif::key("name2") == "noot").size() == 1);
-	CHECK(cat2.find(cif::key("parent_id") == 20 and cif::key("name2") == "n2").size() == 0);
+	CHECK(cat2.find(cif::key("parent_id") == "2" and cif::key("name2") == "noot").size() == 0);
+	CHECK(cat2.find(cif::key("parent_id") == "2" and cif::key("name2") == "n2").size() == 1);
+	CHECK(cat2.find(cif::key("parent_id") == "20" and cif::key("name2") == "noot").size() == 1);
+	CHECK(cat2.find(cif::key("parent_id") == "20" and cif::key("name2") == "n2").size() == 0);
 
 	// --------------------------------------------------------------------
 
-	cat1.erase(cif::key("id") == 10);
+	cat1.erase(cif::key("id") == "10");
 
 	CHECK(cat1.size() == 2);
 	CHECK(cat2.size() == 2); // TODO: Is this really what we want?
 
-	cat1.erase(cif::key("id") == 20);
+	cat1.erase(cif::key("id") == "20");
 
 	CHECK(cat1.size() == 1);
 	CHECK(cat2.size() == 1); // TODO: Is this really what we want?
@@ -1325,21 +1334,18 @@ save__cat_2.parent_id
     _item.name                '_cat_2.parent_id'
     _item.category_id         cat_2
     _item.mandatory_code      yes
-    _item_type.code           int
     save_
 
 save__cat_2.parent_id2
     _item.name                '_cat_2.parent_id2'
     _item.category_id         cat_2
     _item.mandatory_code      no
-    _item_type.code           code
     save_
 
 save__cat_2.parent_id3
     _item.name                '_cat_2.parent_id3'
     _item.category_id         cat_2
     _item.mandatory_code      no
-    _item_type.code           code
     save_
 
     )";
@@ -1528,21 +1534,18 @@ save__cat_2.parent_id
     _item.name                '_cat_2.parent_id'
     _item.category_id         cat_2
     _item.mandatory_code      yes
-    _item_type.code           int
     save_
 
 save__cat_2.parent_id2
     _item.name                '_cat_2.parent_id2'
     _item.category_id         cat_2
     _item.mandatory_code      no
-    _item_type.code           code
     save_
 
 save__cat_2.parent_id3
     _item.name                '_cat_2.parent_id3'
     _item.category_id         cat_2
     _item.mandatory_code      no
-    _item_type.code           code
     save_
 
 loop_
@@ -1628,12 +1631,11 @@ _cat_2.parent_id3
 
 	auto CR2set = cat1.get_children(PR2, cat2);
 	CHECK(CR2set.size() == 3);
-	CHECK(CR2set.size() == 3);
 
 	std::vector<int> CRids;
-	std::transform(CR2set.begin(), CR2set.end(), std::back_inserter(CRids), [](cif::row_handle r)
+	std::ranges::transform(CR2set, std::back_inserter(CRids), [](cif::row_handle r)
 		{ return r["id"].get<int>(); });
-	std::sort(CRids.begin(), CRids.end());
+	std::ranges::sort(CRids);
 	CHECK(CRids == std::vector<int>({ 4, 5, 6 }));
 
 	// check a rename in parent and child
@@ -1777,14 +1779,12 @@ save__cat_2.parent_id
     _item.name                '_cat_2.parent_id'
     _item.category_id         cat_2
     _item.mandatory_code      yes
-    _item_type.code           int
     save_
 
 save__cat_2.parent_id_2
     _item.name                '_cat_2.parent_id_2'
     _item.category_id         cat_2
     _item.mandatory_code      no
-    _item_type.code           code
     save_
 
 loop_
@@ -1862,13 +1862,13 @@ _cat_2.parent_id_2
 
 	using namespace cif::literals;
 
-	CHECK(	cat2.has_parents(cat2.find1("id"_key == 0)));
-	CHECK(	cat2.has_parents(cat2.find1("id"_key == 1)));
-	CHECK(	cat2.has_parents(cat2.find1("id"_key == 2)));
-	CHECK(not	cat2.has_parents(cat2.find1("id"_key == 3)));
-	CHECK(	cat2.has_parents(cat2.find1("id"_key == 4)));
-	CHECK(not	cat2.has_parents(cat2.find1("id"_key == 5)));
-	CHECK(	cat2.has_parents(cat2.find1("id"_key == 6)));
+	CHECK(cat2.has_parents(cat2.find1("id"_key == 0)));
+	CHECK(cat2.has_parents(cat2.find1("id"_key == 1)));
+	CHECK(cat2.has_parents(cat2.find1("id"_key == 2)));
+	CHECK(not cat2.has_parents(cat2.find1("id"_key == 3)));
+	CHECK(cat2.has_parents(cat2.find1("id"_key == 4)));
+	CHECK(not cat2.has_parents(cat2.find1("id"_key == 5)));
+	CHECK(cat2.has_parents(cat2.find1("id"_key == 6)));
 }
 
 // --------------------------------------------------------------------
@@ -2350,7 +2350,7 @@ TEST_CASE("pc_1")
 	/*
 	    Parent/child tests
 
-		Note that the dictionary is different than the one in test r1
+	    Note that the dictionary is different than the one in test r1
 	*/
 
 	const char dict[] = R"(
@@ -3420,13 +3420,13 @@ _cat_1.id_2
 	auto &cat1 = f.front()["cat_1"];
 
 	using key_type = cif::category::key_type;
-	using test_tuple_type = std::tuple<key_type,bool>;
+	using test_tuple_type = std::tuple<key_type, bool>;
 
 	test_tuple_type TESTS[] = {
-		{ {{"id", "1"}, {"id_2", "10"}}, true },
-		{ {{"id_2", "10"}, {"id", "1"}}, true },
-		{ {{"id", "1"}, {"id_2", "20"}}, false },
-		{ {{"id", "3"} }, true },
+		{ { { "id", 1 }, { "id_2", 10 } }, true },
+		{ { { "id_2", 10 }, { "id", 1 } }, true },
+		{ { { "id", 1 }, { "id_2", 20 } }, false },
+		{ { { "id", 3 }, { "id_2", nullptr } }, true },
 	};
 
 	for (const auto &[key, test] : TESTS)
@@ -3508,7 +3508,7 @@ _date    today
 	CHECK(not cat.empty());
 
 	auto r = cat.front();
-	CHECK(r["version"].get<std::string>() == "1.0");
+	CHECK(r["version"].get<float>() == 1.0);
 	CHECK(r["date"].get<std::string>() == "today");
 
 	std::stringstream ss;

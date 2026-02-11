@@ -26,9 +26,11 @@
 
 #include "cif++/parser.hpp"
 
+#include "cif++/condition.hpp"
 #include "cif++/file.hpp"
 #include "cif++/forward_decl.hpp"
 #include "cif++/utilities.hpp"
+#include "cif++/validate.hpp"
 
 #include <cassert>
 #include <iostream>
@@ -527,7 +529,13 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else if (not is_non_blank(ch))
 				{
 					retract();
-					result = CIFToken::VALUE_NUMERIC_INTEGER;
+					if (m_token_buffer.size() == 1 and negative)
+					{
+						result = CIFToken::VALUE_CHARSTRING;	// A single hyphen... 
+						m_token_value = std::string_view { m_token_buffer.data(), m_token_buffer.data() +  1 };
+					}
+					else
+						result = CIFToken::VALUE_NUMERIC_INTEGER;
 				}
 				else if (ch < '0' or ch > '9')
 					state = State::Value;
@@ -1023,7 +1031,9 @@ void parser::produce_category(std::string_view name)
 	if (VERBOSE >= 4)
 		std::cerr << "producing category " << name << '\n';
 
-	const auto &[cat, ignore] = m_datablock->emplace(name);
+	const auto &[cat, is_new] = m_datablock->emplace(name);
+	if (is_new and m_validator)
+		cat->set_validator(m_validator, *m_datablock);
 	m_category = &*cat;
 }
 
@@ -1047,6 +1057,19 @@ void parser::produce_item(std::string_view category, std::string_view item, item
 
 	if (m_category == nullptr or not iequals(category, m_category->name()))
 		error("inconsistent categories in loop_");
+
+	if (value.is_number())
+	{
+		auto cv = m_category->get_cat_validator();
+		if (cv != nullptr)
+		{
+			if (auto iv = cv->get_validator_for_item(item))
+			{
+				if (auto tv = iv->m_type; tv and tv->m_primitive_type != DDL_PrimitiveType::Numb)
+					value = std::string_view{ m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size() };
+			}
+		}
+	}
 
 	m_row[item] = std::move(value);
 }

@@ -278,6 +278,7 @@ class category
 	/// the category is empty.
 	reference front()
 	{
+		assert(size() > 0);
 		return { *this, *m_head };
 	}
 
@@ -286,6 +287,7 @@ class category
 	/// the category is empty.
 	[[nodiscard]] const_reference front() const
 	{
+		assert(size() > 0);
 		return { *this, *m_head };
 	}
 
@@ -294,6 +296,7 @@ class category
 	/// the category is empty.
 	reference back()
 	{
+		assert(size() > 0);
 		return { *this, *m_tail };
 	}
 
@@ -302,6 +305,7 @@ class category
 	/// the category is empty.
 	[[nodiscard]] const_reference back() const
 	{
+		assert(size() > 0);
 		return { *this, *m_tail };
 	}
 
@@ -996,7 +1000,7 @@ class category
 			for (auto i = b; i != e; ++i)
 			{
 				// item_value *new_item = this->create_item(*i);
-				r->append(add_item(i->name()), i->value());
+				r->set(add_item(i->name()), i->value());
 			}
 		}
 		catch (...)

@@ -110,35 +110,35 @@ class row_comparator
 		return d;
 	}
 
-	// int operator()(const category &cat, const category::key_type &a, const row *b) const
-	// {
-	// 	assert(b);
+	int operator()(const category &cat, const category::key_type &a, const row *b) const
+	{
+		assert(b);
 
-	// 	row_handle rhb(cat, *b);
+		const_row_handle rhb(cat, *b);
 
-	// 	int d = 0;
-	// 	auto ai = a.begin();
+		int d = 0;
+		auto ai = a.begin();
 
-	// 	for (const auto &[k, f] : m_comparator)
-	// 	{
-	// 		// assert(ai != a.end());
+		for (const auto &[k, f] : m_comparator)
+		{
+			// assert(ai != a.end());
 
-	// 		// std::string_view ka = ai->value;
-	// 		// std::string_view kb = rhb[k].text();
+			// std::string_view ka = ai->value;
+			// std::string_view kb = rhb[k].text();
 
-	// 		// if (not(ai->may_be_null and rhb[k].empty()))
-	// 		// 	d = f(ka, kb);
+			// if (not(ai->may_be_null and rhb[k].empty()))
+			// 	d = f(ka, kb);
 
-	// 		d = rha[k].value().compare(rhb[k].value());
+			d = ai->value.compare(rhb[k].value());
 
-	// 		if (d != 0)
-	// 			break;
+			if (d != 0)
+				break;
 
-	// 		++ai;
-	// 	}
+			++ai;
+		}
 
-	// 	return d;
-	// }
+		return d;
+	}
 
   private:
 	using compareFunc = std::function<int(std::string_view, std::string_view)>;
@@ -371,35 +371,34 @@ row *category_index::find(const category &cat, row *k) const
 
 row *category_index::find_by_value(const category &cat, const category::key_type &k) const
 {
-return nullptr;
-	// // sort the values in k first
+	// sort the values in k first
 
-	// category::key_type k2;
-	// for (auto &f : cat.key_item_indices())
-	// {
-	// 	auto fld = cat.get_item_name(f);
+	category::key_type k2;
+	for (auto &f : cat.key_item_indices())
+	{
+		auto fld = cat.get_item_name(f);
 
-	// 	auto ki = std::ranges::find_if(k, [&fld](auto &i)
-	// 		{ return i.name == fld; });
-	// 	if (ki == k.end())
-	// 		k2.emplace_back(std::string{ fld }, "");
-	// 	else
-	// 		k2.emplace_back(*ki);
-	// }
+		auto ki = std::ranges::find_if(k, [&fld](auto &i)
+			{ return i.name == fld; });
+		if (ki == k.end())
+			k2.emplace_back(std::string{ fld }, "");
+		else
+			k2.emplace_back(*ki);
+	}
 
-	// const entry *r = m_root;
-	// while (r != nullptr)
-	// {
-	// 	int d = m_row_comparator(cat, k2, r->m_row);
-	// 	if (d < 0)
-	// 		r = r->m_left;
-	// 	else if (d > 0)
-	// 		r = r->m_right;
-	// 	else
-	// 		break;
-	// }
+	const entry *r = m_root;
+	while (r != nullptr)
+	{
+		int d = m_row_comparator(cat, k2, r->m_row);
+		if (d < 0)
+			r = r->m_left;
+		else if (d > 0)
+			r = r->m_right;
+		else
+			break;
+	}
 
-	// return r ? r->m_row : nullptr;
+	return r ? r->m_row : nullptr;
 }
 
 void category_index::insert(category &cat, row *k)
@@ -1569,14 +1568,7 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 			m_index->erase(*this, row);
 	}
 
-	// first remove old value with cix
-	if (ival != nullptr)
-		row->remove(item);
-
-	std::swap(*ival, value);
-
-	if (not value.empty())
-		row->append(item, { value });
+	row->set(item, value);
 
 	if (reinsert and m_index != nullptr)
 		m_index->insert(*this, row);
@@ -1670,14 +1662,7 @@ row *category::clone_row(const row &r)
 
 	try
 	{
-		for (uint16_t ix = 0; ix < static_cast<uint16_t>(r.size()); ++ix)
-		{
-			auto &i = r[ix];
-			if (not i)
-				continue;
-
-			result->append(ix, i);
-		}
+		result->assign(r.begin(), r.end());
 	}
 	catch (...)
 	{
@@ -1723,7 +1708,7 @@ row_handle category::create_copy(row_handle r)
 				continue;
 
 			if (kv->m_type->m_primitive_type == DDL_PrimitiveType::Numb)
-				item.value(get_unique_id(""));
+				item.value(find_max<uint64_t>(key) + 1);
 			else
 				item.value(get_unique_id(m_name + "_id_"));
 			break;

@@ -467,7 +467,7 @@ namespace detail
 
 		std::string m_item_name;
 		uint16_t m_item_ix = 0;
-		item_value &m_value;
+		item_value m_value;
 		bool m_icase = false;
 		std::optional<const_row_handle> m_single_hit;
 	};

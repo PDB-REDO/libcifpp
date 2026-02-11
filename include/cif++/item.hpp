@@ -668,13 +668,19 @@ struct item_handle
 	template <typename T>
 	auto get() const
 	{
-		return value().template get<T>();
+		if (empty())
+			return T{};
+		else
+			return value().template get<T>();
 	}
 
 	template <typename T>
 	auto as() const
 	{
-		return value().template get<T>();
+		if (empty())
+			return T{};
+		else
+			return value().template get<T>();
 	}
 
 	[[nodiscard]] auto str() const
@@ -743,10 +749,7 @@ struct item_handle
 	 * only contains '.' meaning null or '?' meaning unknown
 	 * in a mmCIF context
 	 */
-	[[nodiscard]] bool empty() const
-	{
-		return this->value().empty();
-	}
+	[[nodiscard]] bool empty() const;
 
 	/** Easy way to test for an empty item */
 	explicit operator bool() const { return not empty(); }
@@ -800,13 +803,19 @@ struct const_item_handle
 	template <typename T>
 	auto get() const
 	{
-		return value().template get<T>();
+		if (empty())
+			return T{};
+		else
+			return value().template get<T>();
 	}
 
 	template <typename T>
 	auto as() const
 	{
-		return value().template get<T>();
+		if (empty())
+			return T{};
+		else
+			return value().template get<T>();
 	}
 
 	[[nodiscard]] auto str() const
@@ -872,10 +881,7 @@ struct const_item_handle
 	 * only contains '.' meaning null or '?' meaning unknown
 	 * in a mmCIF context
 	 */
-	[[nodiscard]] bool empty() const
-	{
-		return this->value().empty();
-	}
+	[[nodiscard]] bool empty() const;
 
 	/** Easy way to test for an empty item */
 	explicit operator bool() const { return not empty(); }

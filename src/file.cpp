@@ -166,10 +166,8 @@ void file::load(const std::filesystem::path &p, const validator &v)
 
 void file::load(std::istream &is, const validator &v)
 {
-	parser p(is, *this);
+	parser p(is, *this, &v);
 	p.parse_file();
-	for (auto &db : *this)
-		db.set_validator(&v);
 }
 
 void file::load(std::istream &is)

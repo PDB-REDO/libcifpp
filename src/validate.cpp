@@ -270,9 +270,23 @@ bool item_validator::validate_value(const item_value &value, std::error_code &ec
 
 	if (not value.empty())
 	{
-		if (m_type != nullptr and not m_type->m_rx->match(value.str()))
-			ec = make_error_code(validation_error::value_does_not_match_rx);
-		else if (not m_enums.empty() and m_enums.count(value.str()) == 0)
+		if (m_type != nullptr)
+		{
+			if (m_type->m_primitive_type == DDL_PrimitiveType::Numb)
+			{
+				if (not value.is_number())
+					ec = make_error_code(validation_error::value_is_not_a_number);
+			}
+			else
+			{
+				if (value.is_number())
+					ec = make_error_code(validation_error::value_is_not_a_char_string);
+				else if (not m_type->m_rx->match(value.str()))
+					ec = make_error_code(validation_error::value_does_not_match_rx);
+			}
+		}
+
+		if (ec == std::errc{} and not m_enums.empty() and m_enums.count(value.str()) == 0)
 			ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
 	}
 
@@ -468,11 +482,14 @@ void validator::report_error(std::error_code ec, std::string_view category,
 		if (item.empty())
 			throw validation_exception(ec, category);
 		else
-		 	throw validation_exception(ec, category, item);
+			throw validation_exception(ec, category, item);
 	}
 
 	if (VERBOSE > 0)
-		std::cerr << ec.message() << " category: " << std::quoted(category) << " item: " << std::quoted(item) << '\n';
+		std::cerr << ec.message()
+				  << "; category: " << std::quoted(category)
+				  << " item: " << std::quoted(item)
+				  << '\n';
 }
 
 void validator::fill_audit_conform(category &audit_conform) const

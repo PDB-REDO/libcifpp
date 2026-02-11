@@ -36,6 +36,11 @@
 namespace cif
 {
 
+bool item_handle::empty() const
+{
+	return m_item_ix >= m_row.size() or m_row[m_item_ix].empty();
+}
+
 item_value &item_handle::value()
 {
 	return m_row.operator[](m_item_ix);
@@ -51,6 +56,11 @@ item_handle &item_handle::operator=(item_value value)
 	row_handle rh{ m_category, m_row };
 	rh.assign(m_item_ix, std::move(value), true);
 	return *this;
+}
+
+bool const_item_handle::empty() const
+{
+	return m_item_ix >= m_row.size() or m_row[m_item_ix].empty();
 }
 
 const item_value &const_item_handle::value() const
@@ -86,6 +96,16 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 				break;
 			default:;
 		}
+	}
+	else if (is_number() and b.is_number())
+	{
+		auto dp = (get<double>() <=> b.get<double>());
+		if (dp == std::partial_ordering::less)
+			d = -1;
+		else if (dp == std::partial_ordering::greater)
+			d = 1;
+		else
+		 	d = 0;
 	}
 
 	return d;
