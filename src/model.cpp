@@ -1167,8 +1167,8 @@ structure::structure(datablock &db, std::size_t modelNr, structure_open_options 
 	// Check to see if we should actually load another model?
 	if (m_atoms.empty() and m_model_nr == 1)
 	{
-		std::optional<std::size_t> model_nr;
-		cif::tie(model_nr) = atom_site.front().get("pdbx_PDB_model_num");
+		auto model_nr =
+			atom_site.front().get<std::optional<std::size_t>>("pdbx_PDB_model_num");
 		if (model_nr and *model_nr != m_model_nr)
 		{
 			if (VERBOSE > 0)

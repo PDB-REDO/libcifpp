@@ -560,8 +560,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::Numeric_Exponent2;
 				else
 				{
-					if (VERBOSE > 0)
-						std::cerr << "parsing " << std::string_view{ m_token_buffer.data(), m_token_buffer.size() } << " Invalid floating point value, expected digit or sign character\n";
+					// warning(std::format("parsing {}:  Invalid floating point value, expected digit or sign character", std::string_view{ m_token_buffer.data(), m_token_buffer.size() }));
 					state = State::Value;
 				}
 				break;
@@ -575,7 +574,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				else if (ch < '0' or ch > '9')
 				{
 					if (VERBOSE > 0)
-						std::cerr << "parsing " << std::string_view{ m_token_buffer.data(), m_token_buffer.size() } << " Invalid floating point value, expected exponent digit\n";
+						// warning(std::format("parsing {}:  Invalid floating point value, expected digit or sign character", std::string_view{ m_token_buffer.data(), m_token_buffer.size() }));
 					state = State::Value;
 				}
 				break;
