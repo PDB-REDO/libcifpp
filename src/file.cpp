@@ -36,8 +36,6 @@
 namespace cif
 {
 
-class validator;
-
 bool file::is_valid() const
 {
 	bool result = true;
@@ -144,28 +142,6 @@ void file::load(const std::filesystem::path &p)
 	{
 		throw_with_nested(std::runtime_error("Error reading file '" + p.string() + '\''));
 	}
-}
-
-void file::load(const std::filesystem::path &p, const validator &v)
-{
-	gzio::ifstream in(p);
-	if (not in.is_open())
-		throw std::runtime_error("Could not open file '" + p.string() + '\'');
-
-	try
-	{
-		load(in, v);
-	}
-	catch (const std::exception &)
-	{
-		throw_with_nested(std::runtime_error("Error reading file '" + p.string() + '\''));
-	}
-}
-
-void file::load(std::istream &is, const validator &v)
-{
-	parser p(is, *this, &v);
-	p.parse_file();
 }
 
 void file::load(std::istream &is)

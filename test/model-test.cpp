@@ -169,8 +169,8 @@ _atom_type.symbol   C
 
 	std::istream is(&buffer);
 
-	expected_file.load(is, *cif::validator_factory::instance().get("mmcif_pdbx.dic"));
-
+	expected_file.load(is);
+	expected_file.front().set_validator(cif::validator_factory::instance().get("mmcif_pdbx.dic"));
 
 	if (not(expected_file.front() == structure.get_datablock()))
 	{

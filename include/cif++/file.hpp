@@ -51,8 +51,6 @@
 namespace cif
 {
 
-class validator;
-
 // --------------------------------------------------------------------
 
 /**
@@ -210,12 +208,6 @@ class file : public std::list<datablock>
 
 	/** Load the data from @a is */
 	void load(std::istream &is);
-
-	/** Load the data from the file specified by @a p using validator @a v */
-	void load(const std::filesystem::path &p, const validator &v);
-
-	/** Load the data from @a is using validator @a v */
-	void load(std::istream &is, const validator &v);
 
 	/** Save the data to the file specified by @a p */
 	void save(const std::filesystem::path &p) const;

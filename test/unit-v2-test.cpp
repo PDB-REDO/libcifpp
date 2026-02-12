@@ -882,7 +882,8 @@ _cat_2.desc
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	SECTION("one")
 	{
@@ -1026,7 +1027,8 @@ mies Mies
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	auto &cat1 = f.front()["cat_1"];
 
@@ -1198,7 +1200,8 @@ _cat_2.desc
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	auto &cat1 = f.front()["cat_1"];
 	auto &cat2 = f.front()["cat_2"];
@@ -1407,7 +1410,8 @@ _cat_2.parent_id3
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	auto &cat1 = f.front()["cat_1"];
 	auto &cat2 = f.front()["cat_2"];
@@ -1617,7 +1621,8 @@ _cat_2.parent_id3
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	auto &cat1 = f.front()["cat_1"];
 	auto &cat2 = f.front()["cat_2"];
@@ -1853,7 +1858,8 @@ _cat_2.parent_id_2
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	// auto &cat1 = f.front()["cat_1"];
 	auto &cat2 = f.front()["cat_2"];
@@ -2253,7 +2259,8 @@ _cat_3.num
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	auto &cat1 = f.front()["cat_1"];
 	auto &cat2 = f.front()["cat_2"];
@@ -2537,7 +2544,8 @@ _cat_3.num
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	auto &cat1 = f.front()["cat_1"];
 	auto &cat2 = f.front()["cat_2"];
@@ -3114,7 +3122,8 @@ _cat_1.name
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	CHECK(f.is_valid());
 
@@ -3310,7 +3319,8 @@ _cat_1.name
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	CHECK(f.is_valid());
 
@@ -3416,7 +3426,8 @@ _cat_1.id_2
 	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
 
 	std::istream is_data(&data_buffer);
-	f.load(is_data, validator);
+	f.load(is_data);
+	f.front().set_validator(&validator);
 
 	auto &cat1 = f.front()["cat_1"];
 
