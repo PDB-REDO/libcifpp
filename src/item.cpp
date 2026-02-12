@@ -50,11 +50,10 @@ const item_value &item_handle::value() const
 	return m_row.operator[](m_item_ix);
 }
 
-item_handle &item_handle::operator=(item_value value)
+void item_handle::set(item_value value, bool updateLinked)
 {
 	row_handle rh{ m_category, m_row };
-	rh.assign(m_item_ix, std::move(value), true);
-	return *this;
+	rh.assign(m_item_ix, std::move(value), updateLinked);
 }
 
 bool const_item_handle::empty() const

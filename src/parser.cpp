@@ -1044,9 +1044,8 @@ void parser::produce_row()
 	if (m_category == nullptr)
 		error("inconsistent categories in loop_");
 
-	m_category->emplace({});
-	m_row = m_category->back();
-	// m_row.lineNr(m_line_nr);
+	auto i = m_category->emplace({});
+	m_row = *i;
 }
 
 void parser::produce_item(std::string_view category, std::string_view item, item_value value)
@@ -1070,7 +1069,7 @@ void parser::produce_item(std::string_view category, std::string_view item, item
 		}
 	}
 
-	m_row[item] = std::move(value);
+	m_row[item].set(value, false);
 }
 
 } // namespace cif

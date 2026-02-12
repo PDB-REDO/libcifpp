@@ -539,7 +539,7 @@ class item
 
 	[[nodiscard]] const std::string &name() const { return m_name; }    ///< Return the name of the item
 	[[nodiscard]] const item_value &value() const & { return m_value; } ///< Return the value of the item
-	item_value &value() & { return m_value; }             ///< Return the value of the item
+	item_value &value() & { return m_value; }                           ///< Return the value of the item
 
 	/// \brief replace the content of the stored value with \a v
 	void value(item_value v) { m_value = std::move(v); }
@@ -589,7 +589,11 @@ struct item_handle
 	 * @param value The value
 	 * @return reference to this item_handle
 	 */
-	item_handle &operator=(item_value value);
+	item_handle &operator=(item_value value)
+	{
+		set(std::move(value), true);
+		return *this;
+	}
 
 	[[nodiscard]] item_value &value();
 	[[nodiscard]] const item_value &value() const;
@@ -716,9 +720,10 @@ struct item_handle
 	row &m_row;
 	uint16_t m_item_ix;
 
-	void assign_value(item_value value);
-};
+	friend class parser;
 
+	void set(item_value value, bool updateLinked);
+};
 
 struct const_item_handle
 {
