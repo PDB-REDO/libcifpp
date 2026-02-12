@@ -370,7 +370,7 @@ class atom
 	/// Return true if this atom is an alternate
 	[[nodiscard]] bool is_alternate() const
 	{
-		if (auto alt_id = get_label_alt_id(); alt_id.empty() or alt_id == ".")
+		if (auto alt_id = get_label_alt_id(); alt_id.empty())
 			return false;
 		return true;
 	}

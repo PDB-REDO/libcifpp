@@ -175,7 +175,7 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 
 			std::map<int, std::set<std::string>> mon_per_seq_id;
 
-			for (const auto &[num, mon_id, hetero] : entity_poly_seq.find<int, std::string, bool>("entity_id"_key == entity_id, "num", "mon_id", "hetero"))
+			for (const auto &[num, mon_id, hetero] : entity_poly_seq.find<int, std::string, std::string>("entity_id"_key == entity_id, "num", "mon_id", "hetero"))
 			{
 				mon_per_seq_id[num].emplace(mon_id);
 
@@ -193,7 +193,7 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 				}
 			}
 
-			for (const auto &[seq_id, mon_id, hetero] : pdbx_poly_seq_scheme.find<int, std::string, bool>("entity_id"_key == entity_id, "seq_id", "mon_id", "hetero"))
+			for (const auto &[seq_id, mon_id, hetero] : pdbx_poly_seq_scheme.find<int, std::string, std::string>("entity_id"_key == entity_id, "seq_id", "mon_id", "hetero"))
 			{
 				if (entity_poly_seq.count(
 						"entity_id"_key == entity_id and
@@ -204,7 +204,7 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 					throw std::runtime_error("For each pdbx_poly_seq/struct_asym record there should be exactly one entity_poly_seq record");
 				}
 
-				if ((mon_per_seq_id[seq_id].size() > 1) != hetero)
+				if ((mon_per_seq_id[seq_id].size() > 1) != iequals(hetero, "Y"))
 					throw std::runtime_error("Mismatch between the hetero flag in the poly seq schemes and the number residues per seq_id");
 			}
 

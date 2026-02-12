@@ -181,7 +181,7 @@ TEST_CASE("item_0")
 	cif::item i1("v1", "tekst");
 	cif::item i2("v2", 2);
 	cif::item i3("v3", 3.0);
-	cif::item i4("v4", true);
+	// cif::item i4("v4", true);
 	cif::item i5("v5", nullptr);
 
 	static_assert(cif::IntegralType<int>);
@@ -190,14 +190,14 @@ TEST_CASE("item_0")
 	CHECK(i1.value().get<std::string>() == "tekst");
 	CHECK(i2.value().get<int>() == 2);
 	CHECK(i3.value().get<double>() == 3.0);
-	CHECK(i4.value().get<bool>() == true);
+	// CHECK(i4.value().get<bool>() == true);
 	CHECK(i5.value().is_null());
 	CHECK(i5.value().is_missing());
 	CHECK(i5.value().empty());
 
 	i2.value() = false;
 	CHECK(i2.value().type() == cif::item_value_type::INT);
-	CHECK(i2.value().get<bool>() == false);
+	// CHECK(i2.value().get<bool>() == false);
 
 	cif::item i6 = std::move(i1);
 	CHECK(i6.value().get<std::string>() == "tekst");

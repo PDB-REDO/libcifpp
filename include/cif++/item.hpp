@@ -153,9 +153,16 @@ class item_value
 
 	item_value(std::string_view s)
 	{
-		m_data.m_type = item_value_type::TEXT;
-		m_data.m_len = s.length();
-		m_data.m_value = s;
+		if (s == ".")
+			m_data.m_type = item_value_type::INAPPLICABLE;
+		else if (s == "?")
+			m_data.m_type = item_value_type::MISSING;
+		else
+		{
+			m_data.m_type = item_value_type::TEXT;
+			m_data.m_len = s.length();
+			m_data.m_value = s;
+		}
 	}
 
 	template <size_t N>
@@ -290,6 +297,8 @@ class item_value
 	template <IntegralType T>
 	[[nodiscard]] std::remove_cvref_t<T> get() const
 	{
+		static_assert(not std::is_same_v<std::remove_cvref_t<T>, bool>, "bool is no longer supported");
+
 		switch (m_data.m_type)
 		{
 			case item_value_type::INT:

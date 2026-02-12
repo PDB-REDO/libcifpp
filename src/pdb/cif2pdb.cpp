@@ -2843,7 +2843,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 		std::string id, name, mon_nstd_flag;
 		cif::tie(id, name, mon_nstd_flag) = r.get("id", "name", "mon_nstd_flag");
 
-		if (mon_nstd_flag == "y")
+		if (iequals(mon_nstd_flag, "Y"))
 			continue;
 
 		het[id] = name;
