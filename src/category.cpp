@@ -80,8 +80,8 @@ class row_comparator
 
 			using namespace std::placeholders;
 
-			m_comparator.emplace_back(ix, [tv](auto &&a1, auto &&a2)
-				{ return tv->compare(std::forward<decltype(a1)>(a1), std::forward<decltype(a2)>(a2)); });
+			m_comparator.emplace_back(ix, [tv](const item_value &a, const item_value &b)
+				{ return tv->compare(a, b); });
 		}
 	}
 
@@ -96,11 +96,7 @@ class row_comparator
 		int d = 0;
 		for (const auto &[k, f] : m_comparator)
 		{
-			// std::string_view ka = rha[k].text();
-			// std::string_view kb = rhb[k].text();
-
-			// d = f(ka, kb);
-			d = rha[k].value().compare(rhb[k].value());
+			d = f(rha[k].value(), rhb[k].value());
 
 			if (d != 0)
 				break;
@@ -120,15 +116,7 @@ class row_comparator
 
 		for (const auto &[k, f] : m_comparator)
 		{
-			// assert(ai != a.end());
-
-			// std::string_view ka = ai->value;
-			// std::string_view kb = rhb[k].text();
-
-			// if (not(ai->may_be_null and rhb[k].empty()))
-			// 	d = f(ka, kb);
-
-			d = ai->value.compare(rhb[k].value());
+			d = f(ai->value, rhb[k].value());
 
 			if (d != 0)
 				break;
@@ -140,7 +128,7 @@ class row_comparator
 	}
 
   private:
-	using compareFunc = std::function<int(std::string_view, std::string_view)>;
+	using compareFunc = std::function<int(const item_value &, const item_value &)>;
 	using key_comparator = std::tuple<uint16_t, compareFunc>;
 
 	std::vector<key_comparator> m_comparator;
@@ -729,9 +717,7 @@ void category::set_validator(const validator *v, datablock &db)
 				}
 			}
 
-			if (missing.empty())
-				m_index = new category_index(*this);
-			else
+			if (not missing.empty())
 			{
 				std::ostringstream msg;
 				msg << "Cannot construct index since the key item" << (missing.size() > 1 ? "s" : "") << " "
@@ -743,8 +729,33 @@ void category::set_validator(const validator *v, datablock &db)
 	else
 		m_cat_validator = nullptr;
 
-	for (auto &&[item, cv] : m_items)
+	for (size_t cix = 0; cix < m_items.size(); ++cix)
+	{
+		auto &&[item, cv] = m_items[cix];
+
 		cv = m_cat_validator ? m_cat_validator->get_validator_for_item(item) : nullptr;
+
+		if (cv == nullptr)
+			continue;
+
+		auto type = cv->m_type;
+		if (type == nullptr)
+			continue;
+
+		bool number = type->m_primitive_type == DDL_PrimitiveType::Numb;
+		if (number)
+			continue;
+
+		for (auto row = m_head; row != nullptr; row = row->m_next)
+		{
+			item_value &v = row->operator[](cix);
+			if (v.is_number())
+				v = v.str();
+		}
+	}
+
+	if (m_cat_validator)
+		m_index = new category_index(*this);
 
 	update_links(db);
 }
@@ -2113,7 +2124,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 					offset = 0;
 				}
 
-				offset = detail::write_value(os, s, offset, w, /* right_aligned[cix] */iv->is_number());
+				offset = detail::write_value(os, s, offset, w, /* right_aligned[cix] */ iv->is_number());
 
 				if (offset > 132)
 				{

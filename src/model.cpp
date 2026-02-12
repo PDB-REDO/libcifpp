@@ -1710,17 +1710,7 @@ void structure::remove_atom(atom &a, bool removeFromResidue)
 
 	auto &atomSite = m_db["atom_site"];
 
-	if (a.is_water())
-	{
-		auto ra = atomSite.find1("id"_key == a.id());
-		if (ra)
-		{
-			auto &nps = m_db["pdbx_nonpoly_scheme"];
-			for (auto rnp : atomSite.get_children(ra, nps))
-				nps.erase(rnp);
-		}
-	}
-	else if (removeFromResidue)
+	if (removeFromResidue)
 	{
 		try
 		{
@@ -1736,6 +1726,13 @@ void structure::remove_atom(atom &a, bool removeFromResidue)
 
 	for (auto ri : atomSite.find("id"_key == a.id()))
 	{
+		if (a.is_water())
+		{
+			auto &nps = m_db["pdbx_nonpoly_scheme"];
+			for (auto rnp : atomSite.get_children(ri, nps))
+				nps.erase(rnp);
+		}
+
 		// also remove struct_conn records for this atom
 		auto &structConn = m_db["struct_conn"];
 

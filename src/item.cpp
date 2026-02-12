@@ -86,8 +86,16 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 					double fb = b.m_data.m_value.m_float;
 
 					auto delta = std::abs(fa - fb);
-					if (std::isnan(delta) or delta <= std::pow(10, -std::max(m_data.m_len, b.m_data.m_len)))
+					if (delta == 0 or std::isnan(delta))
 						d = 0;
+					else if (m_data.m_len and b.m_data.m_len)
+					{
+						auto epsilon = std::pow(10.0f, -1.0f * std::min(m_data.m_len, b.m_data.m_len));
+						if (delta > epsilon)
+							d = fa < fb ? -1 : 1;
+						else
+							d = 0;
+					}
 					else
 					{
 						auto dp = (m_data.m_value.m_float <=> b.m_data.m_value.m_float);

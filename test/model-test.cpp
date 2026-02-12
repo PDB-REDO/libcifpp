@@ -260,7 +260,7 @@ _atom_site.auth_atom_id
 _atom_site.pdbx_PDB_model_num
 1 A ? A CHA HEM 1 . C HETATM ? 2.748 -19.531 39.896 1.00 ? 1 HEM CHA 1
 2 A ? A CHB HEM 1 . C HETATM ? 3.258 -17.744 35.477 1.00 ? 1 HEM CHB 1
-3 A ? A CHC HEM 1 . C HETATM ? 1.703 -21.9   33.637 1.00 ? 1 HEM CHC 1
+3 A ? A CHC HEM 1 . C HETATM ? 1.703 -21.900 33.637 1.00 ? 1 HEM CHC 1
 4 A ? A CHD HEM 1 . C HETATM ? 1.149 -23.677 38.059 1.00 ? 1 HEM CHD 1
 #
 _chem_comp.id               HEM

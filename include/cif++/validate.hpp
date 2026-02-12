@@ -278,7 +278,7 @@ struct type_validator
 	/// primitive type of this type. A value of zero indicates the
 	/// values are equal. Less than zero means @a a sorts before @a b
 	/// and a value larger than zero likewise means the opposite
-	[[nodiscard]] int compare(std::string_view a, std::string_view b) const;
+	[[nodiscard]] int compare(const item_value &a, const item_value &b) const;
 };
 
 /** @brief Item alias, items can be renamed over time

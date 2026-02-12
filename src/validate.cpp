@@ -28,10 +28,12 @@
 
 #include "cif++/category.hpp"
 #include "cif++/dictionary_parser.hpp"
+#include "cif++/text.hpp"
 #include "cif++/utilities.hpp"
 
 #include <algorithm>
 #include <cassert>
+#include <compare>
 #include <format>
 #include <iomanip>
 #include <iostream>
@@ -158,101 +160,39 @@ type_validator::type_validator(std::string_view name, DDL_PrimitiveType type, st
 {
 }
 
-int type_validator::compare(std::string_view a, std::string_view b) const
+int type_validator::compare(const item_value &a, const item_value &b) const
 {
 	int result = 0;
 
-	if (a.empty())
-		result = b.empty() ? 0 : -1;
-	else if (b.empty())
-		result = a.empty() ? 0 : +1;
-	else
+	switch (m_primitive_type)
 	{
-		switch (m_primitive_type)
+		case DDL_PrimitiveType::Numb:
 		{
-			case DDL_PrimitiveType::Numb:
-			{
-				double da, db;
+			if (a.is_number() and b.is_number())
+				return a.compare(b);
 
-				using namespace cif;
-				using namespace std;
+			auto da = a.get<double>();
+			auto db = b.get<double>();
 
-				std::from_chars_result ra, rb;
-
-				ra = from_chars(a.data(), a.data() + a.length(), da);
-				rb = from_chars(b.data(), b.data() + b.length(), db);
-
-				if (ra.ec == std::errc{} and rb.ec == std::errc{})
-				{
-					auto d = da - db;
-					if (std::abs(d) > std::numeric_limits<double>::epsilon())
-					{
-						if (d > 0)
-							result = 1;
-						else if (d < 0)
-							result = -1;
-					}
-				}
-				else if (ra.ec != std::errc{})
-					result = 1;
-				else
-					result = -1;
-				break;
-			}
-
-			case DDL_PrimitiveType::UChar:
-			case DDL_PrimitiveType::Char:
-			{
-				// CIF is guaranteed to have ascii only, therefore this primitive code will do
-				// also, we're collapsing spaces
-
-				auto ai = a.begin(), bi = b.begin();
-				for (;;)
-				{
-					if (ai == a.end())
-					{
-						if (bi != b.end())
-							result = -1;
-						break;
-					}
-					else if (bi == b.end())
-					{
-						result = 1;
-						break;
-					}
-
-					char ca = *ai;
-					char cb = *bi;
-
-					if (m_primitive_type == DDL_PrimitiveType::UChar)
-					{
-						ca = tolower(ca);
-						cb = tolower(cb);
-					}
-
-					result = ca - cb;
-
-					if (result != 0)
-						break;
-
-					if (ca == ' ')
-					{
-						while (ai[1] == ' ')
-							++ai;
-						while (bi[1] == ' ')
-							++bi;
-					}
-
-					++ai;
-					++bi;
-				}
-
-				break;
-			}
+			return da < db
+			           ? -1
+			       : da > db
+			           ? 1
+			           : 0;
 		}
-	}
 
-	return result;
+		case DDL_PrimitiveType::UChar:
+			if (a.is_string() and b.is_string())
+				return a.compare(b, true);
+
+			return icompare(a.str(), b.str());
+
+		case DDL_PrimitiveType::Char:
+			if (a.is_string() and b.is_string())
+				return a.compare(b, false);
+
+			return a.str().compare(b.str());
+	}
 }
 
 // --------------------------------------------------------------------
@@ -283,7 +223,8 @@ bool item_validator::validate_value(const item_value &value, std::error_code &ec
 					ec = make_error_code(validation_error::value_is_not_a_char_string);
 				else
 				{
-					try {
+					try
+					{
 						auto s = value.str();
 						if (not m_type->m_rx->match(s))
 							ec = make_error_code(validation_error::value_does_not_match_rx);
