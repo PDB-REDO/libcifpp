@@ -635,7 +635,7 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 		{ "type", type },
 		{ "formula", formula },
 		{ "pdbx_formal_charge", formal_charge },
-		{ "formula_weight", formula_weight },
+		{ "formula_weight", { formula_weight, 3 } },
 		{ "three_letter_code", three_letter_code } });
 
 	std::shared_lock lock(mMutex);

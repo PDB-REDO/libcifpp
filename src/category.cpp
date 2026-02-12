@@ -2039,6 +2039,11 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 			                     col.m_validator->m_type->m_primitive_type == cif::DDL_PrimitiveType::Numb;
 		}
 	}
+	else if (not empty())
+	{
+		for (auto cix : order)
+			right_aligned[cix] = front()[cix].is_number();
+	}
 
 	if (needLoop)
 	{
@@ -2108,7 +2113,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 					offset = 0;
 				}
 
-				offset = detail::write_value(os, s, offset, w, right_aligned[cix]);
+				offset = detail::write_value(os, s, offset, w, /* right_aligned[cix] */iv->is_number());
 
 				if (offset > 132)
 				{
@@ -2184,7 +2189,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 				offset = 0;
 			}
 
-			if (detail::write_value(os, s, offset, width, s.empty() or right_aligned[cix]) != 0)
+			if (detail::write_value(os, s, offset, width, s.empty() or /* right_aligned[cix] */ iv->is_number()) != 0)
 				os << '\n';
 		}
 	}
@@ -2209,6 +2214,11 @@ void category::write_delimited(std::ostream &os, const std::vector<uint16_t> &or
 			                     col.m_validator->m_type != nullptr and
 			                     col.m_validator->m_type->m_primitive_type == cif::DDL_PrimitiveType::Numb;
 		}
+	}
+	else if (not empty())
+	{
+		for (auto cix : order)
+			right_aligned[cix] = front()[cix].is_number();
 	}
 
 	std::vector<std::size_t> itemWidths(get_item_count());
@@ -2375,6 +2385,11 @@ void category::write_markdown(std::ostream &os, const std::vector<uint16_t> &ord
 			                     col.m_validator->m_type->m_primitive_type == cif::DDL_PrimitiveType::Numb;
 		}
 	}
+	else if (not empty())
+	{
+		for (auto cix : order)
+			right_aligned[cix] = front()[cix].is_number();
+	}
 
 	std::vector<std::size_t> itemWidths(get_item_count());
 
@@ -2500,6 +2515,11 @@ void category::write_table(std::ostream &os, const std::vector<uint16_t> &order,
 			                     col.m_validator->m_type != nullptr and
 			                     col.m_validator->m_type->m_primitive_type == cif::DDL_PrimitiveType::Numb;
 		}
+	}
+	else if (not empty())
+	{
+		for (auto cix : order)
+			right_aligned[cix] = front()[cix].is_number();
 	}
 
 	std::vector<std::size_t> itemWidths(get_item_count());

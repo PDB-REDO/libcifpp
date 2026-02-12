@@ -62,80 +62,33 @@ void atom::atom_impl::moveTo(const point &p)
 
 // const compound *compound() const;
 
-std::string atom::atom_impl::get_property(std::string_view name) const
+const item_value &atom::atom_impl::get_property(std::string_view name) const
 {
 	if (auto rh = row(); rh)
-		return rh[name].as<std::string>();
-	return "";
+		return rh[name].value();
+	throw std::runtime_error(std::format("Missing property {} for atom", name));
 }
 
-int atom::atom_impl::get_property_int(std::string_view name) const
-{
-	int result = 0;
-	if (auto rh = row(); rh and not rh[name].empty())
-	{
-		auto s = get_property(name);
-
-		std::from_chars_result r = std::from_chars(s.data(), s.data() + s.length(), result);
-		if (r.ec != std::errc{} and VERBOSE > 0)
-			std::cerr << "Error converting " << s << " to number for property " << name << '\n';
-	}
-	return result;
-}
-
-float atom::atom_impl::get_property_float(std::string_view name) const
-{
-	float result = 0;
-	if (auto rh = row(); rh and not rh[name].empty())
-	{
-		auto s = get_property(name);
-
-		std::from_chars_result r = cif::from_chars(s.data(), s.data() + s.length(), result);
-		if (r.ec != std::errc{} and VERBOSE > 0)
-			std::cerr << "Error converting " << s << " to number for property " << name << '\n';
-	}
-	return result;
-}
-
-void atom::atom_impl::set_property(const std::string_view name, const std::string &value)
+void atom::atom_impl::set_property(const std::string_view name, item_value value)
 {
 	auto r = row();
 	if (not r)
 		throw std::runtime_error("Trying to modify a row that does not exist");
-	r.assign(name, value, true, true);
+	r.assign(name, std::move(value), true, true);
 }
 
 int atom::atom_impl::compare(const atom_impl &b) const
 {
 	int d = get_property("label_asym_id").compare(b.get_property("label_asym_id"));
 	if (d == 0)
-		d = get_property_int("label_seq_id") - b.get_property_int("label_seq_id");
+		d = get_property("label_seq_id").compare(b.get_property("label_seq_id"));
 	if (d == 0)
-		d = get_property_int("auth_seq_id") - b.get_property_int("auth_seq_id");
+		d = get_property("auth_seq_id").compare(b.get_property("auth_seq_id"));
 	if (d == 0)
 		d = get_property("label_atom_id").compare(b.get_property("label_atom_id"));
 
 	return d;
 }
-
-// bool atom::atom_impl::getAnisoU(float anisou[6]) const
-// {
-// 	bool result = false;
-
-// 	auto cat = m_db.get("atom_site_anisotrop");
-// 	if (cat)
-// 	{
-// 		for (auto r : cat->find(key("id") == m_id))
-// 		{
-// 			tie(anisou[0], anisou[1], anisou[2], anisou[3], anisou[4], anisou[5]) =
-// 				r.get("U[1][1]", "U[1][2]", "U[1][3]", "U[2][2]", "U[2][3]", "U[3][3]");
-// 			result = true;
-// 			break;
-// 		}
-// 	}
-
-// 	return result;
-// }
 
 int atom::atom_impl::get_charge() const
 {
@@ -143,7 +96,7 @@ int atom::atom_impl::get_charge() const
 
 	if (not formalCharge.has_value())
 	{
-		auto c = cif::compound_factory::instance().create(get_property("label_comp_id"));
+		auto c = cif::compound_factory::instance().create(get_property("label_comp_id").get<std::string>());
 
 		if (c != nullptr and c->atoms().size() == 1)
 			formalCharge = c->atoms().front().charge;
@@ -239,7 +192,7 @@ atom residue::create_new_atom(atom_type inType, const std::string &inAtomID, poi
 		{ "auth_atom_id", inAtomID },
 		{ "auth_comp_id", m_compound_id },
 		{ "auth_seq_id", m_pdb_seq_num },
-		{ "occupancy", 1.0f/* , 2 */ },
+		{ "occupancy", { 1.0f, 2 } },
 		{ "B_iso_or_equiv", 20.0f },
 		{ "pdbx_PDB_model_num", m_structure->get_model_nr() },
 	});
@@ -957,8 +910,8 @@ cif::mm::atom sugar::add_atom(row_initializer atom_info)
 	atom_info.set_value({ "auth_asym_id", m_branch->get_asym_id() });
 	atom_info.set_value({ "auth_comp_id", m_compound_id });
 	atom_info.set_value({ "auth_seq_id", m_pdb_seq_num });
-	atom_info.set_value({ "occupancy", 1.0/* , 2 */ });
-	atom_info.set_value({ "B_iso_or_equiv", 30.0/* , 2 */ });
+	atom_info.set_value({ "occupancy", { 1.0, 2 } });
+	atom_info.set_value({ "B_iso_or_equiv", { 30.0, 2 } });
 	atom_info.set_value({ "pdbx_PDB_model_num", 1 });
 
 	auto row = atom_site.emplace(std::move(atom_info));
@@ -1061,7 +1014,7 @@ sugar &branch::construct_sugar(const std::string &compound_id)
 		chemComp.emplace({ { "id", compound_id },
 			{ "name", compound->name() },
 			{ "formula", compound->formula() },
-			{ "formula_weight", compound->formula_weight() },
+			{ "formula_weight", { compound->formula_weight(), 3 } },
 			{ "type", compound->type() } });
 	}
 
@@ -1233,7 +1186,7 @@ void structure::load_atoms_for_model(structure_open_options options)
 		for (auto id : atom_site.find<std::string>(std::move(c), "id"))
 		{
 			auto a = std::make_shared<atom::atom_impl>(m_db, id);
-			if (a->get_property_float("occupancy") > 0)
+			if (a->get_property("occupancy").get<float>() > 0)
 				continue;
 			emplace_atom(a);
 		}
@@ -1682,7 +1635,7 @@ std::string structure::insert_compound(const std::string &compoundID, bool is_en
 		chemComp.emplace({ { "id", compoundID },
 			{ "name", compound->name() },
 			{ "formula", compound->formula() },
-			{ "formula_weight", compound->formula_weight() },
+			{ "formula_weight", { compound->formula_weight(), 3 } },
 			{ "type", compound->type() } });
 	}
 
@@ -1702,7 +1655,7 @@ std::string structure::insert_compound(const std::string &compoundID, bool is_en
 			entity.emplace({ { "id", entity_id },
 				{ "type", "non-polymer" },
 				{ "pdbx_description", compound->name() },
-				{ "formula_weight", compound->formula_weight() } });
+				{ "formula_weight", { compound->formula_weight(), 3 } } });
 
 			pdbxEntityNonpoly.emplace({ { "entity_id", entity_id },
 				{ "name", compound->name() },
@@ -1903,7 +1856,7 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 			entity.emplace({ { "id", entityID },
 				{ "type", "non-polymer" },
 				{ "pdbx_description", compound->name() },
-				{ "formula_weight", compound->formula_weight() } });
+				{ "formula_weight", { compound->formula_weight(), 3 } } });
 
 			auto &pdbxEntityNonpoly = m_db["pdbx_entity_nonpoly"];
 			pdbxEntityNonpoly.emplace({ { "entity_id", entityID },
@@ -1927,7 +1880,7 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 			chemComp.emplace({ { "id", newCompound },
 				{ "name", compound->name() },
 				{ "formula", compound->formula() },
-				{ "formula_weight", compound->formula_weight() },
+				{ "formula_weight", { compound->formula_weight(), 3 } },
 				{ "type", compound->type() } });
 		}
 
@@ -2202,24 +2155,24 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 
 		auto row = atom_site.emplace({ { "group_PDB", atom.get_property("group_PDB") },
 			{ "id", atom_id },
-			{ "type_symbol", atom.get_property("type_symbol") },
-			{ "label_atom_id", atom.get_property("label_atom_id") },
-			{ "label_alt_id", atom.get_property("label_alt_id") },
+			{ "type_symbol", atom.get_property_value("type_symbol") },
+			{ "label_atom_id", atom.get_property_value("label_atom_id") },
+			{ "label_alt_id", atom.get_property_value("label_alt_id") },
 			{ "label_comp_id", comp_id },
 			{ "label_asym_id", asym_id },
 			{ "label_entity_id", entity_id },
 			{ "label_seq_id", nullptr },
 			{ "pdbx_PDB_ins_code", "" },
-			{ "Cartn_x", atom.get_property("Cartn_x") },
-			{ "Cartn_y", atom.get_property("Cartn_y") },
-			{ "Cartn_z", atom.get_property("Cartn_z") },
-			{ "occupancy", atom.get_property("occupancy") },
-			{ "B_iso_or_equiv", atom.get_property("B_iso_or_equiv") },
-			{ "pdbx_formal_charge", atom.get_property("pdbx_formal_charge") },
+			{ "Cartn_x", atom.get_property_value("Cartn_x") },
+			{ "Cartn_y", atom.get_property_value("Cartn_y") },
+			{ "Cartn_z", atom.get_property_value("Cartn_z") },
+			{ "occupancy", atom.get_property_value("occupancy") },
+			{ "B_iso_or_equiv", atom.get_property_value("B_iso_or_equiv") },
+			{ "pdbx_formal_charge", atom.get_property_value("pdbx_formal_charge") },
 			{ "auth_seq_id", "1" },
 			{ "auth_comp_id", comp_id },
 			{ "auth_asym_id", asym_id },
-			{ "auth_atom_id", atom.get_property("label_atom_id") },
+			{ "auth_atom_id", atom.get_property_value("label_atom_id") },
 			{ "pdbx_PDB_model_num", 1 } });
 
 		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
@@ -2276,10 +2229,10 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 		atom.set_value_if_empty({ "label_comp_id", comp_id });
 		atom.set_value_if_empty({ "label_seq_id", nullptr });
 		atom.set_value_if_empty({ "auth_comp_id", comp_id });
-		atom.set_value_if_empty({ "auth_seq_id", 1 });
+		atom.set_value_if_empty({ "auth_seq_id", "1" });
 		atom.set_value_if_empty({ "pdbx_PDB_model_num", 1 });
 		atom.set_value_if_empty({ "label_alt_id", "" });
-		atom.set_value_if_empty({ "occupancy", 1.0/* , 2 */ });
+		atom.set_value_if_empty({ "occupancy", { 1.0, 2 } });
 
 		auto row = atom_site.emplace(atom.begin(), atom.end());
 
@@ -2293,7 +2246,7 @@ std::string structure::create_non_poly(const std::string &entity_id, std::vector
 		{ "asym_id", asym_id },
 		{ "entity_id", entity_id },
 		{ "mon_id", comp_id },
-		{ "ndb_seq_num", ndb_nr },
+		{ "ndb_seq_num", std::to_string(ndb_nr) },
 		{ "pdb_seq_num", res.get_pdb_seq_num() },
 		{ "auth_seq_num", res.get_pdb_seq_num() },
 		{ "pdb_mon_id", comp_id },
@@ -2377,7 +2330,7 @@ void structure::create_water(row_initializer atom)
 	atom.set_value_if_empty({ "auth_comp_id", "HOH" });
 	atom.set_value_if_empty({ "pdbx_PDB_model_num", 1 });
 	atom.set_value_if_empty({ "label_alt_id", "" });
-	atom.set_value_if_empty({ "occupancy", 1.0/* , 2 */ });
+	atom.set_value_if_empty({ "occupancy", { 1.0, 2 } });
 
 	auto row = atom_site.emplace(atom.begin(), atom.end());
 
@@ -2448,7 +2401,7 @@ std::string structure::create_link(atom a1, atom a2, const std::string &link_typ
 			{ "ptnr2_auth_seq_id", a2.get_auth_seq_id() },
 			{ "ptnr2_symmetry", a2.symmetry() },
 
-			{ "pdbx_dist_value", distance(a1.get_location(), a2.get_location())/* , 3 */ },
+			{ "pdbx_dist_value", { distance(a1.get_location(), a2.get_location()), 3 } },
 			{ "pdbx_role", role } });
 
 	return link_id;
@@ -2670,7 +2623,7 @@ std::string structure::create_entity_for_branch(branch &branch)
 			{ "type", "branched" },
 			{ "src_method", "man" },
 			{ "pdbx_description", entityName },
-			{ "formula_weight", branch.weight() } });
+			{ "formula_weight", { branch.weight(), 3 } } });
 
 		auto &pdbx_entity_branch_list = m_db["pdbx_entity_branch_list"];
 		for (auto &sugar : branch)

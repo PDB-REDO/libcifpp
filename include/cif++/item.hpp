@@ -136,8 +136,13 @@ class item_value
 		m_data.m_type = rhs.m_data.m_type;
 		switch (m_data.m_type)
 		{
-			case item_value_type::INT: m_data.m_value = rhs.m_data.m_value.m_integer; break;
-			case item_value_type::FLOAT: m_data.m_value = rhs.m_data.m_value.m_float; break;
+			case item_value_type::INT:
+				m_data.m_value = rhs.m_data.m_value.m_integer;
+				break;
+			case item_value_type::FLOAT:
+				m_data.m_len = rhs.m_data.m_len;
+				m_data.m_value = rhs.m_data.m_value.m_float;
+				break;
 			case item_value_type::TEXT:
 				m_data.m_len = rhs.m_data.m_len;
 				m_data.m_value = rhs.m_data.sv();
@@ -268,30 +273,7 @@ class item_value
 	template <StringType T>
 	[[nodiscard]] inline std::string get() const
 	{
-		switch (m_data.m_type)
-		{
-			case item_value_type::MISSING:
-			case item_value_type::INAPPLICABLE:
-				return "";
-
-			case item_value_type::TEXT:
-				return std::string{ m_data.sv() };
-
-			default:
-			{
-				char b[32];
-
-				const auto &[ptr, ec] =
-					m_data.m_type == item_value_type::INT ? std::to_chars(b, b + sizeof(b), m_data.m_value.m_integer)
-					: m_data.m_len                        ? std::to_chars(b, b + sizeof(b), m_data.m_value.m_float, std::chars_format::fixed, m_data.m_len)
-														  : std::to_chars(b, b + sizeof(b), m_data.m_value.m_float, std::chars_format::general);
-
-				if (ec != std::errc{})
-					throw std::system_error(std::make_error_code(ec));
-
-				return std::string{ b, ptr };
-			}
-		}
+		return str();
 	}
 
 	template <IntegralType T>
@@ -365,10 +347,7 @@ class item_value
 		}
 	}
 
-	[[nodiscard]] std::string str() const
-	{
-		return get<std::string>();
-	}
+	[[nodiscard]] std::string str() const;
 
 	// --------------------------------------------------------------------
 
@@ -493,11 +472,13 @@ class item_value
 
 		[[nodiscard]] std::string_view sv() const noexcept
 		{
+			assert(m_type == item_value_type::TEXT);
 			return m_type == item_value_type::TEXT ? std::string_view(m_len >= sizeof(m_value.m_local_str) ? m_value.m_str : m_value.m_local_str, m_len) : std::string_view{};
 		}
 
 		[[nodiscard]] const char *c_str() const noexcept
 		{
+			assert(m_type == item_value_type::TEXT);
 			return m_type == item_value_type::TEXT ? (m_len >= sizeof(m_value.m_local_str) ? m_value.m_str : m_value.m_local_str) : nullptr;
 		}
 	} m_data{};
@@ -804,7 +785,14 @@ struct const_item_handle
 
 	[[nodiscard]] int compare(const const_item_handle &value, bool icase = true) const noexcept
 	{
-		return compare(value.value(), icase);
+		if (empty() and value.empty())
+			return 0;
+		else if (empty())
+			return -1;
+		else if (value.empty())
+			return 1;
+		else
+			return compare(value.value(), icase);
 	}
 
 	/**

@@ -28,6 +28,7 @@
 
 #include "cif++/file.hpp"
 #include "cif++/forward_decl.hpp"
+#include "cif++/item.hpp"
 #include "cif++/utilities.hpp"
 #include "cif++/validate.hpp"
 
@@ -278,6 +279,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 	m_token_value = {};
 
 	bool negative = false;
+	m_float_precision = 0;
 
 	reserved_words_automaton dag;
 
@@ -322,7 +324,9 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					negative = true;
 					state = State::Numeric_Integer;
 				}
-				else if (ch >= '0' and ch <= '9')
+				else if (ch == '0')
+					state = State::Numeric_Zero;
+				else if (ch >= '1' and ch <= '9')
 					state = State::Numeric_Integer;
 				else if (ch == '.')
 					state = State::Numeric_Float;
@@ -520,6 +524,18 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				}
 				break;
 
+			case State::Numeric_Zero:
+				if (not is_non_blank(ch))
+				{
+					retract();
+					result = CIFToken::VALUE_NUMERIC_INTEGER;
+				}
+				else if (ch == '.')
+					state = State::Numeric_Float;
+				else
+					state = State::Value;
+				break;
+
 			case State::Numeric_Integer:
 				if (ch == '.')
 					state = State::Numeric_Float;
@@ -530,8 +546,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					retract();
 					if (m_token_buffer.size() == 1 and negative)
 					{
-						result = CIFToken::VALUE_CHARSTRING;	// A single hyphen... 
-						m_token_value = std::string_view { m_token_buffer.data(), m_token_buffer.data() +  1 };
+						result = CIFToken::VALUE_CHARSTRING; // A single hyphen...
+						m_token_value = std::string_view{ m_token_buffer.data(), m_token_buffer.data() + 1 };
 					}
 					else
 						result = CIFToken::VALUE_NUMERIC_INTEGER;
@@ -553,6 +569,8 @@ sac_parser::CIFToken sac_parser::get_next_token()
 					state = State::Numeric_Exponent1;
 				else if (ch < '0' or ch > '9')
 					state = State::Value;
+				else
+					++m_float_precision;
 				break;
 
 			case State::Numeric_Exponent1:
@@ -575,7 +593,7 @@ sac_parser::CIFToken sac_parser::get_next_token()
 				{
 					if (VERBOSE > 0)
 						// warning(std::format("parsing {}:  Invalid floating point value, expected digit or sign character", std::string_view{ m_token_buffer.data(), m_token_buffer.size() }));
-					state = State::Value;
+						state = State::Value;
 				}
 				break;
 
@@ -920,11 +938,11 @@ void sac_parser::parse_datablock()
 						switch (m_lookahead)
 						{
 							case CIFToken::VALUE_INAPPLICABLE:
-								produce_item(cat, item_name, nullptr);
+								produce_item(cat, item_name, item_value_type::INAPPLICABLE);
 								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_UNKNOWN:
-								produce_item(cat, item_name, std::optional<std::string>{});
+								produce_item(cat, item_name, item_value_type::MISSING);
 								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_NUMERIC_INTEGER:
@@ -932,7 +950,7 @@ void sac_parser::parse_datablock()
 								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_NUMERIC_FLOAT:
-								produce_item(cat, item_name, m_token_value_float);
+								produce_item(cat, item_name, { m_token_value_float, m_float_precision });
 								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_CHARSTRING:
@@ -967,11 +985,11 @@ void sac_parser::parse_datablock()
 				switch (m_lookahead)
 				{
 					case CIFToken::VALUE_INAPPLICABLE:
-						produce_item(cat, itemName, nullptr);
+						produce_item(cat, itemName, item_value_type::INAPPLICABLE);
 						match(CIFToken::VALUE_INAPPLICABLE);
 						break;
 					case CIFToken::VALUE_UNKNOWN:
-						produce_item(cat, itemName, item_value{ std::optional<std::string>{} });
+						produce_item(cat, itemName, item_value_type::MISSING);
 						match(CIFToken::VALUE_UNKNOWN);
 						break;
 					case CIFToken::VALUE_NUMERIC_INTEGER:
@@ -979,7 +997,7 @@ void sac_parser::parse_datablock()
 						match(CIFToken::VALUE_NUMERIC_INTEGER);
 						break;
 					case CIFToken::VALUE_NUMERIC_FLOAT:
-						produce_item(cat, itemName, m_token_value_float);
+						produce_item(cat, itemName, { m_token_value_float, m_float_precision });
 						match(CIFToken::VALUE_NUMERIC_FLOAT);
 						break;
 					case CIFToken::VALUE_CHARSTRING:

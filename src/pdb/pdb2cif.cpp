@@ -4563,15 +4563,17 @@ void PDBFileParser::ConstructEntities()
 			nstd = "n";
 
 		// clang-format off
-		getCategory("chem_comp")->emplace({
+		auto i = getCategory("chem_comp")->emplace({
 			{ "id", cc },
 			{ "name", name },
 			{ "formula", formula },
-			{ "formula_weight", formulaWeight/* , 3 */ },
 			{ "mon_nstd_flag", nstd },
 			{ "type", type }
 		});
 		// clang-format on
+
+		if (formulaWeight)
+			(*i)["formula_weight"] = item_value{ *formulaWeight, 3 };
 	}
 
 	getCategory("chem_comp")->reorder_by_index();

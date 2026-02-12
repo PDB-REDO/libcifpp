@@ -65,6 +65,7 @@ foreach(CIFPP_TEST IN LISTS CIFPP_tests)
 
 	target_link_libraries(${CIFPP_TEST} PRIVATE cifpp::cifpp Catch2::Catch2)
 	target_include_directories(${CIFPP_TEST} PRIVATE "${EIGEN_INCLUDE_DIR}")
+	target_compile_features(${CIFPP_TEST} PUBLIC cxx_std_23)
 
 	if(MSVC)
 		# Specify unwind semantics so that MSVC knowns how to handle exceptions

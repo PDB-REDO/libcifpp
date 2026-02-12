@@ -304,6 +304,7 @@ class sac_parser
 		TextItemBS2,
 		TextItemBSNL,
 
+		Numeric_Zero,
 		Numeric_Integer,
 		Numeric_Float,
 		Numeric_Exponent1,
@@ -323,6 +324,7 @@ class sac_parser
 	std::string_view m_token_value;
 	int64_t m_token_value_int;
 	double m_token_value_float;
+	int m_float_precision;
 
 	/** @endcond */
 };

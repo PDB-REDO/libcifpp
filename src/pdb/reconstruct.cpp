@@ -187,7 +187,7 @@ void checkEntities(datablock &db)
 		}
 
 		if (formula_weight > 0)
-			entity.assign({ { "formula_weight", formula_weight/* , 3 */ } });
+			entity.assign({ { "formula_weight", { formula_weight, 3 } } });
 	}
 }
 
@@ -469,7 +469,7 @@ void checkChemCompRecords(datablock &db)
 			if (not chem_comp_entry["formula"])
 				items.emplace_back("formula", compound->formula());
 			if (not chem_comp_entry["formula_weight"])
-				items.emplace_back("formula_weight", compound->formula_weight());
+				items.emplace_back("formula_weight", item_value{ compound->formula_weight(), 3 });
 
 			if (not items.empty())
 				chem_comp_entry.assign(items);
@@ -587,7 +587,7 @@ void checkAtomRecords(datablock &db)
 				{ "mon_nstd_flag", non_std },
 				{ "name", compound->name() },
 				{ "formula", compound->formula() },
-				{ "formula_weight", compound->formula_weight() } });
+				{ "formula_weight", { compound->formula_weight(), 3 } } });
 		}
 		else
 		{
@@ -602,7 +602,7 @@ void checkAtomRecords(datablock &db)
 			if (not chem_comp_entry["formula"])
 				items.emplace_back("formula", compound->formula());
 			if (not chem_comp_entry["formula_weight"])
-				items.emplace_back("formula_weight", compound->formula_weight());
+				items.emplace_back("formula_weight", item_value{ compound->formula_weight(), 3 });
 
 			if (not items.empty())
 				chem_comp_entry.assign(items);
@@ -648,14 +648,15 @@ void checkAtomRecords(datablock &db)
 			if (auto [ptr, ec] = cif::from_chars(s.data(), s.data() + s.length(), v); ec != std::errc{})
 				continue;
 
-/* 			if (s.length() < prec + 1UL or s[s.length() - prec - 1] != '.')
-			{
-				char b[12];
+		/* 			if (s.length() < prec + 1UL or s[s.length() - prec - 1] != '.')
+		            {
+		                char b[12];
 
-				if (auto [ptr, ec] = std::to_chars(b, b + sizeof(b), v, std::chars_format::fixed, prec); ec == std::errc{})
-					row.assign(item_name, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
-			}
- */		}
+		                if (auto [ptr, ec] = std::to_chars(b, b + sizeof(b), v, std::chars_format::fixed, prec); ec == std::errc{})
+		                    row.assign(item_name, { b, static_cast<std::string::size_type>(ptr - b) }, false, false);
+		            }
+		 */
+		}
 	}
 
 	// auto *cv = atom_site.get_cat_validator();
@@ -895,7 +896,7 @@ void createEntity(datablock &db)
 			{ "id", entity_id },
 			{ "type", type },
 			{ "pdbx_description", desc },
-			{ "formula_weight", weight },
+			{ "formula_weight", { weight, 3 } },
 			{ "pdbx_number_of_molecules", count } });
 	}
 }
@@ -1166,37 +1167,37 @@ void createPdbxPolySeqScheme(datablock &db)
 		last_seq_id = seq_id;
 	}
  */
-	// // select distinct A.entity_id, A.id, B.mon_id, B.num, B.hetero, C.auth_seq_id, C.auth_comp_id, C.pdbx_PDB_ins_code from struct_asym A, entity_poly_seq B, atom_site C where A.entity_id = B.entity_id and C.label_asym_id = A.id and C.label_seq_id = B.num order by A.entity_id, B.num;
+	// select distinct A.entity_id, A.id, B.mon_id, B.num, B.hetero, C.auth_seq_id, C.auth_comp_id, C.pdbx_PDB_ins_code from struct_asym A, entity_poly_seq B, atom_site C where A.entity_id = B.entity_id and C.label_asym_id = A.id and C.label_seq_id = B.num order by A.entity_id, B.num;
 
-	// // select distinct label_entity_id, label_asym_id, label_comp_id, label_seq_id, auth_asym_id, auth_seq_id, auth_comp_id from atom_site order by CAST(label_entity_id AS INT), label_asym_id, CAST(label_seq_id AS INT);
+	// select distinct label_entity_id, label_asym_id, label_comp_id, label_seq_id, auth_asym_id, auth_seq_id, auth_comp_id from atom_site order by CAST(label_entity_id AS INT), label_asym_id, CAST(label_seq_id AS INT);
 
-	// for (auto entity_id : entity_poly.rows<std::string>("entity_id"))
-	// {
-	// 	for (auto asym_id : struct_asym.find<std::string>("entity_id"_key == entity_id, "id"))
-	// 	{
-	// 		for (const auto &[comp_id, num, hetero] : entity_poly_seq.find<std::string, int, bool>("entity_id"_key == entity_id, "mon_id", "num", "hetero"))
-	// 		{
-	// 			const auto &[auth_seq_num, auth_mon_id, ins_code] =
-	// 				atom_site.find_first<std::string, std::string, std::optional<std::string>>(
-	// 					"label_asym_id"_key == asym_id and "label_seq_id"_key == num,
-	// 					"auth_seq_id", "auth_comp_id", "pdbx_PDB_ins_code");
+	for (auto entity_id : entity_poly.rows<std::string>("entity_id"))
+	{
+		for (auto asym_id : struct_asym.find<std::string>("entity_id"_key == entity_id, "id"))
+		{
+			for (const auto &[comp_id, num, hetero] : entity_poly_seq.find<std::string, int, std::string>("entity_id"_key == entity_id, "mon_id", "num", "hetero"))
+			{
+				const auto &[auth_seq_num, auth_mon_id, ins_code] =
+					atom_site.find_first<std::string, std::string, std::optional<std::string>>(
+						"label_asym_id"_key == asym_id and "label_seq_id"_key == num,
+						"auth_seq_id", "auth_comp_id", "pdbx_PDB_ins_code");
 
-	// 			pdbx_poly_seq_scheme.emplace({ //
-	// 				{ "asym_id", asym_id },
-	// 				{ "entity_id", entity_id },
-	// 				{ "seq_id", num },
-	// 				{ "mon_id", comp_id },
-	// 				{ "ndb_seq_num", num },
-	// 				{ "pdb_seq_num", auth_seq_num },
-	// 				{ "auth_seq_num", auth_seq_num },
-	// 				{ "pdb_mon_id", auth_mon_id },
-	// 				{ "auth_mon_id", auth_mon_id },
-	// 				{ "pdb_strand_id", asym_id_to_pdb_strand_map[asym_id] },
-	// 				{ "pdb_ins_code", ins_code },
-	// 				{ "hetero", hetero } });
-	// 		}
-	// 	}
-	// }
+				pdbx_poly_seq_scheme.emplace({ //
+					{ "asym_id", asym_id },
+					{ "entity_id", entity_id },
+					{ "seq_id", num },
+					{ "mon_id", comp_id },
+					{ "ndb_seq_num", num },
+					{ "pdb_seq_num", auth_seq_num },
+					{ "auth_seq_num", auth_seq_num },
+					{ "pdb_mon_id", auth_mon_id },
+					{ "auth_mon_id", auth_mon_id },
+					{ "pdb_strand_id", asym_id_to_pdb_strand_map[asym_id] },
+					{ "pdb_ins_code", ins_code },
+					{ "hetero", hetero } });
+			}
+		}
+	}
 }
 
 // Some programs write out a ndb_poly_seq_scheme, which has been replaced by pdbx_poly_seq_scheme
