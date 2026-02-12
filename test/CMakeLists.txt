@@ -42,7 +42,7 @@ list(
 	CIFPP_tests
 	unit-v2
 	unit-3d
-	# model
+	model
 	# query
 	# rename-compound
 	# sugar
