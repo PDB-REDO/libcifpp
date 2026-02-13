@@ -1041,12 +1041,10 @@ condition category::get_parents_condition(const_row_handle rh, const category &p
 
 			for (std::size_t ix = 0; ix < link->m_child_keys.size(); ++ix)
 			{
-				auto childValue = rh[link->m_child_keys[ix]].value();
-
-				if (childValue.empty())
+				if (rh[link->m_child_keys[ix]].empty())
 					continue;
 
-				cond = std::move(cond) and key(link->m_parent_keys[ix]) == childValue;
+				cond = std::move(cond) and key(link->m_parent_keys[ix]) == rh[link->m_child_keys[ix]].value();
 			}
 
 			result = std::move(result) or std::move(cond);
@@ -1086,14 +1084,16 @@ condition category::get_children_condition(const_row_handle rh, const category &
 				auto childKey = link->m_child_keys[ix];
 				auto parentKey = link->m_parent_keys[ix];
 
-				auto parentValue = rh[parentKey].value();
-
-				if (parentValue.empty())
+				if (rh[parentKey].empty())
+				{
 					cond = std::move(cond) and key(childKey) == null;
-				else if (link->m_parent_keys.size() > 1 and not mandatoryChildItems.contains(childKey))
-					cond = std::move(cond) and (key(childKey) == parentValue or key(childKey) == null);
+					continue;
+				}
+
+				if (link->m_parent_keys.size() > 1 and not mandatoryChildItems.contains(childKey))
+					cond = std::move(cond) and (key(childKey) == rh[parentKey].value() or key(childKey) == null);
 				else
-					cond = std::move(cond) and key(childKey) == parentValue;
+					cond = std::move(cond) and key(childKey) == rh[parentKey].value();
 			}
 
 			result = std::move(result) or std::move(cond);
@@ -1266,37 +1266,38 @@ std::size_t category::erase(condition &&cond, std::function<void(row_handle)> &&
 {
 	std::size_t result = 0;
 
-	cond.prepare(*this);
-
-	std::map<category *, condition> potential_orphans;
-
-	auto ri = begin();
-	while (ri != end())
+	if (cond.prepare(*this))
 	{
-		if (cond(*ri))
+		std::map<category *, condition> potential_orphans;
+
+		auto ri = begin();
+		while (ri != end())
 		{
-			if (visit)
-				visit(*ri);
-
-			for (auto &&[childCat, link] : m_child_links)
+			if (cond(*ri))
 			{
-				auto ccond = get_children_condition(*ri, *childCat);
-				if (not ccond)
-					continue;
-				potential_orphans[childCat] = std::move(potential_orphans[childCat]) or std::move(ccond);
+				if (visit)
+					visit(*ri);
+
+				for (auto &&[childCat, link] : m_child_links)
+				{
+					auto ccond = get_children_condition(*ri, *childCat);
+					if (not ccond)
+						continue;
+					potential_orphans[childCat] = std::move(potential_orphans[childCat]) or std::move(ccond);
+				}
+
+				save_value sv(m_validator);
+
+				ri = erase(ri);
+				++result;
 			}
-
-			save_value sv(m_validator);
-
-			ri = erase(ri);
-			++result;
+			else
+				++ri;
 		}
-		else
-			++ri;
-	}
 
-	for (auto &&[childCat, condition] : potential_orphans)
-		childCat->erase_orphans(std::move(condition), *this);
+		for (auto &&[childCat, condition] : potential_orphans)
+			childCat->erase_orphans(std::move(condition), *this);
+	}
 
 	return result;
 }
@@ -1320,32 +1321,33 @@ void category::clear()
 
 void category::erase_orphans(condition &&cond, category &parent)
 {
-	std::vector<row *> remove;
-
-	cond.prepare(*this);
-
-	for (auto r : *this)
+	if (cond.prepare(*this))
 	{
-		if (not cond(r))
-			continue;
-
-		if (parent.contains(get_parents_condition(r, parent)))
-			continue;
-
-		if (VERBOSE > 1)
+		std::vector<row *> remove;
+	
+		for (auto r : *this)
 		{
-			category c(m_name);
-			c.emplace(r);
-			std::cerr << "Removing orphaned record: \n"
-					  << c << '\n'
-					  << '\n';
+			if (not cond(r))
+				continue;
+
+			if (parent.contains(get_parents_condition(r, parent)))
+				continue;
+
+			if (VERBOSE > 1)
+			{
+				category c(m_name);
+				c.emplace(r);
+				std::cerr << "Removing orphaned record: \n"
+						  << c << '\n'
+						  << '\n';
+			}
+
+			remove.emplace_back(r.m_row);
 		}
 
-		remove.emplace_back(r.m_row);
+		for (auto r : remove)
+			erase(iterator(*this, r));
 	}
-
-	for (auto r : remove)
-		erase(iterator(*this, r));
 }
 
 std::string category::get_unique_id(std::function<std::string(int)> generator)

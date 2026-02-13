@@ -39,9 +39,13 @@ iset get_category_items(const category &cat)
 	return cat.key_items();
 }
 
-uint16_t get_item_ix(const category &cat, std::string_view col)
+std::optional<uint16_t> get_item_ix(const category &cat, std::string_view col)
 {
-	return cat.get_item_ix(col);
+	auto ix = cat.get_item_ix(col);
+	std::optional<uint16_t> result;
+	if (ix < cat.get_item_count())
+		result = ix;
+	return result;
 }
 
 bool is_item_type_uchar(const category &cat, std::string_view col)
@@ -113,17 +117,24 @@ namespace detail
 
 	condition_impl *key_equals_condition_impl::prepare(const category &c)
 	{
-		m_item_ix = c.get_item_ix(m_item_name);
-		m_icase = is_item_type_uchar(c, m_item_name);
-
-		if (c.get_cat_validator() != nullptr and
-			c.key_item_indices().contains(m_item_ix) and
-			c.key_item_indices().size() == 1)
+		condition_impl *result = nullptr;
+		
+		if (auto ix = get_item_ix(c, m_item_name); ix.has_value())
 		{
-			m_single_hit = c[{ { m_item_name, m_value } }];
+			m_item_ix = *ix;
+			m_icase = is_item_type_uchar(c, m_item_name);
+	
+			if (c.get_cat_validator() != nullptr and
+				c.key_item_indices().contains(m_item_ix) and
+				c.key_item_indices().size() == 1)
+			{
+				m_single_hit = c[{ { m_item_name, m_value } }];
+			}
+	
+			result = this;
 		}
 
-		return this;
+		return result;
 	}
 
 	bool found_in_range(condition_impl *c, std::vector<and_condition_impl *>::iterator b, std::vector<and_condition_impl *>::iterator e)
@@ -199,7 +210,10 @@ namespace detail
 	condition_impl *and_condition_impl::prepare(const category &c)
 	{
 		for (auto &sub : m_sub)
-			sub = sub->prepare(c);
+		{
+			if (sub->prepare(c) == nullptr)
+				return nullptr;
+		}
 
 		if (auto cv = c.get_cat_validator(); cv != nullptr)
 		{
@@ -273,25 +287,30 @@ namespace detail
 
 		for (auto &sub : m_sub)
 		{
-			sub = sub->prepare(c);
+			if (sub->prepare(c) == nullptr)
+			{
+				delete sub;
+				sub = nullptr;
+				continue;
+			}
+
 			if (typeid(*sub) == typeid(and_condition_impl))
 				and_conditions.push_back(static_cast<and_condition_impl *>(sub));
 		}
 
+		std::erase(m_sub, nullptr);
+
 		if (and_conditions.size() == m_sub.size())
 			return and_condition_impl::combine_equal(and_conditions, this);
 
-		return this;
+		return m_sub.empty() ? nullptr : this;
 	}
 
 } // namespace detail
 
-void condition::prepare(const category &c)
+bool condition::prepare(const category &c)
 {
-	if (m_impl)
-		m_impl = m_impl->prepare(c);
-
-	m_prepared = true;
+	return m_impl and m_impl->prepare(c) != nullptr;
 }
 
 } // namespace cif

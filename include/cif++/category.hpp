@@ -868,10 +868,8 @@ class category
 	{
 		bool result = false;
 
-		if (cond)
+		if (cond and cond.prepare(*this))
 		{
-			cond.prepare(*this);
-
 			auto sh = cond.single();
 
 			if (sh.has_value() and *sh)
@@ -899,10 +897,8 @@ class category
 	{
 		std::size_t result = 0;
 
-		if (cond)
+		if (cond and cond.prepare(*this))
 		{
-			cond.prepare(*this);
-
 			auto sh = cond.single();
 
 			if (sh.has_value() and *sh)

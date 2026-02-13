@@ -128,9 +128,9 @@ iset get_category_items(const category &cat);
  *
  * @param cat The category
  * @param col The name of the item
- * @return uint16_t The index
+ * @return uint16_t The index, if item is found
  */
-uint16_t get_item_ix(const category &cat, std::string_view col);
+std::optional<uint16_t> get_item_ix(const category &cat, std::string_view col);
 
 /**
  * @brief Return whether the item @a col in category @a cat has a primitive type of *uchar*
@@ -233,8 +233,9 @@ class condition
 	 * take care of setting the correct indices for items e.g.
 	 *
 	 * @param c The category this query should act upon
+	 * @result Returns true if the condition might result in rows
 	 */
-	void prepare(const category &c);
+	bool prepare(const category &c);
 
 	/**
 	 * @brief This operator returns true if the row referenced by @a r is
@@ -247,7 +248,6 @@ class condition
 	bool operator()(const_row_handle r) const
 	{
 		assert(this->m_impl != nullptr);
-		assert(this->m_prepared);
 		return m_impl ? m_impl->test(r) : false;
 	}
 
@@ -288,7 +288,6 @@ class condition
 	friend void swap(condition &lhs, condition &rhs) noexcept
 	{
 		std::swap(lhs.m_impl, rhs.m_impl);
-		std::swap(lhs.m_prepared, rhs.m_prepared);
 	}
 
 	/**
@@ -309,7 +308,6 @@ class condition
 	void optimise(condition_impl *&impl);
 
 	condition_impl *m_impl;
-	bool m_prepared = false;
 };
 
 namespace detail
@@ -323,8 +321,13 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_name);
-			return this;
+			auto ix = get_item_ix(c, m_item_name);
+			if (ix.has_value())
+			{
+				m_item_ix = *ix;
+				return this;
+			}
+			return nullptr;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -350,8 +353,13 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_name);
-			return this;
+			auto ix = get_item_ix(c, m_item_name);
+			if (ix.has_value())
+			{
+				m_item_ix = *ix;
+				return this;
+			}
+			return nullptr;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -426,9 +434,14 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_name);
-			m_icase = is_item_type_uchar(c, m_item_name);
-			return this;
+			auto ix = get_item_ix(c, m_item_name);
+			if (ix.has_value())
+			{
+				m_item_ix = *ix;
+				m_icase = is_item_type_uchar(c, m_item_name);
+				return this;
+			}
+			return nullptr;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -484,9 +497,14 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_name);
-			m_icase = is_item_type_uchar(c, m_item_name);
-			return this;
+			auto ix = get_item_ix(c, m_item_name);
+			if (ix.has_value())
+			{
+				m_item_ix = *ix;
+				m_icase = is_item_type_uchar(c, m_item_name);
+				return this;
+			}
+			return nullptr;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -516,8 +534,13 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			m_item_ix = get_item_ix(c, m_item_name);
-			return this;
+			auto ix = get_item_ix(c, m_item_name);
+			if (ix.has_value())
+			{
+				m_item_ix = *ix;
+				return this;
+			}
+			return nullptr;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -803,8 +826,7 @@ namespace detail
 
 		condition_impl *prepare(const category &c) override
 		{
-			mA = mA->prepare(c);
-			return this;
+			return mA->prepare(c) ? this : nullptr;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override

@@ -773,10 +773,8 @@ conditional_iterator_proxy_base<Const, Ts...>::conditional_iterator_proxy_base(c
 {
 	static_assert(sizeof...(Ts) == sizeof...(Ns), "Number of item names should be equal to number of requested value types");
 
-	if (m_condition)
+	if (m_condition and m_condition.prepare(cat))
 	{
-		m_condition.prepare(cat);
-
 		while (mCBegin != mCEnd and not m_condition(*mCBegin))
 			++mCBegin;
 	}
