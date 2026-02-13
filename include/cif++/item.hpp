@@ -827,9 +827,6 @@ struct const_item_handle
 	/** Easy way to test for an empty item */
 	explicit operator bool() const { return not empty(); }
 
-	/** Return a std::string_view for the contents */
-	[[nodiscard]] std::string_view text_() const;
-
 	/**
 	 * @brief Construct a new item handle object
 	 *

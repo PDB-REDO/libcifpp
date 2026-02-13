@@ -1030,9 +1030,8 @@ condition category::get_parents_condition(const_row_handle rh, const category &p
 	condition result;
 
 	auto links = m_validator->get_links_for_child(m_name);
-	auto e = std::ranges::remove_if(links, [n = parentCat.m_name](auto &l)
+	std::erase_if(links, [n = parentCat.m_name](auto &l)
 		{ return l->m_parent_category != n; });
-	links.erase(e.begin(), e.end());
 
 	if (not links.empty())
 	{

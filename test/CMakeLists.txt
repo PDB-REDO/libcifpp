@@ -44,7 +44,7 @@ list(
 	unit-3d
 	model
 	# query
-	# rename-compound
+	rename-compound
 	# sugar
 	# spinner
 	# reconstruction

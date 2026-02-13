@@ -398,7 +398,7 @@ class const_row_handle
 	/// \brief return a cif::item_handle to the item in the item named @a item_name
 	const_item_handle operator[](std::string_view item_name) const
 	{
-		return { *m_category, *m_row, get_item_ix(item_name) };
+		return operator[](get_item_ix(item_name));
 	}
 
 	/// \brief Return an object that can be used in combination with cif::tie

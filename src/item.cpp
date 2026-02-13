@@ -43,11 +43,13 @@ bool item_handle::empty() const
 
 item_value &item_handle::value()
 {
+	assert(m_item_ix < m_row.size());
 	return m_row.operator[](m_item_ix);
 }
 
 const item_value &item_handle::value() const
 {
+	assert(m_item_ix < m_row.size());
 	return m_row.operator[](m_item_ix);
 }
 
@@ -64,6 +66,7 @@ bool const_item_handle::empty() const
 
 const item_value &const_item_handle::value() const
 {
+	assert(m_item_ix < m_row.size());
 	return m_row.operator[](m_item_ix);
 }
 
