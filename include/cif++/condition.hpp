@@ -323,16 +323,16 @@ namespace detail
 		{
 			auto ix = get_item_ix(c, m_item_name);
 			if (ix.has_value())
-			{
 				m_item_ix = *ix;
-				return this;
-			}
-			return nullptr;
+			else
+				m_missing_key = true;
+
+			return this;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
 		{
-			return r[m_item_ix].empty();
+			return m_missing_key or r[m_item_ix].empty();
 		}
 
 		void str(std::ostream &os) const override
@@ -342,6 +342,7 @@ namespace detail
 
 		std::string m_item_name;
 		uint16_t m_item_ix = 0;
+		bool m_missing_key = false;
 	};
 
 	struct key_is_not_empty_condition_impl : public condition_impl
@@ -439,18 +440,24 @@ namespace detail
 			{
 				m_item_ix = *ix;
 				m_icase = is_item_type_uchar(c, m_item_name);
-				return this;
 			}
-			return nullptr;
+			else
+				m_key_is_missing = true;
+
+			return this;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
 		{
 			bool result = false;
-			if (m_single_hit.has_value())
+
+			if (m_key_is_missing)
+				result = true;
+			else if (m_single_hit.has_value())
 				result = *m_single_hit == r;
 			else
 				result = r[m_item_ix].empty() or r[m_item_ix].compare(m_value, m_icase) == 0;
+
 			return result;
 		}
 
@@ -482,6 +489,7 @@ namespace detail
 		uint16_t m_item_ix = 0;
 		item_value m_value;
 		bool m_icase = false;
+		bool m_key_is_missing = false;
 		std::optional<const_row_handle> m_single_hit;
 	};
 

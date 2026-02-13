@@ -24,6 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "cif++/utilities.hpp"
 #include "test-main.hpp"
 
 #include <cif++.hpp>
@@ -34,6 +35,8 @@
 
 TEST_CASE("reconstruct")
 {
+	cif::VERBOSE = 1;
+
 	cif::compound_factory::instance().push_dictionary(gTestDir / "REA.cif");
 
 	for (std::filesystem::directory_iterator i(gTestDir / "reconstruct"); i != std::filesystem::directory_iterator{}; ++i)
@@ -58,6 +61,8 @@ TEST_CASE("reconstruct")
 			CHECK((bool)ec);
 
 			CHECK(cif::pdb::reconstruct_pdbx(f));
+
+			f.save(std::filesystem::temp_directory_path() / i->path().filename());
 		}
 	}
 }

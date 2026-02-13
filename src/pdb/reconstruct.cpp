@@ -29,6 +29,7 @@
 // #include "cif++/cql.hpp"
 #include "cif++/item.hpp"
 #include "cif++/row.hpp"
+#include "cif++/validate.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -427,7 +428,7 @@ void fixNegativeSeqID(category &atom_site)
 											   key("auth_seq_id") == auth_seq_id and
 											   key("label_seq_id") == label_seq_id))
 				{
-					row.assign("label_seq_id", std::to_string(seq_id), false, false);
+					row.assign("label_seq_id", seq_id, false, false);
 				}
 
 				++seq_id;
@@ -441,7 +442,7 @@ void fixNegativeSeqID(category &atom_site)
 										   key("auth_seq_id") == auth_seq_id and
 										   key("label_seq_id") == label_seq_id))
 			{
-				row.assign("label_seq_id", ".", false, false);
+				row.assign("label_seq_id", cif::item_value_type::INAPPLICABLE, false, false);
 			}
 		}
 	}
@@ -575,9 +576,9 @@ void checkAtomRecords(datablock &db)
 
 		auto chem_comp_entry = chem_comp.find_first("id"_key == comp_id);
 
-		std::optional<bool> non_std;
+		std::optional<std::string> non_std;
 		if (cf.is_monomer(comp_id))
-			non_std = cf.is_std_monomer(comp_id);
+			non_std = cf.is_std_monomer(comp_id) ? "n" : "y";
 
 		if (not chem_comp_entry)
 		{
@@ -614,7 +615,7 @@ void checkAtomRecords(datablock &db)
 		int seq_id = get_seq_id(k);
 
 		if (is_polymer and row["label_seq_id"].empty() and cf.is_monomer(comp_id))
-			row["label_seq_id"] = std::to_string(seq_id);
+			row["label_seq_id"] = seq_id;
 
 		if (row["label_asym_id"].empty())
 			row["label_asym_id"] = row["auth_asym_id"].value();
@@ -916,8 +917,8 @@ void createEntityPoly(datablock &db)
 		std::string type;
 		int last_seq_id = -1;
 		std::map<std::string, std::string> seq, seq_can;
-		bool non_std_monomer = false;
-		bool non_std_linkage = false;
+		std::string non_std_monomer = "n";
+		std::string non_std_linkage = "n";
 		std::vector<std::string> pdb_strand_ids;
 
 		for (const auto &[comp_id, seq_id, auth_asym_id] : atom_site.find<std::string, int, std::string>(
@@ -961,8 +962,8 @@ void createEntityPoly(datablock &db)
 					letter_can = c->one_letter_code();
 					letter = '(' + comp_id + ')';
 
-					non_std_linkage = true;
-					non_std_monomer = true;
+					non_std_linkage = "y";
+					non_std_monomer = "y";
 				}
 				else if (iequals(c->type(), "L-PEPTIDE LINKING") or iequals(c->type(), "PEPTIDE LINKING"))
 				{
@@ -971,7 +972,7 @@ void createEntityPoly(datablock &db)
 					letter_can = c->one_letter_code();
 					letter = '(' + comp_id + ')';
 
-					non_std_monomer = true;
+					non_std_monomer = "y";
 				}
 				else
 				{
@@ -980,7 +981,7 @@ void createEntityPoly(datablock &db)
 					letter_can = c->one_letter_code();
 					letter = '(' + comp_id + ')';
 
-					non_std_monomer = true;
+					non_std_monomer = "y";
 				}
 
 				if (type.empty())
@@ -1066,19 +1067,19 @@ void createEntityPolySeq(datablock &db)
 
 		for (const auto &[comp_id, seq_id] : atom_site.find<std::string, int>("label_entity_id"_key == entity_id and "label_asym_id"_key == asym_id, "label_comp_id", "label_seq_id"))
 		{
-			bool hetero = false;
+			std::string hetero = "n";
 
 			if (seq_id == last_seq_id)
 			{
 				if (last_comp_id != comp_id)
-					hetero = true;
+					hetero = "y";
 				else
 					continue;
 			}
 
-			if (hetero)
+			if (hetero == "y")
 			{
-				entity_poly_seq.back().assign({ { "hetero", true } });
+				entity_poly_seq.back().assign({ { "hetero", hetero } });
 			}
 
 			entity_poly_seq.emplace({ //
@@ -1308,7 +1309,9 @@ void createPdbxEntityNonpoly(datablock &db)
 			{
 				auto c = cif::compound_factory::instance().create(comp_id);
 
-				std::string name = c ? c->name() : ".";
+				std::optional<std::string> name;
+				if (c)
+					name = c->name();
 
 				pdbx_entity_nonpoly.emplace({ //
 					{ "entity_id", entity_id },
@@ -1346,9 +1349,9 @@ void createPdbxNonpolyScheme(datablock &db)
 				{ "asym_id", row.get<std::string>("label_asym_id") },
 				{ "entity_id", entity_id },
 				{ "mon_id", comp_id },
-				{ "ndb_seq_num", ndb_nr++ },
-				{ "pdb_seq_num", num },
-				{ "auth_seq_num", num },
+				{ "ndb_seq_num", std::to_string(ndb_nr++) },
+				{ "pdb_seq_num", std::to_string(num) },
+				{ "auth_seq_num", std::to_string(num) },
 				{ "pdb_mon_id", row.get<std::string>("auth_comp_id") },
 				{ "auth_mon_id",  row.get<std::string>("auth_comp_id") },
 				{ "pdb_strand_id", row.get<std::string>("auth_asym_id") },
@@ -1556,7 +1559,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 	checkChemCompRecords(db);
 
 	// If the data is really horrible, it might not contain entities
-	if (db["atom_site"].find_first(key("label_entity_id") == null))
+	if (db["atom_site"].contains(key("label_entity_id") == null))
 		createEntityIDs(db);
 
 	// Now see if atom records make sense at all
@@ -1639,7 +1642,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 
 					cat.add_item(item);
 
-					cat.update_value(all(), item, "?");
+					cat.update_value(all(), item, cif::item_value_type::MISSING);
 				}
 			}
 
@@ -1660,13 +1663,20 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 				{
 					std::error_code ec;
 
-					if (row[ix].empty())
+					if (ix >= row.size() or row[ix].empty())
 						continue;
 
 					if (not iv->validate_value(row[ix].value(), ec))
 					{
+						if (ec == cif::make_error_code(cif::validation_error::value_is_not_a_char_string))
+						{
+							row[ix] = item_value{ std::to_string(row[ix].value().get<int>()) };
+							if (iv->validate_value(row[ix].value(), ec))
+								continue;
+						}
+
 						if (VERBOSE > 0)
-							std::clog << "Replacing value (" << std::quoted(row[ix].str()) << ") for item " << item_name << " in category " << cat.name() << " since it does not validate\n";
+							std::clog << "Replacing value (" << std::quoted(row[ix].str()) << ") for item " << item_name << " in category " << cat.name() << " since it does not validate: " << ec.message() << "\n";
 
 						row[ix] = item_value{ cif::item_value_type::INAPPLICABLE };
 					}
