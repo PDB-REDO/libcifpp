@@ -26,6 +26,7 @@
 
 #include "cif++/category.hpp"
 
+#include "cif++/condition.hpp"
 #include "cif++/datablock.hpp"
 #include "cif++/item.hpp"
 #include "cif++/parser.hpp"
@@ -748,6 +749,9 @@ void category::set_validator(const validator *v, datablock &db)
 
 		for (auto row = m_head; row != nullptr; row = row->m_next)
 		{
+			if (cix >= row->size() or row->operator[](cix).empty())
+				continue;
+
 			item_value &v = row->operator[](cix);
 			if (v.is_number())
 				v = v.str();
@@ -877,13 +881,12 @@ bool category::is_valid() const
 				continue;
 			}
 
-			auto vi = ri->get(cix);
-			if (vi != nullptr)
+			if (cix < ri->size())
 			{
 				seen = true;
 				std::error_code ec;
 
-				iv->validate_value(*vi, ec);
+				iv->validate_value(*ri->get(cix), ec);
 
 				if (ec != std::errc{})
 				{
@@ -1324,7 +1327,7 @@ void category::erase_orphans(condition &&cond, category &parent)
 	if (cond.prepare(*this))
 	{
 		std::vector<row *> remove;
-	
+
 		for (auto r : *this)
 		{
 			if (not cond(r))
@@ -1438,7 +1441,8 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 	{
 		for (auto row : rows)
 		{
-			auto value{ value_provider(row[item_name].value()) };
+			auto value{ value_provider(
+				row[item_name].empty() ? item_value{} : row[item_name].value()) };
 
 			std::error_code ec;
 			col.m_validator->validate_value(value, ec);
@@ -1450,7 +1454,9 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 	// update and see if we need to update any child categories that depend on this value
 	for (auto parent : rows)
 	{
-		auto oldValue{ parent[item_name].value() };
+		item_value oldValue;
+		if (not parent[item_name].empty())
+			oldValue = parent[item_name].value();
 		auto value{ value_provider(oldValue) };
 
 		update_value(parent.get_row(), colIx, value, false, false);
@@ -1473,7 +1479,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 					childItemName = ck;
 					cond = std::move(cond) && key(ck) == oldValue;
 				}
-				else
+				else if (not parent[pk].empty())
 					cond = std::move(cond) && key(ck) == parent[pk].value();
 			}
 
@@ -1498,7 +1504,8 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 					std::string pk = linked->m_parent_keys[ix];
 					std::string ck = linked->m_child_keys[ix];
 
-					cond_c = std::move(cond_c) && key(pk) == child[ck].value();
+					if (not child[ck].empty())
+						cond_c = std::move(cond_c) && key(pk) == child[ck].value();
 				}
 
 				auto parents = find(std::move(cond_c));
@@ -1612,11 +1619,10 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 				}
 				else
 				{
-					auto pk_value = rh[pk].value();
-					if (pk_value.empty())
+					if (rh[pk].empty())
 						cond = std::move(cond) and key(ck) == null;
 					else
-						cond = std::move(cond) and ((key(ck) == pk_value) or key(ck) == null);
+						cond = std::move(cond) and ((key(ck) == rh[pk].value()) or key(ck) == null);
 				}
 			}
 
@@ -1644,11 +1650,10 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 					cond_n = std::move(cond_n) and key(ck) == value;
 				else
 				{
-					auto pk_value = rh[pk].value();
-					if (pk_value.empty())
+					if (rh[pk].empty())
 						cond_n = std::move(cond_n) and key(ck) == null;
 					else
-						cond_n = std::move(cond_n) and key(ck) == pk_value;
+						cond_n = std::move(cond_n) and key(ck) == rh[pk].value();
 				}
 			}
 

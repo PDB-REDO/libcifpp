@@ -300,7 +300,7 @@ namespace detail
 
 		std::erase(m_sub, nullptr);
 
-		if (and_conditions.size() == m_sub.size())
+		if (not m_sub.empty() and and_conditions.size() == m_sub.size())
 			return and_condition_impl::combine_equal(and_conditions, this);
 
 		return m_sub.empty() ? nullptr : this;

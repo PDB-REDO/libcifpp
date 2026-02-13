@@ -1660,6 +1660,9 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 				{
 					std::error_code ec;
 
+					if (row[ix].empty())
+						continue;
+
 					if (not iv->validate_value(row[ix].value(), ec))
 					{
 						if (VERBOSE > 0)

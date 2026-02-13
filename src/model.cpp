@@ -2043,6 +2043,7 @@ void structure::remove_sugar(sugar &s)
 		std::set<std::size_t> dix;
 		std::stack<std::size_t> test;
 		test.push(s.num());
+		std::vector<atom> da;
 
 		while (not test.empty())
 		{
@@ -2061,11 +2062,14 @@ void structure::remove_sugar(sugar &s)
 			}
 
 			for (auto atom : branch[tix - 1].atoms())
-				remove_atom(atom, false);
+				da.emplace_back(atom);
 		}
 
 		std::erase_if(branch, [dix](const sugar &s)
 			{ return dix.count(s.num()); });
+
+		for (auto atom : da)
+			remove_atom(atom, false);
 
 		auto entity_id = create_entity_for_branch(branch);
 
@@ -2091,7 +2095,7 @@ void structure::remove_sugar(sugar &s)
 				{ "mon_id", sugar.get_compound_id() },
 
 				{ "pdb_asym_id", asym_id },
-				{ "pdb_seq_num", sugar.num() },
+				{ "pdb_seq_num", std::to_string(sugar.num()) },
 				{ "pdb_mon_id", sugar.get_compound_id() },
 
 				// TODO: need fix, collect from nag_atoms?

@@ -45,11 +45,11 @@ list(
 	model
 	# query
 	rename-compound
-	# sugar
-	# spinner
-	# reconstruction
-	# validate-pdbx
-	# matrix
+	sugar
+	spinner
+	reconstruction
+	validate-pdbx
+	matrix
 )
 
 add_library(test-main OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/test-main.cpp")
