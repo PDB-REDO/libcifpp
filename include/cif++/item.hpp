@@ -30,7 +30,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <catch2/catch_tostring.hpp>
 #include <cctype>
 #include <charconv>
 #include <cstdint>
