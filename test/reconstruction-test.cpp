@@ -41,10 +41,6 @@ TEST_CASE("reconstruct")
 
 	for (std::filesystem::directory_iterator i(gTestDir / "reconstruct"); i != std::filesystem::directory_iterator{}; ++i)
 	{
-if (i->path().filename().string() != "9d3j_fixDMC.cif")
-		continue;
-
-
 		std::cout << i->path() << '\n';
 
 		if (i->path().extension() == ".pdb")
