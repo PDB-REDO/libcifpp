@@ -87,7 +87,7 @@ TEST_CASE("t1")
 	cif::center_points(p1);
 
 	for (auto &p : p2)
-		p = q * p;
+		p = cif::rotate(p, q);
 
 	cif::center_points(p2);
 
@@ -222,9 +222,7 @@ TEST_CASE("dh_q_1")
 	{
 		auto q = cif::construct_for_dihedral_angle(pts[0], pts[1], pts[2], pts[3], angle, 1);
 
-		pts[3] -= pts[2];
-		pts[3] = q * pts[3];
-		pts[3] += pts[2];
+		pts[3] = cif::rotate(pts[3], q, pts[2]);
 
 		auto dh = cif::dihedral_angle(pts[0], pts[1], pts[2], pts[3]);
 		CHECK_THAT(dh, Catch::Matchers::WithinRel(angle, 0.1f));

@@ -367,9 +367,9 @@ class transformation
 
 	void try_create_quaternion();
 
-	matrix3x3<float> m_rotation;
-	quaternion m_q;
-	point m_translation;
+	matrix3x3<float> m_rotation{};
+	quaternion m_q{};
+	point m_translation{};
 };
 
 // --------------------------------------------------------------------

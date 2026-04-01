@@ -49,7 +49,7 @@ namespace cif
 
 point center_points(std::vector<point> &Points)
 {
-	point t;
+	point t{};
 
 	for (point &pt : Points)
 	{
@@ -268,18 +268,18 @@ std::tuple<point, float> smallest_sphere_around_3_points(std::array<point, 3> pt
 	auto vz = cross(pts[1] - pts[0], pts[2] - pts[0]);
 
 	auto bs1 = cross(vz, pts[1] - pts[0]);
-	normalize(bs1);
+	bs1 = glm::normalize(bs1);
 
 	auto v1 = (pts[1] - pts[0]);
-	normalize(v1);
+	v1 = glm::normalize(v1);
 
 	auto s1 = pts[0] + (distance(pts[1], pts[0]) / 2) * v1;
 
 	auto bs2 = cross(vz, pts[2] - pts[0]);
-	normalize(bs2);
+	bs2 = glm::normalize(bs2);
 
 	auto v2 = (pts[2] - pts[0]);
-	normalize(v2);
+	v2 = glm::normalize(v2);
 
 	auto s2 = pts[0] + (distance(pts[2], pts[0]) / 2) * v2;
 

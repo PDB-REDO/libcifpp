@@ -33,6 +33,7 @@
 #include <cstdlib>
 #include <format>
 #include <functional>
+#include <glm/ext/quaternion_common.hpp>
 #include <glm/ext/quaternion_geometric.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/glm.hpp>
@@ -77,6 +78,18 @@ template <typename T>
 using point_type = glm::vec<3, T>;
 
 using point = point_type<float>;
+
+// --------------------------------------------------------------------
+
+constexpr point rotate(point pt, quaternion q)
+{
+	return q * pt;
+}
+
+constexpr point rotate(point pt, quaternion q, point a)
+{
+	return q * (pt - a) + a;
+}
 
 // --------------------------------------------------------------------
 // several standard 3d operations
@@ -146,7 +159,7 @@ constexpr auto angle(const point_type<F> &p1, const point_type<F> &p2, const poi
 	point_type<F> v1 = p1 - p2;
 	point_type<F> v2 = p3 - p2;
 
-	return std::acos(dot(v1, v2) / (v1.length() * v2.length())) * 180 / std::numbers::pi_v<F>;
+	return std::acos(dot(v1, v2) / (glm::length(v1) * glm::length(v2))) * 180 / std::numbers::pi_v<F>;
 }
 
 /// \brief return the dihedral angle in degrees for the four points @a p1, @a p2, @a p3 and @a p4
@@ -199,7 +212,7 @@ constexpr auto distance_point_to_line(const point_type<F> &l1, const point_type<
 	auto p_to_l1 = p - l1;
 	auto p_to_l2 = p - l2;
 	auto cross = glm::cross(p_to_l1, p_to_l2);
-	return cross.length() / line.length();
+	return glm::length(cross) / glm::length(line);
 }
 
 /// \brief return the smallest sphere around the points in @a pts
@@ -210,8 +223,7 @@ std::tuple<point, float> smallest_sphere_around_points(std::vector<point> pts);
 /// \brief Return a quaternion created from angle @a angle and axis @a axis
 constexpr quaternion construct_from_angle_axis(float angle, point axis)
 {
-	glm::normalize(axis);
-	return glm::angleAxis(glm::radians(angle), axis);
+	return glm::angleAxis(glm::radians(angle), glm::normalize(axis));
 }
 
 /// \brief Return a tuple of an angle and an axis for quaternion @a q
