@@ -34,8 +34,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <initializer_list>
-#include <numbers>
 #include <optional>
+#include <glm/ext/matrix_double3x3.hpp>
+#include <glm/ext/matrix_double4x4.hpp>
 #include <random>
 #include <stdexcept>
 #include <tuple>
@@ -156,43 +157,82 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 	return t.max();
 }
 
+/**
+ * @brief Implementation of a cofactor calculation as a matrix expression
+ *
+ * @tparam M Type of matrix
+ */
+
+auto cofactors(glm::dmat4 &m)
+{
+	glm::dmat4 result{};
+
+	const std::size_t ixs[4][3] = {
+		{ 1, 2, 3 },
+		{ 0, 2, 3 },
+		{ 0, 1, 3 },
+		{ 0, 1, 2 }
+	};
+
+	for (size_t i = 0; i < 4; ++i)
+	{
+		for (size_t j = 0; j < 4; ++j)
+		{
+			const std::size_t *ix = ixs[i];
+			const std::size_t *iy = ixs[j];
+
+			auto e =
+				m[ix[0]][iy[0]] * m[ix[1]][iy[1]] * m[ix[2]][iy[2]] +
+				m[ix[0]][iy[1]] * m[ix[1]][iy[2]] * m[ix[2]][iy[0]] +
+				m[ix[0]][iy[2]] * m[ix[1]][iy[0]] * m[ix[2]][iy[1]] -
+				m[ix[0]][iy[2]] * m[ix[1]][iy[1]] * m[ix[2]][iy[0]] -
+				m[ix[0]][iy[1]] * m[ix[1]][iy[0]] * m[ix[2]][iy[2]] -
+				m[ix[0]][iy[0]] * m[ix[1]][iy[2]] * m[ix[2]][iy[1]];
+
+			result[i][j] = (i + j) % 2 == 1 ? -e : e;
+		}
+	}
+
+	return result;
+}
+
 quaternion align_points(const std::vector<point> &pa, const std::vector<point> &pb)
 {
 	// First calculate M, a 3x3 matrix containing the sums of products of the coordinates of A and B
-	matrix3x3<double> M;
+	glm::dmat3x3 M{};
 
 	for (uint32_t i = 0; i < pa.size(); ++i)
 	{
 		const point &a = pa[i];
 		const point &b = pb[i];
 
-		M(0, 0) += a.x * b.x;
-		M(0, 1) += a.x * b.y;
-		M(0, 2) += a.x * b.z;
-		M(1, 0) += a.y * b.x;
-		M(1, 1) += a.y * b.y;
-		M(1, 2) += a.y * b.z;
-		M(2, 0) += a.z * b.x;
-		M(2, 1) += a.z * b.y;
-		M(2, 2) += a.z * b.z;
+		M[0][0] += a.x * b.x;
+		M[0][1] += a.x * b.y;
+		M[0][2] += a.x * b.z;
+		M[1][0] += a.y * b.x;
+		M[1][1] += a.y * b.y;
+		M[1][2] += a.y * b.z;
+		M[2][0] += a.z * b.x;
+		M[2][1] += a.z * b.y;
+		M[2][2] += a.z * b.z;
 	}
 
 	// Now calculate N, a symmetric 4x4 matrix
-	symmetric_matrix4x4<double> N(4);
+	glm::dmat4x4 N;
 
-	N(0, 0) = M(0, 0) + M(1, 1) + M(2, 2);
-	N(0, 1) = M(1, 2) - M(2, 1);
-	N(0, 2) = M(2, 0) - M(0, 2);
-	N(0, 3) = M(0, 1) - M(1, 0);
+	N[0][0] = M[0][0] + M[1][1] + M[2][2];
+	N[0][1] = N[1][0] = M[1][2] - M[2][1];
+	N[0][2] = N[2][0] = M[2][0] - M[0][2];
+	N[0][3] = N[3][0] = M[0][1] - M[1][0];
 
-	N(1, 1) = M(0, 0) - M(1, 1) - M(2, 2);
-	N(1, 2) = M(0, 1) + M(1, 0);
-	N(1, 3) = M(0, 2) + M(2, 0);
+	N[1][1] = M[0][0] - M[1][1] - M[2][2];
+	N[1][2] = N[2][1] = M[0][1] + M[1][0];
+	N[1][3] = N[3][1] = M[0][2] + M[2][0];
 
-	N(2, 2) = -M(0, 0) + M(1, 1) - M(2, 2);
-	N(2, 3) = M(1, 2) + M(2, 1);
+	N[2][2] = -M[0][0] + M[1][1] - M[2][2];
+	N[2][3] = N[3][2] = M[1][2] + M[2][1];
 
-	N(3, 3) = -M(0, 0) - M(1, 1) + M(2, 2);
+	N[3][3] = -M[0][0] - M[1][1] + M[2][2];
 
 	// det(N - λI) = 0
 	// find the largest λ (λm)
@@ -203,41 +243,41 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 	// and so this is a so-called depressed quartic
 	// solve it using Ferrari's algorithm
 
-	double C = -2 * (M(0, 0) * M(0, 0) + M(0, 1) * M(0, 1) + M(0, 2) * M(0, 2) +
-						M(1, 0) * M(1, 0) + M(1, 1) * M(1, 1) + M(1, 2) * M(1, 2) +
-						M(2, 0) * M(2, 0) + M(2, 1) * M(2, 1) + M(2, 2) * M(2, 2));
+	double C = -2 * (M[0][0] * M[0][0] + M[0][1] * M[0][1] + M[0][2] * M[0][2] +
+						M[1][0] * M[1][0] + M[1][1] * M[1][1] + M[1][2] * M[1][2] +
+						M[2][0] * M[2][0] + M[2][1] * M[2][1] + M[2][2] * M[2][2]);
 
-	double D = 8 * (M(0, 0) * M(1, 2) * M(2, 1) +
-					   M(1, 1) * M(2, 0) * M(0, 2) +
-					   M(2, 2) * M(0, 1) * M(1, 0)) -
-	           8 * (M(0, 0) * M(1, 1) * M(2, 2) +
-					   M(1, 2) * M(2, 0) * M(0, 1) +
-					   M(2, 1) * M(1, 0) * M(0, 2));
+	double D = 8 * (M[0][0] * M[1][2] * M[2][1] +
+					   M[1][1] * M[2][0] * M[0][2] +
+					   M[2][2] * M[0][1] * M[1][0]) -
+	           8 * (M[0][0] * M[1][1] * M[2][2] +
+					   M[1][2] * M[2][0] * M[0][1] +
+					   M[2][1] * M[1][0] * M[0][2]);
 
 	// E is the determinant of N:
 	double E =
-		(N(0, 0) * N(1, 1) - N(0, 1) * N(0, 1)) * (N(2, 2) * N(3, 3) - N(2, 3) * N(2, 3)) +
-		(N(0, 1) * N(0, 2) - N(0, 0) * N(2, 1)) * (N(2, 1) * N(3, 3) - N(2, 3) * N(1, 3)) +
-		(N(0, 0) * N(1, 3) - N(0, 1) * N(0, 3)) * (N(2, 1) * N(2, 3) - N(2, 2) * N(1, 3)) +
-		(N(0, 1) * N(2, 1) - N(1, 1) * N(0, 2)) * (N(0, 2) * N(3, 3) - N(2, 3) * N(0, 3)) +
-		(N(1, 1) * N(0, 3) - N(0, 1) * N(1, 3)) * (N(0, 2) * N(2, 3) - N(2, 2) * N(0, 3)) +
-		(N(0, 2) * N(1, 3) - N(2, 1) * N(0, 3)) * (N(0, 2) * N(1, 3) - N(2, 1) * N(0, 3));
+		(N[0][0] * N[1][1] - N[0][1] * N[0][1]) * (N[2][2] * N[3][3] - N[2][3] * N[2][3]) +
+		(N[0][1] * N[0][2] - N[0][0] * N[2][1]) * (N[2][1] * N[3][3] - N[2][3] * N[1][3]) +
+		(N[0][0] * N[1][3] - N[0][1] * N[0][3]) * (N[2][1] * N[2][3] - N[2][2] * N[1][3]) +
+		(N[0][1] * N[2][1] - N[1][1] * N[0][2]) * (N[0][2] * N[3][3] - N[2][3] * N[0][3]) +
+		(N[1][1] * N[0][3] - N[0][1] * N[1][3]) * (N[0][2] * N[2][3] - N[2][2] * N[0][3]) +
+		(N[0][2] * N[1][3] - N[2][1] * N[0][3]) * (N[0][2] * N[1][3] - N[2][1] * N[0][3]);
 
 	// solve quartic
 	double lambda = LargestDepressedQuarticSolution(C, D, E);
 
 	// calculate t = (N - λI)
-	matrix<double> t(N - identity_matrix(4) * lambda);
+	auto t = N - glm::dmat4x4(1.0) * lambda;
 
 	// calculate a matrix of cofactors for t
-	auto cf = matrix_cofactors(t);
+	auto cf = cofactors(t);
 
 	int maxR = 0;
-	double maxCF = std::abs(cf(0, 0));
+	double maxCF = std::abs(cf[0][0]);
 
 	for (int r = 1; r < 4; ++r)
 	{
-		auto cfr = std::abs(cf(r, 0));
+		auto cfr = std::abs(cf[r][0]);
 		if (maxCF < cfr)
 		{
 			maxCF = cfr;
@@ -246,10 +286,10 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 	}
 
 	quaternion q(
-		static_cast<float>(cf(maxR, 0)),
-		static_cast<float>(cf(maxR, 1)),
-		static_cast<float>(cf(maxR, 2)),
-		static_cast<float>(cf(maxR, 3)));
+		static_cast<float>(cf[maxR][0]),
+		static_cast<float>(cf[maxR][1]),
+		static_cast<float>(cf[maxR][2]),
+		static_cast<float>(cf[maxR][3]));
 	q = normalize(q);
 
 	return q;
@@ -308,7 +348,7 @@ std::tuple<point, float> smallest_sphere_around_4_points(std::array<point, 4> pt
 	auto t3 = -norm_squared(pts[3]);
 
 	// clang-format off
-	matrix4x4<float> Tm({
+	glm::mat4x4 Tm({
 		pts[0].x, pts[0].y, pts[0].z, 1,
 		pts[1].x, pts[1].y, pts[1].z, 1,
 		pts[2].x, pts[2].y, pts[2].z, 1,
@@ -318,7 +358,7 @@ std::tuple<point, float> smallest_sphere_around_4_points(std::array<point, 4> pt
 
 	if (T != 0)
 	{
-		matrix4x4<float> Dm({
+		glm::mat4x4 Dm({
 			t0, pts[0].y, pts[0].z, 1,
 			t1, pts[1].y, pts[1].z, 1,
 			t2, pts[2].y, pts[2].z, 1,
@@ -326,7 +366,7 @@ std::tuple<point, float> smallest_sphere_around_4_points(std::array<point, 4> pt
 		});
 		auto D = determinant(Dm) / T;
 		
-		matrix4x4<float> Em({
+		glm::mat4x4 Em({
 			pts[0].x, t0, pts[0].z, 1,
 			pts[1].x, t1, pts[1].z, 1,
 			pts[2].x, t2, pts[2].z, 1,
@@ -334,7 +374,7 @@ std::tuple<point, float> smallest_sphere_around_4_points(std::array<point, 4> pt
 		});
 		auto E = determinant(Em) / T;
 		
-		matrix4x4<float> Fm({
+		glm::mat4x4 Fm({
 			pts[0].x, pts[0].y, t0, 1,
 			pts[1].x, pts[1].y, t1, 1,
 			pts[2].x, pts[2].y, t2, 1,
@@ -343,7 +383,7 @@ std::tuple<point, float> smallest_sphere_around_4_points(std::array<point, 4> pt
 		
 		auto F = determinant(Fm) / T;
 		
-		matrix4x4<float> Gm({
+		glm::mat4x4 Gm({
 			pts[0].x, pts[0].y, pts[0].z, t0,
 			pts[1].x, pts[1].y, pts[1].z, t1,
 			pts[2].x, pts[2].y, pts[2].z, t2,

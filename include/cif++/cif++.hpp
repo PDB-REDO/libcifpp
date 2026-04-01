@@ -40,7 +40,6 @@
 #include "cif++/gzio.hpp"
 #include "cif++/item.hpp"
 #include "cif++/iterator.hpp"
-#include "cif++/matrix.hpp"
 #include "cif++/model.hpp"
 #include "cif++/parser.hpp"
 #include "cif++/pdb.hpp"

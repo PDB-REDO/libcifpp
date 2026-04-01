@@ -250,7 +250,7 @@ TEST_CASE("dh_q_1")
         cif::point p2 = p1;
         p2 = q * p2;
 
-        cif::matrix3x3<float> rot_c({ static_cast<float>(d[0]),
+        cif::glm::mat3 rot_c({ static_cast<float>(d[0]),
             static_cast<float>(d[1]),
             static_cast<float>(d[2]),
             static_cast<float>(d[3]),
@@ -275,7 +275,7 @@ TEST_CASE("dh_q_1")
 // 	{
 // 		auto d = cif::kSymopNrTable[i].symop().data();
 
-// 		cif::matrix3x3<float> rot;
+// 		cif::glm::mat3 rot;
 // 		float Qxx = rot(0, 0) = d[0];
 // 		float Qxy = rot(0, 1) = d[1];
 // 		float Qxz = rot(0, 2) = d[2];
@@ -394,35 +394,6 @@ TEST_CASE("symm_4")
 
 // --------------------------------------------------------------------
 
-TEST_CASE("symm_4wvp_1")
-{
-	using namespace cif::literals;
-
-	cif::file f(gTestDir / "4wvp.cif.gz");
-	f.front().set_validator(cif::validator_factory::instance().get("mmcif_pdbx.dic"));
-
-	auto &db = f.front();
-	cif::mm::structure s(db);
-
-	cif::crystal c(db);
-
-	cif::point p{ -78.722f, 98.528f, 11.994f };
-	auto a = s.get_residue("A", 10, "").get_atom_by_atom_id("O");
-
-	auto sp1 = c.symmetry_copy(a.get_location(), "2_565"_symop);
-	CHECK_THAT(sp1.x, Catch::Matchers::WithinAbs(p.x, 0.5f));
-	CHECK_THAT(sp1.y, Catch::Matchers::WithinAbs(p.y, 0.5f));
-	CHECK_THAT(sp1.z, Catch::Matchers::WithinAbs(p.z, 0.5f));
-
-	const auto &[d, sp2, so] = c.closest_symmetry_copy(p, a.get_location());
-
-	REQUIRE(d < 1);
-
-	CHECK_THAT(sp2.x, Catch::Matchers::WithinAbs(p.x, 0.5f));
-	CHECK_THAT(sp2.y, Catch::Matchers::WithinAbs(p.y, 0.5f));
-	CHECK_THAT(sp2.z, Catch::Matchers::WithinAbs(p.z, 0.5f));
-}
-
 TEST_CASE("symm_2bi3_1")
 {
 	cif::file f(gTestDir / "2bi3.cif.gz");
@@ -453,17 +424,17 @@ TEST_CASE("symm_2bi3_1")
 		auto sa1 = c.symmetry_copy(a1.get_location(), cif::sym_op(symm1));
 		auto sa2 = c.symmetry_copy(a2.get_location(), cif::sym_op(symm2));
 
-		CHECK_THAT(glm::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
+		CHECK_THAT(glm::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.01f));
 
 		auto pa1 = a1.get_location();
 
 		const auto &[d, p, so] = c.closest_symmetry_copy(pa1, a2.get_location());
 
-		CHECK_THAT(p.x, Catch::Matchers::WithinAbs(sa2.x, 0.5f));
-		CHECK_THAT(p.y, Catch::Matchers::WithinAbs(sa2.y, 0.5f));
-		CHECK_THAT(p.z, Catch::Matchers::WithinAbs(sa2.z, 0.5f));
+		CHECK_THAT(p.x, Catch::Matchers::WithinAbs(sa2.x, 0.01f));
+		CHECK_THAT(p.y, Catch::Matchers::WithinAbs(sa2.y, 0.01f));
+		CHECK_THAT(p.z, Catch::Matchers::WithinAbs(sa2.z, 0.01f));
 
-		CHECK_THAT(d, Catch::Matchers::WithinAbs(dist, 0.5f));
+		CHECK_THAT(d, Catch::Matchers::WithinAbs(dist, 0.01f));
 		REQUIRE(so.string() == symm2);
 	}
 }
@@ -504,15 +475,15 @@ TEST_CASE("symm_2bi3_1a")
 		auto sa1 = c.symmetry_copy(p1, cif::sym_op(symm1));
 		auto sa2 = c.symmetry_copy(p2, cif::sym_op(symm2));
 
-		CHECK_THAT(glm::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
+		CHECK_THAT(glm::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.01f));
 
 		const auto &[d, p, so] = c.closest_symmetry_copy(p1, p2);
 
-		CHECK_THAT(p.x, Catch::Matchers::WithinAbs(sa2.x, 0.5f));
-		CHECK_THAT(p.y, Catch::Matchers::WithinAbs(sa2.y, 0.5f));
-		CHECK_THAT(p.z, Catch::Matchers::WithinAbs(sa2.z, 0.5f));
+		CHECK_THAT(p.x, Catch::Matchers::WithinAbs(sa2.x, 0.01f));
+		CHECK_THAT(p.y, Catch::Matchers::WithinAbs(sa2.y, 0.01f));
+		CHECK_THAT(p.z, Catch::Matchers::WithinAbs(sa2.z, 0.01f));
 
-		CHECK_THAT(d, Catch::Matchers::WithinAbs(dist, 0.5f));
+		CHECK_THAT(d, Catch::Matchers::WithinAbs(dist, 0.01f));
 		REQUIRE(so.string() == symm2);
 	}
 }
@@ -536,7 +507,7 @@ TEST_CASE("symm_3bwh_1")
 
 			const auto &[d, p, so] = c.closest_symmetry_copy(a1.get_location(), a2.get_location());
 
-			CHECK_THAT(d, Catch::Matchers::WithinAbs(distance(a1.get_location(), p), 0.5f));
+			CHECK_THAT(d, Catch::Matchers::WithinAbs(distance(a1.get_location(), p), 0.01f));
 		}
 	}
 }

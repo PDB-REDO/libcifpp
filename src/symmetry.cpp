@@ -81,14 +81,15 @@ void cell::init()
 
 	auto alpha_star = std::acos((std::cos(gamma) * std::cos(beta) - std::cos(alpha)) / (std::sin(beta) * std::sin(gamma)));
 
-	m_orthogonal = identity_matrix(3);
+	m_orthogonal = glm::mat3(1.0f);
 
-	m_orthogonal(0, 0) = m_a;
-	m_orthogonal(0, 1) = m_b * std::cos(gamma);
-	m_orthogonal(0, 2) = m_c * std::cos(beta);
-	m_orthogonal(1, 1) = m_b * std::sin(gamma);
-	m_orthogonal(1, 2) = m_c * std::sin(beta) * std::cos(alpha_star);
-	m_orthogonal(2, 2) = m_c * std::sin(beta) * std::sin(alpha_star);
+	// WARNING: glm matrices are column major, by default
+	m_orthogonal[0][0] = m_a;
+	m_orthogonal[1][0] = m_b * std::cos(gamma);
+	m_orthogonal[2][0] = m_c * std::cos(beta);
+	m_orthogonal[1][1] = m_b * std::sin(gamma);
+	m_orthogonal[2][1] = m_c * std::sin(beta) * std::cos(alpha_star);
+	m_orthogonal[2][2] = m_c * std::sin(beta) * std::sin(alpha_star);
 
 	m_fractional = inverse(m_orthogonal);
 }
@@ -150,15 +151,16 @@ transformation::transformation(const symop_data &data)
 {
 	const auto &d = data.data();
 
-	m_rotation(0, 0) = static_cast<float>(d[0]);
-	m_rotation(0, 1) = static_cast<float>(d[1]);
-	m_rotation(0, 2) = static_cast<float>(d[2]);
-	m_rotation(1, 0) = static_cast<float>(d[3]);
-	m_rotation(1, 1) = static_cast<float>(d[4]);
-	m_rotation(1, 2) = static_cast<float>(d[5]);
-	m_rotation(2, 0) = static_cast<float>(d[6]);
-	m_rotation(2, 1) = static_cast<float>(d[7]);
-	m_rotation(2, 2) = static_cast<float>(d[8]);
+	// WARNING: glm::mat is column major
+	m_rotation[0][0] = static_cast<float>(d[0]);
+	m_rotation[1][0] = static_cast<float>(d[1]);
+	m_rotation[2][0] = static_cast<float>(d[2]);
+	m_rotation[0][1] = static_cast<float>(d[3]);
+	m_rotation[1][1] = static_cast<float>(d[4]);
+	m_rotation[2][1] = static_cast<float>(d[5]);
+	m_rotation[0][2] = static_cast<float>(d[6]);
+	m_rotation[1][2] = static_cast<float>(d[7]);
+	m_rotation[2][2] = static_cast<float>(d[8]);
 
 	try_create_quaternion();
 
@@ -167,7 +169,7 @@ transformation::transformation(const symop_data &data)
 	m_translation.z = static_cast<float>(d[13] == 0 ? 0 : 1.0 * d[13] / d[14]);
 }
 
-transformation::transformation(const matrix3x3<float> &r, const cif::point &t)
+transformation::transformation(const glm::mat3 &r, const cif::point &t)
 	: m_rotation(r)
 	, m_translation(t)
 {
@@ -178,9 +180,9 @@ void transformation::try_create_quaternion()
 {
 	Eigen::Matrix3f rot;
 
-	rot << m_rotation(0, 0), m_rotation(0, 1), m_rotation(0, 2),
-		m_rotation(1, 0), m_rotation(1, 1), m_rotation(1, 2),
-		m_rotation(2, 0), m_rotation(2, 1), m_rotation(2, 2);
+	rot << m_rotation[0][0], m_rotation[0][1], m_rotation[0][2],
+		m_rotation[1][0], m_rotation[1][1], m_rotation[1][2],
+		m_rotation[2][0], m_rotation[2][1], m_rotation[2][2];
 
 	if (rot * rot.transpose() == Eigen::Matrix3f::Identity() and rot.determinant() == 1)
 	{
@@ -292,12 +294,7 @@ point spacegroup::operator()(const point &pt, const cell &c, sym_op symop) const
 	t.m_translation.y += symop.m_tb - 5;
 	t.m_translation.z += symop.m_tc - 5;
 
-	auto fpt = fractional(pt, c);
-	auto o = offsetToOriginFractional(fpt);
-
-	auto spt = t(fpt + o) - o;
-
-	return orthogonal(spt, c);
+	return orthogonal(t(fractional(pt, c)), c);
 }
 
 point spacegroup::inverse(const point &pt, const cell &c, sym_op symop) const
@@ -311,13 +308,8 @@ point spacegroup::inverse(const point &pt, const cell &c, sym_op symop) const
 	t.m_translation.y += symop.m_tb - 5;
 	t.m_translation.z += symop.m_tc - 5;
 
-	auto fpt = fractional(pt, c);
-	auto o = offsetToOriginFractional(fpt);
-
 	auto it = cif::inverse(t);
-	auto spt = it(fpt + o) - o;
-
-	return orthogonal(spt, c);
+	return orthogonal(it(fractional(pt, c)), c);
 }
 
 // --------------------------------------------------------------------

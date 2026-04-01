@@ -27,11 +27,11 @@
 #pragma once
 
 #include "cif++/exports.hpp"
-#include "cif++/matrix.hpp"
 #include "cif++/point.hpp"
 
 #include <array>
 #include <cstdint>
+#include <glm/ext/matrix_float3x3.hpp>
 #include <string>
 
 #if defined(__cpp_impl_three_way_comparison)
@@ -46,18 +46,6 @@
 
 namespace cif
 {
-
-// --------------------------------------------------------------------
-
-/// \brief Apply matrix transformation @a m on point @a pt and return the result
-inline point operator*(const matrix3x3<float> &m, const point &pt)
-{
-	return {
-		m(0, 0) * pt.x + m(0, 1) * pt.y + m(0, 2) * pt.z,
-		m(1, 0) * pt.x + m(1, 1) * pt.y + m(1, 2) * pt.z,
-		m(2, 0) * pt.x + m(2, 1) * pt.y + m(2, 2) * pt.z
-	};
-}
 
 // --------------------------------------------------------------------
 
@@ -326,7 +314,7 @@ class transformation
 	transformation(const symop_data &data);
 
 	/// \brief constructor taking a rotation matrix @a r and a translation vector @a t
-	transformation(const matrix3x3<float> &r, const cif::point &t);
+	transformation(const glm::mat3 &r, const cif::point &t);
 
 	/** @cond */
 	transformation(const transformation &) = default;
@@ -367,7 +355,7 @@ class transformation
 
 	void try_create_quaternion();
 
-	matrix3x3<float> m_rotation{};
+	glm::mat3 m_rotation{};
 	quaternion m_q{};
 	point m_translation{};
 };
@@ -399,14 +387,14 @@ class cell
 
 	[[nodiscard]] float get_volume() const; ///< return the calculated volume for this cell
 
-	[[nodiscard]] matrix3x3<float> get_orthogonal_matrix() const { return m_orthogonal; } ///< return the matrix to use to transform coordinates from fractional to orthogonal
-	[[nodiscard]] matrix3x3<float> get_fractional_matrix() const { return m_fractional; } ///< return the matrix to use to transform coordinates from orthogonal to fractional
+	[[nodiscard]] glm::mat3 get_orthogonal_matrix() const { return m_orthogonal; } ///< return the matrix to use to transform coordinates from fractional to orthogonal
+	[[nodiscard]] glm::mat3 get_fractional_matrix() const { return m_fractional; } ///< return the matrix to use to transform coordinates from orthogonal to fractional
 
   private:
 	void init();
 
 	float m_a, m_b, m_c, m_alpha, m_beta, m_gamma;
-	matrix3x3<float> m_orthogonal, m_fractional;
+	glm::mat3 m_orthogonal, m_fractional;
 };
 
 // --------------------------------------------------------------------

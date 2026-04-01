@@ -26,13 +26,9 @@
 
 #pragma once
 
-#include <array>
 #include <cmath>
-#include <complex>
-#include <cstdint>
 #include <cstdlib>
 #include <format>
-#include <functional>
 #include <glm/ext/quaternion_common.hpp>
 #include <glm/ext/quaternion_geometric.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
@@ -42,11 +38,7 @@
 #include <limits>
 #include <numbers>
 #include <optional>
-#include <ostream>
 #include <tuple>
-#include <type_traits>
-#include <utility>
-#include <valarray>
 #include <vector>
 
 #if __has_include(<clipper/core/coords.h>)
@@ -159,7 +151,7 @@ constexpr auto angle(const point_type<F> &p1, const point_type<F> &p2, const poi
 	point_type<F> v1 = p1 - p2;
 	point_type<F> v2 = p3 - p2;
 
-	return std::acos(dot(v1, v2) / (glm::length(v1) * glm::length(v2))) * 180 / std::numbers::pi_v<F>;
+	return std::acos(glm::dot(v1, v2) / (glm::length(v1) * glm::length(v2))) * 180 / std::numbers::pi_v<F>;
 }
 
 /// \brief return the dihedral angle in degrees for the four points @a p1, @a p2, @a p3 and @a p4
@@ -173,18 +165,18 @@ constexpr auto dihedral_angle(const point_type<F> &p1, const point_type<F> &p2, 
 
 	point_type<F> z = p2 - p3; // vector from p3 to p2
 
-	point_type<F> p = cross(z, v12);
-	point_type<F> x = cross(z, v43);
-	point_type<F> y = cross(z, x);
+	point_type<F> p = glm::cross(z, v12);
+	point_type<F> x = glm::cross(z, v43);
+	point_type<F> y = glm::cross(z, x);
 
-	auto u = dot(x, x);
-	auto v = dot(y, y);
+	auto u = glm::dot(x, x);
+	auto v = glm::dot(y, y);
 
 	F result = 360;
 	if (u > 0 and v > 0)
 	{
-		u = dot(p, x) / std::sqrt(u);
-		v = dot(p, y) / std::sqrt(v);
+		u = glm::dot(p, x) / std::sqrt(u);
+		v = glm::dot(p, y) / std::sqrt(v);
 		if (u != 0 or v != 0)
 			result = std::atan2(v, u) * static_cast<F>(180 / std::numbers::pi_v<F>);
 	}
@@ -199,9 +191,9 @@ constexpr auto cosinus_angle(const point_type<F> &p1, const point_type<F> &p2, c
 	point_type<F> v12 = p1 - p2;
 	point_type<F> v34 = p3 - p4;
 
-	auto x = dot(v12, v12) * dot(v34, v34);
+	auto x = glm::dot(v12, v12) * glm::dot(v34, v34);
 
-	return x > 0 ? dot(v12, v34) / std::sqrt(x) : 0;
+	return x > 0 ? glm::dot(v12, v34) / std::sqrt(x) : 0;
 }
 
 /// \brief return the distance from point @a p to the line from @a l1 to @a l2
