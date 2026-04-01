@@ -8,7 +8,7 @@ Points
 
 The most basic type in use is :cpp:type:`cif::point`. It can be thought of as a point in space with three coordinates, but it is also often used as a vector in 3d space. To keep the interface simple there's no separate vector type.
 
-Many functions are available in :ref:`file_cif++_point.hpp` that work on points. There are functions to calculate the :cpp:func:`cif::distance` between two points and also function to calculate dot products, cross products and dihedral angles between sets of points.
+Many functions are available in :ref:`file_cif++_point.hpp` that work on points. There are functions to calculate the :cpp:func:`glm::distance` between two points and also function to calculate dot products, cross products and dihedral angles between sets of points.
 
 Quaternions
 -----------
@@ -91,7 +91,7 @@ To give an idea how this works, here's a piece of code copied from one of the un
         auto sa2 = c.symmetry_copy(p2, cif::sym_op(symm2));
 
         // The distance between these symmetry atoms should be equal to the distance in the struct_conn record
-        assert(cif::distance(sa1, sa2) == dist);
+        assert(glm::distance(sa1, sa2) == dist);
 
         // And to show how you can obtain the closest symmetry copy of an atom near another one:
         // here we request the symmetry copy of p2 that lies closest to p1

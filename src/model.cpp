@@ -2288,17 +2288,15 @@ std::string structure::create_non_poly(const std::string &compound_id, bool skip
 		if (skip_hydrogen and cif::atom_type_traits(a.type_symbol).symbol() == "H")
 			continue;
 
-		auto ax = a.get_location().get_x();
-		auto ay = a.get_location().get_y();
-		auto az = a.get_location().get_z();
+		auto aloc = a.get_location();
 
 		atoms.emplace_back(cif::row_initializer{
 			{ "type_symbol", cif::atom_type_traits(a.type_symbol).symbol() },
 			{ "label_atom_id", a.id },
 			{ "auth_atom_id", a.id },
-			{ "Cartn_x", ax },
-			{ "Cartn_y", ay },
-			{ "Cartn_z", az },
+			{ "Cartn_x", aloc.x },
+			{ "Cartn_y", aloc.y },
+			{ "Cartn_z", aloc.z },
 			{ "B_iso_or_equiv", 30.00 } });
 	}
 

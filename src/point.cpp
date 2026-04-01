@@ -257,29 +257,29 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 
 // --------------------------------------------------------------------
 
-std::tuple<point, float> smallest_sphere_around_2_points(std::array<cif::point, 2> pts)
+std::tuple<point, float> smallest_sphere_around_2_points(std::array<point, 2> pts)
 {
-	return { (pts[0] + pts[1]) / 2, distance(pts[0], pts[1]) / 2 };
+	return { (pts[0] + pts[1]) / 2.0f, distance(pts[0], pts[1]) / 2.0f };
 }
 
-std::tuple<point, float> smallest_sphere_around_3_points(std::array<cif::point, 3> pts)
+std::tuple<point, float> smallest_sphere_around_3_points(std::array<point, 3> pts)
 {
 	// Find two bisectors
 	auto vz = cross(pts[1] - pts[0], pts[2] - pts[0]);
 
 	auto bs1 = cross(vz, pts[1] - pts[0]);
-	bs1.normalize();
+	normalize(bs1);
 
 	auto v1 = (pts[1] - pts[0]);
-	v1.normalize();
+	normalize(v1);
 
 	auto s1 = pts[0] + (distance(pts[1], pts[0]) / 2) * v1;
 
 	auto bs2 = cross(vz, pts[2] - pts[0]);
-	bs2.normalize();
+	normalize(bs2);
 
 	auto v2 = (pts[2] - pts[0]);
-	v2.normalize();
+	normalize(v2);
 
 	auto s2 = pts[0] + (distance(pts[2], pts[0]) / 2) * v2;
 
@@ -300,7 +300,7 @@ std::tuple<point, float> smallest_sphere_around_3_points(std::array<cif::point, 
 		return smallest_sphere_around_2_points({ pts[1], pts[2] });
 }
 
-std::tuple<point, float> smallest_sphere_around_4_points(std::array<cif::point, 4> pts)
+std::tuple<point, float> smallest_sphere_around_4_points(std::array<point, 4> pts)
 {
 	auto t0 = -norm_squared(pts[0]);
 	auto t1 = -norm_squared(pts[1]);
@@ -427,19 +427,19 @@ bool point_in_circle(point p, std::vector<point> c)
 		case 2:
 		{
 			auto [center, radius] = smallest_sphere_around_2_points({ c[0], c[1] });
-			return cif::distance_squared(p, center) <= radius * radius;
+			return distance_squared(p, center) <= radius * radius;
 		}
 
 		case 3:
 		{
 			auto [center, radius] = smallest_sphere_around_3_points({ c[0], c[1], c[2] });
-			return cif::distance_squared(p, center) <= radius * radius;
+			return distance_squared(p, center) <= radius * radius;
 		}
 
 		case 4:
 		{
 			auto [center, radius] = smallest_sphere_around_4_points({ c[0], c[1], c[2], c[3] });
-			return cif::distance_squared(p, center) <= radius * radius;
+			return distance_squared(p, center) <= radius * radius;
 		}
 
 		default:

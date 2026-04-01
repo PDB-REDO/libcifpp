@@ -87,7 +87,7 @@ TEST_CASE("t1")
 	cif::center_points(p1);
 
 	for (auto &p : p2)
-		p.rotate(q);
+		p = q * p;
 
 	cif::center_points(p2);
 
@@ -98,7 +98,7 @@ TEST_CASE("t1")
 	CHECK_THAT(std::fmod(360 + angle, 360), Catch::Matchers::WithinRel(std::fmod(360 - angle0, 360), 0.01));
 
 	for (auto &p : p1)
-		p.rotate(q2);
+		p = q2 * p;
 
 	auto rmsd = cif::RMSd(p1, p2);
 
@@ -115,7 +115,7 @@ TEST_CASE("t2")
 		{ 1, 2, 0 }
 	};
 
-	cif::point xp = cif::cross(p[1] - p[0], p[2] - p[0]);
+	auto xp = glm::cross(p[1] - p[0], p[2] - p[0]);
 
 	auto q = cif::construct_from_angle_axis(45, xp);
 
@@ -132,16 +132,16 @@ TEST_CASE("t3")
 		{ 1, 2, 0 }
 	};
 
-	cif::point xp = cif::cross(p[1] - p[0], p[2] - p[0]);
+	cif::point xp = glm::cross(p[1] - p[0], p[2] - p[0]);
 
 	auto q = cif::construct_from_angle_axis(45, xp);
 
 	auto v = p[1];
 	v -= p[0];
-	v.rotate(q);
+	v = q * v;
 	v += p[0];
 
-	std::cout << v << '\n';
+	std::println(std::cout, "{}", v);
 
 	double a = cif::angle(v, p[0], p[1]);
 
@@ -165,7 +165,7 @@ TEST_CASE("dh_q_0")
 
 	auto q = cif::construct_from_angle_axis(90, axis);
 
-	p.rotate(q);
+	p = q * p;
 
 	REQUIRE(std::abs(p.x - 1.f) < 0.01f);
 	REQUIRE(std::abs(p.y - 0.f) < 0.01f);
@@ -176,7 +176,7 @@ TEST_CASE("dh_q_0")
 
 	q = cif::construct_from_angle_axis(-90, axis);
 
-	p.rotate(q);
+	p = q * p;
 
 	REQUIRE(std::abs(p.x - 1.f) < 0.01f);
 	REQUIRE(std::abs(p.y - 1.f) < 0.01f);
@@ -222,7 +222,9 @@ TEST_CASE("dh_q_1")
 	{
 		auto q = cif::construct_for_dihedral_angle(pts[0], pts[1], pts[2], pts[3], angle, 1);
 
-		pts[3].rotate(q, pts[2]);
+		pts[3] -= pts[2];
+		pts[3] = q * pts[3];
+		pts[3] += pts[2];
 
 		auto dh = cif::dihedral_angle(pts[0], pts[1], pts[2], pts[3]);
 		CHECK_THAT(dh, Catch::Matchers::WithinRel(angle, 0.1f));
@@ -248,7 +250,7 @@ TEST_CASE("dh_q_1")
 
         cif::point p1{ 1, 1, 1 };
         cif::point p2 = p1;
-        p2.rotate(q);
+        p2 = q * p2;
 
         cif::matrix3x3<float> rot_c({ static_cast<float>(d[0]),
             static_cast<float>(d[1]),
@@ -318,7 +320,7 @@ TEST_CASE("dh_q_1")
 
 // 		cif::point p1{ 1, 1, 1 };
 // 		cif::point p2 = p1;
-// 		p2.rotate(q);
+// 		p2 = q * p2;
 
 // 		cif::point p3 = rot * p1;
 
@@ -453,7 +455,7 @@ TEST_CASE("symm_2bi3_1")
 		auto sa1 = c.symmetry_copy(a1.get_location(), cif::sym_op(symm1));
 		auto sa2 = c.symmetry_copy(a2.get_location(), cif::sym_op(symm2));
 
-		CHECK_THAT(cif::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
+		CHECK_THAT(glm::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
 
 		auto pa1 = a1.get_location();
 
@@ -491,17 +493,20 @@ TEST_CASE("symm_2bi3_1a")
 			 "ptnr2_label_asym_id", "ptnr2_label_seq_id", "ptnr2_auth_seq_id", "ptnr2_label_atom_id", "ptnr2_symmetry",
 			 "pdbx_dist_value"))
 	{
-		cif::point p1 = atom_site.find1<float, float, float>(
+		auto t1 = atom_site.find1<float, float, float>(
 			"label_asym_id"_key == asym1 and "label_seq_id"_key == seqid1 and "auth_seq_id"_key == authseqid1 and "label_atom_id"_key == atomid1,
 			"cartn_x", "cartn_y", "cartn_z");
-		cif::point p2 = atom_site.find1<float, float, float>(
+		auto t2 = atom_site.find1<float, float, float>(
 			"label_asym_id"_key == asym2 and "label_seq_id"_key == seqid2 and "auth_seq_id"_key == authseqid2 and "label_atom_id"_key == atomid2,
 			"cartn_x", "cartn_y", "cartn_z");
+
+		cif::point p1{ std::get<0>(t1), std::get<1>(t1), std::get<2>(t1) };
+		cif::point p2{ std::get<0>(t2), std::get<1>(t2), std::get<2>(t2) };
 
 		auto sa1 = c.symmetry_copy(p1, cif::sym_op(symm1));
 		auto sa2 = c.symmetry_copy(p2, cif::sym_op(symm2));
 
-		CHECK_THAT(cif::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
+		CHECK_THAT(glm::distance(sa1, sa2), Catch::Matchers::WithinAbs(dist, 0.5f));
 
 		const auto &[d, p, so] = c.closest_symmetry_copy(p1, p2);
 
@@ -582,7 +587,7 @@ TEST_CASE("smallest_sphere-1")
 	for (int i = 0; i < 1000; ++i)
 	{
 		auto [c, r] = cif::smallest_sphere_around_points(pts);
-		CHECK_THAT(cif::distance(c, cif::point{ 0, 0.743099928, 51.1741028 }), Catch::Matchers::WithinAbs(0.f, 0.01f));
+		CHECK_THAT(glm::distance(c, cif::point{ 0, 0.743099928, 51.1741028 }), Catch::Matchers::WithinAbs(0.f, 0.01f));
 		CHECK_THAT(r, Catch::Matchers::WithinAbs(7.31248331f, 0.01f));
 	}
 }

@@ -448,7 +448,7 @@ std::tuple<float, point, sym_op> crystal::closest_symmetry_copy(point a, point b
 	if (m_cell.get_a() == 0 or m_cell.get_b() == 0 or m_cell.get_c() == 0)
 		throw std::runtime_error("Invalid cell, contains a dimension that is zero");
 
-	point result_fsb;
+	point result_fsb{};
 	float result_d = std::numeric_limits<float>::max();
 	sym_op result_s;
 

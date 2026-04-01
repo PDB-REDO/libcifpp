@@ -33,8 +33,11 @@
 #include <cstdlib>
 #include <format>
 #include <functional>
+#include <glm/ext/quaternion_geometric.hpp>
+#include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/trigonometric.hpp>
 #include <limits>
 #include <numbers>
 #include <optional>
@@ -205,10 +208,17 @@ std::tuple<point, float> smallest_sphere_around_points(std::vector<point> pts);
 // --------------------------------------------------------------------
 
 /// \brief Return a quaternion created from angle @a angle and axis @a axis
-quaternion construct_from_angle_axis(float angle, point axis);
+constexpr quaternion construct_from_angle_axis(float angle, point axis)
+{
+	glm::normalize(axis);
+	return glm::angleAxis(glm::radians(angle), axis);
+}
 
 /// \brief Return a tuple of an angle and an axis for quaternion @a q
-std::tuple<float, point> quaternion_to_angle_axis(quaternion q);
+constexpr std::tuple<float, point> quaternion_to_angle_axis(quaternion q)
+{
+	return { glm::degrees(glm::angle(q)), glm::axis(q) };
+}
 
 /// @brief Given four points and an angle, return the quaternion required to rotate
 /// point p4 along the p2-p3 axis and around point p3 to obtain the required within
@@ -236,3 +246,17 @@ double RMSd(const std::vector<point> &a, const std::vector<point> &b);
 
 
 } // namespace cif
+
+template <>
+struct std::formatter<glm::vec3> : std::formatter<std::string_view> // NOLINT
+{
+	template <class FmtContext>
+	auto format(glm::vec3 pt, FmtContext &ctx) const
+	{
+		std::string temp;
+		std::format_to(std::back_inserter(temp), "( {}, {}, {} )", pt.x, pt.y, pt.z);
+
+		return std::formatter<std::string_view>::format(temp, ctx);
+	}
+};
+
