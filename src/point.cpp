@@ -47,84 +47,26 @@ namespace cif
 
 // --------------------------------------------------------------------
 
-template <typename T>
-quaternion_type<T> normalize(quaternion_type<T> q)
-{
-	std::valarray<double> t(4);
-
-	t[0] = q.get_a();
-	t[1] = q.get_b();
-	t[2] = q.get_c();
-	t[3] = q.get_d();
-
-	t *= t;
-
-	double length = std::sqrt(t.sum());
-
-	if (length > 0.001)
-		q /= static_cast<quaternion::value_type>(length);
-	else
-		q = quaternion(1, 0, 0, 0);
-
-	return q;
-}
-
-// --------------------------------------------------------------------
-
-quaternion construct_from_angle_axis(float angle, point axis)
-{
-	angle = (angle * std::numbers::pi_v<float> / 180) / 2;
-	auto s = std::sin(angle);
-	auto c = std::cos(angle);
-
-	axis.normalize();
-
-	return normalize(quaternion{
-		static_cast<float>(c),
-		static_cast<float>(s * axis.m_x),
-		static_cast<float>(s * axis.m_y),
-		static_cast<float>(s * axis.m_z) });
-}
-
-std::tuple<float, point> quaternion_to_angle_axis(quaternion q)
-{
-	if (q.get_a() > 1)
-		q = normalize(q);
-
-	// angle:
-	float angle = 2 * std::acos(q.get_a());
-	angle = angle * 180 / std::numbers::pi_v<float>;
-
-	// axis:
-	float s = std::sqrt(1 - q.get_a() * q.get_a());
-	if (s < 0.001)
-		s = 1;
-
-	point axis(q.get_b() / s, q.get_c() / s, q.get_d() / s);
-
-	return { angle, axis };
-}
-
 point center_points(std::vector<point> &Points)
 {
 	point t;
 
 	for (point &pt : Points)
 	{
-		t.m_x += pt.m_x;
-		t.m_y += pt.m_y;
-		t.m_z += pt.m_z;
+		t.x += pt.x;
+		t.y += pt.y;
+		t.z += pt.z;
 	}
 
-	t.m_x /= static_cast<float>(Points.size());
-	t.m_y /= static_cast<float>(Points.size());
-	t.m_z /= static_cast<float>(Points.size());
+	t.x /= static_cast<float>(Points.size());
+	t.y /= static_cast<float>(Points.size());
+	t.z /= static_cast<float>(Points.size());
 
 	for (point &pt : Points)
 	{
-		pt.m_x -= t.m_x;
-		pt.m_y -= t.m_y;
-		pt.m_z -= t.m_z;
+		pt.x -= t.x;
+		pt.y -= t.y;
+		pt.z -= t.z;
 	}
 
 	return t;
@@ -163,9 +105,9 @@ double RMSd(const std::vector<point> &a, const std::vector<point> &b)
 	{
 		std::valarray<double> d(3);
 
-		d[0] = b[i].m_x - a[i].m_x;
-		d[1] = b[i].m_y - a[i].m_y;
-		d[2] = b[i].m_z - a[i].m_z;
+		d[0] = b[i].x - a[i].x;
+		d[1] = b[i].y - a[i].y;
+		d[2] = b[i].z - a[i].z;
 
 		d *= d;
 
@@ -224,15 +166,15 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 		const point &a = pa[i];
 		const point &b = pb[i];
 
-		M(0, 0) += a.m_x * b.m_x;
-		M(0, 1) += a.m_x * b.m_y;
-		M(0, 2) += a.m_x * b.m_z;
-		M(1, 0) += a.m_y * b.m_x;
-		M(1, 1) += a.m_y * b.m_y;
-		M(1, 2) += a.m_y * b.m_z;
-		M(2, 0) += a.m_z * b.m_x;
-		M(2, 1) += a.m_z * b.m_y;
-		M(2, 2) += a.m_z * b.m_z;
+		M(0, 0) += a.x * b.x;
+		M(0, 1) += a.x * b.y;
+		M(0, 2) += a.x * b.z;
+		M(1, 0) += a.y * b.x;
+		M(1, 1) += a.y * b.y;
+		M(1, 2) += a.y * b.z;
+		M(2, 0) += a.z * b.x;
+		M(2, 1) += a.z * b.y;
+		M(2, 2) += a.z * b.z;
 	}
 
 	// Now calculate N, a symmetric 4x4 matrix
@@ -315,29 +257,6 @@ quaternion align_points(const std::vector<point> &pa, const std::vector<point> &
 
 // --------------------------------------------------------------------
 
-point nudge(point p, float offset)
-{
-	static std::random_device rd;
-	static std::mt19937_64 rng(rd());
-
-	std::uniform_real_distribution<float> randomAngle(0, 2 * std::numbers::pi);
-	std::normal_distribution<float> randomOffset(0, offset);
-
-	float theta = randomAngle(rng);
-	float phi1 = randomAngle(rng) - static_cast<float>(std::numbers::pi);
-	float phi2 = randomAngle(rng) - static_cast<float>(std::numbers::pi);
-
-	quaternion q = spherical(1.0f, theta, phi1, phi2);
-
-	point r{ 0, 0, 1 };
-	r.rotate(q);
-	r *= randomOffset(rng);
-
-	return p + r;
-}
-
-// --------------------------------------------------------------------
-
 std::tuple<point, float> smallest_sphere_around_2_points(std::array<cif::point, 2> pts)
 {
 	return { (pts[0] + pts[1]) / 2, distance(pts[0], pts[1]) / 2 };
@@ -346,9 +265,9 @@ std::tuple<point, float> smallest_sphere_around_2_points(std::array<cif::point, 
 std::tuple<point, float> smallest_sphere_around_3_points(std::array<cif::point, 3> pts)
 {
 	// Find two bisectors
-	auto vz = cross_product(pts[1] - pts[0], pts[2] - pts[0]);
+	auto vz = cross(pts[1] - pts[0], pts[2] - pts[0]);
 
-	auto bs1 = cross_product(vz, pts[1] - pts[0]);
+	auto bs1 = cross(vz, pts[1] - pts[0]);
 	bs1.normalize();
 
 	auto v1 = (pts[1] - pts[0]);
@@ -356,7 +275,7 @@ std::tuple<point, float> smallest_sphere_around_3_points(std::array<cif::point, 
 
 	auto s1 = pts[0] + (distance(pts[1], pts[0]) / 2) * v1;
 
-	auto bs2 = cross_product(vz, pts[2] - pts[0]);
+	auto bs2 = cross(vz, pts[2] - pts[0]);
 	bs2.normalize();
 
 	auto v2 = (pts[2] - pts[0]);
@@ -390,45 +309,45 @@ std::tuple<point, float> smallest_sphere_around_4_points(std::array<cif::point, 
 
 	// clang-format off
 	matrix4x4<float> Tm({
-		pts[0].m_x, pts[0].m_y, pts[0].m_z, 1,
-		pts[1].m_x, pts[1].m_y, pts[1].m_z, 1,
-		pts[2].m_x, pts[2].m_y, pts[2].m_z, 1,
-		pts[3].m_x, pts[3].m_y, pts[3].m_z, 1
+		pts[0].x, pts[0].y, pts[0].z, 1,
+		pts[1].x, pts[1].y, pts[1].z, 1,
+		pts[2].x, pts[2].y, pts[2].z, 1,
+		pts[3].x, pts[3].y, pts[3].z, 1
 	});
 	auto T = determinant(Tm);
 
 	if (T != 0)
 	{
 		matrix4x4<float> Dm({
-			t0, pts[0].m_y, pts[0].m_z, 1,
-			t1, pts[1].m_y, pts[1].m_z, 1,
-			t2, pts[2].m_y, pts[2].m_z, 1,
-			t3, pts[3].m_y, pts[3].m_z, 1
+			t0, pts[0].y, pts[0].z, 1,
+			t1, pts[1].y, pts[1].z, 1,
+			t2, pts[2].y, pts[2].z, 1,
+			t3, pts[3].y, pts[3].z, 1
 		});
 		auto D = determinant(Dm) / T;
 		
 		matrix4x4<float> Em({
-			pts[0].m_x, t0, pts[0].m_z, 1,
-			pts[1].m_x, t1, pts[1].m_z, 1,
-			pts[2].m_x, t2, pts[2].m_z, 1,
-			pts[3].m_x, t3, pts[3].m_z, 1
+			pts[0].x, t0, pts[0].z, 1,
+			pts[1].x, t1, pts[1].z, 1,
+			pts[2].x, t2, pts[2].z, 1,
+			pts[3].x, t3, pts[3].z, 1
 		});
 		auto E = determinant(Em) / T;
 		
 		matrix4x4<float> Fm({
-			pts[0].m_x, pts[0].m_y, t0, 1,
-			pts[1].m_x, pts[1].m_y, t1, 1,
-			pts[2].m_x, pts[2].m_y, t2, 1,
-			pts[3].m_x, pts[3].m_y, t3, 1
+			pts[0].x, pts[0].y, t0, 1,
+			pts[1].x, pts[1].y, t1, 1,
+			pts[2].x, pts[2].y, t2, 1,
+			pts[3].x, pts[3].y, t3, 1
 		});
 		
 		auto F = determinant(Fm) / T;
 		
 		matrix4x4<float> Gm({
-			pts[0].m_x, pts[0].m_y, pts[0].m_z, t0,
-			pts[1].m_x, pts[1].m_y, pts[1].m_z, t1,
-			pts[2].m_x, pts[2].m_y, pts[2].m_z, t2,
-			pts[3].m_x, pts[3].m_y, pts[3].m_z, t3
+			pts[0].x, pts[0].y, pts[0].z, t0,
+			pts[1].x, pts[1].y, pts[1].z, t1,
+			pts[2].x, pts[2].y, pts[2].z, t2,
+			pts[3].x, pts[3].y, pts[3].z, t3
 		});
 		auto G = determinant(Gm) / T;
 		

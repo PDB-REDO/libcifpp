@@ -67,9 +67,9 @@ void atom::atom_impl::moveTo(const point &p)
 
 	auto r = row();
 
-	r.assign("Cartn_x", { p.m_x, 3 }, false, false);
-	r.assign("Cartn_y", { p.m_y, 3 }, false, false);
-	r.assign("Cartn_z", { p.m_z, 3 }, false, false);
+	r.assign("Cartn_x", { p.x, 3 }, false, false);
+	r.assign("Cartn_y", { p.y, 3 }, false, false);
+	r.assign("Cartn_z", { p.z, 3 }, false, false);
 
 	m_location = p;
 }
@@ -689,8 +689,8 @@ float monomer::chiral_volume() const
 		auto atom2 = get_atom_by_atom_id("CD1");
 		auto atom3 = get_atom_by_atom_id("CD2");
 
-		result = dot_product(atom1.get_location() - centre.get_location(),
-			cross_product(atom2.get_location() - centre.get_location(), atom3.get_location() - centre.get_location()));
+		result = dot(atom1.get_location() - centre.get_location(),
+			cross(atom2.get_location() - centre.get_location(), atom3.get_location() - centre.get_location()));
 	}
 	else if (m_compound_id == "VAL")
 	{
@@ -699,8 +699,8 @@ float monomer::chiral_volume() const
 		auto atom2 = get_atom_by_atom_id("CG1");
 		auto atom3 = get_atom_by_atom_id("CG2");
 
-		result = dot_product(atom1.get_location() - centre.get_location(),
-			cross_product(atom2.get_location() - centre.get_location(), atom3.get_location() - centre.get_location()));
+		result = dot(atom1.get_location() - centre.get_location(),
+			cross(atom2.get_location() - centre.get_location(), atom3.get_location() - centre.get_location()));
 	}
 
 	return result;

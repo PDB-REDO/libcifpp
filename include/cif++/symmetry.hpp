@@ -53,9 +53,9 @@ namespace cif
 inline point operator*(const matrix3x3<float> &m, const point &pt)
 {
 	return {
-		m(0, 0) * pt.m_x + m(0, 1) * pt.m_y + m(0, 2) * pt.m_z,
-		m(1, 0) * pt.m_x + m(1, 1) * pt.m_y + m(1, 2) * pt.m_z,
-		m(2, 0) * pt.m_x + m(2, 1) * pt.m_y + m(2, 2) * pt.m_z
+		m(0, 0) * pt.x + m(0, 1) * pt.y + m(0, 2) * pt.z,
+		m(1, 0) * pt.x + m(1, 1) * pt.y + m(1, 2) * pt.z,
+		m(2, 0) * pt.x + m(2, 1) * pt.y + m(2, 2) * pt.z
 	};
 }
 
@@ -338,8 +338,8 @@ class transformation
 	/// \brief operator() to perform the transformation on point @a pt and return the result
 	point operator()(point pt) const
 	{
-		if (m_q)
-			pt.rotate(m_q);
+		if (m_q != quaternion{})
+			pt = m_q * pt;
 		else
 			pt = m_rotation * pt;
 

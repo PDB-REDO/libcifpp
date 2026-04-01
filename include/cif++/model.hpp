@@ -99,7 +99,7 @@ class atom
 		{
 			auto r = row();
 			if (r)
-				std::tie(m_location.m_x, m_location.m_y, m_location.m_z) = r.get<float, float, float>("Cartn_x", "Cartn_y", "Cartn_z");
+				std::tie(m_location.x, m_location.y, m_location.z) = r.get<float, float, float>("Cartn_x", "Cartn_y", "Cartn_z");
 		}
 
 		// constructor for a symmetry copy of an atom
@@ -298,16 +298,16 @@ class atom
 	/// \brief Rotate the position of this atom by \a q
 	void rotate(quaternion q)
 	{
-		auto loc = get_location();
-		loc.rotate(q);
-		set_location(loc);
+		set_location(q * get_location());
 	}
 
 	/// \brief rotate the coordinates of this atom by \a q around point \a p
 	void rotate(quaternion q, point p)
 	{
 		auto loc = get_location();
-		loc.rotate(q, p);
+		loc -= p;
+		loc = q * loc;
+		loc += p;
 		set_location(loc);
 	}
 
@@ -316,7 +316,7 @@ class atom
 	{
 		auto loc = get_location();
 		loc += t;
-		loc.rotate(q);
+		loc = q * loc;
 		set_location(loc);
 	}
 
@@ -325,7 +325,7 @@ class atom
 	{
 		auto loc = get_location();
 		loc += t1;
-		loc.rotate(q);
+		loc = q * loc;
 		loc += t2;
 		set_location(loc);
 	}
@@ -451,16 +451,6 @@ inline void swap(atom &a, atom &b)
 inline float distance(const atom &a, const atom &b)
 {
 	return distance(a.get_location(), b.get_location());
-}
-
-/** Calculate the square of the distance between atoms @a and @a b in ångström
- *
- * @note Use this whenever possible instead of simply using distance since
- * this function does not have to calculate a square root which is expensive.
- */
-inline float distance_squared(const atom &a, const atom &b)
-{
-	return distance_squared(a.get_location(), b.get_location());
 }
 
 // --------------------------------------------------------------------

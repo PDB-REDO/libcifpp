@@ -162,9 +162,9 @@ transformation::transformation(const symop_data &data)
 
 	try_create_quaternion();
 
-	m_translation.m_x = static_cast<float>(d[9] == 0 ? 0 : 1.0 * d[9] / d[10]);
-	m_translation.m_y = static_cast<float>(d[11] == 0 ? 0 : 1.0 * d[11] / d[12]);
-	m_translation.m_z = static_cast<float>(d[13] == 0 ? 0 : 1.0 * d[13] / d[14]);
+	m_translation.x = static_cast<float>(d[9] == 0 ? 0 : 1.0 * d[9] / d[10]);
+	m_translation.y = static_cast<float>(d[11] == 0 ? 0 : 1.0 * d[11] / d[12]);
+	m_translation.z = static_cast<float>(d[13] == 0 ? 0 : 1.0 * d[13] / d[14]);
 }
 
 transformation::transformation(const matrix3x3<float> &r, const cif::point &t)
@@ -241,20 +241,20 @@ point offsetToOrigin(const cell &c, const point &p)
 {
 	point d{};
 
-	while (p.m_x + d.m_x < -(c.get_a()))
-		d.m_x += c.get_a();
-	while (p.m_x + d.m_x > (c.get_a()))
-		d.m_x -= c.get_a();
+	while (p.x + d.x < -(c.get_a()))
+		d.x += c.get_a();
+	while (p.x + d.x > (c.get_a()))
+		d.x -= c.get_a();
 
-	while (p.m_y + d.m_y < -(c.get_b()))
-		d.m_y += c.get_b();
-	while (p.m_y + d.m_y > (c.get_b()))
-		d.m_y -= c.get_b();
+	while (p.y + d.y < -(c.get_b()))
+		d.y += c.get_b();
+	while (p.y + d.y > (c.get_b()))
+		d.y -= c.get_b();
 
-	while (p.m_z + d.m_z < -(c.get_c()))
-		d.m_z += c.get_c();
-	while (p.m_z + d.m_z > (c.get_c()))
-		d.m_z -= c.get_c();
+	while (p.z + d.z < -(c.get_c()))
+		d.z += c.get_c();
+	while (p.z + d.z > (c.get_c()))
+		d.z -= c.get_c();
 
 	return d;
 };
@@ -263,20 +263,20 @@ point offsetToOriginFractional(const point &p)
 {
 	point d{};
 
-	while (p.m_x + d.m_x < -0.5f)
-		d.m_x += 1;
-	while (p.m_x + d.m_x > 0.5f)
-		d.m_x -= 1;
+	while (p.x + d.x < -0.5f)
+		d.x += 1;
+	while (p.x + d.x > 0.5f)
+		d.x -= 1;
 
-	while (p.m_y + d.m_y < -0.5f)
-		d.m_y += 1;
-	while (p.m_y + d.m_y > 0.5f)
-		d.m_y -= 1;
+	while (p.y + d.y < -0.5f)
+		d.y += 1;
+	while (p.y + d.y > 0.5f)
+		d.y -= 1;
 
-	while (p.m_z + d.m_z < -0.5f)
-		d.m_z += 1;
-	while (p.m_z + d.m_z > 0.5f)
-		d.m_z -= 1;
+	while (p.z + d.z < -0.5f)
+		d.z += 1;
+	while (p.z + d.z > 0.5f)
+		d.z -= 1;
 
 	return d;
 };
@@ -288,9 +288,9 @@ point spacegroup::operator()(const point &pt, const cell &c, sym_op symop) const
 
 	transformation t = at(symop.m_nr - 1);
 
-	t.m_translation.m_x += symop.m_ta - 5;
-	t.m_translation.m_y += symop.m_tb - 5;
-	t.m_translation.m_z += symop.m_tc - 5;
+	t.m_translation.x += symop.m_ta - 5;
+	t.m_translation.y += symop.m_tb - 5;
+	t.m_translation.z += symop.m_tc - 5;
 
 	auto fpt = fractional(pt, c);
 	auto o = offsetToOriginFractional(fpt);
@@ -307,9 +307,9 @@ point spacegroup::inverse(const point &pt, const cell &c, sym_op symop) const
 
 	transformation t = at(symop.m_nr - 1);
 
-	t.m_translation.m_x += symop.m_ta - 5;
-	t.m_translation.m_y += symop.m_tb - 5;
-	t.m_translation.m_z += symop.m_tc - 5;
+	t.m_translation.x += symop.m_ta - 5;
+	t.m_translation.y += symop.m_tb - 5;
+	t.m_translation.z += symop.m_tc - 5;
 
 	auto fpt = fractional(pt, c);
 	auto o = offsetToOriginFractional(fpt);
@@ -469,39 +469,39 @@ std::tuple<float, point, sym_op> crystal::closest_symmetry_copy(point a, point b
 
 		auto fsb = t(fb);
 
-		while (fsb.m_x - 0.5f > fa.m_x)
+		while (fsb.x - 0.5f > fa.x)
 		{
-			fsb.m_x -= 1;
+			fsb.x -= 1;
 			s.m_ta -= 1;
 		}
 
-		while (fsb.m_x + 0.5f < fa.m_x)
+		while (fsb.x + 0.5f < fa.x)
 		{
-			fsb.m_x += 1;
+			fsb.x += 1;
 			s.m_ta += 1;
 		}
 
-		while (fsb.m_y - 0.5f > fa.m_y)
+		while (fsb.y - 0.5f > fa.y)
 		{
-			fsb.m_y -= 1;
+			fsb.y -= 1;
 			s.m_tb -= 1;
 		}
 
-		while (fsb.m_y + 0.5f < fa.m_y)
+		while (fsb.y + 0.5f < fa.y)
 		{
-			fsb.m_y += 1;
+			fsb.y += 1;
 			s.m_tb += 1;
 		}
 
-		while (fsb.m_z - 0.5f > fa.m_z)
+		while (fsb.z - 0.5f > fa.z)
 		{
-			fsb.m_z -= 1;
+			fsb.z -= 1;
 			s.m_tc -= 1;
 		}
 
-		while (fsb.m_z + 0.5f < fa.m_z)
+		while (fsb.z + 0.5f < fa.z)
 		{
-			fsb.m_z += 1;
+			fsb.z += 1;
 			s.m_tc += 1;
 		}
 

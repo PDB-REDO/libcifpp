@@ -115,7 +115,7 @@ TEST_CASE("t2")
 		{ 1, 2, 0 }
 	};
 
-	cif::point xp = cif::cross_product(p[1] - p[0], p[2] - p[0]);
+	cif::point xp = cif::cross(p[1] - p[0], p[2] - p[0]);
 
 	auto q = cif::construct_from_angle_axis(45, xp);
 
@@ -132,7 +132,7 @@ TEST_CASE("t3")
 		{ 1, 2, 0 }
 	};
 
-	cif::point xp = cif::cross_product(p[1] - p[0], p[2] - p[0]);
+	cif::point xp = cif::cross(p[1] - p[0], p[2] - p[0]);
 
 	auto q = cif::construct_from_angle_axis(45, xp);
 
@@ -167,9 +167,9 @@ TEST_CASE("dh_q_0")
 
 	p.rotate(q);
 
-	REQUIRE(std::abs(p.m_x - 1.f) < 0.01f);
-	REQUIRE(std::abs(p.m_y - 0.f) < 0.01f);
-	REQUIRE(std::abs(p.m_z - 1.f) < 0.01f);
+	REQUIRE(std::abs(p.x - 1.f) < 0.01f);
+	REQUIRE(std::abs(p.y - 0.f) < 0.01f);
+	REQUIRE(std::abs(p.z - 1.f) < 0.01f);
 
 	a = cif::dihedral_angle(t[0], t[1], t[2], p);
 	REQUIRE(std::abs(a - 90.f) < 0.01f);
@@ -178,9 +178,9 @@ TEST_CASE("dh_q_0")
 
 	p.rotate(q);
 
-	REQUIRE(std::abs(p.m_x - 1.f) < 0.01f);
-	REQUIRE(std::abs(p.m_y - 1.f) < 0.01f);
-	REQUIRE(std::abs(p.m_z - 0.f) < 0.01f);
+	REQUIRE(std::abs(p.x - 1.f) < 0.01f);
+	REQUIRE(std::abs(p.y - 1.f) < 0.01f);
+	REQUIRE(std::abs(p.z - 0.f) < 0.01f);
 
 	a = cif::dihedral_angle(t[0], t[1], t[2], p);
 	REQUIRE(std::abs(a - 0.f) < 0.01f);
@@ -262,9 +262,9 @@ TEST_CASE("dh_q_1")
 
         cif::point p3 = rot_c * p1;
 
-        CHECK_THAT(p2.m_x, Catch::Matchers::WithinRel(p3.m_x, 0.01f));
-        CHECK_THAT(p2.m_y, Catch::Matchers::WithinRel(p3.m_y, 0.01f));
-        CHECK_THAT(p2.m_z, Catch::Matchers::WithinRel(p3.m_z, 0.01f));
+        CHECK_THAT(p2.x, Catch::Matchers::WithinRel(p3.x, 0.01f));
+        CHECK_THAT(p2.y, Catch::Matchers::WithinRel(p3.y, 0.01f));
+        CHECK_THAT(p2.z, Catch::Matchers::WithinRel(p3.z, 0.01f));
     }
 }
  */
@@ -322,9 +322,9 @@ TEST_CASE("dh_q_1")
 
 // 		cif::point p3 = rot * p1;
 
-// 		REQUIRE(p2.m_x == p3.m_x);
-// 		REQUIRE(p2.m_y == p3.m_y);
-// 		REQUIRE(p2.m_z == p3.m_z);
+// 		REQUIRE(p2.x == p3.x);
+// 		REQUIRE(p2.y == p3.y);
+// 		REQUIRE(p2.z == p3.z);
 // 	}
 // }
 
@@ -338,15 +338,15 @@ TEST_CASE("symm_1")
 
 	cif::point f = fractional(p, c);
 
-	CHECK_THAT(f.m_x, Catch::Matchers::WithinRel(0.1f, 0.01f));
-	CHECK_THAT(f.m_y, Catch::Matchers::WithinRel(0.1f, 0.01f));
-	CHECK_THAT(f.m_z, Catch::Matchers::WithinRel(0.1f, 0.01f));
+	CHECK_THAT(f.x, Catch::Matchers::WithinRel(0.1f, 0.01f));
+	CHECK_THAT(f.y, Catch::Matchers::WithinRel(0.1f, 0.01f));
+	CHECK_THAT(f.z, Catch::Matchers::WithinRel(0.1f, 0.01f));
 
 	cif::point o = orthogonal(f, c);
 
-	CHECK_THAT(o.m_x, Catch::Matchers::WithinRel(1.f, 0.01f));
-	CHECK_THAT(o.m_y, Catch::Matchers::WithinRel(1.f, 0.01f));
-	CHECK_THAT(o.m_z, Catch::Matchers::WithinRel(1.f, 0.01f));
+	CHECK_THAT(o.x, Catch::Matchers::WithinRel(1.f, 0.01f));
+	CHECK_THAT(o.y, Catch::Matchers::WithinRel(1.f, 0.01f));
+	CHECK_THAT(o.z, Catch::Matchers::WithinRel(1.f, 0.01f));
 }
 
 TEST_CASE("symm_2")
@@ -385,9 +385,9 @@ TEST_CASE("symm_4")
 	CHECK_THAT(distance(a, sg(a, c, "1_554"_symop)), Catch::Matchers::WithinRel(static_cast<float>(c.get_c()), 0.01f));
 
 	auto sb2 = sg(b, c, "4_565"_symop);
-	CHECK_THAT(sb.m_x, Catch::Matchers::WithinRel(sb2.m_x, 0.01f));
-	CHECK_THAT(sb.m_y, Catch::Matchers::WithinRel(sb2.m_y, 0.01f));
-	CHECK_THAT(sb.m_z, Catch::Matchers::WithinRel(sb2.m_z, 0.01f));
+	CHECK_THAT(sb.x, Catch::Matchers::WithinRel(sb2.x, 0.01f));
+	CHECK_THAT(sb.y, Catch::Matchers::WithinRel(sb2.y, 0.01f));
+	CHECK_THAT(sb.z, Catch::Matchers::WithinRel(sb2.z, 0.01f));
 
 	CHECK_THAT(distance(a, sb2), Catch::Matchers::WithinRel(7.42f, 0.01f));
 }
@@ -410,17 +410,17 @@ TEST_CASE("symm_4wvp_1")
 	auto a = s.get_residue("A", 10, "").get_atom_by_atom_id("O");
 
 	auto sp1 = c.symmetry_copy(a.get_location(), "2_565"_symop);
-	CHECK_THAT(sp1.m_x, Catch::Matchers::WithinAbs(p.m_x, 0.5f));
-	CHECK_THAT(sp1.m_y, Catch::Matchers::WithinAbs(p.m_y, 0.5f));
-	CHECK_THAT(sp1.m_z, Catch::Matchers::WithinAbs(p.m_z, 0.5f));
+	CHECK_THAT(sp1.x, Catch::Matchers::WithinAbs(p.x, 0.5f));
+	CHECK_THAT(sp1.y, Catch::Matchers::WithinAbs(p.y, 0.5f));
+	CHECK_THAT(sp1.z, Catch::Matchers::WithinAbs(p.z, 0.5f));
 
 	const auto &[d, sp2, so] = c.closest_symmetry_copy(p, a.get_location());
 
 	REQUIRE(d < 1);
 
-	CHECK_THAT(sp2.m_x, Catch::Matchers::WithinAbs(p.m_x, 0.5f));
-	CHECK_THAT(sp2.m_y, Catch::Matchers::WithinAbs(p.m_y, 0.5f));
-	CHECK_THAT(sp2.m_z, Catch::Matchers::WithinAbs(p.m_z, 0.5f));
+	CHECK_THAT(sp2.x, Catch::Matchers::WithinAbs(p.x, 0.5f));
+	CHECK_THAT(sp2.y, Catch::Matchers::WithinAbs(p.y, 0.5f));
+	CHECK_THAT(sp2.z, Catch::Matchers::WithinAbs(p.z, 0.5f));
 }
 
 TEST_CASE("symm_2bi3_1")
@@ -459,9 +459,9 @@ TEST_CASE("symm_2bi3_1")
 
 		const auto &[d, p, so] = c.closest_symmetry_copy(pa1, a2.get_location());
 
-		CHECK_THAT(p.m_x, Catch::Matchers::WithinAbs(sa2.m_x, 0.5f));
-		CHECK_THAT(p.m_y, Catch::Matchers::WithinAbs(sa2.m_y, 0.5f));
-		CHECK_THAT(p.m_z, Catch::Matchers::WithinAbs(sa2.m_z, 0.5f));
+		CHECK_THAT(p.x, Catch::Matchers::WithinAbs(sa2.x, 0.5f));
+		CHECK_THAT(p.y, Catch::Matchers::WithinAbs(sa2.y, 0.5f));
+		CHECK_THAT(p.z, Catch::Matchers::WithinAbs(sa2.z, 0.5f));
 
 		CHECK_THAT(d, Catch::Matchers::WithinAbs(dist, 0.5f));
 		REQUIRE(so.string() == symm2);
@@ -505,9 +505,9 @@ TEST_CASE("symm_2bi3_1a")
 
 		const auto &[d, p, so] = c.closest_symmetry_copy(p1, p2);
 
-		CHECK_THAT(p.m_x, Catch::Matchers::WithinAbs(sa2.m_x, 0.5f));
-		CHECK_THAT(p.m_y, Catch::Matchers::WithinAbs(sa2.m_y, 0.5f));
-		CHECK_THAT(p.m_z, Catch::Matchers::WithinAbs(sa2.m_z, 0.5f));
+		CHECK_THAT(p.x, Catch::Matchers::WithinAbs(sa2.x, 0.5f));
+		CHECK_THAT(p.y, Catch::Matchers::WithinAbs(sa2.y, 0.5f));
+		CHECK_THAT(p.z, Catch::Matchers::WithinAbs(sa2.z, 0.5f));
 
 		CHECK_THAT(d, Catch::Matchers::WithinAbs(dist, 0.5f));
 		REQUIRE(so.string() == symm2);

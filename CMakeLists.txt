@@ -205,6 +205,8 @@ if(NOT PCRE2_FOUND)
     add_subdirectory(pcre2-simple)
 endif()
 
+find_package(glm REQUIRED)
+
 # Using Eigen3 is a bit of a thing. We don't want to build it completely since
 # we only need a couple of header files. Nothing special. But often, eigen3 is
 # already installed and then we prefer that.
