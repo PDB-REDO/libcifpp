@@ -26,6 +26,7 @@
 
 #include "cif++/cif++.hpp"
 #include "cif++/item.hpp"
+#include "cif++/row.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -76,10 +77,10 @@ void atom::atom_impl::moveTo(const point &p)
 
 // const compound *compound() const;
 
-const item_value &atom::atom_impl::get_property(std::string_view name) const
+const item_handle atom::atom_impl::get_property(std::string_view name) const
 {
 	if (auto rh = row(); rh)
-		return rh[name].value();
+		return rh[name];
 	throw std::runtime_error(std::format("Missing property {} for atom", name));
 }
 
@@ -1911,7 +1912,14 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 	for (const auto &[a1, a2] : remappedAtoms)
 	{
 		auto i = std::ranges::find_if(atoms, [id = a1](const atom &a)
-			{ return a.get_label_atom_id() == id; });
+			{
+				if (a.get_row())
+				{
+					auto ih = a.get_property_value("label_atom_id");
+					return not ih.empty() and ih.get<std::string>() == id;
+				}
+				return false;
+			});
 		if (i == atoms.end())
 		{
 			if (VERBOSE >= 0)
@@ -2170,27 +2178,29 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 	{
 		auto atom_id = atom_site.get_unique_id("");
 
-		auto row = atom_site.emplace({ { "group_PDB", atom.get_property("group_PDB") },
-			{ "id", atom_id },
-			{ "type_symbol", atom.get_property_value("type_symbol") },
-			{ "label_atom_id", atom.get_property_value("label_atom_id") },
-			{ "label_alt_id", atom.get_property_value("label_alt_id") },
-			{ "label_comp_id", comp_id },
-			{ "label_asym_id", asym_id },
-			{ "label_entity_id", entity_id },
-			{ "label_seq_id", cif::item_value_type::INAPPLICABLE },
-			{ "pdbx_PDB_ins_code", cif::item_value_type::MISSING },
-			{ "Cartn_x", atom.get_property_value("Cartn_x") },
-			{ "Cartn_y", atom.get_property_value("Cartn_y") },
-			{ "Cartn_z", atom.get_property_value("Cartn_z") },
-			{ "occupancy", atom.get_property_value("occupancy") },
-			{ "B_iso_or_equiv", atom.get_property_value("B_iso_or_equiv") },
-			{ "pdbx_formal_charge", atom.get_property_value("pdbx_formal_charge") },
-			{ "auth_seq_id", "1" },
-			{ "auth_comp_id", comp_id },
-			{ "auth_asym_id", asym_id },
-			{ "auth_atom_id", atom.get_property_value("label_atom_id") },
-			{ "pdbx_PDB_model_num", m_model_nr } });
+		cif::row_initializer data //
+			{
+				{ "id", atom_id },
+				{ "label_comp_id", comp_id },
+				{ "label_asym_id", asym_id },
+				{ "label_entity_id", entity_id },
+				{ "label_seq_id", cif::item_value_type::INAPPLICABLE },
+				{ "pdbx_PDB_ins_code", cif::item_value_type::MISSING },
+				{ "auth_seq_id", "1" },
+				{ "auth_comp_id", comp_id },
+				{ "auth_asym_id", asym_id },
+				{ "pdbx_PDB_model_num", m_model_nr } //
+			};
+
+		for (auto item : std::initializer_list<std::string>{
+				 "group_PDB", "type_symbol", "label_atom_id", "label_alt_id", "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "pdbx_formal_charge", "label_atom_id" })
+		{
+			auto v = atom.get_property_value(item);
+			if (not v.empty())
+				data.push_back({ item, v.value() });
+		}
+
+		auto row = atom_site.emplace(std::move(data));
 
 		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
 		res.add_atom(newAtom);

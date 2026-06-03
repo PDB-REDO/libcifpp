@@ -122,7 +122,7 @@ class atom
 
 		// const compound *compound() const;
 
-		[[nodiscard]] const item_value &get_property(std::string_view name) const;
+		[[nodiscard]] const item_handle get_property(std::string_view name) const;
 		void set_property(const std::string_view name, item_value value);
 
 		row_handle row()
@@ -227,7 +227,7 @@ class atom
 	explicit operator bool() const { return m_impl.operator bool(); }
 
 	/// \brief Return the item named @a name in the _atom_site category for this atom
-	[[nodiscard]] const item_value &get_property_value(std::string_view name) const
+	[[nodiscard]] const item_handle get_property_value(std::string_view name) const
 	{
 		if (not m_impl)
 			throw std::logic_error("Error trying to fetch a property from an uninitialized atom");
