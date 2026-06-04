@@ -1918,8 +1918,7 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 					auto ih = a.get_property_value("label_atom_id");
 					return not ih.empty() and ih.get<std::string>() == id;
 				}
-				return false;
-			});
+				return false; });
 		if (i == atoms.end())
 		{
 			if (VERBOSE >= 0)
@@ -2193,16 +2192,35 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 			};
 
 		for (auto item : std::initializer_list<std::string>{
-				 "group_PDB", "type_symbol", "label_atom_id", "label_alt_id", "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "pdbx_formal_charge", "label_atom_id" })
+				 // clang-format off
+				 "group_PDB",
+				 "type_symbol",
+				 "label_atom_id",
+				 "label_alt_id",
+				 "auth_atom_id",
+				 "Cartn_x",
+				 "Cartn_y",
+				 "Cartn_z",
+				 "occupancy",
+				 "B_iso_or_equiv",
+				 "pdbx_formal_charge"
+				 // clang-format on
+			 })
 		{
 			auto v = atom.get_property_value(item);
 			if (not v.empty())
 				data.push_back({ item, v.value() });
+			else
+				data.push_back({ item, cif::item_value_type::INAPPLICABLE });
 		}
 
 		auto row = atom_site.emplace(std::move(data));
 
 		auto &newAtom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
+
+		if (newAtom.get_property_value("auth_atom_id").empty() and not newAtom.get_property_value("label_atom_id").empty())
+			newAtom.set_property("auth_atom_id", newAtom.get_property("label_atom_id"));
+
 		res.add_atom(newAtom);
 	}
 
