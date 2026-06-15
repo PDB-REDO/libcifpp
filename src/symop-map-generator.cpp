@@ -26,6 +26,7 @@
 
 #include <cassert>
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <iostream>
@@ -379,7 +380,7 @@ int main(int argc, char* const argv[])
 
 		// --------------------------------------------------------------------
 
-		sort(data.begin(), data.end());
+		std::sort(data.begin(), data.end());
 
 		// --------------------------------------------------------------------
 
@@ -405,7 +406,7 @@ const space_group kSpaceGroups[] =
 				spacegroups.emplace_back(info.old[1], nr, info.xHM, info.Hall);
 		}
 
-		sort(spacegroups.begin(), spacegroups.end());
+		std::sort(spacegroups.begin(), spacegroups.end());
 
 		for (auto [old, nr, xHM, Hall]: spacegroups)
 		{
