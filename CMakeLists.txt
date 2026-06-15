@@ -70,9 +70,6 @@ set(BUILD_EXAMPLES ON CACHE BOOL "Build the example applications")
 # Optionally build a version to be installed inside CCP4
 set(BUILD_FOR_CCP4 OFF CACHE BOOL "Build a version to be installed in CCP4")
 
-# Create the cql/sqlite interface
-set(BUILD_SQLITE_INTERFACE ON CACHE BOOL "Build the sqlite interface")
-
 # Building shared libraries?
 if(NOT (BUILD_FOR_CCP4 AND WIN32))
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build a shared library instead of a static one")
@@ -247,75 +244,20 @@ add_library(cifpp)
 add_library(cifpp::cifpp ALIAS cifpp)
 
 # Sources
-list(APPEND project_sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/category.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/condition.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/datablock.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/dictionary_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/file.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/item.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/row.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/validate.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/text.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utilities.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/atom_type.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/compound.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/point.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/symmetry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/cif2pdb.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb_record.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/pdb2cif_remark_3.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/reconstruct.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdb/validate-pdbx.cpp
-)
+file(GLOB_RECURSE project_sources src/*.cpp)
+file(GLOB project_headers include/*.hpp)
 
-list(APPEND project_headers
-    include/cif++.hpp
-    include/cif++/cif++.hpp
-    include/cif++/atom_type.hpp
-    include/cif++/category.hpp
-    include/cif++/compound.hpp
-    include/cif++/condition.hpp
-    include/cif++/datablock.hpp
-    include/cif++/dictionary_parser.hpp
-    include/cif++/exports.hpp
-    include/cif++/file.hpp
-    include/cif++/format.hpp
-    include/cif++/gzio.hpp
-    include/cif++/item.hpp
-    include/cif++/iterator.hpp
-    include/cif++/matrix.hpp
-    include/cif++/model.hpp
-    include/cif++/parser.hpp
-    include/cif++/pdb.hpp
-    include/cif++/point.hpp
-    include/cif++/row.hpp
-    include/cif++/symmetry.hpp
-    include/cif++/text.hpp
-    include/cif++/utilities.hpp
-    include/cif++/validate.hpp
-)
+find_package(SQLite3 QUIET)
+if(SQLite3_FOUND)
+	target_link_libraries(cifpp PRIVATE SQLite::SQLite3)
+else()
+	FetchContent_Populate(SQLite3
+		URL https://sqlite.org/2025/sqlite-amalgamation-3510100.zip
+		URL_HASH SHA3_256=856b52ffe7383d779bb86a0ed1ddc19c41b0e5751fa14ce6312f27534e629b64
+		EXCLUDE_FROM_ALL)
 
-if(BUILD_SQLITE_INTERFACE)
-    find_package(SQLite3 QUIET)
-    if(SQLite3_FOUND)
-        target_link_libraries(cifpp PRIVATE SQLite::SQLite3)
-    else()
-        FetchContent_Populate(SQLite3
-            URL https://sqlite.org/2025/sqlite-amalgamation-3510100.zip
-            URL_HASH SHA3_256=856b52ffe7383d779bb86a0ed1ddc19c41b0e5751fa14ce6312f27534e629b64
-            EXCLUDE_FROM_ALL)
-
-        list(APPEND project_sources $<BUILD_INTERFACE:${sqlite3_SOURCE_DIR}>/sqlite3.c)
-        target_include_directories(cifpp PRIVATE $<BUILD_INTERFACE:${sqlite3_SOURCE_DIR}>)
-    endif()
-
-    list(APPEND project_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/cql.cpp)
-    list(APPEND project_headers include/cif++/cql.hpp)
+	list(APPEND project_sources $<BUILD_INTERFACE:${sqlite3_SOURCE_DIR}>/sqlite3.c)
+	target_include_directories(cifpp PRIVATE $<BUILD_INTERFACE:${sqlite3_SOURCE_DIR}>)
 endif()
 
 if(TARGET my-eigen3)
