@@ -614,11 +614,11 @@ void category::drop_empty_items()
 {
 	std::vector<bool> is_empty(get_item_count(), true);
 
-	for (auto row : *this)
+	for (size_t ix = 0; ix < get_item_count(); ++ix)
 	{
-		for (size_t ix = 0; ix < get_item_count(); ++ix)
+		for (auto row : *this)
 		{
-			if (is_empty[ix] and not row[ix].empty())
+			if (not row[ix].empty())
 			{
 				is_empty[ix] = false;
 				break;
@@ -1612,7 +1612,6 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 		}
 		else if (ec)
 			throw validation_exception(ec, m_name, m_items[item].m_name);
-
 	}
 
 	// If the item is part of the Key for this category, remove it from the index
@@ -2200,7 +2199,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 					offset = 0;
 				}
 
-				offset = detail::write_value(os, s, offset, w, right_aligned[cix]/*  iv->is_number() */);
+				offset = detail::write_value(os, s, offset, w, right_aligned[cix] /*  iv->is_number() */);
 
 				if (offset > 132)
 				{
@@ -2722,70 +2721,20 @@ bool category::operator==(const category &rhs) const
 
 	using namespace std::placeholders;
 
-	//	set<std::string> item_namesA(a.items()), item_namesB(b.items());
-	//
-	//	if (item_namesA != item_namesB)
-	//		std::cout << "Unequal number of items\n";
+	std::set<std::string> keys;
 
-	const category_validator *catValidator = nullptr;
-
-	auto validator = a.get_validator();
-	if (validator != nullptr)
-		catValidator = validator->get_validator_for_category(a.name());
-
-	using compType = std::function<int(std::string_view, std::string_view)>;
-	std::vector<std::tuple<std::string, compType>> item_names;
-	std::vector<std::string> keys;
-	std::vector<std::size_t> keyIx;
-
-	if (catValidator == nullptr)
+	for (const auto &items : { a.get_items(), b.get_items()})
 	{
-		for (auto &item_name : a.get_items())
-		{
-			item_names.emplace_back(item_name, [](std::string_view va, std::string_view vb)
-				{ return va.compare(vb); });
-			keyIx.push_back(keys.size());
-			keys.push_back(item_name);
-		}
+		for (auto &item_name : items)
+			keys.insert(item_name);
 	}
-	else
-	{
-		keys = catValidator->m_keys;
-
-		for (auto &item_name : a.key_items())
-		{
-			auto iv = catValidator->get_validator_for_item(item_name);
-			if (iv == nullptr)
-				throw std::runtime_error("missing item validator");
-			auto tv = iv->m_type;
-			if (tv == nullptr)
-				throw std::runtime_error("missing type validator");
-			item_names.emplace_back(item_name, [tv](auto &&a1, auto &&a2)
-				{ return tv->compare(std::forward<decltype(a1)>(a1), std::forward<decltype(a2)>(a2)); });
-
-			auto pred = [item_name](const std::string &s) -> bool
-			{
-				return cif::iequals(item_name, s) == 0;
-			};
-			if (std::ranges::find_if(keys, pred) == keys.end())
-				keyIx.push_back(item_names.size() - 1);
-		}
-	}
-
-	// a.reorderByIndex();
-	// b.reorderByIndex();
 
 	auto rowEqual = [&](const_row_handle &a, const_row_handle &b)
 	{
 		int d = 0;
 
-		for (auto kix : keyIx)
+		for (const auto &item_name : keys)
 		{
-			std::string item_name;
-			compType compare;
-
-			std::tie(item_name, compare) = item_names[kix];
-
 			d = a[item_name].compare(b[item_name]);
 
 			if (d != 0)
@@ -2805,28 +2754,6 @@ bool category::operator==(const category &rhs) const
 
 		if (not rowEqual(ra, rb))
 			return false;
-
-		std::vector<std::string> missingA, missingB, different;
-
-		for (auto &tt : item_names)
-		{
-			std::string item_name;
-			compType compare;
-
-			std::tie(item_name, compare) = tt;
-
-			// make it an option to compare unapplicable to empty or something
-
-			// auto ta = ra[item_name].text();
-			// if (ta == "." or ta == "?")
-			// 	ta = "";
-			// auto tb = rb[item_name].text();
-			// if (tb == "." or tb == "?")
-			// 	tb = "";
-
-			if (ra[item_name].compare(rb[item_name]) != 0)
-				return false;
-		}
 
 		++ai;
 		++bi;
