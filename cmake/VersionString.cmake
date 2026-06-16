@@ -64,7 +64,7 @@ function(_get_git_dir _start_dir _variable)
 	set(cur_dir "${_start_dir}")
 	set(git_dir "${_start_dir}/.git")
 
-	while(NOT EXISTS "${git_dir}")
+	while(NOT (IS_DIRECTORY "${git_dir}"))
 		# .git dir not found, search parent directories
 		set(prev_dir "${cur_dir}")
 		get_filename_component(cur_dir "${cur_dir}" DIRECTORY)
