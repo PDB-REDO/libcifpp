@@ -966,6 +966,9 @@ connection_impl::connection_impl(datablock &db)
 
 	for (auto &cat : db)
 	{
+		if (cat.empty())
+			continue;
+
 		char *errmsg;
 		rc = sqlite3_exec(m_sqlite_db,
 			("CREATE VIRTUAL TABLE " + cat.name() + " USING CIFPP;").c_str(),
