@@ -274,7 +274,7 @@ class row_handle
 
 	/// \brief Return a tuple of values of types @a Ts for the items @a items
 	template <typename... Ts, typename... C>
-	std::tuple<Ts...> get(C... items) const
+	[[nodiscard]] std::tuple<Ts...> get(C... items) const
 		requires(sizeof...(Ts) == sizeof...(C) and sizeof...(C) != 1)
 	{
 		return detail::get_row_result<Ts...>(*this, { get_item_ix(items)... });
