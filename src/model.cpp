@@ -208,9 +208,11 @@ atom residue::create_new_atom(atom_type inType, const std::string &inAtomID, poi
 		{ "auth_atom_id", inAtomID },
 		{ "auth_comp_id", m_compound_id },
 		{ "auth_seq_id", m_pdb_seq_num },
-		{ "occupancy", { 1.0f, 2 } },
+		{ "occupancy", 1 },
 		{ "B_iso_or_equiv", { 20.0f, 3 } },
+		{ "pdbx_formal_charge", cif::item_value_type::MISSING },
 		{ "pdbx_PDB_model_num", m_structure->get_model_nr() },
+
 	});
 
 	atom a(db, *ai);
