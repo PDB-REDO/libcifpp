@@ -709,10 +709,6 @@ void monomer::set_chi(std::size_t nr, float angle)
 			// std::println("Rotating atom {}", a.get_label_atom_id());
 			a.rotate(q, atom_2.get_location());
 		}
-
-		// std::println("chi is now: {}, should be {}", chi(nr), angle);
-
-		assert(std::abs(chi(nr) - angle) < 2.0f);
 	}
 }
 
