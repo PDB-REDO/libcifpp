@@ -331,7 +331,7 @@ target_sources(cifpp
     FILES ${project_headers}
 )
 
-# The code now really requires C++20
+# The code now really requires C++23
 target_compile_features(cifpp PUBLIC cxx_std_23)
 
 generate_export_header(cifpp EXPORT_FILE_NAME
