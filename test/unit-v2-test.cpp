@@ -994,6 +994,22 @@ _cat_2.desc
 
 		cat2.emplace({ { "id", "4" }, { "parent_id", "1" }, { "name", "Brulaap" } });
 	}
+
+	SECTION("four")
+	{
+		auto &cat1 = f.front()["cat_1"];
+		auto &cat2 = f.front()["cat_2"];
+
+		// key_items() must return only the key items, not every item
+		CHECK(cat1.key_items() == cif::iset{ "id" });
+		CHECK(cat2.key_items() == cif::iset{ "id" });
+
+		// and the indices must line up
+		std::set<uint16_t> indices;
+		for (auto &k : cat2.key_items())
+			indices.insert(cat2.get_item_ix(k));
+		CHECK(indices == cat2.key_item_indices());
+	}
 }
 
 // --------------------------------------------------------------------

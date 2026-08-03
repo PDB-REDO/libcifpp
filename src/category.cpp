@@ -670,8 +670,8 @@ iset category::key_items() const
 		throw validation_exception(validation_error::undefined_category);
 
 	iset result;
-	for (auto &iv : m_cat_validator->m_item_validators)
-		result.insert(iv.m_item_name);
+	for (auto &k : m_cat_validator->m_keys)
+		result.insert(k);
 
 	return result;
 }
