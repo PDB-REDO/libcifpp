@@ -57,6 +57,9 @@ endif()
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS
         "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
@@ -301,6 +304,10 @@ target_include_directories(
 
 target_link_libraries(cifpp
     PUBLIC Threads::Threads ZLIB::ZLIB $<$<TARGET_EXISTS:std::atomic>:std::atomic>)
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    target_link_libraries(cifpp PUBLIC m)
+endif()
 
 if(PCRE2_FOUND)
     target_include_directories(cifpp PRIVATE ${PCRE2_INCLUDE_DIRS})
