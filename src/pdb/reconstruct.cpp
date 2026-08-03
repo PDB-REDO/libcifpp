@@ -1569,7 +1569,8 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 	checkChemCompRecords(db);
 
 	// If the data is really horrible, it might not contain entities
-	if (db["atom_site"].contains(key("label_entity_id") == null))
+	if (db["entity"].empty() or
+		db["atom_site"].contains(key("label_entity_id") == null))
 		createEntityIDs(db);
 
 	// Now see if atom records make sense at all
