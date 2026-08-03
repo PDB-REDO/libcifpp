@@ -39,6 +39,7 @@ project(
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+include(CPM)
 include(FindAtomic)
 include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
@@ -55,8 +56,7 @@ endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers"
-    )
+        "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
@@ -175,7 +175,11 @@ try_compile(STD_CHARCONV_COMPILING
 
 if(NOT STD_CHARCONV_COMPILING)
     message(NOTICE "libcifpp: Using fast_float for std::from_chars")
-    find_package(FastFloat 8.0 REQUIRED CONFIG)
+    CPMFindPackage(
+        NAME FastFloat
+        GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
+        GIT_TAG v8.0.2
+        EXCLUDE_FROM_ALL YES)
 endif()
 
 find_package(Threads)
