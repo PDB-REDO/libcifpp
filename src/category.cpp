@@ -2128,7 +2128,16 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 	else if (not empty())
 	{
 		for (auto cix : order)
-			right_aligned[cix] = front()[cix].is_number();
+		{
+			for (auto r : *this)
+			{
+				if (r[cix].is_null())
+					continue;
+
+				right_aligned[cix] = r[cix].is_number();
+				break;
+			}
+		}
 	}
 
 	if (needLoop)
