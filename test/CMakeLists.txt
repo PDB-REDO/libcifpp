@@ -43,7 +43,7 @@ list(
 	unit-v2
 	unit-3d
 	model
-	# query
+	query
 	rename-compound
 	sugar
 	spinner
