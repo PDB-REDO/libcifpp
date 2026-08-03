@@ -225,6 +225,9 @@ spacegroup::spacegroup(int nr)
 
 	for (std::size_t i = L; i < N and kSymopNrTable[i].spacegroup() == m_nr; ++i)
 		emplace_back(kSymopNrTable[i].symop().data());
+
+	if (empty())
+		throw std::runtime_error("Spacegroup has an invalid number: " + std::to_string(m_nr));
 }
 
 std::string spacegroup::get_name() const
