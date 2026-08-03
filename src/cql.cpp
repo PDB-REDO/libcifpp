@@ -514,7 +514,7 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 
 					if (m[2] == " < ")
 						cond = std::move(cond) and key(m[1]) < value;
-					else if (m[2] == " <- ")
+					else if (m[2] == " <= ")
 						cond = std::move(cond) and key(m[1]) <= value;
 					else if (m[2] == " == ")
 						cond = std::move(cond) and key(m[1]) == value;
@@ -532,7 +532,7 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 
 					if (m[2] == " < ")
 						cond = std::move(cond) and key(m[1]) < value;
-					else if (m[2] == " <- ")
+					else if (m[2] == " <= ")
 						cond = std::move(cond) and key(m[1]) <= value;
 					else if (m[2] == " == ")
 						cond = std::move(cond) and key(m[1]) == value;
