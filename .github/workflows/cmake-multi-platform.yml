@@ -14,22 +14,21 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-26.04, windows-latest, macos-latest]
         include:
-          - os: windows-latest
-            cpp_compiler: cl
-          - os: ubuntu-26.04 
-            cpp_compiler: g++-15
-          - os: ubuntu-26.04 
-            cpp_compiler: g++-16
-          - os: ubuntu-26.04 
-            cpp_compiler: clang-20
-          - os: ubuntu-26.04 
-            cpp_compiler: clang-21
-          - os: ubuntu-26.04 
-            cpp_compiler: clang-22
-          - os: macos-latest
-            cpp_compiler: clang++
+          - cpp_compiler: g++-15
+            os: ubuntu-26.04
+          - cpp_compiler: g++-16
+            os: ubuntu-26.04
+          - cpp_compiler: clang-20
+            os: ubuntu-26.04
+          - cpp_compiler: clang-21
+            os: ubuntu-26.04
+          - cpp_compiler: clang-22
+            os: ubuntu-26.04
+          - cpp_compiler: cl
+            os: windows-latest
+          - cpp_compiler: clang++
+            os: macos-latest
 
     steps:
     - uses: actions/checkout@v3
