@@ -1141,7 +1141,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 	uint32_t lineNr = 1;
 	getline(is, lookahead);
 
-	if (lookahead.back() == '\r')
+	if (not lookahead.empty() and lookahead.back() == '\r')
 		lookahead.pop_back();
 
 	auto contNr = [&lookahead](int offset, int len) -> int
