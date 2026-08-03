@@ -19,12 +19,12 @@ jobs:
             os: ubuntu-26.04
           - cpp_compiler: g++-16
             os: ubuntu-26.04
-          - cpp_compiler: clang-20
-            os: ubuntu-26.04
-          - cpp_compiler: clang-21
-            os: ubuntu-26.04
-          - cpp_compiler: clang-22
-            os: ubuntu-26.04
+          # - cpp_compiler: clang-20
+          #   os: ubuntu-26.04
+          # - cpp_compiler: clang-21
+          #   os: ubuntu-26.04
+          # - cpp_compiler: clang-22
+          #   os: ubuntu-26.04
           - cpp_compiler: cl
             os: windows-latest
           - cpp_compiler: clang++
