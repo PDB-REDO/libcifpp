@@ -288,6 +288,9 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 								letter = '(' + comp_id + ')';
 						}
 
+						if (static_cast<std::size_t>(se - si) < letter.length())
+							return false;
+
 						if (iequals(std::string{ si, si + static_cast<int>(letter.length()) }, letter))
 						{
 							match = true;
