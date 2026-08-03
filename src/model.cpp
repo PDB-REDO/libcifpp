@@ -25,7 +25,9 @@
  */
 
 #include "cif++/cif++.hpp"
+#include "cif++/compound.hpp"
 #include "cif++/item.hpp"
+#include "cif++/point.hpp"
 #include "cif++/row.hpp"
 
 #include <algorithm>
@@ -44,6 +46,7 @@
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <print>
 #include <ranges>
 #include <set>
 #include <stack>
@@ -208,9 +211,11 @@ atom residue::create_new_atom(atom_type inType, const std::string &inAtomID, poi
 		{ "auth_atom_id", inAtomID },
 		{ "auth_comp_id", m_compound_id },
 		{ "auth_seq_id", m_pdb_seq_num },
-		{ "occupancy", { 1.0f, 2 } },
+		{ "occupancy", 1 },
 		{ "B_iso_or_equiv", { 20.0f, 3 } },
+		{ "pdbx_formal_charge", cif::item_value_type::MISSING },
 		{ "pdbx_PDB_model_num", m_structure->get_model_nr() },
+
 	});
 
 	atom a(db, *ai);
@@ -625,6 +630,86 @@ float monomer::chi(std::size_t nr) const
 	}
 
 	return result;
+}
+
+void monomer::set_chi(std::size_t nr, float angle)
+{
+	auto i = kChiAtomsMap.find(m_compound_id);
+	if (i == kChiAtomsMap.end())
+		throw std::runtime_error("Invalid compound ID, no chi angles");
+
+	if (nr >= i->second.size())
+		throw std::runtime_error("Invalid chi index for compound");
+
+	std::vector<std::string> atoms{ "N", "CA", "CB" };
+
+	atoms.insert(atoms.end(), i->second.begin(), i->second.end());
+
+	// in case we have a positive chiral volume we need to swap atoms
+	if (chiral_volume() > 0)
+	{
+		if (m_compound_id == "LEU")
+			atoms.back() = "CD2";
+		if (m_compound_id == "VAL")
+			atoms.back() = "CG2";
+	}
+
+	auto atom_0 = get_atom_by_atom_id(atoms[nr + 0]);
+	auto atom_1 = get_atom_by_atom_id(atoms[nr + 1]);
+	auto atom_2 = get_atom_by_atom_id(atoms[nr + 2]);
+	auto atom_3 = get_atom_by_atom_id(atoms[nr + 3]);
+
+	if (not(atom_0 and atom_1 and atom_2 and atom_3))
+		throw std::runtime_error("Missing atoms in set_chi");
+
+	auto current = static_cast<float>(dihedral_angle(
+		atom_0.get_location(),
+		atom_1.get_location(),
+		atom_2.get_location(),
+		atom_3.get_location()));
+
+	if (std::abs(std::fmod(current - angle + 360.f, 360.f)) > 1.0f)
+	{
+		// Need to rotate
+
+		auto q = construct_from_angle_axis(angle - current, atom_2.get_location() - atom_1.get_location());
+
+		// collect atoms that need to move
+		auto compound = cif::compound_factory::instance().create(m_compound_id);
+		assert(compound);
+
+		std::stack<std::string> s;
+		s.push(atom_2.get_label_atom_id());
+
+		std::vector<atom> movingAtoms;
+
+		while (not s.empty())
+		{
+			auto a = s.top();
+			s.pop();
+
+			for (auto &b : compound->atoms())
+			{
+				if (not compound->atoms_bonded(a, b.id) or
+					b.id == atom_1.get_label_atom_id() or
+					b.id == atom_2.get_label_atom_id())
+					continue;
+
+				auto ba = get_atom_by_atom_id(b.id);
+				if (not ba or std::ranges::contains(movingAtoms, ba))
+					continue;
+
+				movingAtoms.emplace_back(ba);
+				s.push(b.id);
+			}
+		}
+
+		for (auto &a : movingAtoms)
+		{
+			// std::println("Rotating atom {}", a.get_label_atom_id());
+			a.rotate(q, atom_2.get_location());
+		}
+	}
 }
 
 bool monomer::is_cis() const

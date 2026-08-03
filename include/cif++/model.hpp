@@ -698,6 +698,8 @@ class monomer : public residue
 	[[nodiscard]] std::size_t nr_of_chis() const; ///< Return how many torsion angles can be calculated
 	[[nodiscard]] float chi(std::size_t i) const; ///< Return torsion angle @a i
 
+	void set_chi(std::size_t i, float angle); ///< Rotate atoms in the side chain to make chi(i) == angle
+
 	[[nodiscard]] bool is_cis() const; ///< Return true if this residue is in a cis conformation
 
 	/// \brief Returns true if the four atoms C, CA, N and O are present
