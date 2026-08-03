@@ -315,7 +315,19 @@ namespace detail
 
 bool condition::prepare(const category &c)
 {
-	return m_impl and m_impl->prepare(c) != nullptr;
+	if (m_impl == nullptr)
+		return false;
+
+	auto *prepared = m_impl->prepare(c);
+	if (prepared == nullptr)
+	{
+		delete m_impl;
+		m_impl = nullptr;
+		return false;
+	}
+
+	m_impl = prepared;
+	return true;
 }
 
 } // namespace cif

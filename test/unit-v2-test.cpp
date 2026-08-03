@@ -2121,6 +2121,38 @@ _test.name
 	CHECK_THROWS_AS(db["test"].find1<int>(cif::all(), "id"), cif::multiple_results_error);
 }
 
+TEST_CASE("c5")
+{
+	// An OR of ANDs with a shared sub-condition must factor out the common part:
+	// (a==1 and b==x) or (a==1 and b==y)  ==  a==1 and (b==x or b==y)
+
+	auto f = R"(data_TEST
+#
+loop_
+_test.a
+_test.b
+1 x
+1 y
+2 x
+2 y
+    )"_cf;
+
+	auto &db = f.front();
+	auto &cat = db["test"];
+
+	CHECK(cat.count((cif::key("a") == 1 and cif::key("b") == "x") or
+					(cif::key("a") == 1 and cif::key("b") == "y")) == 2);
+
+	CHECK(cat.count((cif::key("a") == 1 and cif::key("b") == "x") or
+					(cif::key("a") == 2 and cif::key("b") == "x")) == 2);
+
+	CHECK(cat.count((cif::key("a") == 1 and cif::key("b") == "x") or
+					(cif::key("a") == 1)) == 2);
+
+	CHECK(cat.count((cif::key("a") == 1 and cif::key("b") == "x") or
+					(cif::key("a") == 1 and cif::key("b") == "z")) == 1);
+}
+
 // --------------------------------------------------------------------
 // rename test
 
