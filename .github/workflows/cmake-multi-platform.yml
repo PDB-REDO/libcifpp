@@ -14,12 +14,12 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-26.04, windows-latest, macos-latest]
         include:
           - os: windows-latest
             cpp_compiler: cl
-          - os: ubuntu-latest
-            cpp_compiler: g++
+          - os: ubuntu-26.04 
+            cpp_compiler: [g++-15, g++-16, clang-20, clang-21, clang-22]
           - os: macos-latest
             cpp_compiler: clang++
 
@@ -32,8 +32,8 @@ jobs:
       run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Install dependencies Ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get update && sudo apt-get install mrc catch2 libsqlite3-dev
+      if: matrix.os == 'ubuntu-26.04'
+      run: sudo apt-get update && sudo apt-get install mrc catch2 libsqlite3-dev ${{ matrix.cpp_compiler }}
 
     - name: Install dependencies Window
       if: matrix.os == 'windows-latest'

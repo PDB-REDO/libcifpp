@@ -33,7 +33,7 @@ if(NOT (Catch2_FOUND OR TARGET Catch2))
 
 		FetchContent_MakeAvailable(Catch2)
 
-		target_compile_features(Catch2 PRIVATE cxx_std_20)
+		target_compile_features(Catch2 PRIVATE cxx_std_23)
 	endif()
 endif()
 

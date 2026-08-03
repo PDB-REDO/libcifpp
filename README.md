@@ -91,13 +91,13 @@ carefully.
 
 ### Requirements
 
-The code for this library was written in C++17. You therefore need a
-recent compiler to build it. For the development gcc >= 9.4 and clang >= 9.0
+The code for this library was written in C++23. You therefore need a
+recent compiler to build it. For the development gcc >= 15 and clang >= 20
 have been used as well as MSVC version 2019.
 
 The other requirement you really need to have installed on your computer
 is a version of [CMake](https://cmake.org). For now the minimum version
-is 3.16 but that may soon change into a higher version. You should also
+is 3.23 but that may soon change into a higher version. You should also
 install the gui version of CMake to set build options easily, on Debian
 I prefer to use the curses version installed with `cmake-curses-gui`.
 
