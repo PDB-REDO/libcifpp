@@ -568,3 +568,74 @@ _table1.name
 	// 	CHECK(db["table1"].size() == 2);
 	// }
 }
+
+// Items without an _item_type.code have a null type validator; creating a
+// virtual table for such a category used to dereference the null m_type.
+TEST_CASE("cql-7")
+{
+	const char *dictText = R"(
+data_test.dic
+
+_datablock.id            test.dic
+
+_dictionary.title            test.dic
+_dictionary.datablock_id     test.dic
+_dictionary.version          1.0
+
+loop_
+_item_type_list.code
+_item_type_list.primitive_code
+_item_type_list.construct
+int   numb  '[-+]?[0-9]+'
+float numb  '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
+code  char  '.*'
+text  char  '.*'
+
+save_foo
+   _category.id              foo
+   _category.mandatory_code  no
+   _category_key.name        '_foo.id'
+   save_
+
+save__foo.id
+	_item.name                  '_foo.id'
+	_item.category_id           foo
+	_item.mandatory_code        no
+	_item_type.code             int
+	save_
+
+save__foo.notes
+	_item.name                  '_foo.notes'
+	_item.category_id           foo
+	_item.mandatory_code        no
+	save_
+)";
+
+	std::istringstream dictIs(dictText);
+	cif::validator v(dictIs);
+	cif::validator_factory::instance().add(std::move(v));
+
+	auto f = R"(data_TEST
+#
+loop_
+_foo.id
+_foo.notes
+1 "first row"
+2 "second row"
+)"_cf;
+
+	auto &db = f.front();
+	db.load_dictionary("test.dic");
+
+	cif::cql::connection connection(db);
+	cif::cql::transaction tx(connection);
+
+	auto r = tx.exec("SELECT id, notes FROM foo;");
+	REQUIRE(r.size() == 2);
+
+	auto ri = r.begin();
+	CHECK((*ri)[0].get<int>() == 1);
+	CHECK((*ri)[1].get<std::string>() == "first row");
+	++ri;
+	CHECK((*ri)[0].get<int>() == 2);
+}

@@ -295,7 +295,7 @@ int connection_impl::Connect(sqlite3 *db, int argc, const char *const *argv, sql
 			if (cv->m_keys.size() == 1 and cv->m_keys.front() == item)
 				primaryKey = " PRIMARY KEY";
 
-			if (iv != nullptr and iv->m_type->m_primitive_type == DDL_PrimitiveType::Numb)
+			if (iv != nullptr and iv->m_type != nullptr and iv->m_type->m_primitive_type == DDL_PrimitiveType::Numb)
 			{
 				if (iequals(iv->m_type->m_name, "int"))
 				{
