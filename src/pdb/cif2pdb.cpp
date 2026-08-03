@@ -838,13 +838,18 @@ std::ostream &operator<<(std::ostream &os, SEP &&sep)
 
 // --------------------------------------------------------------------
 
+const_row_handle first_row(const category &cat)
+{
+	return cat.empty() ? const_row_handle{} : cat.front();
+}
+
 void WriteRemark3BusterTNT(std::ostream &pdbFile, const datablock &db)
 {
-	auto refine = db["refine"].front();
-	auto ls_shell = db["refine_ls_shell"].front();
-	auto hist = db["refine_hist"].front();
-	auto reflns = db["reflns"].front();
-	auto analyze = db["refine_analyze"].front();
+	auto refine = first_row(db["refine"]);
+	auto ls_shell = first_row(db["refine_ls_shell"]);
+	auto hist = first_row(db["refine_hist"]);
+	auto reflns = first_row(db["reflns"]);
+	auto analyze = first_row(db["refine_analyze"]);
 	auto &ls_restr = db["refine_ls_restr"];
 	//	auto ls_restr_ncs = db["refine_ls_restr_ncs"].front();
 	//	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
@@ -1017,13 +1022,13 @@ void WriteRemark3BusterTNT(std::ostream &pdbFile, const datablock &db)
 
 void WriteRemark3CNS(std::ostream &pdbFile, const datablock &db)
 {
-	auto refine = db["refine"].front();
-	auto ls_shell = db["refine_ls_shell"].front();
-	auto hist = db["refine_hist"].front();
-	auto reflns = db["reflns"].front();
-	auto analyze = db["refine_analyze"].front();
+	auto refine = first_row(db["refine"]);
+	auto ls_shell = first_row(db["refine_ls_shell"]);
+	auto hist = first_row(db["refine_hist"]);
+	auto reflns = first_row(db["reflns"]);
+	auto analyze = first_row(db["refine_analyze"]);
 	auto &ls_restr = db["refine_ls_restr"];
-	auto ls_restr_ncs = db["refine_ls_restr_ncs"].front();
+	auto ls_restr_ncs = first_row(db["refine_ls_restr_ncs"]);
 	//	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
 	//	auto pdbx_refine = db["pdbx_refine"].front();
 
@@ -1155,10 +1160,10 @@ void WriteRemark3CNS(std::ostream &pdbFile, const datablock &db)
 
 void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 {
-	auto refine = db["refine"].front();
-	auto ls_shell = db["refine_ls_shell"].front();
-	auto hist = db["refine_hist"].front();
-	auto reflns = db["reflns"].front();
+	auto refine = first_row(db["refine"]);
+	auto ls_shell = first_row(db["refine_ls_shell"]);
+	auto hist = first_row(db["refine_hist"]);
+	auto reflns = first_row(db["reflns"]);
 	//	auto analyze = db["refine_analyze"].front();
 	auto &ls_restr = db["refine_ls_restr"];
 	//	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
@@ -1499,14 +1504,14 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 
 void WriteRemark3Shelxl(std::ostream &pdbFile, const datablock &db)
 {
-	auto refine = db["refine"].front();
+	auto refine = first_row(db["refine"]);
 	//	auto ls_shell = db["refine_ls_shell"].front();
-	auto refine_hist = db["refine_hist"].front();
+	auto refine_hist = first_row(db["refine_hist"]);
 	//	auto reflns = db["reflns"].front();
-	auto refine_analyze = db["refine_analyze"].front();
+	auto refine_analyze = first_row(db["refine_analyze"]);
 	auto &ls_restr = db["refine_ls_restr"];
 	//	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
-	auto pdbx_refine = db["pdbx_refine"].front();
+	auto pdbx_refine = first_row(db["pdbx_refine"]);
 
 	auto c = [](const char *t) -> condition
 	{
@@ -1581,14 +1586,14 @@ void WriteRemark3Shelxl(std::ostream &pdbFile, const datablock &db)
 
 void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 {
-	auto refine = db["refine"].front();
+	auto refine = first_row(db["refine"]);
 	//	auto ls_shell = db["refine_ls_shell"].front();
 	//	auto hist = db["refine_hist"].front();
-	auto reflns = db["reflns"].front();
+	auto reflns = first_row(db["reflns"]);
 	//	auto analyze = db["refine_analyze"].front();
 	auto &ls_restr = db["refine_ls_restr"];
 	//	auto pdbx_xplor_file = db["pdbx_xplor_file"].front();
-	auto pdbx_reflns_twin = db["pdbx_reflns_twin"].front();
+	auto pdbx_reflns_twin = first_row(db["pdbx_reflns_twin"]);
 
 	auto c = [](const char *t) -> condition
 	{
@@ -1810,10 +1815,10 @@ void WriteRemark3Phenix(std::ostream &pdbFile, const datablock &db)
 
 void WriteRemark3XPlor(std::ostream &pdbFile, const datablock &db)
 {
-	auto refine = db["refine"].front();
-	auto hist = db["refine_hist"].front();
-	auto reflns = db["reflns"].front();
-	auto analyze = db["refine_analyze"].front();
+	auto refine = first_row(db["refine"]);
+	auto hist = first_row(db["refine_hist"]);
+	auto reflns = first_row(db["reflns"]);
+	auto analyze = first_row(db["refine_analyze"]);
 	auto &ls_restr = db["refine_ls_restr"];
 
 	pdbFile << RM3("") << '\n'
@@ -1942,11 +1947,11 @@ void WriteRemark3XPlor(std::ostream &pdbFile, const datablock &db)
 
 void WriteRemark3NuclSQ(std::ostream &pdbFile, const datablock &db)
 {
-	auto refine = db["refine"].front();
-	auto pdbx_refine = db["pdbx_refine"].front();
-	auto hist = db["refine_hist"].front();
-	auto reflns = db["reflns"].front();
-	auto analyze = db["refine_analyze"].front();
+	auto refine = first_row(db["refine"]);
+	auto pdbx_refine = first_row(db["pdbx_refine"]);
+	auto hist = first_row(db["refine_hist"]);
+	auto reflns = first_row(db["reflns"]);
+	auto analyze = first_row(db["refine_analyze"]);
 	auto &ls_restr = db["refine_ls_restr"];
 
 	pdbFile << RM3("") << '\n'
@@ -2046,11 +2051,11 @@ void WriteRemark3NuclSQ(std::ostream &pdbFile, const datablock &db)
 
 void WriteRemark3ProlSQ(std::ostream &pdbFile, const datablock &db)
 {
-	auto refine = db["refine"].front();
-	auto pdbx_refine = db["pdbx_refine"].front();
-	auto hist = db["refine_hist"].front();
-	auto reflns = db["reflns"].front();
-	auto analyze = db["refine_analyze"].front();
+	auto refine = first_row(db["refine"]);
+	auto pdbx_refine = first_row(db["pdbx_refine"]);
+	auto hist = first_row(db["refine_hist"]);
+	auto reflns = first_row(db["reflns"]);
+	auto analyze = first_row(db["refine_analyze"]);
 	auto &ls_restr = db["refine_ls_restr"];
 
 	pdbFile << RM3("") << '\n'
