@@ -421,7 +421,7 @@ std::string::const_iterator nextLineBreak(std::string::const_iterator text, std:
 			break;
 		}
 
-		ncls = kASCII_LBTable[ch];
+		ncls = kASCII_LBTable[static_cast<uint8_t>(ch)];
 
 		if (ncls == kLBC_Space)
 			continue;
