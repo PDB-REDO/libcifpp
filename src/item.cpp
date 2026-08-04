@@ -126,7 +126,9 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 				}
 				break;
 			case TEXT:
-				d = m_data.sv().compare(b.m_data.sv());
+				d = ignore_case
+				        ? icompare(m_data.sv(), b.m_data.sv())
+				        : m_data.sv().compare(b.m_data.sv());
 				break;
 			default:;
 		}
