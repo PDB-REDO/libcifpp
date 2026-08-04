@@ -250,7 +250,10 @@ namespace detail
 				m_single = c[lookup];
 
 				for (auto s : subs)
+				{
 					std::erase(m_sub, s);
+					delete s;
+				}
 			}
 		}
 
