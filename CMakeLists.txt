@@ -249,7 +249,7 @@ add_library(cifpp::cifpp ALIAS cifpp)
 
 # Sources
 file(GLOB_RECURSE project_sources src/*.cpp)
-file(GLOB project_headers include/*.hpp)
+file(GLOB_RECURSE project_headers include/*.hpp)
 
 find_package(SQLite3 QUIET)
 if(SQLite3_FOUND)
