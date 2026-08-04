@@ -881,7 +881,7 @@ class PDBFileParser
 	void ParsePrimaryStructure();
 	void ParseHeterogen();
 	void ConstructEntities();
-	void ConstructSugarTrees(int &asymNr);
+	// void ConstructSugarTrees(int &asymNr);
 	void ParseSecondaryStructure();
 	void ParseConnectivtyAnnotation();
 	void ParseMiscellaneousFeatures();
@@ -4675,206 +4675,206 @@ void PDBFileParser::ConstructEntities()
 	}
 }
 
-void PDBFileParser::ConstructSugarTrees(int &asymNr)
-{
-	for (;;)
-	{
-		// find a first NAG/NDG
-		auto si = std::ranges::find_if(mHets, [](const HET &h)
-			{ return (h.hetID == "NAG" or h.hetID == "NDG") and not(h.processed or h.branch); });
-		if (si != mHets.end())
-		{
-			si->processed = true;
+// void PDBFileParser::ConstructSugarTrees(int &asymNr)
+// {
+// 	for (;;)
+// 	{
+// 		// find a first NAG/NDG
+// 		auto si = std::ranges::find_if(mHets, [](const HET &h)
+// 			{ return (h.hetID == "NAG" or h.hetID == "NDG") and not(h.processed or h.branch); });
+// 		if (si != mHets.end())
+// 		{
+// 			si->processed = true;
 
-			// take the location of the C1 atom(s?)
-			std::set<char> ci;
+// 			// take the location of the C1 atom(s?)
+// 			std::set<char> ci;
 
-			for (auto a : si->atoms)
-			{
-				std::string name = a->vS(13, 16); //	13 - 16        Atom          name         Atom name.
+// 			for (auto a : si->atoms)
+// 			{
+// 				std::string name = a->vS(13, 16); //	13 - 16        Atom          name         Atom name.
 
-				if (name != "C1")
-					continue;
+// 				if (name != "C1")
+// 					continue;
 
-				ci.insert(a->vC(17)); //	17             Character     altLoc       Alternate location indicator.
-			}
+// 				ci.insert(a->vC(17)); //	17             Character     altLoc       Alternate location indicator.
+// 			}
 
-			if (ci.empty())
-				continue;
+// 			if (ci.empty())
+// 				continue;
 
-			for (auto alt : ci)
-			{
-				ATOM_REF c1{ "C1", si->hetID, si->seqNum, si->chainID, si->iCode, alt };
+// 			for (auto alt : ci)
+// 			{
+// 				ATOM_REF c1{ "C1", si->hetID, si->seqNum, si->chainID, si->iCode, alt };
 
-				const auto &[asn, linked] = FindLink(c1, "ND2", "ASN");
-				if (not linked)
-					continue;
+// 				const auto &[asn, linked] = FindLink(c1, "ND2", "ASN");
+// 				if (not linked)
+// 					continue;
 
-				std::stack<ATOM_REF> c1s;
-				c1s.push(c1);
+// 				std::stack<ATOM_REF> c1s;
+// 				c1s.push(c1);
 
-				SUGAR_TREE sugarTree;
-				sugarTree.push_back({ c1 });
+// 				SUGAR_TREE sugarTree;
+// 				sugarTree.push_back({ c1 });
 
-				// naive implementation
-				while (not c1s.empty())
-				{
-					c1 = c1s.top();
-					c1s.pop();
+// 				// naive implementation
+// 				while (not c1s.empty())
+// 				{
+// 					c1 = c1s.top();
+// 					c1s.pop();
 
-					for (auto o : { "O1", "O2", "O3", "O4", "O5", "O6" })
-					{
-						ATOM_REF leaving = c1;
-						leaving.name = o;
+// 					for (auto o : { "O1", "O2", "O3", "O4", "O5", "O6" })
+// 					{
+// 						ATOM_REF leaving = c1;
+// 						leaving.name = o;
 
-						const auto &[nc1, linked_c1] = FindLink(leaving, "C1");
-						if (linked_c1)
-						{
-							sugarTree.push_back({ nc1, o[1] - '0', c1 });
-							c1s.push(nc1);
-						}
-					}
-				}
+// 						const auto &[nc1, linked_c1] = FindLink(leaving, "C1");
+// 						if (linked_c1)
+// 						{
+// 							sugarTree.push_back({ nc1, o[1] - '0', c1 });
+// 							c1s.push(nc1);
+// 						}
+// 					}
+// 				}
 
-				if (sugarTree.size() < 2) // not really a tree
-					continue;
+// 				if (sugarTree.size() < 2) // not really a tree
+// 					continue;
 
-				auto branchName = sugarTree.entityName();
-				auto entityID = mBranch2EntityID[branchName];
+// 				auto branchName = sugarTree.entityName();
+// 				auto entityID = mBranch2EntityID[branchName];
 
-				// See if we've already added it to the entities
-				if (entityID.empty())
-				{
-					entityID = std::to_string(mNextEntityNr++);
-					mBranch2EntityID[branchName] = entityID;
+// 				// See if we've already added it to the entities
+// 				if (entityID.empty())
+// 				{
+// 					entityID = std::to_string(mNextEntityNr++);
+// 					mBranch2EntityID[branchName] = entityID;
 
-					// clang-format off
-					getCategory("entity")->emplace({
-						{ "id", entityID },
-						{ "type", "branched" },
-						{ "src_method", "man" },
-						{ "pdbx_description", branchName }
-					});
+// 					// clang-format off
+// 					getCategory("entity")->emplace({
+// 						{ "id", entityID },
+// 						{ "type", "branched" },
+// 						{ "src_method", "man" },
+// 						{ "pdbx_description", branchName }
+// 					});
 
-					getCategory("pdbx_entity_branch")->emplace({
-						{ "entity_id", entityID },
-						{ "type", "oligosaccharide" }
-					});
-					// clang-format on
+// 					getCategory("pdbx_entity_branch")->emplace({
+// 						{ "entity_id", entityID },
+// 						{ "type", "oligosaccharide" }
+// 					});
+// 					// clang-format on
 
-					int num = 0;
-					std::map<ATOM_REF, int> branch_list;
+// 					int num = 0;
+// 					std::map<ATOM_REF, int> branch_list;
 
-					for (auto &s : sugarTree)
-					{
-						// clang-format off
-						getCategory("pdbx_entity_branch_list")->emplace({
-							{ "entity_id", entityID },
-							{ "comp_id", s.c1.resName },
-							{ "num", ++num },
-							{ "hetero", ci.size() == 1 ? "n" : "y" }
-						});
-						// clang-format on
+// 					for (auto &s : sugarTree)
+// 					{
+// 						// clang-format off
+// 						getCategory("pdbx_entity_branch_list")->emplace({
+// 							{ "entity_id", entityID },
+// 							{ "comp_id", s.c1.resName },
+// 							{ "num", ++num },
+// 							{ "hetero", ci.size() == 1 ? "n" : "y" }
+// 						});
+// 						// clang-format on
 
-						branch_list[s.c1] = num;
-					}
+// 						branch_list[s.c1] = num;
+// 					}
 
-					auto &branch_link = *getCategory("pdbx_entity_branch_link");
+// 					auto &branch_link = *getCategory("pdbx_entity_branch_link");
 
-					for (auto &s : sugarTree)
-					{
-						if (s.leaving_o == 0)
-							continue;
+// 					for (auto &s : sugarTree)
+// 					{
+// 						if (s.leaving_o == 0)
+// 							continue;
 
-						// clang-format off
-						branch_link.emplace({
-							{ "link_id", branch_link.size() + 1 },
-							{ "entity_id", entityID },
-							{ "entity_branch_list_num_1", branch_list[s.c1] },
-							{ "comp_id_1", s.c1.resName },
-							{ "atom_id_1", s.c1.name },
-							{ "leaving_atom_id_1", "O1" },
-							{ "entity_branch_list_num_2", branch_list[s.next] },
-							{ "comp_id_2", s.next.resName },
-							{ "atom_id_2", "O" + std::to_string(s.leaving_o) },
-							{ "leaving_atom_id_2", "HO" + std::to_string(s.leaving_o) },
-							{ "value_order", "sing" } /// ??
-						});
-						// clang-format on
-					}
-				}
+// 						// clang-format off
+// 						branch_link.emplace({
+// 							{ "link_id", branch_link.size() + 1 },
+// 							{ "entity_id", entityID },
+// 							{ "entity_branch_list_num_1", branch_list[s.c1] },
+// 							{ "comp_id_1", s.c1.resName },
+// 							{ "atom_id_1", s.c1.name },
+// 							{ "leaving_atom_id_1", "O1" },
+// 							{ "entity_branch_list_num_2", branch_list[s.next] },
+// 							{ "comp_id_2", s.next.resName },
+// 							{ "atom_id_2", "O" + std::to_string(s.leaving_o) },
+// 							{ "leaving_atom_id_2", "HO" + std::to_string(s.leaving_o) },
+// 							{ "value_order", "sing" } /// ??
+// 						});
+// 						// clang-format on
+// 					}
+// 				}
 
-				mSugarEntities.insert(entityID);
+// 				mSugarEntities.insert(entityID);
 
-				// create an asym for this sugar tree
+// 				// create an asym for this sugar tree
 
-				std::string asymID = cif::cif_id_for_number(asymNr++);
+// 				std::string asymID = cif::cif_id_for_number(asymNr++);
 
-				mAsymID2EntityID[asymID] = entityID;
+// 				mAsymID2EntityID[asymID] = entityID;
 
-				// clang-format off
-				getCategory("struct_asym")->emplace({
-					{ "id", asymID },
-					{ "pdbx_blank_PDB_chainid_flag", si->chainID == ' ' ? "Y" : "N" },
-					{ "pdbx_modified", "N" },
-					{ "entity_id", entityID }
-				});
-				// clang-format on
+// 				// clang-format off
+// 				getCategory("struct_asym")->emplace({
+// 					{ "id", asymID },
+// 					{ "pdbx_blank_PDB_chainid_flag", si->chainID == ' ' ? "Y" : "N" },
+// 					{ "pdbx_modified", "N" },
+// 					{ "entity_id", entityID }
+// 				});
+// 				// clang-format on
 
-				std::string iCode{ si->iCode };
-				cif::trim(iCode);
-				if (iCode.empty())
-					iCode = { '.' };
+// 				std::string iCode{ si->iCode };
+// 				cif::trim(iCode);
+// 				if (iCode.empty())
+// 					iCode = { '.' };
 
-				int num = 0;
-				for (auto s : sugarTree)
-				{
-					// clang-format off
-					getCategory("pdbx_branch_scheme")->emplace({
-						{ "asym_id", asymID },
-						{ "entity_id", entityID },
-						{ "mon_id", s.c1.resName },
-						{ "num", ++num },
-						{ "pdb_asym_id", asymID },
-						{ "pdb_mon_id", s.c1.resName },
-						{ "pdb_seq_num", std::to_string(num) },
-						{ "auth_asym_id", std::string{ s.c1.chainID } },
-						{ "auth_mon_id", s.next.resName },
-						{ "auth_seq_num", s.c1.resSeq },
-						{ "hetero", ci.size() == 1 ? "n" : "y" }
-					});
-					// clang-format on
+// 				int num = 0;
+// 				for (auto s : sugarTree)
+// 				{
+// 					// clang-format off
+// 					getCategory("pdbx_branch_scheme")->emplace({
+// 						{ "asym_id", asymID },
+// 						{ "entity_id", entityID },
+// 						{ "mon_id", s.c1.resName },
+// 						{ "num", ++num },
+// 						{ "pdb_asym_id", asymID },
+// 						{ "pdb_mon_id", s.c1.resName },
+// 						{ "pdb_seq_num", std::to_string(num) },
+// 						{ "auth_asym_id", std::string{ s.c1.chainID } },
+// 						{ "auth_mon_id", s.next.resName },
+// 						{ "auth_seq_num", s.c1.resSeq },
+// 						{ "hetero", ci.size() == 1 ? "n" : "y" }
+// 					});
+// 					// clang-format on
 
-					auto k = std::make_tuple(s.c1.chainID, s.c1.resSeq, s.c1.iCode);
-					assert(mChainSeq2AsymSeq.count(k) == 0);
+// 					auto k = std::make_tuple(s.c1.chainID, s.c1.resSeq, s.c1.iCode);
+// 					assert(mChainSeq2AsymSeq.count(k) == 0);
 
-					mChainSeq2AsymSeq[k] = std::make_tuple(asymID, num, false);
+// 					mChainSeq2AsymSeq[k] = std::make_tuple(asymID, num, false);
 
-					// mark all hets as part of tree
+// 					// mark all hets as part of tree
 
-					for (auto &h : mHets)
-					{
-						if (h.hetID == s.c1.resName and h.chainID == s.c1.chainID and h.seqNum == s.c1.resSeq and h.iCode == s.c1.iCode)
-						{
-							h.branch = true;
-							break; // should be only one of course... right?
-						}
-					}
-				}
+// 					for (auto &h : mHets)
+// 					{
+// 						if (h.hetID == s.c1.resName and h.chainID == s.c1.chainID and h.seqNum == s.c1.resSeq and h.iCode == s.c1.iCode)
+// 						{
+// 							h.branch = true;
+// 							break; // should be only one of course... right?
+// 						}
+// 					}
+// 				}
 
-				break;
-			}
+// 				break;
+// 			}
 
-			continue;
-		}
+// 			continue;
+// 		}
 
-		break;
-	}
+// 		break;
+// 	}
 
-	// remove the branched HET's
-	std::erase_if(mHets, [](auto &h)
-		{ return h.branch; });
-}
+// 	// remove the branched HET's
+// 	std::erase_if(mHets, [](auto &h)
+// 		{ return h.branch; });
+// }
 
 void PDBFileParser::ParseSecondaryStructure()
 {

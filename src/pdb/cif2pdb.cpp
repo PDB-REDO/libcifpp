@@ -2577,16 +2577,16 @@ void WriteRemark400(std::ostream &pdbFile, const datablock &db)
 	}
 }
 
-void WriteRemark450(std::ostream &pdbFile, const datablock &db)
-{
-	for (auto r : db["pdbx_entry_details"])
-	{
-		auto source_details = r["source_details"].get<std::string>();
-		if (not source_details.empty())
-			WriteOneContinuedLine(pdbFile, "REMARK 450", 0, "\nSOURCE\n" + source_details, 11);
-		break;
-	}
-}
+// void WriteRemark450(std::ostream &pdbFile, const datablock &db)
+// {
+// 	for (auto r : db["pdbx_entry_details"])
+// 	{
+// 		auto source_details = r["source_details"].get<std::string>();
+// 		if (not source_details.empty())
+// 			WriteOneContinuedLine(pdbFile, "REMARK 450", 0, "\nSOURCE\n" + source_details, 11);
+// 		break;
+// 	}
+// }
 
 void WriteRemark465(std::ostream &pdbFile, const datablock &db)
 {
@@ -2692,10 +2692,10 @@ void WriteRemark470(std::ostream &pdbFile, const datablock &db)
 	}
 }
 
-void WriteRemark610(std::ostream &pdbFile, const datablock &db)
-{
-	// #warning("unimplemented!");
-}
+// void WriteRemark610(std::ostream &pdbFile, const datablock &db)
+// {
+// 	// #warning("unimplemented!");
+// }
 
 void WriteRemark800(std::ostream &pdbFile, const datablock &db)
 {
