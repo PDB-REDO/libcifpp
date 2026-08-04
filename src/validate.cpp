@@ -249,10 +249,9 @@ bool item_validator::validate_value(const item_value &value, std::error_code &ec
 					if (ec == std::errc{} and not m_enums.empty())
 					{
 						bool valid =
-							m_type->m_primitive_type == DDL_PrimitiveType::UChar ? //
-								m_enums.contains(cif::to_lower_copy(value.sv()))
-																				 : //
-								m_enums.contains(std::string{ value.sv() });
+							m_type->m_primitive_type == DDL_PrimitiveType::UChar
+								? m_enums.contains(cif::to_lower_copy(value.sv()))
+								: m_enums.contains(std::string{ value.sv() });
 
 						if (not valid)
 							ec = make_error_code(validation_error::value_is_not_in_enumeration_list);
