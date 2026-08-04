@@ -2749,7 +2749,7 @@ void WriteRemarks(std::ostream &pdbFile, const datablock &db)
 	WriteRemark465(pdbFile, db);
 	WriteRemark470(pdbFile, db);
 
-	WriteRemark610(pdbFile, db);
+	// WriteRemark610(pdbFile, db);
 
 	WriteRemark800(pdbFile, db);
 	WriteRemark999(pdbFile, db);
