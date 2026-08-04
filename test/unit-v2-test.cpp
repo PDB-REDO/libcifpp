@@ -2169,6 +2169,49 @@ _test.b
 					(cif::key("a") == 1 and cif::key("b") == "z")) == 1);
 }
 
+TEST_CASE("c6")
+{
+	// Nested composites must adopt the impl returned by sub->prepare().
+	// An OR of ANDs factored by combine_equal returns a *new*
+	// and_condition_impl that owns the original OR. A surrounding `not` or
+	// `and` that discards that replacement leaves the OR stripped of its
+	// factored sub-conditions (every branch becomes empty -> always true),
+	// and leaks the new impl. That made the two checks below return
+	// 0 / 2 instead of 2 / 1.
+
+	auto f = R"(data_TEST
+     #
+     loop_
+     _test.a
+     _test.b
+     1 x
+     1 y
+     2 x
+     2 y
+         )"_cf;
+
+	auto &db = f.front();
+	auto &cat = db["test"];
+
+	// sanity: top-level factoring (already covered by c5)
+	CHECK(cat.count((cif::key("a") == 1 and cif::key("b") == "x") or
+					(cif::key("a") == 1 and cif::key("b") == "y")) == 2);
+
+	// OR of ANDs nested inside a NOT  -- returns 0 with the bug, expects 2
+	CHECK(cat.count(not((cif::key("a") == 1 and cif::key("b") == "x") or
+						(cif::key("a") == 1 and cif::key("b") == "y"))) == 2);
+
+	// OR of ANDs nested inside an AND -- returns 2 with the bug, expects 1
+	CHECK(cat.count((cif::key("b") == "y") and
+					((cif::key("a") == 1 and cif::key("b") == "x") or
+						(cif::key("a") == 1 and cif::key("b") == "y"))) == 1);
+
+	// controls: plain OR nested in NOT / AND (no factoring involved,
+	// these pass both before and after the fix)
+	CHECK(cat.count(not(cif::key("a") == 1 or cif::key("b") == "x")) == 1);
+	CHECK(cat.count((cif::key("b") == "y") and (cif::key("a") == 1 or cif::key("a") == 2)) == 2);
+}
+
 // --------------------------------------------------------------------
 // rename test
 
@@ -3744,7 +3787,7 @@ _pdbx_contact_author.name_mi '+98765432109'
 	CHECK(r["name_mi"].str() == "+98765432109");
 	CHECK(r["name_mi"].get<int64_t>() == 98765432109);
 	CHECK(r["name_mi"].get<double>() == 98765432109.0);
-}// --------------------------------------------------------------------
+} // --------------------------------------------------------------------
 
 TEST_CASE("q-1")
 {

@@ -160,7 +160,7 @@ namespace detail
 	{
 		virtual ~condition_impl() = default;
 
-		virtual condition_impl *prepare(const category &) { return this; }
+		virtual bool prepare(const category &) { return true; }
 		[[nodiscard]] virtual bool test(const_row_handle) const = 0;
 		virtual void str(std::ostream &) const = 0;
 		[[nodiscard]] virtual std::optional<const_row_handle> single() const { return std::nullopt; };
@@ -258,7 +258,6 @@ class condition
 	 */
 	bool operator()(const_row_handle r) const
 	{
-		assert(this->m_impl != nullptr);
 		return m_impl ? m_impl->test(r) : false;
 	}
 
@@ -332,7 +331,7 @@ namespace detail
 		{
 		}
 
-		condition_impl *prepare(const category &c) override
+		bool prepare(const category &c) override
 		{
 			auto ix = get_item_ix(c, m_item_name);
 			if (ix.has_value())
@@ -340,7 +339,7 @@ namespace detail
 			else
 				m_missing_key = true;
 
-			return this;
+			return true;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -365,15 +364,14 @@ namespace detail
 		{
 		}
 
-		condition_impl *prepare(const category &c) override
+		bool prepare(const category &c) override
 		{
-			auto ix = get_item_ix(c, m_item_name);
-			if (ix.has_value())
+			if (auto ix = get_item_ix(c, m_item_name); ix.has_value())
 			{
 				m_item_ix = *ix;
-				return this;
+				return true;
 			}
-			return nullptr;
+			return false;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -398,7 +396,7 @@ namespace detail
 		{
 		}
 
-		condition_impl *prepare(const category &c) override;
+		bool prepare(const category &c) override;
 
 		[[nodiscard]] bool test(const_row_handle r) const override
 		{
@@ -407,7 +405,7 @@ namespace detail
 
 		void str(std::ostream &os) const override
 		{
-			os << m_item_name << (m_icase ? "^ " : " ") << " == " << m_value;
+			os << m_item_name << (m_icase ? "^" : "") << " == " << m_value;
 		}
 
 		[[nodiscard]] std::optional<const_row_handle> single() const override
@@ -446,7 +444,7 @@ namespace detail
 		{
 		}
 
-		condition_impl *prepare(const category &c) override
+		bool prepare(const category &c) override
 		{
 			auto ix = get_item_ix(c, m_item_name);
 			if (ix.has_value())
@@ -457,7 +455,7 @@ namespace detail
 			else
 				m_key_is_missing = true;
 
-			return this;
+			return true;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -516,16 +514,16 @@ namespace detail
 		{
 		}
 
-		condition_impl *prepare(const category &c) override
+		bool prepare(const category &c) override
 		{
 			auto ix = get_item_ix(c, m_item_name);
 			if (ix.has_value())
 			{
 				m_item_ix = *ix;
 				m_icase = is_item_type_uchar(c, m_item_name);
-				return this;
+				return true;
 			}
-			return nullptr;
+			return false;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -553,15 +551,15 @@ namespace detail
 		{
 		}
 
-		condition_impl *prepare(const category &c) override
+		bool prepare(const category &c) override
 		{
 			auto ix = get_item_ix(c, m_item_name);
 			if (ix.has_value())
 			{
 				m_item_ix = *ix;
-				return this;
+				return true;
 			}
-			return nullptr;
+			return false;
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
@@ -690,7 +688,7 @@ namespace detail
 				delete sub;
 		}
 
-		condition_impl *prepare(const category &c) override;
+		bool prepare(const category &c) override;
 
 		[[nodiscard]] bool test(const_row_handle r) const override;
 
@@ -744,6 +742,8 @@ namespace detail
 
 	struct or_condition_impl : public condition_impl
 	{
+		or_condition_impl() = default;
+
 		or_condition_impl(condition &&a, condition &&b)
 		{
 			if (typeid(*a.m_impl) == typeid(*this))
@@ -773,7 +773,7 @@ namespace detail
 				delete sub;
 		}
 
-		condition_impl *prepare(const category &c) override;
+		bool prepare(const category &c) override;
 
 		[[nodiscard]] bool test(const_row_handle r) const override
 		{
@@ -845,9 +845,9 @@ namespace detail
 			delete mA;
 		}
 
-		condition_impl *prepare(const category &c) override
+		bool prepare(const category &c) override
 		{
-			return mA->prepare(c) ? this : nullptr;
+			return mA->prepare(c);
 		}
 
 		[[nodiscard]] bool test(const_row_handle r) const override
