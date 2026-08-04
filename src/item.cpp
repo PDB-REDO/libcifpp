@@ -56,7 +56,7 @@ item_value &item_handle::value()
 #ifndef NDEBUG
 	assert(m_item_ix < m_row.size());
 #else
-	if (m_item_ix < m_row.size())
+	if (m_item_ix >= m_row.size())
 		throw std::runtime_error("Invalid item handle");
 #endif
 	return m_row.operator[](m_item_ix);
@@ -67,7 +67,7 @@ const item_value &item_handle::value() const
 #ifndef NDEBUG
 	assert(m_item_ix < m_row.size());
 #else
-	if (m_item_ix < m_row.size())
+	if (m_item_ix >= m_row.size())
 		throw std::runtime_error("Invalid item handle");
 #endif
 	return m_row.operator[](m_item_ix);
