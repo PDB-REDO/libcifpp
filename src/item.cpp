@@ -63,7 +63,8 @@ item_value &item_handle::value()
 }
 
 const item_value &item_handle::value() const
-{#ifndef NDEBUG
+{
+#ifndef NDEBUG
 	assert(m_item_ix < m_row.size());
 #else
 	if (m_item_ix < m_row.size())
