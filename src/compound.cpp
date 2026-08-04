@@ -337,7 +337,8 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 
 	compound *get(std::string id)
 	{
-		std::unique_lock lock(mMutex);
+		// TODO: seems this might cause a race condition
+		std::shared_lock lock(mMutex);
 
 		compound *result = nullptr;
 
