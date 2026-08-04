@@ -76,5 +76,5 @@ jobs:
         cmake -E rm -rf ${{ steps.strings.outputs.build-output-dir }}
         cmake -B ${{ steps.strings.outputs.build-output-dir }} -S ${{ github.workspace }}/examples -DCIFPP_DOWNLOAD_CCD=OFF -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         cmake --build ${{ steps.strings.outputs.build-output-dir }}
-        ${{ steps.strings.outputs.build-output-dir }}/build/example ${{ github.workspace }}/examples/1cbs.cif.gz
+        ${{ steps.strings.outputs.build-output-dir }}/example ${{ github.workspace }}/examples/1cbs.cif.gz
 
