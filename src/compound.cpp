@@ -36,6 +36,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <ranges>
 #include <shared_mutex>
@@ -336,7 +337,7 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 
 	compound *get(std::string id)
 	{
-		std::shared_lock lock(mMutex);
+		std::unique_lock lock(mMutex);
 
 		compound *result = nullptr;
 
