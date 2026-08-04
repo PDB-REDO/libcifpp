@@ -38,7 +38,7 @@ jobs:
     - run: pip install -r docs/requirements.txt
 
     - name: Configure CMake
-      run: cmake -S . -B ${{ steps.strings.outputs.build-output-dir }} -DBUILD_DOCUMENTATION=ON -DBUILD_TESTING=OFF
+      run: cmake -S . -B ${{ steps.strings.outputs.build-output-dir }} -DBUILD_DOCUMENTATION=ON -DBUILD_TESTING=OFF -DCIFPP_DOWNLOAD_CCD=OFF
 
     - name: Run Sphinx
       run: |
