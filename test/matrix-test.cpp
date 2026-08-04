@@ -113,3 +113,24 @@ TEST_CASE("m5")
 
 }
 
+TEST_CASE("m6")
+{
+	cif::matrix_fixed<float, 1, 2> a({ 1, 2 });
+	cif::matrix_fixed<float, 2, 1> b({ 1, 2 });
+
+	auto c = a * b;
+
+	CHECK(c.dim_m() == 1);
+	CHECK(c.dim_n() == 1);
+	CHECK(c(0, 0) == 5);
+
+	auto d = b * a;
+
+	CHECK(d.dim_m() == 2);
+	CHECK(d.dim_n() == 2);
+
+	CHECK(d(0, 0) == 1);
+	CHECK(d(0, 1) == 2);
+	CHECK(d(1, 0) == 2);
+	CHECK(d(1, 1) == 4);
+}

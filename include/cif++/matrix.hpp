@@ -566,7 +566,7 @@ class matrix_matrix_multiplication : public matrix_expression<matrix_matrix_mult
 	}
 
 	[[nodiscard]] constexpr std::size_t dim_m() const { return m_m1.dim_m(); } ///< Return dimension m
-	[[nodiscard]] constexpr std::size_t dim_n() const { return m_m1.dim_n(); } ///< Return dimension n
+	[[nodiscard]] constexpr std::size_t dim_n() const { return m_m2.dim_n(); } ///< Return dimension n
 
 	/** Access to the value of element [ @a i, @a j ] */
 	[[nodiscard]] constexpr auto operator()(std::size_t i, std::size_t j) const
