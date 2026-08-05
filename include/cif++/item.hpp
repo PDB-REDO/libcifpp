@@ -157,7 +157,7 @@ class item_value
 		else
 		{
 			m_data.m_type = item_value_type::TEXT;
-			m_data.m_len = s.length();
+			m_data.m_len = static_cast<uint32_t>(s.length());
 			m_data.m_value = s;
 		}
 	}

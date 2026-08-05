@@ -636,7 +636,7 @@ namespace detail
 						break;
 					}
 				}
-				catch (const std::exception &ex) // NOLINT(bugprone-empty-catch)
+				catch ([[maybe_unused]] const std::exception &ex) // NOLINT(bugprone-empty-catch)
 				{
 				}
 			}
