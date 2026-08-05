@@ -170,7 +170,7 @@ endif()
 # Using fast_float for float parsing, but only if needed
 try_compile(STD_CHARCONV_COMPILING
     SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp
-    CXX_STANDARD 20
+    CXX_STANDARD 23
     CXX_STANDARD_REQUIRED ON)
 
 if(NOT STD_CHARCONV_COMPILING)
@@ -180,6 +180,15 @@ if(NOT STD_CHARCONV_COMPILING)
         GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
         GIT_TAG v8.0.2
         EXCLUDE_FROM_ALL YES)
+endif()
+
+try_compile(STD_SPANSTREAM_COMPILING
+    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-spanstream.cpp
+    CXX_STANDARD 23
+    CXX_STANDARD_REQUIRED ON)
+
+if(NOT STD_SPANSTREAM_COMPILING)
+    message(FATAL_ERROR "Missing spanstream from c++23")
 endif()
 
 find_package(Threads)
