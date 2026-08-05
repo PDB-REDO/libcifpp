@@ -46,6 +46,10 @@
 namespace cif
 {
 
+// return a reference to a null item_value for out of range item handles,
+// read access to a missing item should yield a MISSING value rather than UB
+thread_local item_value s_null_item;
+
 bool item_handle::empty() const
 {
 	return m_item_ix >= m_row.size() or m_row[m_item_ix].empty();
@@ -54,12 +58,26 @@ bool item_handle::empty() const
 item_value &item_handle::value() noexcept
 {
 	assert(m_item_ix < m_row.size());
+
+	if (m_item_ix >= m_row.size())
+	{
+		std::cerr << "ERROR: Index out of range for item_handle!\n";
+		return s_null_item;
+	}
+
 	return m_row.operator[](m_item_ix);
 }
 
 const item_value &item_handle::value() const noexcept
 {
 	assert(m_item_ix < m_row.size());
+
+	if (m_item_ix >= m_row.size())
+	{
+		std::cerr << "ERROR: Index out of range for item_handle!\n";
+		return s_null_item;
+	}
+
 	return m_row.operator[](m_item_ix);
 }
 
