@@ -421,15 +421,21 @@ std::string::const_iterator nextLineBreak(std::string::const_iterator text, std:
 			break;
 		}
 
-		ncls = kASCII_LBTable[static_cast<uint8_t>(ch)];
+		ncls = ch < 128 ? kASCII_LBTable[ch] : kLBC_CombiningMark;
 
 		if (ncls == kLBC_Space)
 			continue;
 
-		breakAction brk = brkTable[cls][ncls];
+		if (ncls >= kLBC_MandatoryBreak)
+			ncls = kLBC_Alphabetic;
 
-		if (brk == DBK or (brk == IBK and lcls == kLBC_Space))
-			break;
+		if (cls != kLBC_Unknown)
+		{
+			breakAction brk = brkTable[cls][ncls];
+	
+			if (brk == DBK or (brk == IBK and lcls == kLBC_Space))
+				break;
+		}
 
 		cls = ncls;
 	}
