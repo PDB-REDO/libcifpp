@@ -34,3 +34,9 @@ target_link_libraries(example cifpp::cifpp)
 
 add_executable(example-cql example-cql.cpp)
 target_link_libraries(example-cql cifpp::cifpp)
+
+# Used in the smoke test in CI:
+
+include(CTest)
+add_test(NAME example_test COMMAND $<TARGET_FILE:example> ${CMAKE_CURRENT_SOURCE_DIR}/1cbs.cif.gz)
+add_test(NAME example_test_cql COMMAND $<TARGET_FILE:example-cql> ${CMAKE_CURRENT_SOURCE_DIR}/1cbs.cif.gz)
