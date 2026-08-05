@@ -842,9 +842,11 @@ bool category::is_valid() const
 			result = false;
 		}
 
-		// col.m_validator = iv;
 		if (col.m_validator != iv)
+		{
 			m_validator->report_error(validation_error::incorrect_item_validator, true);
+			result = false;
+		}
 
 		mandatory.erase(col.m_name);
 	}
