@@ -917,6 +917,7 @@ bool category::is_valid() const
 				if (ec != std::errc{})
 				{
 					m_validator->report_error(ec, v.str(), m_name, m_items[cix].m_name, false);
+					// result = false;
 					continue;
 				}
 			}
