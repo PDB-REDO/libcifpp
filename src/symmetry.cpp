@@ -120,7 +120,7 @@ sym_op::sym_op(std::string_view s)
 	int rnri = 256; // default to unexisting number
 	auto r = std::from_chars(b, e, rnri);
 
-	if (r.ec != std::errc{} or rnri > 192 or r.ptr != e - 4)
+	if (r.ec != std::errc{} or rnri > 192 or e - r.ptr != 4)
 		throw std::invalid_argument("Could not convert string into sym_op");
 
 	m_nr = static_cast<uint8_t>(rnri);
