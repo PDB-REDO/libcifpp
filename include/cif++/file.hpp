@@ -27,13 +27,13 @@
 #pragma once
 
 #include "cif++/datablock.hpp"
+#include "cif++/utilities.hpp"
 
 #include <cassert>
 #include <cstddef>
 #include <filesystem>
 #include <istream>
 #include <list>
-#include <spanstream>
 #include <string_view>
 #include <tuple>
 
@@ -93,7 +93,7 @@ class file : public std::list<datablock>
 	 */
 	explicit file(const char *data, std::size_t length)
 	{
-		std::ispanstream is(std::span(data, data + length));
+		ispanstream is(std::span(data, data + length));
 		load(is);
 	}
 

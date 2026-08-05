@@ -32,7 +32,6 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
-#include <spanstream>
 #include <sstream>
 
 TEST_CASE("reconstruct")

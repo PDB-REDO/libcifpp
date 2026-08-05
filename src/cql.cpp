@@ -37,7 +37,6 @@
 #include <memory>
 #include <ranges>
 #include <regex>
-#include <spanstream>
 #include <sqlite3.h>
 #include <sstream>
 #include <stack>
@@ -485,7 +484,7 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 	{
 		if (idxStr != nullptr)
 		{
-			std::ispanstream is(std::span(idxStr, idxStr + strlen(idxStr)));
+			ispanstream is(std::span(idxStr, idxStr + strlen(idxStr)));
 
 			std::regex rx("^(.+?)( IS NULL| IS NOT NULL|(?: < | <= | == | >= | > ))(.+)?$");
 

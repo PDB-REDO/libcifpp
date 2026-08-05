@@ -182,15 +182,6 @@ if(NOT STD_CHARCONV_COMPILING)
         EXCLUDE_FROM_ALL YES)
 endif()
 
-try_compile(STD_SPANSTREAM_COMPILING
-    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-spanstream.cpp
-    CXX_STANDARD 23
-    CXX_STANDARD_REQUIRED ON)
-
-if(NOT STD_SPANSTREAM_COMPILING)
-    message(FATAL_ERROR "Missing spanstream from c++23")
-endif()
-
 find_package(Threads)
 find_package(ZLIB QUIET)
 

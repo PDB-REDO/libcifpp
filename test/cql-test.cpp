@@ -29,7 +29,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cif++/cif++.hpp>
 #include <cif++/cql.hpp>
-#include <spanstream>
+#include <cif++/utilities.hpp>
 
 // --------------------------------------------------------------------
 
@@ -427,7 +427,7 @@ save__cat_2.desc
     save_
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -452,7 +452,7 @@ _cat_2.desc
 3 2 'walnoot bijvoorbeeld'
     )";
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 

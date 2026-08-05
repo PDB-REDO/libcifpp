@@ -24,9 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "cif++/category.hpp"
-#include "cif++/model.hpp"
-#include "cif++/row.hpp"
 #include "test-main.hpp"
 
 #include <algorithm>
@@ -34,7 +31,6 @@
 #include <cif++/cif++.hpp>
 #include <exception>
 #include <ostream>
-#include <spanstream>
 #include <sstream>
 #include <stdexcept>
 
@@ -887,7 +883,7 @@ save__cat_2.desc
     save_
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -912,7 +908,7 @@ _cat_2.desc
 3 2 'walnoot bijvoorbeeld'
     )";
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1047,7 +1043,7 @@ save__cat_1.c
     save_
 )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -1064,7 +1060,7 @@ noot Noot
 mies Mies
 )";
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1194,7 +1190,7 @@ save__cat_2.desc
     save_
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -1222,7 +1218,7 @@ _cat_2.desc
 4 2 n2     hazelnoot
     )";
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1377,7 +1373,7 @@ save__cat_2.parent_id3
 
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -1415,7 +1411,7 @@ _cat_2.parent_id3
 13 4 roos  .
     )";
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1578,7 +1574,7 @@ cat_2 2 cat_2:cat_1:2
 cat_2 3 cat_2:cat_1:3
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -1609,7 +1605,7 @@ _cat_2.parent_id3
 
 	// --------------------------------------------------------------------
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1798,7 +1794,7 @@ _pdbx_item_linked_group.label
 cat_2 1 cat_2:cat_1:1
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -1829,7 +1825,7 @@ _cat_2.parent_id_2
 
 	// --------------------------------------------------------------------
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -2252,7 +2248,7 @@ cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
 
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -2288,7 +2284,7 @@ _cat_3.num
 
 	using namespace cif::literals;
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -2520,7 +2516,7 @@ cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
 
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -2556,7 +2552,7 @@ _cat_3.num
 
 	using namespace cif::literals;
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -2934,7 +2930,7 @@ save__cat_1.name
     save_
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -2951,7 +2947,7 @@ _cat_1.name
 3 Mies
     )";
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -3110,7 +3106,7 @@ save__cat_1.name
     save_
     )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	auto &validator = cif::validator_factory::instance().add(cif::validator(is_dict));
 
 	cif::file f;
@@ -3131,7 +3127,7 @@ _cat_1.name
 3 Mies
     )";
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -3202,7 +3198,7 @@ save__cat_1.id_2
     save_
 )";
 
-	std::ispanstream is_dict(dict);
+	cif::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
@@ -3221,7 +3217,7 @@ _cat_1.id_2
 
 	// --------------------------------------------------------------------
 
-	std::ispanstream is_data(data);
+	cif::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -3407,7 +3403,7 @@ ATOM      5  CB  PRO A   1      17.678  13.270  42.255  1.00 29.24           C
 ATOM      6  CG  PRO A   1      16.248  13.734  42.347  1.00 29.29           C
 ATOM      7  CD  PRO A   1      15.762  13.216  43.724  1.00 30.71           C)";
 
-	std::ispanstream is(k1CBS);
+	cif::ispanstream is(k1CBS);
 	auto f = cif::pdb::read(is);
 	CHECK(f.is_valid());
 }

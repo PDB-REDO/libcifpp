@@ -36,6 +36,10 @@
 #include <string_view>
 #include <type_traits>
 
+#if __has_include(<spanstream>)
+# include <spanstream>
+#endif
+
 #ifndef STDOUT_FILENO
 /// @brief For systems that lack this value
 # define STDOUT_FILENO 1
@@ -378,5 +382,37 @@ void add_data_directory(std::filesystem::path dataDir);
  */
 
 void list_data_directories(std::ostream &os);
+
+/// Since not all compilers support std::spanstream yet...
+
+#if __cpp_lib_spanstream >= 202106L
+
+using ispanstream = std::ispanstream;
+
+#else
+
+struct spanbuf : public std::streambuf
+{
+	spanbuf(const std::span<const char> data)
+	{
+		setg(
+			const_cast<char *>(data.data()),
+			const_cast<char *>(data.data()),
+			const_cast<char *>(data.data()) + data.size());
+	}
+};
+
+struct ispanstream : public std::istream
+{
+	ispanstream(const std::span<const char> data)
+		: std::istream(&m_buffer)
+		, m_buffer(data)
+	{
+	}
+
+	spanbuf m_buffer;
+};
+
+#endif
 
 } // namespace cif
