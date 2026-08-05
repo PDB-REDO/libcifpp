@@ -43,7 +43,8 @@ namespace cif
 
 iset get_category_items(const category &cat)
 {
-	return cat.key_items();
+	auto items = cat.get_items();
+	return { items.begin(), items.end() };
 }
 
 std::optional<uint16_t> get_item_ix(const category &cat, std::string_view col)
