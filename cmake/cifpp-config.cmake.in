@@ -8,5 +8,6 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(Threads)
 find_dependency(ZLIB REQUIRED)
+@SQLITE3_DEPENDENCY@
 
 check_required_components(cifpp)

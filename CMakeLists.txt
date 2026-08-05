@@ -268,6 +268,7 @@ if(SQLite3_FOUND)
     elseif (TARGET SQLite::SQLite3)
 	    target_link_libraries(cifpp PRIVATE  $<BUILD_INTERFACE:SQLite::SQLite3>)
     endif()
+    set(SQLITE3_DEPENDENCY "find_dependency(SQLite3 REQUIRED)")
 else()
 	FetchContent_Populate(SQLite3
 		URL https://sqlite.org/2025/sqlite-amalgamation-3510100.zip
