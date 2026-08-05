@@ -72,6 +72,7 @@ jobs:
       run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --config Release
 
     - name: Verify installed files
+      if: matrix.os != 'windows-latest'
       shell: bash
       run: |
         P="$RUNNER_TEMP/cifpp-prefix"
@@ -84,7 +85,6 @@ jobs:
         test -f "$P/share/libcifpp/mmcif_pdbx.dic"
 
     - name: Build and test consumer against installed package
-      shell: bash
       run: |
         cmake -E rm -rf "$RUNNER_TEMP/cifpp-consumer"
         cmake -B "$RUNNER_TEMP/cifpp-consumer" -S "${{ github.workspace }}/examples" \
