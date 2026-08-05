@@ -479,6 +479,8 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 
 	pCur->m_result.reset();
 
+	int result = SQLITE_OK;
+
 	try
 	{
 		if (idxStr != nullptr)
@@ -539,21 +541,22 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 			pCur->m_result = std::make_unique<conditional_iterator_proxy<>>(cat.find(std::move(cond)));
 			pCur->m_cur = pCur->m_result->begin();
 		}
+
+		if (not pCur->m_result)
+		{
+			condition cond = all();
+			pCur->m_result = std::make_unique<conditional_iterator_proxy<>>(cat.find(std::move(cond)));
+			pCur->m_cur = pCur->m_result->begin();
+		}
 	}
 	catch (const std::exception &ex)
 	{
 		std::cerr << "Internal error: " << ex.what() << "\n";
 		pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("%s", ex.what());
+		result = SQLITE_ERROR;
 	}
 
-	if (not pCur->m_result)
-	{
-		condition cond = all();
-		pCur->m_result = std::make_unique<conditional_iterator_proxy<>>(cat.find(std::move(cond)));
-		pCur->m_cur = pCur->m_result->begin();
-	}
-
-	return SQLITE_OK;
+	return result;
 }
 
 /*
@@ -565,6 +568,8 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 int connection_impl::BestIndex(sqlite3_vtab *pVtab, sqlite3_index_info *pIdxInfo)
 {
 	auto *p = reinterpret_cast<virtual_table *>(pVtab);
+
+	int result = SQLITE_OK;
 
 	try
 	{
@@ -699,11 +704,12 @@ int connection_impl::BestIndex(sqlite3_vtab *pVtab, sqlite3_index_info *pIdxInfo
 			pIdxInfo->colUsed = 0;
 
 		pVtab->zErrMsg = sqlite3_mprintf("%s", ex.what());
+		result = SQLITE_ERROR;
 	}
 
 	pIdxInfo->estimatedCost = static_cast<double>(p->m_cat.size());
 	pIdxInfo->estimatedRows = static_cast<int64_t>(p->m_cat.size());
-	return SQLITE_OK;
+	return result;
 }
 
 int bind_item_value(sqlite3_stmt *stmt, int ix, const item_value &value)
