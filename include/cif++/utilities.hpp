@@ -32,6 +32,7 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
