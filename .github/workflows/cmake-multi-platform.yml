@@ -89,4 +89,4 @@ jobs:
         cmake -E rm -rf "$RUNNER_TEMP/cifpp-consumer"
         cmake -B "$RUNNER_TEMP/cifpp-consumer" -S "${{ github.workspace }}/examples" -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/cifpp-prefix" -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_BUILD_TYPE=Release
         cmake --build "$RUNNER_TEMP/cifpp-consumer" --config Release
-        LIBCIFPP_DATA_DIR="$RUNNER_TEMP/cifpp-prefix/share/libcifpp" ctest --test-dir "$RUNNER_TEMP/cifpp-consumer" --build-config Release --output-on-failure
+        ctest --test-dir "$RUNNER_TEMP/cifpp-consumer" --build-config Release --output-on-failure
