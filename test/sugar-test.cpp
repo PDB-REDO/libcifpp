@@ -34,16 +34,7 @@
 
 cif::file operator""_cf(const char* text, std::size_t length)
 {
-    struct membuf : public std::streambuf
-    {
-        membuf(char* text, std::size_t length)
-        {
-            this->setg(text, text, text + length);
-        }
-    } buffer(const_cast<char*>(text), length);
-
-    std::istream is(&buffer);
-    return cif::file(is);
+    return cif::file(text, length);
 }
 
 // --------------------------------------------------------------------

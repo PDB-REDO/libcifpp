@@ -32,6 +32,7 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <spanstream>
 #include <sstream>
 
 TEST_CASE("reconstruct")
@@ -83,7 +84,7 @@ TEST_CASE("remark3 with missing refinement subcategories")
 	// Regression test for the unguarded category::front() calls in the
 	// WriteRemark3* writers.
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _software.classification
@@ -95,16 +96,7 @@ _refine.ls_d_res_high
 2.50
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is(&buffer);
-	cif::file f(is);
+	cif::file f(data.data(), data.length());
 
 	std::ostringstream os;
 	cif::pdb::write(os, f.front());

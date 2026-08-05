@@ -29,21 +29,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cif++/cif++.hpp>
 #include <cif++/cql.hpp>
+#include <spanstream>
 
 // --------------------------------------------------------------------
 
 cif::file operator""_cf(const char *text, std::size_t length)
 {
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(text), length);
-
-	std::istream is(&buffer);
-	return cif::file(is);
+	return cif::file(text, length);
 }
 
 // --------------------------------------------------------------------
@@ -342,7 +334,7 @@ _table2.name
 
 TEST_CASE("cql-foreign-keys-1")
 {
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -435,23 +427,14 @@ save__cat_2.desc
     save_
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -469,15 +452,7 @@ _cat_2.desc
 3 2 'walnoot bijvoorbeeld'
     )";
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 

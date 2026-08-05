@@ -33,6 +33,7 @@
 #include <filesystem>
 #include <istream>
 #include <list>
+#include <spanstream>
 #include <string_view>
 #include <tuple>
 
@@ -92,15 +93,7 @@ class file : public std::list<datablock>
 	 */
 	explicit file(const char *data, std::size_t length)
 	{
-		struct membuf : public std::streambuf
-		{
-			membuf(char *text, std::size_t length)
-			{
-				this->setg(text, text, text + length);
-			}
-		} buffer(const_cast<char *>(data), length);
-
-		std::istream is(&buffer);
+		std::ispanstream is(std::span(data, data + length));
 		load(is);
 	}
 

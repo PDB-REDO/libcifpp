@@ -34,6 +34,7 @@
 #include <cif++/cif++.hpp>
 #include <exception>
 #include <ostream>
+#include <spanstream>
 #include <sstream>
 #include <stdexcept>
 
@@ -41,16 +42,7 @@
 
 cif::file operator""_cf(const char *text, std::size_t length)
 {
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(text), length);
-
-	std::istream is(&buffer);
-	return cif::file(is);
+	return cif::file(text, length);
 }
 
 // --------------------------------------------------------------------
@@ -802,7 +794,7 @@ TEST_CASE("d0")
 
 TEST_CASE("d1")
 {
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -895,23 +887,14 @@ save__cat_2.desc
     save_
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -929,15 +912,7 @@ _cat_2.desc
 3 2 'walnoot bijvoorbeeld'
     )";
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1016,7 +991,7 @@ _cat_2.desc
 
 TEST_CASE("d2")
 {
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -1072,23 +1047,14 @@ save__cat_1.c
     save_
 )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -1098,15 +1064,7 @@ noot Noot
 mies Mies
 )";
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1143,7 +1101,7 @@ mies Mies
 
 TEST_CASE("d3")
 {
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -1236,23 +1194,14 @@ save__cat_2.desc
     save_
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -1273,15 +1222,7 @@ _cat_2.desc
 4 2 n2     hazelnoot
     )";
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1344,7 +1285,7 @@ _cat_2.desc
 
 TEST_CASE("d4")
 {
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -1436,23 +1377,14 @@ save__cat_2.parent_id3
 
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -1483,15 +1415,7 @@ _cat_2.parent_id3
 13 4 roos  .
     )";
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1565,7 +1489,7 @@ _cat_2.parent_id3
 
 TEST_CASE("d5")
 {
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -1654,23 +1578,14 @@ cat_2 2 cat_2:cat_1:2
 cat_2 3 cat_2:cat_1:3
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -1694,15 +1609,7 @@ _cat_2.parent_id3
 
 	// --------------------------------------------------------------------
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -1804,7 +1711,7 @@ _cat_2.parent_id3
 
 TEST_CASE("d6")
 {
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -1891,23 +1798,14 @@ _pdbx_item_linked_group.label
 cat_2 1 cat_2:cat_1:1
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -1931,15 +1829,7 @@ _cat_2.parent_id_2
 
 	// --------------------------------------------------------------------
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -2233,7 +2123,7 @@ TEST_CASE("r1")
 	    children of this split row that are direct children.
 	*/
 
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -2362,23 +2252,14 @@ cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
 
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -2407,15 +2288,7 @@ _cat_3.num
 
 	using namespace cif::literals;
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -2518,7 +2391,7 @@ TEST_CASE("pc_1")
 	    Note that the dictionary is different than the one in test r1
 	*/
 
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -2647,23 +2520,14 @@ cat_2 1 '_cat_2.num'  '_cat_3.num'  cat_3
 
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -2692,15 +2556,7 @@ _cat_3.num
 
 	using namespace cif::literals;
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -3021,7 +2877,7 @@ TEST_CASE("replace_all_test")
 TEST_CASE("reorder_test")
 {
 
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -3078,23 +2934,14 @@ save__cat_1.name
     save_
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -3104,15 +2951,7 @@ _cat_1.name
 3 Mies
     )";
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -3138,7 +2977,7 @@ _cat_1.name
 TEST_CASE("audit_conform_test")
 {
 
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -3271,23 +3110,14 @@ save__cat_1.name
     save_
     )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	auto &validator = cif::validator_factory::instance().add(cif::validator(is_dict));
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 #
 _audit_conform.dict_name test_dict.dic
@@ -3301,15 +3131,7 @@ _cat_1.name
 3 Mies
     )";
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -3332,7 +3154,7 @@ _cat_1.name
 
 TEST_CASE("ix_op_1")
 {
-	const char dict[] = R"(
+	std::string_view dict = R"(
 data_test_dict.dic
     _datablock.id	test_dict.dic
     _datablock.description
@@ -3380,23 +3202,14 @@ save__cat_1.id_2
     save_
 )";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(dict), sizeof(dict) - 1);
-
-	std::istream is_dict(&buffer);
-
+	std::ispanstream is_dict(dict);
 	cif::validator validator(is_dict);
 
 	cif::file f;
 
 	// --------------------------------------------------------------------
 
-	const char data[] = R"(
+	std::string_view data = R"(
 data_test
 loop_
 _cat_1.id
@@ -3408,15 +3221,7 @@ _cat_1.id_2
 
 	// --------------------------------------------------------------------
 
-	struct data_membuf : public std::streambuf
-	{
-		data_membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} data_buffer(const_cast<char *>(data), sizeof(data) - 1);
-
-	std::istream is_data(&data_buffer);
+	std::ispanstream is_data(data);
 	f.load(is_data);
 	f.front().set_validator(&validator);
 
@@ -3573,7 +3378,7 @@ TEST_CASE("compound_test_1")
 
 TEST_CASE("pdb_parser_test_1")
 {
-	char k1CBS[] = R"(HEADER    RETINOIC-ACID TRANSPORT                 28-SEP-94   1CBS
+	std::string_view k1CBS = R"(HEADER    RETINOIC-ACID TRANSPORT                 28-SEP-94   1CBS
 TITLE     CRYSTAL STRUCTURE OF CELLULAR RETINOIC-ACID-BINDING
 TITLE    2 PROTEINS I AND II IN COMPLEX WITH ALL-TRANS-RETINOIC ACID
 TITLE    3 AND A SYNTHETIC RETINOID
@@ -3602,16 +3407,7 @@ ATOM      5  CB  PRO A   1      17.678  13.270  42.255  1.00 29.24           C
 ATOM      6  CG  PRO A   1      16.248  13.734  42.347  1.00 29.29           C
 ATOM      7  CD  PRO A   1      15.762  13.216  43.724  1.00 30.71           C)";
 
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(k1CBS, sizeof(k1CBS) - 1);
-
-	std::istream is(&buffer);
-
+	std::ispanstream is(k1CBS);
 	auto f = cif::pdb::read(is);
 	CHECK(f.is_valid());
 }
