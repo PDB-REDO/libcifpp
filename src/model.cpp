@@ -2169,7 +2169,7 @@ void structure::remove_sugar(sugar &s)
 					test.push(s2.num());
 			}
 
-			for (auto atom : branch[tix - 1].atoms())
+			for (auto atom : branch.at(tix - 1).atoms())
 				da.emplace_back(atom);
 		}
 
@@ -2779,7 +2779,12 @@ std::string structure::create_entity_for_branch(branch &branch)
 			if (not l2 or l2.get_auth_seq_id().empty())
 				continue;
 
-			auto &s2 = branch.at(stoi(l2.get_auth_seq_id()) - 1);
+			int branchNr;
+			auto asid = l2.get_auth_seq_id();
+			if (auto r = std::from_chars(asid.data(), asid.data() + asid.length(), branchNr); r.ec != std::errc{} or r.ptr != asid.data() + asid.length() or branchNr < 1)
+				throw std::runtime_error(std::format("Invalid branch number '{}'", asid));
+
+			auto &s2 = branch.at(branchNr - 1);
 			auto l1 = s2.get_atom_by_atom_id("C1");
 
 			pdbx_entity_branch_link.emplace({ //
@@ -2929,7 +2934,7 @@ void structure::validate_atoms() const
 {
 	// validate order
 	assert(m_atoms.size() == m_atom_index.size());
-	for (std::size_t i = 0; i + i < m_atoms.size(); ++i)
+	for (std::size_t i = 0; i + 1 < m_atoms.size(); ++i)
 		assert(m_atoms[m_atom_index[i]].id().compare(m_atoms[m_atom_index[i + 1]].id()) < 0);
 
 	std::vector<atom> atoms = m_atoms;
