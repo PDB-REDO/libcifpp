@@ -73,6 +73,14 @@ std::string_view row_handle::get_item_name(uint16_t ix) const
 	return m_category->get_item_name(ix);
 }
 
+int64_t row_handle::row_id() const noexcept
+{
+	// A row's pointer is constant during its lifetime
+	// since rows are stored as a linked list.
+	// This means it is safe to use the address as row id
+	return reinterpret_cast<int64_t>(m_row);
+}
+
 uint16_t const_row_handle::get_item_ix(std::string_view name) const
 {
 	if (not m_category)
@@ -87,6 +95,14 @@ std::string_view const_row_handle::get_item_name(uint16_t ix) const
 		throw std::runtime_error("uninitialized row");
 
 	return m_category->get_item_name(ix);
+}
+
+int64_t const_row_handle::row_id() const noexcept
+{
+	// A row's pointer is constant during its lifetime
+	// since rows are stored as a linked list.
+	// This means it is safe to use the address as row id
+	return reinterpret_cast<int64_t>(m_row);
 }
 
 // --------------------------------------------------------------------

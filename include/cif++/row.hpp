@@ -184,10 +184,7 @@ class row_handle
 	}
 
 	/// \brief return the row ID
-	[[nodiscard]] int64_t row_id() const
-	{
-		return reinterpret_cast<int64_t>(m_row);
-	}
+	[[nodiscard]] int64_t row_id() const noexcept;
 
 	/// \brief Return true if the row is empty or uninitialised
 	[[nodiscard]] bool empty() const
@@ -368,10 +365,7 @@ class const_row_handle
 	}
 
 	/// \brief return the row ID
-	[[nodiscard]] int64_t row_id() const
-	{
-		return reinterpret_cast<int64_t>(m_row);
-	}
+	[[nodiscard]] int64_t row_id() const noexcept;
 
 	/// \brief Return true if the row is empty or uninitialised
 	[[nodiscard]] bool empty() const

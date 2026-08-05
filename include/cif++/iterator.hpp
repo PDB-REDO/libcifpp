@@ -290,9 +290,9 @@ class iterator_impl_base<Const>
 		return m_current;
 	}
 
-	[[nodiscard]] int64_t row_id() const
+	[[nodiscard]] int64_t row_id() const noexcept
 	{
-		return reinterpret_cast<int64_t>(m_current.m_row);
+		return m_current.row_id();
 	}
 
 	iterator_impl_base &operator++()

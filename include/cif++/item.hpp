@@ -686,10 +686,10 @@ struct item_handle
 	}
 
 	/// Return the value of the item
-	[[nodiscard]] item_value &value();
+	[[nodiscard]] item_value &value() noexcept;
 
 	/// Return the const value of the item
-	[[nodiscard]] const item_value &value() const;
+	[[nodiscard]] const item_value &value() const noexcept;
 
 	/// Return if value in item is of type INAPPLICABLE
 	[[nodiscard]] bool is_inapplicable() const noexcept

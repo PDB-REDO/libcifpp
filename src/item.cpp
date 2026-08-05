@@ -51,25 +51,15 @@ bool item_handle::empty() const
 	return m_item_ix >= m_row.size() or m_row[m_item_ix].empty();
 }
 
-item_value &item_handle::value()
+item_value &item_handle::value() noexcept
 {
-#ifndef NDEBUG
 	assert(m_item_ix < m_row.size());
-#else
-	if (m_item_ix >= m_row.size())
-		throw std::runtime_error("Invalid item handle");
-#endif
 	return m_row.operator[](m_item_ix);
 }
 
-const item_value &item_handle::value() const
+const item_value &item_handle::value() const noexcept
 {
-#ifndef NDEBUG
 	assert(m_item_ix < m_row.size());
-#else
-	if (m_item_ix >= m_row.size())
-		throw std::runtime_error("Invalid item handle");
-#endif
 	return m_row.operator[](m_item_ix);
 }
 
