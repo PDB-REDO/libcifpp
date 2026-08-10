@@ -68,61 +68,54 @@
 
 namespace error
 {
-enum pdbErrors
+
+enum pdb_errors
 {
 	residueNotFound = 1000,
 	invalidDate
 };
 
-namespace detail
+class pdb_category_impl : public std::error_category
 {
-	class pdbCategory : public std::error_category
+  public:
+	[[nodiscard]] const char *name() const noexcept override
 	{
-	  public:
-		[[nodiscard]] const char *name() const noexcept override
+		return "pdb";
+	}
+
+	[[nodiscard]] std::string message(int value) const override
+	{
+		switch (value)
 		{
-			return "pdb";
+			case residueNotFound:
+				return "Residue not found";
+
+			case invalidDate:
+				return "Invalid date";
+
+			default:
+				return "Error in PDB format";
 		}
+	}
+};
 
-		[[nodiscard]] std::string message(int value) const override
-		{
-			switch (value)
-			{
-				case residueNotFound:
-					return "Residue not found";
-
-				case invalidDate:
-					return "Invalid date";
-
-				default:
-					return "Error in PDB format";
-			}
-		}
-	};
-} // namespace detail
-
-std::error_category &pdbCategory()
+std::error_category &pdb_category()
 {
-	static detail::pdbCategory impl;
+	static pdb_category_impl impl;
 	return impl;
 }
 
-inline std::error_code make_error_code(pdbErrors e)
+inline std::error_code make_error_code(pdb_errors e)
 {
-	return { static_cast<int>(e), pdbCategory() };
+	return { static_cast<int>(e), pdb_category() };
 }
 } // namespace error
 
-namespace std
-{
-
 template <>
-struct is_error_code_enum<error::pdbErrors>
+struct std::is_error_code_enum<error::pdb_errors>
 {
 	static const bool value = true;
 };
-
-} // namespace std
 
 namespace cif::pdb
 {
@@ -850,7 +843,7 @@ class PDBFileParser
 
 		if (not mChainSeq2AsymSeq.count(key))
 		{
-			ec = error::make_error_code(error::pdbErrors::residueNotFound);
+			ec = error::pdb_errors::residueNotFound;
 			if (VERBOSE > 0)
 				std::cerr << "Residue " << chainID << resSeq << iCode << " could not be mapped\n";
 		}
@@ -935,13 +928,13 @@ class PDBFileParser
 				s = std::format("{:04}-{:02}", year, month);
 			}
 			else
-				ec = error::make_error_code(error::pdbErrors::invalidDate);
+				ec = error::pdb_errors::invalidDate;
 		}
 		catch (const std::exception &ex)
 		{
 			if (VERBOSE > 0)
 				std::cerr << ex.what() << '\n';
-			ec = error::make_error_code(error::pdbErrors::invalidDate);
+			ec = error::pdb_errors::invalidDate;
 		}
 
 		return s;

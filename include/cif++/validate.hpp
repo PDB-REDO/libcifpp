@@ -32,17 +32,16 @@
 
 #include <cassert>
 #include <iosfwd>
-#include <list>
 #include <memory>
 #include <mutex>
+#include <list>
 #include <optional>
-#include <set>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <type_traits>
 #include <utility>
-#include <vector>
 
 /**
  * @file validate.hpp
@@ -86,104 +85,16 @@ enum class validation_error
 	empty_category,                   /**< The category is empty */
 	not_valid_pdbx,                   /**< The file is not a valid PDBx file */
 };
-/**
- * @brief The implementation for @ref validation_category error messages
- *
- */
-class validation_category_impl : public std::error_category
-{
-  public:
-	/**
-	 * @brief User friendly name
-	 *
-	 * @return const char*
-	 */
-
-	[[nodiscard]] const char *name() const noexcept override
-	{
-		return "cif::validation";
-	}
-
-	/**
-	 * @brief Provide the error message as a string for the error code @a ev
-	 *
-	 * @param ev The error code
-	 * @return std::string
-	 */
-
-	[[nodiscard]] std::string message(int ev) const override
-	{
-		switch (static_cast<validation_error>(ev))
-		{
-			using enum validation_error;
-
-			case value_does_not_match_rx:
-				return "Value in item does not match regular expression";
-			case value_is_not_in_enumeration_list:
-				return "Value is not in the enumerated list of valid values";
-			case value_is_not_a_number:
-				return "Value is not a number";
-			case value_is_not_a_char_string:
-				return "Value is not a character string";
-			case not_a_known_primitive_type:
-				return "The type is not a known primitive type";
-			case undefined_category:
-				return "Category has no definition in the dictionary";
-			case unknown_item:
-				return "Item is not defined to be part of the category";
-			case incorrect_item_validator:
-				return "Incorrectly specified validator for item";
-			case missing_mandatory_items:
-				return "Missing mandatory items";
-			case missing_key_items:
-				return "An index could not be constructed due to missing key items";
-			case item_not_allowed_in_category:
-				return "Requested item not allowed in category according to dictionary";
-			case empty_file:
-				return "The file contains no datablocks";
-			case empty_datablock:
-				return "The datablock contains no categories";
-			case empty_category:
-				return "The category is empty";
-			case not_valid_pdbx:
-				return "The file is not a valid PDBx file";
-
-			default:
-				assert(false);
-				return "unknown error code";
-		}
-	}
-
-	/**
-	 * @brief Return whether two error codes are equivalent, always false in this case
-	 *
-	 */
-
-	[[nodiscard]] bool equivalent(const std::error_code & /*code*/, int /*condition*/) const noexcept override
-	{
-		return false;
-	}
-};
 
 /**
  * @brief Return the implementation for the validation_category
  *
  * @return std::error_category&
  */
-inline std::error_category &validation_category()
-{
-	static validation_category_impl instance;
-	return instance;
-}
+std::error_category &validation_category();
 
 /// Return a std::error_code for a validation error
 inline std::error_code make_error_code(validation_error e)
-{
-	return { static_cast<int>(e), validation_category() };
-}
-
-/// Return a std::error_condition for a validation error
-inline std::error_condition make_error_condition(validation_error e)
 {
 	return { static_cast<int>(e), validation_category() };
 }
@@ -612,3 +523,9 @@ class validator_factory
 };
 
 } // namespace cif
+
+template <>
+struct std::is_error_code_enum<cif::validation_error>
+	: public std::true_type
+{
+};

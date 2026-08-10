@@ -245,11 +245,11 @@ add_library(cifpp::cifpp ALIAS cifpp)
 
 # Sources
 file(GLOB_RECURSE project_sources src/*.cpp)
-file(GLOB project_headers include/*.hpp)
+file(GLOB_RECURSE project_headers include/*.hpp)
 
 find_package(SQLite3 QUIET)
 if(SQLite3_FOUND)
-	target_link_libraries(cifpp PRIVATE SQLite3::SQLite3)
+	target_link_libraries(cifpp PRIVATE SQLite::SQLite3)
 else()
 	FetchContent_Populate(SQLite3
 		URL https://sqlite.org/2025/sqlite-amalgamation-3510100.zip

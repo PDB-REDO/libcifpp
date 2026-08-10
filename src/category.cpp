@@ -1470,7 +1470,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 
 			std::error_code ec;
 			col.m_validator->validate_value(value, ec);
-			if (ec == cif::make_error_code(cif::validation_error::value_is_not_in_enumeration_list))
+			if (ec == cif::validation_error::value_is_not_in_enumeration_list)
 			{
 				if (cif::VERBOSE >= 0)
 					m_validator->report_error(ec, m_name, item_name, false);
@@ -1605,7 +1605,7 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 	{
 		std::error_code ec;
 		col.m_validator->validate_value(value, ec);
-		if (ec == cif::make_error_code(cif::validation_error::value_is_not_in_enumeration_list))
+		if (ec == cif::validation_error::value_is_not_in_enumeration_list)
 		{
 			if (cif::VERBOSE >= 0)
 				m_validator->report_error(ec, m_name, m_items[item].m_name, false);
@@ -1810,7 +1810,7 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 					std::error_code ec;
 					if (not iv->validate_value(*v, ec))
 					{
-						if (ec == cif::make_error_code(cif::validation_error::value_is_not_a_number))
+						if (ec == cif::validation_error::value_is_not_a_number)
 						{
 							// Try cast the value to a number and throw in case of failure
 							try
@@ -1822,9 +1822,9 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 								v->cast_to_float();
 							}
 						}
-						else if (ec == cif::make_error_code(cif::validation_error::value_is_not_a_char_string))
+						else if (ec == cif::validation_error::value_is_not_a_char_string)
 							v->cast_to_string();
-						else if (ec == cif::make_error_code(cif::validation_error::value_is_not_in_enumeration_list))
+						else if (ec == cif::validation_error::value_is_not_in_enumeration_list)
 						{
 							if (cif::VERBOSE >= 0)
 								m_validator->report_error(ec, m_name, m_items[ix].m_name, false);
