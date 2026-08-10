@@ -14,17 +14,24 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
-          - os: windows-latest
-            cpp_compiler: cl
-          - os: ubuntu-latest
-            cpp_compiler: g++
-          - os: macos-latest
-            cpp_compiler: clang++
+          - cpp_compiler: g++-15
+            os: ubuntu-26.04
+          - cpp_compiler: g++-16
+            os: ubuntu-26.04
+          # - cpp_compiler: clang-20
+          #   os: ubuntu-26.04
+          # - cpp_compiler: clang-21
+          #   os: ubuntu-26.04
+          # - cpp_compiler: clang-22
+          #   os: ubuntu-26.04
+          - cpp_compiler: cl
+            os: windows-latest
+          - cpp_compiler: clang++
+            os: macos-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set reusable strings
       id: strings
@@ -32,8 +39,8 @@ jobs:
       run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Install dependencies Ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get update && sudo apt-get install mrc catch2 libsqlite3-dev
+      if: matrix.os == 'ubuntu-26.04'
+      run: sudo apt-get update && sudo apt-get install mrc catch2 libsqlite3-dev ${{ matrix.cpp_compiler }}
 
     - name: Install dependencies Window
       if: matrix.os == 'windows-latest'
@@ -48,8 +55,10 @@ jobs:
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCIFPP_DOWNLOAD_CCD=OFF
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/cifpp-prefix"
         -S ${{ github.workspace }}
         
     - name: Build
@@ -59,6 +68,25 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: ctest --build-config Release --output-on-failure
 
-    - name: Install
+    - name: Install to staging prefix
+      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --config Release
+
+    - name: Verify installed files
       if: matrix.os != 'windows-latest'
-      run: sudo cmake --install ${{ steps.strings.outputs.build-output-dir }} --config Release
+      shell: bash
+      run: |
+        P="$RUNNER_TEMP/cifpp-prefix"
+        for h in cif++.hpp cif++/category.hpp cif++/condition.hpp cif++/exports.hpp \
+                 cif++/file.hpp cif++/gzio.hpp cif++/matrix.hpp cif++/row.hpp cif++/utilities.hpp; do
+          test -f "$P/include/$h"
+        done
+        test -f "$P/lib/cmake/cifpp/cifpp-config.cmake"
+        test -f "$P/lib/cmake/cifpp/cifpp-config-version.cmake"
+        test -f "$P/share/libcifpp/mmcif_pdbx.dic"
+
+    - name: Build and test consumer against installed package
+      run: |
+        cmake -E rm -rf "$RUNNER_TEMP/cifpp-consumer"
+        cmake -B "$RUNNER_TEMP/cifpp-consumer" -S "${{ github.workspace }}/examples" -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/cifpp-prefix" -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_BUILD_TYPE=Release
+        cmake --build "$RUNNER_TEMP/cifpp-consumer" --config Release
+        ctest --test-dir "$RUNNER_TEMP/cifpp-consumer" --build-config Release --output-on-failure

@@ -36,6 +36,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <ranges>
 #include <shared_mutex>
@@ -315,29 +316,27 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 			delete c;
 	}
 
-	[[nodiscard]] virtual bool exists_self(const std::string &id) const
+	[[nodiscard]] bool exists(std::string_view id)
 	{
-		if (m_missing.contains(id))
-			return false;
+		auto key = std::string{ id };
 
-		if (std::ranges::find_if(m_compounds, [id](compound *c)
-				{ return c->id() == id; }) != m_compounds.end())
-			return true;
+		for (auto impl = shared_from_this(); impl; impl = impl->m_next)
+		{
+			std::shared_lock lock(impl->mMutex);
 
-		return m_next and m_next->exists_self(id);
-	}
+			if (impl->m_missing.contains(key))
+				return false;
 
-	bool exists(std::string_view id)
-	{
-		std::shared_lock lock(mMutex);
+			if (std::ranges::find_if(impl->m_compounds, [&key](compound *c)
+					{ return c->id() == key; }) != impl->m_compounds.end())
+				return true;
+		}
 
-		return exists_self(std::string{ id });
+		return false;
 	}
 
 	compound *get(std::string id)
 	{
-		std::shared_lock lock(mMutex);
-
 		compound *result = nullptr;
 
 		for (auto impl = shared_from_this(); impl; impl = impl->m_next)
@@ -394,12 +393,27 @@ compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_p
 
 compound *compound_factory_impl::create(const std::string &id)
 {
-	// shortcut
+	// fast path, no parsing involved
+	{
+		std::shared_lock lock(mMutex);
+
+		if (m_missing.contains(id))
+			return nullptr;
+
+		if (auto i = std::ranges::find_if(m_compounds, [&id](compound *c)
+				{ return c->id() == id; });
+			i != m_compounds.end())
+			return *i;
+	}
+
+	// compound not created yet, so parse it under an exclusive lock.
+	// Check again though, since another thread might have beaten us to it.
+	std::unique_lock lock(mMutex);
 
 	if (m_missing.contains(id))
 		return nullptr;
 
-	if (auto i = std::ranges::find_if(m_compounds, [id](compound *c)
+	if (auto i = std::ranges::find_if(m_compounds, [&id](compound *c)
 			{ return c->id() == id; });
 		i != m_compounds.end())
 		return *i;
@@ -466,8 +480,6 @@ compound *compound_factory_impl::create(const std::string &id)
 		if (db.name() == id)
 		{
 			result = new compound(db);
-
-			std::shared_lock lock(mMutex);
 			m_compounds.push_back(result);
 		}
 	}
@@ -499,10 +511,27 @@ class local_compound_factory_impl : public compound_factory_impl
 
 compound *local_compound_factory_impl::create(const std::string &id)
 {
+	// fast path, no parsing involved
+	{
+		std::shared_lock lock(mMutex);
+
+		if (m_missing.contains(id))
+			return nullptr;
+
+		if (auto i = std::ranges::find_if(m_compounds, [&id](compound *c)
+				{ return c->id() == id; });
+			i != m_compounds.end())
+			return *i;
+	}
+
+	// compound not created yet, so parse it under an exclusive lock.
+	// Check again though, since another thread might have beaten us to it.
+	std::unique_lock lock(mMutex);
+
 	if (m_missing.contains(id))
 		return nullptr;
 
-	if (auto i = std::ranges::find_if(m_compounds, [id](compound *c)
+	if (auto i = std::ranges::find_if(m_compounds, [&id](compound *c)
 			{ return c->id() == id; });
 		i != m_compounds.end())
 		return *i;
@@ -624,8 +653,6 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 		{ "pdbx_formal_charge", formal_charge },
 		{ "formula_weight", { formula_weight, 3 } },
 		{ "three_letter_code", three_letter_code } });
-
-	std::shared_lock lock(mMutex);
 
 	auto result = new compound(db);
 	m_compounds.push_back(result);

@@ -42,16 +42,7 @@
 
 cif::file operator""_cf(const char *text, std::size_t length)
 {
-	struct membuf : public std::streambuf
-	{
-		membuf(char *text, std::size_t length)
-		{
-			this->setg(text, text, text + length);
-		}
-	} buffer(const_cast<char *>(text), length);
-
-	std::istream is(&buffer);
-	return cif::file(is);
+	return cif::file(text, length);
 }
 
 // --------------------------------------------------------------------
@@ -296,6 +287,14 @@ TEST_CASE("symm_3")
 
 	REQUIRE(sg.size() == 4UL);
 	REQUIRE(sg.get_name() == "P 21 21 2");
+}
+
+TEST_CASE("symm_invalid_nr")
+{
+	CHECK_THROWS_AS(cif::spacegroup(0), std::runtime_error);
+	CHECK_THROWS_AS(cif::spacegroup(231), std::runtime_error);
+	CHECK_THROWS_AS(cif::spacegroup(6000), std::runtime_error);
+	CHECK_NOTHROW(cif::spacegroup(18));
 }
 
 TEST_CASE("symm_4")

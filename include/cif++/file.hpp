@@ -27,6 +27,7 @@
 #pragma once
 
 #include "cif++/datablock.hpp"
+#include "cif++/utilities.hpp"
 
 #include <cassert>
 #include <cstddef>
@@ -92,15 +93,7 @@ class file : public std::list<datablock>
 	 */
 	explicit file(const char *data, std::size_t length)
 	{
-		struct membuf : public std::streambuf
-		{
-			membuf(char *text, std::size_t length)
-			{
-				this->setg(text, text, text + length);
-			}
-		} buffer(const_cast<char *>(data), length);
-
-		std::istream is(&buffer);
+		ispanstream is(std::span(data, data + length));
 		load(is);
 	}
 

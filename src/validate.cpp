@@ -333,10 +333,9 @@ bool item_validator::validate_value(const item_value &value, std::error_code &ec
 					if (ec == std::errc{} and not m_enums.empty())
 					{
 						bool valid =
-							m_type->m_primitive_type == DDL_PrimitiveType::UChar ? //
-								m_enums.contains(cif::to_lower_copy(value.sv()))
-																				 : //
-								m_enums.contains(std::string{ value.sv() });
+							m_type->m_primitive_type == DDL_PrimitiveType::UChar
+								? m_enums.contains(cif::to_lower_copy(value.sv()))
+								: m_enums.contains(std::string{ value.sv() });
 
 						if (not valid)
 							ec = validation_error::value_is_not_in_enumeration_list;
@@ -715,15 +714,15 @@ bool validator_factory::check_version(std::string_view name, std::string_view ex
 
 	while (eli != el.end() and fli != fl.end())
 	{
-		int e_int, f_int;
-		if (auto [ptr, ec] = std::from_chars(eli->data(), eli->data() + eli->length(), e_int); ec != std::errc{})
+		int e_int = 0, f_int = 0;
+		if (auto [ptr, ec] = std::from_chars(eli->data(), eli->data() + eli->length(), e_int); ec != std::errc{} or ptr != eli->data() + eli->length())
 		{
 			std::clog << "Could not parse requested version string for dictionary " << std::quoted(expected) << "\n";
 			result = false;
 			break;
 		}
 
-		if (auto [ptr, ec] = std::from_chars(fli->data(), fli->data() + fli->length(), f_int); ec != std::errc{})
+		if (auto [ptr, ec] = std::from_chars(fli->data(), fli->data() + fli->length(), f_int); ec != std::errc{} or ptr != fli->data() + fli->length())
 		{
 			std::clog << "Could not parse version string in dictionary " << name << " " << std::quoted(found) << "\n";
 			result = false;
@@ -742,6 +741,12 @@ bool validator_factory::check_version(std::string_view name, std::string_view ex
 
 		++eli;
 		++fli;
+	}
+
+	if (result and fli == fl.end() and eli != el.end())
+	{
+		std::clog << "The version in dictionary " << name << " is lower than requested, this may cause validation errors\n";
+		result = false;
 	}
 
 	return result;

@@ -893,7 +893,7 @@ class category
 	{
 		bool result = false;
 
-		if (cond and cond.prepare(*this))
+		if (cond.prepare(*this))
 		{
 			auto sh = cond.single();
 
@@ -922,7 +922,7 @@ class category
 	{
 		std::size_t result = 0;
 
-		if (cond and cond.prepare(*this))
+		if (cond.prepare(*this))
 		{
 			auto sh = cond.single();
 

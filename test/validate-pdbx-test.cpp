@@ -279,6 +279,46 @@ A 1 5   GLY 5   5   5   GLY GLY A . n
 
 		REQUIRE_FALSE(cif::pdb::is_valid_pdbx_file(f));
 	}
+
+	SECTION("Modified residue at the end of a truncated sequence")
+	{
+		// Regression test: the seq_match lambda compared a possibly
+		// multi-character one letter code (here "(SEP)") against the
+		// remaining sequence without checking there were enough
+		// characters left, constructing a std::string from iterators
+		// that read past the end.
+
+		auto &db = f.front();
+		auto &entity_poly = db["entity_poly"];
+
+		entity_poly.front().assign({
+			{ "pdbx_seq_one_letter_code", "PNFSGX" }
+		});
+
+		db["entity_poly_seq"].emplace({ //
+			{ "entity_id", 1 },
+			{ "num", 6 },
+			{ "mon_id", "SEP" },
+			{ "hetero", "n" }
+		});
+
+		db["pdbx_poly_seq_scheme"].emplace({ //
+			{ "asym_id", "A" },
+			{ "entity_id", "1" },
+			{ "seq_id", "6" },
+			{ "mon_id", "SEP" },
+			{ "ndb_seq_num", 6 },
+			{ "pdb_seq_num", "6" },
+			{ "auth_seq_num", "6" },
+			{ "pdb_mon_id", "SEP" },
+			{ "auth_mon_id", "SEP" },
+			{ "pdb_strand_id", "A" },
+			{ "pdb_ins_code", "." },
+			{ "hetero", "n" }
+		});
+
+		REQUIRE_FALSE(cif::pdb::is_valid_pdbx_file(f));
+	}
 }
 
 TEST_CASE("extended-dictionary-1")

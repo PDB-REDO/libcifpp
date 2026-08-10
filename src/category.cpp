@@ -670,8 +670,8 @@ iset category::key_items() const
 		throw validation_exception(validation_error::undefined_category);
 
 	iset result;
-	for (auto &iv : m_cat_validator->m_item_validators)
-		result.insert(iv.m_item_name);
+	for (auto &k : m_cat_validator->m_keys)
+		result.insert(k);
 
 	return result;
 }
@@ -842,9 +842,11 @@ bool category::is_valid() const
 			result = false;
 		}
 
-		// col.m_validator = iv;
 		if (col.m_validator != iv)
+		{
 			m_validator->report_error(validation_error::incorrect_item_validator, true);
+			result = false;
+		}
 
 		mandatory.erase(col.m_name);
 	}
@@ -915,6 +917,7 @@ bool category::is_valid() const
 				if (ec != std::errc{})
 				{
 					m_validator->report_error(ec, v.str(), m_name, m_items[cix].m_name, false);
+					// result = false;
 					continue;
 				}
 			}
@@ -2128,7 +2131,16 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 	else if (not empty())
 	{
 		for (auto cix : order)
-			right_aligned[cix] = front()[cix].is_number();
+		{
+			for (auto r : *this)
+			{
+				if (r[cix].is_null())
+					continue;
+
+				right_aligned[cix] = r[cix].is_number();
+				break;
+			}
+		}
 	}
 
 	if (needLoop)

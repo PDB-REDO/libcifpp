@@ -120,12 +120,15 @@ sym_op::sym_op(std::string_view s)
 	int rnri = 256; // default to unexisting number
 	auto r = std::from_chars(b, e, rnri);
 
+	if (r.ec != std::errc{} or rnri > 192 or e - r.ptr != 4)
+		throw std::invalid_argument("Could not convert string into sym_op");
+
 	m_nr = static_cast<uint8_t>(rnri);
 	m_ta = r.ptr[1] - '0';
 	m_tb = r.ptr[2] - '0';
 	m_tc = r.ptr[3] - '0';
 
-	if (r.ec != std::errc{} or rnri > 192 or r.ptr[0] != '_' or m_ta > 9 or m_tb > 9 or m_tc > 9)
+	if (r.ptr[0] != '_' or m_ta > 9 or m_tb > 9 or m_tc > 9)
 		throw std::invalid_argument("Could not convert string into sym_op");
 }
 
@@ -225,6 +228,9 @@ spacegroup::spacegroup(int nr)
 
 	for (std::size_t i = L; i < N and kSymopNrTable[i].spacegroup() == m_nr; ++i)
 		emplace_back(kSymopNrTable[i].symop().data());
+
+	if (empty())
+		throw std::runtime_error("Spacegroup has an invalid number: " + std::to_string(m_nr));
 }
 
 std::string spacegroup::get_name() const

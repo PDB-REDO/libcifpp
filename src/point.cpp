@@ -457,7 +457,7 @@ std::tuple<point, float> smallest_sphere_around_4_points(std::array<cif::point, 
 	}
 
 	assert(false);
-	exit(1);
+	throw std::runtime_error("Invalid set of points for smallest_sphere_around_4_points");
 }
 
 std::tuple<point, float> smallest_sphere_around_all_points(std::vector<point> P, std::vector<point> R)

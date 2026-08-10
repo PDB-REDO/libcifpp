@@ -39,6 +39,7 @@ project(
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+include(CPM)
 include(FindAtomic)
 include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
@@ -53,10 +54,9 @@ if(CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
     set(CMAKE_DEFAULT_CONFIGS "Debug;Release")
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers"
-    )
+        "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
@@ -170,12 +170,16 @@ endif()
 # Using fast_float for float parsing, but only if needed
 try_compile(STD_CHARCONV_COMPILING
     SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-charconv.cpp
-    CXX_STANDARD 20
+    CXX_STANDARD 23
     CXX_STANDARD_REQUIRED ON)
 
 if(NOT STD_CHARCONV_COMPILING)
     message(NOTICE "libcifpp: Using fast_float for std::from_chars")
-    find_package(FastFloat 8.0 REQUIRED CONFIG)
+    CPMFindPackage(
+        NAME FastFloat
+        GIT_REPOSITORY "https://github.com/fastfloat/fast_float"
+        GIT_TAG v8.0.2
+        EXCLUDE_FROM_ALL YES)
 endif()
 
 find_package(Threads)
@@ -222,7 +226,7 @@ if(CIFPP_RECREATE_SYMOP_DATA)
     add_executable(symop-map-generator
         "${CMAKE_CURRENT_SOURCE_DIR}/src/symop-map-generator.cpp")
 
-    target_compile_features(symop-map-generator PUBLIC cxx_std_20)
+    target_compile_features(symop-map-generator PUBLIC cxx_std_23)
 
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/symop_table_data.hpp
@@ -246,10 +250,16 @@ add_library(cifpp::cifpp ALIAS cifpp)
 # Sources
 file(GLOB_RECURSE project_sources src/*.cpp)
 file(GLOB_RECURSE project_headers include/*.hpp)
+list(APPEND project_headers include/cif++/exports.hpp)
 
 find_package(SQLite3 QUIET)
 if(SQLite3_FOUND)
-	target_link_libraries(cifpp PRIVATE SQLite::SQLite3)
+    if(TARGET SQLite3::SQLite3)
+	    target_link_libraries(cifpp PRIVATE SQLite3::SQLite3)
+    elseif (TARGET SQLite::SQLite3)
+	    target_link_libraries(cifpp PRIVATE SQLite::SQLite3)
+    endif()
+    set(SQLITE3_DEPENDENCY "find_dependency(SQLite3 REQUIRED)")
 else()
 	FetchContent_Populate(SQLite3
 		URL https://sqlite.org/2025/sqlite-amalgamation-3510100.zip

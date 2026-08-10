@@ -52,10 +52,10 @@ TEST_CASE("rename")
 
 	structure.cleanup_empty_categories();
 
-	f.save(std::cout);
+	// f.save(std::cout);
 
-	if (not f.is_valid())
-		throw std::runtime_error("Invalid");
+	CHECK(f.is_valid());
+	CHECK(res.get_compound_id() == "RXA");
 
-	f.save(std::cout);
+	// f.save(std::cout);
 }

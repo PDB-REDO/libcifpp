@@ -290,9 +290,9 @@ class iterator_impl_base<Const>
 		return m_current;
 	}
 
-	[[nodiscard]] int64_t row_id() const
+	[[nodiscard]] int64_t row_id() const noexcept
 	{
-		return reinterpret_cast<int64_t>(m_current.m_row);
+		return m_current.row_id();
 	}
 
 	iterator_impl_base &operator++()
@@ -780,7 +780,7 @@ conditional_iterator_proxy_base<Const, Ts...>::conditional_iterator_proxy_base(c
 {
 	static_assert(sizeof...(Ts) == sizeof...(Ns), "Number of item names should be equal to number of requested value types");
 
-	if (m_condition and m_condition.prepare(cat))
+	if (m_condition.prepare(cat))
 	{
 		while (mCBegin != mCEnd and not m_condition(*mCBegin))
 			++mCBegin;

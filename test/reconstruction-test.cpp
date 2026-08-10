@@ -32,6 +32,7 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 TEST_CASE("reconstruct")
 {
@@ -72,4 +73,32 @@ TEST_CASE("reconstruct")
 			}
 		}
 	}
+}
+
+TEST_CASE("remark3 with missing refinement subcategories")
+{
+	// A structure refined with a program that dispatches to one of the
+	// program-specific REMARK 3 writers must not crash when the refinement
+	// subcategories (refine_ls_shell, refine_hist, reflns, ...) are absent.
+	// Regression test for the unguarded category::front() calls in the
+	// WriteRemark3* writers.
+
+	std::string_view data = R"(
+data_test
+loop_
+_software.classification
+_software.name
+refinement CNS
+
+loop_
+_refine.ls_d_res_high
+2.50
+    )";
+
+	cif::file f(data.data(), data.length());
+
+	std::ostringstream os;
+	cif::pdb::write(os, f.front());
+
+	CHECK(os.str().find("REMARK   3") != std::string::npos);
 }

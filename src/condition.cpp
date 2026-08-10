@@ -24,11 +24,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "cif++/condition.hpp"
 #include "cif++/cif++.hpp"
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <set>
 #include <string>
@@ -41,7 +43,8 @@ namespace cif
 
 iset get_category_items(const category &cat)
 {
-	return cat.key_items();
+	auto items = cat.get_items();
+	return { items.begin(), items.end() };
 }
 
 std::optional<uint16_t> get_item_ix(const category &cat, std::string_view col)
@@ -120,9 +123,9 @@ namespace detail
 	// 		row_handle m_single_hit;
 	// 	};
 
-	condition_impl *key_equals_condition_impl::prepare(const category &c)
+	bool key_equals_condition_impl::prepare(const category &c)
 	{
-		condition_impl *result = nullptr;
+		bool result = false;
 
 		if (auto ix = get_item_ix(c, m_item_name); ix.has_value())
 		{
@@ -136,7 +139,7 @@ namespace detail
 				m_single_hit = c[{ { m_item_name, m_value } }];
 			}
 
-			result = this;
+			result = true;
 		}
 
 		return result;
@@ -146,9 +149,9 @@ namespace detail
 	{
 		bool result = true;
 
-		for (auto s = b; s != e; ++s)
+		for (auto s : std::span(b, e))
 		{
-			auto &cs = (*s)->m_sub;
+			auto &cs = s->m_sub;
 
 			if (std::ranges::find_if(cs, [c](const condition_impl *i)
 					{ return i->equals(c); }) == cs.end())
@@ -163,61 +166,51 @@ namespace detail
 
 	condition_impl *and_condition_impl::combine_equal(std::vector<and_condition_impl *> &subs, or_condition_impl *oc)
 	{
-		and_condition_impl *and_result = nullptr;
+		auto and_result = std::make_unique<and_condition_impl>();
 
 		auto first = subs.front();
-		auto &fc = first->m_sub;
 
-		for (size_t fc_i = 0; fc_i < fc.size();)
+		for (auto &fc : first->m_sub)
 		{
-			auto c = fc[fc_i];
-			if (not found_in_range(c, subs.begin() + 1, subs.end()))
-			{
-				++fc_i;
+			if (not found_in_range(fc, subs.begin() + 1, subs.end()))
 				continue;
-			}
 
-			if (and_result == nullptr)
-				and_result = new and_condition_impl();
+			and_result->m_sub.push_back(fc);
 
-			and_result->m_sub.push_back(c);
-			fc.erase(fc.begin() + static_cast<std::string::difference_type>(fc_i));
-
-			for (auto sub : subs)
+			for (auto sub : std::span(subs.begin() + 1, subs.end()))
 			{
 				auto &ssub = sub->m_sub;
 
-				for (size_t ssub_i = 0; ssub_i < ssub.size();)
+				for (auto &sc : ssub)
 				{
-					auto sc = ssub[ssub_i];
-					if (not sc->equals(c))
-					{
-						++ssub_i;
+					if (not sc->equals(fc))
 						continue;
-					}
 
-					ssub.erase(ssub.begin() + static_cast<std::string::difference_type>(ssub_i));
 					delete sc;
+					sc = nullptr;
 					break;
 				}
+
+				std::erase(ssub, nullptr);
 			}
+
+			fc = nullptr;
 		}
 
-		if (and_result != nullptr)
-		{
-			and_result->m_sub.push_back(oc);
-			return and_result;
-		}
+		std::erase(first->m_sub, nullptr);
 
-		return oc;
+		auto new_or = std::make_unique<or_condition_impl>();
+		new_or->m_sub = std::move(oc->m_sub);
+		and_result->m_sub.push_back(new_or.release());
+		return and_result.release();
 	}
 
-	condition_impl *and_condition_impl::prepare(const category &c)
+	bool and_condition_impl::prepare(const category &c)
 	{
 		for (auto &sub : m_sub)
 		{
-			if (sub->prepare(c) == nullptr)
-				return nullptr;
+			if (not sub->prepare(c))
+				return false;
 		}
 
 		if (auto cv = c.get_cat_validator(); cv != nullptr)
@@ -258,11 +251,14 @@ namespace detail
 				m_single = c[lookup];
 
 				for (auto s : subs)
+				{
 					std::erase(m_sub, s);
+					delete s;
+				}
 			}
 		}
 
-		return this;
+		return true;
 	}
 
 	bool and_condition_impl::test(const_row_handle r) const
@@ -286,13 +282,13 @@ namespace detail
 		return result;
 	}
 
-	condition_impl *or_condition_impl::prepare(const category &c)
+	bool or_condition_impl::prepare(const category &c)
 	{
 		std::vector<and_condition_impl *> and_conditions;
 
 		for (auto &sub : m_sub)
 		{
-			if (sub->prepare(c) == nullptr)
+			if (not sub->prepare(c))
 			{
 				delete sub;
 				sub = nullptr;
@@ -306,16 +302,16 @@ namespace detail
 		std::erase(m_sub, nullptr);
 
 		if (not m_sub.empty() and and_conditions.size() == m_sub.size())
-			return and_condition_impl::combine_equal(and_conditions, this);
+			m_sub = { and_condition_impl::combine_equal(and_conditions, this) };
 
-		return m_sub.empty() ? nullptr : this;
+		return not m_sub.empty();
 	}
 
 } // namespace detail
 
 bool condition::prepare(const category &c)
 {
-	return m_impl and m_impl->prepare(c) != nullptr;
+	return m_impl != nullptr and m_impl->prepare(c);
 }
 
 } // namespace cif

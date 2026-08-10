@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include "cif++/utilities.hpp"
 #include <array>
 #include <filesystem>
 #include <fstream>
@@ -310,7 +311,11 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 					err = ::inflateReset2(&zstream, 47);
 
 				if (err < Z_OK)
+				{
+					if (VERBOSE >= 0)
+						std::println(std::clog, "Error in decompression: {}", zError(err));
 					break;
+				}
 			}
 		}
 

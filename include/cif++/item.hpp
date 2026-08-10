@@ -157,7 +157,7 @@ class item_value
 		else
 		{
 			m_data.m_type = item_value_type::TEXT;
-			m_data.m_len = s.length();
+			m_data.m_len = static_cast<uint32_t>(s.length());
 			m_data.m_value = s;
 		}
 	}
@@ -436,11 +436,19 @@ class item_value
 			switch (m_data.m_type)
 			{
 				using enum item_value_type;
-	
-				case INT: result = m_data.m_value.m_integer <=> rhs.m_data.m_value.m_integer;
-				case FLOAT: result = m_data.m_value.m_float <=> rhs.m_data.m_value.m_float;
-				case TEXT: result = m_data.sv() <=> rhs.m_data.sv();
-				default: result = std::partial_ordering::equivalent;
+
+				case INT:
+					result = m_data.m_value.m_integer <=> rhs.m_data.m_value.m_integer;
+					break;
+				case FLOAT:
+					result = m_data.m_value.m_float <=> rhs.m_data.m_value.m_float;
+					break;
+				case TEXT:
+					result = m_data.sv() <=> rhs.m_data.sv();
+					break;
+				default:
+					result = std::partial_ordering::equivalent;
+					break;
 			}
 		}
 		else
@@ -576,7 +584,6 @@ class item_value
 
 static_assert(sizeof(item_value) == 16, "item_value should be 16 bytes");
 
-
 class item
 {
   public:
@@ -679,10 +686,10 @@ struct item_handle
 	}
 
 	/// Return the value of the item
-	[[nodiscard]] item_value &value();
+	[[nodiscard]] item_value &value() noexcept;
 
 	/// Return the const value of the item
-	[[nodiscard]] const item_value &value() const;
+	[[nodiscard]] const item_value &value() const noexcept;
 
 	/// Return if value in item is of type INAPPLICABLE
 	[[nodiscard]] bool is_inapplicable() const noexcept
@@ -803,7 +810,7 @@ struct item_handle
 	 * @return -1, 0 or 1
 	 */
 
-	 [[nodiscard]] int compare(const item_handle &value, bool icase = true) const noexcept
+	[[nodiscard]] int compare(const item_handle &value, bool icase = true) const noexcept
 	{
 		if (empty() and value.empty())
 			return 0;
@@ -879,7 +886,7 @@ struct item_handle
 		if (h.empty())
 			os << "NULL";
 		else
-		 	os << h.value();
+			os << h.value();
 		return os;
 	}
 
