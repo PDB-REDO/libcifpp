@@ -1679,21 +1679,21 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 
 					if (not iv->validate_value(row[ix].value(), ec))
 					{
-						if (ec == cif::make_error_code(cif::validation_error::value_is_not_a_char_string))
+						if (ec == cif::validation_error::value_is_not_a_char_string)
 						{
 							row[ix] = item_value{ std::to_string(row[ix].value().get<int>()) };
 							if (iv->validate_value(row[ix].value(), ec))
 								continue;
 						}
 
-						if (ec == cif::make_error_code(cif::validation_error::value_is_not_a_number))
+						if (ec == cif::validation_error::value_is_not_a_number)
 						{
 							row[ix] = item_value{ std::stoi(row[ix].value().get<std::string>()) };
 							if (iv->validate_value(row[ix].value(), ec))
 								continue;
 						}
 
-						if (ec == cif::make_error_code(cif::validation_error::value_is_not_in_enumeration_list))
+						if (ec == cif::validation_error::value_is_not_in_enumeration_list)
 						{
 							if (VERBOSE > 0)
 								std::clog << "Value (" << std::quoted(row[ix].str()) << ") for item " << item_name << " in category " << cat.name() << " is not valid since it is not in the list of allowed values\n";

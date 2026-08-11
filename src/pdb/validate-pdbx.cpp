@@ -96,7 +96,7 @@ bool is_valid_pdbx_file(const file &file, std::error_code &ec)
 	bool result = false;
 
 	if (file.empty())
-		ec = make_error_code(validation_error::empty_file);
+		ec = validation_error::empty_file;
 	else if (auto ac = file.front().get("audit_conform"); ac != nullptr)
 		result = is_valid_pdbx_file(file, validator_factory::instance()[*ac], ec);
 	else
@@ -346,11 +346,11 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 		result = false;
 		if (VERBOSE > 0)
 			std::clog << ex.what() << '\n';
-		ec = make_error_code(validation_error::not_valid_pdbx);
+		ec = validation_error::not_valid_pdbx;
 	}
 
 	if (not result and ec == std::errc{})
-		ec = make_error_code(validation_error::not_valid_pdbx);
+		ec = validation_error::not_valid_pdbx;
 
 	return result;
 }
