@@ -47,6 +47,6 @@ TEST_CASE("q-1")
 
 		CHECK(pdbx_poly_seq_scheme.count("asym_id"_key == "A" and "entity_id"_key == 1 and "seq_id"_key == 1 and "mon_id"_key == "PRO") == 1);
 
-		CHECK(pdbx_poly_seq_scheme.count("asym_id"_key == "A" and "entity_id"_key == 1 and "seq_id"_key == 1 and "mon_id"_key == "PRO" and "hetero"_key == false) == 1);
+		CHECK(pdbx_poly_seq_scheme.count("asym_id"_key == "A" and "entity_id"_key == 1 and "seq_id"_key == 1 and "mon_id"_key == "PRO" and "hetero"_key == "n") == 1);
 	}
 }

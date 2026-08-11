@@ -115,19 +115,12 @@ namespace cif
 /// we declare a function to access its contents
 
 /**
- * @brief Get the items that can be used as key in conditions for a category
+ * @brief Get all the items for a category
+ *
+ * This is used to construct cif:any == <value>
  *
  * @param cat The category whose items to return
- * @return iset The set of key item names
- */
-[[deprecated("use get_category_items instead")]]
-iset get_category_fields(const category &cat);
-
-/**
- * @brief Get the items that can be used as key in conditions for a category
- *
- * @param cat The category whose items to return
- * @return iset The set of key field names
+ * @return iset The set of item names
  */
 iset get_category_items(const category &cat);
 
@@ -1005,45 +998,6 @@ inline condition operator!=(const key &key, const item_value &value)
 }
 
 /**
- * @brief Operator to create an equals condition based on a key @a key and a boolean @a v.
- * The value of the item is interpreted as a boolean: the text "y" (compared
- * case insensitive) or a non-zero number is considered true.
- */
-template <typename T>
-	requires std::is_same_v<T, bool>
-inline condition operator==(const key &key, const T &v)
-{
-	return condition(new detail::key_compare_condition_impl(
-		key.m_item_name,
-		[item_name = key.m_item_name, v](const_row_handle r, bool)
-		{
-			const auto &item = r[item_name];
-			bool rv = false;
-
-			if (not item.empty())
-			{
-				if (item.is_string())
-					rv = iequals(item.sv(), "y");
-				else if (item.is_number())
-					rv = item.template get<double>() != 0.0;
-			}
-
-			return rv == v;
-		},
-		std::format(" == {}", v ? "true" : "false")));
-}
-
-/**
- * @brief Operator to create a not equals condition based on a key @a key and a boolean @a v
- */
-template <typename T>
-	requires std::is_same_v<T, bool>
-inline condition operator!=(const key &key, const T &v)
-{
-	return condition(new detail::not_condition_impl(operator==(key, v)));
-}
-
-/**
  * @brief Operator to create a greater than condition based on a key @a key and a value @a v
  */
 template <Numeric T>
@@ -1201,6 +1155,11 @@ struct any_type
 
 /**
  * @brief A helper for any item constructs
+ *
+ * This allows construction queries like
+ * @code{cpp}
+ * auto r = cat.find(cif::any == "foo");
+ * @endcode
  */
 inline constexpr any_type any = any_type{};
 
