@@ -82,7 +82,7 @@ enum class item_value_type
 
 /// @cond
 template <typename T>
-concept IntegralType = (std::is_integral_v<std::remove_cvref_t<T>>);
+concept IntegralType = (std::is_integral_v<std::remove_cvref_t<T>> and not std::is_same_v<std::remove_cvref_t<T>, bool>);
 
 template <typename T>
 concept FloatType = std::is_floating_point_v<std::remove_cvref_t<T>>;

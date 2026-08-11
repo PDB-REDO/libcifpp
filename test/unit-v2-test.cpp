@@ -230,8 +230,9 @@ TEST_CASE("item_0")
 	CHECK(i5.value().is_missing());
 	CHECK(i5.value().empty());
 
-	i2.value() = false;
-	CHECK(i2.value().type() == cif::item_value_type::INT);
+	// An item no longer holds boolean values, so these tests should be removed
+	// i2.value() = false;
+	// CHECK(i2.value().type() == cif::item_value_type::INT);
 	// CHECK(i2.value().get<bool>() == false);
 
 	cif::item i6 = std::move(i1);
