@@ -45,7 +45,7 @@ std::regex kNameRx(R"(^(\d+) +(\d+) +(\d+) +(\S+) +(\S+) +(\S+) +'([^']+)'( +'([
 class SymopParser
 {
   public:
-	SymopParser() {}
+	SymopParser() = default;
 
 	std::array<int,15> parse(const std::string& s)
 	{
@@ -54,9 +54,9 @@ class SymopParser
 		m_lookahead = next_token();
 
 		parsepart(0);
-		match((Token)',');
+		match(static_cast<Token>(','));
 		parsepart(1);
-		match((Token)',');
+		match(static_cast<Token>(','));
 		parsepart(2);
 
 		if (m_lookahead != 0 or m_p != m_e)
@@ -126,7 +126,7 @@ class SymopParser
 						result = Number;
 					}
 					else
-						result = (Token)ch;
+						result = static_cast<Token>(ch);
 					break;
 			}
 			break;
@@ -156,7 +156,7 @@ class SymopParser
 				m_trn[row][0] = sign * m_nr;
 				match(Number);
 
-				match((Token)'/');
+				match(static_cast<Token>('/'));
 
 				m_trn[row][1] = m_nr;
 				match(Number);
@@ -380,7 +380,7 @@ int main(int argc, char* const argv[])
 
 		// --------------------------------------------------------------------
 
-		std::sort(data.begin(), data.end());
+		std::ranges::sort(data);
 
 		// --------------------------------------------------------------------
 
@@ -406,7 +406,7 @@ const space_group kSpaceGroups[] =
 				spacegroups.emplace_back(info.old[1], nr, info.xHM, info.Hall);
 		}
 
-		std::sort(spacegroups.begin(), spacegroups.end());
+		std::ranges::sort(spacegroups);
 
 		for (auto [old, nr, xHM, Hall]: spacegroups)
 		{
