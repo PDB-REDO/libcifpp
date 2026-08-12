@@ -24,6 +24,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/// @file cif++.hpp
+///
+/// Convenience header that includes all public headers of the libcifpp library.
+/// Using this file is deprecated, use @c \#include \<cif++/cif++.hpp\> instead.
+///
+
 #pragma once
 
 #warning "Using this file is deprecated, use #include <cif++/cif++.hpp> instead"

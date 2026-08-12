@@ -563,7 +563,7 @@ class row_initializer : public std::vector<item>
 	{
 	}
 
-	/// Constructor
+	/// @brief Constructor taking a const row handle @a rh
 	row_initializer(const_row_handle rh);
 
 	/// @brief set the value for item name @a name to @a value

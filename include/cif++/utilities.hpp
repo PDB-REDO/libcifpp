@@ -91,10 +91,10 @@ namespace cif
 ///
 extern CIFPP_EXPORT int VERBOSE;
 
-/// return the git 'build' number
+/// @brief Return the git 'build' number
 [[nodiscard]] std::string get_version_nr();
 
-/// return the width of the current output terminal, or 80 if it cannot be determined
+/// @brief Return the width of the current output terminal, or 80 if it cannot be determined
 [[nodiscard]] uint32_t get_terminal_width();
 
 // --------------------------------------------------------------------
@@ -104,34 +104,34 @@ namespace colour
 	/// @brief The defined colours
 	enum colour_type
 	{
-		black,
-		red,
-		green,
-		yellow,
-		blue,
-		magenta,
-		cyan,
-		white,
-		_unused,
-		none
+		black,   ///< Black
+		red,     ///< Red
+		green,   ///< Green
+		yellow,  ///< Yellow
+		blue,    ///< Blue
+		magenta, ///< Magenta
+		cyan,    ///< Cyan
+		white,   ///< White
+		_unused, ///< Unused
+		none     ///< No colour / default
 	};
 
-	/// @brief The defined styles
+	/// @brief The defined text styles
 	enum style_type
 	{
-		bold = 1,
-		underlined = 4,
-		blink = 5,
-		inverse = 7,
-		regular = 22,
+		bold = 1,       ///< Bold text
+		underlined = 4, ///< Underlined text
+		blink = 5,      ///< Blinking text
+		inverse = 7,    ///< Inverse/reversed text
+		regular = 22,   ///< Regular text (no styling)
 	};
 
 	namespace detail
 	{
-		///
-		/// @brief Struct for delimited strings.
-		///
-		struct coloured_string_t
+	///
+	/// @brief Struct for coloured output strings.
+	///
+	struct coloured_string_t
 		{
 			///
 			/// @brief Construct a new coloured string t object

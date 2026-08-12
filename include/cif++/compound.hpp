@@ -60,7 +60,8 @@ class datablock;
 class file;
 enum atom_type : uint8_t;
 
-/// @brief The bond type or bond order as defined in the CCD, possible values taken from the mmcif_pdbx file
+/// @brief The bond type or bond order as defined in the CCD
+
 enum class bond_type
 {
 	sing, ///< single bond
@@ -346,7 +347,7 @@ class compound_factory
 class compound_source
 {
   public:
-    /// Constructor
+	/// @brief Constructor
 	compound_source(const file &file)
 	{
 		compound_factory::instance().push_dictionary(file);

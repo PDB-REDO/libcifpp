@@ -217,7 +217,9 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 
 	/// @endcond
 
-	/// @brief This closes the zlib stream and sets the get pointers to null.
+	/// @brief Close the zlib stream and set the get pointers to null.
+	///
+	/// @return A pointer to this streambuf, or nullptr on failure
 	base_type *close() override
 	{
 		if (m_zstream)
@@ -273,7 +275,7 @@ class basic_igzip_streambuf : public basic_streambuf<CharT, Traits>
 	}
 
   private:
-	/// @brief The actual work is done here.
+	/// @brief Handle underflow: decompress more data from the upstream buffer
 	int_type underflow() override
 	{
 		if (m_zstream and this->m_upstream)
@@ -406,7 +408,9 @@ class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 		close();
 	}
 
-	/// @brief This closes the zlib stream and sets the put pointers to null.
+	/// @brief Close the zlib stream and set the put pointers to null.
+	///
+	/// @return A pointer to this streambuf, or nullptr on failure
 	base_type *close() override
 	{
 		if (m_zstream)
@@ -461,7 +465,7 @@ class basic_ogzip_streambuf : public basic_streambuf<CharT, Traits>
 	}
 
   private:
-	/// @brief The actual work is done here
+	/// @brief Handle overflow: compress data and write to the upstream buffer
 	///
 	/// @param ch The character that did not fit, in case it is eof we need to flush
 	///

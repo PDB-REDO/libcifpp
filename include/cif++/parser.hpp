@@ -306,15 +306,17 @@ class sac_parser
 		}
 	}
 
-	// get_next_char takes the next character from the istream.
-	// This function also does carriage/linefeed translation.
+	/// @brief Get the next character from the istream.
+	/// This function also does carriage/linefeed translation.
 	int get_next_char();
 
-	// Put the last read character back into the istream
+	/// @brief Put the last read character back into the istream
 	void retract();
 
+	/// @brief Get the next token from the input stream
 	CIFToken get_next_token();
 
+	/// @brief Match the next token with an expected token, throws on mismatch
 	void match(CIFToken token);
 
 	/// @endcond
@@ -325,11 +327,15 @@ class sac_parser
 	/// is parsed up until the next start of a datablock or the end of
 	/// the data.
 	///
+	/// @param datablock The name of the datablock to parse
+	/// @return true If a datablock was found and parsed
+	/// @return false If the datablock was not found
 	bool parse_single_datablock(const std::string &datablock);
 
 	/// @brief Return an index for all the datablocks found, that is
 	/// the index will contain the names and offsets for each.
 	///
+	/// @return A map of datablock names to their offsets in the stream
 	datablock_index index_datablocks();
 
 	///
@@ -345,10 +351,8 @@ class sac_parser
 	///
 	bool parse_single_datablock(const std::string &datablock, const datablock_index &index);
 
-	///
-	/// @brief Parse the file
-	///
-	///
+	/// @brief Parse the entire file, calling the production methods for each
+	/// datablock, category, row and item found.
 	void parse_file();
 
   protected:

@@ -86,9 +86,9 @@ enum class validation_error
 };
 
 ///
-/// @brief Return the implementation for the validation_category
+/// @brief Return the error category for validation errors
 ///
-/// @return std::error_category&
+/// @return The error category instance
 ///
 std::error_category &validation_category();
 
@@ -141,9 +141,14 @@ enum class DDL_PrimitiveType
 };
 
 /// @brief Return the DDL_PrimitiveType encoded in @a s
+/// @param s The string to parse
+/// @return The parsed DDL_PrimitiveType
 DDL_PrimitiveType map_to_primitive_type(std::string_view s);
 
 /// @brief Return the DDL_PrimitiveType encoded in @a s, error reporting variant
+/// @param s The string to parse
+/// @param ec Output parameter for error code if parsing fails
+/// @return The parsed DDL_PrimitiveType
 DDL_PrimitiveType map_to_primitive_type(std::string_view s, std::error_code &ec) noexcept;
 
 struct regex_impl;
@@ -441,10 +446,14 @@ class validator
 	/// @param audit_conform
 	void fill_audit_conform(category &audit_conform) const;
 
-	/// @brief Return true if this validator matches @a audit_conform
+	/// @brief Return true if this validator matches the audit_conform category
+	/// @param audit_conform The audit_conform category to match against
+	/// @return true if the validator matches
 	[[nodiscard]] bool matches_audit_conform(const category &audit_conform) const;
 
-	/// @brief Add info
+		/// @brief Append audit_conform information
+	/// @param name The name of the dictionary
+	/// @param version The version of the dictionary, if known
 	void append_audit_conform(const std::string &name, const std::optional<std::string> &version);
 
   private:

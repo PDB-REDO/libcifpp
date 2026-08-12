@@ -50,12 +50,16 @@ namespace cif::pdb
 /// @brief Read a file in either mmCIF or PDB format from file @a file,
 /// compressed or not, depending on the content.
 ///
+/// @param file The path to the file to read
+/// @return A cif::file containing the parsed data
 
 file read(const std::filesystem::path &file);
 
 /// @brief Read a file in either mmCIF or PDB format from std::istream @a is,
 /// compressed or not, depending on the content.
 ///
+/// @param is The input stream to read from
+/// @return A cif::file containing the parsed data
 
 file read(std::istream &is);
 
@@ -135,9 +139,9 @@ void fixup_pdbx(file &pdbx_file, const validator &v);
 /// @result Returns true if the resulting file is valid
 ///
 
- bool reconstruct_pdbx(file &pdbx_file);
+	bool reconstruct_pdbx(file &pdbx_file);
 
- /// @brief Reconstruct all missing categories for an assumed PDBx file.
+	/// @brief Reconstruct all missing categories for an assumed PDBx file.
  ///
  /// Some people believe that simply dumping some atom records is enough.
  ///

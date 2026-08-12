@@ -435,7 +435,7 @@ class cql_iterator_proxy : public cif::iterator_proxy<Ts...>
 class transaction final
 {
   public:
-    /// Constructor
+	/// @brief Constructor
 	transaction(connection &conn);
 
 	/// @cond
@@ -478,10 +478,10 @@ class transaction final
 class connection final
 {
   public:
-	/// Constructor
+	/// @brief Constructor
 	connection(datablock &db);
 
-	/// Destructor
+	/// @brief Destructor
 	~connection();
 
 	friend class transaction;

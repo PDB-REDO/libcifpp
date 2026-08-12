@@ -24,6 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/// @file cif++/cif++.hpp
+///
+/// Convenience header that includes all public headers of the libcifpp library.
+///
+
 #pragma once
 
 // IWYU pragma: begin_exports

@@ -39,7 +39,7 @@ namespace cif
 {
 
 // --------------------------------------------------------------------
-/// A streambuf that fills out lines with spaces up until a specified width
+/// @brief A streambuf that fills out lines with spaces up until a specified width
 
 class fill_out_streambuf : public std::streambuf
 {
@@ -123,4 +123,4 @@ class fill_out_streambuf : public std::streambuf
 	int m_column_count = 0;
 };
 
-} // namespace pdbx
+} // namespace cif

@@ -86,6 +86,8 @@ class duplicate_key_error : public std::runtime_error
 	///
 	/// @brief Construct a new duplicate key error object
 	///
+	/// @param msg The error message describing the duplicate key
+	///
 	duplicate_key_error(const std::string &msg)
 		: std::runtime_error(msg)
 	{
@@ -98,7 +100,10 @@ class missing_key_error : public std::runtime_error
 {
   public:
 	///
-	/// @brief Construct a new duplicate key error object
+	/// @brief Construct a new missing key error object
+	///
+	/// @param msg The error message
+	/// @param key The name of the key that was missing
 	///
 	missing_key_error(const std::string &msg, std::string key)
 		: std::runtime_error(msg)
@@ -106,7 +111,8 @@ class missing_key_error : public std::runtime_error
 	{
 	}
 
-	/// Return the name of the key that was missing
+	/// @brief Return the name of the key that was missing
+	/// @return The name of the missing key
 	[[nodiscard]] const std::string &get_key() const noexcept { return m_key; }
 
   private:
@@ -226,19 +232,19 @@ class category
 
 	/// @brief Set the validator for this category to @a v
 	/// @param v The category_validator to assign. A nullptr value is allowed.
-	/// @param db The enclosing @ref datablock
+	/// @param db The enclosing datablock
 	void set_validator(const validator *v, datablock &db);
 
 	/// @brief Update the links in this category
-	/// @param db The enclosing @ref datablock
+	/// @param db The enclosing datablock
 	void update_links(const datablock &db);
 
-	/// @brief Return the global @ref validator for the data
-	/// @return The @ref validator or nullptr if not assigned
+	/// @brief Return the global validator for the data
+	/// @return The validator or nullptr if not assigned
 	[[nodiscard]] const validator *get_validator() const { return m_validator; }
 
 	/// @brief Return the category validator for this category
-	/// @return The @ref category_validator or nullptr if not assigned
+	/// @return The category_validator or nullptr if not assigned
 	[[nodiscard]] const category_validator *get_cat_validator() const { return m_cat_validator; }
 
 	/// @brief Validate the data stored using the assigned @ref category_validator
@@ -268,7 +274,7 @@ class category
 	/// @return True if the data contained is equal
 	bool operator==(const category &rhs) const;
 
-	/// @brief Unequality operator, returns true if @a rhs is not equal to this
+	/// @brief Inequality operator, returns true if @a rhs is not equal to this
 	/// @param rhs The object to compare with
 	/// @return True if the data contained is not equal
 	bool operator!=(const category &rhs) const
@@ -1202,7 +1208,6 @@ class category
 		box,      // table with unicode line characters
 	};
 
-	/// @brief
 	/// @brief Write the contents of the category to the std::ostream @a os and
 	/// use @a order as the order of the items. If @a addMissingItems is
 	/// false, items that do not contain any value will be suppressed. Use this version

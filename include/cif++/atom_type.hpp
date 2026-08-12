@@ -42,7 +42,7 @@
 namespace cif
 {
 
-/// Atom type as an integer. All known elements are available as a constant.
+/// @brief Atom type as an integer. All known elements are available as a constant.
 
 enum atom_type : uint8_t
 {
@@ -180,7 +180,7 @@ enum atom_type : uint8_t
 
 // --------------------------------------------------------------------
 
-/// An enum used to select the desired radius for an atom.
+/// @brief An enum used to select the desired radius for an atom.
 /// All values are collected from the wikipedia pages on atom radii
 
 enum class radius_type
@@ -203,7 +203,7 @@ enum class radius_type
 /// @brief The number of radii per element which can be requested from atom_type_info
 constexpr std::size_t kRadiusTypeCount = static_cast<std::size_t>(radius_type::type_count);
 
-/// An enum used to select either the effective or the crystal radius of an ion.
+/// @brief An enum used to select either the effective or the crystal radius of an ion.
 /// See explanation on Wikipedia: https://en.wikipedia.org/wiki/Ionic_radius
 
 enum class ionic_radius_type
@@ -212,10 +212,10 @@ enum class ionic_radius_type
 	crystal    ///< Calculated ion radius based on a function of ionic charge and spin
 };
 
-/// Requests for an unknown radius value return kNA
+/// @brief Requests for an unknown radius value return kNA
 constexpr float kNA = std::numeric_limits<float>::quiet_NaN();
 
-/// A struct holding the known information for all elements defined in atom_type
+/// @brief A struct holding the known information for all elements defined in atom_type
 
 struct atom_type_info
 {
@@ -239,22 +239,22 @@ struct atom_type_info
 	std::array<float, kRadiusTypeCount> radii;
 };
 
-/// Array of atom_type_info struct for each of the defined elements in atom_type
+/// @brief Array of atom_type_info struct for each of the defined elements in atom_type
 
 extern CIFPP_EXPORT const atom_type_info kKnownAtoms[];
 
 // --------------------------------------------------------------------
 // AtomTypeTraits
 
-/// A traits class to access information for known elements
+/// @brief A traits class to access information for known elements
 
 class atom_type_traits
 {
   public:
-	/// Constructor taking an atom_type @a a
+	/// @brief Constructor taking an atom_type @a a
 	atom_type_traits(atom_type a);
 
-	/// Constructor based on the element as a string in @a symbol
+	/// @brief Constructor based on the element as a string in @a symbol
 	atom_type_traits(const std::string &symbol);
 
 	[[nodiscard]] atom_type type() const { return m_info->type; }       ///< Returns the atom_type
@@ -264,10 +264,10 @@ class atom_type_traits
 
 	[[nodiscard]] bool is_metal() const { return m_info->metal; } ///< Returns true if the element is a metal
 
-	/// Return true if the symbol in @a symbol actually exists in the list of known elements in atom_type
+	/// @brief Return true if the symbol in @a symbol actually exists in the list of known elements in atom_type
 	static bool is_element(const std::string &symbol);
 
-	/// Return true if the symbol in @a symbol exists and is a metal
+	/// @brief Return true if the symbol in @a symbol exists and is a metal
 	static bool is_metal(const std::string &symbol);
 
 	/// @brief Return the radius for the element, use @a type to select which radius to return
@@ -303,7 +303,7 @@ class atom_type_traits
 	}
 
 	///
-	/// @brief data type encapsulating the scattering factors
+	/// @brief Data type encapsulating the scattering factors
 	/// in a simplified form (only a and b).
 	///
 	struct SFData
@@ -313,7 +313,7 @@ class atom_type_traits
 		/// @endcond
 	};
 
-	/// @brief to get the Cval and Siva scattering factor values, use this constant as charge:
+	/// @brief To get the Cval and Siva scattering factor values, use this constant as charge:
 	static constexpr int kWKSFVal = -99;
 
 	/// @brief Return the Waasmaier & Kirfel scattering factor values for the element
@@ -329,8 +329,10 @@ class atom_type_traits
 	/// @return The scattering factors as a SFData struct
 	[[nodiscard]] const SFData &elsf() const;
 
+	/// @brief Check if a scattering factor exists for the given @a charge
+	///
 	/// Clipper doesn't like atoms with charges that do not have a scattering factor. And
-	/// rightly so, but we need to know in advance if this is the case
+	/// rightly so, but we need to know in advance if this is the case.
 	[[nodiscard]] bool has_sf(int charge) const;
 
   private:
