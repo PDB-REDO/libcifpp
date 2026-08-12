@@ -43,11 +43,11 @@
 #include <utility>
 #include <version>
 
-/** \file item.hpp
- *
- * This file contains the declaration of item but also the item_value and item_handle
- * These handle the storage of and access to the data for a single data item.
- */
+/// @file item.hpp
+///
+/// This file contains the declaration of item but also the item_value and item_handle
+/// These handle the storage of and access to the data for a single data item.
+///
 
 namespace cif
 {
@@ -57,9 +57,9 @@ class row;
 
 // --------------------------------------------------------------------
 
-/**
- * The primitive types as known in libcifpp.
- */
+///
+/// The primitive types as known in libcifpp.
+///
 enum class item_value_type
 {
 	/// Integer, stored as int64_t
@@ -482,13 +482,13 @@ class item_value
 	/// For debugging, print out a value
 	friend std::ostream &operator<<(std::ostream &os, const item_value &v);
 
-	/// \brief Cast the value to an integer, will throw if not possible
+	/// @brief Cast the value to an integer, will throw if not possible
 	void cast_to_int();
 
-	/// \brief Cast the value to a float, will throw if not possible
+	/// @brief Cast the value to a float, will throw if not possible
 	void cast_to_float();
 
-	/// \brief Cast the value to a string, may throw (when value is null)
+	/// @brief Cast the value to a string, may throw (when value is null)
 	void cast_to_string();
 
 	/// @cond
@@ -587,10 +587,10 @@ static_assert(sizeof(item_value) == 16, "item_value should be 16 bytes");
 class item
 {
   public:
-	/// \brief Default constructor, empty item
+	/// @brief Default constructor, empty item
 	item() = default;
 
-	/// \brief constructor for an item with name \a name and as
+	/// @brief constructor for an item with name @a name and as
 	/// content the character '.', i.e. an inapplicable value.
 	item(std::string name)
 		: m_name(std::move(name))
@@ -605,7 +605,7 @@ class item
 	{
 	}
 
-	/** @cond */
+	/// @cond
 	item(const item &rhs) = default;
 
 	item(item &&rhs)
@@ -618,7 +618,7 @@ class item
 		swap(*this, rhs);
 		return *this;
 	}
-	/** @endcond */
+	/// @endcond
 
 	/// Swap two items
 	friend void swap(item &a, item &b) noexcept
@@ -631,22 +631,22 @@ class item
 	[[nodiscard]] const item_value &value() const & { return m_value; } ///< Return the value of the item
 	item_value &value() & { return m_value; }                           ///< Return the value of the item
 
-	/// \brief replace the content of the stored value with \a v
+	/// @brief replace the content of the stored value with @a v
 	void value(item_value v) { m_value = std::move(v); }
 
-	/// \brief empty means either null or unknown
+	/// @brief empty means either null or unknown
 	[[nodiscard]] bool empty() const { return m_value.empty(); }
 
-	/// \brief returns true if the item contains '.' or '?'
+	/// @brief returns true if the item contains '.' or '?'
 	[[nodiscard]] bool is_null() const { return m_value.is_null(); }
 
-	/// \brief returns true if the item contains '?'
+	/// @brief returns true if the item contains '?'
 	[[nodiscard]] bool is_unknown() const { return m_value.is_missing(); }
 
-	// /// \brief the length of the value string
+	// /// @brief the length of the value string
 	// std::size_t length() const { return m_value.length(); }
 
-	/// \brief support for structured binding
+	/// @brief support for structured binding
 	template <std::size_t N>
 	decltype(auto) get() const
 	{
@@ -664,7 +664,7 @@ class item
 };
 
 // --------------------------------------------------------------------
-/// \brief This is item_handle, it is used to access the data stored in
+/// @brief This is item_handle, it is used to access the data stored in
 /// item_value's in rows
 
 struct item_handle
@@ -672,13 +672,13 @@ struct item_handle
   public:
 	item_handle() = delete;
 
-	/**
-	 * @brief Assign value @a value to the item referenced
-	 *
-	 * @tparam T Type of the value
-	 * @param value The value
-	 * @return reference to this item_handle
-	 */
+	///
+	/// @brief Assign value @a value to the item referenced
+	///
+	/// @tparam T Type of the value
+	/// @param value The value
+	/// @return reference to this item_handle
+	///
 	item_handle &operator=(item_value value)
 	{
 		set(std::move(value), true);
@@ -771,44 +771,44 @@ struct item_handle
 		return value().sv();
 	}
 
-	/** Swap contents of @a a and @a b */
+	/// Swap contents of @a a and @a b
 	friend void swap(item_handle a, item_handle b) noexcept;
 
-	/** Return the contents of this item as type @tparam T or, if not
-	 * set, use @a dv as the default value.
-	 */
+	/// Return the contents of this item as type @tparam T or, if not
+	/// set, use @a dv as the default value.
+	///
 	template <typename T>
 	[[nodiscard]] auto value_or(const T &dv) const
 	{
 		return empty() ? dv : this->get<T>();
 	}
 
-	/**
-	 * @brief Compare the contents of this item with value @a value
-	 * optionally ignoring character case, if @a icase is true.
-	 * Returns 0 if both are equal, -1 if this sorts before @a value
-	 * and 1 if this sorts after @a value
-	 *
-	 * @param value The value to compare with
-	 * @param icase Flag indicating if we should compare character case sensitive
-	 * @return -1, 0 or 1
-	 */
+	///
+	/// @brief Compare the contents of this item with value @a value
+	/// optionally ignoring character case, if @a icase is true.
+	/// Returns 0 if both are equal, -1 if this sorts before @a value
+	/// and 1 if this sorts after @a value
+	///
+	/// @param value The value to compare with
+	/// @param icase Flag indicating if we should compare character case sensitive
+	/// @return -1, 0 or 1
+	///
 
 	[[nodiscard]] int compare(const item_value &value, bool icase = true) const noexcept
 	{
 		return this->value().compare(value, icase);
 	}
 
-	/**
-	 * @brief Compare the contents of this item with value of item @a value
-	 * optionally ignoring character case, if @a icase is true.
-	 * Returns 0 if both are equal, -1 if this sorts before @a value
-	 * and 1 if this sorts after @a value
-	 *
-	 * @param value The value to compare with
-	 * @param icase Flag indicating if we should compare character case sensitive
-	 * @return -1, 0 or 1
-	 */
+	///
+	/// @brief Compare the contents of this item with value of item @a value
+	/// optionally ignoring character case, if @a icase is true.
+	/// Returns 0 if both are equal, -1 if this sorts before @a value
+	/// and 1 if this sorts after @a value
+	///
+	/// @param value The value to compare with
+	/// @param icase Flag indicating if we should compare character case sensitive
+	/// @return -1, 0 or 1
+	///
 
 	[[nodiscard]] int compare(const item_handle &value, bool icase = true) const noexcept
 	{
@@ -822,10 +822,10 @@ struct item_handle
 			return compare(value.value(), icase);
 	}
 
-	/**
-	 * @brief Compare the value contained with the value @a value and
-	 * return true if both are equal.
-	 */
+	///
+	/// @brief Compare the value contained with the value @a value and
+	/// return true if both are equal.
+	///
 	[[nodiscard]] bool operator==(const item_value &value) const noexcept
 	{
 		// TODO: icase or not icase?
@@ -834,33 +834,33 @@ struct item_handle
 
 	// We may not have C++20 yet...
 
-	/**
-	 * @brief Compare the value contained with the value @a value and
-	 * return true if both are not equal.
-	 */
+	///
+	/// @brief Compare the value contained with the value @a value and
+	/// return true if both are not equal.
+	///
 	template <typename T>
 	[[nodiscard]] bool operator!=(const T &value) const noexcept
 	{
 		return not operator==(value);
 	}
 
-	/**
-	 * @brief Returns true if the content string is empty or
-	 * only contains '.' meaning null or '?' meaning unknown
-	 * in a mmCIF context
-	 */
+	///
+	/// @brief Returns true if the content string is empty or
+	/// only contains '.' meaning null or '?' meaning unknown
+	/// in a mmCIF context
+	///
 	[[nodiscard]] bool empty() const;
 
-	/** Return a std::string_view for the contents */
+	/// Return a std::string_view for the contents
 	[[nodiscard]] std::string_view text_() const;
 
-	/**
-	 * @brief Construct a new item handle object
-	 *
-	 * @param cat Reference to category containing row
-	 * @param row Reference to the row
-	 * @param item_ix Item index
-	 */
+	///
+	/// @brief Construct a new item handle object
+	///
+	/// @param cat Reference to category containing row
+	/// @param row Reference to the row
+	/// @param item_ix Item index
+	///
 	item_handle(category &cat, row &row, uint16_t item_ix)
 		: m_category(cat)
 		, m_row(row)
@@ -906,7 +906,7 @@ struct item_handle
 namespace std
 {
 
-/** @cond */
+/// @cond
 
 template <>
 struct tuple_size<::cif::item>

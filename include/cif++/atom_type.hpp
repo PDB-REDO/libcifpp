@@ -24,10 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file atom_type.hpp
- * 
- * This file contains information about all known elements
- */
+/// @file atom_type.hpp
+///
+/// This file contains information about all known elements
+///
 
 #pragma once
 
@@ -42,7 +42,7 @@
 namespace cif
 {
 
-/** Atom type as an integer. All known elements are available as a constant. */
+/// Atom type as an integer. All known elements are available as a constant.
 
 enum atom_type : uint8_t
 {
@@ -251,10 +251,10 @@ extern CIFPP_EXPORT const atom_type_info kKnownAtoms[];
 class atom_type_traits
 {
   public:
-	/// Constructor taking an atom_type \a a
+	/// Constructor taking an atom_type @a a
 	atom_type_traits(atom_type a);
 
-	/// Constructor based on the element as a string in \a symbol
+	/// Constructor based on the element as a string in @a symbol
 	atom_type_traits(const std::string &symbol);
 
 	[[nodiscard]] atom_type type() const { return m_info->type; }       ///< Returns the atom_type
@@ -264,13 +264,13 @@ class atom_type_traits
 
 	[[nodiscard]] bool is_metal() const { return m_info->metal; } ///< Returns true if the element is a metal
 
-	/// Return true if the symbol in \a symbol actually exists in the list of known elements in atom_type
+	/// Return true if the symbol in @a symbol actually exists in the list of known elements in atom_type
 	static bool is_element(const std::string &symbol);
 
-	/// Return true if the symbol in \a symbol exists and is a metal
+	/// Return true if the symbol in @a symbol exists and is a metal
 	static bool is_metal(const std::string &symbol);
 
-	/// @brief Return the radius for the element, use \a type to select which radius to return
+	/// @brief Return the radius for the element, use @a type to select which radius to return
 	/// @param type The selector for which radius to return
 	/// @return The requested radius or kNA if not known (or applicable)
 	[[nodiscard]] float radius(radius_type type = radius_type::single_bond) const
@@ -280,37 +280,37 @@ class atom_type_traits
 		return m_info->radii[static_cast<std::size_t>(type)] / 100.f;
 	}
 
-	/// \brief Return the radius for a charged version of this atom in a solid crystal
+	/// @brief Return the radius for a charged version of this atom in a solid crystal
 	///
-	/// \param charge  The charge of the ion
-	/// \return        The radius of the ion
+	/// @param charge  The charge of the ion
+	/// @return        The radius of the ion
 	[[nodiscard]] float crystal_ionic_radius(int charge) const;
 
-	/// \brief Return the radius for a charged version of this atom in a non-solid environment
+	/// @brief Return the radius for a charged version of this atom in a non-solid environment
 	///
-	/// \param charge  The charge of the ion
-	/// \return        The radius of the ion
+	/// @param charge  The charge of the ion
+	/// @return        The radius of the ion
 	[[nodiscard]] float effective_ionic_radius(int charge) const;
 
-	/// \brief Return the radius for a charged version of this atom, returns the effective radius by default
+	/// @brief Return the radius for a charged version of this atom, returns the effective radius by default
 	///
-	/// \param charge  The charge of the ion
-	/// \param type    The requested ion radius type
-	/// \return        The radius of the ion
+	/// @param charge  The charge of the ion
+	/// @param type    The requested ion radius type
+	/// @return        The radius of the ion
 	[[nodiscard]] float ionic_radius(int charge, ionic_radius_type type = ionic_radius_type::effective) const
 	{
 		return type == ionic_radius_type::effective ? effective_ionic_radius(charge) : crystal_ionic_radius(charge);
 	}
 
-	/**
-	 * @brief data type encapsulating the scattering factors
-	 * in a simplified form (only a and b).
-	 */
+	///
+	/// @brief data type encapsulating the scattering factors
+	/// in a simplified form (only a and b).
+	///
 	struct SFData
 	{
-		/** @cond */
+		/// @cond
 		double a[6], b[6];
-		/** @endcond */
+		/// @endcond
 	};
 
 	/// @brief to get the Cval and Siva scattering factor values, use this constant as charge:

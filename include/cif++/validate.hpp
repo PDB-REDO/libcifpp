@@ -43,15 +43,14 @@
 #include <type_traits>
 #include <utility>
 
-/**
- * @file validate.hpp
- *
- * Support for validating mmCIF files based on a dictionary. These dictionaries
- * contain information about the categories and items therein, what they may
- * contain and how this should be formatted. There's also information on links
- * between parent and child categories.
- *
- */
+/// @file validate.hpp
+///
+/// Support for validating mmCIF files based on a dictionary. These dictionaries
+/// contain information about the categories and items therein, what they may
+/// contain and how this should be formatted. There's also information on links
+/// between parent and child categories.
+///
+///
 
 namespace cif
 {
@@ -62,35 +61,35 @@ struct category_validator;
 // --------------------------------------------------------------------
 // New: error_code
 
-/**
- * @enum validation_error
- *
- * @brief A stronly typed class containing the error codes reported by @ref cif::validator and friends
- */
+///
+/// @enum validation_error
+///
+/// @brief A stronly typed class containing the error codes reported by @ref cif::validator and friends
+///
 enum class validation_error
 {
-	value_does_not_match_rx = 1,      /**< The value of an item does not conform to the regular expression specified for it */
-	value_is_not_in_enumeration_list, /**< The value of an item is not in the list of values allowed */
-	value_is_not_a_number,            /**< The value is not a number */
-	value_is_not_a_char_string,       /**< The value is not a character string */
-	not_a_known_primitive_type,       /**< The type is not a known primitive type */
-	undefined_category,               /**< Category has no definition in the dictionary */
-	unknown_item,                     /**< The item is not defined to be part of the category */
-	incorrect_item_validator,         /**< Incorrectly specified validator for item */
-	missing_mandatory_items,          /**< Missing mandatory items */
-	missing_key_items,                /**< An index could not be constructed due to missing key items */
-	item_not_allowed_in_category,     /**< Requested item allowed in category according to dictionary */
-	empty_file,                       /**< The file contains no datablocks */
-	empty_datablock,                  /**< The datablock contains no categories */
-	empty_category,                   /**< The category is empty */
-	not_valid_pdbx,                   /**< The file is not a valid PDBx file */
+	value_does_not_match_rx = 1,      ///< The value of an item does not conform to the regular expression specified for it
+	value_is_not_in_enumeration_list, ///< The value of an item is not in the list of values allowed
+	value_is_not_a_number,            ///< The value is not a number
+	value_is_not_a_char_string,       ///< The value is not a character string
+	not_a_known_primitive_type,       ///< The type is not a known primitive type
+	undefined_category,               ///< Category has no definition in the dictionary
+	unknown_item,                     ///< The item is not defined to be part of the category
+	incorrect_item_validator,         ///< Incorrectly specified validator for item
+	missing_mandatory_items,          ///< Missing mandatory items
+	missing_key_items,                ///< An index could not be constructed due to missing key items
+	item_not_allowed_in_category,     ///< Requested item allowed in category according to dictionary
+	empty_file,                       ///< The file contains no datablocks
+	empty_datablock,                  ///< The datablock contains no categories
+	empty_category,                   ///< The category is empty
+	not_valid_pdbx,                   ///< The file is not a valid PDBx file
 };
 
-/**
- * @brief Return the implementation for the validation_category
- *
- * @return std::error_category&
- */
+///
+/// @brief Return the implementation for the validation_category
+///
+/// @return std::error_category&
+///
 std::error_category &validation_category();
 
 /// Return a std::error_code for a validation error
@@ -133,7 +132,7 @@ class validation_exception : public std::runtime_error
 
 // --------------------------------------------------------------------
 
-/** @brief the primitive types known */
+/// @brief the primitive types known
 enum class DDL_PrimitiveType
 {
 	Char,  ///< Text
@@ -149,16 +148,16 @@ DDL_PrimitiveType map_to_primitive_type(std::string_view s, std::error_code &ec)
 
 struct regex_impl;
 
-/**
- * @brief For each defined type in a dictionary a type_validator is created
- *
- * A type validator can check if the contents of an item are conforming the
- * specification. The check is done using regular expressions.
- *
- * A type_validator can also be used to compare two values that conform to
- * this type. Comparison is of course based on the primitive type.
- *
- */
+///
+/// @brief For each defined type in a dictionary a type_validator is created
+///
+/// A type validator can check if the contents of an item are conforming the
+/// specification. The check is done using regular expressions.
+///
+/// A type_validator can also be used to compare two values that conform to
+/// this type. Comparison is of course based on the primitive type.
+///
+///
 struct type_validator
 {
 	std::string m_name;                 ///< The name of the type
@@ -210,8 +209,8 @@ struct type_validator
 	[[nodiscard]] int compare(const item_value &a, const item_value &b) const;
 };
 
-/** @brief Item alias, items can be renamed over time
- */
+/// @brief Item alias, items can be renamed over time
+///
 
 struct item_alias
 {
@@ -234,15 +233,15 @@ struct item_alias
 	std::string m_vers; ///< The version of the dictionary
 };
 
-/**
- * @brief An item_validator binds a type_validator to an item in
- * a category along with other information found in the dictionary.
- *
- * mmCIF dictionaries may indicate an item is e.g. mandatory or
- * consists of a certain list of allowed values. Even default
- * values can be provided.
- *
- */
+///
+/// @brief An item_validator binds a type_validator to an item in
+/// a category along with other information found in the dictionary.
+///
+/// mmCIF dictionaries may indicate an item is e.g. mandatory or
+/// consists of a certain list of allowed values. Even default
+/// values can be provided.
+///
+///
 struct item_validator
 {
 	std::string m_item_name;           ///< The item name
@@ -275,12 +274,12 @@ struct item_validator
 	bool validate_value(std::string_view value, std::error_code &ec) const noexcept;
 };
 
-/**
- * @brief A validator for categories
- *
- * Categories can have a key, a set of items that in combination
- * should be unique.
- */
+///
+/// @brief A validator for categories
+///
+/// Categories can have a key, a set of items that in combination
+/// should be unique.
+///
 struct category_validator
 {
 	std::string m_name;                            ///< The name of the category
@@ -305,17 +304,17 @@ struct category_validator
 	[[nodiscard]] const item_validator *get_validator_for_aliased_item(std::string_view item_name) const;
 };
 
-/**
- * @brief A validator for links between categories
- *
- * Links are defined as a set of pairs of item names in a
- * parent category and a corresponding item in a child
- * category. This means that the size of m_parent_keys
- * is always equal to the size of m_child_keys.
- *
- * Multiple links may be defined between two categories.
- *
- */
+///
+/// @brief A validator for links between categories
+///
+/// Links are defined as a set of pairs of item names in a
+/// parent category and a corresponding item in a child
+/// category. This means that the size of m_parent_keys
+/// is always equal to the size of m_child_keys.
+///
+/// Multiple links may be defined between two categories.
+///
+///
 struct link_validator
 {
 	int m_link_group_id;                    ///< The link group ID
@@ -328,26 +327,26 @@ struct link_validator
 
 // --------------------------------------------------------------------
 
-/**
- * @brief The validator class combines all the link, category and item validator classes
- *
- */
+///
+/// @brief The validator class combines all the link, category and item validator classes
+///
+///
 class validator
 {
   public:
-	/**
-	 * @brief Construct a new validator object
-	 */
+	///
+	/// @brief Construct a new validator object
+	///
 	validator()
 		: m_audit_conform("audit_conform")
 	{
 	}
 
-	/**
-	 * @brief Construct a new validator object
-	 *
-	 * @param is The data to parse
-	 */
+	///
+	/// @brief Construct a new validator object
+	///
+	/// @param is The data to parse
+	///
 	validator(std::istream &is)
 		: m_audit_conform("audit_conform")
 	{
@@ -462,10 +461,10 @@ class validator
 
 // --------------------------------------------------------------------
 
-/**
- * @brief Validators are globally unique objects, use the validator_factory
- * class to construct them. This class is a singleton.
- */
+///
+/// @brief Validators are globally unique objects, use the validator_factory
+/// class to construct them. This class is a singleton.
+///
 
 class validator_factory
 {

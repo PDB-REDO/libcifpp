@@ -38,23 +38,23 @@
 # include <utility>
 #endif
 
-/** @file model.hpp
- *
- * This file contains code to work with models of molecules.
- *
- * The classes available encapsulate the real world concepts of
- * atoms, residues, monomers, polymers and everything is then
- * bound together in a structure.
- *
- * This code is not finished yet, ideally it would be a high
- * level interface to manipulate macro molecular structures
- * and an attempt has been made to start work on this. But
- * there's still a lot that needs to be implemented.
- *
- * However, the code that is here is still useful in
- * manipulating the underlying mmCIF data model.
- *
- */
+/// @file model.hpp
+///
+/// This file contains code to work with models of molecules.
+///
+/// The classes available encapsulate the real world concepts of
+/// atoms, residues, monomers, polymers and everything is then
+/// bound together in a structure.
+///
+/// This code is not finished yet, ideally it would be a high
+/// level interface to manipulate macro molecular structures
+/// and an attempt has been made to start work on this. But
+/// there's still a lot that needs to be implemented.
+///
+/// However, the code that is here is still useful in
+/// manipulating the underlying mmCIF data model.
+///
+///
 
 namespace cif
 {
@@ -72,24 +72,24 @@ class structure;
 
 // --------------------------------------------------------------------
 
-/**
- * @brief The class atom encapsulates the data in _atom_site and
- * _atom_site_anisotrop
- *
- * The class atom is a kind of flyweight class. It can be copied
- * with low overhead. All data is stored in the underlying mmCIF
- * categories but some very often used items are cached in the
- * impl.
- *
- * It is also possible to have symmetry copies of atoms. They
- * share the same data in the cif::category but their location
- * differs by using a symmetry operator.
- */
+///
+/// @brief The class atom encapsulates the data in _atom_site and
+/// _atom_site_anisotrop
+///
+/// The class atom is a kind of flyweight class. It can be copied
+/// with low overhead. All data is stored in the underlying mmCIF
+/// categories but some very often used items are cached in the
+/// impl.
+///
+/// It is also possible to have symmetry copies of atoms. They
+/// share the same data in the cif::category but their location
+/// differs by using a symmetry operator.
+///
 
 class atom
 {
   private:
-	/** @cond */
+	/// @cond
 	struct atom_impl : public std::enable_shared_from_this<atom_impl>
 	{
 		atom_impl(datablock &db, std::string_view id)
@@ -159,74 +159,74 @@ class atom
 		point m_location;
 		std::string m_symop = "1_555";
 	};
-	/** @endcond */
+	/// @endcond
 
   public:
-	/**
-	 * @brief Construct a new, empty atom object
-	 */
+	///
+	/// @brief Construct a new, empty atom object
+	///
 	atom() = default;
 
-	/**
-	 * @brief Construct a new atom object using @a impl as impl
-	 *
-	 * @param impl The implementation objectt
-	 */
+	///
+	/// @brief Construct a new atom object using @a impl as impl
+	///
+	/// @param impl The implementation objectt
+	///
 	atom(std::shared_ptr<atom_impl> impl)
 		: m_impl(std::move(impl))
 	{
 	}
 
-	/**
-	 * @brief Copy construct a new atom object
-	 */
+	///
+	/// @brief Copy construct a new atom object
+	///
 	atom(const atom &rhs) // NOLINT(modernize-use-equals-default)
 		: m_impl(rhs.m_impl)
 	{
 	}
 
-	/**
-	 * @brief Move construct a new atom object
-	 */
+	///
+	/// @brief Move construct a new atom object
+	///
 	atom(atom &&rhs)
 	{
 		std::swap(m_impl, rhs.m_impl);
 	}
 
-	/// \brief Copy assignement operator
+	/// @brief Copy assignement operator
 	atom &operator=(atom rhs)
 	{
 		std::swap(m_impl, rhs.m_impl);
 		return *this;
 	}
 
-	/**
-	 * @brief Construct a new atom object based on a cif::row
-	 *
-	 * @param db The datablock where the _atom_site category resides
-	 * @param row The row containing the data for this atom
-	 */
+	///
+	/// @brief Construct a new atom object based on a cif::row
+	///
+	/// @param db The datablock where the _atom_site category resides
+	/// @param row The row containing the data for this atom
+	///
 	atom(datablock &db, const_row_handle row)
 		: atom(std::make_shared<atom_impl>(db, row["id"].get<std::string>()))
 	{
 	}
 
-	/**
-	 * @brief A special constructor to create symmetry copies
-	 *
-	 * @param rhs The original atom to copy
-	 * @param symmmetry_location The symmetry location
-	 * @param symmetry_operation The symmetry operator used
-	 */
+	///
+	/// @brief A special constructor to create symmetry copies
+	///
+	/// @param rhs The original atom to copy
+	/// @param symmmetry_location The symmetry location
+	/// @param symmetry_operation The symmetry operator used
+	///
 	atom(const atom &rhs, const point &symmmetry_location, const std::string &symmetry_operation)
 		: atom(std::make_shared<atom_impl>(*rhs.m_impl, symmmetry_location, symmetry_operation))
 	{
 	}
 
-	/// \brief To quickly test if the atom has data
+	/// @brief To quickly test if the atom has data
 	explicit operator bool() const { return m_impl.operator bool(); }
 
-	/// \brief Return the item named @a name in the _atom_site category for this atom
+	/// @brief Return the item named @a name in the _atom_site category for this atom
 	[[nodiscard]] const item_handle get_property_value(std::string_view name) const
 	{
 		if (not m_impl)
@@ -234,25 +234,25 @@ class atom
 		return m_impl->get_property(name);
 	}
 
-	/// \brief Return the item named @a name in the _atom_site category for this atom as string
+	/// @brief Return the item named @a name in the _atom_site category for this atom as string
 	[[nodiscard]] auto get_property(std::string_view name) const
 	{
 		return get_property_value(name).get<std::string>();
 	}
 
-	/// \brief Return the item named @a name in the _atom_site category for this atom as float
+	/// @brief Return the item named @a name in the _atom_site category for this atom as float
 	[[nodiscard]] auto get_property_float(std::string_view name) const
 	{
 		return get_property_value(name).get<float>();
 	}
 
-	/// \brief Return the item named @a name in the _atom_site category for this atom as string
+	/// @brief Return the item named @a name in the _atom_site category for this atom as string
 	[[nodiscard]] auto get_property_int(std::string_view name) const
 	{
 		return get_property_value(name).get<int>();
 	}
 
-	/// \brief Set value for the item named @a name in the _atom_site category to @a value
+	/// @brief Set value for the item named @a name in the _atom_site category to @a value
 	void set_property(const std::string_view name, item_value value)
 	{
 		if (not m_impl)
@@ -260,7 +260,7 @@ class atom
 		m_impl->set_property(name, std::move(value));
 	}
 
-	/// \brief Set value for the item named @a name in the _atom_site category to @a value
+	/// @brief Set value for the item named @a name in the _atom_site category to @a value
 	template <typename T>
 	void set_property(const std::string_view name, const T &value)
 		requires(std::is_arithmetic_v<T>)
@@ -268,20 +268,20 @@ class atom
 		set_property(name, std::to_string(value));
 	}
 
-	/** Return the ID of the _atom_site record.
-	 *
-	 * @note Although I've never seen anything other than integers,
-	 * the standard says this should be a string and so we use that.
-	 */
+	/// Return the ID of the _atom_site record.
+	///
+	/// @note Although I've never seen anything other than integers,
+	/// the standard says this should be a string and so we use that.
+	///
 	[[nodiscard]] const std::string &id() const { return impl().m_id; }
 
-	/// \brief Return the type of the atom
+	/// @brief Return the type of the atom
 	[[nodiscard]] cif::atom_type get_type() const { return atom_type_traits(get_property("type_symbol")).type(); }
 
-	/// \brief Return the cached location of this atom
+	/// @brief Return the cached location of this atom
 	[[nodiscard]] point get_location() const { return impl().m_location; }
 
-	/// \brief Set the location of this atom, will set both the cached data as well as the data in the underlying _atom_site category
+	/// @brief Set the location of this atom, will set both the cached data as well as the data in the underlying _atom_site category
 	void set_location(point p)
 	{
 		if (not m_impl)
@@ -289,13 +289,13 @@ class atom
 		m_impl->moveTo(p);
 	}
 
-	/// \brief Translate the position of this atom by \a t
+	/// @brief Translate the position of this atom by @a t
 	void translate(point t)
 	{
 		set_location(get_location() + t);
 	}
 
-	/// \brief Rotate the position of this atom by \a q
+	/// @brief Rotate the position of this atom by @a q
 	void rotate(quaternion q)
 	{
 		auto loc = get_location();
@@ -303,7 +303,7 @@ class atom
 		set_location(loc);
 	}
 
-	/// \brief rotate the coordinates of this atom by \a q around point \a p
+	/// @brief rotate the coordinates of this atom by @a q around point @a p
 	void rotate(quaternion q, point p)
 	{
 		auto loc = get_location();
@@ -311,7 +311,7 @@ class atom
 		set_location(loc);
 	}
 
-	/// \brief Translate and rotate the position of this atom by \a t and \a q
+	/// @brief Translate and rotate the position of this atom by @a t and @a q
 	void translate_and_rotate(point t, quaternion q)
 	{
 		auto loc = get_location();
@@ -320,7 +320,7 @@ class atom
 		set_location(loc);
 	}
 
-	/// \brief Translate, rotate and translate again the coordinates this atom by \a t1 , \a q and \a t2
+	/// @brief Translate, rotate and translate again the coordinates this atom by @a t1 , @a q and @a t2
 	void translate_rotate_and_translate(point t1, quaternion q, point t2)
 	{
 		auto loc = get_location();
@@ -441,23 +441,23 @@ class atom
 	std::shared_ptr<atom_impl> m_impl;
 };
 
-/** swap */
+/// swap
 inline void swap(atom &a, atom &b)
 {
 	a.swap(b);
 }
 
-/** Calculate the distance between atoms @a and @a b in ångström */
+/// Calculate the distance between atoms @a and @a b in ångström
 inline float distance(const atom &a, const atom &b)
 {
 	return distance(a.get_location(), b.get_location());
 }
 
-/** Calculate the square of the distance between atoms @a and @a b in ångström
- *
- * @note Use this whenever possible instead of simply using distance since
- * this function does not have to calculate a square root which is expensive.
- */
+/// Calculate the square of the distance between atoms @a and @a b in ångström
+///
+/// @note Use this whenever possible instead of simply using distance since
+/// this function does not have to calculate a square root which is expensive.
+///
 inline float distance_squared(const atom &a, const atom &b)
 {
 	return distance_squared(a.get_location(), b.get_location());
@@ -465,10 +465,10 @@ inline float distance_squared(const atom &a, const atom &b)
 
 // --------------------------------------------------------------------
 
-/**
- * @brief The entity types that can be found in a mmCIF file
- *
- */
+///
+/// @brief The entity types that can be found in a mmCIF file
+///
+///
 enum class EntityType
 {
 	Polymer,    ///< entity is a polymer
@@ -480,21 +480,21 @@ enum class EntityType
 
 // --------------------------------------------------------------------
 
-/**
- * @brief The class residue is a collection of atoms forming a molecule
- *
- * This class is used to store ligand e.g. Derived classes are monomer
- * and sugar.
- */
+///
+/// @brief The class residue is a collection of atoms forming a molecule
+///
+/// This class is used to store ligand e.g. Derived classes are monomer
+/// and sugar.
+///
 
 class residue
 {
   public:
 	friend class structure;
 
-	/**
-	 * @brief Construct a new residue object based on key items
-	 */
+	///
+	/// @brief Construct a new residue object based on key items
+	///
 	residue(structure &structure, std::string compoundID, std::string asymID, int seqID,
 		std::string authAsymID, std::string authSeqID, std::string pdbInsCode)
 		: m_structure(&structure)
@@ -507,10 +507,10 @@ class residue
 	{
 	}
 
-	/** Construct a new residue in structure with the atoms in @a atoms */
+	/// Construct a new residue in structure with the atoms in @a atoms
 	residue(structure &structure, const std::vector<atom> &atoms);
 
-	/** @cond */
+	/// @cond
 	residue(const residue &rhs) = default;
 	residue(residue &&rhs)
 	{
@@ -536,12 +536,12 @@ class residue
 	}
 
 	virtual ~residue() = default;
-	/** @endcond */
+	/// @endcond
 
-	/** Return the entity_id of this residue */
+	/// Return the entity_id of this residue
 	[[nodiscard]] std::string get_entity_id() const;
 
-	/** Return the entity type of this residue */
+	/// Return the entity type of this residue
 	[[nodiscard]] EntityType entity_type() const;
 
 	[[nodiscard]] const std::string &get_asym_id() const { return m_asym_id; } ///< Return the asym_id
@@ -554,64 +554,64 @@ class residue
 	[[nodiscard]] const std::string &get_compound_id() const { return m_compound_id; } ///< Return the compound_id
 	void set_compound_id(const std::string &id) { m_compound_id = id; }                ///< Set the compound_id to @a id
 
-	/** Return the structure this residue belongs to */
+	/// Return the structure this residue belongs to
 	[[nodiscard]] structure *get_structure() const { return m_structure; }
 
-	/** Return a list of the atoms for this residue */
+	/// Return a list of the atoms for this residue
 	std::vector<atom> &atoms()
 	{
 		return m_atoms;
 	}
 
-	/** Return a const list of the atoms for this residue */
+	/// Return a const list of the atoms for this residue
 	[[nodiscard]] const std::vector<atom> &atoms() const
 	{
 		return m_atoms;
 	}
 
-	/** Add atom @a atom to the atoms in this residue */
+	/// Add atom @a atom to the atoms in this residue
 	void add_atom(atom &atom);
 
-	/// \brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
+	/// @brief Unique atoms returns only the atoms without alternates and the first of each alternate atom id.
 	[[nodiscard]] std::vector<atom> unique_atoms() const;
 
-	/// \brief Return the atom with atom_id @a atomID
+	/// @brief Return the atom with atom_id @a atomID
 	[[nodiscard]] atom get_atom_by_atom_id(const std::string &atomID) const;
 
-	/// \brief Return the atom with atom_id @a atomID and alternate_id @a altID
+	/// @brief Return the atom with atom_id @a atomID and alternate_id @a altID
 	[[nodiscard]] atom get_atom_by_atom_id(const std::string &atomID, const std::string &altID) const;
 
-	/// \brief Return the list of atoms having ID \a atomID
+	/// @brief Return the list of atoms having ID @a atomID
 	///
 	/// This includes all alternate atoms with this ID
 	/// whereas get_atom_by_atom_id only returns the first unique atom
 	[[nodiscard]] std::vector<atom> get_atoms_by_id(const std::string &atomID) const;
 
-	/// \brief Is this residue a single entity?
+	/// @brief Is this residue a single entity?
 	[[nodiscard]] bool is_entity() const;
 
-	/// \brief Is this residue a water molecule?
+	/// @brief Is this residue a water molecule?
 	[[nodiscard]] bool is_water() const { return m_compound_id == "HOH"; }
 
-	/// \brief Return true if this residue has alternate atoms
+	/// @brief Return true if this residue has alternate atoms
 	[[nodiscard]] bool has_alternate_atoms() const;
 
-	/// \brief Return true if this residue has alternate atoms for the atom \a atomID
+	/// @brief Return true if this residue has alternate atoms for the atom @a atomID
 	[[nodiscard]] bool has_alternate_atoms_for(const std::string &atomID) const;
 
-	/// \brief Return the list of unique alt ID's present in this residue
+	/// @brief Return the list of unique alt ID's present in this residue
 	[[nodiscard]] std::set<std::string> get_alternate_ids() const;
 
-	/// \brief Return the list of unique atom ID's
+	/// @brief Return the list of unique atom ID's
 	[[nodiscard]] std::set<std::string> get_atom_ids() const;
 
-	/// \brief Return a tuple containing the center location and the radius for the atoms of this residue
+	/// @brief Return a tuple containing the center location and the radius for the atoms of this residue
 	[[nodiscard]] std::tuple<point, float> center_and_radius() const;
 
-	/// \brief Write the residue @a res to the std::ostream @a os
+	/// @brief Write the residue @a res to the std::ostream @a os
 	friend std::ostream &operator<<(std::ostream &os, const residue &res);
 
-	/// \brief Return true if this residue is equal to @a rhs
+	/// @brief Return true if this residue is equal to @a rhs
 	bool operator==(const residue &rhs) const
 	{
 		return this == &rhs or (m_structure == rhs.m_structure and
@@ -626,7 +626,7 @@ class residue
 	virtual atom create_new_atom(atom_type inType, const std::string &inAtomID, point inLocation);
 
   protected:
-	/** @cond */
+	/// @cond
 	residue() = default;
 
 	structure *m_structure = nullptr;
@@ -634,27 +634,27 @@ class residue
 	int m_seq_id = 0;
 	std::string m_pdb_strand_id, m_pdb_seq_num, m_pdb_ins_code;
 	std::vector<atom> m_atoms;
-	/** @endcond */
+	/// @endcond
 };
 
 // --------------------------------------------------------------------
 
-/**
- * @brief a monomer models a single residue in a protein chain
- *
- */
+///
+/// @brief a monomer models a single residue in a protein chain
+///
+///
 
 class monomer : public residue
 {
   public:
-	/// \brief constructor with actual values
+	/// @brief constructor with actual values
 	monomer(const polymer &polymer, std::size_t index, int seqID, const std::string &authSeqID,
 		const std::string &pdbInsCode, const std::string &compoundID);
 
-	/// \brief Copy constructor
+	/// @brief Copy constructor
 	monomer(const monomer &rhs) = default;
 
-	/// \brief Move constructor
+	/// @brief Move constructor
 	monomer(monomer &&rhs)
 	{
 		swap(*this, rhs);
@@ -702,10 +702,10 @@ class monomer : public residue
 
 	[[nodiscard]] bool is_cis() const; ///< Return true if this residue is in a cis conformation
 
-	/// \brief Returns true if the four atoms C, CA, N and O are present
+	/// @brief Returns true if the four atoms C, CA, N and O are present
 	[[nodiscard]] bool is_complete() const;
 
-	/// \brief Returns true if any of the backbone atoms has an alternate
+	/// @brief Returns true if any of the backbone atoms has an alternate
 	[[nodiscard]] bool has_alternate_backbone_atoms() const;
 
 	[[nodiscard]] atom CAlpha() const { return get_atom_by_atom_id("CA"); } ///< Return the CAlpha atom
@@ -714,32 +714,32 @@ class monomer : public residue
 	[[nodiscard]] atom O() const { return get_atom_by_atom_id("O"); }       ///< Return the O atom
 	[[nodiscard]] atom H() const { return get_atom_by_atom_id("H"); }       ///< Return the H atom
 
-	/// \brief Return true if this monomer is bonded to monomer @a rhs
+	/// @brief Return true if this monomer is bonded to monomer @a rhs
 	[[nodiscard]] bool is_bonded_to(const monomer &rhs) const
 	{
 		return this != &rhs and are_bonded(*this, rhs);
 	}
 
-	/**
-	 * @brief Return true if the distance between the CA atoms of the
-	 * two monomers @a a and @a b are within the expected range with
-	 * an error margin of @a errorMargin.
-	 *
-	 * The expected distance is 3.0 ångström for a cis conformation
-	 * and 3.8 ångström for trans.
-	 */
+	///
+	/// @brief Return true if the distance between the CA atoms of the
+	/// two monomers @a a and @a b are within the expected range with
+	/// an error margin of @a errorMargin.
+	///
+	/// The expected distance is 3.0 ångström for a cis conformation
+	/// and 3.8 ångström for trans.
+	///
 	static bool are_bonded(const monomer &a, const monomer &b, float errorMargin = 0.5f);
 
-	/// \brief Return true if the bond between @a a and @a b is cis
+	/// @brief Return true if the bond between @a a and @a b is cis
 	static bool is_cis(const monomer &a, const monomer &b);
 
-	/// \brief Return the omega angle between @a a and @a b
+	/// @brief Return the omega angle between @a a and @a b
 	static float omega(const monomer &a, const monomer &b);
 
-	/// \brief Return the chiral volume, only for LEU and VAL
+	/// @brief Return the chiral volume, only for LEU and VAL
 	[[nodiscard]] float chiral_volume() const;
 
-	/// \brief Compare this monomer with \a rhs
+	/// @brief Compare this monomer with @a rhs
 	bool operator==(const monomer &rhs) const
 	{
 		return m_polymer == rhs.m_polymer and m_index == rhs.m_index;
@@ -754,14 +754,14 @@ class monomer : public residue
 
 // --------------------------------------------------------------------
 
-/**
- * @brief A polymer is simply a list of monomers
- *
- */
+///
+/// @brief A polymer is simply a list of monomers
+///
+///
 class polymer : public std::vector<monomer>
 {
   public:
-	/// \brief Constructor
+	/// @brief Constructor
 	polymer(structure &s, std::string entityID, std::string asymID, std::string auth_asym_id);
 
 	polymer(const polymer &) = delete;
@@ -785,19 +785,19 @@ class polymer : public std::vector<monomer>
 
 class branch;
 
-/**
- * @brief A sugar is a residue that is part of a glycosylation site
- *
- */
+///
+/// @brief A sugar is a residue that is part of a glycosylation site
+///
+///
 
 class sugar : public residue
 {
   public:
-	/// \brief constructor
+	/// @brief constructor
 	sugar(branch &branch, const std::string &compoundID,
 		const std::string &asymID, int authSeqID);
 
-	/** @cond */
+	/// @cond
 	sugar(const sugar &rhs) = default;
 
 	sugar(sugar &&rhs)
@@ -818,18 +818,18 @@ class sugar : public residue
 		swap(static_cast<residue &>(a), static_cast<residue &>(b));
 	}
 
-	/** @endcond */
+	/// @endcond
 
-	/**
-	 * @brief Return the sugar number in the glycosylation tree
-	 *
-	 * To store the sugar number, the auth_seq_id item has been overloaded
-	 * in the specification. But since a sugar number should be, ehm, a number
-	 * and auth_seq_id is specified to contain a string, we do a check here
-	 * to see if it really is a number.
-	 *
-	 * @return The sugar number
-	 */
+	///
+	/// @brief Return the sugar number in the glycosylation tree
+	///
+	/// To store the sugar number, the auth_seq_id item has been overloaded
+	/// in the specification. But since a sugar number should be, ehm, a number
+	/// and auth_seq_id is specified to contain a string, we do a check here
+	/// to see if it really is a number.
+	///
+	/// @return The sugar number
+	///
 	[[nodiscard]] int num() const
 	{
 		int result;
@@ -839,16 +839,16 @@ class sugar : public residue
 		return result;
 	}
 
-	/// \brief Return the name of this sugar
+	/// @brief Return the name of this sugar
 	[[nodiscard]] std::string name() const;
 
-	/// \brief Return the atom the C1 is linked to
+	/// @brief Return the atom the C1 is linked to
 	[[nodiscard]] atom get_link() const { return m_link; }
 
-	/// \brief Set the link atom C1 is linked to to @a link
+	/// @brief Set the link atom C1 is linked to to @a link
 	void set_link(atom link) { m_link = link; }
 
-	/// \brief Return the sugar number of the sugar linked to C1
+	/// @brief Return the sugar number of the sugar linked to C1
 	[[nodiscard]] std::size_t get_link_nr() const
 	{
 		std::size_t result = 0;
@@ -857,7 +857,7 @@ class sugar : public residue
 		return result;
 	}
 
-	/// \brief Construct an atom based on the info in @a atom_info and add it to this sugar
+	/// @brief Construct an atom based on the info in @a atom_info and add it to this sugar
 	atom add_atom(row_initializer atom_info);
 
   private:
@@ -865,35 +865,35 @@ class sugar : public residue
 	atom m_link;
 };
 
-/**
- * @brief A branch is a list of sugars
- *
- * A list is how it is stored, but a branch is like a branch in a tree,
- * with potentially lots of sub branches. Each sugar is linked to a sugar
- * up in the branch with its (almost always) C1 atom.
- *
- */
+///
+/// @brief A branch is a list of sugars
+///
+/// A list is how it is stored, but a branch is like a branch in a tree,
+/// with potentially lots of sub branches. Each sugar is linked to a sugar
+/// up in the branch with its (almost always) C1 atom.
+///
+///
 class branch : public std::vector<sugar>
 {
   public:
-	/// \brief constructor
+	/// @brief constructor
 	branch(structure &structure, std::string asym_id, std::string entity_id);
 
 	branch(const branch &) = delete;
 	branch &operator=(const branch &) = delete;
 
-	/** @cond */
+	/// @cond
 	branch(branch &&) = default;
 	branch &operator=(branch &&) = default;
-	/** @endcond */
+	/// @endcond
 
-	/// \brief Update the link atoms in all sugars in this branch
+	/// @brief Update the link atoms in all sugars in this branch
 	void link_atoms();
 
-	/// \brief Return the name of the branch
+	/// @brief Return the name of the branch
 	[[nodiscard]] std::string name() const;
 
-	/// \brief Return the weight of the branch based on the formulae of the sugars
+	/// @brief Return the weight of the branch based on the formulae of the sugars
 	[[nodiscard]] float weight() const;
 
 	[[nodiscard]] std::string get_asym_id() const { return m_asym_id; }     ///< Return the asym_id
@@ -902,21 +902,21 @@ class branch : public std::vector<sugar>
 	[[nodiscard]] structure &get_structure() { return *m_structure; }       ///< Return the structure
 	[[nodiscard]] structure &get_structure() const { return *m_structure; } ///< Return the structure
 
-	/// \brief Return a reference to the sugar with number @a num
+	/// @brief Return a reference to the sugar with number @a num
 	[[nodiscard]] sugar &get_sugar_by_num(int nr);
 
-	/// \brief Return a const reference to the sugar with number @a num
+	/// @brief Return a const reference to the sugar with number @a num
 	[[nodiscard]] const sugar &get_sugar_by_num(int nr) const
 	{
 		return const_cast<branch *>(this)->get_sugar_by_num(nr);
 	}
 
-	/// \brief Construct a new sugar with compound ID @a compound_id in this branch
+	/// @brief Construct a new sugar with compound ID @a compound_id in this branch
 	/// and return a reference to the newly created sugar. Use this to create a first
 	/// sugar in a branch.
 	sugar &construct_sugar(const std::string &compound_id);
 
-	/// \brief Construct a new sugar with compound ID @a compound_id in this branch
+	/// @brief Construct a new sugar with compound ID @a compound_id in this branch
 	/// and return a reference to the newly created sugar. The newly created sugar
 	/// will be connected to an already created sugar in the branch using the
 	/// information in @a atom_id, @a linked_sugar_nr and @a linked_atom_id
@@ -932,25 +932,25 @@ class branch : public std::vector<sugar>
 	std::string m_asym_id, m_entity_id;
 };
 
-/** @brief Enumeration for controlling atom selection based on occupancy. */
+/// @brief Enumeration for controlling atom selection based on occupancy.
 enum class occupancy_policy
 {
-	/** @brief Include all atoms regardless of their occupancy factor. */
+	/// @brief Include all atoms regardless of their occupancy factor.
 	ALL = 0,
 
-	/** @brief Select only alternate atoms with the maximum occupancy factor.
-	 * If multiple atoms have the same maximum occupancy, choose the one with the minimum B-factor.
-	 * If multiple atoms share both the maximum occupancy and the minimum B-factor, select the first encountered atom.
-	 */
+	/// @brief Select only alternate atoms with the maximum occupancy factor.
+	/// If multiple atoms have the same maximum occupancy, choose the one with the minimum B-factor.
+	/// If multiple atoms share both the maximum occupancy and the minimum B-factor, select the first encountered atom.
+	///
 	MAX = 1,
 
-	/** @brief Select only alternate atoms with the minimum occupancy factor.
-	 * Similar to MAX, if multiple atoms have the same minimum occupancy, choose the one with the minimum B-factor.
-	 * If multiple atoms share both the minimum occupancy and the minimum B-factor, select the first encountered atom.
-	 */
+	/// @brief Select only alternate atoms with the minimum occupancy factor.
+	/// Similar to MAX, if multiple atoms have the same minimum occupancy, choose the one with the minimum B-factor.
+	/// If multiple atoms share both the minimum occupancy and the minimum B-factor, select the first encountered atom.
+	///
 	MIN = 2,
 
-	/** @brief Exclude all atoms with an occupancy factor greater than zero. */
+	/// @brief Exclude all atoms with an occupancy factor greater than zero.
 	UNOCCUPIED = 3
 };
 
@@ -968,24 +968,24 @@ struct structure_open_options
 
 // --------------------------------------------------------------------
 
-/**
- * @brief A structure is the combination of polymers, ligand and sugar branches found
- * in the mmCIF file. This will always contain one model, the first model is taken
- * if not otherwise specified.
- *
- */
+///
+/// @brief A structure is the combination of polymers, ligand and sugar branches found
+/// in the mmCIF file. This will always contain one model, the first model is taken
+/// if not otherwise specified.
+///
+///
 class structure
 {
   public:
-	/// \brief Read the structure from cif::file @a p
+	/// @brief Read the structure from cif::file @a p
 	structure(file &p, std::size_t modelNr = 1, structure_open_options options = {});
 
-	/// \brief Load the structure from already parsed mmCIF data in @a db
+	/// @brief Load the structure from already parsed mmCIF data in @a db
 	structure(datablock &db, std::size_t modelNr = 1, structure_open_options options = {});
 
-	/** @cond */
+	/// @cond
 	structure(structure &&s) = default;
-	/** @endcond */
+	/// @endcond
 
 	// structures cannot be copied.
 
@@ -993,10 +993,10 @@ class structure
 	structure &operator=(const structure &) = delete;
 	~structure() = default;
 
-	/// \brief Return the model number
+	/// @brief Return the model number
 	[[nodiscard]] std::size_t get_model_nr() const { return m_model_nr; }
 
-	/// \brief Return a list of all the atoms in this structure
+	/// @brief Return a list of all the atoms in this structure
 	[[nodiscard]] const std::vector<atom> &atoms() const { return m_atoms; }
 
 	[[nodiscard]] EntityType get_entity_type_for_entity_id(const std::string entityID) const; ///< Return the entity type for the entity with id @a entity_id
@@ -1022,56 +1022,56 @@ class structure
 	[[nodiscard]] bool has_atom_id(const std::string &id) const;    ///< Return true if an atom with ID @a id exists in this structure
 	[[nodiscard]] atom get_atom_by_id(const std::string &id) const; ///< Return the atom with ID @a id
 
-	/// \brief Return the atom identified by the label_ values specified
+	/// @brief Return the atom identified by the label_ values specified
 	[[nodiscard]] atom get_atom_by_label(const std::string &atomID, const std::string &asymID,
 		const std::string &compID, int seqID, const std::string &altID = "");
 
-	/// \brief Return the atom closest to point \a p
+	/// @brief Return the atom closest to point @a p
 	[[nodiscard]] atom get_atom_by_position(point p) const;
 
-	/// \brief Return the atom closest to point \a p with atom type \a type in a residue of type \a res_type
+	/// @brief Return the atom closest to point @a p with atom type @a type in a residue of type @a res_type
 	[[nodiscard]] atom get_atom_by_position_and_type(point p, std::string_view type, std::string_view res_type) const;
 
-	/// \brief Create a non-poly residue based on atoms already present in this structure.
+	/// @brief Create a non-poly residue based on atoms already present in this structure.
 	residue &create_residue(const std::vector<atom> &atoms);
 
-	/// \brief Get a non-poly residue for an asym with id \a asymID
+	/// @brief Get a non-poly residue for an asym with id @a asymID
 	[[nodiscard]] residue &get_residue(const std::string &asymID)
 	{
 		return get_residue(asymID, 0, "");
 	}
 
-	/// \brief Get a non-poly residue for an asym with id \a asymID
+	/// @brief Get a non-poly residue for an asym with id @a asymID
 	[[nodiscard]] const residue &get_residue(const std::string &asymID) const
 	{
 		return get_residue(asymID, 0, "");
 	}
 
-	/// \brief Get a residue for an asym with id \a asymID seq id \a seqID and authSeqID \a authSeqID
+	/// @brief Get a residue for an asym with id @a asymID seq id @a seqID and authSeqID @a authSeqID
 	[[nodiscard]] residue &get_residue(const std::string &asymID, int seqID, const std::string &authSeqID);
 
-	/// \brief Get a the single residue for an asym with id \a asymID seq id \a seqID and authSeqID \a authSeqID
+	/// @brief Get a the single residue for an asym with id @a asymID seq id @a seqID and authSeqID @a authSeqID
 	[[nodiscard]] const residue &get_residue(const std::string &asymID, int seqID, const std::string &authSeqID) const
 	{
 		return const_cast<structure *>(this)->get_residue(asymID, seqID, authSeqID);
 	}
 
-	/// \brief Get a residue for an asym with id \a asymID, compound id \a compID, seq id \a seqID and authSeqID \a authSeqID
+	/// @brief Get a residue for an asym with id @a asymID, compound id @a compID, seq id @a seqID and authSeqID @a authSeqID
 	[[nodiscard]] residue &get_residue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID);
 
-	/// \brief Get a residue for an asym with id \a asymID, compound id \a compID, seq id \a seqID and authSeqID \a authSeqID
+	/// @brief Get a residue for an asym with id @a asymID, compound id @a compID, seq id @a seqID and authSeqID @a authSeqID
 	[[nodiscard]] const residue &get_residue(const std::string &asymID, const std::string &compID, int seqID, const std::string &authSeqID) const
 	{
 		return const_cast<structure *>(this)->get_residue(asymID, compID, seqID, authSeqID);
 	}
 
-	/// \brief Get a the residue for atom \a atom
+	/// @brief Get a the residue for atom @a atom
 	[[nodiscard]] residue &get_residue(const atom &atom)
 	{
 		return get_residue(atom.get_label_asym_id(), atom.get_label_comp_id(), atom.get_label_seq_id(), atom.get_auth_seq_id());
 	}
 
-	/// \brief Get a the residue for atom \a atom
+	/// @brief Get a the residue for atom @a atom
 	[[nodiscard]] const residue &get_residue(const atom &atom) const
 	{
 		return get_residue(atom.get_label_asym_id(), atom.get_label_comp_id(), atom.get_label_seq_id(), atom.get_auth_seq_id());
@@ -1079,7 +1079,7 @@ class structure
 
 	// Actions. Originally a lot more actions were expected here
 
-	/// \brief Remove atom @a a
+	/// @brief Remove atom @a a
 	void remove_atom(atom &a)
 	{
 		remove_atom(a, true);
@@ -1088,140 +1088,140 @@ class structure
 	void swap_atoms(atom a1, atom a2); ///< swap the labels for these atoms
 	void move_atom(atom a, point p);   ///< move atom to a new location
 
-	/**
-	 * @brief Change residue @a res to a new compound ID optionally
-	 * remapping atoms.
-	 *
-	 * A new chem_comp entry as well as an entity is created if needed and
-	 * if the list of @a remappedAtoms is not empty it is used to remap.
-	 *
-	 * The array in @a remappedAtoms contains tuples of strings, both
-	 * strings contain an atom_id. The first is the one in the current
-	 * residue and the second is the atom_id that should be used instead.
-	 * If the second string is empty, the atom is removed from the residue.
-	 *
-	 * @param res
-	 * @param newcompound
-	 * @param remappedAtoms
-	 */
+	///
+	/// @brief Change residue @a res to a new compound ID optionally
+	/// remapping atoms.
+	///
+	/// A new chem_comp entry as well as an entity is created if needed and
+	/// if the list of @a remappedAtoms is not empty it is used to remap.
+	///
+	/// The array in @a remappedAtoms contains tuples of strings, both
+	/// strings contain an atom_id. The first is the one in the current
+	/// residue and the second is the atom_id that should be used instead.
+	/// If the second string is empty, the atom is removed from the residue.
+	///
+	/// @param res
+	/// @param newcompound
+	/// @param remappedAtoms
+	///
 	void change_residue(residue &res, const std::string &newcompound,
 		const std::vector<std::tuple<std::string, std::string>> &remappedAtoms);
 
-	/// \brief Remove a residue, can be monomer or nonpoly
+	/// @brief Remove a residue, can be monomer or nonpoly
 	///
-	/// \param asym_id     The asym ID
-	/// \param seq_id      The sequence ID
-	/// \param auth_seq_id The auth sequence ID
+	/// @param asym_id     The asym ID
+	/// @param seq_id      The sequence ID
+	/// @param auth_seq_id The auth sequence ID
 	void remove_residue(const std::string &asym_id, int seq_id, const std::string &auth_seq_id);
 
-	/// \brief Create a new non-polymer entity, returns new ID
-	/// \param mon_id	The mon_id for the new nonpoly, must be an existing and known compound from CCD
-	/// \return			The ID of the created entity
+	/// @brief Create a new non-polymer entity, returns new ID
+	/// @param mon_id	The mon_id for the new nonpoly, must be an existing and known compound from CCD
+	/// @return			The ID of the created entity
 	std::string create_non_poly_entity(const std::string &mon_id);
 
-	/// \brief Create a new NonPolymer struct_asym with atoms constructed from \a atoms, returns asym_id.
+	/// @brief Create a new NonPolymer struct_asym with atoms constructed from @a atoms, returns asym_id.
 	/// This method assumes you are copying data from one cif file to another.
 	///
-	/// \param entity_id	The entity ID of the new nonpoly
-	/// \param atoms		The array of atom_site rows containing the data.
-	/// \return				The newly create asym ID
+	/// @param entity_id	The entity ID of the new nonpoly
+	/// @param atoms		The array of atom_site rows containing the data.
+	/// @return				The newly create asym ID
 	std::string create_non_poly(const std::string &entity_id, const std::vector<atom> &atoms);
 
-	/// \brief Create a new NonPolymer struct_asym with atoms constructed from info in \a atom_info, returns asym_id.
+	/// @brief Create a new NonPolymer struct_asym with atoms constructed from info in @a atom_info, returns asym_id.
 	/// This method creates new atom records filled with info from the info.
 	///
-	/// \param entity_id	The entity ID of the new nonpoly
-	/// \param atoms		The array of sets of item data containing the data for the atoms.
-	/// \return				The newly create asym ID
+	/// @param entity_id	The entity ID of the new nonpoly
+	/// @param atoms		The array of sets of item data containing the data for the atoms.
+	/// @return				The newly create asym ID
 	std::string create_non_poly(const std::string &entity_id, std::vector<row_initializer> atoms);
 
-	/// \brief Create a new NonPolymer struct_asym for a compound of type \a compound_id, returns asym_id.
+	/// @brief Create a new NonPolymer struct_asym for a compound of type @a compound_id, returns asym_id.
 	/// This method creates new atom records filled with info from the CCD compound info.
 	///
-	/// \param compound_id	 The compound ID of the new nonpoly
-	/// \param skip_hydrogen Do not create hydrogen atoms when true
-	/// \return				 The newly create asym ID
+	/// @param compound_id	 The compound ID of the new nonpoly
+	/// @param skip_hydrogen Do not create hydrogen atoms when true
+	/// @return				 The newly create asym ID
 	std::string create_non_poly(const std::string &compound_id, bool skip_hydrogen);
 
-	/// \brief Create a new water with atom constructed from info in \a atom_info
+	/// @brief Create a new water with atom constructed from info in @a atom_info
 	/// This method creates a new atom record filled with info from the info.
 	///
-	/// \param atom			The set of item data containing the data for the atoms.
+	/// @param atom			The set of item data containing the data for the atoms.
 	void create_water(row_initializer atom);
 
-	/// \brief Create a link, a struct_conn record for two atoms.
+	/// @brief Create a link, a struct_conn record for two atoms.
 	///
-	/// \param a1			Atom 1
-	/// \param a2			Atom 2
-	/// \param link_type	The struct_conn_type ID for the link
-	/// \param role			The pdbx_role field value
-	/// \return 			The ID of the struct_conn record created
+	/// @param a1			Atom 1
+	/// @param a2			Atom 2
+	/// @param link_type	The struct_conn_type ID for the link
+	/// @param role			The pdbx_role field value
+	/// @return 			The ID of the struct_conn record created
 
 	std::string create_link(atom a1, atom a2, const std::string &link_type, const std::string &role);
 
-	/// \brief Create a new and empty (sugar) branch
+	/// @brief Create a new and empty (sugar) branch
 	branch &create_branch();
 
-	// /// \brief Create a new (sugar) branch with one first NAG containing atoms constructed from \a atoms
+	// /// @brief Create a new (sugar) branch with one first NAG containing atoms constructed from @a atoms
 	// branch &create_branch(std::vector<row_initializer> atoms);
 
-	// /// \brief Extend an existing (sugar) branch identified by \a asymID with one sugar containing atoms constructed from \a atom_info
+	// /// @brief Extend an existing (sugar) branch identified by @a asymID with one sugar containing atoms constructed from @a atom_info
 	// ///
-	// /// \param asym_id      The asym id of the branch to extend
-	// /// \param atom_info    Array containing the info for the atoms to construct for the new sugar
-	// /// \param link_sugar   The sugar to link to, note: this is the sugar number (1 based)
-	// /// \param link_atom    The atom id of the atom linked in the sugar
+	// /// @param asym_id      The asym id of the branch to extend
+	// /// @param atom_info    Array containing the info for the atoms to construct for the new sugar
+	// /// @param link_sugar   The sugar to link to, note: this is the sugar number (1 based)
+	// /// @param link_atom    The atom id of the atom linked in the sugar
 	// branch &extend_branch(const std::string &asym_id, std::vector<row_initializer> atom_info,
 	// 	int link_sugar, const std::string &link_atom);
 
-	/// \brief Remove \a branch
+	/// @brief Remove @a branch
 	void remove_branch(branch &branch);
 
-	/// \brief Remove residue \a res
+	/// @brief Remove residue @a res
 	///
-	/// \param res         The residue to remove
+	/// @param res         The residue to remove
 	void remove_residue(residue &res);
 
-	/// \brief Translate the coordinates of all atoms in the structure by \a t
+	/// @brief Translate the coordinates of all atoms in the structure by @a t
 	void translate(point t);
 
-	/// \brief Rotate the coordinates of all atoms in the structure by \a q
+	/// @brief Rotate the coordinates of all atoms in the structure by @a q
 	void rotate(quaternion t);
 
-	/// \brief Translate and rotate the coordinates of all atoms in the structure by \a t and \a q
+	/// @brief Translate and rotate the coordinates of all atoms in the structure by @a t and @a q
 	void translate_and_rotate(point t, quaternion q);
 
-	/// \brief Translate, rotate and translate again the coordinates of all atoms in the structure by \a t1 , \a q and \a t2
+	/// @brief Translate, rotate and translate again the coordinates of all atoms in the structure by @a t1 , @a q and @a t2
 	void translate_rotate_and_translate(point t1, quaternion q, point t2);
 
-	/// \brief Remove all categories that have no rows left
+	/// @brief Remove all categories that have no rows left
 	void cleanup_empty_categories();
 
-	/// \brief Direct access to underlying data
+	/// @brief Direct access to underlying data
 	[[nodiscard]] category &get_category(std::string_view name) const
 	{
 		return m_db[name];
 	}
 
-	/// \brief Direct access to underlying data
+	/// @brief Direct access to underlying data
 	[[nodiscard]] datablock &get_datablock() const
 	{
 		return m_db;
 	}
 
-	/// \brief Check if all atoms are part of either a polymer, a branch or one of the non-polymer residues
+	/// @brief Check if all atoms are part of either a polymer, a branch or one of the non-polymer residues
 	void validate_atoms() const;
 
-	/// \brief emplace a newly created atom using @a args
+	/// @brief emplace a newly created atom using @a args
 	atom &emplace_atom(datablock &db, const_row_handle rh)
 	{
 		return emplace_atom(atom{ db, rh });
 	}
 
-	/// \brief emplace the moved atom @a atom
+	/// @brief emplace the moved atom @a atom
 	atom &emplace_atom(atom atom);
 
-	/// \brief Reorder atom_site atoms based on 'natural' ordering
+	/// @brief Reorder atom_site atoms based on 'natural' ordering
 	void reorder_atoms();
 
   private:

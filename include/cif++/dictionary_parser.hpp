@@ -29,20 +29,19 @@
 #include "cif++/validate.hpp"
 #include <iosfwd>
 
-/**
- * @file validate.hpp
- * 
- * Functions to create and manipulate validator objects 
- */
+/// @file dictionary_parser.hpp
+///
+/// Functions to create and manipulate validator objects
+///
 
 namespace cif
 {
 
 class validator;
 
-/**
- * @brief Parse the contents of @a is and place content in validator @a v
- */
+///
+/// @brief Parse the contents of @a is and place content in validator @a v
+///
 void parse_dictionary(validator &v, std::istream &is);
 
 } // namespace cif

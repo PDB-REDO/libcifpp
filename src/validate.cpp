@@ -60,30 +60,30 @@
 namespace cif
 {
 
-/**
- * @brief The implementation for @ref validation_category error messages
- *
- */
+///
+/// @brief The implementation for @ref validation_category error messages
+///
+///
 class validation_category_impl : public std::error_category
 {
   public:
-	/**
-	 * @brief User friendly name
-	 *
-	 * @return const char*
-	 */
+	///
+	/// @brief User friendly name
+	///
+	/// @return const char*
+	///
 
 	[[nodiscard]] const char *name() const noexcept override
 	{
 		return "cif::validation";
 	}
 
-	/**
-	 * @brief Provide the error message as a string for the error code @a ev
-	 *
-	 * @param ev The error code
-	 * @return std::string
-	 */
+	///
+	/// @brief Provide the error message as a string for the error code @a ev
+	///
+	/// @param ev The error code
+	/// @return std::string
+	///
 
 	[[nodiscard]] std::string message(int ev) const override
 	{
@@ -128,10 +128,10 @@ class validation_category_impl : public std::error_category
 		}
 	}
 
-	/**
-	 * @brief Return whether two error codes are equivalent, always false in this case
-	 *
-	 */
+	///
+	/// @brief Return whether two error codes are equivalent, always false in this case
+	///
+	///
 
 	[[nodiscard]] bool equivalent(const std::error_code & /*code*/, int /*condition*/) const noexcept override
 	{

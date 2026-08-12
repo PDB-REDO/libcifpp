@@ -30,10 +30,10 @@
 #include <streambuf>
 
 
-/**  \file format.hpp
- * 
- * Now using std::format instead of a home grown rip off
- */
+/// @file format.hpp
+///
+/// Now using std::format instead of a home grown rip off
+///
 
 namespace cif
 {
@@ -45,19 +45,19 @@ class fill_out_streambuf : public std::streambuf
 {
   public:
 
-	/** @cond */
+	/// @cond
 
 	using base_type = std::streambuf;
 	using int_type = base_type::int_type;
 	using char_type = base_type::char_type;
 	using traits_type = base_type::traits_type;
 
-	/** @endcond */
+	/// @endcond
 
-	/**
-	 * @brief Construct a new fill out streambuf object based on ostream @a os and a
-	 * width to fill out to of @a width
-	 */
+	///
+	/// @brief Construct a new fill out streambuf object based on ostream @a os and a
+	/// width to fill out to of @a width
+	///
 	fill_out_streambuf(std::ostream &os, int width = 80)
 		: m_os(os)
 		, m_upstream(os.rdbuf())
@@ -65,20 +65,20 @@ class fill_out_streambuf : public std::streambuf
 	{
 	}
 
-	/** @cond */
+	/// @cond
 
 	~fill_out_streambuf() override
 	{
 		m_os.rdbuf(m_upstream);
 	}
 
-	/** @endcond */
+	/// @endcond
 
-	/**
-	 * @brief The magic happens here. Write out a couple of spaces when
-	 * the last character to write is a newline to make the line as
-	 * wide as the requested width.
-	 */
+	///
+	/// @brief The magic happens here. Write out a couple of spaces when
+	/// the last character to write is a newline to make the line as
+	/// wide as the requested width.
+	///
 	
 	int_type overflow(int_type ic = traits_type::eof()) override
 	{
@@ -109,10 +109,10 @@ class fill_out_streambuf : public std::streambuf
 		return result;
 	}
 
-	/** Return the upstream streambuf */
+	/// Return the upstream streambuf
 	[[nodiscard]] std::streambuf *get_upstream() const { return m_upstream; }
 
-	/** Return how many lines have been written */
+	/// Return how many lines have been written
 	[[nodiscard]] int get_line_count() const { return m_line_count; }
 
   private:

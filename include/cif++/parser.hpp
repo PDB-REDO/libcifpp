@@ -42,11 +42,10 @@
 #include <string_view>
 #include <vector>
 
-/**
- * @file parser.hpp
- *
- * This file contains the declaration of an mmCIF parser
- */
+/// @file parser.hpp
+///
+/// This file contains the declaration of an mmCIF parser
+///
 
 namespace cif
 {
@@ -58,11 +57,11 @@ class validator;
 
 // --------------------------------------------------------------------
 
-/** Exception that is thrown when the mmCIF file contains a parsing error */
+/// Exception that is thrown when the mmCIF file contains a parsing error
 class parse_error : public std::runtime_error
 {
   public:
-	/// \brief constructor
+	/// @brief constructor
 	parse_error(uint32_t line_nr, const std::string &message)
 		: std::runtime_error("parse error at line " + std::to_string(line_nr) + ": " + message)
 	{
@@ -71,25 +70,25 @@ class parse_error : public std::runtime_error
 
 // --------------------------------------------------------------------
 
-/**
- * @brief The sac_parser is a similar to SAX parsers (Simple API for XML,
- * in our case it is Simple API for CIF)
- *
- * This is a hand crafted, optimised parser for reading cif files,
- * both cif 1.0 and cif 1.1 is supported. But version 2.0 is not.
- * That means that the content of files strictly contains only
- * ASCII characters. Anything else will generate an error.
- *
- * This class is an abstract base class. Derived classes should
- * implement the produce_ methods.
- */
+///
+/// @brief The sac_parser is a similar to SAX parsers (Simple API for XML,
+/// in our case it is Simple API for CIF)
+///
+/// This is a hand crafted, optimised parser for reading cif files,
+/// both cif 1.0 and cif 1.1 is supported. But version 2.0 is not.
+/// That means that the content of files strictly contains only
+/// ASCII characters. Anything else will generate an error.
+///
+/// This class is an abstract base class. Derived classes should
+/// implement the produce_ methods.
+///
 
 // TODO: Need to implement support for transformed long lines
 
 class sac_parser
 {
   public:
-	/** @cond */
+	/// @cond
 	struct iless_op
 	{
 		bool operator()(std::string_view a, std::string_view b) const
@@ -101,9 +100,9 @@ class sac_parser
 	using datablock_index = std::map<std::string, std::size_t, iless_op>;
 
 	virtual ~sac_parser() = default;
-	/** @endcond */
+	/// @endcond
 
-	/// \brief The parser only supports ASCII so we can
+	/// @brief The parser only supports ASCII so we can
 	/// create a table with character properties.
 	enum CharTraitsMask : uint8_t
 	{
@@ -113,48 +112,48 @@ class sac_parser
 		kAnyPrintMask = 1 << 3  ///< The character is in the AnyPrint class
 	};
 
-	/// \brief Return true if the character @a ch is a *space* character
+	/// @brief Return true if the character @a ch is a *space* character
 	static constexpr bool is_space(int ch)
 	{
 		return ch == ' ' or ch == '\t' or ch == '\r' or ch == '\n';
 	}
 
-	/// \brief Return true if the character @a ch is a *white* character
+	/// @brief Return true if the character @a ch is a *white* character
 	static constexpr bool is_white(int ch)
 	{
 		return is_space(ch) or ch == '#';
 	}
 
-	/// \brief Return true if the character @a ch is a *ordinary* character
+	/// @brief Return true if the character @a ch is a *ordinary* character
 	static constexpr bool is_ordinary(int ch)
 	{
 		return ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kOrdinaryMask) != 0;
 	}
 
-	/// \brief Return true if the character @a ch is a *non_blank* character
+	/// @brief Return true if the character @a ch is a *non_blank* character
 	static constexpr bool is_non_blank(int ch)
 	{
 		return ch > 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kNonBlankMask) != 0;
 	}
 
-	/// \brief Return true if the character @a ch is a *text_lead* character
+	/// @brief Return true if the character @a ch is a *text_lead* character
 	static constexpr bool is_text_lead(int ch)
 	{
 		return ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kTextLeadMask) != 0;
 	}
 
-	/// \brief Return true if the character @a ch is a *any_print* character
+	/// @brief Return true if the character @a ch is a *any_print* character
 	static constexpr bool is_any_print(int ch)
 	{
 		return ch == '\t' or
 		       (ch >= 0x20 and ch <= 0x7f and (kCharTraitsTable[ch - 0x20] & kAnyPrintMask) != 0);
 	}
 
-	/// \brief Return true if the string in @a text can safely be written without quotation
+	/// @brief Return true if the string in @a text can safely be written without quotation
 	static bool is_unquoted_string(std::string_view text);
 
   protected:
-	/** @cond */
+	/// @cond
 
 	static constexpr uint8_t kCharTraitsTable[128] = {
 		//	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
@@ -318,42 +317,42 @@ class sac_parser
 
 	void match(CIFToken token);
 
-	/** @endcond */
+	/// @endcond
 
   public:
-	/** \brief Parse only a single datablock in the string @a datablock
-	 * The start of the datablock is first located and then data
-	 * is parsed up until the next start of a datablock or the end of
-	 * the data.
-	 * */
+	/// @brief Parse only a single datablock in the string @a datablock
+	/// The start of the datablock is first located and then data
+	/// is parsed up until the next start of a datablock or the end of
+	/// the data.
+	///
 	bool parse_single_datablock(const std::string &datablock);
 
-	/** \brief Return an index for all the datablocks found, that is
-	 * the index will contain the names and offsets for each.
-	 */
+	/// @brief Return an index for all the datablocks found, that is
+	/// the index will contain the names and offsets for each.
+	///
 	datablock_index index_datablocks();
 
-	/**
-	 * @brief Parse the datablock named @a datablock
-	 *
-	 * This will first lookup the datablock's offset in the index @a index
-	 * and then start parsing from that location until the next datablock.
-	 *
-	 * @param datablock Name of the datablock to parse
-	 * @param index The index created using index_datablocks
-	 * @return true If the datablock was found
-	 * @return false If the datablock was not found
-	 */
+	///
+	/// @brief Parse the datablock named @a datablock
+	///
+	/// This will first lookup the datablock's offset in the index @a index
+	/// and then start parsing from that location until the next datablock.
+	///
+	/// @param datablock Name of the datablock to parse
+	/// @param index The index created using index_datablocks
+	/// @return true If the datablock was found
+	/// @return false If the datablock was not found
+	///
 	bool parse_single_datablock(const std::string &datablock, const datablock_index &index);
 
-	/**
-	 * @brief Parse the file
-	 *
-	 */
+	///
+	/// @brief Parse the file
+	///
+	///
 	void parse_file();
 
   protected:
-	/** @cond */
+	/// @cond
 
 	sac_parser(std::istream &is, bool init = true);
 
@@ -428,21 +427,21 @@ class sac_parser
 	double m_token_value_float;
 	int m_float_precision;
 
-	/** @endcond */
+	/// @endcond
 };
 
 // --------------------------------------------------------------------
 
-/**
- * @brief An actual implementation of a sac_parser generating data in a file
- *
- * This parser will create the cif::file, cif::datablock and cif::category
- * objects required to contain all data
- */
+///
+/// @brief An actual implementation of a sac_parser generating data in a file
+///
+/// This parser will create the cif::file, cif::datablock and cif::category
+/// objects required to contain all data
+///
 class parser : public sac_parser
 {
   public:
-	/// \brief constructor, generates data into @a file from @a is using validator @a v
+	/// @brief constructor, generates data into @a file from @a is using validator @a v
 	parser(std::istream &is, file &file, const validator *v)
 		: sac_parser(is)
 		, m_file(file)
@@ -450,14 +449,14 @@ class parser : public sac_parser
 	{
 	}
 
-	/// \brief constructor, generates data into @a file from @a is
+	/// @brief constructor, generates data into @a file from @a is
 	parser(std::istream &is, file &file)
 		: sac_parser(is)
 		, m_file(file)
 	{
 	}
 
-	/** @cond */
+	/// @cond
 	void produce_datablock(std::string_view name) override;
 
 	void produce_category(std::string_view name) override;
@@ -473,7 +472,7 @@ class parser : public sac_parser
 	const validator *m_validator = nullptr;
 	row_handle m_row;
 
-	/** @endcond */
+	/// @endcond
 };
 
 } // namespace cif

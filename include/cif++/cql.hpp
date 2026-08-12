@@ -26,13 +26,12 @@
 
 #pragma once
 
-/**
- * @file cql.hpp
- *
- * This file contains code to access stored data as if it were
- * a relation database. The underlying code uses SQLite as engine.
- * categories are exposed as virtual tables.
- */
+/// @file cql.hpp
+///
+/// This file contains code to access stored data as if it were
+/// a relation database. The underlying code uses SQLite as engine.
+/// categories are exposed as virtual tables.
+///
 
 #include "cif++/category.hpp"
 #include "cif++/item.hpp"
@@ -75,7 +74,7 @@ class field_ref final
 		return m_index;
 	}
 
-	/** Return the contents of this item as type @tparam T */
+	/// Return the contents of this item as type @tparam T
 	template <typename T = std::string>
 	[[nodiscard]] auto get() const -> T
 	{
@@ -88,9 +87,9 @@ class field_ref final
 		return m_row[m_index].is_null();
 	}
 
-	/** Return the contents of this item as type @tparam T or, if not
-	 * set, use @a dv as the default value.
-	 */
+	/// Return the contents of this item as type @tparam T or, if not
+	/// set, use @a dv as the default value.
+	///
 	template <typename T>
 	auto value_or(const T &dv) const
 	{
@@ -446,10 +445,10 @@ class transaction final
 	transaction &operator=(const transaction &) = delete;
 	/// @endcond
 
-	/// \brief Execute the sql in @a query returning an iterable result
+	/// @brief Execute the sql in @a query returning an iterable result
 	result exec(std::string query);
 
-	/// \brief Execute the sql in @a query returning an iterable result.
+	/// @brief Execute the sql in @a query returning an iterable result.
 	/// Updates @a tail with what remains after the first statement in @a query
 	result exec(std::string query, std::string &tail);
 
@@ -487,17 +486,17 @@ class connection final
 
 	friend class transaction;
 
-	/// \brief Return true if the string @a sql contains a complete statement.
+	/// @brief Return true if the string @a sql contains a complete statement.
 	[[nodiscard]] bool is_complete_statement(const std::string &sql) const;
 
-	/// \brief Execute the sql in @a query returning an iterable result
+	/// @brief Execute the sql in @a query returning an iterable result
 	result exec(std::string query);
 
-	/// \brief Execute the sql in @a query returning an iterable result.
+	/// @brief Execute the sql in @a query returning an iterable result.
 	/// Updates @a tail with what remains after the first statement in @a query
 	result exec(std::string query, std::string &tail);
 
-	/// \brief Return true if the underlying data was modified by any query.
+	/// @brief Return true if the underlying data was modified by any query.
 	[[nodiscard]] bool is_modified() const;
 
   private:

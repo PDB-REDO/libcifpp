@@ -31,7 +31,7 @@
 #include <optional>
 #include <string>
 
-/// \file pdb_record.hpp
+/// @file pdb_record.hpp
 
 namespace cif::pdb
 {

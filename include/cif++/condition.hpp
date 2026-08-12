@@ -45,67 +45,67 @@
 #include <utility>
 #include <vector>
 
-/** \file condition.hpp
- * This file contains code to create conditions: object encapsulating a
- * query you can use to find rows in a @ref cif::category
- *
- * Conditions are created as standard C++ expressions. That means
- * you can use the standard comparison operators to compare item
- * contents with a value and boolean operators to chain everything
- * together.
- *
- * To create a query that simply compares one item with one value:
- *
- * @code {.cpp}
- * cif::condition c = cif::key("id") == 1;
- * @endcode
- *
- * That will find rows where the ID item contains the number 1. If
- * using cif::key is a bit too much typing, you can also write:
- *
- * @code{.cpp}
- * using namespace cif::literals;
- *
- * cif::condition c2 = "id"_key == 1;
- * @endcode
- *
- * Now if you want both ID = 1 and ID = 2 in the result:
- *
- * @code{.cpp}
- * auto c3 = "id"_key == 1 or "id"_key == 2;
- * @endcode
- *
- * There are some special values you can use. To find rows with item that
- * do not have a value:
- *
- * @code{.cpp}
- * auto c4 = "type"_key == cif::null;
- * @endcode
- *
- * Of if it should not be NULL:
- *
- * @code{.cpp}
- * auto c5 = "type"_key != cif::null;
- * @endcode
- *
- * There's even a way to find all records:
- *
- * @code{.cpp}
- * auto c6 = cif::all;
- * @endcode
- *
- * And when you want to search for any item containing the value 'foo':
- *
- * @code{.cpp}
- * auto c7 = cif::any == "foo";
- * @endcode
- *
- * All these conditions can be chained together again:
- *
- * @code{.cpp}
- * auto c8 = std::move(c3) and std::move(c5);
- * @endcode
- */
+/// @file condition.hpp
+/// This file contains code to create conditions: object encapsulating a
+/// query you can use to find rows in a @ref cif::category
+///
+/// Conditions are created as standard C++ expressions. That means
+/// you can use the standard comparison operators to compare item
+/// contents with a value and boolean operators to chain everything
+/// together.
+///
+/// To create a query that simply compares one item with one value:
+///
+/// @code {.cpp}
+/// cif::condition c = cif::key("id") == 1;
+/// @endcode
+///
+/// That will find rows where the ID item contains the number 1. If
+/// using cif::key is a bit too much typing, you can also write:
+///
+/// @code{.cpp}
+/// using namespace cif::literals;
+///
+/// cif::condition c2 = "id"_key == 1;
+/// @endcode
+///
+/// Now if you want both ID = 1 and ID = 2 in the result:
+///
+/// @code{.cpp}
+/// auto c3 = "id"_key == 1 or "id"_key == 2;
+/// @endcode
+///
+/// There are some special values you can use. To find rows with item that
+/// do not have a value:
+///
+/// @code{.cpp}
+/// auto c4 = "type"_key == cif::null;
+/// @endcode
+///
+/// Of if it should not be NULL:
+///
+/// @code{.cpp}
+/// auto c5 = "type"_key != cif::null;
+/// @endcode
+///
+/// There's even a way to find all records:
+///
+/// @code{.cpp}
+/// auto c6 = cif::all;
+/// @endcode
+///
+/// And when you want to search for any item containing the value 'foo':
+///
+/// @code{.cpp}
+/// auto c7 = cif::any == "foo";
+/// @endcode
+///
+/// All these conditions can be chained together again:
+///
+/// @code{.cpp}
+/// auto c8 = std::move(c3) and std::move(c5);
+/// @endcode
+///
 
 namespace cif
 {
@@ -114,33 +114,33 @@ namespace cif
 /// let's make life easier, since @ref cif::category is not known yet,
 /// we declare a function to access its contents
 
-/**
- * @brief Get all the items for a category
- *
- * This is used to construct cif:any == <value>
- *
- * @param cat The category whose items to return
- * @return iset The set of item names
- */
+///
+/// @brief Get all the items for a category
+///
+/// This is used to construct cif:any == <value>
+///
+/// @param cat The category whose items to return
+/// @return iset The set of item names
+///
 iset get_category_items(const category &cat);
 
-/**
- * @brief Get the item index for item @a col in category @a cat
- *
- * @param cat The category
- * @param col The name of the item
- * @return uint16_t The index, if item is found
- */
+///
+/// @brief Get the item index for item @a col in category @a cat
+///
+/// @param cat The category
+/// @param col The name of the item
+/// @return uint16_t The index, if item is found
+///
 std::optional<uint16_t> get_item_ix(const category &cat, std::string_view col);
 
-/**
- * @brief Return whether the item @a col in category @a cat has a primitive type of *uchar*
- *
- * @param cat The category
- * @param col The item name
- * @return true If the primitive type is of type *uchar*
- * @return false If the primitive type is not of type *uchar*
- */
+///
+/// @brief Return whether the item @a col in category @a cat has a primitive type of *uchar*
+///
+/// @param cat The category
+/// @param col The item name
+/// @return true If the primitive type is of type *uchar*
+/// @return false If the primitive type is not of type *uchar*
+///
 bool is_item_type_uchar(const category &cat, std::string_view col);
 
 // --------------------------------------------------------------------
@@ -174,31 +174,31 @@ namespace detail
 
 /// @endcond
 
-/**
- * @brief The interface class for conditions. This uses the bridge pattern,
- * which means the implementation is in the member m_impl
- */
+///
+/// @brief The interface class for conditions. This uses the bridge pattern,
+/// which means the implementation is in the member m_impl
+///
 class condition
 {
   public:
-	/** @cond */
+	/// @cond
 	using condition_impl = detail::condition_impl;
-	/** @endcond */
+	/// @endcond
 
-	/**
-	 * @brief Construct a new, empty condition object
-	 *
-	 */
+	///
+	/// @brief Construct a new, empty condition object
+	///
+	///
 	condition()
 		: m_impl(nullptr)
 	{
 	}
 
-	/**
-	 * @brief Construct a new condition object with implementation @a impl
-	 *
-	 * @param impl The implementation to use
-	 */
+	///
+	/// @brief Construct a new condition object with implementation @a impl
+	///
+	/// @param impl The implementation to use
+	///
 	explicit condition(condition_impl *impl)
 		: m_impl(impl)
 	{
@@ -206,9 +206,9 @@ class condition
 
 	condition(const condition &) = delete;
 
-	/**
-	 * @brief Construct a new condition object moving the data from @a rhs
-	 */
+	///
+	/// @brief Construct a new condition object moving the data from @a rhs
+	///
 	condition(condition &&rhs) noexcept
 		: m_impl(nullptr)
 	{
@@ -217,9 +217,9 @@ class condition
 
 	condition &operator=(const condition &) = delete;
 
-	/**
-	 * @brief Assignment operator moving the data from @a rhs
-	 */
+	///
+	/// @brief Assignment operator moving the data from @a rhs
+	///
 	condition &operator=(condition &&rhs) noexcept
 	{
 		swap(*this, rhs);
@@ -232,52 +232,52 @@ class condition
 		m_impl = nullptr;
 	}
 
-	/**
-	 * @brief Prepare the condition to be used on category @a c. This will
-	 * take care of setting the correct indices for items e.g.
-	 *
-	 * @param c The category this query should act upon
-	 * @result Returns true if the condition might result in rows
-	 */
+	///
+	/// @brief Prepare the condition to be used on category @a c. This will
+	/// take care of setting the correct indices for items e.g.
+	///
+	/// @param c The category this query should act upon
+	/// @result Returns true if the condition might result in rows
+	///
 	bool prepare(const category &c);
 
-	/**
-	 * @brief This operator returns true if the row referenced by @a r is
-	 * a match for this condition.
-	 *
-	 * @param r The reference to a row.
-	 * @return true If there is a match
-	 * @return false If there is no match
-	 */
+	///
+	/// @brief This operator returns true if the row referenced by @a r is
+	/// a match for this condition.
+	///
+	/// @param r The reference to a row.
+	/// @return true If there is a match
+	/// @return false If there is no match
+	///
 	bool operator()(const_row_handle r) const
 	{
 		return m_impl ? m_impl->test(r) : false;
 	}
 
-	/**
-	 * @brief Return true if the condition is not empty
-	 */
+	///
+	/// @brief Return true if the condition is not empty
+	///
 	explicit operator bool() const { return not empty(); }
 
-	/**
-	 * @brief Return true if the condition is empty, has no condition
-	 */
+	///
+	/// @brief Return true if the condition is empty, has no condition
+	///
 	[[nodiscard]] bool empty() const { return m_impl == nullptr; }
 
-	/**
-	 * @brief If the prepare step found out there is only one hit
-	 * this single hit can be returned by this method.
-	 *
-	 * @return std::optional<const_row_handle> The result will contain
-	 * a row reference if there is a single hit, it will be empty otherwise
-	 */
+	///
+	/// @brief If the prepare step found out there is only one hit
+	/// this single hit can be returned by this method.
+	///
+	/// @return std::optional<const_row_handle> The result will contain
+	/// a row reference if there is a single hit, it will be empty otherwise
+	///
 	[[nodiscard]] std::optional<const_row_handle> single() const
 	{
 		return m_impl ? m_impl->single() : std::optional<const_row_handle>();
 	}
 
-	friend condition operator||(condition &&a, condition &&b); /**< Return a condition which is the logical OR or condition @a and @b */
-	friend condition operator&&(condition &&a, condition &&b); /**< Return a condition which is the logical AND or condition @a and @b */
+	friend condition operator||(condition &&a, condition &&b); ///< Return a condition which is the logical OR or condition @a and @b
+	friend condition operator&&(condition &&a, condition &&b); ///< Return a condition which is the logical AND or condition @a and @b
 
 	/// @cond
 	friend struct detail::or_condition_impl;
@@ -285,21 +285,21 @@ class condition
 	friend struct detail::not_condition_impl;
 	/// @endcond
 
-	/**
-	 * @brief Swap two conditions
-	 */
+	///
+	/// @brief Swap two conditions
+	///
 	friend void swap(condition &lhs, condition &rhs) noexcept
 	{
 		std::swap(lhs.m_impl, rhs.m_impl);
 	}
 
-	/**
-	 * @brief Operator to use to write out a condition to @a os, for debugging purposes
-	 *
-	 * @param os The std::ostream to write to
-	 * @param cond The condition to write
-	 * @return std::ostream& The same as @a os
-	 */
+	///
+	/// @brief Operator to use to write out a condition to @a os, for debugging purposes
+	///
+	/// @param os The std::ostream to write to
+	/// @param cond The condition to write
+	/// @return std::ostream& The same as @a os
+	///
 	friend std::ostream &operator<<(std::ostream &os, const condition &cond)
 	{
 		if (cond.m_impl)
@@ -862,9 +862,9 @@ namespace detail
 
 } // namespace detail
 
-/**
- * @brief Create a condition containing the logical AND of conditions @a a and @a b
- */
+///
+/// @brief Create a condition containing the logical AND of conditions @a a and @a b
+///
 inline condition operator and(condition &&a, condition &&b)
 {
 	if (a.m_impl and b.m_impl)
@@ -874,9 +874,9 @@ inline condition operator and(condition &&a, condition &&b)
 	return b;
 }
 
-/**
- * @brief Create a condition containing the logical OR of conditions @a a and @a b
- */
+///
+/// @brief Create a condition containing the logical OR of conditions @a a and @a b
+///
 inline condition operator or(condition &&a, condition &&b)
 {
 	if (a.m_impl and b.m_impl)
@@ -910,59 +910,59 @@ inline condition operator or(condition &&a, condition &&b)
 	return b;
 }
 
-/**
- * @brief A helper class to make it possible to search for empty items (NULL)
- *
- * @code{.cpp}
- * "id"_key == cif::empty_type();
- * @endcode
- */
+///
+/// @brief A helper class to make it possible to search for empty items (NULL)
+///
+/// @code{.cpp}
+/// "id"_key == cif::empty_type();
+/// @endcode
+///
 
 struct empty_type
 {
 };
 
-/**
- * @brief A helper to make it possible to have conditions like
- *
- * @code{.cpp}
- * "id"_key == cif::null;
- * @endcode
- */
+///
+/// @brief A helper to make it possible to have conditions like
+///
+/// @code{.cpp}
+/// "id"_key == cif::null;
+/// @endcode
+///
 
 inline constexpr empty_type null = empty_type();
 
-/**
- * @brief Class to use in creating conditions, creates a reference to a item or item
- *
- */
+///
+/// @brief Class to use in creating conditions, creates a reference to a item or item
+///
+///
 struct key
 {
-	/**
-	 * @brief Construct a new key object using @a item_name as name
-	 *
-	 * @param item_name
-	 */
+	///
+	/// @brief Construct a new key object using @a item_name as name
+	///
+	/// @param item_name
+	///
 	explicit key(std::string item_name)
 		: m_item_name(std::move(item_name))
 	{
 	}
 
-	/**
-	 * @brief Construct a new key object using @a item_name as name
-	 *
-	 * @param item_name
-	 */
+	///
+	/// @brief Construct a new key object using @a item_name as name
+	///
+	/// @param item_name
+	///
 	explicit key(const char *item_name)
 		: m_item_name(item_name)
 	{
 	}
 
-	/**
-	 * @brief Construct a new key object using @a item_name as name
-	 *
-	 * @param item_name
-	 */
+	///
+	/// @brief Construct a new key object using @a item_name as name
+	///
+	/// @param item_name
+	///
 	explicit key(std::string_view item_name)
 		: m_item_name(item_name)
 	{
@@ -978,9 +978,9 @@ struct key
 template <typename T>
 concept Numeric = ((std::is_floating_point_v<T> or std::is_integral_v<T>) and not std::is_same_v<T, bool>);
 
-/**
- * @brief Operator to create an equals condition based on a key @a key and a value @a value
- */
+///
+/// @brief Operator to create an equals condition based on a key @a key and a value @a value
+///
 inline condition operator==(const key &key, const item_value &value)
 {
 	if (not value.empty())
@@ -989,17 +989,17 @@ inline condition operator==(const key &key, const item_value &value)
 		return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
-/**
- * @brief Operator to create a not equals condition based on a key @a key and a value @a value
- */
+///
+/// @brief Operator to create a not equals condition based on a key @a key and a value @a value
+///
 inline condition operator!=(const key &key, const item_value &value)
 {
 	return condition(new detail::not_condition_impl(operator==(key, value)));
 }
 
-/**
- * @brief Operator to create a greater than condition based on a key @a key and a value @a v
- */
+///
+/// @brief Operator to create a greater than condition based on a key @a key and a value @a v
+///
 template <Numeric T>
 condition operator>(const key &key, const T &v)
 {
@@ -1009,9 +1009,9 @@ condition operator>(const key &key, const T &v)
 		std::format(" > {}", v)));
 }
 
-/**
- * @brief Operator to create a greater than or equals condition based on a key @a key and a value @a v
- */
+///
+/// @brief Operator to create a greater than or equals condition based on a key @a key and a value @a v
+///
 template <Numeric T>
 condition operator>=(const key &key, const T &v)
 {
@@ -1021,9 +1021,9 @@ condition operator>=(const key &key, const T &v)
 		std::format(" >= {}", v)));
 }
 
-/**
- * @brief Operator to create a less than condition based on a key @a key and a value @a v
- */
+///
+/// @brief Operator to create a less than condition based on a key @a key and a value @a v
+///
 template <Numeric T>
 condition operator<(const key &key, const T &v)
 {
@@ -1033,9 +1033,9 @@ condition operator<(const key &key, const T &v)
 		std::format(" < {}", v)));
 }
 
-/**
- * @brief Operator to create a less than or equals condition based on a key @a key and a value @a v
- */
+///
+/// @brief Operator to create a less than or equals condition based on a key @a key and a value @a v
+///
 template <Numeric T>
 condition operator<=(const key &key, const T &v)
 {
@@ -1045,9 +1045,9 @@ condition operator<=(const key &key, const T &v)
 		std::format(" <= {}", v)));
 }
 
-/**
- * @brief Operator to create a greater than condition based on a key @a key and a value @a v
- */
+///
+/// @brief Operator to create a greater than condition based on a key @a key and a value @a v
+///
 inline condition operator>(const key &key, std::string_view v)
 {
 	return condition(new detail::key_compare_condition_impl(
@@ -1056,9 +1056,9 @@ inline condition operator>(const key &key, std::string_view v)
 		std::format(" > {}", v)));
 }
 
-/**
- * @brief Operator to create a greater than or equals condition based on a key @a key and a value @a v
- */
+///
+/// @brief Operator to create a greater than or equals condition based on a key @a key and a value @a v
+///
 inline condition operator>=(const key &key, std::string_view v)
 {
 	return condition(new detail::key_compare_condition_impl(
@@ -1067,9 +1067,9 @@ inline condition operator>=(const key &key, std::string_view v)
 		std::format(" >= {}", v)));
 }
 
-/**
- * @brief Operator to create a less than condition based on a key @a key and a value @a v
- */
+///
+/// @brief Operator to create a less than condition based on a key @a key and a value @a v
+///
 inline condition operator<(const key &key, std::string_view v)
 {
 	return condition(new detail::key_compare_condition_impl(
@@ -1078,9 +1078,9 @@ inline condition operator<(const key &key, std::string_view v)
 		std::format(" < {}", v)));
 }
 
-/**
- * @brief Operator to create a less than or equals condition based on a key @a key and a value @a v
- */
+///
+/// @brief Operator to create a less than or equals condition based on a key @a key and a value @a v
+///
 inline condition operator<=(const key &key, std::string_view v)
 {
 	return condition(new detail::key_compare_condition_impl(
@@ -1089,34 +1089,34 @@ inline condition operator<=(const key &key, std::string_view v)
 		std::format(" <= {}", v)));
 }
 
-/**
- * @brief Operator to create a condition based on a key @a key and a regular expression @a rx
- */
+///
+/// @brief Operator to create a condition based on a key @a key and a regular expression @a rx
+///
 inline condition operator==(const key &key, const std::regex &rx)
 {
 	return condition(new detail::key_matches_condition_impl(key.m_item_name, rx));
 }
 
-/**
- * @brief Operator to create a condition based on a key @a key which should be empty/null
- */
+///
+/// @brief Operator to create a condition based on a key @a key which should be empty/null
+///
 inline condition operator==(const key &key, const empty_type &)
 {
 	return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
-/**
- * @brief Operator to create a condition based on a key @a key which should be not empty/null
- */
+///
+/// @brief Operator to create a condition based on a key @a key which should be not empty/null
+///
 inline condition operator!=(const key &key, const empty_type &)
 {
 	return condition(new detail::key_is_not_empty_condition_impl(key.m_item_name));
 }
 
-/**
- * @brief Create a condition to search any item for a value @a v if @a v contains a value
- * compare to null if not.
- */
+///
+/// @brief Create a condition to search any item for a value @a v if @a v contains a value
+/// compare to null if not.
+///
 template <typename T>
 condition operator==(const key &key, const std::optional<T> &v)
 {
@@ -1126,10 +1126,10 @@ condition operator==(const key &key, const std::optional<T> &v)
 		return condition(new detail::key_is_empty_condition_impl(key.m_item_name));
 }
 
-/**
- * @brief Create a condition to search any item for a value @a v if @a v contains a value
- * compare to null if not.
- */
+///
+/// @brief Create a condition to search any item for a value @a v if @a v contains a value
+/// compare to null if not.
+///
 template <typename T>
 condition operator!=(const key &key, const std::optional<T> &v)
 {
@@ -1139,50 +1139,50 @@ condition operator!=(const key &key, const std::optional<T> &v)
 		return condition(new detail::not_condition_impl(condition(new detail::key_is_empty_condition_impl(key.m_item_name))));
 }
 
-/**
- * @brief Operator to create a boolean opposite of the condition in @a rhs
- */
+///
+/// @brief Operator to create a boolean opposite of the condition in @a rhs
+///
 inline condition operator not(condition &&rhs)
 {
 	return condition(new detail::not_condition_impl(std::move(rhs)));
 }
 
-/** @cond */
+/// @cond
 struct any_type
 {
 };
-/** @endcond */
+/// @endcond
 
-/**
- * @brief A helper for any item constructs
- *
- * This allows construction queries like
- * @code{cpp}
- * auto r = cat.find(cif::any == "foo");
- * @endcode
- */
+///
+/// @brief A helper for any item constructs
+///
+/// This allows construction queries like
+/// @code{cpp}
+/// auto r = cat.find(cif::any == "foo");
+/// @endcode
+///
 inline constexpr any_type any = any_type{};
 
-/**
- * @brief Create a condition to search any item for a value @a v
- */
+///
+/// @brief Create a condition to search any item for a value @a v
+///
 template <typename T>
 condition operator==(const any_type &, const T &v)
 {
 	return condition(new detail::any_is_condition_impl<T>(v));
 }
 
-/**
- * @brief Create a condition to search any item for a regular expression @a rx
- */
+///
+/// @brief Create a condition to search any item for a regular expression @a rx
+///
 inline condition operator==(const any_type &, const std::regex &rx)
 {
 	return condition(new detail::any_matches_condition_impl(rx));
 }
 
-/**
- * @brief Create a condition to return all rows
- */
+///
+/// @brief Create a condition to return all rows
+///
 inline condition all()
 {
 	return condition(new detail::all_condition_impl());
@@ -1190,13 +1190,13 @@ inline condition all()
 
 namespace literals
 {
-	/**
-	 * @brief Return a cif::key for the item name @a text
-	 *
-	 * @param text The name of the item
-	 * @param length The length of @a text
-	 * @return key The cif::key created
-	 */
+	///
+	/// @brief Return a cif::key for the item name @a text
+	///
+	/// @param text The name of the item
+	/// @param length The length of @a text
+	/// @return key The cif::key created
+	///
 	inline key operator""_key(const char *text, std::size_t length)
 	{
 		return key(std::string(text, length));

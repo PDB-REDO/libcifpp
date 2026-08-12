@@ -41,11 +41,10 @@
 #include <utility>
 #include <vector>
 
-/**
- * \file text.hpp
- *
- * Various text manipulating routines
- */
+/// @file text.hpp
+///
+/// Various text manipulating routines
+///
 
 namespace cif
 {
@@ -55,40 +54,40 @@ namespace cif
 // some basic utilities: Since we're using ASCII input only, we define for optimisation
 // our own case conversion routines.
 
-/// \brief return whether string @a is equal to string @a b ignoring changes in character case
+/// @brief return whether string @a is equal to string @a b ignoring changes in character case
 bool iequals(std::string_view a, std::string_view b) noexcept;
 
-/// \brief compare string @a is to string @a b ignoring changes in character case
+/// @brief compare string @a is to string @a b ignoring changes in character case
 int icompare(std::string_view a, std::string_view b) noexcept;
 
-/// \brief return whether string @a is equal to string @a b ignoring changes in character case
+/// @brief return whether string @a is equal to string @a b ignoring changes in character case
 bool iequals(const char *a, const char *b) noexcept;
 
-/// \brief compare string @a is to string @a b ignoring changes in character case
+/// @brief compare string @a is to string @a b ignoring changes in character case
 int icompare(const char *a, const char *b) noexcept;
 
-/// \brief convert the string @a s to lower case in situ
+/// @brief convert the string @a s to lower case in situ
 void to_lower(std::string &s);
 
-/// \brief return a lower case copy of string @a s
+/// @brief return a lower case copy of string @a s
 std::string to_lower_copy(std::string_view s);
 
-/// \brief convert the string @a s to upper case in situ
+/// @brief convert the string @a s to upper case in situ
 void to_upper(std::string &s);
 
-/**
- * @brief Join the strings in the range [ @a a, @a e ) using
- * @a sep as separator
- *
- * Example usage:
- *
- * @code {.cpp}
- * std::vector<std::string> v{ "aap", "noot", "mies" };
- *
- * assert(cif::join(v.begin(), v.end(), ", ") == "aap, noot, mies");
- * @endcode
- *
- */
+///
+/// @brief Join the strings in the range [ @a a, @a e ) using
+/// @a sep as separator
+///
+/// Example usage:
+///
+/// @code {.cpp}
+/// std::vector<std::string> v{ "aap", "noot", "mies" };
+///
+/// assert(cif::join(v.begin(), v.end(), ", ") == "aap, noot, mies");
+/// @endcode
+///
+///
 template <typename IterType>
 std::string join(IterType b, IterType e, std::string_view sep)
 {
@@ -116,41 +115,41 @@ std::string join(IterType b, IterType e, std::string_view sep)
 	return s.str();
 }
 
-/**
- * @brief Join the strings in the array @a arr using @a sep as separator
- *
- * Example usage:
- *
- * @code {.cpp}
- * std::list<std::string> v{ "aap", "noot", "mies" };
- *
- * assert(cif::join(v, ", ") == "aap, noot, mies");
- * @endcode
- *
- */
+///
+/// @brief Join the strings in the array @a arr using @a sep as separator
+///
+/// Example usage:
+///
+/// @code {.cpp}
+/// std::list<std::string> v{ "aap", "noot", "mies" };
+///
+/// assert(cif::join(v, ", ") == "aap, noot, mies");
+/// @endcode
+///
+///
 template <typename V>
 std::string join(const V &arr, std::string_view sep)
 {
 	return join(arr.begin(), arr.end(), sep);
 }
 
-/**
- * @brief Split the string in @a s based on the characters in @a separators
- *
- * Each of the characters in @a separators induces a split.
- *
- * When suppress_empty is true, empty strings are not produced in the
- * resulting array.
- *
- * Example:
- *
- * @code {.cpp}
- * auto v = cif::split("aap:noot,,mies", ":,", true);
- *
- * assert(v == std::vector{"aap", "noot", "mies"});
- * @endcode
- *
- */
+///
+/// @brief Split the string in @a s based on the characters in @a separators
+///
+/// Each of the characters in @a separators induces a split.
+///
+/// When suppress_empty is true, empty strings are not produced in the
+/// resulting array.
+///
+/// Example:
+///
+/// @code {.cpp}
+/// auto v = cif::split("aap:noot,,mies", ":,", true);
+///
+/// assert(v == std::vector{"aap", "noot", "mies"});
+/// @endcode
+///
+///
 template <typename StringType = std::string_view>
 std::vector<StringType> split(std::string_view s, std::string_view separators, bool suppress_empty = false)
 {
@@ -178,23 +177,23 @@ std::vector<StringType> split(std::string_view s, std::string_view separators, b
 	return result;
 }
 
-/**
- * @brief Replace all occurrences of @a what in string @a s with the string @a with
- *
- * The string @a with may be empty in which case each occurrence of @a what is simply
- * deleted.
- */
+///
+/// @brief Replace all occurrences of @a what in string @a s with the string @a with
+///
+/// The string @a with may be empty in which case each occurrence of @a what is simply
+/// deleted.
+///
 void replace_all(std::string &s, std::string_view what, std::string_view with = {});
 
 #if defined(__cpp_lib_starts_ends_with)
 
-/// \brief return whether string @a s starts with @a with
+/// @brief return whether string @a s starts with @a with
 inline bool starts_with(std::string s, std::string_view with)
 {
 	return s.starts_with(with);
 }
 
-/// \brief return whether string @a s ends with @a with
+/// @brief return whether string @a s ends with @a with
 inline bool ends_with(std::string_view s, std::string_view with)
 {
 	return s.ends_with(with);
@@ -202,13 +201,13 @@ inline bool ends_with(std::string_view s, std::string_view with)
 
 #else
 
-/// \brief return whether string @a s starts with @a with
+/// @brief return whether string @a s starts with @a with
 inline bool starts_with(std::string s, std::string_view with)
 {
 	return s.compare(0, with.length(), with) == 0;
 }
 
-/// \brief return whether string @a s ends with @a with
+/// @brief return whether string @a s ends with @a with
 inline bool ends_with(std::string_view s, std::string_view with)
 {
 	return s.length() >= with.length() and s.compare(s.length() - with.length(), with.length(), with) == 0;
@@ -218,7 +217,7 @@ inline bool ends_with(std::string_view s, std::string_view with)
 
 #if defined(__cpp_lib_string_contains)
 
-/// \brief return whether string @a s contains @a q
+/// @brief return whether string @a s contains @a q
 inline bool contains(std::string_view s, std::string_view q)
 {
 	return s.contains(q);
@@ -226,7 +225,7 @@ inline bool contains(std::string_view s, std::string_view q)
 
 #else
 
-/// \brief return whether string @a s contains @a q
+/// @brief return whether string @a s contains @a q
 inline bool contains(std::string_view s, std::string_view q)
 {
 	return s.find(q) != std::string_view::npos;
@@ -234,33 +233,33 @@ inline bool contains(std::string_view s, std::string_view q)
 
 #endif
 
-/// \brief return whether string @a s contains @a q ignoring character case
+/// @brief return whether string @a s contains @a q ignoring character case
 bool icontains(std::string_view s, std::string_view q);
 
-/// \brief trim white space at the start of string @a s in situ
+/// @brief trim white space at the start of string @a s in situ
 void trim_left(std::string &s);
 
-/// \brief trim white space at the end of string @a s in situ
+/// @brief trim white space at the end of string @a s in situ
 void trim_right(std::string &s);
 
-/// \brief trim white space at both the start and the end of string @a s in situ
+/// @brief trim white space at both the start and the end of string @a s in situ
 void trim(std::string &s);
 
-/// \brief return a string trimmed of white space at the start of string @a s
+/// @brief return a string trimmed of white space at the start of string @a s
 std::string trim_left_copy(std::string_view s);
 
-/// \brief return a string trimmed of white space at the end of string @a s
+/// @brief return a string trimmed of white space at the end of string @a s
 std::string trim_right_copy(std::string_view s);
 
-/// \brief return a string trimmed of white space at both the start and the end of string @a s
+/// @brief return a string trimmed of white space at both the start and the end of string @a s
 std::string trim_copy(std::string_view s);
 
 // To make life easier, we also define iless and iset using iequals
 
-/// \brief an operator object you can use to compare strings ignoring their character case
+/// @brief an operator object you can use to compare strings ignoring their character case
 struct iless
 {
-	/// \brief return the result of icompare for @a a and @a b
+	/// @brief return the result of icompare for @a a and @a b
 	bool operator()(const std::string &a, const std::string &b) const
 	{
 		return icompare(a, b) < 0;
@@ -274,10 +273,10 @@ using iset = std::set<std::string, iless>;
 // --------------------------------------------------------------------
 // This really makes a difference, having our own tolower routines
 
-/// \brief global list containing the lower case version of each ASCII character
+/// @brief global list containing the lower case version of each ASCII character
 extern CIFPP_EXPORT const uint8_t kCharToLowerMap[256];
 
-/// \brief a very fast tolower implementation
+/// @brief a very fast tolower implementation
 inline char tolower(int ch)
 {
 	return static_cast<char>(kCharToLowerMap[static_cast<uint8_t>(ch)]);
@@ -285,40 +284,40 @@ inline char tolower(int ch)
 
 // --------------------------------------------------------------------
 
-/** \brief return a tuple consisting of the category and item name for @a item_name
- *
- * The category name is stripped of its leading underscore character.
- *
- * If no dot character was found, the category name is empty. That's for
- * cif 1.0 formatted data.
- */
+/// @brief return a tuple consisting of the category and item name for @a item_name
+///
+/// The category name is stripped of its leading underscore character.
+///
+/// If no dot character was found, the category name is empty. That's for
+/// cif 1.0 formatted data.
+///
 
 [[deprecated("use split_item_name instead")]]
 std::tuple<std::string, std::string> split_tag_name(std::string_view item_name);
 
-/** \brief return a tuple consisting of the category and item name for @a item_name
- *
- * The category name is stripped of its leading underscore character.
- *
- * If no dot character was found, the category name is empty. That's for
- * cif 1.0 formatted data.
- */
+/// @brief return a tuple consisting of the category and item name for @a item_name
+///
+/// The category name is stripped of its leading underscore character.
+///
+/// If no dot character was found, the category name is empty. That's for
+/// cif 1.0 formatted data.
+///
 
 std::tuple<std::string, std::string> split_item_name(std::string_view item_name);
 
 // --------------------------------------------------------------------
 
-/// \brief generate a cif name, used e.g. to generate asym_id's
+/// @brief generate a cif name, used e.g. to generate asym_id's
 std::string cif_id_for_number(int number);
 
 // --------------------------------------------------------------------
 
-/** \brief custom word wrapping routine.
- *
- * Wrap the text in @a text based on a maximum line width @a width using
- * a dynamic programming approach to get the most efficient filling of
- * the space.
- */
+/// @brief custom word wrapping routine.
+///
+/// Wrap the text in @a text based on a maximum line width @a width using
+/// a dynamic programming approach to get the most efficient filling of
+/// the space.
+///
 std::vector<std::string> word_wrap(const std::string &text, std::size_t width);
 
 // --------------------------------------------------------------------

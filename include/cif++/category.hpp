@@ -52,17 +52,17 @@
 #include <utility>
 #include <vector>
 
-/** \file category.hpp
- * Documentation for the cif::category class
- *
- * The category class should meet the requirements of Container and
- * SequenceContainer.
- *
- * TODO: implement all of:
- * https://en.cppreference.com/w/cpp/named_req/Container
- * https://en.cppreference.com/w/cpp/named_req/SequenceContainer
- * and more?
- */
+/// @file category.hpp
+/// Documentation for the cif::category class
+///
+/// The category class should meet the requirements of Container and
+/// SequenceContainer.
+///
+/// TODO: implement all of:
+/// https://en.cppreference.com/w/cpp/named_req/Container
+/// https://en.cppreference.com/w/cpp/named_req/SequenceContainer
+/// and more?
+///
 
 namespace cif
 {
@@ -83,9 +83,9 @@ struct link_validator;
 class duplicate_key_error : public std::runtime_error
 {
   public:
-	/**
-	 * @brief Construct a new duplicate key error object
-	 */
+	///
+	/// @brief Construct a new duplicate key error object
+	///
 	duplicate_key_error(const std::string &msg)
 		: std::runtime_error(msg)
 	{
@@ -97,9 +97,9 @@ class duplicate_key_error : public std::runtime_error
 class missing_key_error : public std::runtime_error
 {
   public:
-	/**
-	 * @brief Construct a new duplicate key error object
-	 */
+	///
+	/// @brief Construct a new duplicate key error object
+	///
 	missing_key_error(const std::string &msg, std::string key)
 		: std::runtime_error(msg)
 		, m_key(std::move(key))
@@ -118,9 +118,9 @@ class missing_key_error : public std::runtime_error
 class multiple_results_error : public std::runtime_error
 {
   public:
-	/**
-	 * @brief Construct a new multiple results error object
-	 */
+	///
+	/// @brief Construct a new multiple results error object
+	///
 	multiple_results_error() // NOLINT
 		: std::runtime_error("query should have returned exactly one row")
 	{
@@ -139,7 +139,7 @@ class multiple_results_error : public std::runtime_error
 class category
 {
   public:
-	/// \cond
+	/// @cond
 
 	friend class row_handle;
 
@@ -155,10 +155,10 @@ class category
 	static_assert(std::input_iterator<iterator>);
 	static_assert(std::input_iterator<const_iterator>);
 
-	/// \endcond
+	/// @endcond
 
 	category() = default;            ///< Default constructor
-	category(std::string_view name); ///< Constructor taking a \a name
+	category(std::string_view name); ///< Constructor taking a @a name
 
 	/// @brief Constructor creating a category named @a name and filled with @a rows
 	/// @param name Name for the new category
@@ -195,20 +195,20 @@ class category
 
 	[[nodiscard]] const std::string &name() const { return m_name; } ///< Returns the name of the category
 
-	/// \brief Rename category to @a new_name
+	/// @brief Rename category to @a new_name
 	void name(std::string_view new_name)
 	{
 		m_name = new_name;
 		m_dirty = true;
 	}
 
-	/// \brief Return true if the category has been modified since last open/save
+	/// @brief Return true if the category has been modified since last open/save
 	[[nodiscard]] constexpr bool is_dirty() const
 	{
 		return m_dirty;
 	}
 
-	/// \brief Mark the category as modified according to @a dirty
+	/// @brief Mark the category as modified according to @a dirty
 	void set_dirty(bool dirty)
 	{
 		m_dirty = dirty;
@@ -258,9 +258,9 @@ class category
 	/// @return Returns true is all validations pass
 	[[nodiscard]] bool validate_links() const;
 
-	/**
-	 * @brief Strip removes items from this category that are invalid according to the assigned validator
-	 */
+	///
+	/// @brief Strip removes items from this category that are invalid according to the assigned validator
+	///
 	void strip();
 
 	/// @brief Equality operator, returns true if @a rhs is equal to this
@@ -382,12 +382,12 @@ class category
 	/// @brief The key type
 	using key_type = std::vector<key_element_type>;
 
-	/// @brief Return a row_handle for the row specified by \a key
+	/// @brief Return a row_handle for the row specified by @a key
 	/// @param key The value for the key, items specified in the dictionary should have a value
 	/// @return The row found in the index, or an undefined row_handle
 	row_handle operator[](const key_type &key);
 
-	/// @brief Return a const_row_handle for the row specified by \a key
+	/// @brief Return a const_row_handle for the row specified by @a key
 	/// @param key The value for the key, items specified in the dictionary should have a value
 	/// @return The row found in the index, or an undefined row_handle
 	const_row_handle operator[](const key_type &key) const;
@@ -1045,7 +1045,7 @@ class category
 	void clear();
 
 	// --------------------------------------------------------------------
-	/// \brief generate a new, unique ID. Pass it an ID generating function
+	/// @brief generate a new, unique ID. Pass it an ID generating function
 	/// based on a sequence number. This function will be called until the
 	/// result is unique in the context of this category
 	std::string get_unique_id(std::function<std::string(int)> generator = cif::cif_id_for_number);
@@ -1070,8 +1070,8 @@ class category
 	/// value that is the default or the previous value
 	using value_provider_type = std::function<item_value(const item_value &)>;
 
-	/// \brief Update a single item named @a item_name in the rows that match
-	/// \a cond to values provided by a callback function \a value_provider
+	/// @brief Update a single item named @a item_name in the rows that match
+	/// @a cond to values provided by a callback function @a value_provider
 	/// making sure the linked categories are updated according to the link.
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
@@ -1086,8 +1086,8 @@ class category
 		update_value(rows, item_name, std::move(value_provider));
 	}
 
-	/// \brief Update a single item named @a item_name in the rows \a rows
-	/// to values provided by a callback function \a value_provider
+	/// @brief Update a single item named @a item_name in the rows @a rows
+	/// to values provided by a callback function @a value_provider
 	/// making sure the linked categories are updated according to the link.
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
@@ -1095,7 +1095,7 @@ class category
 	void update_value(const std::vector<row_handle> &rows, std::string_view item_name,
 		value_provider_type &&value_provider);
 
-	/// \brief Update a single item named @a item_name in the rows that match \a cond to value \a value
+	/// @brief Update a single item named @a item_name in the rows that match @a cond to value @a value
 	/// making sure the linked categories are updated according to the link.
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
@@ -1109,7 +1109,7 @@ class category
 		update_value(rows, item_name, value);
 	}
 
-	/// \brief Update a single item named @a item_name in @a rows to value \a value
+	/// @brief Update a single item named @a item_name in @a rows to value @a value
 	/// making sure the linked categories are updated according to the link.
 	/// That means, child categories are updated if the links are absolute
 	/// and unique. If they are not, the child category rows are split.
@@ -1121,7 +1121,7 @@ class category
 	}
 
 	// --------------------------------------------------------------------
-	/// \brief Return the index number for \a item_name
+	/// @brief Return the index number for @a item_name
 
 	[[nodiscard]] uint16_t get_item_ix(std::string_view item_name) const;
 
@@ -1141,15 +1141,15 @@ class category
 	/// @return The index number of the item
 	uint16_t add_item(std::string_view item_name);
 
-	/** @brief Remove item name @a colum_name
-	 * @param item_name The item to be removed
-	 */
+	/// @brief Remove item name @a colum_name
+	/// @param item_name The item to be removed
+	///
 	void remove_item(std::string_view item_name);
 
-	/// \brief Drop items in this category that contain empty values in all rows.
+	/// @brief Drop items in this category that contain empty values in all rows.
 	void drop_empty_items();
 
-	/** @brief Rename item @a from_name to @a to_name */
+	/// @brief Rename item @a from_name to @a to_name
 	void rename_item(std::string_view from_name, std::string_view to_name);
 
 	/// @brief Return whether a item with name @a name exists in this category
@@ -1189,7 +1189,7 @@ class category
 	/// Write the contents of the category to the std::ostream @a os
 	void write(std::ostream &os) const;
 
-	/// \brief Various supported output formats
+	/// @brief Various supported output formats
 	enum class output_format
 	{
 		cif,      // Output in mmCIF format

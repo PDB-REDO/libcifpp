@@ -52,43 +52,43 @@
 # pragma GCC diagnostic pop
 #endif
 
-/** \file point.hpp
- *
- * This file contains the definition for *cif::point* as well as
- * lots of routines and classes that can manipulate points.
- */
+/// @file point.hpp
+///
+/// This file contains the definition for *cif::point* as well as
+/// lots of routines and classes that can manipulate points.
+///
 
 namespace cif
 {
 
 // --------------------------------------------------------------------
-/**
- * @brief A stripped down quaternion implementation, based on boost::math::quaternion
- *
- * We use quaternions to do rotations in 3d space. Quaternions are faster than
- * matrix calculations and they also suffer less from drift caused by rounding
- * errors.
- *
- * Like complex number, quaternions do have a meaningful notion of "real part",
- * but unlike them there is no meaningful notion of "imaginary part".
- * Instead there is an "unreal part" which itself is a quaternion, and usually
- * nothing simpler (as opposed to the complex number case).
- * However, for practicality, there are accessors for the other components
- * (these are necessary for the templated copy constructor, for instance).
- *
- * @note Quaternion multiplication is *NOT* commutative;
- * symbolically, "q *= rhs;" means "q = q * rhs;"
- * and "q /= rhs;" means "q = q * inverse_of(rhs);"
- */
+///
+/// @brief A stripped down quaternion implementation, based on boost::math::quaternion
+///
+/// We use quaternions to do rotations in 3d space. Quaternions are faster than
+/// matrix calculations and they also suffer less from drift caused by rounding
+/// errors.
+///
+/// Like complex number, quaternions do have a meaningful notion of "real part",
+/// but unlike them there is no meaningful notion of "imaginary part".
+/// Instead there is an "unreal part" which itself is a quaternion, and usually
+/// nothing simpler (as opposed to the complex number case).
+/// However, for practicality, there are accessors for the other components
+/// (these are necessary for the templated copy constructor, for instance).
+///
+/// @note Quaternion multiplication is *NOT* commutative;
+/// symbolically, "q *= rhs;" means "q = q * rhs;"
+/// and "q /= rhs;" means "q = q * inverse_of(rhs);"
+///
 
 template <typename T>
 class quaternion_type
 {
   public:
-	/// \brief the value type of the elements, usually this is float
+	/// @brief the value type of the elements, usually this is float
 	using value_type = T;
 
-	/// \brief constructor with the four members
+	/// @brief constructor with the four members
 	constexpr explicit quaternion_type(value_type const &value_a = {}, value_type const &value_b = {}, value_type const &value_c = {}, value_type const &value_d = {})
 		: a(value_a)
 		, b(value_b)
@@ -97,7 +97,7 @@ class quaternion_type
 	{
 	}
 
-	/// \brief constructor taking two complex values as input
+	/// @brief constructor taking two complex values as input
 	constexpr explicit quaternion_type(std::complex<value_type> const &z0, std::complex<value_type> const &z1 = std::complex<value_type>())
 		: a(z0.real())
 		, b(z0.imag())
@@ -109,7 +109,7 @@ class quaternion_type
 	constexpr quaternion_type(quaternion_type const &) = default; ///< Copy constructor
 	constexpr quaternion_type(quaternion_type &&) = default;      ///< Copy constructor
 
-	/// \brief Copy constructor accepting a quaternion with a different value_type
+	/// @brief Copy constructor accepting a quaternion with a different value_type
 	template <typename X>
 	constexpr explicit quaternion_type(quaternion_type<X> const &rhs)
 		: a(static_cast<value_type>(rhs.a))
@@ -121,19 +121,19 @@ class quaternion_type
 
 	// accessors
 
-	/// \brief See class description, return the *real* part of the quaternion
+	/// @brief See class description, return the *real* part of the quaternion
 	[[nodiscard]] constexpr value_type real() const
 	{
 		return a;
 	}
 
-	/// \brief See class description, return the *unreal* part of the quaternion
+	/// @brief See class description, return the *unreal* part of the quaternion
 	[[nodiscard]] constexpr quaternion_type unreal() const
 	{
 		return { 0, b, c, d };
 	}
 
-	/// \brief swap
+	/// @brief swap
 	constexpr void swap(quaternion_type &o)
 	{
 		std::swap(a, o.a);
@@ -144,7 +144,7 @@ class quaternion_type
 
 	// assignment operators
 
-	/// \brief Assignment operator accepting a quaternion with optionally another value_type
+	/// @brief Assignment operator accepting a quaternion with optionally another value_type
 	template <typename X>
 	constexpr quaternion_type &operator=(quaternion_type<X> const &rhs)
 	{
@@ -156,10 +156,10 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief Assignment operator
+	/// @brief Assignment operator
 	constexpr quaternion_type &operator=(quaternion_type const &rhs) = default;
 
-	/// \brief Assignment operator that sets the *real* part to @a rhs and the *unreal* parts to zero
+	/// @brief Assignment operator that sets the *real* part to @a rhs and the *unreal* parts to zero
 	constexpr quaternion_type &operator=(value_type const &rhs)
 	{
 		a = rhs;
@@ -169,7 +169,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief Assignment operator that sets the *real* part to the real part of @a rhs
+	/// @brief Assignment operator that sets the *real* part to the real part of @a rhs
 	/// and the first *unreal* part to the imaginary part of of @a rhs. The other *unreal*
 	// parts are set to zero.
 	constexpr quaternion_type &operator=(std::complex<value_type> const &rhs)
@@ -184,14 +184,14 @@ class quaternion_type
 
 	// other assignment-related operators
 
-	/// \brief operator += adding value @a rhs to the *real* part
+	/// @brief operator += adding value @a rhs to the *real* part
 	constexpr quaternion_type &operator+=(value_type const &rhs)
 	{
 		a += rhs;
 		return *this;
 	}
 
-	/// \brief operator += adding the real part of @a rhs to the *real* part
+	/// @brief operator += adding the real part of @a rhs to the *real* part
 	/// and the imaginary part of @a rhs to the first *unreal* part
 	constexpr quaternion_type &operator+=(std::complex<value_type> const &rhs)
 	{
@@ -200,7 +200,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief operator += adding the parts of @a rhs to the equivalent part of this
+	/// @brief operator += adding the parts of @a rhs to the equivalent part of this
 	template <class X>
 	constexpr quaternion_type &operator+=(quaternion_type<X> const &rhs)
 	{
@@ -211,14 +211,14 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief operator -= subtracting value @a rhs from the *real* part
+	/// @brief operator -= subtracting value @a rhs from the *real* part
 	constexpr quaternion_type &operator-=(value_type const &rhs)
 	{
 		a -= rhs;
 		return *this;
 	}
 
-	/// \brief operator -= subtracting the real part of @a rhs from the *real* part
+	/// @brief operator -= subtracting the real part of @a rhs from the *real* part
 	/// and the imaginary part of @a rhs from the first *unreal* part
 	constexpr quaternion_type &operator-=(std::complex<value_type> const &rhs)
 	{
@@ -227,7 +227,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief operator -= subtracting the parts of @a rhs from the equivalent part of this
+	/// @brief operator -= subtracting the parts of @a rhs from the equivalent part of this
 	template <class X>
 	constexpr quaternion_type &operator-=(quaternion_type<X> const &rhs)
 	{
@@ -238,7 +238,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief multiply all parts with value @a rhs
+	/// @brief multiply all parts with value @a rhs
 	constexpr quaternion_type &operator*=(value_type const &rhs)
 	{
 		a *= rhs;
@@ -248,7 +248,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief multiply with complex number @a rhs
+	/// @brief multiply with complex number @a rhs
 	constexpr quaternion_type &operator*=(std::complex<value_type> const &rhs)
 	{
 		value_type ar = rhs.real();
@@ -258,7 +258,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief multiply @a a with @a b and return the result
+	/// @brief multiply @a a with @a b and return the result
 	friend constexpr quaternion_type operator*(const quaternion_type &a, const quaternion_type &b)
 	{
 		auto result = a;
@@ -266,7 +266,7 @@ class quaternion_type
 		return result;
 	}
 
-	/// \brief multiply with quaternion @a rhs
+	/// @brief multiply with quaternion @a rhs
 	template <typename X>
 	constexpr quaternion_type &operator*=(quaternion_type<X> const &rhs)
 	{
@@ -280,7 +280,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief divide all parts by @a rhs
+	/// @brief divide all parts by @a rhs
 	constexpr quaternion_type &operator/=(value_type const &rhs)
 	{
 		a /= rhs;
@@ -290,7 +290,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief divide by complex number @a rhs
+	/// @brief divide by complex number @a rhs
 	constexpr quaternion_type &operator/=(std::complex<value_type> const &rhs)
 	{
 		value_type ar = rhs.real();
@@ -301,7 +301,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief divide by quaternion @a rhs
+	/// @brief divide by quaternion @a rhs
 	template <typename X>
 	constexpr quaternion_type &operator/=(quaternion_type<X> const &rhs)
 	{
@@ -316,7 +316,7 @@ class quaternion_type
 		return *this;
 	}
 
-	/// \brief normalise the values so that the length of the result is exactly 1
+	/// @brief normalise the values so that the length of the result is exactly 1
 	friend constexpr quaternion_type normalize(quaternion_type q)
 	{
 		std::valarray<value_type> t(4);
@@ -338,7 +338,7 @@ class quaternion_type
 		return q;
 	}
 
-	/// \brief return the conjugate of this
+	/// @brief return the conjugate of this
 	friend constexpr quaternion_type conj(quaternion_type q)
 	{
 		return quaternion_type{ +q.a, -q.b, -q.c, -q.d };
@@ -349,25 +349,25 @@ class quaternion_type
 	[[nodiscard]] constexpr value_type get_c() const { return c; } ///< Return part c
 	[[nodiscard]] constexpr value_type get_d() const { return d; } ///< Return part d
 
-	/// \brief compare with @a rhs
+	/// @brief compare with @a rhs
 	constexpr bool operator==(const quaternion_type &rhs) const
 	{
 		return a == rhs.a and b == rhs.b and c == rhs.c and d == rhs.d;
 	}
 
-	/// \brief compare with @a rhs
+	/// @brief compare with @a rhs
 	constexpr bool operator!=(const quaternion_type &rhs) const
 	{
 		return a != rhs.a or b != rhs.b or c != rhs.c or d != rhs.d;
 	}
 
-	/// \brief test for all zero values
+	/// @brief test for all zero values
 	constexpr explicit operator bool() const
 	{
 		return a != 0 or b != 0 or c != 0 or d != 0;
 	}
 
-	/// \brief for debugging e.g.
+	/// @brief for debugging e.g.
 	friend std::ostream &operator<<(std::ostream &os, const quaternion_type &rhs)
 	{
 		os << std::format("{{ a: {}, b: {}, c: {}, d: {} }}", rhs.a, rhs.b, rhs.c, rhs.d);
@@ -378,18 +378,18 @@ class quaternion_type
 	value_type a, b, c, d;
 };
 
-/**
- * @brief This code is similar to the code in boost so I copy the documentation as well:
- *
- * > spherical is a simple transposition of polar, it takes as inputs a (positive)
- * > magnitude and a point on the hypersphere, given by three angles. The first of
- * > these, theta has a natural range of -pi to +pi, and the other two have natural
- * > ranges of -pi/2 to +pi/2 (as is the case with the usual spherical coordinates in
- * > **R**<sup>3</sup>). Due to the many symmetries and periodicities, nothing untoward happens if
- * > the magnitude is negative or the angles are outside their natural ranges. The
- * > expected degeneracies (a magnitude of zero ignores the angles settings...) do
- * > happen however.
- */
+///
+/// @brief This code is similar to the code in boost so I copy the documentation as well:
+///
+/// > spherical is a simple transposition of polar, it takes as inputs a (positive)
+/// > magnitude and a point on the hypersphere, given by three angles. The first of
+/// > these, theta has a natural range of -pi to +pi, and the other two have natural
+/// > ranges of -pi/2 to +pi/2 (as is the case with the usual spherical coordinates in
+/// > **R**<sup>3</sup>). Due to the many symmetries and periodicities, nothing untoward happens if
+/// > the magnitude is negative or the angles are outside their natural ranges. The
+/// > expected degeneracies (a magnitude of zero ignores the angles settings...) do
+/// > happen however.
+///
 
 template <typename T>
 inline quaternion_type<T> spherical(T const &rho, T const &theta, T const &phi1, T const &phi2)
@@ -408,34 +408,34 @@ inline quaternion_type<T> spherical(T const &rho, T const &theta, T const &phi1,
 	return result;
 }
 
-/// \brief By default we use the float version of a quaternion
+/// @brief By default we use the float version of a quaternion
 using quaternion = quaternion_type<float>;
 
 // --------------------------------------------------------------------
 
-/**
- * @brief 3D point: a location with x, y and z coordinates as floating point.
- *
- * Note that you can simply use structured binding to get access to the
- * individual parts like so:
- *
- * @code{.cpp}
- * float x, y, z;
- * tie(x, y, z) = atom.get_location();
- * @endcode
- */
+///
+/// @brief 3D point: a location with x, y and z coordinates as floating point.
+///
+/// Note that you can simply use structured binding to get access to the
+/// individual parts like so:
+///
+/// @code{.cpp}
+/// float x, y, z;
+/// tie(x, y, z) = atom.get_location();
+/// @endcode
+///
 
 template <typename F>
 struct point_type
 {
-	/// \brief the value type of the x, y and z members
+	/// @brief the value type of the x, y and z members
 	using value_type = F;
 
 	value_type m_x, ///< The x part of the location
 		m_y,        ///< The y part of the location
 		m_z;        ///< The z part of the location
 
-	/// \brief default constructor, initialises the values to zero
+	/// @brief default constructor, initialises the values to zero
 	constexpr point_type()
 		: m_x(0)
 		, m_y(0)
@@ -443,7 +443,7 @@ struct point_type
 	{
 	}
 
-	/// \brief constructor taking three values
+	/// @brief constructor taking three values
 	constexpr point_type(value_type x, value_type y, value_type z)
 		: m_x(x)
 		, m_y(y)
@@ -451,7 +451,7 @@ struct point_type
 	{
 	}
 
-	/// \brief Copy constructor
+	/// @brief Copy constructor
 	template <typename PF>
 	constexpr point_type(const point_type<PF> &pt)
 		: m_x(static_cast<F>(pt.m_x))
@@ -460,14 +460,14 @@ struct point_type
 	{
 	}
 
-	/// \brief constructor taking a tuple of three values
+	/// @brief constructor taking a tuple of three values
 	constexpr point_type(const std::tuple<value_type, value_type, value_type> &pt)
 		: point_type(std::get<0>(pt), std::get<1>(pt), std::get<2>(pt))
 	{
 	}
 
 #if HAVE_LIBCLIPPER
-	/// \brief Construct a point using the values in clipper coordinate @a pt
+	/// @brief Construct a point using the values in clipper coordinate @a pt
 	constexpr point_type(const clipper::Coord_orth &pt)
 		: m_x(pt[0])
 		, m_y(pt[1])
@@ -475,7 +475,7 @@ struct point_type
 	{
 	}
 
-	/// \brief Assign a point using the values in clipper coordinate @a rhs
+	/// @brief Assign a point using the values in clipper coordinate @a rhs
 	constexpr point_type &operator=(const clipper::Coord_orth &rhs)
 	{
 		m_x = rhs[0];
@@ -485,7 +485,7 @@ struct point_type
 	}
 #endif
 
-	/// \brief Assignment operator
+	/// @brief Assignment operator
 	template <typename PF>
 	constexpr point_type &operator=(const point_type<PF> &rhs)
 	{
@@ -507,7 +507,7 @@ struct point_type
 	[[nodiscard]] constexpr value_type get_z() const { return m_z; } ///< Get the value of z
 	constexpr void set_z(value_type z) { m_z = z; }                  ///< Set the value of z to @a z
 
-	/// \brief add @a rhs
+	/// @brief add @a rhs
 	constexpr point_type &operator+=(const point_type &rhs)
 	{
 		m_x += rhs.m_x;
@@ -517,7 +517,7 @@ struct point_type
 		return *this;
 	}
 
-	/// \brief add @a d to all members
+	/// @brief add @a d to all members
 	constexpr point_type &operator+=(value_type d)
 	{
 		m_x += d;
@@ -527,14 +527,14 @@ struct point_type
 		return *this;
 	}
 
-	/// \brief Add the points @a lhs and @a rhs and return the result
+	/// @brief Add the points @a lhs and @a rhs and return the result
 	template <typename F2>
 	friend constexpr auto operator+(const point_type &lhs, const point_type<F2> &rhs)
 	{
 		return point_type<std::common_type_t<value_type, F2>>(lhs.m_x + rhs.m_x, lhs.m_y + rhs.m_y, lhs.m_z + rhs.m_z);
 	}
 
-	/// \brief subtract @a rhs
+	/// @brief subtract @a rhs
 	constexpr point_type &operator-=(const point_type &rhs)
 	{
 		m_x -= rhs.m_x;
@@ -544,7 +544,7 @@ struct point_type
 		return *this;
 	}
 
-	/// \brief subtract @a d from all members
+	/// @brief subtract @a d from all members
 	constexpr point_type &operator-=(value_type d)
 	{
 		m_x -= d;
@@ -554,20 +554,20 @@ struct point_type
 		return *this;
 	}
 
-	/// \brief Subtract the points @a lhs and @a rhs and return the result
+	/// @brief Subtract the points @a lhs and @a rhs and return the result
 	template <typename F2>
 	friend constexpr auto operator-(const point_type &lhs, const point_type<F2> &rhs)
 	{
 		return point_type<std::common_type_t<value_type, F2>>(lhs.m_x - rhs.m_x, lhs.m_y - rhs.m_y, lhs.m_z - rhs.m_z);
 	}
 
-	/// \brief Return the negative copy of @a pt
+	/// @brief Return the negative copy of @a pt
 	friend constexpr point_type operator-(const point_type &pt)
 	{
 		return point_type(-pt.m_x, -pt.m_y, -pt.m_z);
 	}
 
-	/// \brief multiply all members with @a rhs
+	/// @brief multiply all members with @a rhs
 	constexpr point_type &operator*=(value_type rhs)
 	{
 		m_x *= rhs;
@@ -576,21 +576,21 @@ struct point_type
 		return *this;
 	}
 
-	/// \brief multiply point @a pt with value @a f and return the result
+	/// @brief multiply point @a pt with value @a f and return the result
 	template <typename F2>
 	friend constexpr auto operator*(const point_type &pt, F2 f)
 	{
 		return point_type<std::common_type_t<value_type, F2>>(pt.m_x * f, pt.m_y * f, pt.m_z * f);
 	}
 
-	/// \brief multiply point @a pt with value @a f and return the result
+	/// @brief multiply point @a pt with value @a f and return the result
 	template <typename F2>
 	friend constexpr auto operator*(F2 f, const point_type &pt)
 	{
 		return point_type<std::common_type_t<value_type, F2>>(pt.m_x * f, pt.m_y * f, pt.m_z * f);
 	}
 
-	/// \brief divide all members by @a rhs
+	/// @brief divide all members by @a rhs
 	constexpr point_type &operator/=(value_type rhs)
 	{
 		m_x /= rhs;
@@ -599,20 +599,20 @@ struct point_type
 		return *this;
 	}
 
-	/// \brief divide point @a pt by value @a f and return the result
+	/// @brief divide point @a pt by value @a f and return the result
 	template <typename F2>
 	friend constexpr auto operator/(const point_type &pt, F2 f)
 	{
 		return point_type<std::common_type_t<value_type, F2>>(pt.m_x / f, pt.m_y / f, pt.m_z / f);
 	}
 
-	/**
-	 * @brief looking at this point as a vector, normalise it which
-	 * means dividing all members by the length making the length
-	 * effectively 1.
-	 *
-	 * @return The previous length of this vector
-	 */
+	///
+	/// @brief looking at this point as a vector, normalise it which
+	/// means dividing all members by the length making the length
+	/// effectively 1.
+	///
+	/// @return The previous length of this vector
+	///
 	constexpr value_type normalize()
 	{
 		auto length = m_x * m_x + m_y * m_y + m_z * m_z;
@@ -624,7 +624,7 @@ struct point_type
 		return length;
 	}
 
-	/// \brief Rotate this point using the quaterion @a q
+	/// @brief Rotate this point using the quaterion @a q
 	constexpr void rotate(const quaternion &q)
 	{
 		quaternion_type<value_type> p(0, m_x, m_y, m_z);
@@ -636,7 +636,7 @@ struct point_type
 		m_z = p.get_d();
 	}
 
-	/// \brief Rotate this point using the quaterion @a q by first
+	/// @brief Rotate this point using the quaterion @a q by first
 	/// moving the point to @a pivot and after rotating moving it
 	/// back
 	constexpr void rotate(const quaternion &q, point_type pivot)
@@ -647,36 +647,36 @@ struct point_type
 	}
 
 #if HAVE_LIBCLIPPER
-	/// \brief Make it possible to pass a point to clipper functions expecting a clipper coordinate
+	/// @brief Make it possible to pass a point to clipper functions expecting a clipper coordinate
 	operator clipper::Coord_orth() const
 	{
 		return clipper::Coord_orth(m_x, m_y, m_z);
 	}
 #endif
 
-	/// \brief Allow access to this point as if it is a tuple of three const value_type's
+	/// @brief Allow access to this point as if it is a tuple of three const value_type's
 	constexpr operator std::tuple<const value_type &, const value_type &, const value_type &>() const
 	{
 		return std::make_tuple(std::ref(m_x), std::ref(m_y), std::ref(m_z));
 	}
 
-	/// \brief Allow access to this point as if it is a tuple of three value_type's
+	/// @brief Allow access to this point as if it is a tuple of three value_type's
 	constexpr operator std::tuple<value_type &, value_type &, value_type &>()
 	{
 		return std::make_tuple(std::ref(m_x), std::ref(m_y), std::ref(m_z));
 	}
 
 #if defined(__cpp_impl_three_way_comparison)
-	/// \brief a default spaceship operator
+	/// @brief a default spaceship operator
 	constexpr auto operator<=>(const point_type &rhs) const = default;
 #else
-	/// \brief a default equals operator
+	/// @brief a default equals operator
 	constexpr bool operator==(const point_type &rhs) const
 	{
 		return m_x == rhs.m_x and m_y == rhs.m_y and m_z == rhs.m_z;
 	}
 
-	/// \brief a default not-equals operator
+	/// @brief a default not-equals operator
 	constexpr bool operator!=(const point_type &rhs) const
 	{
 		return not operator==(rhs);
@@ -685,19 +685,19 @@ struct point_type
 
 	// consider point as a vector... perhaps I should rename point?
 
-	/// \brief looking at the point as if it is a vector, return the squared length
+	/// @brief looking at the point as if it is a vector, return the squared length
 	[[nodiscard]] constexpr value_type length_sq() const
 	{
 		return m_x * m_x + m_y * m_y + m_z * m_z;
 	}
 
-	/// \brief looking at the point as if it is a vector, return the length
+	/// @brief looking at the point as if it is a vector, return the length
 	[[nodiscard]] constexpr value_type length() const
 	{
 		return std::sqrt(length_sq());
 	}
 
-	/// \brief Print out the point @a pt to @a os
+	/// @brief Print out the point @a pt to @a os
 	friend std::ostream &operator<<(std::ostream &os, const point_type &pt)
 	{
 		os << '(' << pt.m_x << ',' << pt.m_y << ',' << pt.m_z << ')';
@@ -705,13 +705,13 @@ struct point_type
 	}
 };
 
-/// \brief By default we use points with float value_type
+/// @brief By default we use points with float value_type
 using point = point_type<float>;
 
 // --------------------------------------------------------------------
 // several standard 3d operations
 
-/// \brief return the squared distance between points @a a and @a b
+/// @brief return the squared distance between points @a a and @a b
 template <typename F1, typename F2>
 constexpr auto distance_squared(const point_type<F1> &a, const point_type<F2> &b)
 {
@@ -720,7 +720,7 @@ constexpr auto distance_squared(const point_type<F1> &a, const point_type<F2> &b
 	       (a.m_z - b.m_z) * (a.m_z - b.m_z);
 }
 
-/// \brief return the distance between points @a a and @a b
+/// @brief return the distance between points @a a and @a b
 template <typename F1, typename F2>
 constexpr auto distance(const point_type<F1> &a, const point_type<F2> &b)
 {
@@ -730,14 +730,14 @@ constexpr auto distance(const point_type<F1> &a, const point_type<F2> &b)
 		(a.m_z - b.m_z) * (a.m_z - b.m_z));
 }
 
-/// \brief return the dot product between the vectors @a a and @a b
+/// @brief return the dot product between the vectors @a a and @a b
 template <typename F1, typename F2>
 inline constexpr auto dot_product(const point_type<F1> &a, const point_type<F2> &b)
 {
 	return a.m_x * b.m_x + a.m_y * b.m_y + a.m_z * b.m_z;
 }
 
-/// \brief return the cross product between the vectors @a a and @a b
+/// @brief return the cross product between the vectors @a a and @a b
 template <typename F1, typename F2>
 inline constexpr auto cross_product(const point_type<F1> &a, const point_type<F2> &b)
 {
@@ -747,21 +747,21 @@ inline constexpr auto cross_product(const point_type<F1> &a, const point_type<F2
 		a.m_x * b.m_y - b.m_x * a.m_y);
 }
 
-/// \brief return the squared norm of point @a p
+/// @brief return the squared norm of point @a p
 template <typename F>
 constexpr F norm_squared(const point_type<F> &p)
 {
 	return p.m_x * p.m_x + p.m_y * p.m_y + p.m_z * p.m_z;
 }
 
-/// \brief return the norm of point @a p
+/// @brief return the norm of point @a p
 template <typename F>
 constexpr point_type<F> norm(const point_type<F> &p)
 {
 	return std::sqrt(norm_squared(p));
 }
 
-/// \brief return the point where two lines intersect, or an empty value if they don't intersect at all
+/// @brief return the point where two lines intersect, or an empty value if they don't intersect at all
 template <typename F>
 std::optional<cif::point> line_line_intersection(const point_type<F> &p1,
 	const point_type<F> &p2, const point_type<F> &p3, const point_type<F> &p4)
@@ -796,7 +796,7 @@ std::optional<cif::point> line_line_intersection(const point_type<F> &p1,
 	return { (pa + pb) / 2 };
 }
 
-/// \brief return the angle in degrees between the vectors from point @a p2 to @a p1 and @a p2 to @a p3
+/// @brief return the angle in degrees between the vectors from point @a p2 to @a p1 and @a p2 to @a p3
 template <typename F>
 constexpr auto angle(const point_type<F> &p1, const point_type<F> &p2, const point_type<F> &p3)
 {
@@ -806,7 +806,7 @@ constexpr auto angle(const point_type<F> &p1, const point_type<F> &p2, const poi
 	return std::acos(dot_product(v1, v2) / (v1.length() * v2.length())) * 180 / std::numbers::pi_v<F>;
 }
 
-/// \brief return the dihedral angle in degrees for the four points @a p1, @a p2, @a p3 and @a p4
+/// @brief return the dihedral angle in degrees for the four points @a p1, @a p2, @a p3 and @a p4
 ///
 /// See https://en.wikipedia.org/wiki/Dihedral_angle for an explanation of what a dihedral angle is
 template <typename F>
@@ -836,7 +836,7 @@ constexpr auto dihedral_angle(const point_type<F> &p1, const point_type<F> &p2, 
 	return result;
 }
 
-/// \brief return the cosinus angle for the four points @a p1, @a p2, @a p3 and @a p4
+/// @brief return the cosinus angle for the four points @a p1, @a p2, @a p3 and @a p4
 template <typename F>
 constexpr auto cosinus_angle(const point_type<F> &p1, const point_type<F> &p2, const point_type<F> &p3, const point_type<F> &p4)
 {
@@ -848,7 +848,7 @@ constexpr auto cosinus_angle(const point_type<F> &p1, const point_type<F> &p2, c
 	return x > 0 ? dot_product(v12, v34) / std::sqrt(x) : 0;
 }
 
-/// \brief return the distance from point @a p to the line from @a l1 to @a l2
+/// @brief return the distance from point @a p to the line from @a l1 to @a l2
 template <typename F>
 constexpr auto distance_point_to_line(const point_type<F> &l1, const point_type<F> &l2, const point_type<F> &p)
 {
@@ -859,23 +859,23 @@ constexpr auto distance_point_to_line(const point_type<F> &l1, const point_type<
 	return cross.length() / line.length();
 }
 
-/// \brief return the smallest sphere around the points in @a pts
+/// @brief return the smallest sphere around the points in @a pts
 std::tuple<point, float> smallest_sphere_around_points(std::vector<point> pts);
 
 // --------------------------------------------------------------------
-/**
- * @brief For e.g. simulated annealing, returns a new point that is moved in
- * a random direction with a distance randomly chosen from a normal
- * distribution with a stddev of offset.
- */
+///
+/// @brief For e.g. simulated annealing, returns a new point that is moved in
+/// a random direction with a distance randomly chosen from a normal
+/// distribution with a stddev of offset.
+///
 point nudge(point p, float offset);
 
 // --------------------------------------------------------------------
 
-/// \brief Return a quaternion created from angle @a angle and axis @a axis
+/// @brief Return a quaternion created from angle @a angle and axis @a axis
 quaternion construct_from_angle_axis(float angle, point axis);
 
-/// \brief Return a tuple of an angle and an axis for quaternion @a q
+/// @brief Return a tuple of an angle and an axis for quaternion @a q
 std::tuple<float, point> quaternion_to_angle_axis(quaternion q);
 
 /// @brief Given four points and an angle, return the quaternion required to rotate
@@ -884,22 +884,22 @@ std::tuple<float, point> quaternion_to_angle_axis(quaternion q);
 quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
 	float angle, float esd);
 
-/// \brief Return the point that is the centroid of all the points in @a pts
+/// @brief Return the point that is the centroid of all the points in @a pts
 point centroid(const std::vector<point> &pts);
 
-/// \brief Move all the points in @a pts so that their centroid is at the origin
+/// @brief Move all the points in @a pts so that their centroid is at the origin
 /// (0, 0, 0) and return the offset used (the former centroid)
 point center_points(std::vector<point> &pts);
 
-/// \brief Returns how the two sets of points \a a and \b b can be aligned
+/// @brief Returns how the two sets of points @a a and \b b can be aligned
 ///
-/// \param a	The first set of points
-/// \param b    The second set of points
-/// \result     The quaternion which should be applied to the points in \a a to
+/// @param a	The first set of points
+/// @param b    The second set of points
+/// @result     The quaternion which should be applied to the points in @a a to
 ///             obtain the best superposition.
 quaternion align_points(const std::vector<point> &a, const std::vector<point> &b);
 
-/// \brief The RMSd for the points in \a a and \a b
+/// @brief The RMSd for the points in @a a and @a b
 double RMSd(const std::vector<point> &a, const std::vector<point> &b);
 
 } // namespace cif

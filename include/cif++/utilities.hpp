@@ -73,22 +73,22 @@
 # define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING 1
 #endif
 
-/** \file utilities.hpp
- *
- * This file contains code that is very generic in nature like a progress_bar
- * and classes you can use to colourise output text.
- */
+/// @file utilities.hpp
+///
+/// This file contains code that is very generic in nature like a progress_bar
+/// and classes you can use to colourise output text.
+///
 
 namespace cif
 {
 
-/**
- * @brief The global variable VERBOSE contains the level of verbosity
- * requested. A value of 0 is normal, with some output on error conditions.
- * A value > 0 will result in more output, the higher the value, the more
- * output. A value < 0 will make the library silent, even in error
- * conditions.
- */
+///
+/// @brief The global variable VERBOSE contains the level of verbosity
+/// requested. A value of 0 is normal, with some output on error conditions.
+/// A value > 0 will result in more output, the higher the value, the more
+/// output. A value < 0 will make the library silent, even in error
+/// conditions.
+///
 extern CIFPP_EXPORT int VERBOSE;
 
 /// return the git 'build' number
@@ -128,14 +128,14 @@ namespace colour
 
 	namespace detail
 	{
-		/**
-		 * @brief Struct for delimited strings.
-		 */
+		///
+		/// @brief Struct for delimited strings.
+		///
 		struct coloured_string_t
 		{
-			/**
-			 * @brief Construct a new coloured string t object
-			 */
+			///
+			/// @brief Construct a new coloured string t object
+			///
 			coloured_string_t(std::string_view s, colour_type fc, colour_type bc, style_type st)
 				: m_str(s)
 				, m_fore_colour(static_cast<int>(fc) + 30)
@@ -147,9 +147,9 @@ namespace colour
 			coloured_string_t(coloured_string_t &) = delete;
 			coloured_string_t &operator=(coloured_string_t &) = delete;
 
-			/**
-			 * @brief Write out the string, either coloured or not
-			 */
+			///
+			/// @brief Write out the string, either coloured or not
+			///
 			template <typename char_type, typename traits_type>
 			friend std::basic_ostream<char_type, traits_type> &operator<<(
 				std::basic_ostream<char_type, traits_type> &os, const coloured_string_t &cs)
@@ -176,30 +176,30 @@ namespace colour
 	} // namespace detail
 } // namespace colour
 
-/**
- * @brief Manipulator for coloured strings.
- *
- * When writing out text to the terminal it is often useful to have
- * some of the text colourised. But only if the output is really a
- * terminal since colouring text is done using escape sequences
- * an if output is redirected to a file, these escape sequences end up
- * in the file making the real text less easy to read.
- *
- * The code presented here is rather basic. It mimics the std::quoted
- * manipulator in that it will colour a string with optionally
- * requested colours and text style.
- *
- * Example:
- *
- * @code {.cpp}
- * using namespace cif::colour;
- * std::cout << cif::coloured("Hello, world!", white, red, bold) << '\n';
- * @endcode
- * @param str String to quote.
- * @param fg Foreground (=text) colour to use
- * @param bg Background colour to use
- * @param st Text style to use
- */
+///
+/// @brief Manipulator for coloured strings.
+///
+/// When writing out text to the terminal it is often useful to have
+/// some of the text colourised. But only if the output is really a
+/// terminal since colouring text is done using escape sequences
+/// an if output is redirected to a file, these escape sequences end up
+/// in the file making the real text less easy to read.
+///
+/// The code presented here is rather basic. It mimics the std::quoted
+/// manipulator in that it will colour a string with optionally
+/// requested colours and text style.
+///
+/// Example:
+///
+/// @code {.cpp}
+/// using namespace cif::colour;
+/// std::cout << cif::coloured("Hello, world!", white, red, bold) << '\n';
+/// @endcode
+/// @param str String to quote.
+/// @param fg Foreground (=text) colour to use
+/// @param bg Background colour to use
+/// @param st Text style to use
+///
 
 template <typename T>
 	requires std::is_assignable_v<std::string_view, T>
@@ -213,58 +213,58 @@ inline auto coloured(T str,
 // --------------------------------------------------------------------
 //	A progress bar
 
-/**
- * @brief A simple progress bar class for terminal based output
- *
- * Using a progress bar is very convenient for the end user when
- * you have long running code. It gives feed back on how fast an
- * operation is performed and may give an indication how long it
- * will take before it is finished.
- *
- * Using this cif::progress_bar implementation is straightforward:
- *
- * @code {.cpp}
- * using namespace std::chrono_literals;
- *
- * cif::progress_bar pb(10, "counting to ten");
- *
- * for (int i = 1; i <= 10; ++i)
- * {
- *   pb.consumed(1);
- *   std::this_thread::sleep_for(1s);
- * }
- *
- * @endcode
- *
- * When the progress_bar is created, it first checks
- * to see if stdout is to a real TTY and if the VERBOSE
- * flag is not less than zero (quiet mode). If this passes
- * a thread is started that waits for updates.
- *
- * The first two seconds, nothing is written to the screen
- * so if the work is finished within those two seconds
- * the screen stays clean.
- *
- * After this time, a progress bar is printed that may look
- * like this:
- *
- * @code
- * step 3           ========================--------------------------------  40% ⢁
- * @endcode
- *
- * The first characters contain the initial action name or
- * the message text if it was used afterwards.
- *
- * The thermometer is made up with '=' and '-' characters.
- *
- * A percentage is also shown and at the end there is a spinner
- * that gives feedback that the program is really still working.
- *
- * The progress bar is removed if the max has been reached
- * or if the progress bar is destructed. If any output has
- * been generated, the initial action is printed out along
- * with the total time spent.
- */
+///
+/// @brief A simple progress bar class for terminal based output
+///
+/// Using a progress bar is very convenient for the end user when
+/// you have long running code. It gives feed back on how fast an
+/// operation is performed and may give an indication how long it
+/// will take before it is finished.
+///
+/// Using this cif::progress_bar implementation is straightforward:
+///
+/// @code {.cpp}
+/// using namespace std::chrono_literals;
+///
+/// cif::progress_bar pb(10, "counting to ten");
+///
+/// for (int i = 1; i <= 10; ++i)
+/// {
+///   pb.consumed(1);
+///   std::this_thread::sleep_for(1s);
+/// }
+///
+/// @endcode
+///
+/// When the progress_bar is created, it first checks
+/// to see if stdout is to a real TTY and if the VERBOSE
+/// flag is not less than zero (quiet mode). If this passes
+/// a thread is started that waits for updates.
+///
+/// The first two seconds, nothing is written to the screen
+/// so if the work is finished within those two seconds
+/// the screen stays clean.
+///
+/// After this time, a progress bar is printed that may look
+/// like this:
+///
+/// @code
+/// step 3           ========================--------------------------------  40% ⢁
+/// @endcode
+///
+/// The first characters contain the initial action name or
+/// the message text if it was used afterwards.
+///
+/// The thermometer is made up with '=' and '-' characters.
+///
+/// A percentage is also shown and at the end there is a spinner
+/// that gives feedback that the program is really still working.
+///
+/// The progress bar is removed if the max has been reached
+/// or if the progress bar is destructed. If any output has
+/// been generated, the initial action is printed out along
+/// with the total time spent.
+///
 
 class progress_bar
 {
@@ -272,47 +272,47 @@ class progress_bar
 	progress_bar(const progress_bar &) = delete;
 	progress_bar &operator=(const progress_bar &) = delete;
 
-	/**
-	 * @brief Construct a new progress bar object
-	 *
-	 * Progress ranges from 0 (zero) to @a inMax
-	 *
-	 * The action in @a inAction is used for display
-	 *
-	 * @param inMax The maximum value
-	 * @param inAction The description of what is
-	 * going on
-	 */
+	///
+	/// @brief Construct a new progress bar object
+	///
+	/// Progress ranges from 0 (zero) to @a inMax
+	///
+	/// The action in @a inAction is used for display
+	///
+	/// @param inMax The maximum value
+	/// @param inAction The description of what is
+	/// going on
+	///
 
 	progress_bar(int64_t inMax, const std::string &inAction);
 
-	/**
-	 * @brief Destroy the progress bar object
-	 *
-	 */
+	///
+	/// @brief Destroy the progress bar object
+	///
+	///
 	~progress_bar();
 
-	/**
-	 * @brief Notify the progress bar that @a inConsumed
-	 * should be added to the internal progress counter
-	 */
+	///
+	/// @brief Notify the progress bar that @a inConsumed
+	/// should be added to the internal progress counter
+	///
 	void consumed(int64_t inConsumed); // consumed is relative
 
-	/**
-	 * @brief Notify the progress bar that the internal
-	 * progress counter should be updated to @a inProgress
-	 */
+	///
+	/// @brief Notify the progress bar that the internal
+	/// progress counter should be updated to @a inProgress
+	///
 	void progress(int64_t inProgress); // progress is absolute
 
-	/**
-	 * @brief Replace the action string in the progress bar
-	 * with @a inMessage
-	 */
+	///
+	/// @brief Replace the action string in the progress bar
+	/// with @a inMessage
+	///
 	void message(const std::string &inMessage);
 
-	/**
-	 * @brief Flush the progress bar to the output stream
-	 */
+	///
+	/// @brief Flush the progress bar to the output stream
+	///
 	void flush();
 
   private:
@@ -322,65 +322,65 @@ class progress_bar
 // --------------------------------------------------------------------
 // Resources
 
-/**
- * @brief Load a resource from disk or the compiled in resources
- *
- * @verbatim embed:rst
-.. note::
-
-   See the :doc:`documentation on resources </resources>` for more information.
-
-   @endverbatim
- *
- * @param name The named resource to load
- * @return std::unique_ptr<std::istream> A pointer to the std::istream or empty if not found
- */
+///
+/// @brief Load a resource from disk or the compiled in resources
+///
+/// @verbatim embed:rst
+/// .. note::
+///
+/// See the :doc:`documentation on resources </resources>` for more information.
+///
+/// @endverbatim
+///
+/// @param name The named resource to load
+/// @return std::unique_ptr<std::istream> A pointer to the std::istream or empty if not found
+///
 
 std::unique_ptr<std::istream> load_resource(std::filesystem::path name);
 
-/**
- * @brief Add a file specified by @a dataFile as the data for resource @a name
- *
- * @verbatim embed:rst
-.. note::
-
-   See the :doc:`documentation on resources </resources>` for more information.
-
-   @endverbatim
- *
- * @param name The name of the resource to specify
- * @param dataFile Path to a file containing the data
- */
+///
+/// @brief Add a file specified by @a dataFile as the data for resource @a name
+///
+/// @verbatim embed:rst
+/// .. note::
+///
+/// See the :doc:`documentation on resources </resources>` for more information.
+///
+/// @endverbatim
+///
+/// @param name The name of the resource to specify
+/// @param dataFile Path to a file containing the data
+///
 
 void add_file_resource(const std::string &name, std::filesystem::path dataFile);
 
-/**
- * @brief List all the file resources added with cif::add_file_resource.
- *
- * @param os The std::ostream to write the directories to
- */
+///
+/// @brief List all the file resources added with cif::add_file_resource.
+///
+/// @param os The std::ostream to write the directories to
+///
 
 void list_file_resources(std::ostream &os);
 
-/**
- * @brief Add a directory to the list of search directories. This list is
- * searched in a last-in-first-out order.
- *
- * @verbatim embed:rst
-.. note::
-
-   See the :doc:`documentation on resources </resources>` for more information.
-
-   @endverbatim
- */
+///
+/// @brief Add a directory to the list of search directories. This list is
+/// searched in a last-in-first-out order.
+///
+/// @verbatim embed:rst
+/// .. note::
+///
+/// See the :doc:`documentation on resources </resources>` for more information.
+///
+/// @endverbatim
+///
 
 void add_data_directory(std::filesystem::path dataDir);
 
-/**
- * @brief List all the data directories, for error reporting on missing resources.
- *
- * @param os The std::ostream to write the directories to
- */
+///
+/// @brief List all the data directories, for error reporting on missing resources.
+///
+/// @param os The std::ostream to write the directories to
+///
 
 void list_data_directories(std::ostream &os);
 

@@ -34,16 +34,15 @@
 #include <numeric>
 #include <type_traits>
 
-/**
- * @file iterator.hpp
- *
- * This file contains several implementations of generic iterators.
- *
- * Using partial specialization we can have implementation for
- * iterators that return row_handles, a single value or tuples of
- * multiple values.
- *
- */
+/// @file iterator.hpp
+///
+/// This file contains several implementations of generic iterators.
+///
+/// Using partial specialization we can have implementation for
+/// iterators that return row_handles, a single value or tuples of
+/// multiple values.
+///
+///
 
 namespace cif
 {
@@ -52,30 +51,30 @@ class category;
 
 // --------------------------------------------------------------------
 
-/**
- * @brief Implementation of an iterator that can return
- * multiple values in a tuple. Of course, that tuple can
- * then be used in structured binding to receive the values
- * in a for loop e.g.
- *
- * @tparam Category The category for this iterator
- * @tparam Ts The types this iterator can be dereferenced to
- */
+///
+/// @brief Implementation of an iterator that can return
+/// multiple values in a tuple. Of course, that tuple can
+/// then be used in structured binding to receive the values
+/// in a for loop e.g.
+///
+/// @tparam Category The category for this iterator
+/// @tparam Ts The types this iterator can be dereferenced to
+///
 template <bool Const, typename... Ts>
 class iterator_impl_base
 {
   public:
-	/** @cond */
+	/// @cond
 	template <bool, typename...>
 	friend class iterator_impl_base;
 
 	friend class category;
-	/** @endcond */
+	/// @endcond
 
-	/** variable that contains the number of elements in the tuple */
+	/// variable that contains the number of elements in the tuple
 	static constexpr std::size_t N = sizeof...(Ts);
 
-	/** @cond */
+	/// @cond
 	using tuple_type = std::tuple<Ts...>;
 
 	using row_handle_type = std::conditional_t<Const, const_row_handle, row_handle>;
@@ -188,7 +187,7 @@ class iterator_impl_base
 		return m_current != rhs.m_current;
 	}
 
-	/** @endcond */
+	/// @endcond
 
   private:
 	template <std::size_t... Is>
@@ -202,17 +201,17 @@ class iterator_impl_base
 	std::array<uint16_t, N> m_item_ix;
 };
 
-/**
- * @brief Implementation of an iterator that returns
- * only row_handles
- *
- * @tparam Category The category for this iterator
- */
+///
+/// @brief Implementation of an iterator that returns
+/// only row_handles
+///
+/// @tparam Category The category for this iterator
+///
 template <bool Const>
 class iterator_impl_base<Const>
 {
   public:
-	/** @cond */
+	/// @cond
 
 	template <bool, typename...>
 	friend class iterator_impl_base;
@@ -325,25 +324,25 @@ class iterator_impl_base<Const>
 		return m_current != rhs.m_current;
 	}
 
-	/** @endcond */
+	/// @endcond
 
   private:
 	row_handle_type m_current;
 };
 
-/**
- * @brief Implementation of an iterator that can return
- * a single value.
- *
- * @tparam Category The category for this iterator
- * @tparam T The type this iterator can be dereferenced to
- */
+///
+/// @brief Implementation of an iterator that can return
+/// a single value.
+///
+/// @tparam Category The category for this iterator
+/// @tparam T The type this iterator can be dereferenced to
+///
 
 template <bool Const, typename T>
 class iterator_impl_base<Const, T>
 {
   public:
-	/** @cond */
+	/// @cond
 	template <bool, typename...>
 	friend class iterator_impl_base;
 
@@ -460,7 +459,7 @@ class iterator_impl_base<Const, T>
 		return m_current != rhs.m_current;
 	}
 
-	/** @endcond */
+	/// @endcond
 
   private:
 	[[nodiscard]] value_type get() const
@@ -486,23 +485,23 @@ using const_iterator_impl = iterator_impl_base<true, Ts...>;
 // --------------------------------------------------------------------
 // iterator proxy
 
-/**
- * @brief An iterator_proxy is used as a result type for methods that
- * return a range of values you want to iterate over.
- *
- * E.g. the class cif::category contains the method cif::category::rows()
- * that returns an iterator_proxy that allows you to iterate over
- * all the rows in the category.
- *
- * @tparam Category The category for the iterators
- * @tparam Ts The types the iterators return. See class: iterator
- */
+///
+/// @brief An iterator_proxy is used as a result type for methods that
+/// return a range of values you want to iterate over.
+///
+/// E.g. the class cif::category contains the method cif::category::rows()
+/// that returns an iterator_proxy that allows you to iterate over
+/// all the rows in the category.
+///
+/// @tparam Category The category for the iterators
+/// @tparam Ts The types the iterators return. See class: iterator
+///
 
 template <bool Const, typename... Ts>
 class iterator_proxy_base
 {
   public:
-	/** @cond */
+	/// @cond
 	static constexpr const std::size_t N = sizeof...(Ts);
 
 	using category_type = std::conditional_t<Const, const category, category>;
@@ -518,7 +517,7 @@ class iterator_proxy_base
 
 	iterator_proxy_base(const iterator_proxy_base &) = delete;
 	iterator_proxy_base &operator=(const iterator_proxy_base &) = delete;
-	/** @endcond */
+	/// @endcond
 
 	[[nodiscard]] iterator begin() const { return iterator(m_begin, m_item_ix); } ///< Return the iterator pointing to the first row
 	[[nodiscard]] iterator end() const { return iterator(m_end, m_item_ix); }     ///< Return the iterator pointing past the last row
@@ -532,7 +531,7 @@ class iterator_proxy_base
 
 	[[nodiscard]] category_type &get_category() const { return *m_category; } ///< Return the category the iterator belong to
 
-	/** swap */
+	/// swap
 	void swap(iterator_proxy_base &rhs)
 	{
 		std::swap(m_category, rhs.m_category);
@@ -565,20 +564,20 @@ using const_iterator_proxy = iterator_proxy_base<true, Ts...>;
 // --------------------------------------------------------------------
 // conditional iterator proxy
 
-/**
- * @brief A conditional iterator proxy is similar to an iterator_proxy
- * in that it can be used to return a range of rows you can iterate over.
- * In the case of an conditional_iterator_proxy a cif::condition is used
- * to filter out only those rows that match the condition.
- *
- * @tparam category_type The category the iterators belong to
- * @tparam Ts The types to which the iterators can be dereferenced
- */
+///
+/// @brief A conditional iterator proxy is similar to an iterator_proxy
+/// in that it can be used to return a range of rows you can iterate over.
+/// In the case of an conditional_iterator_proxy a cif::condition is used
+/// to filter out only those rows that match the condition.
+///
+/// @tparam category_type The category the iterators belong to
+/// @tparam Ts The types to which the iterators can be dereferenced
+///
 template <bool Const, typename... Ts>
 class conditional_iterator_proxy_base
 {
   public:
-	/** @cond */
+	/// @cond
 	static constexpr const std::size_t N = sizeof...(Ts);
 
 	using category_type = std::conditional_t<Const, const category, category>;
@@ -684,7 +683,7 @@ class conditional_iterator_proxy_base
 	conditional_iterator_proxy_base(const conditional_iterator_proxy_base &) = delete;
 	conditional_iterator_proxy_base &operator=(const conditional_iterator_proxy_base &) = delete;
 
-	/** @endcond */
+	/// @endcond
 
 	[[nodiscard]] iterator begin() const; ///< Return the iterator pointing to the first row
 	[[nodiscard]] iterator end() const;   ///< Return the iterator pointing past the last row
@@ -698,7 +697,7 @@ class conditional_iterator_proxy_base
 
 	[[nodiscard]] category_type &get_category() const { return *m_cat; } ///< Category the iterators belong to
 
-	/** swap */
+	/// swap
 	template <bool C2, typename ... T2s>
 	friend void swap(conditional_iterator_proxy_base<C2, T2s...> &lhs, conditional_iterator_proxy_base<C2, T2s...> &rhs);
 
@@ -721,7 +720,7 @@ using const_conditional_iterator_proxy = conditional_iterator_proxy_base<true, T
 
 // --------------------------------------------------------------------
 
-/** @cond */
+/// @cond
 template <bool Const, typename... Ts>
 iterator_proxy_base<Const, Ts...>::iterator_proxy_base(category_type &cat, row_iterator pos, char const *const items[N])
 	: m_category(&cat)
@@ -825,6 +824,6 @@ void swap(conditional_iterator_proxy_base<Const, Ts...> &lhs, conditional_iterat
 // template <bool Const, typename... Ts>
 
 
-/** @endcond */
+/// @endcond
 
 } // namespace cif

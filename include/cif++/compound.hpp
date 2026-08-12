@@ -38,7 +38,7 @@
 #include <string_view>
 #include <vector>
 
-/// \file compound.hpp
+/// @file compound.hpp
 /// This file contains the definition for the class compound, encapsulating
 /// the information found for compounds in the CCD.
 ///
@@ -46,6 +46,7 @@
 /// is located using load_resource. (See documentation on cif::load_resource for more information)
 ///
 /// Note that since version 6 the CCP4 monomer library is no longer used.
+///
 
 /// See also :doc:`/compound` for more information.
 
@@ -59,7 +60,7 @@ class datablock;
 class file;
 enum atom_type : uint8_t;
 
-/// \brief The bond type or bond order as defined in the CCD, possible values taken from the mmcif_pdbx file
+/// @brief The bond type or bond order as defined in the CCD, possible values taken from the mmcif_pdbx file
 enum class bond_type
 {
 	sing, ///< single bond
@@ -78,7 +79,7 @@ std::string bond_type_to_string(bond_type bondType);
 /// @brief return the cif::bond_type for the string representation @a bondType
 bond_type parse_bond_type_from_string(const std::string &bondType);
 
-/// \brief The possible stereo config values for a compound_atom.
+/// @brief The possible stereo config values for a compound_atom.
 ///
 /// As the site https://psiberg.com/r-s-nomenclature/ states:
 ///
@@ -102,7 +103,7 @@ std::string to_string(stereo_config_type stereo_config);
 stereo_config_type parse_stereo_config_from_string(const std::string &stereo_config);
 
 /// --------------------------------------------------------------------
-/// \brief struct containing information about an atom in a chemical compound.
+/// @brief struct containing information about an atom in a chemical compound.
 /// This is a subset of the available information. Contact the author if you need more fields.
 
 struct compound_atom
@@ -125,7 +126,7 @@ struct compound_atom
 };
 
 /// --------------------------------------------------------------------
-/// \brief struct containing information about the bonds
+/// @brief struct containing information about the bonds
 
 struct compound_bond
 {
@@ -136,7 +137,7 @@ struct compound_bond
 };
 
 /// --------------------------------------------------------------------
-/// \brief a class that contains information about a chemical compound.
+/// @brief a class that contains information about a chemical compound.
 /// This information is derived from the CDD by default.
 ///
 /// To create compounds, you use the factory method. You can add your own
@@ -168,10 +169,10 @@ class compound
 		return m_id == "HOH" or m_id == "H2O" or m_id == "WAT";
 	}
 
-	/** \brief Return whether this compound has a type of either 'peptide linking' or 'L-peptide linking' */
+	/// @brief Return whether this compound has a type of either 'peptide linking' or 'L-peptide linking'
 	[[nodiscard]] bool is_peptide() const;
 
-	/** \brief Return whether this compound has a type of either 'DNA linking' or 'RNA linking' */
+	/// @brief Return whether this compound has a type of either 'DNA linking' or 'RNA linking'
 	[[nodiscard]] bool is_base() const;
 
 	/// Return the one letter code to use in a canonical sequence. If unknown the value '\0' is returned
@@ -209,11 +210,11 @@ class compound_factory
 	compound_factory(const compound_factory &) = delete;
 	compound_factory &operator=(const compound_factory &) = delete;
 
-	/// \brief Initialise a singleton instance.
+	/// @brief Initialise a singleton instance.
 	///
 	/// If you have a multithreaded application and want to have different
 	/// compounds in each thread (e.g. a web service processing user requests
-	/// with different sets of compounds) you can set the \a useThreadLocalInstanceOnly
+	/// with different sets of compounds) you can set the @a useThreadLocalInstanceOnly
 	/// flag to true.
 
 	static void init(bool useThreadLocalInstanceOnly);
@@ -232,17 +233,17 @@ class compound_factory
 	/// Override any previously loaded dictionary with @a inDictFile
 	void push_dictionary(const std::filesystem::path &inDictFile);
 
-	/** @brief Override any previously loaded dictionary with the data in @a file
-	 *
-	 * @note experimental feature
-	 *
-	 * Load the file @a file as a source for compound information. This may
-	 * be e.g. a regular mmCIF file with extra files containing compound
-	 * information.
-	 *
-	 * Be carefull to remove the block again, best use @ref cif::compound_source
-	 * as a stack based object.
-	 */
+	/// @brief Override any previously loaded dictionary with the data in @a file
+	///
+	/// @note experimental feature
+	///
+	/// Load the file @a file as a source for compound information. This may
+	/// be e.g. a regular mmCIF file with extra files containing compound
+	/// information.
+	///
+	/// Be carefull to remove the block again, best use @ref cif::compound_source
+	/// as a stack based object.
+	///
 
 	void push_dictionary(const file &file);
 
@@ -289,12 +290,12 @@ class compound_factory
 	/// Return whether @a res_name already exists, without creating it.
 	[[nodiscard]] bool exists(std::string_view res_name) const;
 
-	/// \brief Create the compound object for \a id
+	/// @brief Create the compound object for @a id
 	///
-	/// This will create the compound instance for \a id if it doesn't exist already.
+	/// This will create the compound instance for @a id if it doesn't exist already.
 	/// The result is owned by this factory and should not be deleted by the user.
-	/// \param id	The compound ID, a three letter code usually
-	/// \result		The compound, or nullptr if it could not be created (missing info)
+	/// @param id	The compound ID, a three letter code usually
+	/// @result		The compound, or nullptr if it could not be created (missing info)
 	const compound *create(std::string_view id);
 
 	~compound_factory() = default;
@@ -327,20 +328,20 @@ class compound_factory
 
 // --------------------------------------------------------------------
 
-/**
- * @brief Stack based source for compound info.
- *
- * Use this class to temporarily add a compound source to the
- * compound_factory.
- *
- * @code{.cpp}
- * cif::file f("1cbs-with-custom-rea.cif");
- * cif::compound_source cs(f);
- *
- * auto &cf = cif::compound_factory::instance();
- * auto rea_compound = cf.create("REA");
- * @endcode
- */
+///
+/// @brief Stack based source for compound info.
+///
+/// Use this class to temporarily add a compound source to the
+/// compound_factory.
+///
+/// @code{.cpp}
+/// cif::file f("1cbs-with-custom-rea.cif");
+/// cif::compound_source cs(f);
+///
+/// auto &cf = cif::compound_factory::instance();
+/// auto rea_compound = cf.create("REA");
+/// @endcode
+///
 
 class compound_source
 {
