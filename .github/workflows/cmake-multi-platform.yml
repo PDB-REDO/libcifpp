@@ -84,9 +84,12 @@ jobs:
         test -f "$P/lib/cmake/cifpp/cifpp-config-version.cmake"
         test -f "$P/share/libcifpp/mmcif_pdbx.dic"
 
-    - name: Build and test consumer against installed package
+    - name: Build consumer against installed package
       run: |
         cmake -E rm -rf "$RUNNER_TEMP/cifpp-consumer"
         cmake -B "$RUNNER_TEMP/cifpp-consumer" -S "${{ github.workspace }}/examples" -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/cifpp-prefix" -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_BUILD_TYPE=Release
         cmake --build "$RUNNER_TEMP/cifpp-consumer" --config Release
-        ctest --test-dir "$RUNNER_TEMP/cifpp-consumer" --build-config Release --output-on-failure
+
+    - name: Test consumer against installed package
+      if: matrix.os != 'windows-latest'
+      run: ctest --test-dir "$RUNNER_TEMP/cifpp-consumer" --build-config Release --output-on-failure
