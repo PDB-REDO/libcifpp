@@ -520,7 +520,8 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 				else
 				{
 					double value;
-					const auto &[ptr, ec] = from_chars(m[3].str().data(), m[3].str().data() + m[3].str().length(), value);
+					std::string vs = m[3];
+					const auto &[ptr, ec] = from_chars(vs.data(), vs.data() + vs.length(), value);
 					if (ec != std::errc{})
 						throw std::system_error(std::make_error_code(ec));
 
