@@ -260,14 +260,6 @@ class atom
 		m_impl->set_property(name, std::move(value));
 	}
 
-	/// @brief Set value for the item named @a name in the _atom_site category to @a value
-	template <typename T>
-	void set_property(const std::string_view name, const T &value)
-		requires(std::is_arithmetic_v<T>)
-	{
-		set_property(name, std::to_string(value));
-	}
-
 	/// Return the ID of the _atom_site record.
 	///
 	/// @note Although I've never seen anything other than integers,
