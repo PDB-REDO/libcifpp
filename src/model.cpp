@@ -1254,14 +1254,14 @@ void structure::load_atoms_for_model(structure_open_options options)
 		c = std::move(c) and (cif::key("type_symbol") != "H" and cif::key("type_symbol") != "D");
 
 	if (options.skip_water)
-		c = std::move(c) and (cif::key("auth_comp_id") != "HOH" and cif::key("auth_comp_id") != "H20" and cif::key("auth_comp_id") != "WAT");
+		c = std::move(c) and (cif::key("auth_comp_id") != "HOH" and cif::key("auth_comp_id") != "H2O" and cif::key("auth_comp_id") != "WAT");
 
 	if (options.skip_hetatom)
 	{
 		if (options.skip_water)
 			c = std::move(c) and cif::key("group_PDB") != "HETATM";
 		else
-			c = std::move(c) and (cif::key("group_PDB") != "HETATM" or (cif::key("auth_comp_id") == "HOH" or cif::key("auth_comp_id") == "H20" or cif::key("auth_comp_id") == "WAT"));
+			c = std::move(c) and (cif::key("group_PDB") != "HETATM" or (cif::key("auth_comp_id") == "HOH" or cif::key("auth_comp_id") == "H2O" or cif::key("auth_comp_id") == "WAT"));
 	}
 
 	if (options.min_b_factor.has_value())
