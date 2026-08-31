@@ -729,59 +729,58 @@ void category::set_validator(const validator *v, datablock &db)
 					<< cif::join(missing, ", ") << " in " << m_name << " " << (missing.size() == 1 ? "is" : "are") << " missing\n";
 				throw missing_key_error(msg.str(), *missing.begin());
 			}
+
+			for (size_t cix = 0; cix < m_items.size(); ++cix)
+			{
+				auto &&[item, cv] = m_items[cix];
+
+				cv = m_cat_validator->get_validator_for_item(item);
+
+				if (cv == nullptr)
+					continue;
+
+				auto type = cv->m_type;
+				if (type == nullptr)
+					continue;
+
+				bool number = type->m_primitive_type == DDL_PrimitiveType::Numb;
+				if (number)
+				{
+					for (auto row = m_head; row != nullptr; row = row->m_next)
+					{
+						if (cix >= row->size() or row->operator[](cix).empty())
+							continue;
+
+						item_value &v = row->operator[](cix);
+						if (not v.is_number())
+						{
+							// Try cast the value to a number and throw in case of failure
+							if (auto sv = v.sv(); sv.find_first_of(".eE") == std::string_view::npos)
+								v.cast_to_int();
+							else
+								v.cast_to_float();
+						}
+					}
+				}
+				else
+				{
+					for (auto row = m_head; row != nullptr; row = row->m_next)
+					{
+						if (cix >= row->size() or row->operator[](cix).empty())
+							continue;
+
+						item_value &v = row->operator[](cix);
+						if (v.is_number())
+							v = v.str();
+					}
+				}
+			}
+
+			m_index = new category_index(*this);
 		}
 	}
 	else
 		m_cat_validator = nullptr;
-
-	for (size_t cix = 0; cix < m_items.size(); ++cix)
-	{
-		auto &&[item, cv] = m_items[cix];
-
-		cv = m_cat_validator ? m_cat_validator->get_validator_for_item(item) : nullptr;
-
-		if (cv == nullptr)
-			continue;
-
-		auto type = cv->m_type;
-		if (type == nullptr)
-			continue;
-
-		bool number = type->m_primitive_type == DDL_PrimitiveType::Numb;
-		if (number)
-		{
-			for (auto row = m_head; row != nullptr; row = row->m_next)
-			{
-				if (cix >= row->size() or row->operator[](cix).empty())
-					continue;
-
-				item_value &v = row->operator[](cix);
-				if (not v.is_number())
-				{
-					// Try cast the value to a number and throw in case of failure
-					if (auto sv = v.sv(); sv.find_first_of(".eE") == std::string_view::npos)
-						v.cast_to_int();
-					else
-						v.cast_to_float();
-				}
-			}
-		}
-		else
-		{
-			for (auto row = m_head; row != nullptr; row = row->m_next)
-			{
-				if (cix >= row->size() or row->operator[](cix).empty())
-					continue;
-
-				item_value &v = row->operator[](cix);
-				if (v.is_number())
-					v = v.str();
-			}
-		}
-	}
-
-	if (m_cat_validator)
-		m_index = new category_index(*this);
 
 	update_links(db);
 }
@@ -2735,7 +2734,7 @@ bool category::operator==(const category &rhs) const
 
 	std::set<std::string> keys;
 
-	for (const auto &items : { a.get_items(), b.get_items()})
+	for (const auto &items : { a.get_items(), b.get_items() })
 	{
 		for (auto &item_name : items)
 			keys.insert(item_name);

@@ -25,6 +25,7 @@
  */
 
 #include "cif++/cif++.hpp"
+#include "cif++/item.hpp"
 #include "cif++/validate.hpp"
 
 #include <algorithm>
@@ -1186,27 +1187,27 @@ where label_entity_id in (select id from entity where type = 'polymer')
 				last_asym_id = asym_id;
 				last_seq_id = seq_id;
 			}
-				// std::string hetero = (asym_id == last_asym_id and seq_id == last_seq_id) ? "y" : "n";
+			// std::string hetero = (asym_id == last_asym_id and seq_id == last_seq_id) ? "y" : "n";
 
-				// if (hetero == "y")
-				// 	pdbx_poly_seq_scheme.back().assign("hetero", "y", false);
+			// if (hetero == "y")
+			// 	pdbx_poly_seq_scheme.back().assign("hetero", "y", false);
 
-				// pdbx_poly_seq_scheme.emplace({ //
-				// 	{ "asym_id", asym_id },
-				// 	{ "entity_id", entity_id },
-				// 	{ "seq_id", seq_id },
-				// 	{ "mon_id", comp_id },
-				// 	{ "ndb_seq_num", seq_id },
-				// 	{ "pdb_seq_num", auth_seq_id },
-				// 	{ "auth_seq_num", auth_seq_id },
-				// 	{ "pdb_mon_id", auth_comp_id },
-				// 	{ "auth_mon_id", auth_comp_id },
-				// 	{ "pdb_strand_id", asym_id_to_pdb_strand_map[asym_id] },
-				// 	{ "pdb_ins_code", pdb_ins_code },
-				// 	{ "hetero", hetero } });
+			// pdbx_poly_seq_scheme.emplace({ //
+			// 	{ "asym_id", asym_id },
+			// 	{ "entity_id", entity_id },
+			// 	{ "seq_id", seq_id },
+			// 	{ "mon_id", comp_id },
+			// 	{ "ndb_seq_num", seq_id },
+			// 	{ "pdb_seq_num", auth_seq_id },
+			// 	{ "auth_seq_num", auth_seq_id },
+			// 	{ "pdb_mon_id", auth_comp_id },
+			// 	{ "auth_mon_id", auth_comp_id },
+			// 	{ "pdb_strand_id", asym_id_to_pdb_strand_map[asym_id] },
+			// 	{ "pdb_ins_code", pdb_ins_code },
+			// 	{ "hetero", hetero } });
 
-				// last_asym_id = asym_id;
-				// last_seq_id = seq_id;
+			// last_asym_id = asym_id;
+			// last_seq_id = seq_id;
 		}
 	}
 }
@@ -1686,11 +1687,23 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 								continue;
 						}
 
-						if (ec == cif::validation_error::value_is_not_a_number)
+						if (ec == cif::validation_error::value_is_not_a_number and row[ix].type() == item_value_type::TEXT)
 						{
-							row[ix] = item_value{ std::stoi(row[ix].value().get<std::string>()) };
-							if (iv->validate_value(row[ix].value(), ec))
-								continue;
+							try
+							{
+								if (row[ix].value().sv().find_first_of(".eE") != std::string_view::npos)
+									row[ix].value().cast_to_float();
+								else
+									row[ix].value().cast_to_int();
+
+								if (iv->validate_value(row[ix].value(), ec))
+									continue;
+							}
+							catch (const std::exception &ex)
+							{
+								if (VERBOSE > 0)
+									std::clog << "Value (" << std::quoted(row[ix].str()) << ") for item " << item_name << " in category " << cat.name() << " is not a valid number\n";
+							}
 						}
 
 						if (ec == cif::validation_error::value_is_not_in_enumeration_list)
