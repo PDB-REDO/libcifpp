@@ -25,6 +25,7 @@
  */
 
 #include "cif++/cif++.hpp"
+#include "cif++/item.hpp"
 #include "cif++/utilities.hpp"
 
 #include <cassert>
@@ -634,31 +635,34 @@ sac_parser::CIFToken sac_parser::get_next_token()
 	// 	std::cerr << '\n';
 	// }
 
-	if (result == CIFToken::VALUE_NUMERIC_INTEGER)
-	{
-		// Avoid interpreting phone numbers as integers, TODO: check if this is an issue
-		auto [ptr, ec] = from_chars(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size(), m_token_value_int);
-		if (ec != std::errc{})
-		{
-			if (cif::VERBOSE > 0)
-				std::clog << "Invalid integer value: " << std::make_error_code(ec).message() << '\n';
+	if (result == CIFToken::VALUE_NUMERIC_INTEGER or result == CIFToken::VALUE_NUMERIC_FLOAT)
+		m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
 
-			result = CIFToken::VALUE_CHARSTRING;
-			m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
-		}
-	}
-	else if (result == CIFToken::VALUE_NUMERIC_FLOAT)
-	{
-		auto [ptr, ec] = from_chars(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size(), m_token_value_float);
-		if (ec != std::errc{})
-		{
-			if (cif::VERBOSE > 0)
-				std::clog << "Invalid floating point value: " << std::make_error_code(ec).message() << '\n';
+	// if (result == CIFToken::VALUE_NUMERIC_INTEGER)
+	// {
+	// 	// Avoid interpreting phone numbers as integers, TODO: check if this is an issue
+	// 	auto [ptr, ec] = from_chars(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size(), m_token_value_int);
+	// 	if (ec != std::errc{})
+	// 	{
+	// 		if (cif::VERBOSE > 0)
+	// 			std::clog << "Invalid integer value: " << std::make_error_code(ec).message() << '\n';
 
-			result = CIFToken::VALUE_CHARSTRING;
-			m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
-		}
-	}
+	// 		result = CIFToken::VALUE_CHARSTRING;
+	// 		m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
+	// 	}
+	// }
+	// else if (result == CIFToken::VALUE_NUMERIC_FLOAT)
+	// {
+	// 	auto [ptr, ec] = from_chars(m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size(), m_token_value_float);
+	// 	if (ec != std::errc{})
+	// 	{
+	// 		if (cif::VERBOSE > 0)
+	// 			std::clog << "Invalid floating point value: " << std::make_error_code(ec).message() << '\n';
+
+	// 		result = CIFToken::VALUE_CHARSTRING;
+	// 		m_token_value = std::string_view(m_token_buffer.data(), m_token_buffer.size());
+	// 	}
+	// }
 
 	return result;
 }
@@ -963,24 +967,24 @@ void sac_parser::parse_datablock()
 						switch (m_lookahead)
 						{
 							case CIFToken::VALUE_INAPPLICABLE:
-								produce_item(cat, item_name, item_value_type::INAPPLICABLE);
+								produce_item(cat, item_name, m_token_value, item_value_type::INAPPLICABLE);
 								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_UNKNOWN:
-								produce_item(cat, item_name, item_value_type::MISSING);
+								produce_item(cat, item_name, m_token_value, item_value_type::MISSING);
 								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_NUMERIC_INTEGER:
-								produce_item(cat, item_name, m_token_value_int);
+								produce_item(cat, item_name, m_token_value, item_value_type::INT);
 								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_NUMERIC_FLOAT:
-								produce_item(cat, item_name, { m_token_value_float, m_float_precision });
+								produce_item(cat, item_name, m_token_value, item_value_type::FLOAT);
 								match(m_lookahead);
 								break;
 							case CIFToken::VALUE_CHARSTRING:
 							case CIFToken::VALUE_TEXTFIELD:
-								produce_item(cat, item_name, m_token_value);
+								produce_item(cat, item_name, m_token_value, item_value_type::TEXT);
 								match(m_lookahead);
 								break;
 							default:;
@@ -1010,24 +1014,24 @@ void sac_parser::parse_datablock()
 				switch (m_lookahead)
 				{
 					case CIFToken::VALUE_INAPPLICABLE:
-						produce_item(cat, itemName, item_value_type::INAPPLICABLE);
+						produce_item(cat, itemName, m_token_value, item_value_type::INAPPLICABLE);
 						match(CIFToken::VALUE_INAPPLICABLE);
 						break;
 					case CIFToken::VALUE_UNKNOWN:
-						produce_item(cat, itemName, item_value_type::MISSING);
+						produce_item(cat, itemName, m_token_value, item_value_type::MISSING);
 						match(CIFToken::VALUE_UNKNOWN);
 						break;
 					case CIFToken::VALUE_NUMERIC_INTEGER:
-						produce_item(cat, itemName, m_token_value_int);
+						produce_item(cat, itemName, m_token_value, item_value_type::INT);
 						match(CIFToken::VALUE_NUMERIC_INTEGER);
 						break;
 					case CIFToken::VALUE_NUMERIC_FLOAT:
-						produce_item(cat, itemName, { m_token_value_float, m_float_precision });
+						produce_item(cat, itemName, m_token_value, item_value_type::FLOAT);
 						match(CIFToken::VALUE_NUMERIC_FLOAT);
 						break;
 					case CIFToken::VALUE_CHARSTRING:
 					case CIFToken::VALUE_TEXTFIELD:
-						produce_item(cat, itemName, m_token_value);
+						produce_item(cat, itemName, m_token_value, item_value_type::TEXT);
 						match(m_lookahead);
 						break;
 					default:
@@ -1090,7 +1094,7 @@ void parser::produce_row()
 	m_row = *i;
 }
 
-void parser::produce_item(std::string_view category, std::string_view item, item_value value)
+void parser::produce_item(std::string_view category, std::string_view item, std::string_view value, item_value_type hint)
 {
 	if (VERBOSE >= 4)
 		std::cerr << "producing _" << category << '.' << item << " -> " << value << '\n';
@@ -1098,20 +1102,67 @@ void parser::produce_item(std::string_view category, std::string_view item, item
 	if (m_category == nullptr or not iequals(category, m_category->name()))
 		error("inconsistent categories in loop_");
 
-	if (value.is_number())
+	switch (hint)
 	{
-		auto cv = m_category->get_cat_validator();
-		if (cv != nullptr)
-		{
-			if (auto iv = cv->get_validator_for_item(item))
-			{
-				if (auto tv = iv->m_type; tv and tv->m_primitive_type != DDL_PrimitiveType::Numb)
-					value = std::string_view{ m_token_buffer.data(), m_token_buffer.data() + m_token_buffer.size() };
-			}
-		}
-	}
+		using enum item_value_type;
 
-	m_row[item].set(value, false);
+		case INT:
+		case FLOAT:
+		{
+			m_row[item].set(value, false);
+
+			auto cv = m_category->get_cat_validator();
+			if (cv != nullptr)
+			{
+				if (auto iv = cv->get_validator_for_item(item))
+				{
+					if (auto tv = iv->m_type; tv and tv->m_primitive_type == DDL_PrimitiveType::Numb)
+					{
+						if (hint == item_value_type::INT)
+						{
+							int64_t v;
+							// Avoid interpreting phone numbers as integers, TODO: check if this is an issue
+							auto [ptr, ec] = from_chars(value.data(), value.data() + value.size(), v);
+							if (ec != std::errc{} or ptr != value.data() + value.size())
+								error(std::format("Invalid integer value for _{}.{}", category, item));
+							m_row[item] = v;
+						}
+						else /*  if (hint == item_value_type::FLOAT) */
+						{
+							double v;
+							// Avoid interpreting phone numbers as integers, TODO: check if this is an issue
+							auto [ptr, ec] = from_chars(value.data(), value.data() + value.size(), v);
+							if (ec != std::errc{} or ptr != value.data() + value.size())
+								error(std::format("Invalid integer value for _{}.{}", category, item));
+							m_row[item] = { v, m_float_precision };
+						}
+					}
+				}
+			}
+
+			break;
+		}
+
+		case TEXT:
+		{
+			auto cv = m_category->get_cat_validator();
+			if (cv != nullptr)
+			{
+				if (auto iv = cv->get_validator_for_item(item))
+				{
+					if (auto tv = iv->m_type; tv and tv->m_primitive_type == DDL_PrimitiveType::Numb)
+						error(std::format("Value for item _{}.{} should be a number", category, item));
+				}
+			}
+
+			m_row[item].set(value, false);
+			break;
+		}
+
+		default:
+			m_row[item].set(hint, false);
+			break;
+	}
 }
 
 } // namespace cif

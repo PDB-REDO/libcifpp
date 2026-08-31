@@ -167,10 +167,34 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 		else
 			d = 0;
 	}
-	else if (is_number_int() and b.is_string())
-		d = str().compare(b.m_data.sv());
-	else if (is_string() and b.is_number_int())
-		d = m_data.sv().compare(b.str());
+	else if ((is_number_int() and b.is_string()) or ((b.is_number_int() and is_string())))
+	{
+		try
+		{
+			d = get<int64_t>() - b.get<int64_t>();
+		}
+		catch (const std::invalid_argument &ex)
+		{
+			d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);
+		}
+	}
+	else if ((is_number_float() and b.is_string()) or ((b.is_number_float() and is_string())))
+	{
+		try
+		{
+			std::partial_ordering dp = get<double>() <=> b.get<double>();
+			if (dp == std::partial_ordering::less)
+				d = -1;
+			else if (dp == std::partial_ordering::greater)
+				d = 1;
+			else
+				d = 0;
+		}
+		catch (const std::invalid_argument &ex)
+		{
+			d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);
+		}
+	}
 
 	return d;
 }
@@ -301,7 +325,20 @@ void item_value::cast_to_float()
 				throw std::system_error(std::make_error_code(ec), "attempt to cast value to integer failed");
 			if (ptr != s.data() + s.size())
 				throw std::runtime_error("attempt to cast value to integer failed, trailing data");
+
+			// record the precision
+			int len = 0;
+			if (auto p = s.find('.'); p != std::string_view::npos)
+			{
+				++p;
+				if (auto e = s.find_first_of("eE", p); e != std::string_view::npos)
+					len = e - p;
+				else
+				 	len = s.length() - p;
+			}
+
 			*this = v;
+			m_data.m_len = len;
 			break;
 		}
 

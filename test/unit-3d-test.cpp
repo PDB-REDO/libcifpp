@@ -133,7 +133,7 @@ TEST_CASE("t3")
 	v.rotate(q);
 	v += p[0];
 
-	std::cout << v << '\n';
+	// std::cout << v << '\n';
 
 	double a = cif::angle(v, p[0], p[1]);
 
@@ -492,7 +492,7 @@ TEST_CASE("symm-P_32_2_1_a")
 
 	auto [d2, p, so] = crystal.closest_symmetry_copy(a, p1);
 
-	std::cout << "d: " << d2 << " p: " << p << " so: " << so.string() << '\n';
+	// std::cout << "d: " << d2 << " p: " << p << " so: " << so.string() << '\n';
 
 	auto p2 = crystal.symmetry_copy(p1, so);
 	auto d3 = distance(p2, a);
@@ -517,7 +517,7 @@ TEST_CASE("symm-P_32_2_1")
 
 	auto [d2, p, so] = crystal.closest_symmetry_copy(a, p1);
 
-	std::cout << "d: " << d2 << " p: " << p << " so: " << so.string() << '\n';
+	// std::cout << "d: " << d2 << " p: " << p << " so: " << so.string() << '\n';
 
 	auto p2 = crystal.symmetry_copy(p1, so);
 	auto d3 = distance(p2, a);

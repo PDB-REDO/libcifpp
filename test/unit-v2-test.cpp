@@ -3354,7 +3354,7 @@ _test.value
 	auto &test = db["test"];
 
 	auto v = test.find1<std::optional<float>>("id"_key == 1, "value");
-	CHECK(v.has_value());
+	REQUIRE(v.has_value());
 	CHECK(*v == 1.0f); // NOLINT(bugprone-unchecked-optional-access)
 
 	v = test.find1<std::optional<float>>("id"_key == 4, "value");
@@ -3367,7 +3367,7 @@ TEST_CASE("compound_test_1")
 {
 	cif::compound_factory::instance().push_dictionary(gTestDir / "REA_v2.cif");
 	auto compound = cif::compound_factory::instance().create("REA_v2");
-	CHECK(compound != nullptr);
+	REQUIRE(compound != nullptr);
 	CHECK(cif::iequals(compound->id(), "REA_v2"));
 }
 
