@@ -522,7 +522,10 @@ class item_value
 				m_str[s.length()] = 0;
 			}
 			else
-				std::memcpy(m_local_str, s.data(), s.length() + 1);
+			{
+				std::memcpy(m_local_str, s.data(), s.length());
+				m_local_str[s.length()] = 0;
+			}
 		}
 
 		value(item_value_type t)

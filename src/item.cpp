@@ -105,7 +105,12 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 			using enum item_value_type;
 
 			case INT:
-				d = m_data.m_value.m_integer - b.m_data.m_value.m_integer;
+				if (std::cmp_less(m_data.m_value.m_integer, b.m_data.m_value.m_integer))
+					d = -1;
+				else if (m_data.m_value.m_integer == b.m_data.m_value.m_integer)
+					d = 0;
+				else
+					d = 1;
 				break;
 			case FLOAT:
 				// stupid comparison based on chopped textual representation
@@ -171,7 +176,14 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 	{
 		try
 		{
-			d = get<int64_t>() - b.get<int64_t>();
+			auto ai = get<int64_t>();
+			auto bi = b.get<int64_t>();
+			if (std::cmp_less(ai, bi))
+				d = -1;
+			else if (ai == bi)
+				d = 0;
+			else
+				d = 1;
 		}
 		catch (const std::invalid_argument &ex)
 		{
@@ -334,7 +346,7 @@ void item_value::cast_to_float()
 				if (auto e = s.find_first_of("eE", p); e != std::string_view::npos)
 					len = e - p;
 				else
-				 	len = s.length() - p;
+					len = s.length() - p;
 			}
 
 			*this = v;
