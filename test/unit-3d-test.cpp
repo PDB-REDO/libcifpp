@@ -31,6 +31,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <numbers>
+
 #if defined(_MSC_VER)
 # pragma warning(disable : 5054) // warning C5054: operator '&': deprecated between enumerations of different types
 # pragma warning(disable : 4127) // conditional expression is constant
@@ -268,6 +270,54 @@ TEST_CASE("symm_1")
 	CHECK_THAT(o.m_x, Catch::Matchers::WithinRel(1.f, 0.01f));
 	CHECK_THAT(o.m_y, Catch::Matchers::WithinRel(1.f, 0.01f));
 	CHECK_THAT(o.m_z, Catch::Matchers::WithinRel(1.f, 0.01f));
+}
+
+TEST_CASE("symm_triclinic")
+{
+	// Regression test for the orthogonalization of triclinic cells.
+	// The y-component of the c axis must be c (cos alpha - cos beta cos gamma) / sin gamma.
+	// A sign error there breaks the metric (b.c != |b||c| cos alpha) and hence all distances.
+
+	cif::cell c(42.f, 51.f, 63.f, 74.f, 83.f, 91.f);
+
+	auto M = c.get_orthogonal_matrix();
+
+	// the columns of the orthogonalization matrix are the lattice vectors,
+	// with a along the x axis and b in the xy plane
+	cif::point a{ M(0, 0), M(1, 0), M(2, 0) };
+	cif::point b{ M(0, 1), M(1, 1), M(2, 1) };
+	cif::point cc{ M(0, 2), M(1, 2), M(2, 2) };
+
+	CHECK_THAT(a.m_y, Catch::Matchers::WithinAbs(0.f, 0.0001f));
+	CHECK_THAT(a.m_z, Catch::Matchers::WithinAbs(0.f, 0.0001f));
+	CHECK_THAT(b.m_z, Catch::Matchers::WithinAbs(0.f, 0.0001f));
+
+	auto dot = [](cif::point p, cif::point q) { return p.m_x * q.m_x + p.m_y * q.m_y + p.m_z * q.m_z; };
+	auto len = [&](cif::point p) { return std::sqrt(dot(p, p)); };
+
+	const auto pi = std::numbers::pi_v<float>;
+	CHECK_THAT(dot(a, b) / (len(a) * len(b)), Catch::Matchers::WithinRel(std::cos(91.f * pi / 180.f), 0.0001f));
+	CHECK_THAT(dot(a, cc) / (len(a) * len(cc)), Catch::Matchers::WithinRel(std::cos(83.f * pi / 180.f), 0.0001f));
+	CHECK_THAT(dot(b, cc) / (len(b) * len(cc)), Catch::Matchers::WithinRel(std::cos(74.f * pi / 180.f), 0.0001f));
+
+	// a distance computed in orthogonal coordinates must match the distance
+	// obtained from the metric tensor
+	const float alpha = 74.f * pi / 180.f;
+	const float beta = 83.f * pi / 180.f;
+	const float gamma = 91.f * pi / 180.f;
+
+	cif::point f1{ 0.12f, 0.34f, 0.56f };
+	cif::point f2{ 0.55f, 0.21f, 0.09f };
+
+	float df = f1.m_x - f2.m_x, dy = f1.m_y - f2.m_y, dz = f1.m_z - f2.m_z;
+	float metric = 42.f * 42.f * df * df + 51.f * 51.f * dy * dy + 63.f * 63.f * dz * dz
+		+ 2.f * 42.f * 51.f * std::cos(gamma) * df * dy
+		+ 2.f * 42.f * 63.f * std::cos(beta) * df * dz
+		+ 2.f * 51.f * 63.f * std::cos(alpha) * dy * dz;
+
+	float d_orth = distance(orthogonal(f1, c), orthogonal(f2, c));
+
+	CHECK_THAT(d_orth, Catch::Matchers::WithinRel(std::sqrt(metric), 0.0001f));
 }
 
 TEST_CASE("symm_2")

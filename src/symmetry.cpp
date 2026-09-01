@@ -80,16 +80,15 @@ void cell::init()
 	auto beta = (m_beta * std::numbers::pi_v<float>) / 180;
 	auto gamma = (m_gamma * std::numbers::pi_v<float>) / 180;
 
-	auto alpha_star = std::acos((std::cos(gamma) * std::cos(beta) - std::cos(alpha)) / (std::sin(beta) * std::sin(gamma)));
-
 	m_orthogonal = identity_matrix(3);
 
 	m_orthogonal(0, 0) = m_a;
 	m_orthogonal(0, 1) = m_b * std::cos(gamma);
 	m_orthogonal(0, 2) = m_c * std::cos(beta);
 	m_orthogonal(1, 1) = m_b * std::sin(gamma);
-	m_orthogonal(1, 2) = m_c * std::sin(beta) * std::cos(alpha_star);
-	m_orthogonal(2, 2) = m_c * std::sin(beta) * std::sin(alpha_star);
+	m_orthogonal(1, 2) = m_c * (std::cos(alpha) - std::cos(beta) * std::cos(gamma)) / std::sin(gamma);
+	m_orthogonal(2, 2) = m_c * std::sqrt(1 - std::cos(beta) * std::cos(beta)
+		- std::pow((std::cos(alpha) - std::cos(beta) * std::cos(gamma)) / std::sin(gamma), 2.f));
 
 	m_fractional = inverse(m_orthogonal);
 }
