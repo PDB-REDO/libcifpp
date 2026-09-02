@@ -738,7 +738,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 		if (argc == 1) // DELETE
 		{
 			rc = SQLITE_OK;
-			row_handle rh{ p->m_cat, *reinterpret_cast<row *>(addr) };
+			row_handle rh{ &p->m_cat, reinterpret_cast<row *>(addr) };
 
 			if (auto v = p->m_cat.get_validator())
 			{
@@ -812,7 +812,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 		}
 		else // UPDATE
 		{
-			row_handle rh{ p->m_cat, *reinterpret_cast<row *>(addr) };
+			row_handle rh{ &p->m_cat, reinterpret_cast<row *>(addr) };
 
 			row_initializer data;
 			for (int i = 2; i < argc; ++i)
@@ -878,7 +878,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 					auto sqls = sql.str();
 					rc = sqlite3_prepare_v2(p->m_connection_impl.m_sqlite_db, sqls.c_str(), static_cast<int>(sqls.length()), &sub_stmt, nullptr);
 
-					for (auto [i, txt] : ixs)
+					for (const auto &[i, txt] : ixs)
 					{
 						// set
 						if (rc == SQLITE_OK)

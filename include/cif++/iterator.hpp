@@ -241,7 +241,7 @@ class iterator_impl_base<Const>
 	}
 
 	iterator_impl_base(const category_type &cat, const row_type *current)
-		: m_current(const_cast<category &>(cat), const_cast<row_type &>(*current))
+		: m_current(const_cast<category *>(&cat), const_cast<row_type *>(current))
 	{
 	}
 

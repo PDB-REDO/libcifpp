@@ -90,7 +90,7 @@ void swap(item_handle a, item_handle b) noexcept
 
 void item_handle::set(item_value value, bool updateLinked)
 {
-	row_handle rh{ m_category, m_row };
+	row_handle rh{ &m_category, &m_row };
 	rh.assign(m_item_ix, std::move(value), updateLinked);
 }
 

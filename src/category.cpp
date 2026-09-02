@@ -92,8 +92,8 @@ class row_comparator
 		assert(a);
 		assert(b);
 
-		const_row_handle rha(cat, *a);
-		const_row_handle rhb(cat, *b);
+		const_row_handle rha(&cat, a);
+		const_row_handle rhb(&cat, b);
 
 		int d = 0;
 		for (const auto &[k, f] : m_comparator)
@@ -111,7 +111,7 @@ class row_comparator
 	{
 		assert(b);
 
-		const_row_handle rhb(cat, *b);
+		const_row_handle rhb(&cat, b);
 
 		int d = 0;
 		auto ai = a.begin();
@@ -408,7 +408,7 @@ category_index::entry *category_index::insert(category &cat, entry *h, row *v)
 		h->m_right = insert(cat, h->m_right, v);
 	else
 	{
-		row_handle rh(cat, *v);
+		row_handle rh(&cat, v);
 
 		std::ostringstream os;
 		for (auto col : cat.key_items())
@@ -1024,7 +1024,7 @@ row_handle category::operator[](const key_type &key)
 
 		auto row = m_index->find_by_value(*this, key);
 		if (row != nullptr)
-			result = { *this, *row };
+			result = { this, row };
 	}
 
 	return result;
@@ -1043,7 +1043,7 @@ const_row_handle category::operator[](const key_type &key) const
 
 		auto row = m_index->find_by_value(*this, key);
 		if (row != nullptr)
-			result = { *this, *row };
+			result = { this, row };
 	}
 
 	return result;
@@ -1636,7 +1636,7 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 	auto iv = col.m_validator;
 	if (updateLinked and iv != nullptr)
 	{
-		row_handle rh(*this, *row);
+		row_handle rh(this, row);
 
 		for (auto &&[childCat, linked] : m_child_links)
 		{
@@ -1911,7 +1911,7 @@ void category::sort(std::function<int(row_handle, row_handle)> f)
 
 	std::vector<row_handle> rows;
 	for (auto itemRow = m_head; itemRow != nullptr; itemRow = itemRow->m_next)
-		rows.emplace_back(*this, *itemRow);
+		rows.emplace_back(this, itemRow);
 
 	std::ranges::stable_sort(rows, [&f](row_handle ia, row_handle ib)
 		{ return f(ia, ib) < 0; });

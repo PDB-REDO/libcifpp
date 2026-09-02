@@ -170,9 +170,9 @@ class row_handle
 	/// @endcond
 
 	/// @brief constructor taking a category @a cat and a row @a r
-	row_handle(category &cat, row &r)
-		: m_category(&cat)
-		, m_row(&r)
+	row_handle(category *cat, row *r)
+		: m_category(cat)
+		, m_row(r)
 	{
 	}
 
@@ -351,9 +351,9 @@ class const_row_handle
 	/// @endcond
 
 	/// @brief constructor taking a category @a cat and a row @a r
-	const_row_handle(const category &cat, const row &r)
-		: m_category(&cat)
-		, m_row(&r)
+	const_row_handle(const category *cat, const row *r)
+		: m_category(cat)
+		, m_row(r)
 	{
 	}
 

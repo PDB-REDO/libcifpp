@@ -290,7 +290,7 @@ class category
 	reference front()
 	{
 		assert(size() > 0);
-		return { *this, *m_head };
+		return { this, m_head };
 	}
 
 	/// @brief Return a const reference to the first row in this category.
@@ -299,7 +299,7 @@ class category
 	[[nodiscard]] const_reference front() const
 	{
 		assert(size() > 0);
-		return { *this, *m_head };
+		return { this, m_head };
 	}
 
 	/// @brief Return a reference to the last row in this category.
@@ -308,7 +308,7 @@ class category
 	reference back()
 	{
 		assert(size() > 0);
-		return { *this, *m_tail };
+		return { this, m_tail };
 	}
 
 	/// @brief Return a const reference to the last row in this category.
@@ -317,7 +317,7 @@ class category
 	[[nodiscard]] const_reference back() const
 	{
 		assert(size() > 0);
-		return { *this, *m_tail };
+		return { this, m_tail };
 	}
 
 	/// Return an iterator to the first row
