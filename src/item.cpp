@@ -124,7 +124,7 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 						d = 0;
 					else if (m_data.m_len and b.m_data.m_len)
 					{
-						auto epsilon = std::pow(10.0f, -1.0f * std::min(m_data.m_len, b.m_data.m_len));
+						auto epsilon = std::pow(10.0f, -1.0f * std::max(m_data.m_len, b.m_data.m_len));
 						if (delta > epsilon)
 							d = fa < fb ? -1 : 1;
 						else
