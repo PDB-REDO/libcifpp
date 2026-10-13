@@ -35,6 +35,7 @@
 #include <cmath>
 #include <compare>
 #include <cstdint>
+#include <exception>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -185,7 +186,7 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 			else
 				d = 1;
 		}
-		catch (const std::invalid_argument &ex)
+		catch (const std::exception &ex)
 		{
 			d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);
 		}
@@ -202,7 +203,7 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 			else
 				d = 0;
 		}
-		catch (const std::invalid_argument &ex)
+		catch (const std::exception &ex)
 		{
 			d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);
 		}
