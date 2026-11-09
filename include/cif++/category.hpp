@@ -360,7 +360,7 @@ class category
 	/// Return a count of the rows in this container
 	[[nodiscard]] std::size_t size() const
 	{
-		return std::distance(cbegin(), cend());
+		return m_count;
 	}
 
 	/// Return the theoretical maximum number or rows that can be stored
@@ -1331,7 +1331,6 @@ class category
 
 	// proxy methods for every insertion
 	iterator insert_impl(const_iterator pos, row *n);
-	iterator erase_impl(const_iterator pos);
 
 	// --------------------------------------------------------------------
 
@@ -1352,6 +1351,7 @@ class category
 	uint32_t m_last_unique_num = 0;
 	class category_index *m_index = nullptr;
 	row *m_head = nullptr, *m_tail = nullptr;
+	size_t m_count = 0;
 	int64_t m_next_row_id = 1;
 	std::unique_ptr<std::unordered_map<int64_t, row *>> m_row_id_map;
 

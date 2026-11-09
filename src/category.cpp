@@ -542,6 +542,7 @@ void swap(category &a, category &b) noexcept
 	std::swap(a.m_head, b.m_head);
 	std::swap(a.m_tail, b.m_tail);
 	std::swap(a.m_dirty, b.m_dirty);
+	std::swap(a.m_count, b.m_count);
 	std::swap(a.m_next_row_id, b.m_next_row_id);
 	std::swap(a.m_row_id_map, b.m_row_id_map);
 	std::swap(a.m_last_unique_num, b.m_last_unique_num);
@@ -1062,6 +1063,7 @@ row_handle category::get_row_by_row_id(int64_t row_id)
 	if (not m_row_id_map)
 	{
 		m_row_id_map = std::make_unique<std::unordered_map<int64_t, row *>>();
+		m_row_id_map->reserve(size());
 		for (auto row = m_head; row != nullptr; row = row->m_next)
 			m_row_id_map->emplace(row->m_row_id, row);
 	}
@@ -1245,6 +1247,8 @@ category::iterator category::erase(iterator pos)
 	{
 		m_head = m_head->m_next;
 		r->m_next = nullptr;
+
+		--m_count;
 	}
 	else
 	{
@@ -1254,6 +1258,13 @@ category::iterator category::erase(iterator pos)
 			{
 				pi->m_next = r->m_next;
 				r->m_next = nullptr;
+
+				// reset tail, if needed
+				if (m_tail == r)
+					m_tail = pi;
+
+				--m_count;
+
 				break;
 			}
 		}
@@ -1274,15 +1285,6 @@ category::iterator category::erase(iterator pos)
 	}
 
 	delete_row(r);
-
-	// reset mTail, if needed
-	if (r == m_tail)
-	{
-		m_tail = m_head;
-		if (m_tail != nullptr)
-			while (m_tail->m_next != nullptr)
-				m_tail = m_tail->m_next;
-	}
 
 	return result;
 }
@@ -1889,6 +1891,7 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 		}
 
 		m_dirty = true;
+		++m_count;
 
 		return { *this, n };
 	}

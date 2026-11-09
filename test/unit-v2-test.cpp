@@ -240,6 +240,57 @@ TEST_CASE("item_0")
 	CHECK(i1.value().is_null()); // NOLINT
 }
 
+TEST_CASE("erase")
+{
+	auto cf = R"(
+data_test
+loop_
+_test.a
+_test.b
+1 een
+2 twee
+3 drie
+4 vier
+	)"_cf;
+
+	auto &db = cf.front();
+	auto &c = db.front();
+
+	using namespace cif::literals;
+
+	SECTION("een")
+	{
+		auto i = c.find_first("a"_key == 1);
+		REQUIRE(i != c.end());
+		c.erase(i);
+		CHECK(c.size() == 3);
+	}
+
+	SECTION("twee")
+	{
+		auto i = c.find_first("a"_key == 2);
+		REQUIRE(i != c.end());
+		c.erase(i);
+		CHECK(c.size() == 3);
+	}
+
+	SECTION("drie")
+	{
+		auto i = c.find_first("a"_key == 3);
+		REQUIRE(i != c.end());
+		c.erase(i);
+		CHECK(c.size() == 3);
+	}
+
+	SECTION("vier")
+	{
+		auto i = c.find_first("a"_key == 4);
+		REQUIRE(i != c.end());
+		c.erase(i);
+		CHECK(c.size() == 3);
+	}
+}
+
 // TEST_CASE("row_1")
 // {
 // 	cif::row r;

@@ -183,7 +183,7 @@ if(NOT STD_CHARCONV_COMPILING)
 endif()
 
 find_package(Threads)
-CPMFindPackage(NAME gxrio GIT_REPOSITORY https://codeberg.org/mlhekkelman/gxrio.git GIT_TAG v1.3.0 OPTIONS "EXCLUDE_FROM_ALL ON")
+CPMFindPackage(NAME gxrio GIT_REPOSITORY https://codeberg.org/mlhekkelman/gxrio.git GIT_TAG v1.3.0 EXCLUDE_FROM_ALL YES)
 
 include(FindPkgConfig)
 
