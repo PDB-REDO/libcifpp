@@ -183,11 +183,7 @@ if(NOT STD_CHARCONV_COMPILING)
 endif()
 
 find_package(Threads)
-find_package(ZLIB QUIET)
-
-if(NOT ZLIB_FOUND)
-    message(FATAL_ERROR "cifpp: The zlib development files were not found you this system, please install them and try again (hint: on debian/ubuntu use apt-get install zlib1g-dev)")
-endif()
+CPMFindPackage(NAME gxrio GIT_REPOSITORY https://codeberg.org/mlhekkelman/gxrio.git GIT_TAG v1.3.0 EXCLUDE_FROM_ALL YES)
 
 include(FindPkgConfig)
 
@@ -302,7 +298,7 @@ target_include_directories(
     PRIVATE "${EIGEN_INCLUDE_DIR}")
 
 target_link_libraries(cifpp
-    PUBLIC Threads::Threads ZLIB::ZLIB $<$<TARGET_EXISTS:std::atomic>:std::atomic>)
+    PUBLIC Threads::Threads gxrio::gxrio $<$<TARGET_EXISTS:std::atomic>:std::atomic>)
 
 if(PCRE2_FOUND)
     target_include_directories(cifpp PRIVATE ${PCRE2_INCLUDE_DIRS})

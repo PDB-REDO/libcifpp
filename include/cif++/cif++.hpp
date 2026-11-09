@@ -42,7 +42,6 @@
 #include "cif++/exports.hpp"
 #include "cif++/file.hpp"
 #include "cif++/format.hpp"
-#include "cif++/gzio.hpp"
 #include "cif++/item.hpp"
 #include "cif++/iterator.hpp"
 #include "cif++/matrix.hpp"

@@ -29,6 +29,7 @@
 #include <cassert>
 #include <exception>
 #include <filesystem>
+#include <gxrio.hpp>
 #include <istream>
 #include <list>
 #include <stdexcept>
@@ -132,7 +133,7 @@ std::tuple<file::iterator, bool> file::emplace(std::string_view name)
 
 void file::load(const std::filesystem::path &p)
 {
-	gzio::ifstream in(p);
+	gxrio::ifstream in(p);
 	if (not in.is_open())
 		throw std::runtime_error("Could not open file '" + p.string() + '\'');
 
@@ -154,7 +155,7 @@ void file::load(std::istream &is)
 
 void file::save(const std::filesystem::path &p) const
 {
-	gzio::ofstream outFile(p);
+	gxrio::ofstream outFile(p);
 	save(outFile);
 }
 

@@ -77,7 +77,7 @@ jobs:
       run: |
         P="$RUNNER_TEMP/cifpp-prefix"
         for h in cif++.hpp cif++/category.hpp cif++/condition.hpp cif++/exports.hpp \
-                 cif++/file.hpp cif++/gzio.hpp cif++/matrix.hpp cif++/row.hpp cif++/utilities.hpp; do
+                 cif++/file.hpp cif++/matrix.hpp cif++/row.hpp cif++/utilities.hpp; do
           test -f "$P/include/$h"
         done
         test -f "$P/lib/cmake/cifpp/cifpp-config.cmake"

@@ -36,6 +36,7 @@
 #include <exception>
 #include <filesystem>
 #include <format>
+#include <gxrio.hpp>
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
@@ -3820,10 +3821,11 @@ void write(std::ostream &os, const datablock &db)
 
 void write(const std::filesystem::path &p, const datablock &db)
 {
-	gzio::ofstream out(p);
+	gxrio::ofstream out(p);
 
 	bool writePDB = false;
-	if (p.extension() == ".gz")
+
+	if (p.extension() == ".gz" or p.extension() == ".xz")
 		writePDB = iequals(p.stem().extension().string(), ".pdb");
 	else
 		writePDB = iequals(p.extension().string(), ".pdb");

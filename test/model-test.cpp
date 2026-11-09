@@ -28,6 +28,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <cif++/cif++.hpp>
+#include <fstream>
 
 // --------------------------------------------------------------------
 
@@ -157,7 +158,6 @@ _atom_type.symbol   C
 				  << '\n'
 				  << structure.get_datablock() << '\n';
 
-		
 		std::ofstream of("/tmp/a");
 		of << expected;
 
@@ -578,9 +578,7 @@ _struct_asym.details                       ?
 
 	SECTION("max")
 	{
-		cif::mm::structure s(data, 1, {
-			.occupancy_mode = cif::mm::occupancy_policy::MAX
-		});
+		cif::mm::structure s(data, 1, { .occupancy_mode = cif::mm::occupancy_policy::MAX });
 
 		REQUIRE(s.atoms().size() == 4);
 		CHECK(s.atoms().front().get_label_alt_id() == "A");
@@ -588,9 +586,7 @@ _struct_asym.details                       ?
 
 	SECTION("min")
 	{
-		cif::mm::structure s(data, 1, {
-			.occupancy_mode = cif::mm::occupancy_policy::MIN
-		});
+		cif::mm::structure s(data, 1, { .occupancy_mode = cif::mm::occupancy_policy::MIN });
 
 		REQUIRE(s.atoms().size() == 4);
 		CHECK(s.atoms().front().get_label_alt_id() == "B");
@@ -598,9 +594,7 @@ _struct_asym.details                       ?
 
 	SECTION("unoccupied")
 	{
-		cif::mm::structure s(data, 1, {
-			.occupancy_mode = cif::mm::occupancy_policy::UNOCCUPIED
-		});
+		cif::mm::structure s(data, 1, { .occupancy_mode = cif::mm::occupancy_policy::UNOCCUPIED });
 
 		CHECK(s.atoms().empty());
 	}

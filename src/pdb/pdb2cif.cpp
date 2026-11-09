@@ -42,6 +42,7 @@
 #include <exception>
 #include <filesystem>
 #include <format>
+#include <gxrio.hpp>
 #include <initializer_list>
 #include <iostream>
 #include <iterator>
@@ -6474,7 +6475,7 @@ file read(const std::filesystem::path &file)
 {
 	try
 	{
-		gzio::ifstream in(file);
+		gxrio::ifstream in(file);
 		if (not in.is_open())
 			throw std::runtime_error("Could not open file " + file.string() + " for input");
 

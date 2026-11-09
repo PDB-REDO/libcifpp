@@ -3,31 +3,6 @@ Bits & Pieces
 
 The *libcifpp* library offers some extra code that makes the life of developers a bit easier.
 
-gzio
-----
-
-To work with compressed data files a *std::streambuf* implemenation was added based on the code in `gxrio <https://github.com/mhekkel/gxrio>`_. This allows you to read and write compressed data streams transparently.
-
-When working with files you can use :cpp:class:`cif::gzio::ifstream` and :cpp:class:`cif::gzio::ofstream`. The selection of whether to use compression or not is based on the file extension. If it is ``.gz`` gzip compression is used:
-
-.. code-block:: cpp
-
-	cif::gzio::ifstream file("my-file.txt.gz");
-
-	std::string line;
-	while (std::getline(file, line))
-		std::cout << line << '\n';
-
-Writing is equally easy:
-
-.. code-block:: cpp
-
-	cif::gzio::ofstream file("/tmp/output.txt.gz");
-	file << "Hello, world!";
-	file.close();
-
-You can also use the :cpp:class:`cif::gzio::istream` and feed it a *std::streambuf* object that may or may not contain compressed data. In that case the first bytes of the input are sniffed and if it is gzip compressed data, decompression will be done.
-
 A progress bar
 --------------
 
