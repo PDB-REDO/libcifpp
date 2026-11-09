@@ -1057,7 +1057,7 @@ const_row_handle category::operator[](const key_type &key) const
 
 // --------------------------------------------------------------------
 
-row_handle category::get_row_by_row_id(int64_t row_id) noexcept
+row_handle category::get_row_by_row_id(int64_t row_id)
 {
 	if (not m_row_id_map)
 	{

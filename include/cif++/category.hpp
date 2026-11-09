@@ -400,7 +400,7 @@ class category
 	const_row_handle operator[](const key_type &key) const;
 
 	/// @brief Return a row_handle for the row specified by @a row_id
-	[[nodiscard]] row_handle get_row_by_row_id(int64_t row_id) noexcept;
+	[[nodiscard]] row_handle get_row_by_row_id(int64_t row_id);
 
 	// --------------------------------------------------------------------
 
