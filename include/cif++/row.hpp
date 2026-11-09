@@ -105,7 +105,15 @@ namespace detail
 class row : public std::vector<item_value>
 {
   public:
-	row() = default;
+	explicit row(int64_t id)
+		: m_row_id(id)
+	{
+	}
+
+	row(const row &) = delete;
+	row &operator=(const row &) = delete;
+
+	[[nodiscard]] int64_t get_row_id() const noexcept { return m_row_id; }
 
   private:
 	///
@@ -140,6 +148,7 @@ class row : public std::vector<item_value>
 	friend class iterator_impl_base;
 
 	row *m_next = nullptr;
+	int64_t m_row_id;
 };
 
 // --------------------------------------------------------------------

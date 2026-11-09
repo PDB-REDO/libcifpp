@@ -301,8 +301,7 @@ target_link_libraries(cifpp
     PUBLIC Threads::Threads gxrio::gxrio $<$<TARGET_EXISTS:std::atomic>:std::atomic>)
 
 if(PCRE2_FOUND)
-    target_include_directories(cifpp PRIVATE ${PCRE2_INCLUDE_DIRS})
-    target_link_libraries(cifpp PRIVATE ${PCRE2_LINK_LIBRARIES})
+    target_link_libraries(cifpp PRIVATE PkgConfig::PCRE2)
 else()
     target_link_libraries(cifpp PRIVATE $<BUILD_INTERFACE:pcre2s>)
 endif()

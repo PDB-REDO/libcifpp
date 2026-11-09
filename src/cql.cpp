@@ -733,12 +733,17 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 
 	try
 	{
-		auto addr = sqlite3_value_int64(argv[0]);
+		auto row_id = sqlite3_value_int64(argv[0]);
 
 		if (argc == 1) // DELETE
 		{
 			rc = SQLITE_OK;
-			row_handle rh{ &p->m_cat, reinterpret_cast<row *>(addr) };
+			auto rh = p->m_cat.get_row_by_row_id(row_id);
+			if (rh.empty())
+			{
+				pVTab->zErrMsg = sqlite3_mprintf("rowid %lld not found", row_id);
+				return SQLITE_ERROR;
+			}
 
 			if (auto v = p->m_cat.get_validator())
 			{
@@ -780,10 +785,10 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 			if (rc == SQLITE_OK)
 				p->m_cat.erase(rh);
 		}
-		else if (addr == 0) // INSERT
+		else if (row_id == 0) // INSERT
 		{
-			addr = sqlite3_value_int64(argv[1]);
-			if (addr == 0) // We do not accept rowid's here
+			row_id = sqlite3_value_int64(argv[1]);
+			if (row_id == 0) // We do not accept rowid's here
 			{
 				row_initializer data;
 				for (int i = 2; i < argc; ++i)
@@ -812,7 +817,12 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 		}
 		else // UPDATE
 		{
-			row_handle rh{ &p->m_cat, reinterpret_cast<row *>(addr) };
+			auto rh = p->m_cat.get_row_by_row_id(row_id);
+			if (rh.empty())
+			{
+				pVTab->zErrMsg = sqlite3_mprintf("rowid %lld not found", row_id);
+				return SQLITE_ERROR;
+			}
 
 			row_initializer data;
 			for (int i = 2; i < argc; ++i)
@@ -900,7 +910,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 			}
 
 			rh.assign(data);
-			*pRowid = addr;
+			*pRowid = row_id;
 			rc = SQLITE_OK;
 		}
 	}

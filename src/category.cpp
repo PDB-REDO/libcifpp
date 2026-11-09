@@ -539,6 +539,9 @@ void swap(category &a, category &b) noexcept
 	std::swap(a.m_head, b.m_head);
 	std::swap(a.m_tail, b.m_tail);
 	std::swap(a.m_dirty, b.m_dirty);
+	std::swap(a.m_next_row_id, b.m_next_row_id);
+	std::swap(a.m_row_id_map, b.m_row_id_map);
+	std::swap(a.m_last_unique_num, b.m_last_unique_num);
 }
 
 category::~category()
@@ -1047,6 +1050,14 @@ const_row_handle category::operator[](const key_type &key) const
 	}
 
 	return result;
+}
+
+// --------------------------------------------------------------------
+
+row_handle category::get_row_by_row_id(int64_t row_id) noexcept
+{
+	auto i = m_row_id_map.find(row_id);
+	return (i == m_row_id_map.end()) ? row_handle{} : row_handle{ this, i->second };
 }
 
 // --------------------------------------------------------------------
@@ -1734,6 +1745,8 @@ void category::delete_row(row *r)
 {
 	if (r != nullptr)
 	{
+		m_row_id_map.erase(r->m_row_id);
+
 		row_allocator_type ra(get_allocator());
 		row_allocator_traits::destroy(ra, r);
 		row_allocator_traits::deallocate(ra, r, 1);

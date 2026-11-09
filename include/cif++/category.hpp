@@ -49,6 +49,7 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -397,6 +398,9 @@ class category
 	/// @param key The value for the key, items specified in the dictionary should have a value
 	/// @return The row found in the index, or an undefined row_handle
 	const_row_handle operator[](const key_type &key) const;
+
+	/// @brief Return a row_handle for the row specified by @a row_id
+	[[nodiscard]] row_handle get_row_by_row_id(int64_t row_id) noexcept;
 
 	// --------------------------------------------------------------------
 
@@ -1276,7 +1280,19 @@ class category
 	{
 		auto p = this->get_row();
 		row_allocator_type ra(get_allocator());
-		row_allocator_traits::construct(ra, p);
+		row_allocator_traits::construct(ra, p, m_next_row_id++);
+
+		try
+		{
+			m_row_id_map.emplace(p->m_row_id, p);
+		}
+		catch (const std::exception &ex)
+		{
+			m_row_id_map.erase(p->m_row_id);
+			delete_row(p);
+			throw;
+		}
+
 		return p;
 	}
 
@@ -1336,6 +1352,8 @@ class category
 	uint32_t m_last_unique_num = 0;
 	class category_index *m_index = nullptr;
 	row *m_head = nullptr, *m_tail = nullptr;
+	int64_t m_next_row_id = 1;
+	std::unordered_map<int64_t, row *> m_row_id_map;
 
 	bool m_dirty = false; // Keep track of modifications
 };

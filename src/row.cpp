@@ -75,10 +75,7 @@ std::string_view row_handle::get_item_name(uint16_t ix) const
 
 int64_t row_handle::row_id() const noexcept
 {
-	// A row's pointer is constant during its lifetime
-	// since rows are stored as a linked list.
-	// This means it is safe to use the address as row id
-	return reinterpret_cast<int64_t>(m_row);
+	return m_row ? m_row->get_row_id() : 0;
 }
 
 uint16_t const_row_handle::get_item_ix(std::string_view name) const
@@ -99,10 +96,7 @@ std::string_view const_row_handle::get_item_name(uint16_t ix) const
 
 int64_t const_row_handle::row_id() const noexcept
 {
-	// A row's pointer is constant during its lifetime
-	// since rows are stored as a linked list.
-	// This means it is safe to use the address as row id
-	return reinterpret_cast<int64_t>(m_row);
+	return m_row ? m_row->get_row_id() : 0;
 }
 
 // --------------------------------------------------------------------

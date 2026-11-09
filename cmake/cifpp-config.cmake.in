@@ -7,7 +7,7 @@ set_and_check(CIFPP_SHARE_DIR "@PACKAGE_CIFPP_DATA_DIR@")
 include(CMakeFindDependencyMacro)
 
 find_dependency(Threads)
-find_dependency(ZLIB REQUIRED)
+find_dependency(gxrio REQUIRED)
 @SQLITE3_DEPENDENCY@
 
 check_required_components(cifpp)
