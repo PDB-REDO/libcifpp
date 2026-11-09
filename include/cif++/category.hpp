@@ -1284,11 +1284,11 @@ class category
 
 		try
 		{
-			m_row_id_map.emplace(p->m_row_id, p);
+			if (m_row_id_map)
+				m_row_id_map->emplace(p->m_row_id, p);
 		}
 		catch (const std::exception &ex)
 		{
-			m_row_id_map.erase(p->m_row_id);
 			delete_row(p);
 			throw;
 		}
@@ -1353,7 +1353,7 @@ class category
 	class category_index *m_index = nullptr;
 	row *m_head = nullptr, *m_tail = nullptr;
 	int64_t m_next_row_id = 1;
-	std::unordered_map<int64_t, row *> m_row_id_map;
+	std::unique_ptr<std::unordered_map<int64_t, row *>> m_row_id_map;
 
 	bool m_dirty = false; // Keep track of modifications
 };

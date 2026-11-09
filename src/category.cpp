@@ -25,6 +25,7 @@
  */
 
 #include "cif++/cif++.hpp"
+#include "cif++/condition.hpp"
 #include "cif++/validate.hpp"
 
 #include <algorithm>
@@ -37,6 +38,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <ranges>
 #include <set>
@@ -47,6 +49,7 @@
 #include <string_view>
 #include <system_error>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -1056,8 +1059,15 @@ const_row_handle category::operator[](const key_type &key) const
 
 row_handle category::get_row_by_row_id(int64_t row_id) noexcept
 {
-	auto i = m_row_id_map.find(row_id);
-	return (i == m_row_id_map.end()) ? row_handle{} : row_handle{ this, i->second };
+	if (not m_row_id_map)
+	{
+		m_row_id_map = std::make_unique<std::unordered_map<int64_t, row *>>();
+		for (auto row = m_head; row != nullptr; row = row->m_next)
+			m_row_id_map->emplace(row->m_row_id, row);
+	}
+
+	auto i = m_row_id_map->find(row_id);
+	return (i == m_row_id_map->end()) ? row_handle{} : row_handle{ this, i->second };
 }
 
 // --------------------------------------------------------------------
@@ -1745,7 +1755,8 @@ void category::delete_row(row *r)
 {
 	if (r != nullptr)
 	{
-		m_row_id_map.erase(r->m_row_id);
+		if (m_row_id_map)
+			m_row_id_map->erase(r->m_row_id);
 
 		row_allocator_type ra(get_allocator());
 		row_allocator_traits::destroy(ra, r);
@@ -1799,11 +1810,6 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 
 	if (n == nullptr)
 		throw std::runtime_error("Invalid pointer passed to insert");
-
-	// #ifndef NDEBUG
-	// 	if (m_validator)
-	// 		is_valid();
-	// #endif
 
 	try
 	{
@@ -1889,11 +1895,6 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 		delete_row(n);
 		throw;
 	}
-
-	// #ifndef NDEBUG
-	// 	if (m_validator)
-	// 		is_valid();
-	// #endif
 }
 
 void category::swap_item(uint16_t item_ix, row_handle &a, row_handle &b)

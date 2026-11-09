@@ -1424,7 +1424,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 
 	if (not dropped.empty())
 	{
-		if (VERBOSE >= 0)
+		if (VERBOSE > 0)
 			std::cerr << "Dropped unsupported records: " << cif::join(dropped, ", ") << '\n';
 	}
 

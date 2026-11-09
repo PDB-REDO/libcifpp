@@ -953,7 +953,7 @@ struct structure_open_options
 	bool skip_hetatom = false;                               ///< Do not include HET atoms in the structure object
 	bool skip_water = false;                                 ///< Do not include water atoms in the structure object
 	occupancy_policy occupancy_mode = occupancy_policy::ALL; ///< By default, the occupancy policy is set to occupancy_policy::ALL
-	std::vector<std::string> asyms;                          ///< The asyms to load, if empty load all
+	std::vector<std::string> asyms{};                        ///< The asyms to load, if empty load all
 	std::optional<float> min_b_factor;                       ///< Only load atoms with at least this b_factor
 	std::optional<float> max_b_factor;                       ///< Only load atoms with at most this b_factor
 };
