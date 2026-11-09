@@ -186,8 +186,7 @@ find_package(Threads)
 CPMFindPackage(
 	NAME gxrio
 	GIT_REPOSITORY https://codeberg.org/mlhekkelman/gxrio.git
-	GIT_TAG v1.3.1
-	EXCLUDE_FROM_ALL YES)
+	GIT_TAG v1.3.1)
 
 include(FindPkgConfig)
 
