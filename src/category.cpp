@@ -1354,6 +1354,8 @@ std::size_t category::erase(condition &&cond, std::function<void(row_handle)> &&
 
 void category::clear()
 {
+	m_row_id_map.reset(nullptr);
+
 	auto i = m_head;
 	while (i != nullptr)
 	{

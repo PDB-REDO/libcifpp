@@ -741,7 +741,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 			auto rh = p->m_cat.get_row_by_row_id(row_id);
 			if (rh.empty())
 			{
-				pVTab->zErrMsg = sqlite3_mprintf("rowid %lld not found", row_id);
+				pVTab->zErrMsg = sqlite3_mprintf("rowid %lld not found", (long long)row_id);
 				return SQLITE_ERROR;
 			}
 
