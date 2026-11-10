@@ -155,6 +155,11 @@ class category_index
 		delete m_root;
 	}
 
+	void items_updated(category &cat)
+	{
+		m_row_comparator = row_comparator(cat);
+	}
+
 	[[nodiscard]] row *find(const category &cat, row *k) const;
 	[[nodiscard]] row *find_by_value(const category &cat, const category::key_type &k) const;
 
@@ -600,6 +605,14 @@ uint16_t category::add_item(std::string_view item_name)
 
 void category::remove_item(std::string_view item_name)
 {
+	if (m_cat_validator != nullptr)
+	{
+		for (const auto &k : m_cat_validator->m_keys)
+			if (iequals(k, item_name))
+				throw std::invalid_argument("cannot remove key item '" +
+											std::string{ item_name } + "' from category " + m_name);
+	}
+
 	for (uint16_t ix = 0; ix < get_item_count(); ++ix)
 	{
 		if (not iequals(item_name, m_items[ix].m_name))
@@ -613,12 +626,8 @@ void category::remove_item(std::string_view item_name)
 
 		m_items.erase(m_items.begin() + ix);
 
-		// re-create index, if needed
-		delete m_index;
-		if (m_cat_validator != nullptr)
-			m_index = new category_index(*this);
-		else
-			m_index = nullptr;
+		if (m_index)
+			m_index->items_updated(*this);
 
 		break;
 	}
@@ -628,8 +637,19 @@ void category::drop_empty_items()
 {
 	std::vector<bool> is_empty(get_item_count(), true);
 
+	iset keys{};
+	if (m_cat_validator)
+		keys.insert(m_cat_validator->m_keys.begin(), m_cat_validator->m_keys.end());
+
 	for (size_t ix = 0; ix < get_item_count(); ++ix)
 	{
+		// skip keys
+		if (keys.contains(m_items[ix].m_name))
+		{
+			is_empty[ix] = false;
+			continue;
+		}
+
 		for (auto row : *this)
 		{
 			if (not row[ix].empty())

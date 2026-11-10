@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <cif++/cif++.hpp>
+#include <cstring>
 #include <exception>
 #include <ostream>
 #include <sstream>
@@ -3658,6 +3659,159 @@ _entry.id     82E4475FF8B27F36
 	auto r = db["entry"].front();
 
 	CHECK(r["id"].get<std::string>() == "82E4475FF8B27F36");
+}
+
+// --------------------------------------------------------------------
+
+namespace
+{
+// A small dictionary with a key item and some optional items, so that
+// remove_item/drop_empty_items run against a category that has an index.
+const char *kRemoveItemDictionary = R"(
+data_test.dic
+
+_datablock.id            test.dic
+_dictionary.title        test.dic
+_dictionary.datablock_id test.dic
+_dictionary.version      1.0
+
+loop_
+_item_type_list.code
+_item_type_list.primitive_code
+_item_type_list.construct
+int   numb  '[-+]?[0-9]+'
+text  char  '.*'
+
+save_foo
+   _category.id              foo
+   _category.mandatory_code  no
+   _category_key.name        '_foo.id'
+   save_
+
+save__foo.id
+	_item.name                  '_foo.id'
+	_item.category_id           foo
+	_item.mandatory_code        no
+	_item_type.code             int
+	save_
+
+save__foo.before
+	_item.name                  '_foo.before'
+	_item.category_id           foo
+	_item.mandatory_code        no
+	_item_type.code             text
+	save_
+
+save__foo.extra
+	_item.name                  '_foo.extra'
+	_item.category_id           foo
+	_item.mandatory_code        no
+	_item_type.code             text
+	save_
+
+save__foo.note
+	_item.name                  '_foo.note'
+	_item.category_id           foo
+	_item.mandatory_code        no
+	_item_type.code             text
+	save_
+)";
+
+const char *kRemoveItemData = R"(
+data_TEST
+loop_
+_foo.before
+_foo.extra
+_foo.id
+_foo.note
+x . 1 one
+y . 2 two
+z . 3 three
+)";
+} // namespace
+
+TEST_CASE("remove-item")
+{
+	std::istringstream dict(kRemoveItemDictionary);
+	cif::validator v(dict);
+
+	auto f = cif::file(kRemoveItemData, std::strlen(kRemoveItemData));
+	auto &db = f.front();
+	db.set_validator(&v);
+
+	auto &c = db["foo"];
+
+	auto note_for = [&c](int id)
+	{
+		auto rh = c[{ { "id", id } }];
+		return rh ? rh["note"].str() : std::string{ "<not found>" };
+	};
+
+	CHECK(c.size() == 3);
+	CHECK(c.get_item_ix("before") < c.get_item_count());
+	CHECK(note_for(1) == "one");
+	CHECK(note_for(2) == "two");
+	CHECK(note_for(3) == "three");
+
+	// Removing an item before the key shifts the key's column index. The
+	// index must be updated, otherwise these lookups fail.
+	c.remove_item("before");
+	CHECK(c.get_item_ix("before") == c.get_item_count());
+	CHECK(c.size() == 3);
+	CHECK(note_for(1) == "one");
+	CHECK(note_for(2) == "two");
+	CHECK(note_for(3) == "three");
+
+	// Removing an item after the key must not disturb the index either.
+	c.remove_item("note");
+	CHECK(c.get_item_ix("note") == c.get_item_count());
+	CHECK(c.size() == 3);
+	CHECK(c[{ { "id", 1 } }]);
+	CHECK(c[{ { "id", 3 } }]);
+	CHECK(not c[{ { "id", 4 } }]);
+
+	// Removing an unknown item is a no-op.
+	c.remove_item("does_not_exist");
+	CHECK(c.size() == 3);
+
+	// A key item cannot be removed, since that would invalidate the index.
+	CHECK_THROWS_AS(c.remove_item("id"), std::invalid_argument);
+	CHECK(c.get_item_ix("id") < c.get_item_count());
+	CHECK(c.size() == 3);
+}
+
+TEST_CASE("drop-empty-items")
+{
+	std::istringstream dict(kRemoveItemDictionary);
+	cif::validator v(dict);
+
+	auto f = cif::file(kRemoveItemData, std::strlen(kRemoveItemData));
+	auto &db = f.front();
+	db.set_validator(&v);
+
+	auto &c = db["foo"];
+
+	auto note_for = [&c](int id)
+	{
+		auto rh = c[{ { "id", id } }];
+		return rh ? rh["note"].str() : std::string{ "<not found>" };
+	};
+
+	CHECK(c.get_item_ix("extra") < c.get_item_count());
+	CHECK(note_for(2) == "two");
+
+	// extra is empty in every row and is located before the key column.
+	c.drop_empty_items();
+
+	CHECK(c.get_item_ix("extra") == c.get_item_count());
+	CHECK(c.get_item_ix("before") < c.get_item_count());
+	CHECK(c.get_item_ix("id") < c.get_item_count());
+	CHECK(c.get_item_ix("note") < c.get_item_count());
+
+	CHECK(c.size() == 3);
+	CHECK(note_for(1) == "one");
+	CHECK(note_for(2) == "two");
+	CHECK(note_for(3) == "three");
 }
 
 // --------------------------------------------------------------------
