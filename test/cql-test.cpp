@@ -760,3 +760,48 @@ _t.name
 	CHECK(r.front()[0].get<int64_t>() != old_rowid);
 	CHECK(tx.exec("SELECT id FROM t WHERE rowid = " + std::to_string(old_rowid)).empty());
 }
+
+TEST_CASE("cql-best-index-non-finite")
+{
+	cif::datablock db("TEST");
+	auto &t = db["t"];
+
+	t.emplace(cif::row_initializer{ { "id", 1 }, { "x", 1.0 }, { "name", "a" } });
+	t.emplace(cif::row_initializer{ { "id", 2 }, { "x", 2.0 }, { "name", "b" } });
+
+	cif::cql::connection connection(db);
+	cif::cql::transaction tx(connection);
+
+	// 1e999 is +Inf. Non-finite constraint values must not be serialized into
+	// the plan; they have to be left for SQLite to evaluate.
+	auto r = tx.exec("SELECT id FROM t WHERE x < 1e999");
+	CHECK(r.size() == 2);
+
+	r = tx.exec("SELECT id FROM t WHERE x = 1e999");
+	CHECK(r.empty());
+
+	r = tx.exec("SELECT id FROM t WHERE x > -1e999");
+	CHECK(r.size() == 2);
+}
+
+TEST_CASE("cql-best-index-float-precision")
+{
+	cif::datablock db("TEST");
+	auto &t = db["t"];
+
+	t.emplace(cif::row_initializer{ { "id", 1 }, { "x", 123456.789 }, { "name", "a" } });
+	t.emplace(cif::row_initializer{ { "id", 2 }, { "x", 1.23456789 }, { "name", "b" } });
+
+	cif::cql::connection connection(db);
+	cif::cql::transaction tx(connection);
+
+	// The constraint value must survive the round trip through idxStr without
+	// losing precision (the stream's default precision is only 6 digits).
+	auto r = tx.exec("SELECT name FROM t WHERE x = 123456.789");
+	REQUIRE(r.size() == 1);
+	CHECK(r.front()[0].get<std::string>() == "a");
+
+	r = tx.exec("SELECT name FROM t WHERE x = 1.23456789");
+	REQUIRE(r.size() == 1);
+	CHECK(r.front()[0].get<std::string>() == "b");
+}

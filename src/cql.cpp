@@ -28,12 +28,14 @@
 #include "cif++/item.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <exception>
 #include <format>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <ranges>
 #include <regex>
@@ -517,8 +519,6 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 					else if (m[2] == " > ")
 						cond = std::move(cond) and key(m[1]) > value;
 				}
-				else if (m[3] == "nan" or m[3] == "inf")
-					result = false;
 				else if (m[3].str().find_first_of("eE.") == std::string::npos)
 				{
 					int64_t value;
@@ -635,7 +635,10 @@ int connection_impl::BestIndex(sqlite3_vtab *pVtab, sqlite3_index_info *pIdxInfo
 						os << sqlite3_value_int64(val) << "\n";
 						break;
 					case SQLITE_FLOAT:
-						os << sqlite3_value_double(val) << "\n";
+						if (auto d = sqlite3_value_double(val); std::isfinite(d))
+							os << std::setprecision(std::numeric_limits<double>::max_digits10) << d << "\n";
+						else
+							result = false;
 						break;
 					default:
 					{
