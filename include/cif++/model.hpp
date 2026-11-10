@@ -517,14 +517,14 @@ class residue
 
 	friend void swap(residue &a, residue &b) noexcept
 	{
-		if (&a != &b)
-		{
-			std::swap(a.m_structure, b.m_structure);
-			std::swap(a.m_asym_id, b.m_asym_id);
-			std::swap(a.m_seq_id, b.m_seq_id);
-			std::swap(a.m_pdb_ins_code, b.m_pdb_ins_code);
-			std::swap(a.m_atoms, b.m_atoms);
-		}
+		std::swap(a.m_structure, b.m_structure);
+		std::swap(a.m_compound_id, b.m_compound_id);
+		std::swap(a.m_asym_id, b.m_asym_id);
+		std::swap(a.m_seq_id, b.m_seq_id);
+		std::swap(a.m_pdb_strand_id, b.m_pdb_strand_id);
+		std::swap(a.m_pdb_seq_num, b.m_pdb_seq_num);
+		std::swap(a.m_pdb_ins_code, b.m_pdb_ins_code);
+		std::swap(a.m_atoms, b.m_atoms);
 	}
 
 	virtual ~residue() = default;
