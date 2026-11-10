@@ -3659,3 +3659,95 @@ _entry.id     82E4475FF8B27F36
 
 	CHECK(r["id"].get<std::string>() == "82E4475FF8B27F36");
 }
+
+// --------------------------------------------------------------------
+
+TEST_CASE("insert")
+{
+	auto cf = R"(
+data_test
+loop_
+_test.a
+_test.b
+1 een
+2 twee
+3 drie
+)"_cf;
+
+	auto &c = cf.front()["test"];
+
+	auto order = [&c]()
+	{
+		std::string result;
+		for (auto r : c)
+		{
+			if (not result.empty())
+				result += ',';
+			result += r["a"].str();
+		}
+		return result;
+	};
+
+	auto find_row = [&c](int a)
+	{
+		auto i = c.begin();
+		while (i != c.end() and (*i)["a"].get<int>() != a)
+			++i;
+		return i;
+	};
+
+	CHECK(order() == "1,2,3");
+
+	// Insert before the last row. The old implementation inserted after the
+	// head, which would result in 1,10,2,3 here.
+	auto i = c.insert(find_row(3), cif::row_initializer{ { "a", 10 }, { "b", "tien" } });
+	REQUIRE(i != c.end());
+	CHECK((*i)["a"].get<int>() == 10);
+	CHECK(c.size() == 4);
+	CHECK(order() == "1,2,10,3");
+
+	// Insert at the head.
+	i = c.insert(c.begin(), cif::row_initializer{ { "a", 0 }, { "b", "nul" } });
+	CHECK((*i)["a"].get<int>() == 0);
+	CHECK(order() == "0,1,2,10,3");
+
+	// Insert at the end.
+	i = c.insert(c.end(), cif::row_initializer{ { "a", 11 }, { "b", "elf" } });
+	CHECK((*i)["a"].get<int>() == 11);
+	CHECK(order() == "0,1,2,10,3,11");
+
+	// Insert before the tail.
+	i = c.insert(find_row(11), cif::row_initializer{ { "a", 12 }, { "b", "twaalf" } });
+	CHECK((*i)["a"].get<int>() == 12);
+	CHECK(order() == "0,1,2,10,3,12,11");
+}
+
+TEST_CASE("insert-invalid-position")
+{
+	auto cf = R"(
+data_test
+loop_
+_test.a
+_test.b
+1 een
+2 twee
+
+loop_
+_other.a
+_other.b
+1 ander
+)"_cf;
+
+	auto &db = cf.front();
+	auto &c = db["test"];
+	auto &o = db["other"];
+
+	CHECK(c.size() == 2);
+
+	// An iterator from another category must be rejected, and the new row must
+	// be cleaned up again.
+	CHECK_THROWS_AS(c.insert(o.begin(), cif::row_initializer{ { "a", 3 } }), std::invalid_argument);
+	CHECK_THROWS_AS(c.insert(o.end(), cif::row_initializer{ { "a", 3 } }), std::invalid_argument);
+
+	CHECK(c.size() == 2);
+}

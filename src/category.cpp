@@ -414,7 +414,7 @@ category_index::entry *category_index::insert(category &cat, entry *h, row *v)
 		row_handle rh(&cat, v);
 
 		std::ostringstream os;
-		for (const auto& col : cat.key_items())
+		for (const auto &col : cat.key_items())
 		{
 			if (not rh[col].empty())
 				os << col << ": " << std::quoted(rh[col].str()) << "; ";
@@ -722,7 +722,7 @@ void category::set_validator(const validator *v, datablock &db)
 			if (not empty())
 			{
 				std::vector<uint16_t> kix;
-				for (const auto& k : m_cat_validator->m_keys)
+				for (const auto &k : m_cat_validator->m_keys)
 				{
 					kix.push_back(get_item_ix(k));
 					if (kix.back() >= get_item_count())
@@ -868,7 +868,7 @@ bool category::is_valid() const
 	{
 		std::set<std::string> missing;
 
-		for (const auto& k : m_cat_validator->m_keys)
+		for (const auto &k : m_cat_validator->m_keys)
 		{
 			if (get_item_ix(k) >= get_item_count())
 				missing.insert(k);
@@ -1011,7 +1011,7 @@ void category::strip()
 			to_be_removed.push_back(item.m_name);
 	}
 
-	for (const auto& item : to_be_removed)
+	for (const auto &item : to_be_removed)
 	{
 		if (VERBOSE > 0)
 			std::clog << "Dropping item " << m_name << '.' << item << '\n';
@@ -1823,6 +1823,23 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 
 	try
 	{
+		// Validate the insertion point before modifying the index.
+		row *cur = const_cast<row *>(pos.m_current.m_row);
+		row *prev = nullptr;
+
+		if (pos.m_current.m_category != this)
+			throw std::invalid_argument("iterator does not belong to this category");
+
+		if (cur != nullptr and cur != m_head)
+		{
+			prev = m_head;
+			while (prev != nullptr and prev->m_next != cur)
+				prev = prev->m_next;
+
+			if (prev == nullptr)
+				throw std::invalid_argument("iterator does not point to a row in this category");
+		}
+
 		// First, make sure all mandatory items are supplied
 		if (m_cat_validator != nullptr)
 		{
@@ -1878,22 +1895,23 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 		if (m_index != nullptr)
 			m_index->insert(*this, n);
 
-		// insert at end, most often this is the case
-		if (pos.m_current.m_row == nullptr)
+		// Insert at the end, most often this is the case
+		if (cur == nullptr)
 		{
 			if (m_head == nullptr)
 				m_tail = m_head = n;
 			else
 				m_tail = m_tail->m_next = n;
 		}
+		else if (cur == m_head)
+		{
+			n->m_next = m_head;
+			m_head = n;
+		}
 		else
 		{
-			assert(m_head != nullptr);
-
-			if (pos.m_current.m_row == m_head)
-				m_head = n->m_next = m_head;
-			else
-				n = n->m_next = m_head->m_next;
+			n->m_next = cur;
+			prev->m_next = n;
 		}
 
 		m_dirty = true;
@@ -2062,7 +2080,7 @@ std::vector<std::string> category::get_item_order() const
 {
 	std::vector<std::string> result;
 	result.reserve(m_items.size());
-for (auto &c : m_items)
+	for (auto &c : m_items)
 		result.push_back("_" + m_name + "." + c.m_name);
 	return result;
 }

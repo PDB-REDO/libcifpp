@@ -1009,7 +1009,41 @@ class category
 	/// @return The number of rows that have been erased
 	std::size_t erase(condition &&cond, std::function<void(row_handle)> &&visit);
 
-	/// @brief Emplace the values in @a ri in a new row
+	/// @brief Insert a new row containing the values in @a ri before @a pos
+	/// @param pos The iterator before which the new row is inserted
+	/// @param ri An object containing the values to insert
+	/// @return iterator to the newly created row
+	iterator insert(const_iterator pos, row_initializer &&ri)
+	{
+		return insert(pos, ri.begin(), ri.end());
+	}
+
+	/// @brief Insert a new row containing the values in the range @a b to @a e
+	/// before @a pos
+	/// @param pos The iterator before which the new row is inserted
+	/// @param b Iterator to the beginning of the range of item_values
+	/// @param e Iterator to the end of the range of item_values
+	/// @return iterator to the newly created row
+	template <typename ItemIter>
+	iterator insert(const_iterator pos, ItemIter b, ItemIter e)
+	{
+		row *r = this->create_row();
+
+		try
+		{
+			for (auto i = b; i != e; ++i)
+				r->set(add_item(i->name()), i->value());
+		}
+		catch (...)
+		{
+			this->delete_row(r);
+			throw;
+		}
+
+		return insert_impl(pos, r);
+	}
+
+	/// @brief Emplace the values in @a ri in a new row at the end of the category
 	/// @param ri An object containing the values to insert
 	/// @return iterator to the newly created row
 	iterator emplace(row_initializer &&ri)
@@ -1024,24 +1058,7 @@ class category
 	template <typename ItemIter>
 	iterator emplace(ItemIter b, ItemIter e)
 	{
-		row *r = this->create_row();
-
-		try
-		{
-			for (auto i = b; i != e; ++i)
-			{
-				// item_value *new_item = this->create_item(*i);
-				r->set(add_item(i->name()), i->value());
-			}
-		}
-		catch (...)
-		{
-			if (r != nullptr)
-				this->delete_row(r);
-			throw;
-		}
-
-		return insert_impl(cend(), r);
+		return insert(cend(), b, e);
 	}
 
 	/// Create rows with the content of the data in [ @a b, to @a e)
