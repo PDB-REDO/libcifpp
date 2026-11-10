@@ -613,6 +613,13 @@ void category::remove_item(std::string_view item_name)
 
 		m_items.erase(m_items.begin() + ix);
 
+		// re-create index, if needed
+		delete m_index;
+		if (m_cat_validator != nullptr)
+			m_index = new category_index(*this);
+		else
+			m_index = nullptr;
+
 		break;
 	}
 }
@@ -2038,7 +2045,7 @@ namespace detail
 			for (char q : { '\'', '"' })
 			{
 				auto p = value.find(q); // see if we can use the quote character
-				while (p != std::string::npos and sac_parser::is_non_blank(value[p + 1]) and value[p + 1] != q)
+				while (p != std::string::npos and p + 1 < value.length() and sac_parser::is_non_blank(value[p + 1]) and value[p + 1] != q)
 					p = value.find(q, p + 1);
 
 				if (p != std::string::npos)
@@ -2770,6 +2777,9 @@ bool category::operator==(const category &rhs) const
 	// shortcut
 	if (this == &rhs)
 		return true;
+
+	if (m_name != rhs.m_name)
+		return false;
 
 	auto &a = *this;
 	auto &b = rhs;

@@ -27,6 +27,7 @@
 #include "cif++/validate.hpp"
 
 #include "cif++/cif++.hpp"
+#include "cif++/condition.hpp"
 #include "cif++/text.hpp"
 
 #include <cassert>
@@ -187,11 +188,14 @@ regex_impl::regex_impl(std::string_view rx)
 	{
 		char buffer[256];
 		int n = pcre2_get_error_message(err_code, reinterpret_cast<unsigned char *>(&buffer[0]), sizeof(buffer));
-
-		throw std::runtime_error(std::string("PCRE2 compilation failed: ") + std::string{ buffer, buffer + n });
+		if (n > 0)
+			throw std::runtime_error(std::string("PCRE2 compilation failed: ") + std::string{ buffer, buffer + n });
+		throw std::runtime_error(std::string("PCRE2 compilation failed"));
 	}
 
 	m_data = pcre2_match_data_create_from_pattern(m_rx, nullptr);
+	if (m_data == nullptr)
+		throw std::runtime_error("PCRE2 failed to create match data");
 }
 
 regex_impl::~regex_impl()

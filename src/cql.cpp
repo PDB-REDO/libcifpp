@@ -828,7 +828,10 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 							data.emplace_back(p->m_items[i - 2], item_value_type::MISSING);
 							break;
 						default:
-							data.emplace_back(p->m_items[i - 2], reinterpret_cast<const char *>(sqlite3_value_text(argv[i])));
+							if (auto txt = sqlite3_value_text(argv[i]))
+								data.emplace_back(p->m_items[i - 2], reinterpret_cast<const char *>(txt));
+							else
+							 	data.emplace_back(p->m_items[i - 2], item_value_type::MISSING);
 							break;
 					}
 				}
@@ -862,7 +865,10 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 						data.emplace_back(p->m_items[i - 2], item_value_type::MISSING);
 						break;
 					default:
-						data.emplace_back(p->m_items[i - 2], reinterpret_cast<const char *>(sqlite3_value_text(argv[i])));
+						if (auto txt = sqlite3_value_text(argv[i]))
+							data.emplace_back(p->m_items[i - 2], reinterpret_cast<const char *>(txt));
+						else
+							data.emplace_back(p->m_items[i - 2], item_value_type::MISSING);
 						break;
 				}
 			}
@@ -1095,14 +1101,17 @@ result connection::exec(std::string query, std::string &tail)
 							data.emplace_back(sqlite3_column_name(stmt, i), sqlite3_column_double(stmt, i));
 							break;
 						case SQLITE_TEXT:
-							data.emplace_back(sqlite3_column_name(stmt, i), reinterpret_cast<const char *>(sqlite3_column_text(stmt, i)));
+							if (auto txt = reinterpret_cast<const char *>(sqlite3_column_text(stmt, i)))
+								data.emplace_back(sqlite3_column_name(stmt, i), reinterpret_cast<const char *>(txt));
+							else
+							 	data.emplace_back(sqlite3_column_name(stmt, i), item_value_type::MISSING);
 							break;
 						case SQLITE_BLOB:
 							throw std::runtime_error("Unexpected: blob in result");
 							break;
 						case SQLITE_NULL:
 						default:
-							data.emplace_back(sqlite3_column_name(stmt, i), ".");
+							data.emplace_back(sqlite3_column_name(stmt, i), item_value_type::MISSING);
 							break;
 					}
 				}
