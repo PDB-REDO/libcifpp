@@ -134,7 +134,7 @@ class quaternion_type
 	}
 
 	/// @brief swap
-	constexpr void swap(quaternion_type &o)
+	constexpr void swap(quaternion_type &o) noexcept
 	{
 		std::swap(a, o.a);
 		std::swap(b, o.b);

@@ -962,7 +962,7 @@ void sac_parser::parse_datablock()
 				{
 					produce_row();
 
-					for (auto item_name : item_names)
+					for (const auto& item_name : item_names)
 					{
 						switch (m_lookahead)
 						{

@@ -16,3 +16,4 @@ build_ci/
 data/components.cif
 perf.data*
 .cache/
+session-*.md

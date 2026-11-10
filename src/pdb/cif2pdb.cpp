@@ -105,7 +105,7 @@ std::string cif2pdbSymmetry(std::string s)
 	return s;
 }
 
-std::string cif2pdbAtomName(std::string name, std::string resName, const datablock &db)
+std::string cif2pdbAtomName(std::string name, const std::string &resName, const datablock &db)
 {
 	if (name.length() < 4)
 	{
@@ -184,7 +184,7 @@ std::vector<std::string> MapAsymIDs2ChainIDs(const std::vector<std::string> &asy
 {
 	std::set<std::string> result;
 
-	for (auto asym : asymIDs)
+	for (const auto &asym : asymIDs)
 	{
 		for (auto r : db["pdbx_poly_seq_scheme"].find(key("asym_id") == asym))
 		{
@@ -203,7 +203,7 @@ std::vector<std::string> MapAsymIDs2ChainIDs(const std::vector<std::string> &asy
 }
 
 // support for wrapping text using a 'continuation marker'
-std::size_t WriteContinuedLine(std::ostream &pdbFile, std::string header, int &count, int cLen, std::string text, std::string::size_type lStart = 0)
+std::size_t WriteContinuedLine(std::ostream &pdbFile, const std::string &header, int &count, int cLen, const std::string &text, std::string::size_type lStart = 0)
 {
 	if (lStart == 0)
 	{
@@ -238,7 +238,7 @@ std::size_t WriteContinuedLine(std::ostream &pdbFile, std::string header, int &c
 	return lines.size();
 }
 
-std::size_t WriteOneContinuedLine(std::ostream &pdbFile, std::string header, int cLen, std::string line, int lStart = 0)
+std::size_t WriteOneContinuedLine(std::ostream &pdbFile, const std::string &header, int cLen, const std::string &line, int lStart = 0)
 {
 	int count = 0;
 	return WriteContinuedLine(pdbFile, header, count, cLen, line, lStart);
@@ -1369,7 +1369,7 @@ void WriteRemark3Refmac(std::ostream &pdbFile, const datablock &db)
 
 		pdbFile << RM3("  NUMBER OF DIFFERENT NCS GROUPS : ") << ncs_groups.size() << '\n';
 
-		for (auto ens_id : ncs_groups)
+		for (const auto &ens_id : ncs_groups)
 		{
 			auto lim = db["struct_ncs_dom_lim"].find(key("pdbx_ens_id") == ens_id);
 
@@ -2199,11 +2199,11 @@ void WriteRemark3(std::ostream &pdbFile, const datablock &db)
 				<< RM3("REFINEMENT.") << '\n';
 
 		int l = 0;
-		for (auto s : word_wrap(program, 52))
+		for (const auto &s : word_wrap(program, 52))
 			pdbFile << RM3(++l == 1 ? "  PROGRAM     : " : "                ") << s << '\n';
 
 		l = 0;
-		for (auto s : word_wrap(authors, 52))
+		for (const auto &s : word_wrap(authors, 52))
 			pdbFile << RM3(++l == 1 ? "  AUTHORS     : " : "                ") << s << '\n';
 	}
 
@@ -2407,7 +2407,7 @@ void WriteRemark280(std::ostream &pdbFile, const datablock &db)
 				continue;
 
 			std::vector<std::string> conditions;
-			auto add = [&conditions](const std::string c)
+			auto add = [&conditions](const std::string &c)
 			{
 				if (std::ranges::find(conditions, c) == conditions.end())
 					conditions.push_back(c);
@@ -2482,7 +2482,7 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 	{
 		pdbFile << RM<300>("REMARK:") << '\n';
 
-		for (auto detail : details)
+		for (const auto &detail : details)
 			WriteOneContinuedLine(pdbFile, "REMARK 300", 0, detail);
 	}
 
@@ -2541,7 +2541,7 @@ void WriteRemark350(std::ostream &pdbFile, const datablock &db)
 			std::vector<std::string> chains = MapAsymIDs2ChainIDs(asyms, db);
 			pdbFile << RM("APPLY THE FOLLOWING TO CHAINS: ") << join(chains, ", ") << '\n';
 
-			for (auto oper_id : split<std::string>(oper_id_list, ",", true))
+			for (const auto &oper_id : split<std::string>(oper_id_list, ",", true))
 			{
 				auto r = db["pdbx_struct_oper_list"].find_first(key("id") == oper_id);
 
@@ -2715,9 +2715,9 @@ void WriteRemark800(std::ostream &pdbFile, const datablock &db)
 
 		to_upper(code);
 
-		for (auto l : { "SITE_IDENTIFIER: " + ident, "EVIDENCE_CODE: " + code, "SITE_DESCRIPTION: " + desc })
+		for (const auto &l : { "SITE_IDENTIFIER: " + ident, "EVIDENCE_CODE: " + code, "SITE_DESCRIPTION: " + desc })
 		{
-			for (auto s : word_wrap(l, 69))
+			for (const auto &s : word_wrap(l, 69))
 				pdbFile << "REMARK 800 " << s << '\n';
 		};
 	}
@@ -3028,7 +3028,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 
 	std::vector<std::string> formulas;
 
-	for (auto h : het)
+	for (const auto &h : het)
 	{
 		std::string hetID = h.first;
 		int componentNr = 0;

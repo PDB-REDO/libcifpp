@@ -183,10 +183,12 @@ if(NOT STD_CHARCONV_COMPILING)
 endif()
 
 find_package(Threads)
-CPMFindPackage(
-	NAME gxrio
-	GIT_REPOSITORY https://codeberg.org/mlhekkelman/gxrio.git
-	GIT_TAG v1.3.1)
+
+# gxrio is a submodule from now on, only required when it is not installed already
+find_package(gxrio 1.3.1 QUIET)
+if (NOT gxrio_FOUND)
+    add_subdirectory(gxrio)
+endif()
 
 include(FindPkgConfig)
 

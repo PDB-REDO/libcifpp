@@ -436,7 +436,7 @@ TEST_CASE("test_alternates_1")
 
 	cif::mm::structure s(file);
 
-	for (auto atom : s.atoms())
+	for (const auto& atom : s.atoms())
 		CHECK_FALSE(atom.is_alternate());
 }
 
@@ -458,7 +458,7 @@ TEST_CASE("options_1")
 
 		REQUIRE_NOTHROW(s.validate_atoms());
 
-		for (auto a : s.atoms())
+		for (const auto& a : s.atoms())
 			CHECK_FALSE(a.is_water());
 	}
 
@@ -468,7 +468,7 @@ TEST_CASE("options_1")
 
 		REQUIRE_NOTHROW(s.validate_atoms());
 
-		for (auto a : s.atoms())
+		for (const auto& a : s.atoms())
 			CHECK((a.is_water() or cf.is_peptide(a.get_label_comp_id()) or cf.is_base(a.get_label_comp_id())));
 	}
 
@@ -478,7 +478,7 @@ TEST_CASE("options_1")
 
 		REQUIRE_NOTHROW(s.validate_atoms());
 
-		for (auto a : s.atoms())
+		for (const auto& a : s.atoms())
 			CHECK(a.get_label_asym_id() == "A");
 	}
 
@@ -488,7 +488,7 @@ TEST_CASE("options_1")
 
 		REQUIRE_NOTHROW(s.validate_atoms());
 
-		for (auto a : s.atoms())
+		for (const auto& a : s.atoms())
 			CHECK(a.get_property_float("B_iso_or_equiv") >= 20.f);
 	}
 
@@ -498,7 +498,7 @@ TEST_CASE("options_1")
 
 		REQUIRE_NOTHROW(s.validate_atoms());
 
-		for (auto a : s.atoms())
+		for (const auto& a : s.atoms())
 			CHECK(a.get_property_float("B_iso_or_equiv") <= 20.f);
 	}
 }

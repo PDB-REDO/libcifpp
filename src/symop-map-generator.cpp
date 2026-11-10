@@ -40,7 +40,9 @@
 
 namespace fs = std::filesystem;
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization,cert-err58-cpp)
 std::regex kNameRx(R"(^(\d+) +(\d+) +(\d+) +(\S+) +(\S+) +(\S+) +'([^']+)'( +'([^']+)')?(?: +!.+)?$)");
+// NOLINTEND(bugprone-throwing-static-initialization,cert-err58-cpp)
 
 class SymopParser
 {
@@ -74,7 +76,7 @@ class SymopParser
 
   private:
 
-	enum Token : int { Eof = 0, Number = 256, XYZ };
+	enum Token : std::uint16_t { Eof = 0, Number = 256, XYZ = 257 };
 
 	std::string to_string(Token t)
 	{

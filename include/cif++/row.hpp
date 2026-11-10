@@ -251,9 +251,9 @@ class row_handle
 	/// checked to see if it conforms to the rules defined in the dictionary
 	///
 
-	void assign(std::string_view name, item_value value, bool updateLinked, bool validate = true)
+	void assign(std::string_view name, const item_value &value, bool updateLinked, bool validate = true)
 	{
-		assign(add_item(name), std::move(value), updateLinked, validate);
+		assign(add_item(name), value, updateLinked, validate);
 	}
 
 	/// @brief assign the value @a value to item at index @a item
@@ -267,7 +267,7 @@ class row_handle
 	/// checked to see if it conforms to the rules defined in the dictionary
 	///
 
-	void assign(uint16_t item, item_value value, bool updateLinked, bool validate = true);
+	void assign(uint16_t item, const item_value &value, bool updateLinked, bool validate = true);
 
 	/// @brief Return an object that can be used in combination with cif::tie
 	/// to assign the values for the items @a items

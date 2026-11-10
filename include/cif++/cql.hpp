@@ -187,7 +187,7 @@ class row_ref final
 	  private:
 		friend class row_ref;
 
-		const_field_iterator(const_row_handle row, uint16_t column, std::shared_ptr<result_impl> result_impl)
+		const_field_iterator(const_row_handle row, uint16_t column, const std::shared_ptr<result_impl>& result_impl)
 			: m_row(std::move(row))
 			, m_col(column)
 			, m_current(m_row, m_col, result_impl)
@@ -273,7 +273,7 @@ class result
 
 		// const_row_iterator() = default;
 
-		iterator(std::shared_ptr<result_impl> result_impl, category::const_iterator cat_iter)
+		iterator(const std::shared_ptr<result_impl>& result_impl, category::const_iterator cat_iter)
 			: m_iter(std::move(cat_iter))
 			, m_current(*m_iter, result_impl)
 			, m_result_impl(result_impl)

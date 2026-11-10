@@ -123,7 +123,7 @@ class atom
 		// const compound *compound() const;
 
 		[[nodiscard]] const item_handle get_property(std::string_view name) const;
-		void set_property(const std::string_view name, item_value value);
+		void set_property(const std::string_view name, const item_value &value);
 
 		row_handle row()
 		{
@@ -188,7 +188,7 @@ class atom
 	///
 	/// @brief Move construct a new atom object
 	///
-	atom(atom &&rhs)
+	atom(atom &&rhs) noexcept
 	{
 		std::swap(m_impl, rhs.m_impl);
 	}
@@ -253,11 +253,11 @@ class atom
 	}
 
 	/// @brief Set value for the item named @a name in the _atom_site category to @a value
-	void set_property(const std::string_view name, item_value value)
+	void set_property(const std::string_view name, const item_value &value)
 	{
 		if (not m_impl)
 			throw std::logic_error("Error trying to modify an uninitialized atom");
-		m_impl->set_property(name, std::move(value));
+		m_impl->set_property(name, value);
 	}
 
 	/// Return the ID of the _atom_site record.
@@ -434,7 +434,7 @@ class atom
 };
 
 /// swap
-inline void swap(atom &a, atom &b)
+inline void swap(atom &a, atom &b) noexcept
 {
 	a.swap(b);
 }
@@ -504,7 +504,7 @@ class residue
 
 	/// @cond
 	residue(const residue &rhs) = default;
-	residue(residue &&rhs)
+	residue(residue &&rhs) noexcept
 	{
 		swap(*this, rhs);
 	}
@@ -647,7 +647,7 @@ class monomer : public residue
 	monomer(const monomer &rhs) = default;
 
 	/// @brief Move constructor
-	monomer(monomer &&rhs)
+	monomer(monomer &&rhs) noexcept
 	{
 		swap(*this, rhs);
 	}
@@ -792,7 +792,7 @@ class sugar : public residue
 	/// @cond
 	sugar(const sugar &rhs) = default;
 
-	sugar(sugar &&rhs)
+	sugar(sugar &&rhs) noexcept
 	{
 		swap(*this, rhs);
 	}
@@ -805,7 +805,6 @@ class sugar : public residue
 
 	friend void swap(sugar &a, sugar &b) noexcept
 	{
-		assert(a.m_branch == b.m_branch);
 		std::swap(a.m_link, b.m_link);
 		swap(static_cast<residue &>(a), static_cast<residue &>(b));
 	}
@@ -838,7 +837,7 @@ class sugar : public residue
 	[[nodiscard]] atom get_link() const { return m_link; }
 
 	/// @brief Set the link atom C1 is linked to to @a link
-	void set_link(atom link) { m_link = link; }
+	void set_link(atom link) { m_link = std::move(link); }
 
 	/// @brief Return the sugar number of the sugar linked to C1
 	[[nodiscard]] std::size_t get_link_nr() const
@@ -970,10 +969,10 @@ class structure
 {
   public:
 	/// @brief Read the structure from cif::file @a p
-	structure(file &p, std::size_t modelNr = 1, structure_open_options options = {});
+	structure(file &p, std::size_t modelNr = 1, const structure_open_options &options = {});
 
 	/// @brief Load the structure from already parsed mmCIF data in @a db
-	structure(datablock &db, std::size_t modelNr = 1, structure_open_options options = {});
+	structure(datablock &db, std::size_t modelNr = 1, const structure_open_options &options = {});
 
 	/// @cond
 	structure(structure &&s) = default;
@@ -991,8 +990,8 @@ class structure
 	/// @brief Return a list of all the atoms in this structure
 	[[nodiscard]] const std::vector<atom> &atoms() const { return m_atoms; }
 
-	[[nodiscard]] EntityType get_entity_type_for_entity_id(const std::string entityID) const; ///< Return the entity type for the entity with id @a entity_id
-	[[nodiscard]] EntityType get_entity_type_for_asym_id(const std::string asymID) const;     ///< Return the entity type for the asym with id @a asym_id
+	[[nodiscard]] EntityType get_entity_type_for_entity_id(const std::string &entityID) const; ///< Return the entity type for the entity with id @a entity_id
+	[[nodiscard]] EntityType get_entity_type_for_asym_id(const std::string &asymID) const;     ///< Return the entity type for the asym with id @a asym_id
 
 	[[nodiscard]] const std::list<polymer> &polymers() const { return m_polymers; } ///< Return the list of polymers
 	[[nodiscard]] std::list<polymer> &polymers() { return m_polymers; }             ///< Return the list of polymers

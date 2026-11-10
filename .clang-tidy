@@ -6,13 +6,19 @@ Checks: '-*,
          -modernize-use-trailing-return-type,
          -modernize-avoid-c-arrays,
          -modernize-use-designated-initializers,
-         performance
+         performance*,
+         -performance-inefficient-string-concatenation,
+         -performance-enum-size
          '
 
 # HeaderFilterRegex: '.*'
-ExcludeHeaderFilterRegex: 'Eigen|Eigen/Eigenvalues|eigen3/Eigen/Eigenvalues|sqlite3.h'
+ExcludeHeaderFilterRegex: 'Eigen/.*|eigen3/.*|sqlite3.h'
 CheckOptions:
   - key: bugprone-narrowing-conversions.WarnOnIntegerNarrowingConversion
     value: false
   - key: bugprone-narrowing-conversions.WarnOnIntegerToFloatingPointNarrowingConversion
     value: false
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: cif::row_handle;cif::const_row_handle;cif::mm::atom;cif::category::const_iterator
+  - key: performance-for-range-copy.AllowedTypes
+    value: cif::row_handle;cif::const_row_handle;cif::mm::atom;cif::cql::row_ref;cif::cql::field_ref

@@ -46,7 +46,6 @@
 #include <memory>
 #include <numeric>
 #include <optional>
-#include <print>
 #include <ranges>
 #include <set>
 #include <stack>
@@ -60,6 +59,7 @@
 
 namespace cif::mm
 {
+using std::string;
 
 // --------------------------------------------------------------------
 // atom
@@ -87,12 +87,12 @@ const item_handle atom::atom_impl::get_property(std::string_view name) const
 	throw std::runtime_error(std::format("Missing property {} for atom", name));
 }
 
-void atom::atom_impl::set_property(const std::string_view name, item_value value)
+void atom::atom_impl::set_property(const std::string_view name, const item_value& value)
 {
 	auto r = row();
 	if (not r)
 		throw std::runtime_error("Trying to modify a row that does not exist");
-	r.assign(name, std::move(value), true, true);
+	r.assign(name, value, true, true);
 }
 
 int atom::atom_impl::compare(const atom_impl &b) const
@@ -158,7 +158,7 @@ residue::residue(structure &structure, const std::vector<atom> &atoms)
 	m_pdb_seq_num = a.get_auth_seq_id();
 	m_pdb_ins_code = a.get_pdb_ins_code();
 
-	for (auto atom : atoms)
+	for (const auto& atom : atoms)
 		m_atoms.push_back(atom);
 }
 
@@ -260,7 +260,7 @@ std::set<std::string> residue::get_alternate_ids() const
 {
 	std::set<std::string> result;
 
-	for (auto a : m_atoms)
+	for (const auto& a : m_atoms)
 	{
 		auto alt = a.get_label_alt_id();
 		if (not alt.empty())
@@ -327,7 +327,8 @@ bool residue::is_entity() const
 std::tuple<point, float> residue::center_and_radius() const
 {
 	std::vector<point> pts;
-	for (auto &a : m_atoms)
+	pts.reserve(m_atoms.size());
+for (auto &a : m_atoms)
 		pts.push_back(a.get_location());
 
 	return smallest_sphere_around_points(pts);
@@ -347,8 +348,8 @@ bool residue::has_alternate_atoms_for(const std::string &atomID) const
 
 std::set<std::string> residue::get_atom_ids() const
 {
-	std::set<std::string> ids;
-	for (auto a : m_atoms)
+	std::set<string> ids;
+	for (const auto& a : m_atoms)
 		ids.insert(a.get_label_atom_id());
 
 	return ids;
@@ -357,7 +358,7 @@ std::set<std::string> residue::get_atom_ids() const
 std::vector<atom> residue::get_atoms_by_id(const std::string &atom_id) const
 {
 	std::vector<atom> atoms;
-	for (auto a : m_atoms)
+	for (const auto& a : m_atoms)
 	{
 		if (a.get_label_atom_id() == atom_id)
 			atoms.push_back(a);
@@ -1203,12 +1204,12 @@ float branch::weight() const
 // --------------------------------------------------------------------
 //	structure
 
-structure::structure(file &p, std::size_t modelNr, structure_open_options options)
+structure::structure(file &p, std::size_t modelNr, const structure_open_options &options)
 	: structure(p.front(), modelNr, options)
 {
 }
 
-structure::structure(datablock &db, std::size_t modelNr, structure_open_options options)
+structure::structure(datablock &db, std::size_t modelNr, const structure_open_options &options)
 	: m_db(db)
 	, m_model_nr(modelNr)
 {
@@ -1273,7 +1274,7 @@ void structure::load_atoms_for_model(structure_open_options options)
 	if (not options.asyms.empty())
 	{
 		condition tmp_c;
-		for (auto asym_id : options.asyms)
+		for (const auto& asym_id : options.asyms)
 			tmp_c = std::move(tmp_c) or cif::key("label_asym_id") == asym_id;
 		c = std::move(c) and std::move(tmp_c);
 	}
@@ -1345,7 +1346,7 @@ void structure::load_atoms_for_model(structure_open_options options)
 			value.emplace(alt_id, occupancy);
 		}
 
-		for (auto a : atoms)
+		for (const auto& a : atoms)
 		{
 			if (a.is_alternate())
 			{
@@ -1442,7 +1443,7 @@ void structure::load_data()
 		branch.link_atoms();
 }
 
-EntityType structure::get_entity_type_for_entity_id(const std::string entityID) const
+EntityType structure::get_entity_type_for_entity_id(const std::string &entityID) const
 {
 	using namespace literals;
 
@@ -1467,7 +1468,7 @@ EntityType structure::get_entity_type_for_entity_id(const std::string entityID) 
 	return result;
 }
 
-EntityType structure::get_entity_type_for_asym_id(const std::string asym_id) const
+EntityType structure::get_entity_type_for_asym_id(const std::string &asym_id) const
 {
 	using namespace literals;
 
@@ -1831,7 +1832,7 @@ void structure::remove_atom(atom &a, bool removeFromResidue)
 		if (a.is_water())
 		{
 			auto &nps = m_db["pdbx_nonpoly_scheme"];
-			for (auto rnp : atomSite.get_children(ri, nps))
+			for (const auto& rnp : atomSite.get_children(ri, nps))
 				nps.erase(rnp);
 		}
 
@@ -1913,7 +1914,7 @@ void structure::swap_atoms(atom a1, atom a2)
 		auto r1 = atomSites.find1(key("id") == a1.id());
 		auto r2 = atomSites.find1(key("id") == a2.id());
 
-		for (std::string fld : std::initializer_list<std::string>{ "label_atom_id", "auth_atom_id", "type_symbol" })
+		for (const std::string& fld : std::initializer_list<std::string>{ "label_atom_id", "auth_atom_id", "type_symbol" })
 			swap(r1[fld].value(), r2[fld].value());
 	}
 	catch (const std::exception &ex)
@@ -2030,7 +2031,7 @@ void structure::change_residue(residue &res, const std::string &newCompound,
 		}
 	}
 
-	for (auto a : atoms)
+	for (const auto& a : atoms)
 	{
 		atomSites.update_value(key("id") == a.id(), "label_comp_id", newCompound);
 		atomSites.update_value(key("id") == a.id(), "auth_comp_id", newCompound);
@@ -2169,7 +2170,7 @@ void structure::remove_sugar(sugar &s)
 					test.push(s2.num());
 			}
 
-			for (auto atom : branch.at(tix - 1).atoms())
+			for (const auto& atom : branch.at(tix - 1).atoms())
 				da.emplace_back(atom);
 		}
 
@@ -2276,7 +2277,7 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 				{ "pdbx_PDB_model_num", m_model_nr } //
 			};
 
-		for (auto item : std::initializer_list<std::string>{
+		for (const auto& item : std::initializer_list<std::string>{
 				 // clang-format off
 				 "group_PDB",
 				 "type_symbol",

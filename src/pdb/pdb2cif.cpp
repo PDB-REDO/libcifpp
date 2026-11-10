@@ -887,7 +887,7 @@ class PDBFileParser
 
 	// ----------------------------------------------------------------
 
-	category *getCategory(std::string name)
+	category *getCategory(const std::string &name)
 	{
 		return &mDatablock[name];
 	}
@@ -941,7 +941,7 @@ class PDBFileParser
 		return s;
 	}
 
-	std::string pdb2cifDate(std::string s)
+	std::string pdb2cifDate(const std::string &s)
 	{
 		std::error_code ec;
 		auto result = pdb2cifDate(s, ec);
@@ -1005,7 +1005,7 @@ class PDBFileParser
 		return c;
 	}
 
-	std::vector<char> altLocsForAtom(char chainID, int seqNum, char iCode, std::string atomName);
+	std::vector<char> altLocsForAtom(char chainID, int seqNum, char iCode, const std::string &atomName);
 	void MapChainID2AsymIDS(char chainID, std::vector<std::string> &asymIds);
 
 	std::tuple<ATOM_REF, bool> FindLink(const std::string &name1, const std::string &resName1, int resSeq1, char altLoc1, char chainID1, char iCode1,
@@ -1085,7 +1085,7 @@ class PDBFileParser
 
 // --------------------------------------------------------------------
 
-std::vector<char> PDBFileParser::altLocsForAtom(char inChainID, int inResSeq, char inICode, std::string inAtomName)
+std::vector<char> PDBFileParser::altLocsForAtom(char inChainID, int inResSeq, char inICode, const std::string &inAtomName)
 {
 	// well, maybe this could be optimized...
 	std::set<char> result;
@@ -1357,7 +1357,7 @@ void PDBFileParser::PreParseInput(std::istream &is)
 			// parse it now, makes life easier later on
 			if (type == "REMARK 200" or type == "REMARK 240")
 			{
-				auto i = value.find(":");
+				auto i = value.find(':');
 
 				if (i != std::string::npos)
 				{
@@ -1753,7 +1753,7 @@ void PDBFileParser::ParseTitle()
 		cat = getCategory("audit_author");
 
 		std::string value = { mRec->vS(11) };
-		for (auto author : cif::split<std::string>(value, ",", true))
+		for (const auto& author : cif::split<std::string>(value, ",", true))
 		{
 			// clang-format off
 			cat->emplace({
@@ -1939,7 +1939,7 @@ void PDBFileParser::ParseCitation(const std::string &id)
 	if (not auth.empty())
 	{
 		cat = getCategory("citation_author");
-		for (auto author : cif::split<std::string>(auth, ",", true))
+		for (const auto &author : cif::split<std::string>(auth, ",", true))
 		{
 			cat->emplace({ { "citation_id", id },
 				{ "name", pdb2cifAuth(author) },
@@ -1952,7 +1952,7 @@ void PDBFileParser::ParseCitation(const std::string &id)
 	if (not edit.empty())
 	{
 		cat = getCategory("citation_editor");
-		for (auto editor : cif::split<std::string>(edit, ",", true))
+		for (const auto &editor : cif::split<std::string>(edit, ",", true))
 		{
 			cat->emplace({ { "citation_id", id },
 				{ "name", pdb2cifAuth(editor) },
@@ -2679,7 +2679,7 @@ void PDBFileParser::ParseRemarks()
 							continue;
 
 						std::vector<std::string> atoms;
-						for (auto atom : compound->atoms())
+						for (const auto &atom : compound->atoms())
 						{
 							if (atom.type_symbol != cif::H)
 								atoms.push_back(atom.id);
@@ -3511,7 +3511,7 @@ void PDBFileParser::ParsePrimaryStructure()
 
 		auto &chain = GetChainForID(chainID, numRes);
 
-		for (auto monID : cif::split<std::string>(monomers, " ", true))
+		for (const auto &monID : cif::split<std::string>(monomers, " ", true))
 		{
 			if (monID.empty())
 				continue;
@@ -6288,7 +6288,7 @@ int PDBFileParser::PDBChain::AlignResToSeqRes()
 		}
 
 		std::ranges::reverse(alignment);
-		for (auto a : alignment)
+		for (const auto &a : alignment)
 			std::cerr << "  " << a.first << " -- " << a.second << '\n';
 
 		std::cerr << '\n';

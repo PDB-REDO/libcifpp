@@ -507,7 +507,7 @@ std::vector<std::string> wrapLine(const std::string &text, std::size_t width)
 std::vector<std::string> word_wrap(const std::string &text, std::size_t width)
 {
 	std::vector<std::string> result;
-	for (auto p : cif::split<std::string>(text, "\n"))
+	for (const auto& p : cif::split<std::string>(text, "\n"))
 	{
 		if (p.empty())
 		{

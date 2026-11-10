@@ -49,8 +49,8 @@ condition get_parents_condition(const validator &validator, const_row_handle rh,
 	condition result;
 
 	auto &childCat = rh.get_category();
-	auto childName = childCat.name();
-	auto parentName = parentCat.name();
+	const auto &childName = childCat.name();
+	const auto &parentName = parentCat.name();
 
 	auto links = validator.get_links_for_child(childName);
 	std::erase_if(links, [n = parentName](auto &l)
@@ -261,7 +261,7 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 
 					bool match = false;
 
-					for (auto comp_id : comp_ids)
+					for (const auto &comp_id : comp_ids)
 					{
 						std::string letter;
 

@@ -188,7 +188,7 @@ void replace_all(std::string &s, std::string_view what, std::string_view with = 
 #if defined(__cpp_lib_starts_ends_with)
 
 /// @brief return whether string @a s starts with @a with
-inline bool starts_with(std::string s, std::string_view with)
+inline bool starts_with(const std::string& s, std::string_view with)
 {
 	return s.starts_with(with);
 }

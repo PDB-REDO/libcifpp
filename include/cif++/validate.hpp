@@ -178,7 +178,7 @@ struct type_validator
 	type_validator(const type_validator &tv) = default;
 
 	/// @brief Move constructor
-	type_validator(type_validator &&rhs)
+	type_validator(type_validator &&rhs) noexcept
 	{
 		swap(*this, rhs);
 	}
@@ -194,7 +194,7 @@ struct type_validator
 	~type_validator() = default;
 
 	/// Swap two type validators
-	friend void swap(type_validator &a, type_validator &b)
+	friend void swap(type_validator &a, type_validator &b) noexcept
 	{
 		std::swap(a.m_name, b.m_name);
 		std::swap(a.m_primitive_type, b.m_primitive_type);
@@ -365,7 +365,7 @@ class validator
 	validator(const validator &rhs) = default;
 
 	/// @brief move constructor
-	validator(validator &&rhs)
+	validator(validator &&rhs) noexcept
 	{
 		swap(*this, rhs);
 	}
@@ -421,7 +421,7 @@ class validator
 	void report_error(validation_error err, std::string value, std::string_view category,
 		std::string_view item, bool fatal = true) const
 	{
-		report_error(make_error_code(err), value, category, item, fatal);
+		report_error(make_error_code(err), std::move(value), category, item, fatal);
 	}
 
 	/// @brief Bottleneck function to report an error in validation

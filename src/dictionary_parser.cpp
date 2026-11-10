@@ -182,7 +182,7 @@ class dictionary_parser : public parser
 					cat->emplace({});
 					auto row = cat->back();
 
-					for (auto item_name : item_names)
+					for (const auto& item_name : item_names)
 					{
 						switch (m_lookahead)
 						{

@@ -611,7 +611,7 @@ class item
 	/// @cond
 	item(const item &rhs) = default;
 
-	item(item &&rhs)
+	item(item &&rhs) noexcept
 	{
 		swap(*this, rhs);
 	}
@@ -682,9 +682,9 @@ struct item_handle
 	/// @param value The value
 	/// @return reference to this item_handle
 	///
-	item_handle &operator=(item_value value)
+	item_handle &operator=(const item_value& value)
 	{
-		set(std::move(value), true);
+		set(value, true);
 		return *this;
 	}
 
@@ -901,7 +901,7 @@ struct item_handle
 
 	friend class parser;
 
-	void set(item_value value, bool updateLinked);
+	void set(const item_value &value, bool updateLinked);
 };
 
 } // namespace cif

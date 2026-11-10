@@ -103,7 +103,7 @@ class file : public std::list<datablock>
 	{
 	}
 
-	file(file &&rhs)
+	file(file &&rhs) noexcept
 	{
 		this->swap(rhs);
 	}

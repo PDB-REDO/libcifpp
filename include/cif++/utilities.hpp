@@ -32,7 +32,6 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
-#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -336,7 +335,7 @@ class progress_bar
 /// @return std::unique_ptr<std::istream> A pointer to the std::istream or empty if not found
 ///
 
-std::unique_ptr<std::istream> load_resource(std::filesystem::path name);
+std::unique_ptr<std::istream> load_resource(const std::filesystem::path &name);
 
 ///
 /// @brief Add a file specified by @a dataFile as the data for resource @a name
@@ -352,7 +351,7 @@ std::unique_ptr<std::istream> load_resource(std::filesystem::path name);
 /// @param dataFile Path to a file containing the data
 ///
 
-void add_file_resource(const std::string &name, std::filesystem::path dataFile);
+void add_file_resource(const std::string &name, const std::filesystem::path &dataFile);
 
 ///
 /// @brief List all the file resources added with cif::add_file_resource.
@@ -374,7 +373,7 @@ void list_file_resources(std::ostream &os);
 /// @endverbatim
 ///
 
-void add_data_directory(std::filesystem::path dataDir);
+void add_data_directory(const std::filesystem::path &dataDir);
 
 ///
 /// @brief List all the data directories, for error reporting on missing resources.

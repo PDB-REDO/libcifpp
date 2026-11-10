@@ -101,12 +101,12 @@ int64_t const_row_handle::row_id() const noexcept
 
 // --------------------------------------------------------------------
 
-void row_handle::assign(uint16_t item, item_value value, bool updateLinked, bool validate)
+void row_handle::assign(uint16_t item, const item_value &value, bool updateLinked, bool validate)
 {
 	if (not m_category)
 		throw std::runtime_error("uninitialized row");
 
-	m_category->update_value(m_row, item, std::move(value), updateLinked, validate);
+	m_category->update_value(m_row, item, value, updateLinked, validate);
 }
 
 uint16_t row_handle::add_item(std::string_view name)

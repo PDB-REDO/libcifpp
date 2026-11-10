@@ -163,7 +163,7 @@ class BUSTER_TNT_Remark3Parser : public Remark3Parser
 {
   public:
 	BUSTER_TNT_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db,
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db,
 			  kBusterTNT_Template, sizeof(kBusterTNT_Template) / sizeof(TemplateLine),
 			  std::regex(R"((BUSTER(?:-TNT)?)(?: (\d+(?:\..+)?))?)"))
 	{
@@ -268,7 +268,7 @@ class CNS_Remark3Parser : public Remark3Parser
 {
   public:
 	CNS_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kCNS_Template,
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kCNS_Template,
 			  sizeof(kCNS_Template) / sizeof(TemplateLine), std::regex(R"((CN[SX])(?: (\d+(?:\.\d+)?))?)"))
 	{
 	}
@@ -352,7 +352,7 @@ class PHENIX_Remark3Parser : public Remark3Parser
 {
   public:
 	PHENIX_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kPHENIX_Template, sizeof(kPHENIX_Template) / sizeof(TemplateLine),
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kPHENIX_Template, sizeof(kPHENIX_Template) / sizeof(TemplateLine),
 			  std::regex(R"((PHENIX)(?: \(PHENIX\.REFINE:) (\d+(?:\.[^)]+)?)\)?)"))
 	{
 	}
@@ -440,7 +440,7 @@ class NUCLSQ_Remark3Parser : public Remark3Parser
 {
   public:
 	NUCLSQ_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kNUCLSQ_Template, sizeof(kNUCLSQ_Template) / sizeof(TemplateLine),
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kNUCLSQ_Template, sizeof(kNUCLSQ_Template) / sizeof(TemplateLine),
 			  std::regex(R"((NUCLSQ)(?: (\d+(?:\.\d+)?))?)"))
 	{
 	}
@@ -533,7 +533,7 @@ class PROLSQ_Remark3Parser : public Remark3Parser
 {
   public:
 	PROLSQ_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kPROLSQ_Template, sizeof(kPROLSQ_Template) / sizeof(TemplateLine),
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kPROLSQ_Template, sizeof(kPROLSQ_Template) / sizeof(TemplateLine),
 			  std::regex(R"((PROLSQ)(?: (\d+(?:\.\d+)?))?)"))
 	{
 	}
@@ -623,7 +623,7 @@ class REFMAC_Remark3Parser : public Remark3Parser
 {
   public:
 	REFMAC_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kREFMAC_Template, sizeof(kREFMAC_Template) / sizeof(TemplateLine),
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kREFMAC_Template, sizeof(kREFMAC_Template) / sizeof(TemplateLine),
 			  std::regex(".+"))
 	{
 	}
@@ -785,7 +785,7 @@ class REFMAC5_Remark3Parser : public Remark3Parser
 {
   public:
 	REFMAC5_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kREFMAC5_Template, sizeof(kREFMAC5_Template) / sizeof(TemplateLine),
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kREFMAC5_Template, sizeof(kREFMAC5_Template) / sizeof(TemplateLine),
 			  std::regex(R"((REFMAC)(?: (\d+(?:\..+)?))?)"))
 	{
 	}
@@ -845,7 +845,7 @@ class SHELXL_Remark3Parser : public Remark3Parser
 {
   public:
 	SHELXL_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kSHELXL_Template, sizeof(kSHELXL_Template) / sizeof(TemplateLine),
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kSHELXL_Template, sizeof(kSHELXL_Template) / sizeof(TemplateLine),
 			  std::regex(R"((SHELXL)(?:-(\d+(?:\..+)?)))"))
 	{
 	}
@@ -902,7 +902,7 @@ class TNT_Remark3Parser : public Remark3Parser
 {
   public:
 	TNT_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kTNT_Template, sizeof(kTNT_Template) / sizeof(TemplateLine),
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kTNT_Template, sizeof(kTNT_Template) / sizeof(TemplateLine),
 			  std::regex(R"((TNT)(?: V. (\d+.+)?)?)"))
 	{
 	}
@@ -992,7 +992,7 @@ class XPLOR_Remark3Parser : public Remark3Parser
 {
   public:
 	XPLOR_Remark3Parser(std::string name, std::string expMethod, PDBRecord *r, cif::datablock &db)
-		: Remark3Parser(name, expMethod, r, db, kXPLOR_Template, sizeof(kXPLOR_Template) / sizeof(TemplateLine),
+		: Remark3Parser(std::move(name), std::move(expMethod), r, db, kXPLOR_Template, sizeof(kXPLOR_Template) / sizeof(TemplateLine),
 			  std::regex(R"((X-PLOR)(?: (\d+(?:\.\d+)?))?)"))
 	{
 	}
@@ -1440,7 +1440,7 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 		}
 	};
 
-	for (auto program : cif::split<std::string>(line, ", ", true))
+	for (const auto& program : cif::split<std::string>(line, ", ", true))
 	{
 		if (cif::starts_with(program, "BUSTER"))
 			tryParser(new BUSTER_TNT_Remark3Parser(program, expMethod, r, db));

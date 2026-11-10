@@ -464,7 +464,7 @@ class iterator_impl_base<Const, T>
   private:
 	[[nodiscard]] value_type get() const
 	{
-		return m_current ?  m_current[m_item_ix].template get<value_type>() : value_type{};
+		return m_current ? m_current[m_item_ix].template get<value_type>() : value_type{};
 	}
 
 	row_handle_type m_current;
@@ -475,11 +475,11 @@ class iterator_impl_base<Const, T>
 // --------------------------------------------------------------------
 
 /// A non-const version of iterator_impl
-template<typename ... Ts>
+template <typename... Ts>
 using iterator_impl = iterator_impl_base<false, Ts...>;
 
 /// A const version of iterator_impl
-template<typename ... Ts>
+template <typename... Ts>
 using const_iterator_impl = iterator_impl_base<true, Ts...>;
 
 // --------------------------------------------------------------------
@@ -512,8 +512,8 @@ class iterator_proxy_base
 	iterator_proxy_base(category_type &cat, row_iterator pos, char const *const items[N]);
 	iterator_proxy_base(category_type &cat, row_iterator pos, std::initializer_list<char const *> items); // NOLINT(modernize-pass-by-value)
 
-	iterator_proxy_base(iterator_proxy_base &&p);
-	iterator_proxy_base &operator=(iterator_proxy_base &&p);
+	iterator_proxy_base(iterator_proxy_base &&p) noexcept;
+	iterator_proxy_base &operator=(iterator_proxy_base &&p) noexcept;
 
 	iterator_proxy_base(const iterator_proxy_base &) = delete;
 	iterator_proxy_base &operator=(const iterator_proxy_base &) = delete;
@@ -522,8 +522,8 @@ class iterator_proxy_base
 	[[nodiscard]] iterator begin() const { return iterator(m_begin, m_item_ix); } ///< Return the iterator pointing to the first row
 	[[nodiscard]] iterator end() const { return iterator(m_end, m_item_ix); }     ///< Return the iterator pointing past the last row
 
-	[[nodiscard]] bool empty() const { return m_begin == m_end; }               ///< Return true if the range is empty
-	explicit operator bool() const { return not empty(); }        ///< Easy way to detect if the range is empty
+	[[nodiscard]] bool empty() const { return m_begin == m_end; }                    ///< Return true if the range is empty
+	explicit operator bool() const { return not empty(); }                           ///< Easy way to detect if the range is empty
 	[[nodiscard]] std::size_t size() const { return std::distance(begin(), end()); } ///< Return size of the range
 
 	// row front() { return *begin(); }
@@ -532,7 +532,7 @@ class iterator_proxy_base
 	[[nodiscard]] category_type &get_category() const { return *m_category; } ///< Return the category the iterator belong to
 
 	/// swap
-	void swap(iterator_proxy_base &rhs)
+	void swap(iterator_proxy_base &rhs) noexcept
 	{
 		std::swap(m_category, rhs.m_category);
 		std::swap(m_begin, rhs.m_begin);
@@ -595,7 +595,7 @@ class conditional_iterator_proxy_base
 		using reference = value_type;
 
 		conditional_iterator_impl() = default;
-		conditional_iterator_impl(category_type &cat, row_iterator pos, const condition &cond, const std::array<uint16_t, N> &cix);
+		conditional_iterator_impl(category_type &cat, const row_iterator &pos, const condition &cond, const std::array<uint16_t, N> &cix);
 		conditional_iterator_impl(const conditional_iterator_impl &i) = default;
 		conditional_iterator_impl &operator=(const conditional_iterator_impl &i) = default;
 
@@ -629,7 +629,7 @@ class conditional_iterator_proxy_base
 			{
 				if (++m_begin == m_end)
 					break;
-				
+
 				if (m_condition->operator()(m_begin))
 					break;
 			}
@@ -669,12 +669,12 @@ class conditional_iterator_proxy_base
 	template <typename... Ns>
 	conditional_iterator_proxy_base(category_type &cat, row_iterator pos, condition &&cond, Ns... names); // NOLINT(modernize-pass-by-value)
 
-	conditional_iterator_proxy_base(conditional_iterator_proxy_base &&p)
+	conditional_iterator_proxy_base(conditional_iterator_proxy_base &&p) noexcept
 	{
 		swap(*this, p);
 	}
 
-	conditional_iterator_proxy_base &operator=(conditional_iterator_proxy_base &&p)
+	conditional_iterator_proxy_base &operator=(conditional_iterator_proxy_base &&p) noexcept
 	{
 		swap(*this, p);
 		return *this;
@@ -688,8 +688,8 @@ class conditional_iterator_proxy_base
 	[[nodiscard]] iterator begin() const; ///< Return the iterator pointing to the first row
 	[[nodiscard]] iterator end() const;   ///< Return the iterator pointing past the last row
 
-	[[nodiscard]] bool empty() const;                                           ///< Return true if the range is empty
-	explicit operator bool() const { return not empty(); }        ///< Easy way to detect if the range is empty
+	[[nodiscard]] bool empty() const;                                                ///< Return true if the range is empty
+	explicit operator bool() const { return not empty(); }                           ///< Easy way to detect if the range is empty
 	[[nodiscard]] std::size_t size() const { return std::distance(begin(), end()); } ///< Return size of the range
 
 	auto front() { return *begin(); } ///< Return reference to the first row
@@ -698,8 +698,8 @@ class conditional_iterator_proxy_base
 	[[nodiscard]] category_type &get_category() const { return *m_cat; } ///< Category the iterators belong to
 
 	/// swap
-	template <bool C2, typename ... T2s>
-	friend void swap(conditional_iterator_proxy_base<C2, T2s...> &lhs, conditional_iterator_proxy_base<C2, T2s...> &rhs);
+	template <bool C2, typename... T2s>
+	friend void swap(conditional_iterator_proxy_base<C2, T2s...> &lhs, conditional_iterator_proxy_base<C2, T2s...> &rhs) noexcept;
 
   private:
 	category_type *m_cat;
@@ -734,7 +734,7 @@ iterator_proxy_base<Const, Ts...>::iterator_proxy_base(category_type &cat, row_i
 template <bool Const, typename... Ts>
 iterator_proxy_base<Const, Ts...>::iterator_proxy_base(category_type &cat, row_iterator pos, std::initializer_list<char const *> items)
 	: m_category(&cat)
-	, m_begin(pos)
+	, m_begin(std::move(pos))
 	, m_end(cat.end())
 {
 	// static_assert(items.size() == N, "The list of item names should be exactly the same as the list of requested items");
@@ -757,7 +757,7 @@ iterator_proxy_base<Const, Ts...>::iterator_proxy_base(category_type &cat)
 
 template <bool Const, typename... Ts>
 conditional_iterator_proxy_base<Const, Ts...>::conditional_iterator_impl::conditional_iterator_impl(
-	category_type &cat, row_iterator pos, const condition &cond, const std::array<uint16_t, N> &cix)
+	category_type &cat, const row_iterator &pos, const condition &cond, const std::array<uint16_t, N> &cix)
 	: m_cat(&cat)
 	, m_begin(pos, cix)
 	, m_end(cat.end(), cix)
@@ -774,7 +774,7 @@ template <typename... Ns>
 conditional_iterator_proxy_base<Const, Ts...>::conditional_iterator_proxy_base(category_type &cat, row_iterator pos, condition &&cond, Ns... names)
 	: m_cat(&cat)
 	, m_condition(std::move(cond))
-	, mCBegin(pos)
+	, mCBegin(std::move(pos))
 	, mCEnd(cat.end())
 {
 	static_assert(sizeof...(Ts) == sizeof...(Ns), "Number of item names should be equal to number of requested value types");
@@ -810,7 +810,7 @@ bool conditional_iterator_proxy_base<Const, Ts...>::empty() const
 }
 
 template <bool Const, typename... Ts>
-void swap(conditional_iterator_proxy_base<Const, Ts...> &lhs, conditional_iterator_proxy_base<Const, Ts...> &rhs)
+void swap(conditional_iterator_proxy_base<Const, Ts...> &lhs, conditional_iterator_proxy_base<Const, Ts...> &rhs) noexcept
 {
 	std::swap(lhs.m_cat, rhs.m_cat);
 	std::swap(lhs.m_condition, rhs.m_condition);
@@ -822,7 +822,6 @@ void swap(conditional_iterator_proxy_base<Const, Ts...> &lhs, conditional_iterat
 // --------------------------------------------------------------------
 
 // template <bool Const, typename... Ts>
-
 
 /// @endcond
 

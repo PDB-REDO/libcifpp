@@ -89,10 +89,10 @@ void swap(item_handle a, item_handle b) noexcept
 	b.value() = std::move(v);
 }
 
-void item_handle::set(item_value value, bool updateLinked)
+void item_handle::set(const item_value &value, bool updateLinked)
 {
 	row_handle rh{ &m_category, &m_row };
-	rh.assign(m_item_ix, std::move(value), updateLinked);
+	rh.assign(m_item_ix, value, updateLinked);
 }
 
 int item_value::compare(const item_value &b, bool ignore_case) const noexcept

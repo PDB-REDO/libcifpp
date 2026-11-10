@@ -420,7 +420,7 @@ void fixNegativeSeqID(category &atom_site)
 	for (auto asym_id : atom_site.find<std::string>(key("label_seq_id") < 0, "label_asym_id"))
 		asymsWithNegativeSeqID.emplace(asym_id);
 
-	for (auto asym_id : asymsWithNegativeSeqID)
+	for (const auto& asym_id : asymsWithNegativeSeqID)
 	{
 		// create a pseudo entity_poly_seq first
 
@@ -754,7 +754,7 @@ void checkAtomAnisotropRecords(datablock &db)
 		if (VERBOSE > 0)
 			std::clog << "Dropped " << to_be_deleted.size() << " anisotrop records since they did not have exactly one parent\n";
 
-		for (auto row : to_be_deleted)
+		for (const auto& row : to_be_deleted)
 			atom_site_anisotrop.erase(row);
 	}
 }
@@ -1086,7 +1086,7 @@ void createEntityPolySeq(datablock &db)
 		}
 
 		// you cannot assume this is correct...
-		entity_poly_seq.sort([](row_handle a, row_handle b)
+		entity_poly_seq.sort([](const row_handle& a, const row_handle& b)
 			{ return a.get<int>("num") < b.get<int>("num"); });
 	}
 }
@@ -1487,7 +1487,7 @@ void reconstruct_index_for_category(const validator &validator, category &cat, d
 			// replace items that do not define a relation to a parent
 
 			std::set<std::string> replaceableKeys;
-			for (auto key : cv->m_keys)
+			for (const auto& key : cv->m_keys)
 			{
 				bool replaceable = true;
 				for (auto lv : validator.get_links_for_child(cat.name()))
@@ -1506,7 +1506,7 @@ void reconstruct_index_for_category(const validator &validator, category &cat, d
 			if (replaceableKeys.empty())
 				throw std::runtime_error("Cannot repair category " + cat.name() + " since it contains duplicate keys that cannot be replaced");
 
-			for (auto key : replaceableKeys)
+			for (const auto& key : replaceableKeys)
 			{
 				for (auto row : cat)
 					row.assign(key, cat.get_unique_value(key), false, false);
@@ -1590,7 +1590,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 
 			// Start by renaming items that may have old names based on alias info
 
-			for (auto item_name : cat.get_items())
+			for (const auto& item_name : cat.get_items())
 			{
 				auto iv = cv->get_validator_for_item(item_name);
 				if (iv) // know, must be OK then`
@@ -1645,7 +1645,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 			}
 
 			// Fill in all mandatory items
-			for (auto item : cv->m_mandatory_items)
+			for (const auto& item : cv->m_mandatory_items)
 			{
 				if (not cat.has_item(item))
 				{
@@ -1659,7 +1659,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 			}
 
 			// validate all values, and if they do not validate replace the content with an unknown flag
-			for (auto item_name : cat.get_items())
+			for (const auto& item_name : cat.get_items())
 			{
 				auto iv = cv->get_validator_for_item(item_name);
 				if (not iv)
@@ -1734,7 +1734,7 @@ bool reconstruct_pdbx(file &file, const validator &validator)
 		}
 	}
 
-	for (auto cat_name : invalidCategories)
+	for (const auto& cat_name : invalidCategories)
 	{
 		auto i = std::ranges::find_if(db, [cat_name](const category &cat)
 			{ return cat.name() == cat_name; });

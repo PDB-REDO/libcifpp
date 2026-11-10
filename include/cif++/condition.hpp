@@ -251,7 +251,7 @@ class condition
 	///
 	bool operator()(const_row_handle r) const
 	{
-		return m_impl ? m_impl->test(r) : false;
+		return m_impl ? m_impl->test(std::move(r)) : false;
 	}
 
 	///

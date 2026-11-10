@@ -541,6 +541,7 @@ std::tuple<point, float> smallest_sphere_around_points(std::vector<point> pts)
 	auto cirle_points = [&]()
 	{
 		std::vector<point> result;
+		result.reserve(cix.size());
 		for (auto ix : cix)
 			result.emplace_back(pts[ix]);
 		return result;

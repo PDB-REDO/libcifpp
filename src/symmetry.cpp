@@ -46,7 +46,10 @@
 # pragma warning(disable : 4127) // conditional expression is constant
 #endif
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-but-set-variable"
 #include <Eigen/Eigen>
+#pragma clang diagnostic pop
 
 namespace cif
 {

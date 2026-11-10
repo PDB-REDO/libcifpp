@@ -38,7 +38,10 @@
 # pragma warning(disable : 4127) // conditional expression is constant
 #endif
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-but-set-variable"
 #include <Eigen/Eigen>
+#pragma clang diagnostic pop
 
 // --------------------------------------------------------------------
 
@@ -474,9 +477,9 @@ TEST_CASE("symm_3bwh_1")
 	cif::crystal c(db);
 	cif::mm::structure s(db);
 
-	for (auto a1 : s.atoms())
+	for (const auto& a1 : s.atoms())
 	{
-		for (auto a2 : s.atoms())
+		for (const auto& a2 : s.atoms())
 		{
 			if (a1 == a2)
 				continue;

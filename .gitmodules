@@ -1,0 +1,3 @@
+[submodule "gxrio"]
+	path = gxrio
+	url = https://codeberg.org/mlhekkelman/gxrio.git

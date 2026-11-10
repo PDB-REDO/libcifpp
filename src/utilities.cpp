@@ -306,7 +306,7 @@ struct fancy_progress_bar_impl : public progress_bar_impl
 		: progress_bar_impl(max_value, message)
 		, m_thread(
 #if __cpp_lib_jthread >= 201911L
-			  [this](std::stop_token stoken)
+			  [this](const std::stop_token& stoken)
 			  { this->run(stoken); }
 #else
 			  [this]()
@@ -319,7 +319,7 @@ struct fancy_progress_bar_impl : public progress_bar_impl
 	~fancy_progress_bar_impl() override;
 
 #if __cpp_lib_jthread >= 201911L
-	void run(std::stop_token stoken);
+	void run(const std::stop_token &stoken);
 #else
 	void run();
 #endif
@@ -374,7 +374,7 @@ fancy_progress_bar_impl::~fancy_progress_bar_impl()
 }
 
 #if __cpp_lib_jthread >= 201911L
-void fancy_progress_bar_impl::run(std::stop_token stoken)
+void fancy_progress_bar_impl::run(const std::stop_token &stoken)
 #else
 void fancy_progress_bar_impl::run()
 #endif
@@ -675,7 +675,7 @@ class rsrc
 	rsrc(const rsrc &other) = default;
 	rsrc &operator=(const rsrc &other) = default;
 
-	rsrc(std::filesystem::path path);
+	rsrc(const std::filesystem::path &path);
 
 	[[nodiscard]] std::string name() const { return rsrc_data::instance().name(m_impl->m_name); }
 
@@ -753,7 +753,7 @@ class rsrc
 	const rsrc_imp *m_impl;
 };
 
-inline rsrc::rsrc(std::filesystem::path p)
+inline rsrc::rsrc(const std::filesystem::path &p)
 {
 	m_impl = rsrc_data::instance().index();
 
@@ -956,7 +956,7 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 
 	basic_istream(const basic_istream &) = delete;
 
-	basic_istream(basic_istream &&rhs)
+	basic_istream(basic_istream &&rhs) noexcept
 		: _istream_type(std::move(rhs))
 		, m_buffer(std::move(rhs.m_buffer))
 	{
@@ -965,14 +965,14 @@ class basic_istream : public std::basic_istream<CharT, Traits>
 
 	basic_istream &operator=(const basic_istream &) = delete;
 
-	basic_istream &operator=(basic_istream &&rhs)
+	basic_istream &operator=(basic_istream &&rhs) noexcept
 	{
 		_istream_type::operator=(std::move(rhs));
 		m_buffer = std::move(rhs.m_buffer);
 		return *this;
 	}
 
-	void swap(basic_istream &rhs)
+	void swap(basic_istream &rhs) noexcept
 	{
 		_istream_type::swap(rhs);
 		m_buffer.swap(rhs.m_buffer);
@@ -1003,7 +1003,7 @@ class resource_pool
 		return *s_instance;
 	}
 
-	void pushDir(fs::path dir)
+	void pushDir(const fs::path& dir)
 	{
 		std::error_code ec;
 
@@ -1017,7 +1017,7 @@ class resource_pool
 			pushDir(fs::path(path));
 	}
 
-	void pushAlias(const std::string &name, std::filesystem::path dataFile)
+	void pushAlias(const std::string &name, const std::filesystem::path& dataFile)
 	{
 		std::error_code ec;
 		if (not fs::exists(dataFile, ec) or ec)
@@ -1026,7 +1026,7 @@ class resource_pool
 		mLocalResources[name] = dataFile;
 	}
 
-	std::unique_ptr<std::istream> load(fs::path name);
+	std::unique_ptr<std::istream> load(const fs::path& name);
 
 	const auto &data_directories() { return mDirs; }
 	const auto &file_resources() { return mLocalResources; }
@@ -1087,7 +1087,7 @@ resource_pool::resource_pool()
 #endif
 }
 
-std::unique_ptr<std::istream> resource_pool::load(fs::path name)
+std::unique_ptr<std::istream> resource_pool::load(const fs::path& name)
 {
 	std::unique_ptr<std::istream> result;
 	std::error_code ec;
@@ -1120,17 +1120,17 @@ std::unique_ptr<std::istream> resource_pool::load(fs::path name)
 
 // --------------------------------------------------------------------
 
-void add_data_directory(std::filesystem::path dataDir)
+void add_data_directory(const std::filesystem::path &dataDir)
 {
 	resource_pool::instance().pushDir(dataDir);
 }
 
-void add_file_resource(const std::string &name, std::filesystem::path dataFile)
+void add_file_resource(const std::string &name, const std::filesystem::path &dataFile)
 {
 	resource_pool::instance().pushAlias(name, dataFile);
 }
 
-std::unique_ptr<std::istream> load_resource(std::filesystem::path name)
+std::unique_ptr<std::istream> load_resource(const std::filesystem::path &name)
 {
 	return resource_pool::instance().load(name);
 }

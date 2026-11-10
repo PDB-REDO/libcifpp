@@ -276,7 +276,7 @@ int connection_impl::Connect(sqlite3 *db, int argc, const char *const *argv, sql
 
 		auto &items = vtab->m_items;
 
-		for (auto item : cat->get_items())
+		for (const auto& item : cat->get_items())
 			items.emplace_back(item);
 
 		for (auto iv : cv->m_item_validators)
@@ -616,7 +616,7 @@ int connection_impl::BestIndex(sqlite3_vtab *pVtab, sqlite3_index_info *pIdxInfo
 						default:
 						{
 							std::string s = reinterpret_cast<const char *>(sqlite3_value_text(val));
-							if (s.find("\n") == std::string::npos)
+							if (s.find('\n') == std::string::npos)
 								os << std::quoted(s) << "\n";
 							else
 								result = false;
@@ -741,7 +741,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 			auto rh = p->m_cat.get_row_by_row_id(row_id);
 			if (rh.empty())
 			{
-				pVTab->zErrMsg = sqlite3_mprintf("rowid %lld not found", (long long)row_id);
+				pVTab->zErrMsg = sqlite3_mprintf("rowid %lld not found", static_cast<long long>(row_id));
 				return SQLITE_ERROR;
 			}
 
@@ -869,7 +869,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 					std::ostringstream sql;
 					sql << "UPDATE " << link->m_child_category;
 
-					for (bool first = true; auto [i, txt] : ixs)
+					for (bool first = true; const auto& [i, txt] : ixs)
 					{
 						if (not std::exchange(first, false))
 							sql << ",";
@@ -877,7 +877,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 					}
 
 					sql << " WHERE ";
-					for (bool first = true; auto [i, txt] : ixs)
+					for (bool first = true; const auto& [i, txt] : ixs)
 					{
 						if (not std::exchange(first, false))
 							sql << " AND ";
@@ -1184,12 +1184,12 @@ void transaction::rollback()
 
 result transaction::exec(std::string query)
 {
-	return m_conn.exec(query);
+	return m_conn.exec(std::move(query));
 }
 
 result transaction::exec(std::string query, std::string &tail)
 {
-	return m_conn.exec(query, tail);
+	return m_conn.exec(std::move(query), tail);
 }
 
 } // namespace cif::cql

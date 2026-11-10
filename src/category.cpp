@@ -414,7 +414,7 @@ category_index::entry *category_index::insert(category &cat, entry *h, row *v)
 		row_handle rh(&cat, v);
 
 		std::ostringstream os;
-		for (auto col : cat.key_items())
+		for (const auto& col : cat.key_items())
 		{
 			if (not rh[col].empty())
 				os << col << ": " << std::quoted(rh[col].str()) << "; ";
@@ -662,6 +662,7 @@ std::vector<std::string> category::get_items() const
 {
 	std::vector<std::string> result;
 
+	result.reserve(m_items.size());
 	for (auto &col : m_items)
 		result.emplace_back(col.m_name);
 
@@ -721,7 +722,7 @@ void category::set_validator(const validator *v, datablock &db)
 			if (not empty())
 			{
 				std::vector<uint16_t> kix;
-				for (auto k : m_cat_validator->m_keys)
+				for (const auto& k : m_cat_validator->m_keys)
 				{
 					kix.push_back(get_item_ix(k));
 					if (kix.back() >= get_item_count())
@@ -867,7 +868,7 @@ bool category::is_valid() const
 	{
 		std::set<std::string> missing;
 
-		for (auto k : m_cat_validator->m_keys)
+		for (const auto& k : m_cat_validator->m_keys)
 		{
 			if (get_item_ix(k) >= get_item_count())
 				missing.insert(k);
@@ -1010,7 +1011,7 @@ void category::strip()
 			to_be_removed.push_back(item.m_name);
 	}
 
-	for (auto item : to_be_removed)
+	for (const auto& item : to_be_removed)
 	{
 		if (VERBOSE > 0)
 			std::clog << "Dropping item " << m_name << '.' << item << '\n';
@@ -1404,7 +1405,7 @@ void category::erase_orphans(condition &&cond, category &parent)
 	}
 }
 
-std::string category::get_unique_id(std::function<std::string(int)> generator)
+std::string category::get_unique_id(const std::function<std::string(int)> &generator)
 {
 	using namespace cif::literals;
 
@@ -1611,7 +1612,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 	}
 }
 
-void category::update_value(row *row, uint16_t item, item_value value, bool updateLinked, bool validate)
+void category::update_value(row *row, uint16_t item, const item_value &value, bool updateLinked, bool validate)
 {
 	// make sure we have an index, if possible
 	if ((updateLinked or validate) and m_index == nullptr and m_cat_validator != nullptr)
@@ -2055,7 +2056,8 @@ namespace detail
 std::vector<std::string> category::get_item_order() const
 {
 	std::vector<std::string> result;
-	for (auto &c : m_items)
+	result.reserve(m_items.size());
+for (auto &c : m_items)
 		result.push_back("_" + m_name + "." + c.m_name);
 	return result;
 }

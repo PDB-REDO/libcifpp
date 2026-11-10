@@ -335,7 +335,7 @@ class compound_factory_impl : public std::enable_shared_from_this<compound_facto
 		return false;
 	}
 
-	compound *get(std::string id)
+	compound *get(const std::string& id)
 	{
 		compound *result = nullptr;
 
@@ -386,7 +386,7 @@ compound_factory_impl::compound_factory_impl(std::shared_ptr<compound_factory_im
 }
 
 compound_factory_impl::compound_factory_impl(const fs::path &file, std::shared_ptr<compound_factory_impl> next)
-	: compound_factory_impl(next)
+	: compound_factory_impl(std::move(next))
 {
 	m_file = file;
 }
@@ -496,7 +496,7 @@ class local_compound_factory_impl : public compound_factory_impl
 {
   public:
 	local_compound_factory_impl(cif::file file, shared_ptr<compound_factory_impl> next)
-		: compound_factory_impl(next)
+		: compound_factory_impl(std::move(next))
 		, m_local_file(std::move(file))
 	{
 	}

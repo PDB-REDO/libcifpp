@@ -473,7 +473,7 @@ class category
 
 	conditional_iterator_proxy<> find(iterator pos, condition &&cond)
 	{
-		return { *this, pos, std::move(cond) };
+		return { *this, std::move(pos), std::move(cond) };
 	}
 
 	/// @brief Return a special const iterator to loop over all rows that conform to @a cond
@@ -497,7 +497,7 @@ class category
 
 	const_conditional_iterator_proxy<> find(const_iterator pos, condition &&cond) const
 	{
-		return const_conditional_iterator_proxy<>{ *this, pos, std::move(cond) };
+		return const_conditional_iterator_proxy<>{ *this, std::move(pos), std::move(cond) };
 	}
 
 	/// @brief Return a special iterator to loop over all rows that conform to @a cond. The resulting
@@ -548,7 +548,7 @@ class category
 	conditional_iterator_proxy<Ts...> find(iterator pos, condition &&cond, Ns... names)
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
-		return { *this, pos, std::move(cond), std::forward<Ns>(names)... };
+		return { *this, std::move(pos), std::move(cond), std::forward<Ns>(names)... };
 	}
 
 	/// @brief Return a special const iterator to loop over all rows that conform to @a cond starting at @a pos.
@@ -564,7 +564,7 @@ class category
 	const_conditional_iterator_proxy<Ts...> find(const_iterator pos, condition &&cond, Ns... names) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Ns), "The number of item names should be equal to the number of types to return");
-		return { *this, pos, std::move(cond), std::forward<Ns>(names)... };
+		return { *this, std::move(pos), std::move(cond), std::forward<Ns>(names)... };
 	}
 
 	// --------------------------------------------------------------------
@@ -586,7 +586,7 @@ class category
 	/// @return Row handle to the row found
 	row_handle find1(iterator pos, condition &&cond)
 	{
-		auto h = find(pos, std::move(cond));
+		auto h = find(std::move(pos), std::move(cond));
 
 		if (h.size() != 1)
 			throw multiple_results_error();
@@ -610,7 +610,7 @@ class category
 	/// @return Row handle to the row found
 	const_row_handle find1(const_iterator pos, condition &&cond) const
 	{
-		auto h = find(pos, std::move(cond));
+		auto h = find(std::move(pos), std::move(cond));
 
 		if (h.size() != 1)
 			throw multiple_results_error();
@@ -662,7 +662,7 @@ class category
 	T find1(const_iterator pos, condition &&cond, std::string_view item) const
 		requires(not is_optional_v<T>)
 	{
-		auto h = find<T>(pos, std::move(cond), item);
+		auto h = find<T>(std::move(pos), std::move(cond), item);
 
 		if (h.size() != 1)
 			throw multiple_results_error();
@@ -720,7 +720,7 @@ class category
 	std::tuple<Ts...> find1(const_iterator pos, condition &&cond, Cs... items) const
 	{
 		static_assert(sizeof...(Ts) == sizeof...(Cs), "The number of item names should be equal to the number of types to return");
-		auto h = find<Ts...>(pos, std::move(cond), std::forward<Cs>(items)...);
+		auto h = find<Ts...>(std::move(pos), std::move(cond), std::forward<Cs>(items)...);
 
 		if (h.size() != 1)
 			throw multiple_results_error();
@@ -745,7 +745,7 @@ class category
 	/// @return The handle to the row that matches or an empty row_handle
 	row_handle find_first(iterator pos, condition &&cond)
 	{
-		auto h = find(pos, std::move(cond));
+		auto h = find(std::move(pos), std::move(cond));
 
 		return h.empty() ? row_handle{} : *h.begin();
 	}
@@ -764,7 +764,7 @@ class category
 	/// @return The const handle to the row that matches or an empty row_handle
 	const_row_handle find_first(const_iterator pos, condition &&cond) const
 	{
-		auto h = find(pos, std::move(cond));
+		auto h = find(std::move(pos), std::move(cond));
 
 		return h.empty() ? const_row_handle{} : *h.begin();
 	}
@@ -790,7 +790,7 @@ class category
 	template <typename T>
 	T find_first(const_iterator pos, condition &&cond, std::string_view item) const
 	{
-		auto h = find<T>(pos, std::move(cond), item);
+		auto h = find<T>(std::move(pos), std::move(cond), item);
 
 		return h.empty() ? T{} : *h.begin();
 	}
@@ -1058,7 +1058,7 @@ class category
 	/// @brief generate a new, unique ID. Pass it an ID generating function
 	/// based on a sequence number. This function will be called until the
 	/// result is unique in the context of this category
-	std::string get_unique_id(std::function<std::string(int)> generator = cif::cif_id_for_number);
+	std::string get_unique_id(const std::function<std::string(int)> &generator = cif::cif_id_for_number);
 
 	/// @brief Generate a new, unique ID based on a string prefix followed by a number
 	/// @param prefix The string prefix
@@ -1253,7 +1253,7 @@ class category
 	}
 
   private:
-	void update_value(row *row, uint16_t item, item_value value, bool updateLinked, bool validate = true);
+	void update_value(row *row, uint16_t item, const item_value &value, bool updateLinked, bool validate = true);
 
 	void erase_orphans(condition &&cond, category &parent);
 
