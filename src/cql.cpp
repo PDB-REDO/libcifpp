@@ -276,7 +276,7 @@ int connection_impl::Connect(sqlite3 *db, int argc, const char *const *argv, sql
 
 		auto &items = vtab->m_items;
 
-		for (const auto& item : cat->get_items())
+		for (const auto &item : cat->get_items())
 			items.emplace_back(item);
 
 		for (auto iv : cv->m_item_validators)
@@ -517,6 +517,29 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 					else if (m[2] == " > ")
 						cond = std::move(cond) and key(m[1]) > value;
 				}
+				else if (m[3] == "nan" or m[3] == "inf")
+					result = false;
+				else if (m[3].str().find_first_of("eE.") == std::string::npos)
+				{
+					int64_t value;
+					std::string vs = m[3];
+					const auto &[ptr, ec] = from_chars(vs.data(), vs.data() + vs.length(), value);
+					if (ec != std::errc{})
+						throw std::system_error(std::make_error_code(ec));
+					if (ptr != vs.data() + vs.length())
+						throw std::runtime_error("unexpected trailing data in number");
+
+					if (m[2] == " < ")
+						cond = std::move(cond) and key(m[1]) < value;
+					else if (m[2] == " <= ")
+						cond = std::move(cond) and key(m[1]) <= value;
+					else if (m[2] == " == ")
+						cond = std::move(cond) and key(m[1]) == value;
+					else if (m[2] == " >= ")
+						cond = std::move(cond) and key(m[1]) >= value;
+					else if (m[2] == " > ")
+						cond = std::move(cond) and key(m[1]) > value;
+				}
 				else
 				{
 					double value;
@@ -524,6 +547,8 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 					const auto &[ptr, ec] = from_chars(vs.data(), vs.data() + vs.length(), value);
 					if (ec != std::errc{})
 						throw std::system_error(std::make_error_code(ec));
+					if (ptr != vs.data() + vs.length())
+						throw std::runtime_error("unexpected trailing data in number");
 
 					if (m[2] == " < ")
 						cond = std::move(cond) and key(m[1]) < value;
@@ -574,126 +599,121 @@ int connection_impl::BestIndex(sqlite3_vtab *pVtab, sqlite3_index_info *pIdxInfo
 	try
 	{
 		std::ostringstream os;
+		std::vector<int> toOmit;
 		bool ok = true;
 
-		if (pIdxInfo->nConstraint > 0)
+		auto constraint = [&os](std::string_view item, sqlite3_value *val, unsigned char op)
 		{
-			auto constraint = [&os](std::string_view item, sqlite3_value *val, unsigned char op)
+			bool result = true;
+			switch (op)
 			{
-				bool result = true;
-				switch (op)
+				case SQLITE_INDEX_CONSTRAINT_EQ:
+					os << item << " == ";
+					break;
+				case SQLITE_INDEX_CONSTRAINT_GT:
+					os << item << " > ";
+					break;
+				case SQLITE_INDEX_CONSTRAINT_LE:
+					os << item << " <= ";
+					break;
+				case SQLITE_INDEX_CONSTRAINT_LT:
+					os << item << " < ";
+					break;
+				case SQLITE_INDEX_CONSTRAINT_GE:
+					os << item << " >= ";
+					break;
+				default:
+					result = false;
+					break;
+			}
+
+			if (result)
+			{
+				switch (sqlite3_value_type(val))
 				{
-					case SQLITE_INDEX_CONSTRAINT_EQ:
-						os << item << " == ";
+					case SQLITE_INTEGER:
+						os << sqlite3_value_int64(val) << "\n";
 						break;
-					case SQLITE_INDEX_CONSTRAINT_GT:
-						os << item << " > ";
-						break;
-					case SQLITE_INDEX_CONSTRAINT_LE:
-						os << item << " <= ";
-						break;
-					case SQLITE_INDEX_CONSTRAINT_LT:
-						os << item << " < ";
-						break;
-					case SQLITE_INDEX_CONSTRAINT_GE:
-						os << item << " >= ";
+					case SQLITE_FLOAT:
+						os << sqlite3_value_double(val) << "\n";
 						break;
 					default:
-						result = false;
-						break;
-				}
-
-				if (result)
-				{
-					switch (sqlite3_value_type(val))
 					{
-						case SQLITE_INTEGER:
-							os << sqlite3_value_int64(val) << "\n";
-							break;
-						case SQLITE_FLOAT:
-							os << sqlite3_value_double(val) << "\n";
-							break;
-						default:
+						if (auto txt = sqlite3_value_text(val))
 						{
-							std::string s = reinterpret_cast<const char *>(sqlite3_value_text(val));
+							std::string s;
+							s = reinterpret_cast<const char *>(txt);
 							if (s.find('\n') == std::string::npos)
 								os << std::quoted(s) << "\n";
 							else
 								result = false;
-							break;
-						}
-					}
-				}
-
-				return result;
-			};
-
-			for (int i = 0; ok and i < pIdxInfo->nConstraint; ++i)
-			{
-				auto &info = pIdxInfo->aConstraint[i];
-				auto item = p->m_items[info.iColumn];
-
-				sqlite3_value *pVal;
-
-				switch (info.op)
-				{
-					case SQLITE_INDEX_CONSTRAINT_EQ:
-					case SQLITE_INDEX_CONSTRAINT_GT:
-					case SQLITE_INDEX_CONSTRAINT_LE:
-					case SQLITE_INDEX_CONSTRAINT_LT:
-					case SQLITE_INDEX_CONSTRAINT_GE:
-						if (sqlite3_vtab_rhs_value(pIdxInfo, i, &pVal) == SQLITE_OK and constraint(item, pVal, info.op))
-						{
-							pIdxInfo->aConstraintUsage[i].omit = 1;
-							if (i < 63 and sqlite3_libversion_number() >= 3010000)
-								pIdxInfo->colUsed |= 1ULL << i;
 						}
 						else
-							ok = false;
+							result = false;
 						break;
-					// case SQLITE_INDEX_CONSTRAINT_MATCH:
-					// 	break;
-					// case SQLITE_INDEX_CONSTRAINT_LIKE:
-					// 	break;
-					// case SQLITE_INDEX_CONSTRAINT_GLOB:
-					// 	break;
-					// case SQLITE_INDEX_CONSTRAINT_REGEXP:
-					// 	break;
-					case SQLITE_INDEX_CONSTRAINT_NE:
-						break;
-					// case SQLITE_INDEX_CONSTRAINT_ISNOT:
-					// 	break;
-					case SQLITE_INDEX_CONSTRAINT_ISNOTNULL:
-						os << item << " IS NOT NULL\n";
-						pIdxInfo->aConstraintUsage[i].omit = 1;
-						if (i < 63 and sqlite3_libversion_number() >= 3010000)
-							pIdxInfo->colUsed |= 1ULL << i;
-						break;
-					case SQLITE_INDEX_CONSTRAINT_ISNULL:
-						os << item << " IS NULL\n";
-						pIdxInfo->aConstraintUsage[i].omit = 1;
-						if (i < 63 and sqlite3_libversion_number() >= 3010000)
-							pIdxInfo->colUsed |= 1ULL << i;
-						break;
-						// case SQLITE_INDEX_CONSTRAINT_IS:
-						// 	break;
-						// case SQLITE_INDEX_CONSTRAINT_LIMIT:
-						// 	break;
-						// case SQLITE_INDEX_CONSTRAINT_OFFSET:
-						// 	break;
-						// case SQLITE_INDEX_CONSTRAINT_FUNCTION				:
-						// 	break;
+					}
+				}
+			}
 
-					default:
+			return result;
+		};
+
+		for (int i = 0; ok and i < pIdxInfo->nConstraint; ++i)
+		{
+			auto &c = pIdxInfo->aConstraint[i];
+
+			if (not c.usable)
+				continue;
+
+			if (c.iColumn < 0)
+			{
+				ok = false;
+				break;
+			}
+
+			auto item = p->m_items[c.iColumn];
+
+			switch (c.op)
+			{
+				case SQLITE_INDEX_CONSTRAINT_EQ:
+				case SQLITE_INDEX_CONSTRAINT_GT:
+				case SQLITE_INDEX_CONSTRAINT_LE:
+				case SQLITE_INDEX_CONSTRAINT_LT:
+				case SQLITE_INDEX_CONSTRAINT_GE:
+					sqlite3_value *val;
+					if (sqlite3_vtab_rhs_value(pIdxInfo, i, &val) != SQLITE_OK ||
+						!constraint(item, val, c.op))
+					{
 						ok = false;
 						break;
-				}
+					}
+					toOmit.push_back(i);
+					break;
+
+				case SQLITE_INDEX_CONSTRAINT_ISNULL:
+					os << item << " IS NULL\n";
+					toOmit.push_back(i);
+					break;
+
+				case SQLITE_INDEX_CONSTRAINT_ISNOTNULL:
+					os << item << " IS NOT NULL\n";
+					toOmit.push_back(i);
+					break;
+
+				case SQLITE_INDEX_CONSTRAINT_NE:
+					break;
+
+				default:
+					ok = false; // LIKE/GLOB/... unsupported
+					break;
 			}
 		}
 
-		if (auto cs = os.str(); ok and not cs.empty())
+		if (auto os_s = os.str(); ok and not os_s.empty())
 		{
-			pIdxInfo->idxStr = sqlite3_mprintf("%s", cs.c_str());
+			for (int i : toOmit)
+				pIdxInfo->aConstraintUsage[i].omit = 1;
+			pIdxInfo->idxStr = sqlite3_mprintf("%s", os_s.c_str());
 			pIdxInfo->needToFreeIdxStr = 1;
 		}
 	}
@@ -869,7 +889,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 					std::ostringstream sql;
 					sql << "UPDATE " << link->m_child_category;
 
-					for (bool first = true; const auto& [i, txt] : ixs)
+					for (bool first = true; const auto &[i, txt] : ixs)
 					{
 						if (not std::exchange(first, false))
 							sql << ",";
@@ -877,7 +897,7 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 					}
 
 					sql << " WHERE ";
-					for (bool first = true; const auto& [i, txt] : ixs)
+					for (bool first = true; const auto &[i, txt] : ixs)
 					{
 						if (not std::exchange(first, false))
 							sql << " AND ";

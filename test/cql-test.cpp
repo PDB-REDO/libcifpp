@@ -614,3 +614,149 @@ _foo.notes
 	++ri;
 	CHECK((*ri)[0].get<int>() == 2);
 }
+
+// --------------------------------------------------------------------
+// Regression tests for the CQL xBestIndex planning code.
+//
+// These cover constraints that used to be mishandled:
+//  - rowid constraints have iColumn == -1 and used to index m_items[-1]
+//  - unsupported constraints (LIKE) used to leave previously set omit flags
+//    in place without producing an idxStr, so xFilter never applied them
+//  - IS NULL / IS NOT NULL were added to the omit list but not to idxStr
+// --------------------------------------------------------------------
+
+TEST_CASE("cql-best-index-rowid")
+{
+	auto f = R"(
+data_TEST
+loop_
+_t.id
+_t.name
+1 aap
+2 noot
+3 mies
+)"_cf;
+
+	cif::cql::connection connection(f.front());
+	cif::cql::transaction tx(connection);
+
+	auto rowid = tx.exec("SELECT rowid FROM t WHERE id = '2'").one_field().get<int64_t>();
+
+	auto r = tx.exec("SELECT id FROM t WHERE rowid = " + std::to_string(rowid));
+	REQUIRE(r.size() == 1);
+	CHECK(r.front()[0].get<std::string>() == "2");
+
+	r = tx.exec("SELECT id FROM t WHERE rowid >= 1 AND rowid <= 2");
+	CHECK(r.size() == 2);
+
+	// An unknown rowid must yield an empty result rather than an error or a crash.
+	r = tx.exec("SELECT id FROM t WHERE rowid = " + std::to_string(rowid + 100));
+	CHECK(r.empty());
+}
+
+TEST_CASE("cql-best-index-mixed-constraints")
+{
+	auto f = R"(
+data_TEST
+loop_
+_t.id
+_t.name
+1 aap
+2 appel
+3 noot
+)"_cf;
+
+	cif::cql::connection connection(f.front());
+	cif::cql::transaction tx(connection);
+
+	// id is handled by xBestIndex, LIKE is not. If the id constraint were
+	// marked omitted but not added to idxStr, row 2 (appel) would leak through.
+	auto r = tx.exec("SELECT id FROM t WHERE id = '1' AND name LIKE 'a%'");
+	REQUIRE(r.size() == 1);
+	CHECK(r.front()[0].get<std::string>() == "1");
+}
+
+TEST_CASE("cql-best-index-is-null")
+{
+	auto f = R"(
+data_TEST
+loop_
+_t.id
+_t.name
+1 aap
+2 .
+3 noot
+4 appel
+)"_cf;
+
+	cif::cql::connection connection(f.front());
+	cif::cql::transaction tx(connection);
+
+	auto r = tx.exec("SELECT id FROM t WHERE id >= '1' AND name IS NULL");
+	REQUIRE(r.size() == 1);
+	CHECK(r.front()[0].get<std::string>() == "2");
+
+	r = tx.exec("SELECT id FROM t WHERE id >= '1' AND name IS NOT NULL");
+	CHECK(r.size() == 3);
+
+	// The NULL test must appear in the plan. Otherwise it is omitted (SQLite
+	// may skip checking it) while xFilter never applies it.
+	auto plan = tx.exec("EXPLAIN QUERY PLAN SELECT id FROM t WHERE id >= '1' AND name IS NULL");
+	std::string detail;
+	for (auto row : plan)
+		detail += row[3].get<std::string>();
+	CHECK(detail.find("IS NULL") != std::string::npos);
+}
+
+TEST_CASE("cql-best-index-large-integers")
+{
+	cif::datablock db("TEST");
+	auto &t = db["t"];
+
+	t.emplace(cif::row_initializer{ { "id", int64_t{ 9007199254740992LL } }, { "name", "small" } });
+	t.emplace(cif::row_initializer{ { "id", int64_t{ 9007199254740993LL } }, { "name", "big" } });
+
+	cif::cql::connection connection(db);
+	cif::cql::transaction tx(connection);
+
+	// These values cannot both be represented exactly as a double.
+	auto r = tx.exec("SELECT name FROM t WHERE id = 9007199254740993");
+	REQUIRE(r.size() == 1);
+	CHECK(r.front()[0].get<std::string>() == "big");
+
+	r = tx.exec("SELECT name FROM t WHERE id = 9007199254740992");
+	REQUIRE(r.size() == 1);
+	CHECK(r.front()[0].get<std::string>() == "small");
+
+	r = tx.exec("SELECT name FROM t WHERE id > 9007199254740992");
+	REQUIRE(r.size() == 1);
+	CHECK(r.front()[0].get<std::string>() == "big");
+}
+
+TEST_CASE("cql-rowid-not-reused")
+{
+	auto f = R"(
+data_TEST
+loop_
+_t.id
+_t.name
+1 aap
+2 noot
+)"_cf;
+
+	cif::cql::connection connection(f.front());
+	cif::cql::transaction tx(connection);
+
+	auto old_rowid = tx.exec("SELECT rowid FROM t WHERE id = '1'").one_field().get<int64_t>();
+
+	(void)tx.exec("DELETE FROM t WHERE id = '1'");
+	(void)tx.exec("INSERT INTO t (id, name) VALUES ('3', 'mies')");
+
+	auto r = tx.exec("SELECT rowid FROM t WHERE id = '3'");
+	REQUIRE(r.size() == 1);
+
+	// Row ids must not be recycled: reusing the old id would make a stale
+	// rowid silently refer to a different row.
+	CHECK(r.front()[0].get<int64_t>() != old_rowid);
+	CHECK(tx.exec("SELECT id FROM t WHERE rowid = " + std::to_string(old_rowid)).empty());
+}

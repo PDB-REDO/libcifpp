@@ -1063,10 +1063,11 @@ row_handle category::get_row_by_row_id(int64_t row_id)
 {
 	if (not m_row_id_map)
 	{
-		m_row_id_map = std::make_unique<std::unordered_map<int64_t, row *>>();
-		m_row_id_map->reserve(size());
+		auto id_map = std::make_unique<std::unordered_map<int64_t, row *>>();
+		id_map->reserve(size());
 		for (auto row = m_head; row != nullptr; row = row->m_next)
-			m_row_id_map->emplace(row->m_row_id, row);
+			id_map->emplace(row->m_row_id, row);
+		m_row_id_map = std::move(id_map);
 	}
 
 	auto i = m_row_id_map->find(row_id);
@@ -1249,6 +1250,9 @@ category::iterator category::erase(iterator pos)
 		m_head = m_head->m_next;
 		r->m_next = nullptr;
 
+		if (m_tail == r)
+			m_tail = m_head;
+
 		--m_count;
 	}
 	else
@@ -1372,6 +1376,7 @@ void category::clear()
 	delete m_index;
 	m_index = nullptr;
 	m_dirty = true;
+	m_count = 0;
 }
 
 void category::erase_orphans(condition &&cond, category &parent)

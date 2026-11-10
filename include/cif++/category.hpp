@@ -1280,10 +1280,10 @@ class category
 	{
 		auto p = this->get_row();
 		row_allocator_type ra(get_allocator());
+		row_allocator_traits::construct(ra, p, m_next_row_id++);
 		
 		try
 		{
-			row_allocator_traits::construct(ra, p, m_next_row_id++);
 			if (m_row_id_map)
 				m_row_id_map->emplace(p->m_row_id, p);
 		}
