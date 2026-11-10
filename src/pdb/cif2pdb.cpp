@@ -64,7 +64,7 @@ using namespace std::literals;
 
 std::string cif2pdbDate(const std::string &d)
 {
-	const std::regex rx(R"((\d{4})-(\d{2})(?:-(\d{2}))?)");
+	const std::regex rx(R"((\d{4})-(0?[1-9]|1[0-2])(?:-(\d{2}))?)");
 	const char *kMonths[12] = {
 		"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
 	};
