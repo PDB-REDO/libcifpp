@@ -185,10 +185,15 @@ endif()
 find_package(Threads)
 
 # gxrio is a submodule from now on, only required when it is not installed already
+find_package(ZLIB REQUIRED)
+find_package(LibLZMA REQUIRED)
 find_package(gxrio 1.3.1 QUIET)
-if (NOT gxrio_FOUND)
-    add_subdirectory(gxrio)
+if(NOT gxrio_FOUND)
+    add_subdirectory(gxrio EXCLUDE_FROM_ALL)
 endif()
+
+get_target_property(GXRIO_INCLUDE_DIR gxrio::gxrio INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(GXRIO_LIBRARIES gxrio::gxrio INTERFACE_LINK_LIBRARIES)
 
 include(FindPkgConfig)
 
@@ -203,7 +208,12 @@ endif()
 # Using Eigen3 is a bit of a thing. We don't want to build it completely since
 # we only need a couple of header files. Nothing special. But often, eigen3 is
 # already installed and then we prefer that.
+
 find_package(Eigen3 3.4 QUIET)
+if(NOT Eigen3_FOUND)
+    # Eigen 5 keeps the Eigen3 package name, but rejects a 3.4 version request.
+    find_package(Eigen3 5 QUIET)
+endif()
 
 if(Eigen3_FOUND AND TARGET Eigen3::Eigen)
     get_target_property(EIGEN_INCLUDE_DIR Eigen3::Eigen
@@ -256,19 +266,19 @@ list(APPEND project_headers include/cif++/exports.hpp)
 find_package(SQLite3 QUIET)
 if(SQLite3_FOUND)
     if(TARGET SQLite3::SQLite3)
-	    target_link_libraries(cifpp PUBLIC SQLite3::SQLite3)
-    elseif (TARGET SQLite::SQLite3)
-	    target_link_libraries(cifpp PUBLIC SQLite::SQLite3)
+        target_link_libraries(cifpp PUBLIC SQLite3::SQLite3)
+    elseif(TARGET SQLite::SQLite3)
+        target_link_libraries(cifpp PUBLIC SQLite::SQLite3)
     endif()
     set(SQLITE3_DEPENDENCY "find_dependency(SQLite3 REQUIRED)")
 else()
-	FetchContent_Populate(SQLite3
-		URL https://sqlite.org/2025/sqlite-amalgamation-3510100.zip
-		URL_HASH SHA3_256=856b52ffe7383d779bb86a0ed1ddc19c41b0e5751fa14ce6312f27534e629b64
-		EXCLUDE_FROM_ALL)
+    FetchContent_Populate(SQLite3
+        URL https://sqlite.org/2025/sqlite-amalgamation-3510100.zip
+        URL_HASH SHA3_256=856b52ffe7383d779bb86a0ed1ddc19c41b0e5751fa14ce6312f27534e629b64
+        EXCLUDE_FROM_ALL)
 
-	list(APPEND project_sources $<BUILD_INTERFACE:${sqlite3_SOURCE_DIR}>/sqlite3.c)
-	target_include_directories(cifpp PRIVATE $<BUILD_INTERFACE:${sqlite3_SOURCE_DIR}>)
+    list(APPEND project_sources $<BUILD_INTERFACE:${sqlite3_SOURCE_DIR}>/sqlite3.c)
+    target_include_directories(cifpp PRIVATE $<BUILD_INTERFACE:${sqlite3_SOURCE_DIR}>)
 endif()
 
 if(TARGET my-eigen3)
@@ -281,8 +291,7 @@ target_sources(cifpp
     PUBLIC
     FILE_SET cifpp_headers TYPE HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-    FILES ${project_headers}
-)
+    FILES ${project_headers})
 
 # The code now really requires C++20
 target_compile_features(cifpp PUBLIC cxx_std_23)
@@ -300,13 +309,17 @@ target_include_directories(
     cifpp
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-    PRIVATE "${EIGEN_INCLUDE_DIR}")
+    PRIVATE "${EIGEN_INCLUDE_DIR}" "${GXRIO_INCLUDE_DIR}")
 
 target_link_libraries(cifpp
-    PUBLIC Threads::Threads gxrio::gxrio $<$<TARGET_EXISTS:std::atomic>:std::atomic>)
+    PUBLIC Threads::Threads $<$<TARGET_EXISTS:std::atomic>:std::atomic>
+    PRIVATE "${GXRIO_LIBRARIES}")
 
 if(PCRE2_FOUND)
-    target_link_libraries(cifpp PRIVATE PkgConfig::PCRE2)
+    # target_link_libraries(cifpp PRIVATE PkgConfig::PCRE2)
+    # Don't use that line above, use the primitive ones below instead
+    target_include_directories(cifpp PRIVATE ${PCRE2_INCLUDE_DIRS})
+    target_link_libraries(cifpp PRIVATE ${PCRE2_LINK_LIBRARIES})
 else()
     target_link_libraries(cifpp PRIVATE $<BUILD_INTERFACE:pcre2s>)
 endif()
@@ -314,7 +327,7 @@ endif()
 if(NOT STD_CHARCONV_COMPILING)
     get_target_property(FF_INC_DIR FastFloat::fast_float INTERFACE_INCLUDE_DIRECTORIES)
     target_include_directories(cifpp PRIVATE ${FF_INC_DIR})
-	target_compile_definitions(cifpp PRIVATE USE_FAST_FLOAT)
+    target_compile_definitions(cifpp PRIVATE USE_FAST_FLOAT)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
