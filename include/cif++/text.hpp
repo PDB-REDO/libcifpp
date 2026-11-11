@@ -81,7 +81,7 @@ void to_upper(std::string &s);
 ///
 /// Example usage:
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// std::vector<std::string> v{ "aap", "noot", "mies" };
 ///
 /// assert(cif::join(v.begin(), v.end(), ", ") == "aap, noot, mies");
@@ -120,7 +120,7 @@ std::string join(IterType b, IterType e, std::string_view sep)
 ///
 /// Example usage:
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// std::list<std::string> v{ "aap", "noot", "mies" };
 ///
 /// assert(cif::join(v, ", ") == "aap, noot, mies");
@@ -143,7 +143,7 @@ std::string join(const V &arr, std::string_view sep)
 ///
 /// Example:
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// auto v = cif::split("aap:noot,,mies", ":,", true);
 ///
 /// assert(v == std::vector{"aap", "noot", "mies"});

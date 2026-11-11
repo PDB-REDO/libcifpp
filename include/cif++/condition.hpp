@@ -56,7 +56,7 @@
 ///
 /// To create a query that simply compares one item with one value:
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// cif::condition c = cif::key("id") == 1;
 /// @endcode
 ///

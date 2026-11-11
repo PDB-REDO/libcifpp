@@ -46,8 +46,11 @@ Version 10.1.0
 - Build: gxrio is now a git submodule, or an installed package,
   and is no longer exported as a link target. zlib and liblzma
   are explicit dependencies, and the Windows and macOS builds
-  and CI were updated. The bundled gzio implementation was
-  removed.
+  and CI were updated. The Windows CI now uses vcpkg for its
+  dependencies and the workflow can be started manually. The
+  bundled gzio implementation was removed.
+- SQLite is optional at build time: a system SQLite is used when
+  available, otherwise the bundled amalgamation is compiled in.
 - Installation now uses CMAKE_INSTALL_LIBDIR for the CMake package
   files and honours a custom CIFPP_DATA_DIR.
 - Moved symop-map-generator.cpp to tools/ so it is no longer compiled
@@ -55,6 +58,9 @@ Version 10.1.0
 - Added regression tests for CQL planning and row ids,
   positional insert, remove_item/drop_empty_items and date
   conversion.
+- Cleaned up the documentation build: stale generated API files
+  are removed before Sphinx runs, Doxygen code examples use valid
+  syntax, and invalid RST references were fixed.
 
 Version 10.0.4
 - Fixed find_by_value in the index of a category,

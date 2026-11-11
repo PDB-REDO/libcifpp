@@ -35,6 +35,7 @@ jobs:
           #   os: ubuntu-26.04
           - cpp_compiler: cl
             os: windows-latest
+            preset: --preset vcpkg
           - cpp_compiler: clang++
             os: macos-latest
 
@@ -52,6 +53,13 @@ jobs:
       if: matrix.os == 'ubuntu-26.04'
       run: sudo apt-get update && sudo apt-get install mrc catch2 libsqlite3-dev ${{ matrix.cpp_compiler }} zlib1g-dev liblzma-dev
 
+    - name: Run vcpkg (Windows only)
+      if: runner.os == 'Windows'
+      uses: lukka/run-vcpkg@v11.6
+      with:
+        vcpkgDirectory: ${{ runner.workspace }}/vcpkg
+        vcpkgGitCommitId: 74e6536215718009aae747d86d84b78376bf9e09 # HEAD on 2025-10-17
+
     - name: Install dependencies Window
       if: matrix.os == 'windows-latest'
       # run: ./tools/depends.cmd
@@ -65,7 +73,7 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        cmake -B ${{ steps.strings.outputs.build-output-dir }} ${{ matrix.preset }}
         -DCIFPP_DOWNLOAD_CCD=OFF
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_BUILD_TYPE=Release
