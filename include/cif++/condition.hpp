@@ -1051,7 +1051,7 @@ condition operator<=(const key &key, const T &v)
 inline condition operator>(const key &key, std::string_view v)
 {
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_name, [item_name = key.m_item_name, v](const_row_handle r, bool icase)
+		key.m_item_name, [item_name = key.m_item_name, v = std::string(v)](const_row_handle r, bool icase)
 		{ return r[item_name].compare(v, icase) > 0; },
 		std::format(" > {}", v)));
 }
@@ -1062,7 +1062,7 @@ inline condition operator>(const key &key, std::string_view v)
 inline condition operator>=(const key &key, std::string_view v)
 {
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_name, [item_name = key.m_item_name, v](const_row_handle r, bool icase)
+		key.m_item_name, [item_name = key.m_item_name, v = std::string(v)](const_row_handle r, bool icase)
 		{ return r[item_name].compare(v, icase) >= 0; },
 		std::format(" >= {}", v)));
 }
@@ -1073,7 +1073,7 @@ inline condition operator>=(const key &key, std::string_view v)
 inline condition operator<(const key &key, std::string_view v)
 {
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_name, [item_name = key.m_item_name, v](const_row_handle r, bool icase)
+		key.m_item_name, [item_name = key.m_item_name, v = std::string(v)](const_row_handle r, bool icase)
 		{ return r[item_name].compare(v, icase) < 0; },
 		std::format(" < {}", v)));
 }
@@ -1084,7 +1084,7 @@ inline condition operator<(const key &key, std::string_view v)
 inline condition operator<=(const key &key, std::string_view v)
 {
 	return condition(new detail::key_compare_condition_impl(
-		key.m_item_name, [item_name = key.m_item_name, v](const_row_handle r, bool icase)
+		key.m_item_name, [item_name = key.m_item_name, v = std::string(v)](const_row_handle r, bool icase)
 		{ return r[item_name].compare(v, icase) <= 0; },
 		std::format(" <= {}", v)));
 }

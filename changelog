@@ -1,3 +1,49 @@
+Version 10.1.0
+- Added category::insert to insert a row before an iterator.
+  emplace still appends and keeps working as before.
+- Rows have stable, monotonically increasing ids that are never
+  reused. Added category::get_row_by_row_id, used by the SQLite
+  layer so UPDATE and DELETE can no longer target a stale or
+  recycled row.
+- Fixed CQL query planning for rowid constraints, mixed supported
+  and unsupported constraints (omitted constraints are now only
+  committed after a complete plan), IS NULL/IS NOT NULL,
+  non-finite float values, large integers and float precision.
+- Fixed CQL handling of SQL NULL values and SQLite text values.
+- category::size() is now O(1) and rows are no longer copied.
+- remove_item now keeps the category index up to date and refuses
+  to remove key items. drop_empty_items no longer removes key
+  columns.
+- Fixed get_category_items and key_items returning the wrong
+  items, condition optimiser and ownership bugs, enumeration
+  validation, and a null dereference for item validators without
+  a type.
+- Fixed dangling string_view captures in key comparison conditions
+  that could make CQL range queries return incorrect results.
+- Item values no longer store booleans.
+- Resource loading no longer searches the current working
+  directory. Registered aliases take precedence and the search
+  order now matches the documentation.
+- file::save now throws instead of silently failing when the
+  output file cannot be opened.
+- Fixed several out-of-bounds and robustness problems in, among
+  others, word wrapping, the PDBx sequence matcher, matrix
+  multiplication, symmetry operation parsing, REMARK parsing and
+  PDB name formatting.
+- cif2pdbDate now validates the month and rejects invalid dates.
+- Various PDB and reconstruction fixes, including residue::swap,
+  entity creation, branch handling and charge output.
+- Regularly used regular expressions are now compiled once
+  instead of on every call.
+- Build: gxrio is now a git submodule, or an installed package,
+  and is no longer exported as a link target. zlib and liblzma
+  are explicit dependencies, and the Windows and macOS builds
+  and CI were updated. The bundled gzio implementation was
+  removed.
+- Added regression tests for CQL planning and row ids,
+  positional insert, remove_item/drop_empty_items and date
+  conversion.
+
 Version 10.0.4
 - Fixed find_by_value in the index of a category,
   avoid swapping columns in the search keys
@@ -26,11 +72,10 @@ Version 10.0.0
   basic types.
 - Modernised code and cleaned up warnings using lint
   tools
+- Added a SQLite interface.
 
 Version 9.0.6
 - Various small fixes
-Version 10.0.0
-- Added a SQLite interface.
 
 Version 9.0.5
 - Added exists to compound_factory

@@ -1380,7 +1380,7 @@ bool Remark3Parser::parse(const std::string &expMethod, PDBRecord *r, cif::datab
 
 	line = getNextLine();
 
-	std::regex rxp(R"(^PROGRAM\s*:\s*(.+))");
+	static const std::regex rxp(R"(^PROGRAM\s*:\s*(.+))");
 	std::smatch m;
 
 	if (not std::regex_match(line, m, rxp))

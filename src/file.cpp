@@ -156,14 +156,13 @@ void file::load(std::istream &is)
 void file::save(const std::filesystem::path &p) const
 {
 	gxrio::ofstream outFile(p);
+	if (not outFile.is_open())
+		throw std::runtime_error(std::format("Could not open the file '{}' for writing", p.string()));
 	save(outFile);
 }
 
 void file::save(std::ostream &os) const
 {
-	// if (not is_valid())
-	// 	std::cout << "File is not valid!\n";
-
 	for (auto &db : *this)
 		db.write(os);
 }

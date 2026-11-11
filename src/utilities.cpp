@@ -1092,22 +1092,16 @@ std::unique_ptr<std::istream> resource_pool::load(const fs::path& name)
 	std::unique_ptr<std::istream> result;
 	std::error_code ec;
 
-	fs::path p = name;
-
 	if (mLocalResources.count(name.string()))
 		result = open(mLocalResources[name.string()]);
 
-	if (fs::exists(p, ec) and not ec)
-		result = open(p);
-
 	for (auto di = mDirs.begin(); not result and di != mDirs.end(); ++di)
 	{
-		auto p2 = *di / p;
+		auto p2 = *di / name;
 		if (fs::exists(p2, ec) and not ec)
 			result = open(p2);
 	}
 
-	// if (not result and gResourceData)
 	if (not result and (gResourceIndex[0].m_child > 0 or gResourceIndex[0].m_size > 0))
 	{
 		mrsrc::rsrc rsrc(name);

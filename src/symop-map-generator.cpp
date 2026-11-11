@@ -305,7 +305,7 @@ int main(int argc, char* const argv[])
 
 		enum class State { skip, spacegroup } state = State::skip;
 
-		const std::regex rx(R"(^symbol +(Hall|xHM|old) +'(.+?)'(?: +'(.+?)')?$)"),
+		static const std::regex rx(R"(^symbol +(Hall|xHM|old) +'(.+?)'(?: +'(.+?)')?$)"),
 			rx2(R"(symbol ccp4 (\d+))");;
 
 		SymInfoBlock cur = {};

@@ -954,7 +954,7 @@ class PDBFileParser
 	{
 		cif::trim(author);
 
-		const std::regex rx(R"(((?:[A-Z]+\.)+)(.+))");
+		static const std::regex rx(R"(((?:[A-Z]+\.)+)(.+))");
 		std::smatch m;
 		if (regex_match(author, m, rx))
 			author = m[2].str() + ", " + m[1].str();
@@ -991,7 +991,7 @@ class PDBFileParser
 
 	std::string pdb2cifCharge(std::string c)
 	{
-		std::regex rx(R"((\d+)(\+|-))");
+		static const std::regex rx(R"((\d+)(\+|-))");
 		std::smatch m;
 
 		if (std::regex_match(c, m, rx))
@@ -2004,7 +2004,7 @@ void PDBFileParser::ParseRemarks()
 
 				case 100:
 				{
-					const std::regex rx(R"(THE (\S+) ID CODE IS (\S+?)\.?\s*)");
+					static const std::regex rx(R"(THE (\S+) ID CODE IS (\S+?)\.?\s*)");
 					std::smatch m;
 					std::string r = vS(12);
 
@@ -2051,7 +2051,7 @@ void PDBFileParser::ParseRemarks()
 				{
 					std::string density_Matthews, densityPercentSol, conditions;
 
-					const std::regex rx1(R"(SOLVENT CONTENT, VS +\(%\): *(.+))"),
+					static const std::regex rx1(R"(SOLVENT CONTENT, VS +\(%\): *(.+))"),
 						rx2(R"(MATTHEWS COEFFICIENT, VM \(ANGSTROMS\*\*3/DA\): *(.+))");
 
 					std::smatch m;
@@ -2089,7 +2089,7 @@ void PDBFileParser::ParseRemarks()
 					// clang-format on
 
 					// now try to parse the conditions
-					const std::regex rx3(R"(TEMPERATURE +(\d+)K)"), rx4(R"(PH *(?:: *)?(\d+(?:\.\d+)?))") /*, rx5(R"(\b(\d+)C\b)")*/;
+					static const std::regex rx3(R"(TEMPERATURE +(\d+)K)"), rx4(R"(PH *(?:: *)?(\d+(?:\.\d+)?))") /*, rx5(R"(\b(\d+)C\b)")*/;
 
 					std::string temp, ph, method;
 
@@ -2174,7 +2174,7 @@ void PDBFileParser::ParseRemarks()
 				case 465:
 				{
 					bool headerSeen = false;
-					std::regex rx(R"( *MODELS *(\d+)-(\d+))");
+					static const std::regex rx(R"( *MODELS *(\d+)-(\d+))");
 					int models[2] = { -1, -1 };
 
 					for (; mRec->is("REMARK 465"); GetNextRecord())
@@ -2212,7 +2212,7 @@ void PDBFileParser::ParseRemarks()
 				case 470:
 				{
 					bool headerSeen = false;
-					std::regex rx(R"( *MODELS *(\d+)-(\d+))");
+					static const std::regex rx(R"( *MODELS *(\d+)-(\d+))");
 					int models[2] = { -1, -1 };
 
 					for (; mRec->is("REMARK 470"); GetNextRecord())
@@ -2693,7 +2693,7 @@ void PDBFileParser::ParseRemarks()
 
 				case 800:
 				{
-					const std::regex rx1(R"(SITE_IDENTIFIER: (.+))"),
+					static const std::regex rx1(R"(SITE_IDENTIFIER: (.+))"),
 						rx2(R"(EVIDENCE_CODE: (.+))"),
 						rx3(R"(SITE_DESCRIPTION: (binding site for residue ([[:alnum:]]{1,3}) ([[:alnum:]]) (\d+)|.+))", std::regex_constants::icase);
 
@@ -4575,7 +4575,7 @@ void PDBFileParser::ConstructEntities()
 		{
 			formula = mFormuls[cc];
 
-			const std::regex rx(R"(\d+\((.+)\))");
+			static const std::regex rx(R"(\d+\((.+)\))");
 			std::smatch m;
 			if (std::regex_match(formula, m, rx))
 				formula = m[1].str();

@@ -488,7 +488,7 @@ int connection_impl::Filter(sqlite3_vtab_cursor *pVtabCursor, int idxNum, const 
 		{
 			ispanstream is(std::span(idxStr, idxStr + strlen(idxStr)));
 
-			std::regex rx("^(.+?)( IS NULL| IS NOT NULL|(?: < | <= | == | >= | > ))(.+)?$");
+			static const std::regex rx("^(.+?)( IS NULL| IS NOT NULL|(?: < | <= | == | >= | > ))(.+)?$");
 
 			condition cond;
 			std::string line;
