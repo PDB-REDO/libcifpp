@@ -26,6 +26,8 @@ Version 10.1.0
   order now matches the documentation.
 - file::save now throws instead of silently failing when the
   output file cannot be opened.
+- Serializing a category no longer resizes rows; the write
+  functions are now const-correct.
 - Fixed several out-of-bounds and robustness problems in, among
   others, word wrapping, the PDBx sequence matcher, matrix
   multiplication, symmetry operation parsing, REMARK parsing and

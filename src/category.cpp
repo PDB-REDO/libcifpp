@@ -938,7 +938,7 @@ bool category::is_valid() const
 	// validate all values
 	mandatory = m_cat_validator->m_mandatory_items;
 
-	for (auto ri = m_head; ri != nullptr; ri = ri->m_next)
+	for (const row *ri = m_head; ri != nullptr; ri = ri->m_next)
 	{
 		for (uint16_t cix = 0; cix < get_item_count(); ++cix)
 		{
@@ -957,7 +957,7 @@ bool category::is_valid() const
 				seen = true;
 				std::error_code ec;
 
-				auto &v = *ri->get(cix);
+				const auto &v = *ri->get(cix);
 
 				iv->validate_value(v, ec);
 
@@ -2196,8 +2196,10 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 	if (empty())
 		return;
 
+	const row *head = m_head;
+
 	// If the first Row has a next, we need a loop_
-	bool needLoop = (m_head->m_next != nullptr);
+	bool needLoop = (head->m_next != nullptr);
 
 	std::vector<bool> right_aligned(get_item_count(), false);
 
@@ -2242,7 +2244,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 			itemWidths[cix] = 2;
 		}
 
-		for (auto r = m_head; r != nullptr; r = r->m_next)
+		for (const row *r = m_head; r != nullptr; r = r->m_next)
 		{
 			for (uint16_t ix = 0; static_cast<uint16_t>(ix < r->size()); ++ix)
 			{
@@ -2266,7 +2268,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 			}
 		}
 
-		for (auto r = m_head; r != nullptr; r = r->m_next) // loop over rows
+		for (const row *r = m_head; r != nullptr; r = r->m_next) // loop over rows
 		{
 			std::size_t offset = 0;
 
@@ -2330,7 +2332,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 				continue;
 
 			std::string s;
-			auto iv = m_head->get(cix);
+			auto iv = head->get(cix);
 			if (iv != nullptr)
 				s = iv->str();
 
@@ -2356,7 +2358,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 			os << col.m_name << std::string(l - col.m_name.length() - m_name.length() - 2, ' ');
 
 			std::string s;
-			auto iv = m_head->get(cix);
+			auto iv = head->get(cix);
 			if (iv != nullptr)
 				s = iv->str();
 
@@ -2370,7 +2372,7 @@ void category::write_cif(std::ostream &os, const std::vector<uint16_t> &order, b
 				offset = 0;
 			}
 
-			if (detail::write_value(os, s, offset, width, s.empty() or /* right_aligned[cix] */ iv->is_number()) != 0)
+			if (detail::write_value(os, s, offset, width, right_aligned[cix]) != 0)
 				os << '\n';
 		}
 	}
@@ -2454,7 +2456,7 @@ void category::write_delimited(std::ostream &os, const std::vector<uint16_t> &or
 			}
 		}
 
-		for (auto r = m_head; r != nullptr; r = r->m_next)
+		for (const row *r = m_head; r != nullptr; r = r->m_next)
 		{
 			for (uint16_t ix = 0; static_cast<uint16_t>(ix < r->size()); ++ix)
 			{
@@ -2515,7 +2517,7 @@ void category::write_delimited(std::ostream &os, const std::vector<uint16_t> &or
 		}
 	}
 
-	for (auto r = m_head; r != nullptr; r = r->m_next) // loop over rows
+	for (const row *r = m_head; r != nullptr; r = r->m_next) // loop over rows
 	{
 		for (bool first = true; uint16_t cix : order)
 		{
@@ -2580,7 +2582,7 @@ void category::write_markdown(std::ostream &os, const std::vector<uint16_t> &ord
 		itemWidths[cix] = col.m_name.length();
 	}
 
-	for (auto r = m_head; r != nullptr; r = r->m_next)
+	for (const row *r = m_head; r != nullptr; r = r->m_next)
 	{
 		for (uint16_t ix = 0; ix < static_cast<uint16_t>(r->size()); ++ix)
 		{
@@ -2627,7 +2629,7 @@ void category::write_markdown(std::ostream &os, const std::vector<uint16_t> &ord
 	}
 	os << " |\n";
 
-	for (auto r = m_head; r != nullptr; r = r->m_next) // loop over rows
+	for (const row *r = m_head; r != nullptr; r = r->m_next) // loop over rows
 	{
 		os << "| ";
 		for (bool first = true; uint16_t cix : order)
@@ -2711,7 +2713,7 @@ void category::write_table(std::ostream &os, const std::vector<uint16_t> &order,
 		itemWidths[cix] = col.m_name.length();
 	}
 
-	for (auto r = m_head; r != nullptr; r = r->m_next)
+	for (const row *r = m_head; r != nullptr; r = r->m_next)
 	{
 		for (uint16_t ix = 0; ix < static_cast<uint16_t>(r->size()); ++ix)
 		{
@@ -2765,7 +2767,7 @@ void category::write_table(std::ostream &os, const std::vector<uint16_t> &order,
 	}
 	os << box[5];
 
-	for (auto r = m_head; r != nullptr; r = r->m_next) // loop over rows
+	for (const row *r = m_head; r != nullptr; r = r->m_next) // loop over rows
 	{
 		os << box[9];
 		for (bool first = true; uint16_t cix : order)

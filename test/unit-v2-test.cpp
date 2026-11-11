@@ -3905,3 +3905,27 @@ _other.b
 
 	CHECK(c.size() == 2);
 }
+
+TEST_CASE("write-does-not-mutate")
+{
+	cif::category c("test");
+	c.add_item("a");
+	c.add_item("b");
+
+	// A row that only contains the first of the two known items.
+	c.emplace(cif::row_initializer{ { "a", 1 } });
+	REQUIRE(c.front().size() == 1);
+
+	std::ostringstream os;
+	c.write(os);
+	CHECK(c.front().size() == 1);
+
+	// Exercise the loop_ output path as well.
+	c.emplace(cif::row_initializer{ { "a", 2 } });
+	REQUIRE(c.front().size() == 1);
+
+	os.str({});
+	c.write(os);
+	CHECK(c.front().size() == 1);
+	CHECK(c.back().size() == 1);
+}
