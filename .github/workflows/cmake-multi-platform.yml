@@ -42,7 +42,7 @@ jobs:
 
     - name: Install dependencies Ubuntu
       if: matrix.os == 'ubuntu-26.04'
-      run: sudo apt-get update && sudo apt-get install mrc catch2 libsqlite3-dev ${{ matrix.cpp_compiler }}
+      run: sudo apt-get update && sudo apt-get install mrc catch2 libsqlite3-dev ${{ matrix.cpp_compiler }} zlib1g-dev liblzma-dev
 
     - name: Install dependencies Window
       if: matrix.os == 'windows-latest'

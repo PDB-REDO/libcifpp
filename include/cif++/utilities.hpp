@@ -35,9 +35,12 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <version>
 
 #if __has_include(<spanstream>)
 # include <spanstream>
+#else
+# include <span>
 #endif
 
 #ifndef STDOUT_FILENO
@@ -127,10 +130,10 @@ namespace colour
 
 	namespace detail
 	{
-	///
-	/// @brief Struct for coloured output strings.
-	///
-	struct coloured_string_t
+		///
+		/// @brief Struct for coloured output strings.
+		///
+		struct coloured_string_t
 		{
 			///
 			/// @brief Construct a new coloured string t object
