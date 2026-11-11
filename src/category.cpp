@@ -1669,7 +1669,7 @@ void category::update_value(const std::vector<row_handle> &rows, std::string_vie
 	}
 }
 
-void category::update_value(row *row, uint16_t item, const item_value &value, bool updateLinked, bool validate)
+void category::update_value(row *row, uint16_t item, item_value value, bool updateLinked, bool validate)
 {
 	// make sure we have an index, if possible
 	if ((updateLinked or validate) and m_index == nullptr and m_cat_validator != nullptr)
