@@ -34,6 +34,7 @@ The *CIF* and *mmCIF* were initially developed to store crystallographic informa
     cif::crystal c(db);
 
 .. _symmetry-ops:
+
 Symmetry operations
 -------------------
 

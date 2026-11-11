@@ -1260,7 +1260,7 @@ class category
 
   public:
 	/// friend function to make it possible to do:
-	/// @code {.cpp}
+	/// @code{.cpp}
 	/// std::cout << my_category;
 	/// @endcode
 	friend std::ostream &operator<<(std::ostream &os, const category &cat)

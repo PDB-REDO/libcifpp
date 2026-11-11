@@ -51,7 +51,7 @@
 /// You can access the values of stored items by name or index.
 /// The return value of operator[] is a reference to a cif::item_value object.
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// cif::category &atom_site = my_db["atom_site"];
 /// cif::row_handle rh = atom_site.front();
 ///
@@ -66,7 +66,7 @@
 /// There some template magic here to allow easy extracting of data
 /// from rows. This can be done using cif::tie e.g.:
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// std::string name;
 /// float x, y, z;
 ///
@@ -75,7 +75,7 @@
 ///
 /// However, a more modern way uses structured binding:
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// const auto &[name, x, y, z] = rh.get<std::string,float,float,float>("label_atom_id", "cartn_x", "cartn_y", "cartn_z");
 /// @endcode
 ///

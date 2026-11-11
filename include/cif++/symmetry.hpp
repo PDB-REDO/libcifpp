@@ -293,7 +293,7 @@ namespace literals
 	///
 	/// @brief This operator allows you to write code like this:
 	///
-	/// @code {.cpp}
+	/// @code{.cpp}
 	/// using namespace cif::literals;
 	///
 	/// cif::sym_op so = "1_555"_symop;

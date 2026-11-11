@@ -193,7 +193,7 @@ namespace colour
 ///
 /// Example:
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// using namespace cif::colour;
 /// std::cout << cif::coloured("Hello, world!", white, red, bold) << '\n';
 /// @endcode
@@ -225,7 +225,7 @@ inline auto coloured(T str,
 ///
 /// Using this cif::progress_bar implementation is straightforward:
 ///
-/// @code {.cpp}
+/// @code{.cpp}
 /// using namespace std::chrono_literals;
 ///
 /// cif::progress_bar pb(10, "counting to ten");
@@ -251,7 +251,7 @@ inline auto coloured(T str,
 /// like this:
 ///
 /// @code
-/// step 3           ========================--------------------------------  40% ⢁
+/// step 3           ========================--------------------------------  40% *
 /// @endcode
 ///
 /// The first characters contain the initial action name or
@@ -327,12 +327,7 @@ class progress_bar
 ///
 /// @brief Load a resource from disk or the compiled in resources
 ///
-/// @verbatim embed:rst
-/// .. note::
-///
-/// See the :doc:`documentation on resources </resources>` for more information.
-///
-/// @endverbatim
+/// @note See the [documentation on resources](https://pdb-redo.github.io/libcifpp/resources.html) for more information.
 ///
 /// @param name The named resource to load
 /// @return std::unique_ptr<std::istream> A pointer to the std::istream or empty if not found
@@ -343,12 +338,7 @@ std::unique_ptr<std::istream> load_resource(const std::filesystem::path &name);
 ///
 /// @brief Add a file specified by @a dataFile as the data for resource @a name
 ///
-/// @verbatim embed:rst
-/// .. note::
-///
-/// See the :doc:`documentation on resources </resources>` for more information.
-///
-/// @endverbatim
+/// @note See the [documentation on resources](https://pdb-redo.github.io/libcifpp/resources.html) for more information.
 ///
 /// @param name The name of the resource to specify
 /// @param dataFile Path to a file containing the data
@@ -368,12 +358,7 @@ void list_file_resources(std::ostream &os);
 /// @brief Add a directory to the list of search directories. This list is
 /// searched in a last-in-first-out order.
 ///
-/// @verbatim embed:rst
-/// .. note::
-///
-/// See the :doc:`documentation on resources </resources>` for more information.
-///
-/// @endverbatim
+/// @note See the [documentation on resources](https://pdb-redo.github.io/libcifpp/resources.html) for more information.
 ///
 
 void add_data_directory(const std::filesystem::path &dataDir);

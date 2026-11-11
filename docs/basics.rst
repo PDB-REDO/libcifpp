@@ -55,7 +55,6 @@ Now, each datablock contains categories. To print out all their names:
 
 But you probably know what category you need to use, so lets fetch it by name:
 
-.. _atom_site-label:
 .. code-block:: cpp
 
     // get a reference to the atom_site category in db
@@ -205,6 +204,8 @@ And in linked record you might have the items that have a value in both parent a
     }
     
 
+.. _validation:
+
 Validation
 ----------
 
@@ -259,7 +260,7 @@ Creating your own dictionary is a lot of work, especially if you are only extend
 
     In the example above we're loading the data using :doc:`/resources`. See the documentation on that for more information.
 
-If a validator has been assigned to a file, assignments to items are checked for valid data. So the following code will throw an exception (see: :ref:`_atom_site-label`):
+If a validator has been assigned to a file, assignments to items are checked for valid data. So the following code will throw an exception (see the atom_site example above):
 
 .. code-block:: cpp
     
@@ -269,11 +270,11 @@ If a validator has been assigned to a file, assignments to items are checked for
 Linking
 -------
 
-Based on information recorded in dictionary files (see :ref:`Validation`) you can locate linked records in parent or child categories.
+Based on information recorded in dictionary files (see :ref:`validation`) you can locate linked records in parent or child categories.
 
 To make this example not too complex, lets assume the following example file:
 
-.. code-block:: cif
+.. code-block:: text
 
     data_test
     loop_
@@ -295,7 +296,7 @@ To make this example not too complex, lets assume the following example file:
 
 And we have a dictionary containing the following link definition:
 
-.. code-block:: cif
+.. code-block:: text
 
     loop_
     _pdbx_item_linked_group_list.parent_category_id
@@ -340,9 +341,10 @@ However, changing a value in a child record will not update the parent. This may
 So you have to fix this yourself by inserting a new item in cat1 with the new value.
 
 .. _splitting-rows:
+
 Another situation is when you change a value in a parent and updating children might introduce a situation where you need to split a child. To give an example, consider this:
 
-.. code-block:: cif
+.. code-block:: text
 
     data_test
     loop_
@@ -371,7 +373,7 @@ Another situation is when you change a value in a parent and updating children m
 
 And we have a dictionary containing the following link definition (reversed compared to the previous example):
 
-.. code-block:: cif
+.. code-block:: text
 
     loop_
     _pdbx_item_linked_group_list.parent_category_id
@@ -387,7 +389,7 @@ So *cat3* is a parent of *cat2* and *cat2* is a parent of *cat1*. Now, if you ch
 
 The new *cat1* will thus be like:
 
-.. code-block:: cif
+.. code-block:: text
 
     loop_
     _cat_1.id

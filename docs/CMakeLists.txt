@@ -55,6 +55,7 @@ set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
 
 add_custom_target("Sphinx-cifpp" ALL
+    COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/api
     COMMAND ${SPHINX_EXECUTABLE} -b html
     -Dbreathe_projects.cifpp=${DOXYGEN_OUTPUT_DIR}
     ${SPHINX_SOURCE} ${SPHINX_BUILD}
