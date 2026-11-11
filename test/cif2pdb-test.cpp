@@ -46,6 +46,16 @@ TEST_CASE("cif2pdb-date")
 	CHECK(cif::pdb::cif2pdbDate("2024-12") == "DEC-24");
 	CHECK(cif::pdb::cif2pdbDate("1999-12-31") == "31-DEC-99");
 	CHECK(cif::pdb::cif2pdbDate("2000-01-01") == "01-JAN-00");
+	CHECK(cif::pdb::cif2pdbDate("2024-02-29") == "29-FEB-24");
+	CHECK(cif::pdb::cif2pdbDate("2000-02-29") == "29-FEB-00");
+
+	// Day numbers must be valid for the given month and year.
+	CHECK(cif::pdb::cif2pdbDate("2023-02-29").empty());
+	CHECK(cif::pdb::cif2pdbDate("1900-02-29").empty());
+	CHECK(cif::pdb::cif2pdbDate("2024-02-30").empty());
+	CHECK(cif::pdb::cif2pdbDate("2024-04-31").empty());
+	CHECK(cif::pdb::cif2pdbDate("2024-05-00").empty());
+	CHECK(cif::pdb::cif2pdbDate("2024-05-32").empty());
 
 	// Month numbers outside 1..12 used to index kMonths out of bounds.
 	CHECK(cif::pdb::cif2pdbDate("2024-00").empty());

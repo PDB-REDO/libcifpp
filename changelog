@@ -32,7 +32,8 @@ Version 10.1.0
   others, word wrapping, the PDBx sequence matcher, matrix
   multiplication, symmetry operation parsing, REMARK parsing and
   PDB name formatting.
-- cif2pdbDate now validates the month and rejects invalid dates.
+- cif2pdbDate now validates month and day ranges, including leap
+  years, and rejects invalid dates.
 - Various PDB and reconstruction fixes, including residue::swap,
   entity creation, branch handling and charge output.
 - Regularly used regular expressions are now compiled once

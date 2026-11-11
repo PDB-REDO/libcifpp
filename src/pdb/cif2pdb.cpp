@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cctype>
 #include <charconv>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -78,7 +79,21 @@ std::string cif2pdbDate(const std::string &d)
 		int month = std::stoi(m[2].str());
 
 		if (m[3].matched)
-			result = std::format("{:02}-{:3.3}-{:02}", stoi(m[3].str()), kMonths[month - 1], (year % 100));
+		{
+			int day = std::stoi(m[3].str());
+
+			// Check that the day is valid for this month and year (including leap years).
+			const std::chrono::year_month_day date{
+				std::chrono::year{ year },
+				std::chrono::month{ static_cast<unsigned>(month) },
+				std::chrono::day{ static_cast<unsigned>(day) }
+			};
+
+			if (not date.ok())
+				return result;
+
+			result = std::format("{:02}-{:3.3}-{:02}", day, kMonths[month - 1], (year % 100));
+		}
 		else
 			result = std::format("{:3.3}-{:02}", kMonths[month - 1], (year % 100));
 	}
