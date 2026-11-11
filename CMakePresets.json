@@ -8,6 +8,14 @@
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
-    }
+    },
+	{
+		"name": "debug",
+		"generator": "Ninja",
+		"binaryDir": "${sourceDir}/build",
+		"cacheVariables": {
+			"CMAKE_BUILD_TYPE": "Debug"
+		}
+	}
   ]
 }

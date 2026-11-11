@@ -1270,7 +1270,7 @@ class category
 	}
 
   private:
-	void update_value(row *row, uint16_t item, const item_value &value, bool updateLinked, bool validate = true);
+	void update_value(row *row, uint16_t item, item_value value, bool updateLinked, bool validate = true);
 
 	void erase_orphans(condition &&cond, category &parent);
 
