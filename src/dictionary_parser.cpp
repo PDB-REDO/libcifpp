@@ -296,8 +296,8 @@ class dictionary_parser : public parser
 				ess.insert(e["value"].get<std::string>());
 
 			std::string defaultValue;
-			if (auto &cat = dict["item_default"]; not cat.empty())
-				defaultValue = cat.front().get<std::string>("value");
+			if (auto &cat1 = dict["item_default"]; not cat1.empty())
+				defaultValue = cat1.front().get<std::string>("value");
 			// bool defaultIsNull = false;
 			// if (defaultValue.empty())
 			// {

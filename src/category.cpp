@@ -799,14 +799,14 @@ void category::set_validator(const validator *v, datablock &db)
 						if (cix >= row->size() or row->operator[](cix).empty())
 							continue;
 
-						item_value &v = row->operator[](cix);
-						if (not v.is_number())
+						item_value &v1 = row->operator[](cix);
+						if (not v1.is_number())
 						{
 							// Try cast the value to a number and throw in case of failure
-							if (auto sv = v.sv(); sv.find_first_of(".eE") == std::string_view::npos)
-								v.cast_to_int();
+							if (auto sv = v1.sv(); sv.find_first_of(".eE") == std::string_view::npos)
+								v1.cast_to_int();
 							else
-								v.cast_to_float();
+								v1.cast_to_float();
 						}
 					}
 				}
@@ -817,9 +817,9 @@ void category::set_validator(const validator *v, datablock &db)
 						if (cix >= row->size() or row->operator[](cix).empty())
 							continue;
 
-						item_value &v = row->operator[](cix);
-						if (v.is_number())
-							v = v.str();
+						item_value &v2 = row->operator[](cix);
+						if (v2.is_number())
+							v2 = v2.str();
 					}
 				}
 			}

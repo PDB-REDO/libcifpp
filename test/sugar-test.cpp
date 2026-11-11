@@ -175,5 +175,5 @@ TEST_CASE("delete_sugar_1")
 
 	cif::mm::structure s2(file);
 
-	file.save("/tmp/min-s.cif");
+	// file.save("/tmp/min-s.cif");
 }

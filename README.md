@@ -1,4 +1,4 @@
-[![github CI](https://github.com/pdb-redo/libcifpp/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/pdb-redo/libcifpp/actions)
+con[![github CI](https://github.com/pdb-redo/libcifpp/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/pdb-redo/libcifpp/actions)
 [![GitHub License](https://img.shields.io/github/license/pdb-redo/libcifpp)](https://github.com/pdb-redo/libcifpp/LICENSE)
 
 # libcifpp
