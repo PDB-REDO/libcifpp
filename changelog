@@ -18,6 +18,9 @@ Version 10.1.0
   items, condition optimiser and ownership bugs, enumeration
   validation, and a null dereference for item validators without
   a type.
+- Validators are now move-only and item validators are stored in
+  a deque, so copying a validator is prevented and extending one
+  no longer invalidates pointers cached by categories.
 - Fixed dangling string_view captures in key comparison conditions
   that could make CQL range queries return incorrect results.
 - Item values no longer store booleans.

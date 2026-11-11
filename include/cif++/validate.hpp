@@ -31,6 +31,7 @@
 #include "cif++/text.hpp"
 
 #include <cassert>
+#include <deque>
 #include <iosfwd>
 #include <memory>
 #include <mutex>
@@ -291,7 +292,7 @@ struct category_validator
 	std::vector<std::string> m_keys;               ///< The list of items that make up the key
 	cif::iset m_groups;                            ///< The category groups this category belongs to
 	cif::iset m_mandatory_items;                   ///< The mandatory items for this category
-	std::vector<item_validator> m_item_validators; ///< The item validators for the items in this category
+	std::deque<item_validator> m_item_validators; ///< The item validators for the items in this category
 
 	/// @brief return true if this category sorts before @a rhs
 	bool operator<(const category_validator &rhs) const
@@ -361,8 +362,10 @@ class validator
 	/// @brief destructor
 	~validator() = default;
 
-	/// default copy constructor
-	validator(const validator &rhs) = default;
+	/// Validators are move-only: item validators contain pointers into the
+	/// validator's type table, so copying would leave dangling pointers.
+	validator(const validator &rhs) = delete;
+	validator &operator=(const validator &rhs) = delete;
 
 	/// @brief move constructor
 	validator(validator &&rhs) noexcept
@@ -370,8 +373,8 @@ class validator
 		swap(*this, rhs);
 	}
 
-	/// default copy assignment
-	validator &operator=(validator rhs)
+	/// @brief move assignment
+	validator &operator=(validator &&rhs) noexcept
 	{
 		swap(*this, rhs);
 		return *this;

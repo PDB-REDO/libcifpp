@@ -34,6 +34,7 @@
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 
 // --------------------------------------------------------------------
 
@@ -3965,4 +3966,95 @@ TEST_CASE("bulk-erase")
 	// Erase the last remaining row.
 	CHECK(c.erase(cif::key("id") >= 0) == 1);
 	CHECK(c.empty());
+}
+TEST_CASE("validator-move-only-and-extension")
+{
+	static_assert(not std::is_copy_constructible_v<cif::validator>);
+	static_assert(not std::is_copy_assignable_v<cif::validator>);
+	static_assert(std::is_move_constructible_v<cif::validator>);
+
+	const char *baseDict = R"(
+data_base.dic
+
+_datablock.id            base.dic
+_dictionary.title        base.dic
+_dictionary.datablock_id base.dic
+_dictionary.version      1.0
+
+loop_
+_item_type_list.code
+_item_type_list.primitive_code
+_item_type_list.construct
+int   numb  '[-+]?[0-9]+'
+text  char  '.*'
+
+save_foo
+   _category.id              foo
+   _category.mandatory_code  no
+   _category_key.name        '_foo.id'
+   save_
+
+save__foo.id
+	_item.name                  '_foo.id'
+	_item.category_id           foo
+	_item.mandatory_code        no
+	_item_type.code             int
+	save_
+)";
+
+	std::istringstream baseIs(baseDict);
+	cif::validator validator(baseIs);
+
+	auto f = R"(
+data_TEST
+loop_
+_foo.id
+1
+2
+3
+)"_cf;
+
+	auto &db = f.front();
+	db.set_validator(&validator);
+
+	auto &cat = db["foo"];
+	CHECK(cat.size() == 3);
+	CHECK(cat.is_valid());
+
+	std::string extension = R"(
+data_ext.dic
+
+_datablock.id            ext.dic
+_dictionary.title        ext.dic
+_dictionary.datablock_id ext.dic
+_dictionary.version      1.0
+
+loop_
+_item_type_list.code
+_item_type_list.primitive_code
+_item_type_list.construct
+text  char  '.*'
+)";
+
+	for (int i = 1; i <= 8; ++i)
+	{
+		auto suffix = std::to_string(i);
+		extension += "save__foo.extra" + suffix + "\n";
+		extension += "\t_item.name                  '_foo.extra" + suffix + "'\n";
+		extension += "\t_item.category_id           foo\n";
+		extension += "\t_item.mandatory_code        no\n";
+		extension += "\t_item_type.code             text\n";
+		extension += "\tsave_\n\n";
+	}
+
+	std::istringstream extIs(extension);
+	validator.parse(extIs);
+
+	// Extending the validator must not invalidate the pointers cached by cat.
+	CHECK(cat.is_valid());
+	CHECK(db.is_valid());
+
+	auto *cv = validator.get_validator_for_category("foo");
+	REQUIRE(cv != nullptr);
+	CHECK(cv->get_validator_for_item("extra8") != nullptr);
 }

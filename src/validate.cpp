@@ -422,7 +422,7 @@ void validator::parse(std::istream &is)
 
 void validator::add_type_validator(type_validator &&v)
 {
-	m_type_validators.emplace(v);
+	m_type_validators.emplace(std::move(v));
 }
 
 const type_validator *validator::get_validator_for_type(std::string_view typeCode) const
@@ -437,7 +437,7 @@ const type_validator *validator::get_validator_for_type(std::string_view typeCod
 
 void validator::add_category_validator(category_validator &&v)
 {
-	m_category_validators.emplace(v);
+	m_category_validators.emplace(std::move(v));
 }
 
 const category_validator *validator::get_validator_for_category(std::string_view category) const
