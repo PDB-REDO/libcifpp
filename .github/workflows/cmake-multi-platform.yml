@@ -63,7 +63,7 @@ jobs:
     - name: Install dependencies Window
       if: matrix.os == 'windows-latest'
       # run: ./tools/depends.cmd
-      run: ${{ github.workspace }}/vcpkg/vcpkg install
+      run: vcpkg install
       shell: cmd
 
     - name: Install Catch2 macOS
