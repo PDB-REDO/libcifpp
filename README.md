@@ -4,10 +4,10 @@
 # libcifpp
 
 As the name implies, this library was originally written to work with mmCIF files
-using C++ as programming language. The design of this library leanes heavily on
+using C++ as programming language. The design of this library leans heavily on
 the structure of CIF files. These files can be thought of as a text dump of a
 relational databank with, often but not always, a very strict schema describing
-the data. These schema's are called dictionaries.
+the data. These schemas are called dictionaries.
 
 Using information from the content of a mmCIF file and an optional schema,
 libcifpp allows you to access the data in the file as a collection of datablock
@@ -33,8 +33,9 @@ The documentation can be found at [github.io](https://pdb-redo.github.io/libcifp
 ## Synopsis
 
 ```cpp
-// A simple program counting residues with an OXT atom
+// A simple program counting atoms with an OXT atom
 
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 
@@ -93,7 +94,7 @@ carefully.
 
 The code for this library was written in C++23. You therefore need a
 recent compiler to build it. For the development gcc >= 15 and clang >= 20
-have been used as well as MSVC version 2019.
+have been used as well as MSVC 2022.
 
 The other requirement you really need to have installed on your computer
 is a version of [CMake](https://cmake.org). For now the minimum version
@@ -107,23 +108,32 @@ using the ELF executable format (i.e. Linux or FreeBSD). MRC is a resource
 compiler that allows including data files into the executable making them
 easier to install.
 
-Other libraries you might want to install beforehand are:
+Libraries you may need to install beforehand are:
 
-- [libeigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a
-  library to do amongst others matrix calculations. This usually can be
-  installed using your package manager, in Debian/Ubuntu it is called
-  `libeigen3-dev`
+- [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), a
+  library to do amongst others matrix calculations (optional, can be
+  downloaded by CMake). This usually can be installed using your package
+  manager; in Debian/Ubuntu it is called `libeigen3-dev`
 - [zlib](https://github.com/madler/zlib), the development version of this
   library. On Debian/Ubuntu this is the package `zlib1g-dev`.
+- [liblzma](https://tukaani.org/xz/), the LZMA compression library.
+  On Debian/Ubuntu this is the package `liblzma-dev`.
 - [pcre2](https://www.pcre.org/), the Perl Compatible Regular Expression
-  library. On Debian/Ubuntu this is the package `libpcre2-dev`.
+  library (optional; a bundled fallback is used when not found). On
+  Debian/Ubuntu this is the package `libpcre2-dev`.
+
+The [gxrio](https://github.com/mhekkel/libgxrio) library is used for
+compressed input and output. It is included as a git submodule; when
+building from a git checkout use `git clone --recursive` or run
+`git submodule update --init`. If gxrio is installed on your system it
+will be used instead.
 
 ### Building
 
 First you need to download the code:
 
 ```console
- git clone https://github.com/PDB-REDO/libcifpp.git
+ git clone --recursive https://github.com/PDB-REDO/libcifpp.git
  cd libcifpp
 ```
 

@@ -38,18 +38,18 @@ The *CIF* and *mmCIF* were initially developed to store crystallographic informa
 Symmetry operations
 -------------------
 
-Each basic symmetry operation in the crystallographic world consists of a matrix multiplication followed by a translation. To apply such an operation on a carthesian coordinate you first have to convert the point into a fractional coordinate with respect to the unit cell of the crystal, then apply the matrix and translation operations and then convert the result back into carthesian coordinates. This is all done by the proper routines in *libcifpp*.
+Each basic symmetry operation in the crystallographic world consists of a matrix multiplication followed by a translation. To apply such an operation on a Cartesian coordinate you first have to convert the point into a fractional coordinate with respect to the unit cell of the crystal, then apply the matrix and translation operations and then convert the result back into Cartesian coordinates. This is all done by the proper routines in *libcifpp*.
 
 Symmetry operations are encoded as a string in *mmCIF* PDBx files. The format is a string with the rotational number followed by an underscore and then the encoded translation in each direction where 5 means no translation. So, the identity operator is ``1_555`` meaning that we have rotational number 1 (which is always the identity rotation, point multiplied with the identity matrix) and a translation of zero in each direction.
 
-To give an idea how this works, here's a piece of code copied from one of the unit tests in *libcifpp*. It takes the *struct_conn* records in a certain PDB file and checks wether the distances in each row correspond to what we can calculate.
+To give an idea how this works, here's a piece of code adapted from one of the unit tests in *libcifpp*. It takes the *struct_conn* records in a certain PDB file and checks whether the distances in each row correspond to what we can calculate.
 
 .. code:: cpp
 
     using namespace cif::literals;
 
     // Load the file
-    cif::file f(gTestDir / "2bi3.cif.gz");
+    cif::file f("2bi3.cif.gz");
 
     // Simply assume we can use the first datablock
     auto &db = f.front();
@@ -92,18 +92,18 @@ To give an idea how this works, here's a piece of code copied from one of the un
         auto sa2 = c.symmetry_copy(p2, cif::sym_op(symm2));
 
         // The distance between these symmetry atoms should be equal to the distance in the struct_conn record
-        assert(cif::distance(sa1, sa2) == dist);
+        assert(std::abs(cif::distance(sa1, sa2) - dist) < 1e-4f);
 
         // And to show how you can obtain the closest symmetry copy of an atom near another one:
         // here we request the symmetry copy of p2 that lies closest to p1
         const auto &[d, p, so] = c.closest_symmetry_copy(p1, p2);
 
         // And that should of course be equal to the location in struct_conn for p2
-        assert(p.m_x == sa2.m_x);
-        assert(p.m_y == sa2.m_y);
-        assert(p.m_z == sa2.m_z);
+        assert(std::abs(p.m_x - sa2.m_x) < 1e-4f);
+        assert(std::abs(p.m_y - sa2.m_y) < 1e-4f);
+        assert(std::abs(p.m_z - sa2.m_z) < 1e-4f);
 
         // Distance and symmetry operator string should also be the same
-        assert(d == dist);
+        assert(std::abs(d - dist) < 1e-4f);
         assert(so.string() == symm2);
     }

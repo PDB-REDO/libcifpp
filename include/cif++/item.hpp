@@ -164,8 +164,8 @@ class item_value
 
 	/// Construct an item_value containing the string @a s
 	template <size_t N>
-	item_value(const char(s)[N])
-		: item_value(std::string_view{ s, N })
+	item_value(const char (&s)[N])
+		: item_value(std::string_view{ s, N - 1 })
 	{
 	}
 

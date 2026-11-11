@@ -11,9 +11,9 @@ Reading a file is as simple as:
 
     cif::file f("/path/to/file.cif");
 
-The file may also be compressed using *gzip* which is detected automatically.
+The file may also be compressed using *gzip*, *xz* or *lzma*; this is detected automatically.
 
-Writing out the file again is also simple, to write out the terminal you can do:
+Writing out the file again is also simple. To write it to the terminal you can do:
 
 .. code-block:: cpp
 
@@ -22,7 +22,7 @@ Writing out the file again is also simple, to write out the terminal you can do:
     // or
     f.save(std::cout);
 
-    // or write a compressed file using gzip compression:
+    // or write a compressed file (the extension selects gzip or xz compression):
     f.save("/tmp/f.cif.gz");
 
 CIF files contain one or more datablocks. To print out the names of all datablocks in our file:
@@ -77,11 +77,28 @@ Categories contain rows of data and each row has fields or items. Referencing a 
     // Get the label_atom_id value from this row handle as a std::string
     std::string atom_id = rh["label_atom_id"].get<std::string>();
 
-    // Get the x, y and z coordinates using structered binding
+    // Get the x, y and z coordinates using structured binding
     const auto &[x, y, z] = rh.get<float,float,float>("Cartn_x", "Cartn_y", "Cartn_z");
 
-    // Assign a new value to the x coordinate or our atom
+    // Assign a new value to the x coordinate of our atom
     rh["Cartn_x"] = x + 1;
+
+Adding and inserting rows
+-------------------------
+
+New rows can be appended with :cpp:func:`cif::category::emplace` or inserted
+before an existing row with :cpp:func:`cif::category::insert`:
+
+.. code-block:: cpp
+
+    cif::category c("test");
+
+    // append a row
+    c.emplace(cif::row_initializer{ { "id", 1 }, { "name", "aap" } });
+
+    // insert a row before the first row
+    auto inserted = c.insert(c.begin(),
+        cif::row_initializer{ { "id", 0 }, { "name", "noot" } });
 
 Querying
 --------
@@ -94,7 +111,7 @@ What these functions have in common is that they return data based on a query im
 
     cif::condition c = cif::key("id") == 1;
 
-Here the condition is that all rows returned should have a value of 1 in there item named *id*. Likewise you can use other data types and even combine those. Oh, and I said we use regular C++ syntax for conditions, so you may as well use other operators to compare values:
+Here the condition is that all rows returned should have a value of 1 in their item named *id*. Likewise you can use other data types and even combine those. Oh, and I said we use regular C++ syntax for conditions, so you may as well use other operators to compare values:
 
 .. code-block:: cpp
 
@@ -125,11 +142,11 @@ Using queries constructed in this way is simple:
 
 .. code-block:: cpp
 
-    cif::condition c = ...
+    cif::condition c = "label_atom_id"_key == "CA";
     auto result = atom_site.find(std::move(c));
 
     // or construct a condition inline:
-    auto result = atom_site.find("label_atom_id"_key == "CA");
+    auto result2 = atom_site.find("label_atom_id"_key == "CA");
 
 In the example above the result is a range of :cpp:class:`cif::row_handle` objects. Often, using individual field values is more useful:
 
@@ -143,10 +160,10 @@ In the example above the result is a range of :cpp:class:`cif::row_handle` objec
     for (const auto &[id, x, y, z] : atom_site.find<std::string,float,float,float>("label_atom_id"_key == "CA",
             "id", "Cartn_x", "Cartn_y", "Cartn_z"))
     {
-        std::cout << "Atom " << id << " is at [" << x << ", " << y << ", " z << "]\n";
+        std::cout << "Atom " << id << " is at [" << x << ", " << y << ", " << z << "]\n";
     }
 
-Returning a complete set if often not required, if you only want to have the first you can use :cpp:func:`cif::category::find_first` as shown here:
+Returning a complete set is often not required. If you only want the first match you can use :cpp:func:`cif::category::find_first` as shown here:
 
 .. code-block:: cpp
 
@@ -156,7 +173,7 @@ Returning a complete set if often not required, if you only want to have the fir
     // If you're not sure the row exists, use std::optional
     auto v2 = atom_site.find_first<std::optional<std::string>>("label_atom_id"_key == "CA", "id");
     if (v2.has_value())
-        ...
+        std::cout << "ID for CA: " << *v2 << '\n';
 
 There are cases when you really need exactly one result. The :cpp:func:`cif::category::find1` can be used in that case, it will throw an exception if the query does not result in exactly one row.
 
@@ -193,7 +210,7 @@ And in linked record you might have the items that have a value in both parent a
     // Note that the label_seq_id is returned as a std::optional<int>
     // That means it may contain an integer or may be empty
     for (const auto &[asym1, seqid1, authseqid1, atomid1] :
-        struct_conn.rows<std::string,std::optional<int>,std::string,std::string,std::string>(
+        struct_conn.rows<std::string,std::optional<int>,std::string,std::string>(
             "ptnr1_label_asym_id", "ptnr1_label_seq_id", "ptnr1_auth_seq_id", "ptnr1_label_atom_id"
         ))
     {
@@ -218,27 +235,37 @@ A simple case:
     #include <cif++/cif++.hpp>
 
     cif::file f("1cbs.cif.gz");
-    f.load_dictionary("mmcif_pdbx.dic");
+    f.front().load_dictionary("mmcif_pdbx.dic");
 
     if (not f.is_valid())
         std::cout << "This file is not valid\n";
 
-If you want to know why it is not valid, you should set the global variable :cpp:var:`cif::VERBOSE` to something higer than zero. Depending on the value more or less diagnostic output is sent to std::cerr.
+If you want to know why it is not valid, you should set the global variable :cpp:var:`cif::VERBOSE` to something higher than zero. Depending on the value more or less diagnostic output is sent to std::cerr.
+
+Validation problems are also available programmatically. The validator reports them using the error codes in :cpp:enum:`cif::validation_error`, and APIs that cannot continue throw a :cpp:class:`cif::validation_exception`:
+
+.. code-block:: cpp
+
+    try
+    {
+        // ...
+    }
+    catch (const cif::validation_exception &ex)
+    {
+        std::cerr << ex.what() << '\n';
+    }
 
 In the case above we load a dictionary based on its name. You can of course also load dictionaries based on a specific file, that's a bit more work:
 
 .. code-block:: cpp
 
-    std::filesystem::ifstream dictFile("/tmp/my-dictionary.dic");
-    auto &validator = cif::parse_dictionary("my-dictionary", dictFile);
+    std::ifstream dictFile("/tmp/my-dictionary.dic");
+    cif::validator validator(dictFile);
 
     cif::file f("1cbs.cif.gz");
 
-    // assign the validator
-    f.set_validator(&validator);
-
-    // alternatively, load it by name
-    f.load_dictionary("my-dictionary");
+    // assign the validator to the datablock
+    f.front().set_validator(&validator);
 
     if (not f.is_valid())
         std::cout << "This file is not valid\n";
@@ -253,14 +280,14 @@ Creating your own dictionary is a lot of work, especially if you are only extend
     {
         auto dssp_extension = cif::load_resource("dssp-extension.dic");
         if (dssp_extension)
-            cif::extend_dictionary(validator, *dssp_extension);
+            cif::parse_dictionary(validator, *dssp_extension);
     }
 
 .. note::
 
     In the example above we're loading the data using :doc:`/resources`. See the documentation on that for more information.
 
-If a validator has been assigned to a file, assignments to items are checked for valid data. So the following code will throw an exception (see the atom_site example above):
+If a validator has been assigned to a datablock, assignments to items are checked for valid data. So the following code will throw an exception (see the atom_site example above):
 
 .. code-block:: cpp
     
@@ -313,9 +340,8 @@ So, there are links between *cat_1* and *cat_2* based on the value in items name
     // Assuming the file was loaded in f:
     auto &cat1 = f.front()["cat_1"];
     auto &cat2 = f.front()["cat_2"];
-    auto &cat3 = f.front()["cat_3"];
 
-    // Loop over all ape's in cat2
+    // Loop over all children of the 'aap' row in cat2
     for (auto r : cat1.get_children(cat1.find1("name"_key == "aap"), cat2))
         std::cout << r.get<std::string>("desc") << '\n';
 
@@ -338,7 +364,7 @@ However, changing a value in a child record will not update the parent. This may
 
     assert(f.is_valid() == false);
 
-So you have to fix this yourself by inserting a new item in cat1 with the new value.
+So you have to fix this yourself by inserting a new row in cat1 with the new value.
 
 .. _splitting-rows:
 

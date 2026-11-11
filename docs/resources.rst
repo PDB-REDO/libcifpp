@@ -1,15 +1,15 @@
 Resources
 =========
 
-Programs using libcifpp often need access to common data files. E.g. CIF dictionary files, CCP4 monomer restraints files or the CCD data file. In libcifpp these files are called resources. These files are often also based on external sources that are updated on a regular basis.
+Programs using libcifpp often need access to common data files, e.g. CIF dictionary files, the CCD data file or other data files. In libcifpp these files are called resources. These files are often based on external sources that are updated on a regular basis.
 
 Resources can be compiled into the executable so that the resulting
 application can be made portable to other machines. For this you
 need to use `mrc <https://github.com/mhekkel/mrc.git>`_ which only works
-on Un*x like systems using the ELF executable format or on MS Windows
+on Un*x like systems using the ELF executable format or on MS Windows.
 
-But resources may also be located as files on the filesytem at
-specific locations. And you can specify your own location for
+But resources may also be located as files on the filesystem at
+specific locations. You can specify your own location for
 files (a directory) or even override named resources with your
 own data.
 
@@ -42,6 +42,16 @@ The order in which resources are searched for is:
   at compile time, also based on the installation directory
   of libcifpp. It usually is */usr/share/libcifpp*
 
+* On systems with a */proc* filesystem, a directory next to the
+  executable is tried as well: ``<prefix>/share/libcifpp`` relative
+  to the directory containing the executable.
+
 * As a last resort an attempt is made to load the data from
   resources compiled by `mrc <https://github.com/mhekkel/mrc.git>`_.
+
+Bare resource names are *not* resolved against the current working
+directory. To load a file from an arbitrary location, pass an absolute
+path to :cpp:func:`cif::load_resource` or register it with
+:cpp:func:`cif::add_file_resource` (or its directory with
+:cpp:func:`cif::add_data_directory`).
 

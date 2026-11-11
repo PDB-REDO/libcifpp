@@ -18,7 +18,7 @@ The main part of the library is a set of classes that work with mmCIF files. The
 * :cpp:class:`cif::datablock`
 * :cpp:class:`cif::category`
 
-The :cpp:class:`cif::file` class encapsulates the contents of a mmCIF file. In such a file there are one or more :cpp:class:`cif::datablock` objects and each datablock contains one or more :cpp:class:`cif::category` objects.
+The :cpp:class:`cif::file` class encapsulates the contents of a mmCIF file. In such a file there are one or more :cpp:class:`cif::datablock` objects and each datablock contains one or more :cpp:class:`cif::category` objects. Categories contain :cpp:class:`cif::row_handle` rows of :cpp:class:`cif::item_value` items, and queries are built with :cpp:class:`cif::condition`. On top of that, :cpp:class:`cif::mm::structure` provides a higher level model for molecular structures and CQL exposes the data through SQLite.
 
 Synopsis
 --------
@@ -35,12 +35,15 @@ Using *libcifpp* is easy, if you are familiar with modern C++:
    :caption: Contents
 
    self
+   installation.rst
    basics.rst
+   pdb.rst
    compound.rst
    model.rst
    cql.rst
    resources.rst
    symmetry.rst
+   threading.rst
    bitsandpieces.rst
    api/library_root.rst
    genindex.rst

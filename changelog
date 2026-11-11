@@ -60,7 +60,12 @@ Version 10.1.0
   conversion.
 - Cleaned up the documentation build: stale generated API files
   are removed before Sphinx runs, Doxygen code examples use valid
-  syntax, and invalid RST references were fixed.
+  syntax, invalid RST references were fixed, and non-compiling
+  examples were corrected.
+- Updated the documentation content: corrected the compound factory
+  and resource lookup descriptions, added installation, PDB I/O and
+  thread-safety chapters, and documented category insertion, row ids
+  and validation errors.
 
 Version 10.0.4
 - Fixed find_by_value in the index of a category,

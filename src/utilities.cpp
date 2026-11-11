@@ -1014,7 +1014,7 @@ class resource_pool
   private:
 	resource_pool();
 
-	std::unique_ptr<std::ifstream> open(fs::path &p)
+	std::unique_ptr<std::ifstream> open(const fs::path &p)
 	{
 		std::unique_ptr<std::ifstream> result;
 
@@ -1087,6 +1087,12 @@ std::unique_ptr<std::istream> resource_pool::load(const fs::path& name)
 
 	if (not alias.empty())
 		result = open(alias);
+
+	// An explicit path (absolute, or containing a directory separator)
+	// is opened as-is. Bare resource names are only searched in the
+	// configured directories.
+	if (not result and (name.is_absolute() or name.has_parent_path()))
+		result = open(name);
 
 	for (auto &dir : dirs)
 	{
