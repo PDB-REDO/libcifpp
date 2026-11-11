@@ -3929,3 +3929,40 @@ TEST_CASE("write-does-not-mutate")
 	CHECK(c.front().size() == 1);
 	CHECK(c.back().size() == 1);
 }
+
+TEST_CASE("bulk-erase")
+{
+	cif::category c("test");
+	for (int i = 1; i <= 10; ++i)
+		c.emplace(cif::row_initializer{ { "id", i } });
+
+	auto order = [&c]()
+	{
+		std::string result;
+		for (auto r : c)
+		{
+			if (not result.empty())
+				result += ',';
+			result += r["id"].str();
+		}
+		return result;
+	};
+
+	CHECK(order() == "1,2,3,4,5,6,7,8,9,10");
+
+	// Erase a block in the middle.
+	CHECK(c.erase(cif::key("id") >= 4 and cif::key("id") <= 7) == 4);
+	CHECK(order() == "1,2,3,8,9,10");
+
+	// Erase the head.
+	CHECK(c.erase(cif::key("id") <= 3) == 3);
+	CHECK(order() == "8,9,10");
+
+	// Erase the tail.
+	CHECK(c.erase(cif::key("id") >= 9) == 2);
+	CHECK(order() == "8");
+
+	// Erase the last remaining row.
+	CHECK(c.erase(cif::key("id") >= 0) == 1);
+	CHECK(c.empty());
+}

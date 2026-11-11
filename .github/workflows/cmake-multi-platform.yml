@@ -23,9 +23,9 @@ jobs:
 
       matrix:
         include:
-          - cpp_compiler: -DCMAKE_CXX_COMPILER=g++-15
+          - cpp_compiler: g++-15
             os: ubuntu-26.04
-          - cpp_compiler: -DCMAKE_CXX_COMPILER=g++-16
+          - cpp_compiler: g++-16
             os: ubuntu-26.04
           # - cpp_compiler: clang-20
           #   os: ubuntu-26.04
@@ -33,9 +33,10 @@ jobs:
           #   os: ubuntu-26.04
           # - cpp_compiler: clang-22
           #   os: ubuntu-26.04
-          - os: windows-latest
+          - cpp_compiler: cl
+            os: windows-latest
             preset: --preset vcpkg
-          - cpp_compiler: -DCMAKE_CXX_COMPILER=clang++
+          - cpp_compiler: clang++
             os: macos-latest
 
     steps:
@@ -67,7 +68,7 @@ jobs:
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }} ${{ matrix.preset }}
         -DCIFPP_DOWNLOAD_CCD=OFF
-        ${{ matrix.cpp_compiler }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_BUILD_TYPE=Release
         -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/cifpp-prefix"
         -S ${{ github.workspace }}

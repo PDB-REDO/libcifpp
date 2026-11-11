@@ -1273,47 +1273,24 @@ std::vector<row_handle> category::get_linked(row_handle r, category &cat)
 
 // --------------------------------------------------------------------
 
-category::iterator category::erase(iterator pos)
+void category::erase_row(row *r, row *prev, const row_handle &rh)
 {
-	row_handle rh = *pos;
-	row *r = rh.get_row();
-	iterator result = ++pos;
-
-	if (m_head == nullptr)
-		throw std::runtime_error("erase");
+	assert(r != nullptr);
+	assert(prev == nullptr ? r == m_head : prev->m_next == r);
 
 	if (m_index != nullptr)
 		m_index->erase(*this, r);
 
-	if (r == m_head)
-	{
-		m_head = m_head->m_next;
-		r->m_next = nullptr;
-
-		if (m_tail == r)
-			m_tail = m_head;
-
-		--m_count;
-	}
+	if (prev != nullptr)
+		prev->m_next = r->m_next;
 	else
-	{
-		for (auto pi = m_head; pi != nullptr; pi = pi->m_next)
-		{
-			if (pi->m_next == r)
-			{
-				pi->m_next = r->m_next;
-				r->m_next = nullptr;
+		m_head = r->m_next;
 
-				// reset tail, if needed
-				if (m_tail == r)
-					m_tail = pi;
+	if (m_tail == r)
+		m_tail = prev;
 
-				--m_count;
-
-				break;
-			}
-		}
-	}
+	r->m_next = nullptr;
+	--m_count;
 
 	// links are created based on the _pdbx_item_linked_group_list entries
 	// in mmcif_pdbx.dic dictionary.
@@ -1330,6 +1307,29 @@ category::iterator category::erase(iterator pos)
 	}
 
 	delete_row(r);
+}
+
+category::iterator category::erase(iterator pos)
+{
+	row_handle rh = *pos;
+	row *r = rh.get_row();
+	iterator result = ++pos;
+
+	if (m_head == nullptr)
+		throw std::runtime_error("erase");
+
+	row *prev = nullptr;
+	if (r != m_head)
+	{
+		prev = m_head;
+		while (prev != nullptr and prev->m_next != r)
+			prev = prev->m_next;
+
+		if (prev == nullptr)
+			throw std::runtime_error("row not found in category");
+	}
+
+	erase_row(r, prev, rh);
 
 	return result;
 }
@@ -1367,17 +1367,21 @@ std::size_t category::erase(condition &&cond, std::function<void(row_handle)> &&
 	{
 		std::map<category *, condition> potential_orphans;
 
+		row *prev = nullptr;
 		auto ri = begin();
 		while (ri != end())
 		{
-			if (cond(*ri))
+			row_handle rh = *ri;
+			row *r = rh.get_row();
+
+			if (cond(rh))
 			{
 				if (visit)
-					visit(*ri);
+					visit(rh);
 
 				for (auto &&[childCat, link] : m_child_links)
 				{
-					auto ccond = get_children_condition(*ri, *childCat);
+					auto ccond = get_children_condition(rh, *childCat);
 					if (not ccond)
 						continue;
 					potential_orphans[childCat] = std::move(potential_orphans[childCat]) or std::move(ccond);
@@ -1385,11 +1389,16 @@ std::size_t category::erase(condition &&cond, std::function<void(row_handle)> &&
 
 				save_value sv(m_validator);
 
-				ri = erase(ri);
+				row *next = r->m_next;
+				erase_row(r, prev, rh);
+				ri = iterator(*this, next);
 				++result;
 			}
 			else
+			{
+				prev = r;
 				++ri;
+			}
 		}
 
 		for (auto &&[childCat, condition] : potential_orphans)
@@ -1423,30 +1432,33 @@ void category::erase_orphans(condition &&cond, category &parent)
 {
 	if (cond.prepare(*this))
 	{
-		std::vector<row *> remove;
-
-		for (auto r : *this)
+		row *prev = nullptr;
+		auto ri = begin();
+		while (ri != end())
 		{
-			if (not cond(r))
-				continue;
+			row_handle rh = *ri;
+			row *r = rh.get_row();
 
-			if (parent.contains(get_parents_condition(r, parent)))
+			if (not cond(rh) or parent.contains(get_parents_condition(rh, parent)))
+			{
+				prev = r;
+				++ri;
 				continue;
+			}
 
 			if (VERBOSE > 1)
 			{
 				category c(m_name);
-				c.emplace(r);
+				c.emplace(rh);
 				std::cerr << "Removing orphaned record: \n"
 						  << c << '\n'
 						  << '\n';
 			}
 
-			remove.emplace_back(r.m_row);
+			row *next = r->m_next;
+			erase_row(r, prev, rh);
+			ri = iterator(*this, next);
 		}
-
-		for (auto r : remove)
-			erase(iterator(*this, r));
 	}
 }
 

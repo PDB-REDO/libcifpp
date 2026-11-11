@@ -1349,6 +1349,10 @@ class category
 	// proxy methods for every insertion
 	iterator insert_impl(const_iterator pos, row *n);
 
+	// Unlink, delete and cascade row @a r. @a prev is the row before @a r,
+	// or nullptr when @a r is the first row.
+	void erase_row(row *r, row *prev, const row_handle &rh);
+
 	// --------------------------------------------------------------------
 
 	[[nodiscard]] condition get_parents_condition(const_row_handle rh, const category &parentCat) const;

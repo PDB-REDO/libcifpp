@@ -38,6 +38,8 @@ Version 10.1.0
   entity creation, branch handling and charge output.
 - Regularly used regular expressions are now compiled once
   instead of on every call.
+- Bulk erase with a condition, and orphan removal, no longer scan
+  the category for every removed row.
 - The fancy progress bar now uses std::jthread and std::stop_token
   instead of an unsynchronised stop flag.
 - The resource pool is now internally synchronised, so data
