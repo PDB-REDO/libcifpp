@@ -1143,8 +1143,8 @@ class category
 
 	void update_value(const std::vector<row_handle> &rows, std::string_view item_name, const item_value &value)
 	{
-		update_value(rows, item_name, [value](const item_value &)
-			{ return value; });
+		update_value(rows, item_name, [v = value](const item_value &)
+			{ return v; });
 	}
 
 	// --------------------------------------------------------------------

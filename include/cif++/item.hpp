@@ -300,8 +300,13 @@ class item_value
 			case TEXT:
 				return m_data.sv().empty();
 
-			default:
+			case INT:
+			case FLOAT:
 				return false;
+			
+			default:
+				assert(false);
+				std::unreachable();
 		}
 	}
 

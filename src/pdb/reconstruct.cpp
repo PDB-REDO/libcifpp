@@ -1010,13 +1010,15 @@ void createEntityPoly(datablock &db)
 			}
 		}
 
-		for (auto i = entity_seq.begin() + 80; i < entity_seq.end(); i += 80)
-			i = entity_seq.insert(i, '\n') + 1;
-
-		for (auto i = entity_seq_can.begin() + 76; i < entity_seq_can.end(); i += 76)
+		for (auto i = entity_seq.begin(); entity_seq.end() - i > 80; )
 		{
-			auto j = i;
-			while (j < i + 4 and j < entity_seq_can.end())
+			i = entity_seq.insert(i + 80, '\n') + 1;
+		}
+
+		for (auto i = entity_seq_can.begin(); entity_seq_can.end() - i > 80;)
+		{
+			auto j = i + 76;
+			while (j < i + 80)
 			{
 				if (*j == '(')
 					break;
