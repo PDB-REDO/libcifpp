@@ -260,6 +260,14 @@ type_validator::type_validator(std::string_view name, DDL_PrimitiveType type, st
 
 int type_validator::compare(const item_value &a, const item_value &b) const
 {
+	// This was missing... compare empty values
+	if (a.is_null() and b.is_null())
+		return 0;
+	else if (a.is_null())
+		return -1;
+	else if (b.is_null())
+		return 1;
+
 	switch (m_primitive_type)
 	{
 		using enum DDL_PrimitiveType;

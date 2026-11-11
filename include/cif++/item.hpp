@@ -354,7 +354,7 @@ class item_value
 				return v;
 			}
 			default:
-				return not empty();
+				throw std::runtime_error("Empty value cannot be converted to a number");
 		}
 	}
 
@@ -390,7 +390,7 @@ class item_value
 				return v;
 			}
 			default:
-				return not empty();
+				throw std::runtime_error("Empty value cannot be converted to a number");
 		}
 	}
 
