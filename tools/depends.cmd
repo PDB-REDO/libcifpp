@@ -24,15 +24,15 @@ cmake --build build --target INSTALL --config Release || EXIT /b 1
 CD ..
 
 @REM Install LibLZMA
-IF NOT EXIST lzma-%LZMA_VERSION%.zip (
+IF NOT EXIST xz-%LZMA_VERSION%.zip (
   ECHO Downloading https://github.com/libarchive/xz/archive/refs/tags/v%LZMA_VERSION%.zip
-  curl -L -o lzma-%LZMA_VERSION%.zip https://github.com/libarchive/xz/archive/refs/tags/v%LZMA_VERSION%.zip || exit /b 1
+  curl -L -o xz-%LZMA_VERSION%.zip https://github.com/libarchive/xz/archive/refs/tags/v%LZMA_VERSION%.zip || exit /b 1
 )
-IF NOT EXIST lzma-%LZMA_VERSION% (
-  ECHO Unpacking lzma-%LZMA_VERSION%.zip
-  C:\windows\system32\tar.exe -x -f lzma-%LZMA_VERSION%.zip || EXIT /b 1
+IF NOT EXIST xz-%LZMA_VERSION% (
+  ECHO Unpacking xz-%LZMA_VERSION%.zip
+  C:\windows\system32\tar.exe -x -f xz-%LZMA_VERSION%.zip || EXIT /b 1
 )
-CD lzma-%LZMA_VERSION%
+CD xz-%LZMA_VERSION%
 cmake -B build || EXIT /b 1
 cmake --build build --target ALL_BUILD --config Release || EXIT /b 1
 cmake --build build --target RUN_TESTS --config Release || EXIT /b 1

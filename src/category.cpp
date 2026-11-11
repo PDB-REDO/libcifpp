@@ -627,7 +627,20 @@ void category::remove_item(std::string_view item_name)
 		m_items.erase(m_items.begin() + ix);
 
 		if (m_index)
-			m_index->items_updated(*this);
+		{
+			try
+			{
+				m_index->items_updated(*this);
+			}
+			catch (...)
+			{
+				delete m_index;
+				m_index = nullptr;
+				m_index = new category_index(*this);
+			}
+		}
+
+		m_dirty = true;
 
 		break;
 	}
