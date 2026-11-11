@@ -35,11 +35,23 @@ Version 10.1.0
   entity creation, branch handling and charge output.
 - Regularly used regular expressions are now compiled once
   instead of on every call.
+- The fancy progress bar now uses std::jthread and std::stop_token
+  instead of an unsynchronised stop flag.
+- The resource pool is now internally synchronised, so data
+  directories and named resources can be added while other threads
+  load resources.
+- The compound factory singleton is now created under a mutex and
+  dictionary changes are synchronised with lookups. The
+  report-missing flag is a shared atomic.
 - Build: gxrio is now a git submodule, or an installed package,
   and is no longer exported as a link target. zlib and liblzma
   are explicit dependencies, and the Windows and macOS builds
   and CI were updated. The bundled gzio implementation was
   removed.
+- Installation now uses CMAKE_INSTALL_LIBDIR for the CMake package
+  files and honours a custom CIFPP_DATA_DIR.
+- Moved symop-map-generator.cpp to tools/ so it is no longer compiled
+  into the library.
 - Added regression tests for CQL planning and row ids,
   positional insert, remove_item/drop_empty_items and date
   conversion.

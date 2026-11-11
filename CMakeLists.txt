@@ -235,7 +235,7 @@ endif()
 if(CIFPP_RECREATE_SYMOP_DATA)
     # The tool to create the table
     add_executable(symop-map-generator
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/symop-map-generator.cpp")
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/symop-map-generator.cpp")
 
     target_compile_features(symop-map-generator PUBLIC cxx_std_23)
 
@@ -402,6 +402,17 @@ if(CIFPP_DATA_DIR)
     set_target_properties(cifpp PROPERTIES CIFPP_DATA_DIR ${CIFPP_DATA_DIR})
 endif()
 
+# Where the CMake package files are installed
+set(CIFPP_CMAKE_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/cifpp")
+
+# Install the data files in the configured data directory. Keep the default
+# relative to the install prefix so DESTDIR and --prefix keep working.
+if(NOT CIFPP_DATA_DIR OR CIFPP_DATA_DIR STREQUAL "${CMAKE_INSTALL_FULL_DATADIR}/libcifpp")
+    set(CIFPP_DATA_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/libcifpp")
+else()
+    set(CIFPP_DATA_INSTALL_DIR "${CIFPP_DATA_DIR}")
+endif()
+
 if(NOT PROJECT_IS_TOP_LEVEL)
     set(CIFPP_SHARE_DIR ${CIFPP_DATA_DIR} PARENT_SCOPE)
 endif()
@@ -452,30 +463,30 @@ endif()
 install(EXPORT cifpp
     NAMESPACE cifpp::
     FILE "cifpp-targets.cmake"
-    DESTINATION lib/cmake/cifpp)
+    DESTINATION ${CIFPP_CMAKE_INSTALL_DIR})
 
 install(
     FILES ${CMAKE_CURRENT_SOURCE_DIR}/rsrc/mmcif_ddl.dic
     ${CMAKE_CURRENT_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
     ${CMAKE_CURRENT_SOURCE_DIR}/rsrc/mmcif_ma.dic
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/libcifpp)
+    DESTINATION ${CIFPP_DATA_INSTALL_DIR})
 
 if(CIFPP_DATA_DIR AND CIFPP_DOWNLOAD_CCD)
     install(FILES ${COMPONENTS_CIF}
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/libcifpp)
+        DESTINATION ${CIFPP_DATA_INSTALL_DIR})
 endif()
 
 set(CONFIG_TEMPLATE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cifpp-config.cmake.in)
 
 configure_package_config_file(
     ${CONFIG_TEMPLATE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config.cmake
-    INSTALL_DESTINATION lib/cmake/cifpp
+    INSTALL_DESTINATION ${CIFPP_CMAKE_INSTALL_DIR}
     PATH_VARS CIFPP_DATA_DIR)
 
 install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/cifpp/cifpp-config-version.cmake"
-    DESTINATION lib/cmake/cifpp)
+    DESTINATION ${CIFPP_CMAKE_INSTALL_DIR})
 
 set_target_properties(
     cifpp

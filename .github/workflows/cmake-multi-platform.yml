@@ -5,6 +5,14 @@ on:
     branches: [ "trunk", "develop" ]
   pull_request:
     branches: [ "trunk" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  VCPKG_FEATURE_FLAGS: dependencygraph
 
 jobs:
   build:
@@ -46,7 +54,8 @@ jobs:
 
     - name: Install dependencies Window
       if: matrix.os == 'windows-latest'
-      run: ./tools/depends.cmd
+      # run: ./tools/depends.cmd
+      run: ${{ github.workspace }}/vcpkg/vcpkg install
       shell: cmd
 
     - name: Install Catch2 macOS

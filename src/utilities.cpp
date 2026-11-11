@@ -47,15 +47,12 @@
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
 #include <system_error>
 #include <thread>
 #include <tuple>
 #include <utility>
-
-#if __cpp_lib_jthread >= 201911L
-# include <stop_token>
-#endif
 
 namespace fs = std::filesystem;
 
@@ -304,25 +301,14 @@ struct fancy_progress_bar_impl : public progress_bar_impl
 {
 	fancy_progress_bar_impl(uint64_t max_value, const std::string &message)
 		: progress_bar_impl(max_value, message)
-		, m_thread(
-#if __cpp_lib_jthread >= 201911L
-			  [this](const std::stop_token& stoken)
-			  { this->run(stoken); }
-#else
-			  [this]()
-			  { this->run(); }
-#endif
-		  )
+		, m_thread([this](std::stop_token stoken)
+			  { this->run(stoken); })
 	{
 	}
 
 	~fancy_progress_bar_impl() override;
 
-#if __cpp_lib_jthread >= 201911L
 	void run(const std::stop_token &stoken);
-#else
-	void run();
-#endif
 
 	void consumed(uint64_t n) override;
 	void progress(uint64_t p) override;
@@ -338,12 +324,7 @@ struct fancy_progress_bar_impl : public progress_bar_impl
 	uint32_t m_width, m_bar_width, m_height;
 	uint32_t m_steps, m_last_steps = 0;
 	uint64_t m_last_consumed = 0;
-#if __cpp_lib_jthread >= 201911L
 	std::jthread m_thread;
-#else
-	std::thread m_thread;
-	bool m_stop = false;
-#endif
 };
 
 const char *kBlocks[] = {
@@ -362,22 +343,13 @@ const size_t kBlockCount = sizeof(kBlocks) / sizeof(void *) - 1;
 
 fancy_progress_bar_impl::~fancy_progress_bar_impl()
 {
-	using namespace std::literals;
 	assert(m_thread.joinable());
 
-#if __cpp_lib_jthread >= 201911L
 	m_thread.request_stop();
-#else
-	m_stop = true;
-#endif
 	m_thread.join();
 }
 
-#if __cpp_lib_jthread >= 201911L
 void fancy_progress_bar_impl::run(const std::stop_token &stoken)
-#else
-void fancy_progress_bar_impl::run()
-#endif
 {
 	using namespace std::literals;
 
@@ -391,13 +363,8 @@ void fancy_progress_bar_impl::run()
 
 			m_cv.wait_for(lock, 25ms);
 
-#if __cpp_lib_jthread >= 201911L
 			if (stoken.stop_requested())
 				break;
-#else
-			if (m_stop)
-				break;
-#endif
 
 			auto now = std::chrono::system_clock::now();
 
@@ -1008,7 +975,10 @@ class resource_pool
 		std::error_code ec;
 
 		if (fs::exists(dir, ec) and not ec)
+		{
+			std::lock_guard lock(m_mutex);
 			mDirs.push_front(dir);
+		}
 	}
 
 	void pushDir(const char *path)
@@ -1023,13 +993,23 @@ class resource_pool
 		if (not fs::exists(dataFile, ec) or ec)
 			throw std::runtime_error("Attempt to add a file resource for " + name + " that cannot be used (" + dataFile.string() + ") :" + ec.message());
 
+		std::lock_guard lock(m_mutex);
 		mLocalResources[name] = dataFile;
 	}
 
 	std::unique_ptr<std::istream> load(const fs::path& name);
 
-	const auto &data_directories() { return mDirs; }
-	const auto &file_resources() { return mLocalResources; }
+	[[nodiscard]] std::deque<fs::path> data_directories()
+	{
+		std::lock_guard lock(m_mutex);
+		return mDirs;
+	}
+
+	[[nodiscard]] std::map<std::string, std::filesystem::path> file_resources()
+	{
+		std::lock_guard lock(m_mutex);
+		return mLocalResources;
+	}
 
   private:
 	resource_pool();
@@ -1053,6 +1033,7 @@ class resource_pool
 
 	std::map<std::string, std::filesystem::path> mLocalResources;
 	std::deque<fs::path> mDirs;
+	std::mutex m_mutex;
 };
 
 resource_pool::resource_pool()
@@ -1092,14 +1073,29 @@ std::unique_ptr<std::istream> resource_pool::load(const fs::path& name)
 	std::unique_ptr<std::istream> result;
 	std::error_code ec;
 
-	if (mLocalResources.count(name.string()))
-		result = open(mLocalResources[name.string()]);
+	fs::path alias;
+	std::deque<fs::path> dirs;
 
-	for (auto di = mDirs.begin(); not result and di != mDirs.end(); ++di)
 	{
-		auto p2 = *di / name;
-		if (fs::exists(p2, ec) and not ec)
-			result = open(p2);
+		std::lock_guard lock(m_mutex);
+
+		if (auto i = mLocalResources.find(name.string()); i != mLocalResources.end())
+			alias = i->second;
+
+		dirs = mDirs;
+	}
+
+	if (not alias.empty())
+		result = open(alias);
+
+	for (auto &dir : dirs)
+	{
+		if (result)
+			break;
+
+		auto p = dir / name;
+		if (fs::exists(p, ec) and not ec)
+			result = open(p);
 	}
 
 	if (not result and (gResourceIndex[0].m_child > 0 or gResourceIndex[0].m_size > 0))
@@ -1131,7 +1127,7 @@ std::unique_ptr<std::istream> load_resource(const std::filesystem::path &name)
 
 void list_file_resources(std::ostream &os)
 {
-	auto &file_resources = resource_pool::instance().file_resources();
+	auto file_resources = resource_pool::instance().file_resources();
 
 	if (not file_resources.empty())
 	{

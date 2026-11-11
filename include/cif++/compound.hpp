@@ -30,10 +30,12 @@
 #include "cif++/exports.hpp"
 #include "cif++/point.hpp"
 
+#include <atomic>
 #include <cstdint>
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -217,6 +219,9 @@ class compound_factory
 	/// compounds in each thread (e.g. a web service processing user requests
 	/// with different sets of compounds) you can set the @a useThreadLocalInstanceOnly
 	/// flag to true.
+	///
+	/// @note Call this before the first call to instance() and before starting
+	/// threads that use the factory.
 
 	static void init(bool useThreadLocalInstanceOnly);
 
@@ -226,6 +231,9 @@ class compound_factory
 
 	/// Delete and reset the singleton instance. If initialized with local threads, this is the
 	/// instance for the current thread.
+	///
+	/// @note Do not call this while another thread is still using the instance.
+
 	static void clear();
 
 	/// Set the default dictionary file to @a inDictFile
@@ -308,12 +316,12 @@ class compound_factory
 	void report_missing_compound(std::string_view compound_id);
 
 	/// Return a flag indicating if we need to print out a report
-	[[nodiscard]] bool get_report_missing() const { return m_report_missing; }
+	[[nodiscard]] bool get_report_missing() const { return s_report_missing.load(); }
 
 	/// Set a flag indicating if we need to print out a report
 	void set_report_missing(bool report)
 	{
-		m_report_missing = report;
+		s_report_missing.store(report);
 	}
 
   private:
@@ -321,10 +329,12 @@ class compound_factory
 
 	static std::unique_ptr<compound_factory> s_instance;
 	static thread_local std::unique_ptr<compound_factory> tl_instance;
-	static bool s_use_thread_local_instance;
+	static std::atomic<bool> s_use_thread_local_instance;
+	static std::mutex s_instance_mutex;
+	static std::atomic<bool> s_report_missing;
 
 	std::shared_ptr<compound_factory_impl> m_impl;
-	bool m_report_missing = true;
+	mutable std::mutex m_mutex;
 };
 
 // --------------------------------------------------------------------

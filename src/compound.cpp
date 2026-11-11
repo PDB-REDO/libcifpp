@@ -663,11 +663,13 @@ compound *local_compound_factory_impl::construct_compound(const datablock &rdb, 
 
 std::unique_ptr<compound_factory> compound_factory::s_instance;
 thread_local std::unique_ptr<compound_factory> compound_factory::tl_instance;
-bool compound_factory::s_use_thread_local_instance;
+std::atomic<bool> compound_factory::s_use_thread_local_instance{ false };
+std::mutex compound_factory::s_instance_mutex;
+std::atomic<bool> compound_factory::s_report_missing{ true };
 
 void compound_factory::init(bool useThreadLocalInstanceOnly)
 {
-	s_use_thread_local_instance = useThreadLocalInstanceOnly;
+	s_use_thread_local_instance.store(useThreadLocalInstanceOnly);
 }
 
 compound_factory::compound_factory()
@@ -682,7 +684,7 @@ compound_factory::compound_factory()
 
 compound_factory &compound_factory::instance()
 {
-	if (s_use_thread_local_instance)
+	if (s_use_thread_local_instance.load())
 	{
 		if (not tl_instance)
 			tl_instance.reset(new compound_factory());
@@ -690,6 +692,8 @@ compound_factory &compound_factory::instance()
 	}
 	else
 	{
+		std::lock_guard lock(s_instance_mutex);
+
 		if (not s_instance)
 			s_instance.reset(new compound_factory());
 		return *s_instance;
@@ -698,10 +702,13 @@ compound_factory &compound_factory::instance()
 
 void compound_factory::clear()
 {
-	if (s_use_thread_local_instance)
-		tl_instance.reset(nullptr);
+	if (s_use_thread_local_instance.load())
+		tl_instance.reset();
 	else
+	{
+		std::lock_guard lock(s_instance_mutex);
 		s_instance.reset();
+	}
 }
 
 void compound_factory::set_default_dictionary(const fs::path &inDictFile)
@@ -711,6 +718,7 @@ void compound_factory::set_default_dictionary(const fs::path &inDictFile)
 
 	try
 	{
+		std::lock_guard lock(m_mutex);
 		m_impl = std::make_shared<compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
@@ -726,6 +734,7 @@ void compound_factory::push_dictionary(const fs::path &inDictFile)
 
 	try
 	{
+		std::lock_guard lock(m_mutex);
 		m_impl = std::make_shared<compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
@@ -738,6 +747,7 @@ void compound_factory::push_dictionary(const cif::file &inDictFile)
 {
 	try
 	{
+		std::lock_guard lock(m_mutex);
 		m_impl = std::make_shared<local_compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
@@ -748,18 +758,31 @@ void compound_factory::push_dictionary(const cif::file &inDictFile)
 
 void compound_factory::pop_dictionary()
 {
+	std::lock_guard lock(m_mutex);
 	if (m_impl)
 		m_impl = m_impl->next();
 }
 
 bool compound_factory::exists(std::string_view id) const
 {
-	return m_impl and m_impl->exists(id);
+	std::shared_ptr<compound_factory_impl> impl;
+	{
+		std::lock_guard lock(m_mutex);
+		impl = m_impl;
+	}
+
+	return impl and impl->exists(id);
 }
 
 const compound *compound_factory::create(std::string_view id)
 {
-	auto result = m_impl ? m_impl->get(std::string{ id }) : nullptr;
+	std::shared_ptr<compound_factory_impl> impl;
+	{
+		std::lock_guard lock(m_mutex);
+		impl = m_impl;
+	}
+
+	auto result = impl ? impl->get(std::string{ id }) : nullptr;
 	if (not result)
 		report_missing_compound(id);
 	return result;
@@ -779,10 +802,19 @@ bool compound_factory::is_known_base(const std::string &res_name) const
 bool compound_factory::is_peptide(std::string_view res_name) const
 {
 	bool result = is_std_peptide(res_name);
-	if (not result and m_impl)
+	if (not result)
 	{
-		auto compound = const_cast<compound_factory &>(*this).create(res_name);
-		result = compound != nullptr and compound->is_peptide();
+		std::shared_ptr<compound_factory_impl> impl;
+		{
+			std::lock_guard lock(m_mutex);
+			impl = m_impl;
+		}
+
+		if (impl)
+		{
+			auto compound = const_cast<compound_factory &>(*this).create(res_name);
+			result = compound != nullptr and compound->is_peptide();
+		}
 	}
 	return result;
 }
@@ -791,10 +823,19 @@ bool compound_factory::is_peptide(std::string_view res_name) const
 bool compound_factory::is_base(std::string_view res_name) const
 {
 	bool result = is_std_base(res_name);
-	if (not result and m_impl)
+	if (not result)
 	{
-		auto compound = const_cast<compound_factory &>(*this).create(res_name);
-		result = compound != nullptr and compound->is_base();
+		std::shared_ptr<compound_factory_impl> impl;
+		{
+			std::lock_guard lock(m_mutex);
+			impl = m_impl;
+		}
+
+		if (impl)
+		{
+			auto compound = const_cast<compound_factory &>(*this).create(res_name);
+			result = compound != nullptr and compound->is_base();
+		}
 	}
 	return result;
 }
@@ -819,7 +860,7 @@ bool compound_factory::is_monomer(std::string_view res_name) const
 
 void compound_factory::report_missing_compound(std::string_view compound_id)
 {
-	if (std::exchange(m_report_missing, false))
+	if (s_report_missing.exchange(false))
 	{
 		using namespace cif::colour;
 
@@ -846,10 +887,16 @@ void compound_factory::report_missing_compound(std::string_view compound_id)
 				  << "curl -o " << CACHE_DIR << "/mmcif_ma.dic https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_ma.dic\n\n";
 #endif
 
-		if (m_impl)
+		std::shared_ptr<compound_factory_impl> impl;
+		{
+			std::lock_guard lock(m_mutex);
+			impl = m_impl;
+		}
+
+		if (impl)
 		{
 			std::clog << "The current order of compound factory objects is:\n\n";
-			m_impl->describe(std::clog);
+			impl->describe(std::clog);
 		}
 		else
 			std::clog << "No compound factory objects are created since none of the data sources is found.\n";
