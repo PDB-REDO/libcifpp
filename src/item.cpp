@@ -186,7 +186,7 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 			else
 				d = 1;
 		}
-		catch (const std::exception &ex)
+		catch (const std::exception &)
 		{
 			d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);
 		}
@@ -203,7 +203,7 @@ int item_value::compare(const item_value &b, bool ignore_case) const noexcept
 			else
 				d = 0;
 		}
-		catch (const std::exception &ex)
+		catch (const std::exception &)
 		{
 			d = static_cast<int>(m_data.m_type) - static_cast<int>(b.m_data.m_type);
 		}
@@ -340,7 +340,7 @@ void item_value::cast_to_float()
 				throw std::runtime_error("attempt to cast value to integer failed, trailing data");
 
 			// record the precision
-			int len = 0;
+			size_t len = 0;
 			if (auto p = s.find('.'); p != std::string_view::npos)
 			{
 				++p;
@@ -351,7 +351,7 @@ void item_value::cast_to_float()
 			}
 
 			*this = v;
-			m_data.m_len = len;
+			m_data.m_len = static_cast<uint32_t>(len);
 			break;
 		}
 

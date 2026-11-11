@@ -34,6 +34,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -327,7 +328,11 @@ class item_value
 			case INT:
 				return m_data.m_value.m_integer;
 			case FLOAT:
-				return m_data.m_value.m_float;
+			{
+				// TODO: Add a check to see if value fits
+				using result_type = std::remove_cvref_t<T>;
+				return static_cast<result_type>(m_data.m_value.m_float);
+			}
 			case TEXT:
 			{
 				auto sv = m_data.sv();
@@ -358,7 +363,11 @@ class item_value
 			using enum item_value_type;
 
 			case INT:
-				return m_data.m_value.m_integer;
+			{
+				// TODO: Add a check to see if value fits
+				using result_type = std::remove_cvref_t<T>;
+				return static_cast<result_type>(m_data.m_value.m_integer);
+			}
 			case FLOAT:
 				return m_data.m_value.m_float;
 			case TEXT:
@@ -528,7 +537,7 @@ class item_value
 			}
 		}
 
-		value(item_value_type t)
+		value(item_value_type)
 		{
 			m_integer = 0;
 		}

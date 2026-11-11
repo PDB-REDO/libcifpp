@@ -151,18 +151,19 @@ _atom_type.symbol   C
 
 	expected.front().load_dictionary("mmcif_pdbx.dic");
 
-	if (not(expected.front() == structure.get_datablock()))
-	{
-		CHECK(false);
-		std::cout << expected << '\n'
-				  << '\n'
-				  << structure.get_datablock() << '\n';
-
-		std::ofstream of("/tmp/a");
-		of << expected;
-
-		file.save("/tmp/b");
-	}
+	CHECK(expected.front() == structure.get_datablock());
+// 	if (not(expected.front() == structure.get_datablock()))
+// 	{
+// 		CHECK(false);
+// 		std::cout << expected << '\n'
+// 				  << '\n'
+// 				  << structure.get_datablock() << '\n';
+// 
+// 		std::ofstream of("/tmp/a");
+// 		of << expected;
+// 
+// 		file.save("/tmp/b");
+// 	}
 }
 
 // --------------------------------------------------------------------
@@ -267,18 +268,18 @@ _atom_type.symbol   C
 
 	expected.front().load_dictionary("mmcif_pdbx.dic");
 
-	REQUIRE(expected.front() == structure.get_datablock());
+	CHECK(expected.front() == structure.get_datablock());
 
-	if (not(expected.front() == structure.get_datablock()))
-	{
-		CHECK(false);
-		std::cout << expected.front() << '\n'
-				  << '\n'
-				  << structure.get_datablock() << '\n';
-
-		expected.save("/tmp/a");
-		file.save("/tmp/b");
-	}
+// 	if (not(expected.front() == structure.get_datablock()))
+// 	{
+// 		CHECK(false);
+// 		std::cout << expected.front() << '\n'
+// 				  << '\n'
+// 				  << structure.get_datablock() << '\n';
+// 
+// 		expected.save("/tmp/a");
+// 		file.save("/tmp/b");
+// 	}
 }
 
 // --------------------------------------------------------------------

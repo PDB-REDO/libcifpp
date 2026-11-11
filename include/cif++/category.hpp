@@ -1191,7 +1191,7 @@ class category
 	[[nodiscard]] std::vector<std::string> get_items() const;
 
 	/// @brief Return the number of items (colums) in this category
-	[[nodiscard]] constexpr uint16_t get_item_count() const noexcept
+	[[nodiscard]] constexpr size_t get_item_count() const noexcept
 	{
 		return m_items.size();
 	}
