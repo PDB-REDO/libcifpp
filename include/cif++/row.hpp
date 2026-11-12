@@ -222,10 +222,10 @@ class row_handle
 	}
 
 	/// @brief return a cif::item_handle to the item in the item named @a item_name
-	item_handle operator[](std::string_view item_name)
-	{
-		return { *m_category, *m_row, add_item(item_name) };
-	}
+	///
+	/// If the item does not exist, the item is only added when the handle is
+	/// assigned a value.
+	item_handle operator[](std::string_view item_name);
 
 	/// @brief return a cif::item_handle to the item in the item named @a item_name
 	const item_handle operator[](std::string_view item_name) const

@@ -885,6 +885,9 @@ struct item_handle
 	{
 	}
 
+	/// @brief Construct a handle for item @a item_name, adding the item lazily on assignment
+	item_handle(category &cat, row &row, std::string_view item_name);
+
 	/// Constructor
 	item_handle(const category &cat, const row &r, uint16_t item_ix)
 		: m_category(const_cast<category &>(cat))
@@ -911,6 +914,7 @@ struct item_handle
 	category &m_category;
 	row &m_row;
 	uint16_t m_item_ix;
+	std::string m_item_name;
 	bool m_is_const = false;
 
 	friend class parser;

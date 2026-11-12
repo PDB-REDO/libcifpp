@@ -4365,3 +4365,28 @@ TEST_CASE("reconstruct-identical-chains-share-entity")
 	CHECK(atom_site.find_first<std::string>("label_asym_id"_key == "A", "label_entity_id") ==
 		atom_site.find_first<std::string>("label_asym_id"_key == "B", "label_entity_id"));
 }
+
+TEST_CASE("row-read-does-not-add-item")
+{
+	cif::category c("foo");
+	c.emplace(cif::row_initializer{ { "id", 1 }, { "name", "aap" } });
+
+	auto r = c.front();
+	auto count = c.get_item_count();
+
+	// Reading a missing item through a non-const row must not add the column.
+	CHECK(r["missing"].empty());
+	CHECK(r["missing"].is_missing());
+	CHECK(c.get_item_count() == count);
+	CHECK(c.get_item_ix("missing") == c.get_item_count());
+
+	// Keeping the handle around and assigning later must add the item then.
+	auto h = r["missing"];
+	CHECK(h.empty());
+	CHECK(c.get_item_count() == count);
+
+	h = 42;
+	CHECK(c.get_item_count() == count + 1);
+	CHECK(c.get_item_ix("missing") == count);
+	CHECK(r["missing"].get<int>() == 42);
+}

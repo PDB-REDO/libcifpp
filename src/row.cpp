@@ -65,6 +65,16 @@ uint16_t row_handle::get_item_ix(std::string_view name) const
 	return m_category->get_item_ix(name);
 }
 
+item_handle row_handle::operator[](std::string_view item_name)
+{
+	auto item_ix = get_item_ix(item_name);
+
+	if (item_ix == m_category->get_item_count())
+		return { *m_category, *m_row, item_name };
+
+	return { *m_category, *m_row, item_ix };
+}
+
 std::string_view row_handle::get_item_name(uint16_t ix) const
 {
 	if (not m_category)

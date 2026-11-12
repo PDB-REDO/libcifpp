@@ -26,6 +26,7 @@
 
 #include "cif++/item.hpp"
 
+#include "cif++/category.hpp"
 #include "cif++/row.hpp"
 #include "cif++/text.hpp"
 
@@ -51,6 +52,15 @@ namespace cif
 // read access to a missing item should yield a MISSING value rather than UB
 thread_local item_value s_null_item;
 
+item_handle::item_handle(category &cat, row &row, std::string_view item_name)
+	: m_category(cat)
+	, m_row(row)
+	, m_item_ix(cat.get_item_ix(item_name))
+{
+	if (m_item_ix == cat.get_item_count())
+		m_item_name = item_name;
+}
+
 bool item_handle::empty() const
 {
 	return m_item_ix >= m_row.size() or m_row[m_item_ix].empty();
@@ -58,26 +68,16 @@ bool item_handle::empty() const
 
 item_value &item_handle::value() noexcept
 {
-	assert(m_item_ix < m_row.size());
-
 	if (m_item_ix >= m_row.size())
-	{
-		std::cerr << "ERROR: Index out of range for item_handle!\n";
 		return s_null_item;
-	}
 
 	return m_row.operator[](m_item_ix);
 }
 
 const item_value &item_handle::value() const noexcept
 {
-	assert(m_item_ix < m_row.size());
-
 	if (m_item_ix >= m_row.size())
-	{
-		std::cerr << "ERROR: Index out of range for item_handle!\n";
 		return s_null_item;
-	}
 
 	return m_row.operator[](m_item_ix);
 }
@@ -91,6 +91,15 @@ void swap(item_handle a, item_handle b) noexcept
 
 void item_handle::set(const item_value &value, bool updateLinked)
 {
+	if (m_item_ix >= m_category.get_item_count())
+	{
+		if (m_item_name.empty())
+			throw std::out_of_range("Invalid item index");
+
+		m_item_ix = m_category.add_item(m_item_name);
+		m_item_name.clear();
+	}
+
 	row_handle rh{ &m_category, &m_row };
 	rh.assign(m_item_ix, value, updateLinked);
 }
