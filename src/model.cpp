@@ -1243,6 +1243,36 @@ structure::structure(datablock &db, std::size_t modelNr, const structure_open_op
 		load_data();
 }
 
+structure::structure(structure &&s) noexcept
+	: m_db(s.m_db)
+	, m_model_nr(s.m_model_nr)
+	, m_atoms(std::move(s.m_atoms))
+	, m_atom_index(std::move(s.m_atom_index))
+	, m_polymers(std::move(s.m_polymers))
+	, m_branches(std::move(s.m_branches))
+	, m_non_polymers(std::move(s.m_non_polymers))
+{
+	// The lists and vectors keep their elements at the same addresses when
+	// moved, but every residue and polymer/branch still points at the old
+	// structure. Rebind those back-pointers to this structure.
+	for (auto &poly : m_polymers)
+	{
+		poly.m_structure = this;
+		for (auto &monomer : poly)
+			monomer.m_structure = this;
+	}
+
+	for (auto &branch : m_branches)
+	{
+		branch.m_structure = this;
+		for (auto &sugar : branch)
+			sugar.m_structure = this;
+	}
+
+	for (auto &residue : m_non_polymers)
+		residue.m_structure = this;
+}
+
 void structure::load_atoms_for_model(structure_open_options options)
 {
 	using namespace literals;

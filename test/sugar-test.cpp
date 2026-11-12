@@ -147,6 +147,33 @@ TEST_CASE("sugar_name_1")
 
 // --------------------------------------------------------------------
 
+TEST_CASE("sugar_move_keeps_branch")
+{
+	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
+	cif::file file(example.string());
+	cif::mm::structure s(file);
+
+	auto &branch = s.get_branch_by_asym_id("G");
+	REQUIRE(branch.size() == 4UL);
+
+	// Adding another sugar reallocates the branch's sugar vector. All sugars,
+	// including the ones that were moved, must still point at this branch
+	// because add_atom() uses that back-pointer.
+	auto &added = branch.construct_sugar("NAG");
+	REQUIRE(branch.size() == 5UL);
+	REQUIRE(&added == &branch.back());
+
+	auto &atom_site = s.get_datablock()["atom_site"];
+	auto row = atom_site.front();
+
+	std::vector<cif::row_initializer> atom_info;
+	for (std::size_t i = 0; i < branch.size(); ++i)
+		atom_info.emplace_back(row);
+
+	for (std::size_t i = 0; i < branch.size(); ++i)
+		CHECK_NOTHROW(branch[i].add_atom(std::move(atom_info[i])));
+}
+
 TEST_CASE("delete_sugar_1")
 {
 	using namespace cif::literals;

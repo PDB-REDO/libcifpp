@@ -413,6 +413,68 @@ TEST_CASE("test_load_2")
 		CHECK(poly.size() == pdbx_poly_seq_scheme.find("asym_id"_key == poly.get_asym_id()).size());
 }
 
+TEST_CASE("monomer_move_keeps_polymer")
+{
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+
+	auto &poly = s.polymers().front();
+	REQUIRE(poly.size() >= 3);
+
+	// Growing the polymer moves its monomers to new storage. The move
+	// constructor must preserve the back-pointer to the polymer, otherwise
+	// prev()/next() would dereference an invalid pointer.
+	poly.shrink_to_fit();
+	poly.emplace_back(poly, poly.size(), 0, "0", "", "ALA");
+
+	CHECK(poly[0].is_first_in_chain());
+	CHECK(&poly[0].next() == &poly[1]);
+	CHECK(&poly[1].prev() == &poly[0]);
+	CHECK(poly.back().is_last_in_chain());
+
+	// Moving a monomer out of the polymer must also preserve its back-pointer.
+	cif::mm::monomer m(std::move(poly[0]));
+	CHECK(m.is_first_in_chain());
+	CHECK(&m.next() == &poly[1]);
+}
+
+TEST_CASE("structure_move_rebinds_back_pointers")
+{
+	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+	REQUIRE_FALSE(s.polymers().empty());
+	REQUIRE_FALSE(s.branches().empty());
+
+	cif::mm::structure moved(std::move(s));
+
+	REQUIRE(&moved.get_datablock() == &file.front());
+
+	for (auto &poly : moved.polymers())
+	{
+		CHECK(poly.get_structure() == &moved);
+		for (auto &monomer : poly)
+			CHECK(monomer.get_structure() == &moved);
+	}
+
+	auto &poly = moved.polymers().front();
+	REQUIRE(poly.size() >= 2);
+	CHECK(&poly[0].next() == &poly[1]);
+
+	for (auto &branch : moved.branches())
+	{
+		CHECK(&branch.get_structure() == &moved);
+		for (auto &sugar : branch)
+			CHECK(sugar.get_structure() == &moved);
+	}
+
+	for (auto &residue : moved.non_polymers())
+		CHECK(residue.get_structure() == &moved);
+}
+
 TEST_CASE("remove_residue_1")
 {
 	using namespace cif::literals;

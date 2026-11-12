@@ -662,7 +662,7 @@ class monomer : public residue
 	/// swap two monomers
 	friend void swap(monomer &a, monomer &b) noexcept
 	{
-		assert(a.m_polymer == b.m_polymer);
+		std::swap(a.m_polymer, b.m_polymer);
 		std::swap(a.m_index, b.m_index);
 		swap(static_cast<residue &>(a), static_cast<residue &>(b));
 	}
@@ -740,7 +740,7 @@ class monomer : public residue
 	atom create_new_atom(atom_type inType, const std::string &inAtomID, point inLocation) override;
 
   private:
-	const polymer *m_polymer;
+	const polymer *m_polymer = nullptr;
 	std::size_t m_index{};
 };
 
@@ -766,6 +766,8 @@ class polymer : public std::vector<monomer>
 	[[nodiscard]] std::string get_entity_id() const { return m_entity_id; }         ///< Return the entity_id
 
   private:
+	friend class structure;
+
 	structure *m_structure;
 	std::string m_entity_id;
 	std::string m_asym_id;
@@ -805,6 +807,7 @@ class sugar : public residue
 
 	friend void swap(sugar &a, sugar &b) noexcept
 	{
+		std::swap(a.m_branch, b.m_branch);
 		std::swap(a.m_link, b.m_link);
 		swap(static_cast<residue &>(a), static_cast<residue &>(b));
 	}
@@ -852,7 +855,7 @@ class sugar : public residue
 	atom add_atom(row_initializer atom_info);
 
   private:
-	branch *m_branch;
+	branch *m_branch = nullptr;
 	atom m_link;
 };
 
@@ -916,6 +919,7 @@ class branch : public std::vector<sugar>
 
   private:
 	friend sugar;
+	friend class structure;
 
 	[[nodiscard]] std::string name(const sugar &s) const;
 
@@ -975,7 +979,7 @@ class structure
 	structure(datablock &db, std::size_t modelNr = 1, const structure_open_options &options = {});
 
 	/// @cond
-	structure(structure &&s) = default;
+	structure(structure &&s) noexcept;
 	/// @endcond
 
 	// structures cannot be copied.
