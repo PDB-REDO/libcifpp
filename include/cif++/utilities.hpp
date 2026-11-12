@@ -34,6 +34,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <version>
 
@@ -98,6 +99,9 @@ extern CIFPP_EXPORT int VERBOSE;
 
 /// @brief Return the width of the current output terminal, or 80 if it cannot be determined
 [[nodiscard]] uint32_t get_terminal_width();
+
+/// @brief Return the width and height of the current output terminal, or { 80, 24 } if it cannot be determined
+[[nodiscard]] std::tuple<uint32_t, uint32_t> get_terminal_width_and_height();
 
 // --------------------------------------------------------------------
 

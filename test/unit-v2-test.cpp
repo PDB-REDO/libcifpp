@@ -4122,3 +4122,22 @@ text  char  '.*'
 	REQUIRE(cv != nullptr);
 	CHECK(cv->get_validator_for_item("extra8") != nullptr);
 }
+
+TEST_CASE("terminal-size")
+{
+	auto [width, height] = cif::get_terminal_width_and_height();
+	CHECK(width > 0);
+	CHECK(height > 0);
+
+	auto w = cif::get_terminal_width();
+	CHECK(w > 0);
+
+	// In non-interactive environments (such as ctest) both functions must
+	// report their fallback values instead of uninitialized stack data.
+	if (not isatty(STDOUT_FILENO))
+	{
+		CHECK(width == 80);
+		CHECK(height == 24);
+		CHECK(w == 80);
+	}
+}

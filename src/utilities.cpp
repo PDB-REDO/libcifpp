@@ -131,25 +131,25 @@ void write_to_console(const std::string &s)
 
 uint32_t get_terminal_width()
 {
-	uint32_t width = 80;
-
 	if (isatty(STDOUT_FILENO))
 	{
-		struct winsize w;
-		ioctl(0, TIOCGWINSZ, &w);
-		width = w.ws_col;
+		struct winsize w{};
+		if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == 0 and w.ws_col > 0)
+			return w.ws_col;
 	}
-	return width;
+
+	return 80;
 }
 
 std::tuple<uint32_t, uint32_t> get_terminal_width_and_height()
 {
 	if (isatty(STDOUT_FILENO))
 	{
-		struct winsize w;
-		ioctl(0, TIOCGWINSZ, &w);
-		return { w.ws_col, w.ws_row };
+		struct winsize w{};
+		if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == 0 and w.ws_col > 0 and w.ws_row > 0)
+			return { w.ws_col, w.ws_row };
 	}
+
 	return { 80, 24 };
 }
 
