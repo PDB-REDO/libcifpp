@@ -32,6 +32,8 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <numbers>
+#include <stdexcept>
+#include <vector>
 
 #if defined(_MSC_VER)
 # pragma warning(disable : 5054) // warning C5054: operator '&': deprecated between enumerations of different types
@@ -628,4 +630,55 @@ TEST_CASE("smallest_sphere-1")
 		CHECK_THAT(cif::distance(c, cif::point{ 0, 0.743099928, 51.1741028 }), Catch::Matchers::WithinAbs(0.f, 0.01f));
 		CHECK_THAT(r, Catch::Matchers::WithinAbs(7.31248331f, 0.01f));
 	}
+}
+
+// Internal helper, declared here so the empty-input regression can exercise it.
+namespace cif
+{
+std::tuple<point, float> smallest_sphere_around_all_points(std::vector<point> P, std::vector<point> R);
+}
+
+TEST_CASE("geometry_input_validation")
+{
+	const std::vector<cif::point> empty;
+	const std::vector<cif::point> one{ { 1, 2, 3 } };
+	const std::vector<cif::point> two{ { 1, 2, 3 }, { 4, 5, 6 } };
+
+	CHECK_THROWS_AS(cif::centroid(empty), std::invalid_argument);
+	CHECK_THROWS_AS(cif::RMSd(empty, empty), std::invalid_argument);
+	CHECK_THROWS_AS(cif::align_points(empty, empty), std::invalid_argument);
+
+	CHECK_THROWS_AS(cif::RMSd(one, two), std::invalid_argument);
+	CHECK_THROWS_AS(cif::align_points(one, two), std::invalid_argument);
+
+	std::vector<cif::point> empty_points;
+	CHECK_THROWS_AS(cif::center_points(empty_points), std::invalid_argument);
+
+	// Valid input must keep working.
+	auto c = cif::centroid(one);
+	CHECK(c.m_x == 1);
+	CHECK(c.m_y == 2);
+	CHECK(c.m_z == 3);
+
+	std::vector<cif::point> centered = one;
+	auto offset = cif::center_points(centered);
+	CHECK(offset.m_x == 1);
+	CHECK(centered.front().m_x == 0);
+
+	CHECK(cif::RMSd(one, one) == 0);
+	CHECK(cif::RMSd(two, two) == 0);
+
+	// An empty set of points produces an empty sphere instead of reading past
+	// the end of the input.
+	auto [c1, r1] = cif::smallest_sphere_around_points({});
+	CHECK(c1.m_x == 0);
+	CHECK(c1.m_y == 0);
+	CHECK(c1.m_z == 0);
+	CHECK(r1 == 0);
+
+	auto [c2, r2] = cif::smallest_sphere_around_all_points({}, {});
+	CHECK(c2.m_x == 0);
+	CHECK(c2.m_y == 0);
+	CHECK(c2.m_z == 0);
+	CHECK(r2 == 0);
 }

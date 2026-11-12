@@ -860,6 +860,8 @@ constexpr auto distance_point_to_line(const point_type<F> &l1, const point_type<
 }
 
 /// @brief return the smallest sphere around the points in @a pts
+///
+/// If @a pts is empty, a zero-radius sphere at the origin is returned.
 std::tuple<point, float> smallest_sphere_around_points(std::vector<point> pts);
 
 // --------------------------------------------------------------------
@@ -885,10 +887,12 @@ quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
 	float angle, float esd);
 
 /// @brief Return the point that is the centroid of all the points in @a pts
+/// @throws std::invalid_argument if @a pts is empty
 point centroid(const std::vector<point> &pts);
 
 /// @brief Move all the points in @a pts so that their centroid is at the origin
 /// (0, 0, 0) and return the offset used (the former centroid)
+/// @throws std::invalid_argument if @a pts is empty
 point center_points(std::vector<point> &pts);
 
 /// @brief Returns how the two sets of points @a a and \b b can be aligned
@@ -897,9 +901,11 @@ point center_points(std::vector<point> &pts);
 /// @param b    The second set of points
 /// @result     The quaternion which should be applied to the points in @a a to
 ///             obtain the best superposition.
+/// @throws std::invalid_argument if @a a and @a b are empty or have different sizes
 quaternion align_points(const std::vector<point> &a, const std::vector<point> &b);
 
 /// @brief The RMSd for the points in @a a and @a b
+/// @throws std::invalid_argument if @a a and @a b are empty or have different sizes
 double RMSd(const std::vector<point> &a, const std::vector<point> &b);
 
 } // namespace cif

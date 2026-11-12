@@ -107,6 +107,9 @@ std::tuple<float, point> quaternion_to_angle_axis(quaternion q)
 
 point center_points(std::vector<point> &Points)
 {
+	if (Points.empty())
+		throw std::invalid_argument("Cannot center an empty list of points");
+
 	point t;
 
 	for (point &pt : Points)
@@ -146,6 +149,9 @@ quaternion construct_for_dihedral_angle(point p1, point p2, point p3, point p4,
 
 point centroid(const std::vector<point> &pts)
 {
+	if (pts.empty())
+		throw std::invalid_argument("Cannot calculate the centroid of an empty list of points");
+
 	point result;
 
 	for (auto &pt : pts)
@@ -158,8 +164,11 @@ point centroid(const std::vector<point> &pts)
 
 double RMSd(const std::vector<point> &a, const std::vector<point> &b)
 {
+	if (a.empty() or a.size() != b.size())
+		throw std::invalid_argument("RMSd requires two non-empty point sets of equal size");
+
 	double sum = 0;
-	for (uint32_t i = 0; i < a.size(); ++i)
+	for (std::size_t i = 0; i < a.size(); ++i)
 	{
 		std::valarray<double> d(3);
 
@@ -216,10 +225,13 @@ double LargestDepressedQuarticSolution(double a, double b, double c)
 
 quaternion align_points(const std::vector<point> &pa, const std::vector<point> &pb)
 {
+	if (pa.empty() or pa.size() != pb.size())
+		throw std::invalid_argument("align_points requires two non-empty point sets of equal size");
+
 	// First calculate M, a 3x3 matrix containing the sums of products of the coordinates of A and B
 	matrix3x3<double> M;
 
-	for (uint32_t i = 0; i < pa.size(); ++i)
+	for (std::size_t i = 0; i < pa.size(); ++i)
 	{
 		const point &a = pa[i];
 		const point &b = pb[i];
@@ -466,6 +478,9 @@ std::tuple<point, float> smallest_sphere_around_all_points(std::vector<point> P,
 	{
 		switch (R.size())
 		{
+			case 0:
+				return { point{}, 0 };
+
 			case 1:
 				return { R[0], 0 };
 
@@ -479,7 +494,7 @@ std::tuple<point, float> smallest_sphere_around_all_points(std::vector<point> P,
 				return smallest_sphere_around_4_points({ R[0], R[1], R[2], R[3] });
 
 			default:
-				assert(false);
+				throw std::invalid_argument("Invalid number of boundary points for smallest sphere");
 		}
 	}
 
@@ -531,6 +546,9 @@ bool point_in_circle(point p, std::vector<point> c)
 
 std::tuple<point, float> smallest_sphere_around_points(std::vector<point> pts)
 {
+	if (pts.empty())
+		return { point{}, 0 };
+
 	std::random_device rd;
 	std::mt19937 g(rd());
 
