@@ -33,7 +33,7 @@ jobs:
           #   os: ubuntu-26.04
           # - cpp_compiler: clang-22
           #   os: ubuntu-26.04
-          - cpp_compiler: cl
+          - cpp_compiler: cl.exe
             os: windows-latest
             preset: --preset vcpkg
           - cpp_compiler: clang++
