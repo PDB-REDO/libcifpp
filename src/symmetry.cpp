@@ -82,19 +82,49 @@ cell::cell(const datablock &db)
 
 void cell::init()
 {
-	auto alpha = (m_alpha * std::numbers::pi_v<float>) / 180;
-	auto beta = (m_beta * std::numbers::pi_v<float>) / 180;
-	auto gamma = (m_gamma * std::numbers::pi_v<float>) / 180;
+	constexpr double kEps = 1e-6;
+
+	if (not std::isfinite(m_a) or not std::isfinite(m_b) or not std::isfinite(m_c) or
+		m_a <= 0 or m_b <= 0 or m_c <= 0)
+		throw std::invalid_argument("Invalid unit cell: lengths must be positive finite values");
+
+	if (not std::isfinite(m_alpha) or not std::isfinite(m_beta) or not std::isfinite(m_gamma) or
+		m_alpha <= 0 or m_alpha >= 180 or m_beta <= 0 or m_beta >= 180 or m_gamma <= 0 or m_gamma >= 180)
+		throw std::invalid_argument("Invalid unit cell: angles must be between 0 and 180 degrees");
+
+	constexpr double kDegToRad = std::numbers::pi_v<double> / 180;
+	const double alpha = m_alpha * kDegToRad;
+	const double beta = m_beta * kDegToRad;
+	const double gamma = m_gamma * kDegToRad;
+
+	const double ca = std::cos(alpha);
+	const double cb = std::cos(beta);
+	const double cg = std::cos(gamma);
+	const double sg = std::sin(gamma);
+
+	if (std::abs(sg) < kEps)
+		throw std::invalid_argument("Invalid unit cell: gamma is too close to 0 or 180 degrees");
+
+	const double t = (ca - cb * cg) / sg;
+	const double term = 1 - cb * cb - t * t;
+
+	if (term <= kEps)
+		throw std::invalid_argument("Invalid unit cell: inconsistent angles");
 
 	m_orthogonal = identity_matrix(3);
 
 	m_orthogonal(0, 0) = m_a;
-	m_orthogonal(0, 1) = m_b * std::cos(gamma);
-	m_orthogonal(0, 2) = m_c * std::cos(beta);
-	m_orthogonal(1, 1) = m_b * std::sin(gamma);
-	m_orthogonal(1, 2) = m_c * (std::cos(alpha) - std::cos(beta) * std::cos(gamma)) / std::sin(gamma);
-	m_orthogonal(2, 2) = m_c * std::sqrt(1 - std::cos(beta) * std::cos(beta)
-		- std::pow((std::cos(alpha) - std::cos(beta) * std::cos(gamma)) / std::sin(gamma), 2.f));
+	m_orthogonal(0, 1) = m_b * cg;
+	m_orthogonal(0, 2) = m_c * cb;
+	m_orthogonal(1, 1) = m_b * sg;
+	m_orthogonal(1, 2) = m_c * t;
+	m_orthogonal(2, 2) = m_c * std::sqrt(term);
+
+	const double scale = static_cast<double>(m_a) * m_b * m_c;
+	const double det = determinant(m_orthogonal);
+
+	if (not std::isfinite(det) or det <= 0 or det < kEps * scale)
+		throw std::invalid_argument("Invalid unit cell: singular orthogonalization matrix");
 
 	m_fractional = inverse(m_orthogonal);
 }
@@ -191,7 +221,10 @@ void transformation::try_create_quaternion()
 		m_rotation(1, 0), m_rotation(1, 1), m_rotation(1, 2),
 		m_rotation(2, 0), m_rotation(2, 1), m_rotation(2, 2);
 
-	if (rot * rot.transpose() == Eigen::Matrix3f::Identity() and rot.determinant() == 1)
+	constexpr float kEps = 1e-4f;
+
+	if ((rot * rot.transpose()).isApprox(Eigen::Matrix3f::Identity(), kEps) and
+		std::abs(rot.determinant() - 1.0f) < kEps)
 	{
 		Eigen::Quaternionf qe(rot);
 		m_q = normalize(cif::quaternion{ qe.w(), qe.x(), qe.y(), qe.z() });

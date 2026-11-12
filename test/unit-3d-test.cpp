@@ -31,6 +31,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <limits>
 #include <numbers>
 #include <stdexcept>
 #include <vector>
@@ -693,4 +694,34 @@ TEST_CASE("cell-empty-datablock")
 	// The category exists but contains no rows.
 	db["cell"];
 	CHECK_THROWS_AS(cif::cell(db), std::runtime_error);
+}
+
+TEST_CASE("cell-invalid-geometry")
+{
+	CHECK_THROWS_AS(cif::cell(10, 10, 10, 90, 90, 0), std::invalid_argument);
+	CHECK_THROWS_AS(cif::cell(10, 10, 10, 90, 90, 180), std::invalid_argument);
+	CHECK_THROWS_AS(cif::cell(0, 10, 10, 90, 90, 90), std::invalid_argument);
+	CHECK_THROWS_AS(cif::cell(10, -1, 10, 90, 90, 90), std::invalid_argument);
+	CHECK_THROWS_AS(cif::cell(10, 10, 10, 30, 30, 120), std::invalid_argument);
+	CHECK_THROWS_AS(cif::cell(10, 10, 10, std::numeric_limits<float>::quiet_NaN(), 90, 90), std::invalid_argument);
+
+	CHECK_NOTHROW(cif::cell(10, 10, 12, 80, 95, 110));
+
+	cif::cell c(10, 10, 10, 90, 90, 90);
+	CHECK_THAT(c.get_volume(), Catch::Matchers::WithinRel(1000.0f, 1e-5f));
+}
+
+TEST_CASE("transformation-near-rotation")
+{
+	// A small floating-point deviation from orthogonality must still be
+	// accepted, so the quaternion path normalizes the rotation.
+	cif::matrix3x3<float> r = cif::identity_matrix(3);
+	r(0, 0) = 1.00001f;
+
+	cif::transformation t(r, {});
+	auto p = t(cif::point{ 1, 0, 0 });
+
+	CHECK_THAT(p.m_x, Catch::Matchers::WithinAbs(1.0f, 1e-6f));
+	CHECK_THAT(p.m_y, Catch::Matchers::WithinAbs(0.0f, 1e-6f));
+	CHECK_THAT(p.m_z, Catch::Matchers::WithinAbs(0.0f, 1e-6f));
 }
