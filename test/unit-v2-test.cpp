@@ -483,6 +483,29 @@ TEST_CASE("c_1")
 	}
 }
 
+TEST_CASE("iterator_proxy_initializer_list_size")
+{
+	cif::category c("foo");
+
+	c.emplace({ { "id", 1 }, { "s", "aap" } });
+
+	using proxy = cif::iterator_proxy<int, std::string>;
+
+	// Too few and too many names must be rejected instead of writing past
+	// the fixed-size item index array.
+	CHECK_THROWS_AS((proxy{ c, c.begin(), { "id" } }), std::invalid_argument);
+	CHECK_THROWS_AS((proxy{ c, c.begin(), { "id", "s", "id" } }), std::invalid_argument);
+
+	// The correct number of names still works.
+	proxy p{ c, c.begin(), { "id", "s" } };
+	auto it = p.begin();
+	REQUIRE(it != p.end());
+
+	auto [id, s] = *it;
+	CHECK(id == 1);
+	CHECK(s == "aap");
+}
+
 TEST_CASE("c_2")
 {
 	std::tuple<int, const char *> D[] = {

@@ -32,6 +32,7 @@
 #include <array>
 #include <cstdint>
 #include <numeric>
+#include <stdexcept>
 #include <type_traits>
 
 /// @file iterator.hpp
@@ -739,7 +740,10 @@ iterator_proxy_base<Const, Ts...>::iterator_proxy_base(category_type &cat, row_i
 {
 	// static_assert(items.size() == N, "The list of item names should be exactly the same as the list of requested items");
 
-	std::uint16_t i = 0;
+	if (items.size() != N)
+		throw std::invalid_argument("The number of item names should be equal to the number of requested value types");
+
+	std::size_t i = 0;
 	for (auto item : items)
 		m_item_ix[i++] = m_category->get_item_ix(item);
 }
