@@ -4390,3 +4390,22 @@ TEST_CASE("row-read-does-not-add-item")
 	CHECK(c.get_item_ix("missing") == count);
 	CHECK(r["missing"].get<int>() == 42);
 }
+
+TEST_CASE("const-row-handle-cannot-mutate")
+{
+	cif::category c("foo");
+	c.emplace(cif::row_initializer{ { "id", 1 }, { "name", "aap" } });
+
+	const cif::category &cc = c;
+	auto cr = cc.front();
+
+	// Reading through a const row handle works.
+	CHECK(cr["name"].get<std::string>() == "aap");
+
+	// Dropping the top-level const must not allow mutation.
+	auto h = cr["name"];
+	CHECK_THROWS_AS(h = "noot", std::logic_error);
+	CHECK_THROWS_AS(h.value() = "noot", std::logic_error);
+
+	CHECK(c.front()["name"].get<std::string>() == "aap");
+}

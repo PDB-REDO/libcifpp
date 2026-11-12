@@ -66,8 +66,11 @@ bool item_handle::empty() const
 	return m_item_ix >= m_row.size() or m_row[m_item_ix].empty();
 }
 
-item_value &item_handle::value() noexcept
+item_value &item_handle::value()
 {
+	if (m_is_const)
+		throw std::logic_error("Cannot modify a const item_handle");
+
 	if (m_item_ix >= m_row.size())
 		return s_null_item;
 
@@ -91,6 +94,9 @@ void swap(item_handle a, item_handle b) noexcept
 
 void item_handle::set(const item_value &value, bool updateLinked)
 {
+	if (m_is_const)
+		throw std::logic_error("Cannot modify a const item_handle");
+
 	if (m_item_ix >= m_category.get_item_count())
 	{
 		if (m_item_name.empty())

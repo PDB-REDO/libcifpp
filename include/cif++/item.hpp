@@ -703,7 +703,7 @@ struct item_handle
 	}
 
 	/// Return the value of the item
-	[[nodiscard]] item_value &value() noexcept;
+	[[nodiscard]] item_value &value();
 
 	/// Return the const value of the item
 	[[nodiscard]] const item_value &value() const noexcept;

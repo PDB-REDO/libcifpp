@@ -2353,7 +2353,7 @@ std::string structure::create_non_poly(const std::string &entity_id, const std::
 				 // clang-format on
 			 })
 		{
-			auto v = atom.get_property_value(item);
+			const auto v = atom.get_property_value(item);
 			if (not v.empty())
 				data.push_back({ item, v.value() });
 			else
