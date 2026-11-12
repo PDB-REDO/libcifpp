@@ -265,6 +265,9 @@ class dictionary_parser : public parser
 
 		if (isCategorySaveFrame)
 		{
+			if (dict["category"].empty())
+				error("Category save frame '" + saveFrameName + "' is missing _category.id");
+
 			auto category = dict["category"].front().get<std::string>("id");
 
 			std::vector<std::string> keys;

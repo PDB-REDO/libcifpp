@@ -4203,3 +4203,70 @@ TEST_CASE("ctype-high-bit")
 	CHECK(cif::icompare("\xC3\xA9", "\xC3\xA9") == 0);
 	CHECK(cif::icontains("\xC3\xA9" "Zz", "zz"));
 }
+
+namespace cif::pdb
+{
+void createEntity(datablock &db);
+}
+
+TEST_CASE("dictionary-missing-category-id")
+{
+	std::istringstream dict(R"(
+data_test.dic
+_dictionary.title test.dic
+
+save_broken
+   _foo.bar 1
+   save_
+)");
+
+	CHECK_THROWS_AS(cif::validator(dict), std::runtime_error);
+}
+
+TEST_CASE("compound-empty-chem-comp")
+{
+	cif::file f;
+	auto &db = f["EMPTY"];
+
+	// An existing but empty chem_comp category must not be used to construct
+	// a compound.
+	db["chem_comp"];
+
+	cif::compound_source cs(f);
+
+	struct report_missing_guard
+	{
+		bool m_previous = cif::compound_factory::instance().get_report_missing();
+		report_missing_guard() { cif::compound_factory::instance().set_report_missing(false); }
+		~report_missing_guard() { cif::compound_factory::instance().set_report_missing(m_previous); }
+	} guard;
+
+	CHECK(cif::compound_factory::instance().create("EMPTY") == nullptr);
+}
+
+TEST_CASE("reconstruct-empty-entity-group")
+{
+	using namespace cif::literals;
+
+	cif::datablock db("test");
+
+	auto &atom_site = db["atom_site"];
+	atom_site.emplace(cif::row_initializer{
+		{ "label_asym_id", "A" },
+		{ "label_comp_id", "HOH" },
+		{ "label_seq_id", 1 },
+		{ "label_atom_id", "O" } });
+
+	auto &struct_asym = db["struct_asym"];
+	struct_asym.emplace(cif::row_initializer{ { "id", "A" } });
+	struct_asym.emplace(cif::row_initializer{ { "id", "B" } });
+
+	// Asym B has no atoms. Its empty entity group must be skipped instead of
+	// calling front() on an empty vector.
+	CHECK_NOTHROW(cif::pdb::createEntity(db));
+
+	CHECK(db["entity"].size() == 1);
+	CHECK(db["struct_asym"].find1<std::string>("id"_key == "A", "entity_id") ==
+		db["entity"].front()["id"].str());
+	CHECK(db["struct_asym"].find1<std::string>("id"_key == "B", "entity_id").empty());
+}

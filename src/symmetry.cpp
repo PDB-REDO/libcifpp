@@ -71,6 +71,9 @@ cell::cell(const datablock &db)
 {
 	auto &_cell = db["cell"];
 
+	if (_cell.empty())
+		throw std::runtime_error("Missing or empty cell category in datablock " + db.name());
+
 	tie(m_a, m_b, m_c, m_alpha, m_beta, m_gamma) =
 		_cell.front().get("length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma");
 

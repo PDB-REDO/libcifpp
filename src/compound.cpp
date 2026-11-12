@@ -543,7 +543,7 @@ compound *local_compound_factory_impl::create(const std::string &id)
 		if (db.name() == id)
 		{
 			auto chem_comp = db.get("chem_comp");
-			if (not chem_comp)
+			if (not chem_comp or chem_comp->empty())
 				break;
 
 			try

@@ -828,7 +828,12 @@ void createEntity(datablock &db)
 	std::set<std::vector<std::tuple<std::string, int>>, decltype(less)> entities(less);
 
 	for (const auto &[asym_id, content] : asyms)
+	{
+		if (content.empty())
+			continue;
+
 		entities.emplace(content);
+	}
 
 	auto water_weight = cf.create("HOH")->formula_weight();
 

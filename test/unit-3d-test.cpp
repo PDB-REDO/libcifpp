@@ -682,3 +682,15 @@ TEST_CASE("geometry_input_validation")
 	CHECK(c2.m_z == 0);
 	CHECK(r2 == 0);
 }
+
+TEST_CASE("cell-empty-datablock")
+{
+	cif::datablock db("test");
+
+	// The datablock has no cell category at all.
+	CHECK_THROWS_AS(cif::cell(db), std::runtime_error);
+
+	// The category exists but contains no rows.
+	db["cell"];
+	CHECK_THROWS_AS(cif::cell(db), std::runtime_error);
+}
