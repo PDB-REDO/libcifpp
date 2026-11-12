@@ -354,3 +354,38 @@ TEST_CASE("cif2pdb-model-two-coordinate-count")
 	CHECK(numCoord == 1);
 	CHECK(os.str().find("ATOM") != std::string::npos);
 }
+
+TEST_CASE("pdb-remark3-truncated-at-eof")
+{
+	std::istringstream is(
+		"HEADER    TEST\n"
+		"ATOM      1  N   PRO A   1      16.979  13.301  44.555  1.00 30.05           N\n"
+		"REMARK   3   REFINEMENT.\n"
+		"REMARK   3   PROGRAM     : X-PLOR\n"
+		"REMARK   3   DATA USED IN REFINEMENT.\n"
+		"REMARK   3   RESOLUTION RANGE HIGH (ANGSTROMS) : 1.80\n");
+
+	CHECK_NOTHROW(cif::pdb::read(is));
+}
+
+TEST_CASE("pdb-remark3-wrapped-value")
+{
+	std::string pdb =
+		"HEADER    TEST\n"
+		"ATOM      1  N   PRO A   1      16.979  13.301  44.555  1.00 30.05           N\n"
+		"REMARK   3   REFINEMENT.\n"
+		"REMARK   3   PROGRAM     : X-PLOR\n"
+		"REMARK   3   DATA USED IN REFINEMENT.\n"
+		"REMARK   3   FREE R VALUE TEST SET SELECTION : RANDOM\n";
+
+	pdb += "REMARK   3" + std::string(35, ' ') + "SELECTION\n";
+	pdb += "REMARK   3   RESOLUTION RANGE LOW  (ANGSTROMS) : 8.00\n";
+	pdb += "ATOM      2  CA  PRO A   1      18.150  13.525  43.680  1.00 28.82           C\n";
+
+	std::istringstream is(pdb);
+	auto f = cif::pdb::read(is);
+	auto &refine = f.front()["refine"];
+
+	REQUIRE(refine.size() == 1);
+	CHECK(refine.front()["pdbx_R_Free_selection_details"].str() == "RANDOM");
+}

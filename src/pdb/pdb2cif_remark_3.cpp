@@ -1027,8 +1027,8 @@ std::string Remark3Parser::nextLine()
 
 			if (mRec->mValue[i] == ':')
 			{
-				valueIndent = i;
-				while (valueIndent < mRec->mVlen and mRec->mValue[i] == ' ')
+				valueIndent = i + 1;
+				while (valueIndent < mRec->mVlen and mRec->mValue[valueIndent] == ' ')
 					++valueIndent;
 				break;
 			}
@@ -1046,7 +1046,7 @@ std::string Remark3Parser::nextLine()
 		{
 			std::string indent(valueIndent - 4, ' ');
 
-			while (mRec->is("REMARK   3") and mRec->mVlen > valueIndent)
+			while (mRec != nullptr and mRec->is("REMARK   3") and mRec->mVlen > valueIndent)
 			{
 				std::string v(mRec->mValue + 4, mRec->mValue + mRec->mVlen);
 				if (not cif::starts_with(v, indent))
