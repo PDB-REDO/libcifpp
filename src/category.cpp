@@ -453,7 +453,8 @@ category_index::entry *category_index::insert(category &cat, entry *h, row *v)
 
 void category_index::erase(category &cat, row *k)
 {
-	assert(find(cat, k) == k);
+	if (find(cat, k) != k)
+		throw std::runtime_error("row not found in category index");
 
 	m_root = erase(cat, m_root, k);
 	if (m_root != nullptr)
@@ -462,6 +463,9 @@ void category_index::erase(category &cat, row *k)
 
 category_index::entry *category_index::erase(category &cat, entry *h, row *k)
 {
+	if (h == nullptr)
+		return nullptr;
+
 	if (m_row_comparator(cat, k, h->m_row) < 0)
 	{
 		if (h->m_left != nullptr)

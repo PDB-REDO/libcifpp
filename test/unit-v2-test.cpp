@@ -3827,6 +3827,46 @@ y . 1 two
 	CHECK_THROWS_AS(c.set_validator(&v, db), cif::duplicate_key_error);
 }
 
+TEST_CASE("erase-missing-index-key")
+{
+	std::istringstream dict(kRemoveItemDictionary);
+	cif::validator v(dict);
+
+	auto data = R"(data_TEST
+loop_
+_foo.before
+_foo.extra
+_foo.id
+_foo.note
+x . 1 one
+y . 2 two
+)"_cf;
+
+	auto &db = data.front();
+	auto &c = db["foo"];
+	db.set_validator(&v);
+
+	REQUIRE(c.size() == 2);
+
+	auto it = c.begin();
+	for (; it != c.end(); ++it)
+	{
+		if ((*it)["id"].get<int>() == 1)
+			break;
+	}
+	REQUIRE(it != c.end());
+
+	// Change the key without updating the index, so the row can no longer be
+	// found by its current key. The row is the left child of the root, so a
+	// larger key makes the lookup miss it.
+	auto rh = *it;
+	rh["id"].value() = cif::item_value{ 100 };
+
+	// A missing key must not reach the recursive erase and dereference null.
+	CHECK_THROWS_AS(c.erase(it), std::runtime_error);
+	CHECK(c.size() == 2);
+}
+
 TEST_CASE("drop-empty-items")
 {
 	std::istringstream dict(kRemoveItemDictionary);
