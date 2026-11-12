@@ -29,6 +29,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cif++/pdb.hpp>
 
+#include "../src/pdb/pdb_record.hpp"
+
+#include <memory>
+#include <stdexcept>
 #include <string>
 
 // cif2pdbDate is an internal helper in src/pdb/cif2pdb.cpp. It is not part of
@@ -66,4 +70,44 @@ TEST_CASE("cif2pdb-date")
 	CHECK(cif::pdb::cif2pdbDate("").empty());
 	CHECK(cif::pdb::cif2pdbDate("not a date").empty());
 	CHECK(cif::pdb::cif2pdbDate("2024-05-1").empty());
+}
+
+namespace
+{
+
+std::unique_ptr<cif::pdb::PDBRecord> make_record(const std::string &name, const std::string &value)
+{
+	return std::unique_ptr<cif::pdb::PDBRecord>(new (value.length()) cif::pdb::PDBRecord(1, name, value));
+}
+
+} // namespace
+
+TEST_CASE("pdb-record-bounds")
+{
+	// A record name longer than the 10-character field must not overflow it.
+	CHECK_THROWS_AS(make_record("TOO-LONG-NAME", "value"), std::invalid_argument);
+
+	auto rec = make_record("REMARK 200", "1234567890");
+
+	// Valid columns map to mValue starting at column 7.
+	CHECK(rec->vS(7, 10) == "1234");
+	CHECK(rec->vC(7) == '1');
+	CHECK(rec->vI(7, 10) == 1234);
+
+	// Columns before the value area and reversed ranges are rejected.
+	CHECK_THROWS_AS(rec->vS(1, 6), std::out_of_range);
+	CHECK_THROWS_AS(rec->vC(6), std::out_of_range);
+	CHECK_THROWS_AS(rec->vI(1, 6), std::out_of_range);
+	CHECK_THROWS_AS(rec->vS(10, 7), std::out_of_range);
+	CHECK_THROWS_AS(rec->vI(10, 7), std::out_of_range);
+
+	// Reading past the end is clamped, not out of bounds.
+	CHECK(rec->vS(7, 100) == "1234567890");
+	CHECK(rec->vS(100, 200).empty());
+	CHECK(rec->vC(100) == ' ');
+
+	// The error path in vI must also stay within the record when the
+	// requested range extends past a truncated line.
+	auto truncated = make_record("ATOM  ", "xx");
+	CHECK_THROWS_AS(truncated->vI(7, 100), std::runtime_error);
 }

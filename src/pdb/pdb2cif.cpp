@@ -49,6 +49,7 @@
 #include <limits>
 #include <list>
 #include <map>
+#include <new>
 #include <optional>
 #include <regex>
 #include <set>
@@ -182,15 +183,23 @@ PDBRecord::PDBRecord(uint32_t lineNr, const std::string &name, const std::string
 	: mLineNr(lineNr)
 	, mVlen(value.length())
 {
-	assert(name.length() <= 10);
+	if (name.length() >= sizeof(mName))
+		throw std::invalid_argument("PDB record name is too long: " + name);
 
-	strcpy(mName, name.c_str());
-	strcpy(mValue, value.c_str());
+	std::memcpy(mName, name.data(), name.length());
+	mName[name.length()] = '\0';
+	std::memcpy(mValue, value.data(), value.length() + 1);
 }
 
 void *PDBRecord::operator new(std::size_t size, std::size_t vLen)
 {
-	return malloc(size + vLen + 1);
+	if (vLen > std::numeric_limits<std::size_t>::max() - size - 1)
+		throw std::bad_alloc();
+
+	auto *result = std::malloc(size + vLen + 1);
+	if (result == nullptr)
+		throw std::bad_alloc();
+	return result;
 }
 
 void PDBRecord::operator delete(void *p) // NOLINT(cert-dcl54-cpp)
@@ -210,35 +219,44 @@ bool PDBRecord::is(const char *name) const
 
 char PDBRecord::vC(std::size_t column)
 {
-	char result = ' ';
-	if (column - 7 < mVlen)
-		result = mValue[column - 7];
-	return result;
+	if (column < 7)
+		throw std::out_of_range("Invalid PDB column " + std::to_string(column));
+
+	auto ix = column - 7;
+	return ix < mVlen ? mValue[ix] : ' ';
 }
 
 std::string PDBRecord::vS(std::size_t columnFirst, std::size_t columnLast)
 {
-	std::string result;
+	if (columnFirst < 7 or columnLast < columnFirst)
+		throw std::out_of_range("Invalid PDB column range");
 
-	if (columnLast > mVlen + 6)
-		columnLast = mVlen + 6;
+	// columnLast is inclusive, and mValue starts at column 7.
+	auto begin = columnFirst - 7;
+	auto end = columnLast - 6;
+	if (end > mVlen)
+		end = mVlen;
 
-	if (columnFirst < mVlen + 7)
-	{
-		result = std::string{ mValue + columnFirst - 7, mValue + columnLast - 7 + 1 };
-		cif::trim(result);
-	}
+	if (begin >= end)
+		return {};
 
+	std::string result{ mValue + begin, mValue + end };
+	cif::trim(result);
 	return result;
 }
 
 int PDBRecord::vI(int columnFirst, int columnLast)
 {
-	int result = 0;
+	if (columnFirst < 7 or columnLast < columnFirst)
+		throw std::out_of_range("Invalid PDB column range");
 
-	const char *e = mValue + mVlen;
-	if (e > mValue + columnLast - 7 + 1)
-		e = mValue + columnLast - 7 + 1;
+	// columnLast is inclusive, and mValue starts at column 7.
+	auto begin = static_cast<std::size_t>(columnFirst) - 7;
+	auto end = static_cast<std::size_t>(columnLast) - 6;
+	if (end > mVlen)
+		end = mVlen;
+
+	int result = 0;
 
 	enum
 	{
@@ -250,7 +268,7 @@ int PDBRecord::vI(int columnFirst, int columnLast)
 
 	try
 	{
-		for (const char *p = mValue + columnFirst - 7; p < e; ++p)
+		for (const char *p = mValue + begin, *e = mValue + end; p < e; ++p)
 		{
 			switch (state)
 			{
@@ -290,7 +308,7 @@ int PDBRecord::vI(int columnFirst, int columnLast)
 	catch (const std::exception &ex)
 	{
 		if (VERBOSE >= 0)
-			std::cerr << "Trying to parse '" << std::string(mValue + columnFirst - 7, mValue + columnLast - 7) << '\'' << '\n';
+			std::cerr << "Trying to parse '" << std::string(mValue + begin, mValue + end) << '\'' << '\n';
 		throw;
 	}
 

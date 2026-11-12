@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <optional>
@@ -49,7 +50,7 @@ struct PDBRecord
 	PDBRecord(uint32_t lineNr, const std::string &name, const std::string &value);
 	~PDBRecord() = default;
 
-	void *operator new(std::size_t);
+	void *operator new(std::size_t) = delete;
 	void *operator new(std::size_t size, std::size_t vLen);
 
 	void operator delete(void *p);
