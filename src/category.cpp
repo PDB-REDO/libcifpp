@@ -346,8 +346,19 @@ class category_index
 category_index::category_index(category &cat)
 	: m_row_comparator(cat)
 {
-	for (auto r : cat)
-		insert(cat, r.get_row());
+	try
+	{
+		for (auto r : cat)
+			insert(cat, r.get_row());
+	}
+	catch (...)
+	{
+		// The destructor is not called when a constructor throws, so release
+		// the entries that were inserted before the exception.
+		delete m_root;
+		m_root = nullptr;
+		throw;
+	}
 }
 
 row *category_index::find(const category &cat, row *k) const

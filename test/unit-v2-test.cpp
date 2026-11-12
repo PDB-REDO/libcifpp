@@ -3804,6 +3804,29 @@ TEST_CASE("remove-item")
 	CHECK(c.size() == 3);
 }
 
+TEST_CASE("duplicate-key-index-exception")
+{
+	std::istringstream dict(kRemoveItemDictionary);
+	cif::validator v(dict);
+
+	auto data = R"(data_TEST
+loop_
+_foo.before
+_foo.extra
+_foo.id
+_foo.note
+x . 1 one
+y . 1 two
+)"_cf;
+
+	auto &db = data.front();
+	auto &c = db["foo"];
+
+	// Building the index fails halfway through. The entries inserted before
+	// the duplicate must be released while the constructor unwinds.
+	CHECK_THROWS_AS(c.set_validator(&v, db), cif::duplicate_key_error);
+}
+
 TEST_CASE("drop-empty-items")
 {
 	std::istringstream dict(kRemoveItemDictionary);
