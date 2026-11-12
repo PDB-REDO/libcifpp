@@ -267,7 +267,7 @@ std::size_t WriteCitation(std::ostream &pdbFile, const datablock &db, const_row_
 
 	if (reference > 0)
 	{
-		pdbFile << "REMARK   1 REFERENCE " << std::to_string(reference);
+		pdbFile << "REMARK   1 REFERENCE " << std::to_string(reference) << '\n';
 		result = 1;
 		s1 = "REMARK   1  ";
 	}
@@ -590,9 +590,9 @@ void WriteTitle(std::ostream &pdbFile, const datablock &db)
 		{
 			std::string cs = ++continuation > 1 ? std::to_string(continuation) : std::string();
 
-			std::println(pdbFile, "REVDAT {:3}{:2.2s} {:9.9s} {:4.4s}    {:1}      ", revNum, cs, date, db.name(), modType);
+			pdbFile << std::format("REVDAT {:3}{:2.2s} {:9.9s} {:4.4s}    {:1}      ", revNum, cs, date, db.name(), modType);
 			for (std::size_t i = 0; i < 4; ++i)
-				std::println(pdbFile, " {:<6.6s}", (i < types.size() ? types[i] : std::string()));
+				pdbFile << std::format(" {:<6.6s}", (i < types.size() ? types[i] : std::string()));
 			pdbFile << '\n';
 
 			if (types.size() > 4)
@@ -2942,6 +2942,24 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 	//	for (auto r: db["atom_site"].find(key("group_PDB") == std::string("HETATM")))
 	std::set<std::string> missingHetNames;
 
+	std::optional<int> first_model;
+	try
+	{
+		for (auto r : db["atom_site"])
+		{
+			auto model = r.get<std::string>("pdbx_PDB_model_num");
+
+			int value = 0;
+			auto [ptr, ec] = std::from_chars(model.data(), model.data() + model.size(), value);
+			if (ec == std::errc{} and ptr == model.data() + model.size() and
+				(not first_model.has_value() or value < *first_model))
+				first_model = value;
+		}
+	}
+	catch (...)
+	{
+	}
+
 	for (auto r : db["atom_site"])
 	{
 		int seqNum;
@@ -2949,6 +2967,14 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 
 		cif::tie(entity_id, seqNum, comp_id, chain_id, iCode, modelNr) =
 			r.get("label_entity_id", "auth_seq_id", "auth_comp_id", "auth_asym_id", "pdbx_PDB_ins_code", "pdbx_PDB_model_num");
+
+		if (first_model.has_value() and not modelNr.empty())
+		{
+			int value = 0;
+			auto [ptr, ec] = std::from_chars(modelNr.data(), modelNr.data() + modelNr.size(), value);
+			if (ec == std::errc{} and ptr == modelNr.data() + modelNr.size() and value != *first_model)
+				continue;
+		}
 
 		if (compound_factory::kAAMap.count(comp_id) or compound_factory::kBaseMap.count(comp_id))
 			continue;
@@ -2959,16 +2985,18 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 		if (entity_id != water_entity_id and het.count(comp_id) == 0)
 			missingHetNames.insert(comp_id);
 
+		char iCodeChar = iCode.empty() ? ' ' : iCode[0];
+
 		auto h = std::ranges::find_if(hets,
 			[=](const HET &het) -> bool
 			{
-				return het.hetID == comp_id and het.chainID == chain_id[0] and het.seqNum == seqNum;
+				return het.hetID == comp_id and het.chainID == chain_id[0] and het.seqNum == seqNum and het.iCode == iCodeChar;
 			});
 
 		if (h == hets.end())
 		{
 			hets.push_back({ entity_id == water_entity_id, comp_id, chain_id[0], seqNum,
-				(iCode.empty() ? ' ' : iCode[0]), 1 });
+				iCodeChar, 1 });
 		}
 		else
 			h->numHetAtoms += 1;
@@ -3107,8 +3135,9 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 
 					if (not done)
 					{
-						pdbFile << std::string(formula.begin(), formula.begin() + 55) << '\n';
-						formula.erase(formula.begin(), formula.begin() + 55);
+						constexpr std::size_t kMaxFormulaLength = 51;
+						pdbFile << std::string(formula.begin(), formula.begin() + kMaxFormulaLength) << '\n';
+						formula.erase(formula.begin(), formula.begin() + kMaxFormulaLength);
 					}
 
 					continue;
@@ -3288,10 +3317,22 @@ void WriteConnectivity(std::ostream &pdbFile, const datablock &db)
 		sym1 = cif2pdbSymmetry(sym1);
 		sym2 = cif2pdbSymmetry(sym2);
 
-		std::println(pdbFile, "LINK        {:<4.4s}{:1.1s}{:3.3s} {:1.1s}{:4}{:1.1s}               {:<4.4s}{:1.1s}{:3.3s} {:1.1s}{:4}{:1.1s}  {:>6.6s} {:>6.6s}", name1, altLoc1, resName1, chainID1, resSeq1, iCode1, name2, altLoc2, resName2, chainID2, resSeq2, iCode2, sym1, sym2);
-
+		std::optional<double> distance;
 		if (not Length.empty())
-			std::println(pdbFile, " {:5.2f}", stod(Length));
+		{
+			double d = 0;
+			auto [ptr, ec] = std::from_chars(Length.data(), Length.data() + Length.size(), d);
+			if (ec == std::errc{} and ptr == Length.data() + Length.size())
+				distance = d;
+		}
+
+		pdbFile << std::format("LINK        {:<4.4s}{:1.1s}{:3.3s} {:1.1s}{:4}{:1.1s}               {:<4.4s}{:1.1s}{:3.3s} {:1.1s}{:4}{:1.1s}  {:>6.6s} {:>6.6s}",
+			name1, altLoc1, resName1, chainID1, resSeq1, iCode1, name2, altLoc2, resName2, chainID2, resSeq2, iCode2, sym1, sym2);
+
+		if (distance.has_value())
+			pdbFile << std::format(" {:5.2f}", *distance);
+		else
+			pdbFile << "      ";
 
 		pdbFile << '\n';
 	}
@@ -3582,6 +3623,8 @@ std::tuple<int, int> WriteCoordinate(std::ostream &pdbFile, const datablock &db)
 	}
 	else
 	{
+		bool have_result = false;
+
 		for (int model_nr : models)
 		{
 			if (models.size() > 1)
@@ -3589,8 +3632,11 @@ std::tuple<int, int> WriteCoordinate(std::ostream &pdbFile, const datablock &db)
 
 			std::set<std::string> TERminatedChains;
 			auto n = WriteCoordinatesForModel(pdbFile, db, last_resseq_for_chain_map, TERminatedChains, model_nr);
-			if (model_nr == 1)
+			if (not have_result)
+			{
 				result = n;
+				have_result = true;
+			}
 
 			if (models.size() > 1)
 				pdbFile << "ENDMDL\n";

@@ -32,14 +32,29 @@
 #include "../src/pdb/pdb_record.hpp"
 
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+
+// --------------------------------------------------------------------
+
+cif::file operator""_cf(const char *text, std::size_t length)
+{
+	return cif::file(text, length);
+}
 
 // cif2pdbDate is an internal helper in src/pdb/cif2pdb.cpp. It is not part of
 // the public API, but since it has external linkage we can test it directly.
 namespace cif::pdb
 {
 	std::string cif2pdbDate(const std::string &d);
+
+	std::size_t WriteCitation(std::ostream &pdbFile, const datablock &db, const_row_handle r, int reference);
+	void WriteTitle(std::ostream &pdbFile, const datablock &db);
+	int WriteHeterogen(std::ostream &pdbFile, const datablock &db);
+	void WriteConnectivity(std::ostream &pdbFile, const datablock &db);
+	std::tuple<int, int> WriteCoordinate(std::ostream &pdbFile, const datablock &db);
 }
 
 TEST_CASE("cif2pdb-date")
@@ -110,4 +125,232 @@ TEST_CASE("pdb-record-bounds")
 	// requested range extends past a truncated line.
 	auto truncated = make_record("ATOM  ", "xx");
 	CHECK_THROWS_AS(truncated->vI(7, 100), std::runtime_error);
+}
+
+TEST_CASE("cif2pdb-citation-reference-newline")
+{
+	auto f = R"(
+data_test
+loop_
+_citation.id
+_citation.title
+_citation.journal_abbrev
+_citation.journal_volume
+_citation.journal_id_ASTM
+_citation.country
+_citation.journal_id_ISSN
+_citation.journal_id_CSD
+_citation.book_publisher
+_citation.pdbx_database_id_PubMed
+_citation.pdbx_database_id_DOI
+_citation.page_first
+_citation.page_last
+_citation.year
+1 'A title' . . . . . . . . . . . 2024
+)"_cf;
+
+	std::ostringstream os;
+	cif::pdb::WriteCitation(os, f.front(), f.front()["citation"].front(), 1);
+
+	CHECK(os.str().starts_with("REMARK   1 REFERENCE 1\n"));
+}
+
+TEST_CASE("cif2pdb-revdat-single-line")
+{
+	auto f = R"(
+data_TEST
+loop_
+_database_PDB_rev.num
+_database_PDB_rev.mod_type
+_database_PDB_rev.date
+_database_PDB_rev.replaces
+1 0 2024-05-17 ?
+#
+loop_
+_database_PDB_rev_record.rev_num
+_database_PDB_rev_record.type
+1 HEADER
+1 COMPND
+1 SOURCE
+1 KEYWDS
+)"_cf;
+
+	std::ostringstream os;
+	cif::pdb::WriteTitle(os, f.front());
+
+	auto text = os.str();
+	auto pos = text.find("REVDAT");
+	REQUIRE(pos != std::string::npos);
+	auto eol = text.find('\n', pos);
+	REQUIRE(eol != std::string::npos);
+	auto line = text.substr(pos, eol - pos);
+
+	CHECK(line.find("HEADER") != std::string::npos);
+	CHECK(line.find("COMPND") != std::string::npos);
+	CHECK(line.find("SOURCE") != std::string::npos);
+	CHECK(line.find("KEYWDS") != std::string::npos);
+}
+
+TEST_CASE("cif2pdb-formul-long-formula")
+{
+	cif::datablock db("test");
+	db["chem_comp"].emplace(cif::row_initializer{
+		{ "id", "LIG" },
+		{ "name", "LIGAND" },
+		{ "mon_nstd_flag", "N" },
+		{ "formula", std::string(51, 'C') + "Z" },
+		{ "pdbx_synonyms", nullptr } });
+
+	std::ostringstream os;
+	cif::pdb::WriteHeterogen(os, db);
+
+	auto text = os.str();
+	CHECK(text.find("FORMUL") != std::string::npos);
+	CHECK(text.find('Z') != std::string::npos);
+}
+
+TEST_CASE("cif2pdb-het-model-count")
+{
+	cif::datablock db("test");
+	db["chem_comp"].emplace(cif::row_initializer{
+		{ "id", "LIG" },
+		{ "name", "LIGAND" },
+		{ "mon_nstd_flag", "N" },
+		{ "formula", "C" },
+		{ "pdbx_synonyms", nullptr } });
+
+	auto &atom_site = db["atom_site"];
+	for (int model : { 1, 2 })
+	{
+		atom_site.emplace(cif::row_initializer{
+			{ "group_PDB", "HETATM" },
+			{ "id", std::to_string(model) },
+			{ "label_entity_id", "2" },
+			{ "label_comp_id", "LIG" },
+			{ "auth_comp_id", "LIG" },
+			{ "auth_asym_id", "A" },
+			{ "auth_seq_id", 1 },
+			{ "pdbx_PDB_ins_code", nullptr },
+			{ "label_atom_id", "C1" },
+			{ "type_symbol", "C" },
+			{ "pdbx_PDB_model_num", model } });
+	}
+
+	std::ostringstream os;
+	cif::pdb::WriteHeterogen(os, db);
+
+	auto text = os.str();
+	auto pos = text.find("HET    ");
+	REQUIRE(pos != std::string::npos);
+
+	auto eol = text.find('\n', pos);
+	REQUIRE(eol != std::string::npos);
+
+	auto line = text.substr(pos, eol - pos);
+	CHECK(line.ends_with("    1"));
+	CHECK(text.find("HET    ", pos + 1) == std::string::npos);
+}
+
+TEST_CASE("cif2pdb-het-insertion-code")
+{
+	cif::datablock db("test");
+	db["chem_comp"].emplace(cif::row_initializer{
+		{ "id", "LIG" },
+		{ "name", "LIGAND" },
+		{ "mon_nstd_flag", "N" },
+		{ "formula", "C" },
+		{ "pdbx_synonyms", nullptr } });
+
+	auto &atom_site = db["atom_site"];
+	for (const auto &icode : { std::string{}, std::string{ "A" } })
+	{
+		atom_site.emplace(cif::row_initializer{
+			{ "group_PDB", "HETATM" },
+			{ "id", icode.empty() ? "1" : "2" },
+			{ "label_entity_id", "2" },
+			{ "label_comp_id", "LIG" },
+			{ "auth_comp_id", "LIG" },
+			{ "auth_asym_id", "A" },
+			{ "auth_seq_id", 1 },
+			{ "pdbx_PDB_ins_code", icode.empty() ? cif::item_value_type::MISSING : cif::item_value(icode) },
+			{ "label_atom_id", "C1" },
+			{ "type_symbol", "C" },
+			{ "pdbx_PDB_model_num", 1 } });
+	}
+
+	std::ostringstream os;
+	cif::pdb::WriteHeterogen(os, db);
+
+	auto text = os.str();
+	std::size_t count = 0;
+	for (auto pos = text.find("HET    "); pos != std::string::npos; pos = text.find("HET    ", pos + 1))
+		++count;
+
+	CHECK(count == 2);
+}
+
+TEST_CASE("cif2pdb-link-distance")
+{
+	cif::datablock db("test");
+
+	db["struct_conn"].emplace(cif::row_initializer{
+		{ "conn_type_id", "covale" },
+		{ "ptnr1_label_atom_id", "CA" },
+		{ "pdbx_ptnr1_label_alt_id", nullptr },
+		{ "ptnr1_label_comp_id", "ALA" },
+		{ "ptnr1_auth_asym_id", "A" },
+		{ "ptnr1_auth_seq_id", 1 },
+		{ "pdbx_ptnr1_PDB_ins_code", nullptr },
+		{ "ptnr2_label_atom_id", "CA" },
+		{ "pdbx_ptnr2_label_alt_id", nullptr },
+		{ "ptnr2_label_comp_id", "ALA" },
+		{ "ptnr2_auth_asym_id", "A" },
+		{ "ptnr2_auth_seq_id", 2 },
+		{ "pdbx_ptnr2_PDB_ins_code", nullptr },
+		{ "ptnr1_symmetry", "1_555" },
+		{ "ptnr2_symmetry", "1_555" },
+		{ "pdbx_dist_value", "1.23" } });
+
+	std::ostringstream os;
+	cif::pdb::WriteConnectivity(os, db);
+
+	auto text = os.str();
+	auto pos = text.find("LINK");
+	REQUIRE(pos != std::string::npos);
+
+	auto eol = text.find('\n', pos);
+	REQUIRE(eol != std::string::npos);
+
+	CHECK(text.substr(pos, eol - pos).find("1.23") != std::string::npos);
+}
+
+TEST_CASE("cif2pdb-model-two-coordinate-count")
+{
+	cif::datablock db("test");
+
+	db["atom_site"].emplace(cif::row_initializer{
+		{ "group_PDB", "ATOM" },
+		{ "id", "1" },
+		{ "label_atom_id", "CA" },
+		{ "label_alt_id", nullptr },
+		{ "auth_comp_id", "ALA" },
+		{ "auth_asym_id", "A" },
+		{ "auth_seq_id", 1 },
+		{ "pdbx_PDB_ins_code", nullptr },
+		{ "Cartn_x", 1.0 },
+		{ "Cartn_y", 2.0 },
+		{ "Cartn_z", 3.0 },
+		{ "occupancy", 1.0 },
+		{ "B_iso_or_equiv", 20.0 },
+		{ "type_symbol", "C" },
+		{ "pdbx_formal_charge", 0 },
+		{ "label_comp_id", "ALA" },
+		{ "label_entity_id", "1" },
+		{ "pdbx_PDB_model_num", 2 } });
+
+	std::ostringstream os;
+	auto [numCoord, numTer] = cif::pdb::WriteCoordinate(os, db);
+
+	CHECK(numCoord == 1);
+	CHECK(os.str().find("ATOM") != std::string::npos);
 }
