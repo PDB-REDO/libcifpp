@@ -125,6 +125,11 @@ bool datablock::validate_links() const
 
 bool datablock::strip()
 {
+	// Without a validator there is nothing to strip against. Leave the data
+	// untouched instead of throwing from is_valid() below.
+	if (m_validator == nullptr)
+		return false;
+
 	bool result = true;
 
 	// remove all categories that have no validator
@@ -441,47 +446,17 @@ bool datablock::operator==(const datablock &rhs) const
 	}
 	std::ranges::sort(catB);
 
-	// loop over categories twice, to group output
-	// First iteration is to list missing categories.
-
-	std::vector<std::string> missingA, missingB;
-
-	auto catA_i = catA.begin(), catB_i = catB.begin();
-
-	while (catA_i != catA.end() and catB_i != catB.end())
-	{
-		if (not iequals(*catA_i, *catB_i))
-			return false;
-
-		++catA_i, ++catB_i;
-	}
-
-	if (catA_i != catA.end() or catB_i != catB.end())
+	// Compare the sorted category lists and their contents.
+	if (catA.size() != catB.size())
 		return false;
 
-	// Second loop, now compare category values
-	catA_i = catA.begin(), catB_i = catB.begin();
-
-	while (catA_i != catA.end() and catB_i != catB.end())
+	for (std::size_t i = 0; i < catA.size(); ++i)
 	{
-		std::string nA = *catA_i;
-		to_lower(nA);
+		if (not iequals(catA[i], catB[i]))
+			return false;
 
-		std::string nB = *catB_i;
-		to_lower(nB);
-
-		int d = nA.compare(nB);
-		if (d > 0)
-			++catB_i;
-		else if (d < 0)
-			++catA_i;
-		else
-		{
-			if (not(*dbA.get(*catA_i) == *dbB.get(*catB_i)))
-				return false;
-			++catA_i;
-			++catB_i;
-		}
+		if (not(*dbA.get(catA[i]) == *dbB.get(catB[i])))
+			return false;
 	}
 
 	return true;

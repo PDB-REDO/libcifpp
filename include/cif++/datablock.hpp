@@ -155,6 +155,9 @@ class datablock : public std::list<category>
 	/// @brief Strip removes all categories and items that are invalid according
 	/// to the assigned validator. Will also add a valid audit_conform block.
 	///
+	/// If no validator is assigned, no stripping is performed and @c false is
+	/// returned.
+	///
 	/// @return true if the remaining datablock is valid
 	///
 	bool strip();

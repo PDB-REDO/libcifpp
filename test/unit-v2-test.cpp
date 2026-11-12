@@ -4431,3 +4431,44 @@ TEST_CASE("find-max-min-float")
 	c3.emplace(cif::row_initializer{ { "value", -std::numeric_limits<float>::infinity() } });
 	CHECK(c3.find_max<float>("value") == -std::numeric_limits<float>::infinity());
 }
+
+TEST_CASE("datablock-strip-without-validator")
+{
+	cif::datablock db("test");
+	db["foo"].emplace(cif::row_initializer{ { "id", 1 } });
+
+	// Without a validator there is nothing to validate or strip against.
+	CHECK_FALSE(db.strip());
+	CHECK(db.get("foo") != nullptr);
+	CHECK(db["foo"].size() == 1);
+}
+
+TEST_CASE("datablock-equality")
+{
+	auto a = R"(data_test
+loop_
+_test.id
+_test.value
+1 aap
+2 noot
+)"_cf;
+
+	auto b = R"(data_test
+loop_
+_test.id
+_test.value
+1 aap
+2 noot
+)"_cf;
+
+	auto c = R"(data_test
+loop_
+_test.id
+_test.value
+1 aap
+2 mies
+)"_cf;
+
+	CHECK(a.front() == b.front());
+	CHECK_FALSE(a.front() == c.front());
+}
