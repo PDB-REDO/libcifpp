@@ -281,6 +281,35 @@ void createEntityIDs(datablock &db)
 	std::map<std::size_t, std::string> entity_ids;
 	std::map<std::string, std::string> newEntitiesForCompound;
 
+	auto content_key = [](const std::vector<row_handle> &group)
+	{
+		std::vector<std::tuple<std::string, int>> result;
+
+		int last_seq = std::numeric_limits<int>::min();
+		std::string last_comp;
+		bool first = true;
+
+		for (auto rh : group)
+		{
+			residue_key_type k = rh.get<std::optional<std::string>, std::optional<int>, std::optional<std::string>, std::optional<std::string>, std::optional<int>, std::optional<std::string>>(
+				"auth_asym_id", "auth_seq_id", "auth_comp_id",
+				"label_asym_id", "label_seq_id", "label_comp_id");
+
+			auto comp_id = get_comp_id(k);
+			auto seq_id = get_seq_id(k);
+
+			if (first or seq_id != last_seq or comp_id != last_comp)
+			{
+				result.emplace_back(comp_id, seq_id);
+				last_seq = seq_id;
+				last_comp = comp_id;
+				first = false;
+			}
+		}
+
+		return result;
+	};
+
 	atom_site.add_item("label_entity_id");
 
 	for (std::size_t i = 0; i < entities.size(); ++i)
@@ -288,6 +317,7 @@ void createEntityIDs(datablock &db)
 		if (entity_ids.contains(i))
 			continue;
 
+		auto content = content_key(entities[i]);
 		residue_key_type k = entities[i].front().get<std::optional<std::string>, std::optional<int>, std::optional<std::string>, std::optional<std::string>, std::optional<int>, std::optional<std::string>>(
 			"auth_asym_id", "auth_seq_id", "auth_comp_id",
 			"label_asym_id", "label_seq_id", "label_comp_id");
@@ -325,7 +355,10 @@ void createEntityIDs(datablock &db)
 
 		for (std::size_t j = i + 1; j < entities.size(); ++j)
 		{
-			if (entities[i] == entities[j])
+			if (entity_ids.contains(j))
+				continue;
+
+			if (content == content_key(entities[j]))
 				entity_ids[j] = entity_id;
 		}
 	}
@@ -835,7 +868,8 @@ void createEntity(datablock &db)
 		entities.emplace(content);
 	}
 
-	auto water_weight = cf.create("HOH")->formula_weight();
+	auto water_compound = cf.create("HOH");
+	float water_weight = water_compound != nullptr ? water_compound->formula_weight() : 18.015f;
 
 	int poly_count = 0;
 
@@ -866,15 +900,26 @@ void createEntity(datablock &db)
 				desc = c->name();
 				weight = c->formula_weight();
 			}
+			else
+				desc = first_comp_id;
 		}
 		else
 		{
 			type = "polymer";
 			desc = "polymer-" + std::to_string(++poly_count);
 
-			weight = water_weight;
+			int n = 0;
 			for (const auto &[comp_id, seq_id] : content)
-				weight += cf.create(comp_id)->formula_weight() - water_weight;
+			{
+				if (auto c = cf.create(comp_id); c != nullptr)
+				{
+					weight += c->formula_weight();
+					++n;
+				}
+			}
+
+			if (n > 1)
+				weight -= (n - 1) * water_weight;
 		}
 
 		for (const auto &[asym_id, ac] : asyms)
@@ -928,6 +973,7 @@ void createEntityPoly(datablock &db)
 			last_seq_id = seq_id;
 
 			auto c = cf.create(comp_id);
+			char one_letter = c != nullptr ? c->one_letter_code() : 0;
 
 			std::string letter;
 			char letter_can{};
@@ -953,21 +999,21 @@ void createEntityPoly(datablock &db)
 
 					letter = letter_can = i2->second;
 				}
-				else if (iequals(c->type(), "D-PEPTIDE LINKING"))
+				else if (c != nullptr and iequals(c->type(), "D-PEPTIDE LINKING"))
 				{
 					c_type = "polypeptide(D)";
 
-					letter_can = c->one_letter_code();
+					letter_can = one_letter;
 					letter = '(' + comp_id + ')';
 
 					non_std_linkage = "y";
 					non_std_monomer = "y";
 				}
-				else if (iequals(c->type(), "L-PEPTIDE LINKING") or iequals(c->type(), "PEPTIDE LINKING"))
+				else if (c != nullptr and (iequals(c->type(), "L-PEPTIDE LINKING") or iequals(c->type(), "PEPTIDE LINKING")))
 				{
 					c_type = "polypeptide(L)";
 
-					letter_can = c->one_letter_code();
+					letter_can = one_letter;
 					letter = '(' + comp_id + ')';
 
 					non_std_monomer = "y";
@@ -976,7 +1022,7 @@ void createEntityPoly(datablock &db)
 				{
 					// c_type = "other";
 
-					letter_can = c->one_letter_code();
+					letter_can = one_letter;
 					letter = '(' + comp_id + ')';
 
 					non_std_monomer = "y";

@@ -4207,6 +4207,8 @@ TEST_CASE("ctype-high-bit")
 namespace cif::pdb
 {
 void createEntity(datablock &db);
+void createEntityIDs(datablock &db);
+void createEntityPoly(datablock &db);
 }
 
 TEST_CASE("dictionary-missing-category-id")
@@ -4269,4 +4271,97 @@ TEST_CASE("reconstruct-empty-entity-group")
 	CHECK(db["struct_asym"].find1<std::string>("id"_key == "A", "entity_id") ==
 		db["entity"].front()["id"].str());
 	CHECK(db["struct_asym"].find1<std::string>("id"_key == "B", "entity_id").empty());
+}
+
+namespace
+{
+	struct missing_report_guard
+	{
+		bool m_previous = cif::compound_factory::instance().get_report_missing();
+		missing_report_guard() { cif::compound_factory::instance().set_report_missing(false); }
+		~missing_report_guard() { cif::compound_factory::instance().set_report_missing(m_previous); }
+	};
+}
+
+TEST_CASE("reconstruct-unknown-polymer-compound")
+{
+	missing_report_guard guard;
+
+	cif::datablock db("test");
+
+	db["entity"].emplace(cif::row_initializer{ { "id", "1" }, { "type", "polymer" } });
+
+	auto &atom_site = db["atom_site"];
+	atom_site.emplace(cif::row_initializer{
+		{ "label_entity_id", "1" },
+		{ "label_comp_id", "ZZZ" },
+		{ "label_seq_id", 1 },
+		{ "auth_asym_id", "A" } });
+
+	CHECK_NOTHROW(cif::pdb::createEntityPoly(db));
+
+	REQUIRE(db["entity_poly"].size() == 1);
+	auto ep = db["entity_poly"].front();
+	CHECK(ep["entity_id"].str() == "1");
+	CHECK(ep["type"].str() == "other");
+	CHECK(ep["pdbx_seq_one_letter_code"].str() == "(ZZZ)");
+}
+
+TEST_CASE("reconstruct-unknown-polymer-weight")
+{
+	missing_report_guard guard;
+
+	cif::datablock db("test");
+
+	auto &atom_site = db["atom_site"];
+	atom_site.emplace(cif::row_initializer{
+		{ "label_asym_id", "A" },
+		{ "label_comp_id", "ZZZ" },
+		{ "label_seq_id", 1 } });
+	atom_site.emplace(cif::row_initializer{
+		{ "label_asym_id", "A" },
+		{ "label_comp_id", "ZZZ" },
+		{ "label_seq_id", 2 } });
+
+	db["struct_asym"].emplace(cif::row_initializer{ { "id", "A" } });
+
+	CHECK_NOTHROW(cif::pdb::createEntity(db));
+
+	REQUIRE(db["entity"].size() == 1);
+	CHECK(db["entity"].front()["type"].str() == "polymer");
+	CHECK(db["entity"].front()["formula_weight"].get<float>() == 0);
+}
+
+TEST_CASE("reconstruct-identical-chains-share-entity")
+{
+	using namespace cif::literals;
+
+	cif::datablock db("test");
+
+	auto &atom_site = db["atom_site"];
+	for (const char *asym : { "A", "B" })
+	{
+		atom_site.emplace(cif::row_initializer{
+			{ "auth_asym_id", asym },
+			{ "auth_seq_id", 1 },
+			{ "auth_comp_id", "ALA" },
+			{ "label_asym_id", asym },
+			{ "label_seq_id", 1 },
+			{ "label_comp_id", "ALA" },
+			{ "label_entity_id", cif::item_value_type::MISSING } });
+		atom_site.emplace(cif::row_initializer{
+			{ "auth_asym_id", asym },
+			{ "auth_seq_id", 2 },
+			{ "auth_comp_id", "GLY" },
+			{ "label_asym_id", asym },
+			{ "label_seq_id", 2 },
+			{ "label_comp_id", "GLY" },
+			{ "label_entity_id", cif::item_value_type::MISSING } });
+	}
+
+	cif::pdb::createEntityIDs(db);
+
+	REQUIRE(db["entity"].size() == 1);
+	CHECK(atom_site.find_first<std::string>("label_asym_id"_key == "A", "label_entity_id") ==
+		atom_site.find_first<std::string>("label_asym_id"_key == "B", "label_entity_id"));
 }
