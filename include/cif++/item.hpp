@@ -491,7 +491,7 @@ class item_value
 	}
 
 	/// Compare the value of this item_value with b, optionally ignoring case
-	[[nodiscard]] int compare(const item_value &b, bool ignore_case = false) const noexcept;
+	[[nodiscard]] int compare(const item_value &b, bool ignore_case = true) const noexcept;
 
 	/// For debugging, print out a value
 	friend std::ostream &operator<<(std::ostream &os, const item_value &v);
