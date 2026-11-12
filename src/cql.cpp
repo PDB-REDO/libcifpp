@@ -431,7 +431,7 @@ int connection_impl::Column(sqlite3_vtab_cursor *cur, sqlite3_context *ctx, int 
 				break;
 
 			case TEXT:
-				sqlite3_result_text(ctx, item.sv().data(), static_cast<int>(item.sv().size()), SQLITE_STATIC);
+				sqlite3_result_text(ctx, item.sv().data(), static_cast<int>(item.sv().size()), SQLITE_TRANSIENT);
 				break;
 
 			default:
@@ -743,7 +743,7 @@ int bind_item_value(sqlite3_stmt *stmt, int ix, const item_value &value)
 
 		case FLOAT: return sqlite3_bind_double(stmt, ix, value.get<double>());
 		case INT: return sqlite3_bind_int64(stmt, ix, value.get<int64_t>());
-		case TEXT: return sqlite3_bind_text(stmt, ix, value.sv().data(), static_cast<int>(value.sv().size()), SQLITE_STATIC);
+		case TEXT: return sqlite3_bind_text(stmt, ix, value.sv().data(), static_cast<int>(value.sv().size()), SQLITE_TRANSIENT);
 		default: return sqlite3_bind_null(stmt, ix);
 	}
 }
