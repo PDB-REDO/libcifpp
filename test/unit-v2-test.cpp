@@ -3931,6 +3931,24 @@ TEST_CASE("write-does-not-mutate")
 	CHECK(c.back().size() == 1);
 }
 
+TEST_CASE("assign-item-added-after-row-creation")
+{
+	cif::category c("test");
+	c.add_item("a");
+	c.emplace(cif::row_initializer{ { "a", 1 } });
+
+	// Adding an item does not extend rows that already exist.
+	CHECK(c.front().size() == 1);
+	c.add_item("b");
+	CHECK(c.front().size() == 1);
+
+	// Assigning the new item must handle the missing value and extend the row.
+	c.front()["b"] = "twee";
+	REQUIRE(c.front().size() == 2);
+	CHECK(c.front()["a"].get<int>() == 1);
+	CHECK(c.front()["b"].str() == "twee");
+}
+
 TEST_CASE("bulk-erase")
 {
 	cif::category c("test");

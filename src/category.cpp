@@ -1681,7 +1681,12 @@ void category::update_value(row *row, uint16_t item, item_value value, bool upda
 	if (ival != nullptr and *ival == value)
 		return;
 
-	auto oldValue = *ival;
+	// A row may be shorter than the number of items in the category, for example
+	// when an item was added after the row was created. In that case the old
+	// value is simply empty.
+	item_value oldValue;
+	if (ival != nullptr)
+		oldValue = *ival;
 
 	m_dirty = true;
 
