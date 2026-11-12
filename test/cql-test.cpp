@@ -805,3 +805,169 @@ TEST_CASE("cql-best-index-float-precision")
 	REQUIRE(r.size() == 1);
 	CHECK(r.front()[0].get<std::string>() == "b");
 }
+TEST_CASE("cql-foreign-keys-composite")
+{
+	std::string_view dict = R"(
+data_test_dict.dic
+    _datablock.id	test_dict.dic
+    _datablock.description
+;
+    A test dictionary
+;
+    _dictionary.title           test_dict.dic
+    _dictionary.datablock_id    test_dict.dic
+    _dictionary.version         1.0
+
+     loop_
+    _item_type_list.code
+    _item_type_list.primitive_code
+    _item_type_list.construct
+    _item_type_list.detail
+               code      char
+               '[][_,.;:"&<>()/\{}'`~!@#$%A-Za-z0-9*|+-]*'
+;              code item types/single words ...
+;
+               text      char
+               '[][ \n\t()_,.;:"&<>/\{}'`~!@#$%?+=*A-Za-z0-9|^-]*'
+;              text item types / multi-line text ...
+;
+               int       numb
+               '[+-]?[0-9]+'
+;              int item types are the subset of numbers that are the negative
+               or positive integers.
+;
+
+save_cat_1
+    _category.description     'A simple test category'
+    _category.id              cat_1
+    _category.mandatory_code  no
+    loop_
+    _category_key.name
+    '_cat_1.id'
+    '_cat_1.id2'
+    save_
+
+save__cat_1.id
+    _item.name                '_cat_1.id'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_linked.child_name   '_cat_2.parent_id'
+    _item_linked.parent_name  '_cat_1.id'
+    _item_type.code           code
+    save_
+
+save__cat_1.id2
+    _item.name                '_cat_1.id2'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_linked.child_name   '_cat_2.parent_id2'
+    _item_linked.parent_name  '_cat_1.id2'
+    _item_type.code           code
+    save_
+
+save__cat_1.name
+    _item.name                '_cat_1.name'
+    _item.category_id         cat_1
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           text
+    save_
+
+save_cat_2
+    _category.description     'A second simple test category'
+    _category.id              cat_2
+    _category.mandatory_code  no
+    _category_key.name        '_cat_2.id'
+    save_
+
+save__cat_2.id
+    _item.name                '_cat_2.id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           int
+    save_
+
+save__cat_2.parent_id
+    _item.name                '_cat_2.parent_id'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           code
+    save_
+
+save__cat_2.parent_id2
+    _item.name                '_cat_2.parent_id2'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           code
+    save_
+
+save__cat_2.desc
+    _item.name                '_cat_2.desc'
+    _item.category_id         cat_2
+    _item.mandatory_code      yes
+    _item_aliases.dictionary  cif_core.dic
+    _item_aliases.version     2.0.1
+    _item_type.code           text
+    save_
+    )";
+
+	cif::ispanstream is_dict(dict);
+	cif::validator validator(is_dict);
+
+	cif::file f;
+
+	std::string_view data = R"(
+data_test
+loop_
+_cat_1.id
+_cat_1.id2
+_cat_1.name
+1 10 Aap
+2 20 Noot
+
+loop_
+_cat_2.id
+_cat_2.parent_id
+_cat_2.parent_id2
+_cat_2.desc
+1 1 10 'Een dier'
+2 1 10 'Een andere aap'
+3 2 20 'walnoot bijvoorbeeld'
+    )";
+
+	cif::ispanstream is_data(data);
+	f.load(is_data);
+	f.front().set_validator(&validator);
+
+	auto &db = f.front();
+
+	cif::cql::connection connection(db);
+	cif::cql::transaction tx(connection);
+
+	// Updating a parent row must cascade both key items to the child. The
+	// generated SQL used to contain a second SET keyword, which made the
+	// statement invalid.
+	tx.exec("UPDATE cat_1 SET id = '3' WHERE id = '1'");
+
+	CHECK(db["cat_1"].count(cif::key("id") == 3) == 1);
+	CHECK(db["cat_2"].count(cif::key("parent_id") == 3 and cif::key("parent_id2") == 10) == 2);
+	CHECK(db["cat_2"].count(cif::key("parent_id") == 1) == 0);
+
+	// The child rows are updated through the generated cascade statement, so
+	// SQLite must also restore them when the transaction rolls back.
+	tx.rollback();
+
+	CHECK(db["cat_1"].count(cif::key("id") == 1) == 1);
+	CHECK(db["cat_2"].count(cif::key("parent_id") == 1 and cif::key("parent_id2") == 10) == 2);
+}

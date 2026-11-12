@@ -896,13 +896,14 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 						continue;
 
 					std::ostringstream sql;
-					sql << "UPDATE " << link->m_child_category;
+					sql << "UPDATE " << link->m_child_category << " SET ";
 
+					int parameter = 0;
 					for (bool first = true; const auto &[i, txt] : ixs)
 					{
 						if (not std::exchange(first, false))
-							sql << ",";
-						sql << " SET " << link->m_child_keys[i] << " = ?" << (i + 1);
+							sql << ", ";
+						sql << link->m_child_keys[i] << " = ?" << ++parameter;
 					}
 
 					sql << " WHERE ";
@@ -910,21 +911,25 @@ int connection_impl::Update(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
 					{
 						if (not std::exchange(first, false))
 							sql << " AND ";
-						sql << link->m_child_keys[i] << " = ?" << (i + ixs.size() + 1);
+						sql << link->m_child_keys[i] << " = ?" << ++parameter;
 					}
 
-					sqlite3_stmt *sub_stmt;
+					sqlite3_stmt *sub_stmt = nullptr;
 					auto sqls = sql.str();
 					rc = sqlite3_prepare_v2(p->m_connection_impl.m_sqlite_db, sqls.c_str(), static_cast<int>(sqls.length()), &sub_stmt, nullptr);
 
+					parameter = 0;
 					for (const auto &[i, txt] : ixs)
 					{
 						// set
+						++parameter;
 						if (rc == SQLITE_OK)
-							rc = bind_item_value(sub_stmt, i + 1, txt);
+							rc = bind_item_value(sub_stmt, parameter, txt);
 
 						// where
-						rc = bind_item_value(sub_stmt, static_cast<int>(i + ixs.size() + 1), rh[link->m_parent_keys[i]].value());
+						++parameter;
+						if (rc == SQLITE_OK)
+							rc = bind_item_value(sub_stmt, parameter, rh[link->m_parent_keys[i]].value());
 					}
 
 					if (rc == SQLITE_OK)
