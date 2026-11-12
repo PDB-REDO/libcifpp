@@ -129,18 +129,6 @@ class file : public std::list<datablock>
 	[[nodiscard]] bool is_valid() const;
 
 	///
-	/// @brief Validate the content and return true if everything was valid.
-	///
-	/// Will attempt to load the referenced dictionary if none was specified.
-	///
-	/// If each category was valid, validate_links will also be called.
-	///
-	/// @return true If the content is valid
-	/// @return false If the content is not valid
-	///
-	bool is_valid();
-
-	///
 	/// @brief Validate the links for all datablocks contained.
 	///
 	/// Will throw an exception if no validator was specified.

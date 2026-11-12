@@ -585,12 +585,12 @@ class row_initializer : public std::vector<item>
 	}
 
 	/// @brief set the value for item name @a name to @a value, but only if the item did not have a value already
-	void set_value_if_empty(std::string name, item_value value);
+	void set_value_unless_present(std::string name, item_value value);
 
 	/// @brief set the value for item @a i, but only if the item did not have a value already
-	void set_value_if_empty(const item &i)
+	void set_value_unless_present(const item &i)
 	{
-		set_value_if_empty(i.name(), i.value());
+		set_value_unless_present(i.name(), i.value());
 	}
 
 	/// @brief enable emplace_back for more complex items (floats with precission)

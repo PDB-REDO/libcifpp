@@ -137,6 +137,9 @@ void to_upper(std::string &s)
 
 void replace_all(std::string &s, std::string_view what, std::string_view with)
 {
+	if (what.empty())
+		return;
+
 	for (std::string::size_type p = s.find(what); p != std::string::npos; p = s.find(what, p))
 	{
 		s.replace(p, what.length(), with);
@@ -432,7 +435,7 @@ std::string::const_iterator nextLineBreak(std::string::const_iterator text, std:
 		if (cls != kLBC_Unknown)
 		{
 			breakAction brk = brkTable[cls][ncls];
-	
+
 			if (brk == DBK or (brk == IBK and lcls == kLBC_Space))
 				break;
 		}
@@ -507,7 +510,7 @@ std::vector<std::string> wrapLine(const std::string &text, std::size_t width)
 std::vector<std::string> word_wrap(const std::string &text, std::size_t width)
 {
 	std::vector<std::string> result;
-	for (const auto& p : cif::split<std::string>(text, "\n"))
+	for (const auto &p : cif::split<std::string>(text, "\n"))
 	{
 		if (p.empty())
 		{

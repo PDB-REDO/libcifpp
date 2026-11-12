@@ -1330,9 +1330,6 @@ category::iterator category::erase(iterator pos)
 	row *r = rh.get_row();
 	iterator result = ++pos;
 
-	if (m_head == nullptr)
-		throw std::runtime_error("erase");
-
 	row *prev = nullptr;
 	if (r != m_head)
 	{
@@ -1887,11 +1884,10 @@ category::iterator category::insert_impl(const_iterator pos, row *n)
 	if (m_index == nullptr and m_cat_validator != nullptr)
 		m_index = new category_index(*this);
 
-	assert(n != nullptr);
-	assert(n->m_next == nullptr);
-
 	if (n == nullptr)
 		throw std::runtime_error("Invalid pointer passed to insert");
+
+	assert(n->m_next == nullptr);
 
 	try
 	{

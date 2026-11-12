@@ -160,7 +160,7 @@ void row_initializer::set_value(std::string name, item_value value)
 	emplace_back(std::move(name), std::move(value));
 }
 
-void row_initializer::set_value_if_empty(std::string name, item_value value)
+void row_initializer::set_value_unless_present(std::string name, item_value value)
 {
 	if (std::ranges::find_if(*this, [name](auto &i)
 			{ return i.name() == name; }) == end())
