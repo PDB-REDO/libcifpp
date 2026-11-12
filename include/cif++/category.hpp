@@ -835,12 +835,16 @@ class category
 	T find_max(std::string_view item, condition &&cond) const
 		requires(std::is_arithmetic_v<T>)
 	{
-		T result = std::numeric_limits<T>::min();
+		T result = std::numeric_limits<T>::lowest();
+		bool found = false;
 
 		for (auto v : find<T>(std::move(cond), item))
 		{
-			if (result < v)
+			if (not found or result < v)
+			{
 				result = v;
+				found = true;
+			}
 		}
 
 		return result;
@@ -867,11 +871,15 @@ class category
 		requires(std::is_arithmetic_v<T>)
 	{
 		T result = std::numeric_limits<T>::max();
+		bool found = false;
 
 		for (auto v : find<T>(std::move(cond), item))
 		{
-			if (result > v)
+			if (not found or result > v)
+			{
 				result = v;
+				found = true;
+			}
 		}
 
 		return result;

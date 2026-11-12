@@ -31,6 +31,7 @@
 #include <cif++/cif++.hpp>
 #include <cstring>
 #include <exception>
+#include <limits>
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
@@ -4408,4 +4409,25 @@ TEST_CASE("const-row-handle-cannot-mutate")
 	CHECK_THROWS_AS(h.value() = "noot", std::logic_error);
 
 	CHECK(c.front()["name"].get<std::string>() == "aap");
+}
+
+TEST_CASE("find-max-min-float")
+{
+	cif::category c("test");
+	c.emplace(cif::row_initializer{ { "id", 1 }, { "value", -5.0f } });
+	c.emplace(cif::row_initializer{ { "id", 2 }, { "value", -2.0f } });
+	c.emplace(cif::row_initializer{ { "id", 3 }, { "value", -10.0f } });
+
+	// numeric_limits<T>::min() is the smallest positive float, so this used
+	// to return a value close to zero instead of the real maximum.
+	CHECK(c.find_max<float>("value") == -2.0f);
+	CHECK(c.find_min<float>("value") == -10.0f);
+
+	cif::category c2("test");
+	c2.emplace(cif::row_initializer{ { "value", std::numeric_limits<float>::infinity() } });
+	CHECK(c2.find_min<float>("value") == std::numeric_limits<float>::infinity());
+
+	cif::category c3("test");
+	c3.emplace(cif::row_initializer{ { "value", -std::numeric_limits<float>::infinity() } });
+	CHECK(c3.find_max<float>("value") == -std::numeric_limits<float>::infinity());
 }
