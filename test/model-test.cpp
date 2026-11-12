@@ -655,10 +655,129 @@ _struct_asym.details                       ?
 		CHECK(s.atoms().front().get_label_alt_id() == "B");
 	}
 
+	SECTION("max-zero-occupancy-tie-break")
+	{
+		using namespace cif::literals;
+
+		auto &atom_site = data.front()["atom_site"];
+
+		for (auto r : atom_site.find("label_alt_id"_key == "A"))
+		{
+			r["occupancy"] = 0.0f;
+			r["B_iso_or_equiv"] = 50.0f;
+		}
+
+		for (auto r : atom_site.find("label_alt_id"_key == "B"))
+		{
+			r["occupancy"] = 0.0f;
+			r["B_iso_or_equiv"] = 10.0f;
+		}
+
+		cif::mm::structure s(data, 1, { .occupancy_mode = cif::mm::occupancy_policy::MAX });
+
+		REQUIRE(s.atoms().size() == 4);
+		CHECK(s.atoms().front().get_label_alt_id() == "B");
+	}
+
 	SECTION("unoccupied")
 	{
 		cif::mm::structure s(data, 1, { .occupancy_mode = cif::mm::occupancy_policy::UNOCCUPIED });
 
 		CHECK(s.atoms().empty());
 	}
+}
+TEST_CASE("remove_monomer_renumbers")
+{
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+
+	auto &poly = s.polymers().front();
+	REQUIRE(poly.size() >= 3);
+
+	s.remove_residue(poly[1]);
+
+	for (std::size_t i = 0; i < poly.size(); ++i)
+	{
+		CHECK(poly[i].is_first_in_chain() == (i == 0));
+		CHECK(poly[i].is_last_in_chain() == (i + 1 == poly.size()));
+
+		if (i > 0)
+			CHECK(&poly[i].prev() == &poly[i - 1]);
+		if (i + 1 < poly.size())
+			CHECK(&poly[i].next() == &poly[i + 1]);
+	}
+}
+
+TEST_CASE("create_new_atom_registered")
+{
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+
+	auto &m = s.polymers().front().front();
+	auto count = s.atoms().size();
+
+	auto a = m.create_new_atom(cif::atom_type::C, "XX", { 1, 2, 3 });
+
+	CHECK(s.atoms().size() == count + 1);
+	CHECK(s.has_atom_id(a.id()));
+	CHECK(s.get_atom_by_id(a.id()) == a);
+	CHECK(a.get_location().m_x == 1);
+	CHECK(a.get_location().m_y == 2);
+	CHECK(a.get_location().m_z == 3);
+	CHECK_NOTHROW(s.validate_atoms());
+}
+
+TEST_CASE("remove_water_keeps_siblings")
+{
+	using namespace cif::literals;
+
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+
+	auto &nonpoly = s.get_datablock()["pdbx_nonpoly_scheme"];
+
+	std::string asym, pdb_seq_num;
+	for (auto r : nonpoly.find("mon_id"_key == "HOH"))
+	{
+		asym = r["asym_id"].str();
+		pdb_seq_num = r["pdb_seq_num"].str();
+
+		if (nonpoly.count("asym_id"_key == asym) > 1)
+			break;
+	}
+
+	REQUIRE(not asym.empty());
+	auto before = nonpoly.count("asym_id"_key == asym);
+	REQUIRE(before > 1);
+
+	s.remove_residue(asym, 0, pdb_seq_num);
+
+	CHECK(nonpoly.count("asym_id"_key == asym) == before - 1);
+}
+
+TEST_CASE("create_water_registers_residue")
+{
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+
+	auto count = s.non_polymers().size();
+
+	s.create_water(cif::row_initializer{
+		{ "type_symbol", "O" },
+		{ "label_atom_id", "O" },
+		{ "auth_atom_id", "O" },
+		{ "Cartn_x", 1.0f },
+		{ "Cartn_y", 2.0f },
+		{ "Cartn_z", 3.0f } });
+
+	CHECK(s.non_polymers().size() == count + 1);
+	CHECK_NOTHROW(s.validate_atoms());
 }

@@ -386,7 +386,8 @@ class atom
 		if (not(m_impl and rhs.m_impl))
 			return false;
 
-		return &m_impl->m_db == &rhs.m_impl->m_db and m_impl->m_id == rhs.m_impl->m_id;
+		return &m_impl->m_db == &rhs.m_impl->m_db and m_impl->m_id == rhs.m_impl->m_id and
+		       m_impl->m_symop == rhs.m_impl->m_symop;
 	}
 
 	/// Compare two atoms
@@ -740,6 +741,8 @@ class monomer : public residue
 	atom create_new_atom(atom_type inType, const std::string &inAtomID, point inLocation) override;
 
   private:
+	friend class polymer;
+
 	const polymer *m_polymer = nullptr;
 	std::size_t m_index{};
 };
@@ -755,6 +758,9 @@ class polymer : public std::vector<monomer>
   public:
 	/// @brief Constructor
 	polymer(structure &s, std::string entityID, std::string asymID, std::string auth_asym_id);
+
+	/// @brief Remove @a m from this polymer and renumber the remaining monomers
+	void remove_monomer(const monomer &m);
 
 	polymer(const polymer &) = delete;
 	polymer &operator=(const polymer &) = delete;

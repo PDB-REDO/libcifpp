@@ -220,11 +220,11 @@ atom residue::create_new_atom(atom_type inType, const std::string &inAtomID, poi
 
 	atom a(db, *ai);
 
-	m_atoms.push_back(a);
+	auto &result = m_structure->emplace_atom(a);
+	result.set_location(inLocation);
+	m_atoms.push_back(result);
 
-	a.set_location(inLocation);
-
-	return a;
+	return result;
 }
 
 std::vector<atom> residue::unique_atoms() const
@@ -894,6 +894,19 @@ polymer::polymer(structure &s, std::string entityID, std::string asym_id, std::s
 	}
 }
 
+void polymer::remove_monomer(const monomer &m)
+{
+	auto i = std::ranges::find(*this, m);
+	if (i == end())
+		return;
+
+	auto index = static_cast<std::size_t>(i - begin());
+	std::vector<monomer>::erase(i);
+
+	for (; index < size(); ++index)
+		(*this)[index].m_index = index;
+}
+
 // std::string polymer::chainID() const
 // {
 // 	return mPolySeq.front()["pdb_strand_id"].get<std::string>();
@@ -1326,8 +1339,14 @@ void structure::load_atoms_for_model(structure_open_options options)
 	}
 	else
 	{
+		struct alt_info
+		{
+			float occupancy = 0;
+			float min_b_factor = std::numeric_limits<float>::max();
+		};
+
 		std::vector<cif::mm::atom> atoms;
-		std::map<std::tuple<std::string, int>, std::map<std::string, float>> alts;
+		std::map<std::tuple<std::string, int>, std::map<std::string, alt_info>> alts;
 
 		for (auto id : atom_site.find<std::string>(std::move(c), "id"))
 		{
@@ -1338,10 +1357,12 @@ void structure::load_atoms_for_model(structure_open_options options)
 				auto key = std::make_tuple(a.get_label_asym_id(), a.get_label_seq_id());
 				auto alt_id = a.get_label_alt_id();
 
-				if (auto i = alts.find(key); i != alts.end())
-					i->second[alt_id] += a.get_occupancy();
-				else
-					alts[key][alt_id] = a.get_occupancy();
+				auto &info = alts[key][alt_id];
+				info.occupancy += a.get_occupancy();
+
+				auto b = a.get_property_value("B_iso_or_equiv");
+				if (not b.empty())
+					info.min_b_factor = std::min(info.min_b_factor, b.get<float>());
 			}
 		}
 
@@ -1349,31 +1370,36 @@ void structure::load_atoms_for_model(structure_open_options options)
 		{
 			// const auto &[asym_id, seq_id] = key;
 
-			// select highest occupancy for this residue's alternates
+			// Select the alternate with the highest or lowest occupancy,
+			// breaking ties by the minimum B-factor.
 			std::string alt_id;
-			float occupancy = options.occupancy_mode == occupancy_policy::MAX ? 0.f : std::numeric_limits<float>::max();
-			for (const auto &[alt_key, alt_value] : value)
+			float occupancy = 0;
+			float b_factor = std::numeric_limits<float>::max();
+
+			for (const auto &[alt_key, info] : value)
 			{
-				if (options.occupancy_mode == occupancy_policy::MAX)
+				bool better = alt_id.empty();
+
+				if (not better)
 				{
-					if (occupancy < alt_value)
-					{
-						alt_id = alt_key;
-						occupancy = alt_value;
-					}
+					if (options.occupancy_mode == occupancy_policy::MAX)
+						better = info.occupancy > occupancy or
+						         (info.occupancy == occupancy and info.min_b_factor < b_factor);
+					else
+						better = info.occupancy < occupancy or
+						         (info.occupancy == occupancy and info.min_b_factor < b_factor);
 				}
-				else
+
+				if (better)
 				{
-					if (occupancy > alt_value)
-					{
-						alt_id = alt_key;
-						occupancy = alt_value;
-					}
+					alt_id = alt_key;
+					occupancy = info.occupancy;
+					b_factor = info.min_b_factor;
 				}
 			}
 
 			value.clear();
-			value.emplace(alt_id, occupancy);
+			value.emplace(alt_id, alt_info{ occupancy, b_factor });
 		}
 
 		for (const auto& a : atoms)
@@ -2130,18 +2156,22 @@ void structure::remove_residue(residue &res)
 				"seq_id"_key == res.get_seq_id());
 
 			for (auto &poly : m_polymers)
-				std::erase(poly, m);
+				poly.remove_monomer(m);
 			break;
 		}
 
 		case EntityType::NonPolymer:
-			m_db["pdbx_nonpoly_scheme"].erase("asym_id"_key == res.get_asym_id());
+			m_db["pdbx_nonpoly_scheme"].erase(
+				"asym_id"_key == res.get_asym_id() and
+				"pdb_seq_num"_key == res.get_pdb_seq_num());
 			m_db["struct_asym"].erase("id"_key == res.get_asym_id());
 			std::erase(m_non_polymers, res);
 			break;
 
 		case EntityType::Water:
-			m_db["pdbx_nonpoly_scheme"].erase("asym_id"_key == res.get_asym_id());
+			m_db["pdbx_nonpoly_scheme"].erase(
+				"asym_id"_key == res.get_asym_id() and
+				"pdb_seq_num"_key == res.get_pdb_seq_num());
 			std::erase(m_non_polymers, res);
 			break;
 
@@ -2479,9 +2509,11 @@ void structure::create_water(row_initializer atom)
 
 	auto &atom_site = m_db["atom_site"];
 
-	int auth_seq_id = atom_site.find_max<int>("auth_seq_id", "label_entity_id"_key == entity_id) + 1;
-	if (auth_seq_id < 0)
+	int auth_seq_id = atom_site.find_max<int>("auth_seq_id", "label_entity_id"_key == entity_id);
+	if (auth_seq_id < 1 or auth_seq_id == std::numeric_limits<int>::max())
 		auth_seq_id = 1;
+	else
+		++auth_seq_id;
 
 	auto atom_id = atom_site.get_unique_id("");
 
@@ -2502,10 +2534,17 @@ void structure::create_water(row_initializer atom)
 
 	auto row = atom_site.emplace(atom.begin(), atom.end());
 
-	emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
+	auto &res = m_non_polymers.emplace_back(*this, "HOH", asym_id, 0, asym_id, std::to_string(auth_seq_id), "");
+
+	auto &new_atom = emplace_atom(std::make_shared<atom::atom_impl>(m_db, atom_id));
+	res.add_atom(new_atom);
 
 	auto &pdbx_nonpoly_scheme = m_db["pdbx_nonpoly_scheme"];
-	int ndb_nr = pdbx_nonpoly_scheme.find_max<int>("ndb_seq_num") + 1;
+	int ndb_nr = pdbx_nonpoly_scheme.find_max<int>("ndb_seq_num");
+	if (ndb_nr < 1 or ndb_nr == std::numeric_limits<int>::max())
+		ndb_nr = 1;
+	else
+		++ndb_nr;
 	pdbx_nonpoly_scheme.emplace({
 		{ "asym_id", asym_id },
 		{ "entity_id", entity_id },
