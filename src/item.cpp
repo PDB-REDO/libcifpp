@@ -61,9 +61,19 @@ item_handle::item_handle(category &cat, row &row, std::string_view item_name)
 		m_item_name = item_name;
 }
 
+uint16_t item_handle::item_index() const noexcept
+{
+	if (m_item_name.empty())
+		return m_item_ix;
+
+	auto ix = m_category.get_item_ix(m_item_name);
+	return ix < m_category.get_item_count() ? ix : m_category.get_item_count();
+}
+
 bool item_handle::empty() const
 {
-	return m_item_ix >= m_row.size() or m_row[m_item_ix].empty();
+	auto ix = item_index();
+	return ix >= m_row.size() or m_row[ix].empty();
 }
 
 item_value &item_handle::value()
@@ -71,18 +81,20 @@ item_value &item_handle::value()
 	if (m_is_const)
 		throw std::logic_error("Cannot modify a const item_handle");
 
-	if (m_item_ix >= m_row.size())
+	auto ix = item_index();
+	if (ix >= m_row.size())
 		return s_null_item;
 
-	return m_row.operator[](m_item_ix);
+	return m_row.operator[](ix);
 }
 
 const item_value &item_handle::value() const noexcept
 {
-	if (m_item_ix >= m_row.size())
+	auto ix = item_index();
+	if (ix >= m_row.size())
 		return s_null_item;
 
-	return m_row.operator[](m_item_ix);
+	return m_row.operator[](ix);
 }
 
 void swap(item_handle a, item_handle b) noexcept
@@ -97,14 +109,15 @@ void item_handle::set(const item_value &value, bool updateLinked)
 	if (m_is_const)
 		throw std::logic_error("Cannot modify a const item_handle");
 
-	if (m_item_ix >= m_category.get_item_count())
+	if (not m_item_name.empty())
 	{
-		if (m_item_name.empty())
-			throw std::out_of_range("Invalid item index");
-
+		// Resolve the name at assignment time; other items may have been
+		// added since this handle was created.
 		m_item_ix = m_category.add_item(m_item_name);
 		m_item_name.clear();
 	}
+	else if (m_item_ix >= m_category.get_item_count())
+		throw std::out_of_range("Invalid item index");
 
 	row_handle rh{ &m_category, &m_row };
 	rh.assign(m_item_ix, value, updateLinked);

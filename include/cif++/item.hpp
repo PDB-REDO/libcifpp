@@ -919,6 +919,11 @@ struct item_handle
 
 	friend class parser;
 
+	/// Resolve the current item index. For a lazily created handle this looks
+	/// the item up by name, since the stored index may have become stale when
+	/// other items were added to the category.
+	[[nodiscard]] uint16_t item_index() const noexcept;
+
 	void set(const item_value &value, bool updateLinked);
 };
 

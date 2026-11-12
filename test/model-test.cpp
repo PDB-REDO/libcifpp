@@ -710,6 +710,37 @@ TEST_CASE("remove_monomer_renumbers")
 	}
 }
 
+TEST_CASE("remove_residue_from_first_of_multiple_polymers")
+{
+	const std::filesystem::path example(gTestDir / "1juh.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+
+	REQUIRE(s.polymers().size() > 1);
+
+	std::vector<std::size_t> sizes;
+	for (auto &poly : s.polymers())
+		sizes.push_back(poly.size());
+
+	auto &poly = s.polymers().front();
+	auto size = poly.size();
+
+	s.remove_residue(poly[1]);
+
+	CHECK(poly.size() == size - 1);
+
+	std::size_t ix = 0;
+	for (auto &p : s.polymers())
+	{
+		if (&p != &poly)
+			CHECK(p.size() == sizes[ix]);
+		++ix;
+	}
+
+	CHECK_NOTHROW(s.validate_atoms());
+}
+
 TEST_CASE("create_new_atom_registered")
 {
 	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");

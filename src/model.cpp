@@ -2167,7 +2167,14 @@ void structure::remove_residue(residue &res)
 				"seq_id"_key == res.get_seq_id());
 
 			for (auto &poly : m_polymers)
+			{
+				if (not std::ranges::contains(poly, m))
+					continue;
+
 				poly.remove_monomer(m);
+				break;
+			}
+
 			break;
 		}
 

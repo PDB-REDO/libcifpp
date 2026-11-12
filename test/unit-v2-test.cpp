@@ -4392,6 +4392,42 @@ TEST_CASE("row-read-does-not-add-item")
 	CHECK(r["missing"].get<int>() == 42);
 }
 
+TEST_CASE("lazy-item-handle-resolves-by-name")
+{
+	cif::category c("foo");
+	c.emplace(cif::row_initializer{ { "id", 1 }, { "name", "aap" } });
+
+	auto r = c.front();
+
+	// A pending handle stores the name, not just the index.
+	auto h = r["missing"];
+	CHECK(h.empty());
+
+	// Adding another item must not make the pending handle point at it.
+	c.add_item("other");
+	CHECK(h.empty());
+
+	h = 42;
+
+	CHECK(c.get_item_ix("other") < c.get_item_count());
+	CHECK(c.get_item_ix("missing") < c.get_item_count());
+	CHECK(r["other"].is_missing());
+	CHECK(r["missing"].get<int>() == 42);
+
+	// If someone else adds the item before the handle is assigned, the handle
+	// must resolve to that item instead of adding a duplicate.
+	auto h2 = r["later"];
+	CHECK(h2.empty());
+
+	c.add_item("later");
+	auto count = c.get_item_count();
+
+	h2 = 7;
+
+	CHECK(c.get_item_count() == count);
+	CHECK(r["later"].get<int>() == 7);
+}
+
 TEST_CASE("const-row-handle-cannot-mutate")
 {
 	cif::category c("foo");

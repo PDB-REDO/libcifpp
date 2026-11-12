@@ -11,6 +11,12 @@ Version 10.1.0
   non-finite float values, large integers and float precision.
 - Fixed CQL handling of SQL NULL values and SQLite text values.
 - category::size() is now O(1) and rows are no longer copied.
+- Assigning to a lazily created item handle now resolves the item by
+  name, so adding other items in between no longer writes to the
+  wrong column.
+- remove_residue now removes a polymer residue from its owning polymer
+  only, avoiding a dangling reference when the structure has multiple
+  polymers.
 - remove_item now keeps the category index up to date and refuses
   to remove key items. drop_empty_items no longer removes key
   columns.
