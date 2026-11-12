@@ -280,26 +280,26 @@ int PDBRecord::vI(int columnFirst, int columnLast)
 						negate = true;
 						state = digit;
 					}
-					else if (isdigit(*p))
+					else if (std::isdigit(static_cast<unsigned char>(*p)))
 					{
 						result = *p - '0';
 						state = digit;
 					}
-					else if (not isspace(*p))
+					else if (not std::isspace(static_cast<unsigned char>(*p)))
 						throw std::runtime_error("Not a valid integer in PDB record");
 					break;
 
 				case digit:
-					if (isspace(*p))
+					if (std::isspace(static_cast<unsigned char>(*p)))
 						state = tail;
-					else if (not isdigit(*p))
+					else if (not std::isdigit(static_cast<unsigned char>(*p)))
 						throw std::runtime_error("Not a valid integer in PDB record");
 					else
 						result = result * 10 + *p - '0';
 					break;
 
 				case tail:
-					if (not isspace(*p))
+					if (not std::isspace(static_cast<unsigned char>(*p)))
 						throw std::runtime_error("Not a valid integer in PDB record");
 					break;
 			}
@@ -367,14 +367,14 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 		switch (state)
 		{
 			case eStart:
-				if (isalnum(ch) or ch == '_')
+				if (std::isalnum(static_cast<unsigned char>(ch)) or ch == '_')
 				{
 					id = { ch };
 					value.clear();
 					state = eID;
 					start = mP;
 				}
-				else if (not isspace(ch))
+				else if (not std::isspace(static_cast<unsigned char>(ch)))
 				{
 					if (VERBOSE > 0)
 						std::cerr << "skipping invalid character in SOURCE ID: " << ch << '\n';
@@ -382,7 +382,7 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 				break;
 
 			case eID:
-				if (isalnum(ch) or ch == '_')
+				if (std::isalnum(static_cast<unsigned char>(ch)) or ch == '_')
 					id += ch;
 				else if (ch == ':')
 					state = eColon;
@@ -397,7 +397,7 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 						std::cerr << "Empty value for SOURCE: " << id << '\n';
 					state = eStart;
 				}
-				else if (not isspace(ch))
+				else if (not std::isspace(static_cast<unsigned char>(ch)))
 				{
 					value = { ch };
 					state = eValue;
@@ -430,12 +430,12 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 				break;
 
 			case eNL:
-				if (isalnum(ch))
+				if (std::isalnum(static_cast<unsigned char>(ch)))
 				{
 					value += ' ';
 					state = eNL_ID;
 				}
-				else if (isspace(ch))
+				else if (std::isspace(static_cast<unsigned char>(ch)))
 					state = eValue;
 				break;
 
@@ -447,7 +447,7 @@ std::tuple<std::string, std::string> SpecificationListParser::GetNextSpecificati
 				}
 				else if (ch == ';')
 					state = eSemiColon;
-				else if (not(isalnum(ch) or ch == '_'))
+				else if (not(std::isalnum(static_cast<unsigned char>(ch)) or ch == '_'))
 				{
 					value.insert(value.end(), backup, mP);
 					state = eValue;
@@ -980,12 +980,12 @@ class PDBFileParser
 		bool upper = true;
 		for (auto &c : author)
 		{
-			if (ispunct(c) or isspace(c))
+			if (std::ispunct(static_cast<unsigned char>(c)) or std::isspace(static_cast<unsigned char>(c)))
 				upper = true;
 			else if (upper)
 				upper = false;
 			else
-				c = cif::tolower(c);
+				c = cif::tolower(static_cast<unsigned char>(c));
 		}
 
 		return author;
@@ -4125,7 +4125,7 @@ void PDBFileParser::ConstructEntities()
 			{
 				auto insToStr = [](char i) -> std::string
 				{
-					return i == ' ' or not isprint(i) ? "" : std::string{ i };
+					return i == ' ' or not std::isprint(static_cast<unsigned char>(i)) ? "" : std::string{ i };
 				};
 
 				auto &pdbxPolySeqScheme = *getCategory("pdbx_poly_seq_scheme");
@@ -6438,7 +6438,7 @@ file read(std::istream &is)
 		// Since mmCIF files cannot validly start with a letter character
 		// apart from the letter 'd', the test has changed into the following:
 
-		if (std::isalpha(ch) and std::toupper(ch) != 'D')
+		if (std::isalpha(static_cast<unsigned char>(ch)) and std::toupper(static_cast<unsigned char>(ch)) != 'D')
 		{
 			read_pdb_file(is, result);
 			fixup_pdbx(result);

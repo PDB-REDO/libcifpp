@@ -1065,7 +1065,7 @@ std::string Remark3Parser::nextLine()
 
 		while (i != mLine.end())
 		{
-			bool nspace = isspace(*i);
+			bool nspace = std::isspace(static_cast<unsigned char>(*i));
 
 			if (nspace == false)
 			{

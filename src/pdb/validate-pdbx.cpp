@@ -316,7 +316,7 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 			else
 			{
 				seq->erase(std::remove_if(seq->begin(), seq->end(), [](char ch)
-							   { return std::isspace(ch); }),
+							   { return std::isspace(static_cast<unsigned char>(ch)); }),
 					seq->end());
 
 				if (not seq_match(false, seq->begin(), seq->end()))
@@ -331,7 +331,7 @@ bool is_valid_pdbx_file(const file &file, const validator &validator, std::error
 			else
 			{
 				seq_can->erase(std::remove_if(seq_can->begin(), seq_can->end(), [](char ch)
-								   { return std::isspace(ch); }),
+								   { return std::isspace(static_cast<unsigned char>(ch)); }),
 					seq_can->end());
 
 				if (not seq_match(true, seq_can->begin(), seq_can->end()))

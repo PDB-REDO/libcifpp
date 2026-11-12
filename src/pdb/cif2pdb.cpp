@@ -3004,7 +3004,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 				bool done = false;
 				for (auto e = name.begin() + 54; e != name.begin(); --e)
 				{
-					if (ispunct(*e))
+					if (std::ispunct(static_cast<unsigned char>(*e)))
 					{
 						pdbFile << std::string(name.begin(), e) << '\n';
 						name.erase(name.begin(), e);
@@ -3096,7 +3096,7 @@ int WriteHeterogen(std::ostream &pdbFile, const datablock &db)
 					bool done = false;
 					for (auto e = formula.begin() + 50; e != formula.begin(); --e)
 					{
-						if (ispunct(*e))
+						if (std::ispunct(static_cast<unsigned char>(*e)))
 						{
 							pdbFile << std::string(formula.begin(), e) << '\n';
 							formula.erase(formula.begin(), e);

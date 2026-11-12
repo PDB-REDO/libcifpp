@@ -4181,3 +4181,25 @@ TEST_CASE("terminal-size")
 		CHECK(w == 80);
 	}
 }
+
+TEST_CASE("ctype-high-bit")
+{
+	// Bytes >= 0x80 are negative when stored in a plain char. The ctype
+	// helpers must be called with unsigned char values, and UTF-8 bytes must
+	// survive case conversion and trimming unchanged.
+	const std::string input = "\xC3\xA9" "Aa";
+
+	CHECK(cif::to_lower_copy(input) == "\xC3\xA9" "aa");
+
+	std::string upper = input;
+	cif::to_upper(upper);
+	REQUIRE(upper.size() >= 2);
+	CHECK(upper.substr(upper.size() - 2) == "AA");
+
+	std::string trimmed = " \xC3\xA9\t";
+	cif::trim(trimmed);
+	CHECK(trimmed == "\xC3\xA9");
+
+	CHECK(cif::icompare("\xC3\xA9", "\xC3\xA9") == 0);
+	CHECK(cif::icontains("\xC3\xA9" "Zz", "zz"));
+}

@@ -848,7 +848,7 @@ sac_parser::datablock_index sac_parser::index_datablocks()
 
 			case data_name:
 				if (is_non_blank(ch))
-					datablock.insert(datablock.end(), static_cast<char>(std::toupper(ch)));
+					datablock.insert(datablock.end(), static_cast<char>(std::toupper(static_cast<unsigned char>(ch))));
 				else if (is_space(ch))
 				{
 					if (not datablock.empty())

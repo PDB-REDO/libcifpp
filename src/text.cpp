@@ -118,21 +118,21 @@ int icompare(const char *a, const char *b) noexcept
 void to_lower(std::string &s)
 {
 	for (auto &c : s)
-		c = tolower(c);
+		c = cif::tolower(static_cast<unsigned char>(c));
 }
 
 std::string to_lower_copy(std::string_view s)
 {
 	std::string result(s);
 	for (auto &c : result)
-		c = tolower(c);
+		c = cif::tolower(static_cast<unsigned char>(c));
 	return result;
 }
 
 void to_upper(std::string &s)
 {
 	for (auto &c : s)
-		c = static_cast<char>(toupper(c));
+		c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
 }
 
 void replace_all(std::string &s, std::string_view what, std::string_view with)
@@ -155,7 +155,7 @@ void trim_right(std::string &s)
 	while (e != s.begin())
 	{
 		auto pe = std::prev(e);
-		if (not std::isspace(*pe))
+		if (not std::isspace(static_cast<unsigned char>(*pe)))
 			break;
 		e = pe;
 	}
@@ -170,7 +170,7 @@ std::string trim_right_copy(std::string_view s)
 	while (e != s.begin())
 	{
 		auto pe = std::prev(e);
-		if (not std::isspace(*pe))
+		if (not std::isspace(static_cast<unsigned char>(*pe)))
 			break;
 		e = pe;
 	}
@@ -183,7 +183,7 @@ std::string trim_left_copy(std::string_view s)
 	auto b = s.begin();
 	while (b != s.end())
 	{
-		if (not std::isspace(*b))
+		if (not std::isspace(static_cast<unsigned char>(*b)))
 			break;
 
 		b = std::next(b);
@@ -196,7 +196,7 @@ void trim_left(std::string &s)
 {
 	auto in = s.begin(), out = s.begin();
 
-	while (in != s.end() and std::isspace(*in))
+	while (in != s.end() and std::isspace(static_cast<unsigned char>(*in)))
 		++in;
 
 	if (in == s.end())
@@ -213,10 +213,10 @@ void trim(std::string &s)
 {
 	auto in = s.begin(), out = s.begin(), end = s.end();
 
-	while (end != s.begin() and std::isspace(*(end - 1)))
+	while (end != s.begin() and std::isspace(static_cast<unsigned char>(*(end - 1))))
 		--end;
 
-	while (in != end and std::isspace(*in))
+	while (in != end and std::isspace(static_cast<unsigned char>(*in)))
 		++in;
 
 	if (in == end)
@@ -474,7 +474,7 @@ std::vector<std::string> wrapLine(const std::string &text, std::size_t width)
 			if (w > width)
 				break;
 
-			while (w > 0 and isspace(text[offsets[i] + w - 1]))
+			while (w > 0 and std::isspace(static_cast<unsigned char>(text[offsets[i] + w - 1])))
 				--w;
 
 			std::size_t cost = minima[i];
