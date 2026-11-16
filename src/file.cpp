@@ -25,11 +25,11 @@
  */
 
 #include "cif++/cif++.hpp"
+#include "cif++/gxrio.hpp"
 
 #include <cassert>
 #include <exception>
 #include <filesystem>
-#include <gxrio.hpp>
 #include <istream>
 #include <list>
 #include <stdexcept>

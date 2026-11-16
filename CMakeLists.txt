@@ -184,16 +184,31 @@ endif()
 
 find_package(Threads)
 
-# gxrio is a submodule from now on, only required when it is not installed already
-find_package(ZLIB REQUIRED)
-find_package(LibLZMA REQUIRED)
-find_package(gxrio 1.3.1 QUIET)
-if(NOT gxrio_FOUND)
-    add_subdirectory(gxrio EXCLUDE_FROM_ALL)
+# gxrio uses compression libraries
+if(MSVC)
+	# Avoid linking the shared library of zlib
+	# Search ZLIB_ROOT first if it is set.
+	if(ZLIB_ROOT)
+		set(_ZLIB_SEARCH_ROOT PATHS ${ZLIB_ROOT} NO_DEFAULT_PATH)
+		list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_ROOT)
+	endif()
+
+	# Normal search.
+	set(_ZLIB_x86 "(x86)")
+	set(_ZLIB_SEARCH_NORMAL
+		PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\GnuWin32\\Zlib;InstallPath]"
+		"$ENV{ProgramFiles}/zlib"
+		"$ENV{ProgramFiles${_ZLIB_x86}}/zlib")
+	unset(_ZLIB_x86)
+	list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
+
+	foreach(search ${_ZLIB_SEARCHES})
+		find_library(ZLIB_LIBRARY NAMES zlibstatic NAMES_PER_DIR ${${search}} PATH_SUFFIXES lib)
+	endforeach()
 endif()
 
-get_target_property(GXRIO_INCLUDE_DIR gxrio::gxrio INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(GXRIO_LIBRARIES gxrio::gxrio INTERFACE_LINK_LIBRARIES)
+find_package(ZLIB REQUIRED)
+find_package(LibLZMA REQUIRED)
 
 include(FindPkgConfig)
 
@@ -309,11 +324,11 @@ target_include_directories(
     cifpp
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-    PRIVATE "${EIGEN_INCLUDE_DIR}" "${GXRIO_INCLUDE_DIR}")
+    PRIVATE "${EIGEN_INCLUDE_DIR}")
 
 target_link_libraries(cifpp
     PUBLIC Threads::Threads $<$<TARGET_EXISTS:std::atomic>:std::atomic>
-    PRIVATE "${GXRIO_LIBRARIES}")
+    PRIVATE ZLIB::ZLIB LibLZMA::LibLZMA)
 
 if(PCRE2_FOUND)
     # target_link_libraries(cifpp PRIVATE PkgConfig::PCRE2)

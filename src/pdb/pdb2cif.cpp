@@ -25,6 +25,7 @@
  */
 
 #include "cif++/cif++.hpp"
+#include "cif++/gxrio.hpp"
 #include "cif++/item.hpp"
 #include "cif++/row.hpp"
 #include "pdb2cif_remark_3.hpp"
@@ -42,7 +43,6 @@
 #include <exception>
 #include <filesystem>
 #include <format>
-#include <gxrio.hpp>
 #include <initializer_list>
 #include <iostream>
 #include <iterator>

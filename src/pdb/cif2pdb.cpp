@@ -25,6 +25,7 @@
  */
 
 #include "cif++/cif++.hpp"
+#include "cif++/gxrio.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -37,7 +38,6 @@
 #include <exception>
 #include <filesystem>
 #include <format>
-#include <gxrio.hpp>
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
