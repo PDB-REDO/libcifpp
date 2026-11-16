@@ -579,7 +579,7 @@ uint16_t category::get_item_ix(std::string_view item_name) const
 {
 	uint16_t result;
 
-	for (result = 0; result < get_item_count(); ++result)
+	for (result = 0; std::cmp_less(result, get_item_count()); ++result)
 	{
 		if (iequals(item_name, m_items[result].m_name))
 			break;
@@ -628,7 +628,7 @@ void category::remove_item(std::string_view item_name)
 											std::string{ item_name } + "' from category " + m_name);
 	}
 
-	for (uint16_t ix = 0; ix < get_item_count(); ++ix)
+	for (uint16_t ix = 0; std::cmp_less(ix, get_item_count()); ++ix)
 	{
 		if (not iequals(item_name, m_items[ix].m_name))
 			continue;
@@ -955,7 +955,7 @@ bool category::is_valid() const
 
 	for (const row *ri = m_head; ri != nullptr; ri = ri->m_next)
 	{
-		for (uint16_t cix = 0; cix < get_item_count(); ++cix)
+		for (uint16_t cix = 0; std::cmp_less(cix, get_item_count()); ++cix)
 		{
 			bool seen = false;
 			auto iv = m_items[cix].m_validator;

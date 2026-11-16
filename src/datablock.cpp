@@ -437,14 +437,14 @@ bool datablock::operator==(const datablock &rhs) const
 		if (not cat.empty())
 			catA.push_back(cat.name());
 	}
-	std::ranges::sort(catA);
+	std::ranges::sort(catA, [](const std::string &a, const std::string &b) { return icompare(a, b) < 0; });
 
 	for (auto &cat : dbB)
 	{
 		if (not cat.empty())
 			catB.push_back(cat.name());
 	}
-	std::ranges::sort(catB);
+	std::ranges::sort(catB, [](const std::string &a, const std::string &b) { return icompare(a, b) < 0; });
 
 	// Compare the sorted category lists and their contents.
 	if (catA.size() != catB.size())

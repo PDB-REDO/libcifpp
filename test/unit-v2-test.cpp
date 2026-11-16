@@ -845,12 +845,12 @@ _test.value
 	auto &db = f.front();
 	auto &test = db["test"];
 
-	swap(test.front()["name"], test.back()["name"]);
+	swap(test.front()["name"].value(), test.back()["name"].value());
 
 	CHECK(test.find1<std::string>("id"_key == 1, "name") == "mies");
 	CHECK(test.find1<std::string>("id"_key == 3, "name") == "aap");
 
-	swap(test.front()["name"], test.back()["name"]);
+	swap(test.front()["name"].value(), test.back()["name"].value());
 
 	CHECK(test.find1<std::string>("id"_key == 1, "name") == "aap");
 	CHECK(test.find1<std::string>("id"_key == 3, "name") == "mies");

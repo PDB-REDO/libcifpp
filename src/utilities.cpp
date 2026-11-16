@@ -976,7 +976,7 @@ class resource_pool
 
 		if (fs::exists(dir, ec) and not ec)
 		{
-			std::lock_guard lock(m_mutex);
+			std::scoped_lock lock(m_mutex);
 			mDirs.push_front(dir);
 		}
 	}
@@ -993,7 +993,7 @@ class resource_pool
 		if (not fs::exists(dataFile, ec) or ec)
 			throw std::runtime_error("Attempt to add a file resource for " + name + " that cannot be used (" + dataFile.string() + ") :" + ec.message());
 
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		mLocalResources[name] = dataFile;
 	}
 
@@ -1001,13 +1001,13 @@ class resource_pool
 
 	[[nodiscard]] std::deque<fs::path> data_directories()
 	{
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		return mDirs;
 	}
 
 	[[nodiscard]] std::map<std::string, std::filesystem::path> file_resources()
 	{
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		return mLocalResources;
 	}
 
@@ -1077,7 +1077,7 @@ std::unique_ptr<std::istream> resource_pool::load(const fs::path& name)
 	std::deque<fs::path> dirs;
 
 	{
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 
 		if (auto i = mLocalResources.find(name.string()); i != mLocalResources.end())
 			alias = i->second;

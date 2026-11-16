@@ -10,7 +10,14 @@ Version 10.1.0
   committed after a complete plan), IS NULL/IS NOT NULL,
   non-finite float values, large integers and float precision.
 - Fixed CQL handling of SQL NULL values and SQLite text values.
+- Fixed datablock::operator== so datablocks whose category names differ
+  only in case are compared correctly.
 - category::size() is now O(1) and rows are no longer copied.
+- category::find_max() and find_min() now return
+  numeric_limits<T>::lowest() and numeric_limits<T>::max()
+  respectively when no row matches.
+- row_initializer::set_value_if_empty() was renamed to
+  set_value_unless_present().
 - Assigning to a lazily created item handle now resolves the item by
   name, so adding other items in between no longer writes to the
   wrong column.
@@ -29,22 +36,29 @@ Version 10.1.0
   no longer invalidates pointers cached by categories.
 - Fixed dangling string_view captures in key comparison conditions
   that could make CQL range queries return incorrect results.
-- Item values no longer store booleans.
+- Item values no longer store booleans, and item_value::get<T>() now
+  throws for empty values instead of returning a default value.
+- The item_handle swap helper was removed; swap the underlying
+  item_value objects instead.
 - Resource loading no longer searches the current working
   directory. Registered aliases take precedence and the search
   order now matches the documentation.
 - file::save now throws instead of silently failing when the
-  output file cannot be opened.
+  output file cannot be opened. The non-const file::is_valid()
+  overload was removed; use the const overload.
 - Serializing a category no longer resizes rows; the write
   functions are now const-correct.
 - Fixed several out-of-bounds and robustness problems in, among
   others, word wrapping, the PDBx sequence matcher, matrix
   multiplication, symmetry operation parsing, REMARK parsing and
   PDB name formatting.
+- cell::init now validates its parameters and rejects invalid unit
+  cells.
 - cif2pdbDate now validates month and day ranges, including leap
   years, and rejects invalid dates.
 - Various PDB and reconstruction fixes, including residue::swap,
-  entity creation, branch handling and charge output.
+  entity creation, branch handling, charge output and PDB record
+  column validation.
 - Regularly used regular expressions are now compiled once
   instead of on every call.
 - Bulk erase with a condition, and orphan removal, no longer scan

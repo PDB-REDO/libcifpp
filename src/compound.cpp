@@ -692,7 +692,7 @@ compound_factory &compound_factory::instance()
 	}
 	else
 	{
-		std::lock_guard lock(s_instance_mutex);
+		std::scoped_lock lock(s_instance_mutex);
 
 		if (not s_instance)
 			s_instance.reset(new compound_factory());
@@ -706,7 +706,7 @@ void compound_factory::clear()
 		tl_instance.reset();
 	else
 	{
-		std::lock_guard lock(s_instance_mutex);
+		std::scoped_lock lock(s_instance_mutex);
 		s_instance.reset();
 	}
 }
@@ -718,7 +718,7 @@ void compound_factory::set_default_dictionary(const fs::path &inDictFile)
 
 	try
 	{
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		m_impl = std::make_shared<compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
@@ -734,7 +734,7 @@ void compound_factory::push_dictionary(const fs::path &inDictFile)
 
 	try
 	{
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		m_impl = std::make_shared<compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
@@ -747,7 +747,7 @@ void compound_factory::push_dictionary(const cif::file &inDictFile)
 {
 	try
 	{
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		m_impl = std::make_shared<local_compound_factory_impl>(inDictFile, m_impl);
 	}
 	catch (const std::exception &)
@@ -758,7 +758,7 @@ void compound_factory::push_dictionary(const cif::file &inDictFile)
 
 void compound_factory::pop_dictionary()
 {
-	std::lock_guard lock(m_mutex);
+	std::scoped_lock lock(m_mutex);
 	if (m_impl)
 		m_impl = m_impl->next();
 }
@@ -767,7 +767,7 @@ bool compound_factory::exists(std::string_view id) const
 {
 	std::shared_ptr<compound_factory_impl> impl;
 	{
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		impl = m_impl;
 	}
 
@@ -778,7 +778,7 @@ const compound *compound_factory::create(std::string_view id)
 {
 	std::shared_ptr<compound_factory_impl> impl;
 	{
-		std::lock_guard lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		impl = m_impl;
 	}
 
@@ -806,7 +806,7 @@ bool compound_factory::is_peptide(std::string_view res_name) const
 	{
 		std::shared_ptr<compound_factory_impl> impl;
 		{
-			std::lock_guard lock(m_mutex);
+			std::scoped_lock lock(m_mutex);
 			impl = m_impl;
 		}
 
@@ -827,7 +827,7 @@ bool compound_factory::is_base(std::string_view res_name) const
 	{
 		std::shared_ptr<compound_factory_impl> impl;
 		{
-			std::lock_guard lock(m_mutex);
+			std::scoped_lock lock(m_mutex);
 			impl = m_impl;
 		}
 
@@ -889,7 +889,7 @@ void compound_factory::report_missing_compound(std::string_view compound_id)
 
 		std::shared_ptr<compound_factory_impl> impl;
 		{
-			std::lock_guard lock(m_mutex);
+			std::scoped_lock lock(m_mutex);
 			impl = m_impl;
 		}
 

@@ -97,13 +97,6 @@ const item_value &item_handle::value() const noexcept
 	return m_row.operator[](ix);
 }
 
-void swap(item_handle a, item_handle b) noexcept
-{
-	item_value v(std::move(a.value()));
-	a.value() = std::move(b.value());
-	b.value() = std::move(v);
-}
-
 void item_handle::set(const item_value &value, bool updateLinked)
 {
 	if (m_is_const)
