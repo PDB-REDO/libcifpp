@@ -8,7 +8,7 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(Threads)
 find_dependency(ZLIB)
-find_dependency(LibLZMA)
+@LIBLZMA_DEPENDENCY@
 @SQLITE3_DEPENDENCY@
 
 check_required_components(cifpp)

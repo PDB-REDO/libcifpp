@@ -336,6 +336,7 @@ target_link_libraries(cifpp
 
 if(LibLZMA_FOUND)
     target_link_libraries(cifpp PRIVATE LibLZMA::LibLZMA)
+    set(LIBLZMA_DEPENDENCY "find_dependency(LibLZMA REQUIRED)")
 endif()
 
 if(PCRE2_FOUND)
