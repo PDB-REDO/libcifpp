@@ -1238,6 +1238,7 @@ class structure
 	void load_data();
 
 	void remove_atom(atom &a, bool removeFromResidue);
+	void remove_atoms(const std::vector<atom> &atoms, bool removeFromResidue);
 	void remove_sugar(sugar &sugar);
 
 	datablock &m_db;

@@ -1874,37 +1874,86 @@ atom &structure::emplace_atom(atom atom)
 	return m_atoms.emplace_back(std::move(atom));
 }
 
-void structure::remove_atom(atom &a, bool removeFromResidue)
+namespace
+{
+	struct atom_ids_condition_impl : public cif::detail::condition_impl
+	{
+		explicit atom_ids_condition_impl(std::set<std::string, std::less<>> ids)
+			: m_ids(std::move(ids))
+		{
+		}
+
+		bool prepare(const cif::category &c) override
+		{
+			auto ix = cif::get_item_ix(c, "id");
+			if (not ix.has_value())
+				return false;
+
+			m_item_ix = *ix;
+			return true;
+		}
+
+		[[nodiscard]] bool test(cif::const_row_handle r) const override
+		{
+			auto id = r[m_item_ix];
+			return id.is_string() and m_ids.contains(id.sv());
+		}
+
+		void str(std::ostream &os) const override
+		{
+			os << "id in (" << m_ids.size() << " atom IDs)";
+		}
+
+		std::set<std::string, std::less<>> m_ids;
+		uint16_t m_item_ix = 0;
+	};
+} // namespace
+
+void structure::remove_atoms(const std::vector<atom> &atoms, bool removeFromResidue)
 {
 	using namespace literals;
+
+	if (atoms.empty())
+		return;
 
 	auto &atomSite = m_db["atom_site"];
 
 	if (removeFromResidue)
 	{
-		try
+		for (const auto &a : atoms)
 		{
-			auto &res = get_residue(a);
-			std::erase(res.m_atoms, a);
-		}
-		catch (const std::exception &ex)
-		{
-			if (VERBOSE > 0)
-				std::cerr << "Error removing atom from residue: " << ex.what() << '\n';
+			try
+			{
+				auto &res = get_residue(a);
+				std::erase(res.m_atoms, a);
+			}
+			catch (const std::exception &ex)
+			{
+				if (VERBOSE > 0)
+					std::cerr << "Error removing atom from residue: " << ex.what() << '\n';
+			}
 		}
 	}
 
-	for (auto ri : atomSite.find("id"_key == a.id()))
+	auto &nps = m_db["pdbx_nonpoly_scheme"];
+	for (const auto &a : atoms)
 	{
-		if (a.is_water())
-		{
-			auto &nps = m_db["pdbx_nonpoly_scheme"];
-			for (const auto& rnp : atomSite.get_children(ri, nps))
-				nps.erase(rnp);
-		}
+		if (not a.get_row() or not a.is_water())
+			continue;
 
-		// also remove struct_conn records for this atom
-		auto &structConn = m_db["struct_conn"];
+		for (auto ri : atomSite.find("id"_key == a.id()))
+			for (const auto &rnp : atomSite.get_children(ri, nps))
+				nps.erase(rnp);
+	}
+
+	// Remove all struct_conn records referring to any of the atoms in one pass
+	auto &structConn = m_db["struct_conn"];
+	condition connCondition;
+
+	for (const auto &a : atoms)
+	{
+		if (not a.get_row())
+			continue;
 
 		condition cond;
 
@@ -1923,53 +1972,76 @@ void structure::remove_atom(atom &a, bool removeFromResidue)
 		}
 
 		if (cond)
-			structConn.erase(std::move(cond));
+			connCondition = std::move(connCondition) or std::move(cond);
+	}
 
-		atomSite.erase(ri);
-		break;
+	if (connCondition)
+		structConn.erase(std::move(connCondition));
+
+	// Remove the atom_site rows in one pass
+	std::set<std::string, std::less<>> ids;
+	for (const auto &a : atoms)
+		ids.emplace(a.id());
+
+	atomSite.erase(condition(new atom_ids_condition_impl(std::move(ids))));
+
+	// Remove the atoms from our administration in one pass as well
+	assert(m_atom_index.size() == m_atoms.size());
+
+	std::vector<bool> removed(m_atoms.size(), false);
+	std::size_t removedCount = 0;
+
+	for (const auto &a : atoms)
+	{
+		auto i = std::lower_bound(m_atom_index.begin(), m_atom_index.end(), a.id(),
+			[this](std::size_t ix, const std::string &id)
+			{ return m_atoms[ix].id() < id; });
+
+		bool found = i != m_atom_index.end() and m_atoms[*i].id() == a.id();
+#ifndef NDEBUG
+		assert(found);
+#endif
+		if (not found or removed[*i])
+			continue;
+
+		removed[*i] = true;
+		++removedCount;
+	}
+
+	if (removedCount > 0)
+	{
+		std::vector<std::size_t> remap(m_atoms.size());
+		std::vector<atom> keptAtoms;
+		keptAtoms.reserve(m_atoms.size() - removedCount);
+
+		for (std::size_t i = 0; i < m_atoms.size(); ++i)
+		{
+			if (removed[i])
+				continue;
+
+			remap[i] = keptAtoms.size();
+			keptAtoms.push_back(std::move(m_atoms[i]));
+		}
+
+		std::vector<std::size_t> keptIndex;
+		keptIndex.reserve(keptAtoms.size());
+
+		for (auto i : m_atom_index)
+		{
+			if (not removed[i])
+				keptIndex.emplace_back(remap[i]);
+		}
+
+		m_atoms = std::move(keptAtoms);
+		m_atom_index = std::move(keptIndex);
 	}
 
 	assert(m_atom_index.size() == m_atoms.size());
+}
 
-#ifndef NDEBUG
-	bool removed = false;
-#endif
-
-	int L = 0, R = static_cast<int>(m_atom_index.size() - 1);
-	while (L <= R)
-	{
-		int i = (L + R) / 2;
-
-		const atom &atom = m_atoms[m_atom_index[i]];
-
-		int d = atom.id().compare(a.id());
-
-		if (d == 0)
-		{
-			m_atoms.erase(m_atoms.begin() + m_atom_index[i]);
-
-			auto ai = m_atom_index[i];
-			m_atom_index.erase(m_atom_index.begin() + i);
-
-			for (auto &j : m_atom_index)
-			{
-				if (j > ai)
-					--j;
-			}
-#ifndef NDEBUG
-			removed = true;
-#endif
-			break;
-		}
-
-		if (d < 0)
-			L = i + 1;
-		else
-			R = i - 1;
-	}
-#ifndef NDEBUG
-	assert(removed);
-#endif
+void structure::remove_atom(atom &a, bool removeFromResidue)
+{
+	remove_atoms({ a }, removeFromResidue);
 }
 
 void structure::swap_atoms(atom a1, atom a2)
@@ -2162,6 +2234,8 @@ void structure::remove_residue(residue &res)
 		{
 			auto &m = dynamic_cast<monomer &>(res);
 
+			remove_atoms(atoms, false);
+
 			m_db["pdbx_poly_seq_scheme"].erase(
 				"asym_id"_key == res.get_asym_id() and
 				"seq_id"_key == res.get_seq_id());
@@ -2175,41 +2249,50 @@ void structure::remove_residue(residue &res)
 				break;
 			}
 
-			break;
+			return;
 		}
 
 		case EntityType::NonPolymer:
+		{
+			auto asym_id = res.get_asym_id();
+			auto pdb_seq_num = res.get_pdb_seq_num();
+
+			remove_atoms(atoms, false);
+
 			m_db["pdbx_nonpoly_scheme"].erase(
-				"asym_id"_key == res.get_asym_id() and
-				"pdb_seq_num"_key == res.get_pdb_seq_num());
-			m_db["struct_asym"].erase("id"_key == res.get_asym_id());
+				"asym_id"_key == asym_id and
+				"pdb_seq_num"_key == pdb_seq_num);
+			m_db["struct_asym"].erase("id"_key == asym_id);
 			std::erase(m_non_polymers, res);
-			break;
+			return;
+		}
 
 		case EntityType::Water:
+		{
+			auto asym_id = res.get_asym_id();
+			auto pdb_seq_num = res.get_pdb_seq_num();
+
+			remove_atoms(atoms, false);
+
 			m_db["pdbx_nonpoly_scheme"].erase(
-				"asym_id"_key == res.get_asym_id() and
-				"pdb_seq_num"_key == res.get_pdb_seq_num());
+				"asym_id"_key == asym_id and
+				"pdb_seq_num"_key == pdb_seq_num);
 			std::erase(m_non_polymers, res);
-			break;
+			return;
+		}
 
 		case EntityType::Branched:
 		{
 			auto &s = dynamic_cast<sugar &>(res);
 
 			remove_sugar(s);
-
-			atoms.clear();
-			break;
+			return;
 		}
 
 		case EntityType::Macrolide:
 			// TODO: Fix this?
 			throw std::runtime_error("no support for macrolides yet");
 	}
-
-	for (auto atom : atoms)
-		remove_atom(atom, false);
 }
 
 void structure::remove_sugar(sugar &s)
@@ -2255,8 +2338,7 @@ void structure::remove_sugar(sugar &s)
 		std::erase_if(branch, [dix](const sugar &s)
 			{ return dix.count(s.num()); });
 
-		for (auto atom : da)
-			remove_atom(atom, false);
+		remove_atoms(da, false);
 
 		auto entity_id = create_entity_for_branch(branch);
 
@@ -2299,12 +2381,14 @@ void structure::remove_branch(branch &branch)
 {
 	using namespace literals;
 
+	std::vector<atom> atoms;
 	for (auto &sugar : branch)
 	{
-		auto atoms = sugar.atoms();
-		for (auto atom : atoms)
-			remove_atom(atom);
+		const auto &sugarAtoms = sugar.atoms();
+		atoms.insert(atoms.end(), sugarAtoms.begin(), sugarAtoms.end());
 	}
+
+	remove_atoms(atoms, false);
 
 	m_db["pdbx_branch_scheme"].erase("asym_id"_key == branch.get_asym_id());
 	m_db["struct_asym"].erase("id"_key == branch.get_asym_id());

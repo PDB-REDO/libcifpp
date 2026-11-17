@@ -488,6 +488,42 @@ TEST_CASE("remove_residue_1")
 	CHECK_NOTHROW(s.validate_atoms());
 }
 
+TEST_CASE("remove_residue_removes_atoms")
+{
+	using namespace cif::literals;
+
+	const std::filesystem::path example(gTestDir / ".." / "examples" / "1cbs.cif.gz");
+	cif::file file(example.string());
+
+	cif::mm::structure s(file);
+
+	auto &poly = s.polymers().front();
+	REQUIRE(poly.size() > 1);
+
+	auto &res = poly[1];
+	auto &atom_site = s.get_category("atom_site");
+
+	std::vector<std::string> atom_ids;
+	for (const auto &atom : res.atoms())
+		atom_ids.push_back(atom.id());
+
+	REQUIRE_FALSE(atom_ids.empty());
+
+	auto atom_count = s.atoms().size();
+
+	s.remove_residue(res);
+
+	CHECK(s.atoms().size() == atom_count - atom_ids.size());
+
+	for (const auto &id : atom_ids)
+	{
+		CHECK_FALSE(s.has_atom_id(id));
+		CHECK(atom_site.find("id"_key == id).empty());
+	}
+
+	CHECK_NOTHROW(s.validate_atoms());
+}
+
 // --------------------------------------------------------------------
 
 TEST_CASE("test_alternates_1")
