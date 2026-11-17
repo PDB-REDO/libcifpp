@@ -1,7 +1,6 @@
 {
   "dependencies": [
     "liblzma",
-    "pcre2",
-    "zlib"
+    "pcre2"
   ]
 }
