@@ -53,16 +53,16 @@ jobs:
       if: matrix.os == 'ubuntu-26.04'
       run: sudo apt-get update && sudo apt-get install mrc catch2 libsqlite3-dev ${{ matrix.cpp_compiler }} zlib1g-dev liblzma-dev
 
-    - name: Install dependencies Window
-      if: matrix.os == 'windows-latest'
-      run: ./tools/depends.cmd
-      shell: cmd
-
     - name: Run vcpkg (Windows only)
       if: runner.os == 'Windows'
       uses: lukka/run-vcpkg@v11.6
       with:
         vcpkgDirectory: ${{ runner.workspace }}/vcpkg
+
+    - name: Install dependencies Window
+      if: matrix.os == 'windows-latest'
+      run: ./tools/depends.cmd
+      shell: cmd
 
     - name: Install Catch2 macOS
       if: matrix.os == 'macos-latest'

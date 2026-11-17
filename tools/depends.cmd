@@ -39,4 +39,7 @@ cmake --build build --target RUN_TESTS --config Release || EXIT /b 1
 cmake --build build --target INSTALL --config Release || EXIT /b 1
 CD ..
 
+vcpkg install liblzma
+vcpkg install zlib
+
 @EXIT /b 0
