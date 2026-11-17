@@ -186,29 +186,33 @@ find_package(Threads)
 
 # gxrio uses compression libraries
 if(MSVC)
-	# Avoid linking the shared library of zlib
-	# Search ZLIB_ROOT first if it is set.
-	if(ZLIB_ROOT)
-		set(_ZLIB_SEARCH_ROOT PATHS ${ZLIB_ROOT} NO_DEFAULT_PATH)
-		list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_ROOT)
-	endif()
+    # Avoid linking the shared library of zlib
+    # Search ZLIB_ROOT first if it is set.
+    if(ZLIB_ROOT)
+        set(_ZLIB_SEARCH_ROOT PATHS ${ZLIB_ROOT} NO_DEFAULT_PATH)
+        list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_ROOT)
+    endif()
 
-	# Normal search.
-	set(_ZLIB_x86 "(x86)")
-	set(_ZLIB_SEARCH_NORMAL
-		PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\GnuWin32\\Zlib;InstallPath]"
-		"$ENV{ProgramFiles}/zlib"
-		"$ENV{ProgramFiles${_ZLIB_x86}}/zlib")
-	unset(_ZLIB_x86)
-	list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
+    # Normal search.
+    set(_ZLIB_x86 "(x86)")
+    set(_ZLIB_SEARCH_NORMAL
+        PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\GnuWin32\\Zlib;InstallPath]"
+        "$ENV{ProgramFiles}/zlib"
+        "$ENV{ProgramFiles${_ZLIB_x86}}/zlib")
+    unset(_ZLIB_x86)
+    list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
 
-	foreach(search ${_ZLIB_SEARCHES})
-		find_library(ZLIB_LIBRARY NAMES zlibstatic NAMES_PER_DIR ${${search}} PATH_SUFFIXES lib)
-	endforeach()
+    foreach(search ${_ZLIB_SEARCHES})
+        find_library(ZLIB_LIBRARY NAMES zlibstatic NAMES_PER_DIR ${${search}} PATH_SUFFIXES lib)
+    endforeach()
 endif()
 
 find_package(ZLIB REQUIRED)
-find_package(LibLZMA REQUIRED)
+find_package(LibLZMA)
+
+if(NOT LibLZMA_FOUND)
+    message(WARNING "Could not locate liblzma, building without")
+endif()
 
 include(FindPkgConfig)
 
@@ -328,7 +332,11 @@ target_include_directories(
 
 target_link_libraries(cifpp
     PUBLIC Threads::Threads $<$<TARGET_EXISTS:std::atomic>:std::atomic>
-    PRIVATE ZLIB::ZLIB LibLZMA::LibLZMA)
+    PRIVATE ZLIB::ZLIB)
+
+if(LibLZMA_FOUND)
+    target_link_libraries(cifpp PRIVATE LibLZMA::LibLZMA)
+endif()
 
 if(PCRE2_FOUND)
     # target_link_libraries(cifpp PRIVATE PkgConfig::PCRE2)
