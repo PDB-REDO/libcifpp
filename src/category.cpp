@@ -1003,6 +1003,39 @@ bool category::validate_links() const
 	if (not m_validator)
 		return false;
 
+	for (auto &link : m_parent_links)
+	{
+		auto parent = link.linked;
+
+		if (parent == nullptr)
+			continue;
+
+		// this particular case should be skipped, that's because it is wrong:
+		// there are atoms that are not part of a polymer, and thus will have no
+		// parent in that category.
+		if (name() == "atom_site" and (parent->name() == "pdbx_poly_seq_scheme" or parent->name() == "entity_poly_seq"))
+			continue;
+
+		category first_missing_rows(name());
+
+		for (auto r : *this)
+		{
+			auto cond = get_parents_condition(r, *parent);
+			if (not cond)
+				continue;
+			if (not parent->contains(std::move(cond)))
+				return false;
+		}
+	}
+
+	return true;
+}
+
+bool category::report_missing_links() const
+{
+	if (not m_validator)
+		return false;
+
 	bool result = true;
 
 	for (auto &link : m_parent_links)

@@ -265,6 +265,19 @@ class category
 	/// @return Returns true is all validations pass
 	[[nodiscard]] bool validate_links() const;
 
+	/// @brief Report missing links, values in this category should have an
+	/// accompanying value in parent categories.
+	///
+	/// @note
+	/// The code makes one exception when validating missing links and that's between
+	/// *atom_site* and a parent *pdbx_poly_seq_scheme* or *entity_poly_seq*.
+	/// This particular case should be skipped because it is wrong:
+	/// there are atoms that are not part of a polymer, and thus will have no
+	/// parent in those categories.
+	///
+	/// @return Returns true is all validations pass
+	[[nodiscard]] bool report_missing_links() const;
+
 	///
 	/// @brief Strip removes items from this category that are invalid according to the assigned validator
 	///

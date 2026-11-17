@@ -152,6 +152,15 @@ class datablock : public std::list<category>
 	[[nodiscard]] bool validate_links() const;
 
 	///
+	/// @brief Report a subset of missing links between parents and children in the data
+	/// as defined in the validator
+	///
+	/// @return true If all links are valid
+	/// @return false If all links are not valid
+	///
+	[[nodiscard]] bool report_missing_links() const;
+
+	///
 	/// @brief Strip removes all categories and items that are invalid according
 	/// to the assigned validator. Will also add a valid audit_conform block.
 	///

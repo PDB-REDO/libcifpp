@@ -123,6 +123,19 @@ bool datablock::validate_links() const
 	return result;
 }
 
+bool datablock::report_missing_links() const
+{
+	bool result = true;
+
+	for (auto &cat : *this)
+		const_cast<category &>(cat).update_links(*this);
+
+	for (auto &cat : *this)
+		result = cat.report_missing_links() and result;
+
+	return result;
+}
+
 bool datablock::strip()
 {
 	// Without a validator there is nothing to strip against. Leave the data

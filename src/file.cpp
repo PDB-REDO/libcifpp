@@ -70,6 +70,16 @@ bool file::validate_links() const
 	return result;
 }
 
+bool file::report_missing_links() const
+{
+	bool result = true;
+
+	for (auto &db : *this)
+		result = db.report_missing_links() and result;
+
+	return result;
+}
+
 bool file::contains(std::string_view name) const
 {
 	return std::ranges::find_if(*this, [name](const datablock &db)

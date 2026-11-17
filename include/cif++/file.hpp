@@ -139,6 +139,16 @@ class file : public std::list<datablock>
 	[[nodiscard]] bool validate_links() const;
 
 	///
+	/// @brief Report (a subset of) the missing links for all datablocks contained.
+	///
+	/// Will throw an exception if no validator was specified.
+	///
+	/// @return true If all links were valid
+	/// @return false If all links were not valid
+	///
+	[[nodiscard]] bool report_missing_links() const;
+
+	///
 	/// @brief Return true if a datablock with the name @a name is part of this file
 	///
 	[[nodiscard]] bool contains(std::string_view name) const;
